@@ -1,0 +1,86 @@
+[
+  {
+    "_id": "1",
+    "name": "los angeles",
+    "code": "la",
+    "state_code": "ca",
+    "country_code": "us"
+  },
+  {
+    "_id": "2",
+    "name": "hyderabad",
+    "code": "hyd",
+    "state_code": "ap",
+    "country_code": "in"
+  },
+  {
+    "_id": "3",
+    "name": "new york city",
+    "code": "nyc",
+    "state_code": "ny",
+    "country_code": "us"
+  },
+  {
+    "_id": "4",
+    "name": "toronto",
+    "code": "tor",
+    "state_code": "on",
+    "country_code": "ca"
+  },
+  {
+    "_id": "5",
+    "name": "montreal",
+    "code": "mtl",
+    "state_code": "qc",
+    "country_code": "ca"
+  },
+  {
+    "_id": "6",
+    "name": "berlin",
+    "code": "ber",
+    "state_code": "by",
+    "country_code": "de"
+  },
+  {
+    "_id": "7",
+    "name": "sydney",
+    "code": "syd",
+    "state_code": "nsw",
+    "country_code": "au"
+  },
+  {
+    "_id": "8",
+    "name": "melbourne",
+    "code": "mel",
+    "state_code": "vic",
+    "country_code": "au"
+  },
+  {
+    "_id": "9",
+    "name": "tokyo",
+    "code": "tyo",
+    "state_code": "hk",
+    "country_code": "jp"
+  },
+  {
+    "_id": "10",
+    "name": "mumbai",
+    "code": "bom",
+    "state_code": "mh",
+    "country_code": "in"
+  },
+  {
+    "_id": "11",
+    "name": "auckland",
+    "code": "akl",
+    "state_code": "wgn",
+    "country_code": "nz"
+  },
+  {
+    "_id": "12",
+    "name": "sapporo",
+    "code": "spk",
+    "state_code": "hk",
+    "country_code": "jp"
+  }
+]

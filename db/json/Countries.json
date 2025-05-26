@@ -1,0 +1,90 @@
+[
+  {
+    "_id": "1",
+    "name": "united states",
+    "code": "us",
+    "currency": {
+      "name": "united states dollar",
+      "code": "usd",
+      "symbol": "$"
+    },
+    "phone_code": "+1"
+  },
+  {
+    "_id": "2",
+    "name": "canada",
+    "code": "ca",
+    "currency": {
+      "name": "canadian dollar",
+      "code": "cad",
+      "symbol": "$"
+    },
+    "phone_code": "+1"
+  },
+  {
+    "_id": "3",
+    "name": "united kingdom",
+    "code": "gb",
+    "currency": {
+      "name": "british pound",
+      "code": "gbp",
+      "symbol": "£"
+    },
+    "phone_code": "+44"
+  },
+  {
+    "_id": "4",
+    "name": "australia",
+    "code": "au",
+    "currency": {
+      "name": "australian dollar",
+      "code": "aud",
+      "symbol": "$"
+    },
+    "phone_code": "+61"
+  },
+  {
+    "_id": "5",
+    "name": "india",
+    "code": "in",
+    "currency": {
+      "name": "indian rupee",
+      "code": "inr",
+      "symbol": "₹"
+    },
+    "phone_code": "+91"
+  },
+  {
+    "_id": "6",
+    "name": "germany",
+    "code": "de",
+    "currency": {
+      "name": "euro",
+      "code": "eur",
+      "symbol": "€"
+    },
+    "phone_code": "+49"
+  },
+  {
+    "_id": "7",
+    "name": "japan",
+    "code": "jp",
+    "currency": {
+      "name": "japanese yen",
+      "code": "jpy",
+      "symbol": "¥"
+    },
+    "phone_code": "+81"
+  },
+  {
+    "_id": "8",
+    "name": "new zealand",
+    "code": "nz",
+    "currency": {
+      "name": "new zealand dollar",
+      "code": "nzd",
+      "symbol": "$"
+    },
+    "phone_code": "+64"
+  }
+]

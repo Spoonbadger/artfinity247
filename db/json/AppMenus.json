@@ -1,0 +1,56 @@
+{
+  "primary": [
+    { "title": "home", "href": "/" },
+    {
+      "title": "arts",
+      "href": "/arts"
+    },
+    {
+      "title": "artists",
+      "href": "/artists"
+    },
+    {
+      "title": "scenes",
+      "href": "/scenes"
+    },
+    {
+      "title": "contact",
+      "href": "/contact"
+    },
+    {
+      "title": "about us",
+      "href": "/about-us"
+    }
+  ],
+  "primary_mobile": [],
+  "primary_shortcuts": [
+    {
+      "title": "Visit Us",
+      "href": "/contact#map"
+    }
+  ],
+  "secondary": [],
+  "secondary_mobile": [],
+  "policies": [
+    {
+      "title": "Cookie Policy",
+      "href": "/cookie-policy",
+      "openInNewTab": true
+    },
+    {
+      "title": "Privacy Policy",
+      "href": "/privacy-policy",
+      "openInNewTab": true
+    },
+    {
+      "title": "Return Policy",
+      "href": "/return-policy",
+      "openInNewTab": true
+    },
+    {
+      "title": "Terms and Conditions",
+      "href": "/terms-and-conditions",
+      "openInNewTab": true
+    }
+  ]
+}

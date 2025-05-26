@@ -1,0 +1,18 @@
+[
+  { "_id": "1", "name": "california", "code": "ca", "country_code": "us" },
+  { "_id": "2", "name": "new york", "code": "ny", "country_code": "us" },
+  { "_id": "3", "name": "ontario", "code": "on", "country_code": "ca" },
+  { "_id": "4", "name": "quebec", "code": "qc", "country_code": "ca" },
+  { "_id": "5", "name": "wellington", "code": "wgn", "country_code": "nz" },
+  { "_id": "6", "name": "bavaria", "code": "by", "country_code": "de" },
+  {
+    "_id": "7",
+    "name": "new south wales",
+    "code": "nsw",
+    "country_code": "au"
+  },
+  { "_id": "8", "name": "hokkaido", "code": "hk", "country_code": "jp" },
+  { "_id": "9", "name": "victoria", "code": "vic", "country_code": "au" },
+  { "_id": "10", "name": "andhra pradesh", "code": "ap", "country_code": "in" },
+  { "_id": "11", "name": "maharashtra", "code": "mh", "country_code": "in" }
+]

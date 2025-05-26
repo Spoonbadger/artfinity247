@@ -1,0 +1,302 @@
+[
+  {
+    "_id": "1",
+    "name": "John Doe",
+    "rating": 5,
+    "item_id": "8",
+    "type": "product",
+    "comment": "Absolutely amazing artwork! The details and colors are stunning. Highly recommend.",
+    "img": "/assets/images/icons/users/user-1.png",
+    "created_at": "2024-04-23T08:00:00Z"
+  },
+  {
+    "_id": "2",
+    "name": "Jane Smith",
+    "rating": 4.3,
+    "item_id": "8",
+    "type": "product",
+    "comment": "Great collection of art pieces. Found exactly what I was looking for. Will buy again!",
+    "img": "/assets/images/icons/users/user-2.png",
+    "created_at": "2024-04-26T08:00:00Z"
+  },
+  {
+    "_id": "3",
+    "name": "Mark Johnson",
+    "rating": 5,
+    "item_id": "23",
+    "type": "product",
+    "comment": "The best place to discover new artists and buy original artwork. Love it!",
+    "img": "/assets/images/icons/users/user-3.png",
+    "created_at": "2024-02-03T08:00:00Z"
+  },
+  {
+    "_id": "4",
+    "name": "Emily Davis",
+    "rating": 4.6,
+    "item_id": "29",
+    "type": "product",
+    "comment": "Fantastic platform for art lovers. The interface is user-friendly and the selection is top-notch.",
+    "img": "/assets/images/icons/users/user-4.png",
+    "created_at": "2024-01-05T08:00:00Z"
+  },
+  {
+    "_id": "5",
+    "name": "Michael Brown",
+    "rating": 4.4,
+    "item_id": "25",
+    "type": "product",
+    "comment": "Good experience overall. Customer service was helpful and responsive.",
+    "img": "/assets/images/icons/users/user-5.png",
+    "created_at": "2024-01-07T08:00:00Z"
+  },
+  {
+    "_id": "6",
+    "name": "Sarah Wilson",
+    "rating": 5,
+    "item_id": "10",
+    "type": "product",
+    "comment": "A wonderful site to explore and purchase unique artworks. Highly satisfied!",
+    "img": "/assets/images/icons/users/user-6.png",
+    "created_at": "2024-01-15T08:00:00Z"
+  },
+  {
+    "_id": "7",
+    "name": "David Miller",
+    "rating": 4,
+    "item_id": "13",
+    "type": "product",
+    "comment": "The artwork quality is great, but shipping took longer than expected.",
+    "img": "/assets/images/icons/users/user-7.png",
+    "created_at": "2024-02-19T08:00:00Z"
+  },
+  {
+    "_id": "8",
+    "name": "Jessica Taylor",
+    "rating": 4.2,
+    "item_id": "24",
+    "type": "product",
+    "comment": "Great variety of art pieces. Found some really unique pieces for my collection.",
+    "img": "/assets/images/icons/users/user-8.png",
+    "created_at": "2024-04-30T08:00:00Z"
+  },
+  {
+    "_id": "9",
+    "name": "Daniel Anderson",
+    "rating": 4.6,
+    "item_id": "25",
+    "type": "product",
+    "comment": "Exceptional service and a great platform to discover new artists. Highly recommended.",
+    "img": "/assets/images/icons/users/user-9.png",
+    "created_at": "2024-02-13T08:00:00Z"
+  },
+  {
+    "_id": "10",
+    "name": "Robert Martinez",
+    "rating": 4.3,
+    "item_id": "12",
+    "type": "product",
+    "comment": "Love the simplicity and the range of art available. The purchase process was seamless.",
+    "img": "/assets/images/icons/users/user-10.png",
+    "created_at": "2024-01-11T08:00:00Z"
+  },
+  {
+    "_id": "11",
+    "name": "Emily Johnson",
+    "rating": 4.5,
+    "item_id": "8",
+    "type": "product",
+    "comment": "The colors and details in 'The Bedroom' are just stunning! Highly recommend it.",
+    "img": "",
+    "created_at": "2024-01-16T08:00:00Z"
+  },
+  {
+    "_id": "12",
+    "name": "Michael Brown",
+    "rating": 4.8,
+    "item_id": "9",
+    "type": "product",
+    "comment": "'Café Terrace at Night' brings such a warm and inviting atmosphere to our living room.",
+    "img": "",
+    "created_at": "2024-04-05T08:00:00Z"
+  },
+  {
+    "_id": "13",
+    "name": "Sophia Davis",
+    "rating": 4.7,
+    "item_id": "10",
+    "type": "product",
+    "comment": "A timeless masterpiece, 'Portrait of Dr. Gachet' adds a touch of elegance to our home.",
+    "img": "",
+    "created_at": "2024-03-06T08:00:00Z"
+  },
+  {
+    "_id": "14",
+    "name": "David Wilson",
+    "rating": 4.9,
+    "item_id": "12",
+    "type": "product",
+    "comment": "'Woman with a Parasol' is beautifully detailed. It’s a conversation starter for sure.",
+    "img": "",
+    "created_at": "2024-04-18T08:00:00Z"
+  },
+  {
+    "_id": "15",
+    "name": "Olivia Martinez",
+    "rating": 4.6,
+    "item_id": "13",
+    "type": "product",
+    "comment": "The lighting in 'San Giorgio Maggiore at Dusk' is incredible. It looks fantastic in our dining room.",
+    "img": "",
+    "created_at": "2024-04-02T08:00:00Z"
+  },
+  {
+    "_id": "16",
+    "name": "James Garcia",
+    "rating": 4.2,
+    "item_id": "14",
+    "type": "product",
+    "comment": "'Last Supper' is a powerful piece. The quality of the print is excellent.",
+    "img": "",
+    "created_at": "2024-05-11T08:00:00Z"
+  },
+  {
+    "_id": "17",
+    "name": "Ava Martinez",
+    "rating": 4.9,
+    "item_id": "15",
+    "type": "product",
+    "comment": "Having the 'Mona Lisa' at home feels like owning a piece of history. It's perfect!",
+    "img": "",
+    "created_at": "2024-03-01T08:00:00Z"
+  },
+  {
+    "_id": "18",
+    "name": "Ethan Robinson",
+    "rating": 4.4,
+    "item_id": "16",
+    "type": "product",
+    "comment": "'Vitruvian Man' adds a unique touch to our study. The details are fascinating.",
+    "img": "",
+    "created_at": "2024-05-25T08:00:00Z"
+  },
+  {
+    "_id": "19",
+    "name": "Mia Lee",
+    "rating": 4.5,
+    "item_id": "17",
+    "type": "product",
+    "comment": "The composition of 'Louisiana' is simply beautiful. We love it in our bedroom.",
+    "img": "",
+    "created_at": "2024-03-017T08:00:00Z"
+  },
+  {
+    "_id": "20",
+    "name": "Liam Harris",
+    "rating": 4.3,
+    "item_id": "18",
+    "type": "product",
+    "comment": "'Japanese Bridge' brings a sense of tranquility to our home. The print quality is top-notch.",
+    "img": "",
+    "created_at": "2024-03-09T08:00:00Z"
+  },
+  {
+    "_id": "21",
+    "name": "Charlotte Clark",
+    "rating": 4.6,
+    "item_id": "19",
+    "type": "product",
+    "comment": "'Death and the Maiden' is a striking piece. It adds a dramatic flair to our decor.",
+    "img": "",
+    "created_at": "2024-02-02T08:00:00Z"
+  },
+  {
+    "_id": "22",
+    "name": "Benjamin Young",
+    "rating": 4.7,
+    "item_id": "20",
+    "type": "product",
+    "comment": "'Le Grand Canal' is breathtaking. It looks fantastic above our fireplace.",
+    "img": "",
+    "created_at": "2024-04-29T08:00:00Z"
+  },
+  {
+    "_id": "23",
+    "name": "Amelia King",
+    "rating": 4.8,
+    "item_id": "21",
+    "type": "product",
+    "comment": "The colors in 'Flowers on the Riverbank at Argenteuil' are so vibrant. It’s a joy to look at.",
+    "img": "",
+    "created_at": "2024-03-30T08:00:00Z"
+  },
+  {
+    "_id": "24",
+    "name": "Lucas Wright",
+    "rating": 4.5,
+    "item_id": "22",
+    "type": "product",
+    "comment": "'The Water Lily Pond' brings a serene vibe to our living space. The print is very high quality.",
+    "img": "",
+    "created_at": "2024-01-29T08:00:00Z"
+  },
+  {
+    "_id": "25",
+    "name": "Harper Lopez",
+    "rating": 4.9,
+    "item_id": "23",
+    "type": "product",
+    "comment": "'Portrait of Wally' is so captivating. The details are impeccable.",
+    "img": "",
+    "created_at": "2024-01-09T08:00:00Z"
+  },
+  {
+    "_id": "26",
+    "name": "Henry Hill",
+    "rating": 4.4,
+    "item_id": "24",
+    "type": "product",
+    "comment": "'Dame mit Fächer' is a beautiful piece. It adds a touch of class to our home.",
+    "img": "",
+    "created_at": "2024-05-18T08:00:00Z"
+  },
+  {
+    "_id": "27",
+    "name": "Ella Scott",
+    "rating": 4.7,
+    "item_id": "25",
+    "type": "product",
+    "comment": "'The Golden Apple Tree' is a delightful addition to our art collection. Highly recommend!",
+    "img": "",
+    "created_at": "2024-03-16T08:00:00Z"
+  },
+  {
+    "_id": "28",
+    "name": "Alexander Green",
+    "rating": 4.3,
+    "item_id": "26",
+    "type": "product",
+    "comment": "'The Annunciation' is simply stunning. The quality of the print exceeded our expectations.",
+    "img": "",
+    "created_at": "2024-04-08T08:00:00Z"
+  },
+  {
+    "_id": "29",
+    "name": "Avery Adams",
+    "rating": 4.8,
+    "item_id": "29",
+    "type": "product",
+    "comment": "'Girl With the Pearl Earring' is a timeless classic. It looks amazing on our wall.",
+    "img": "",
+    "created_at": "2024-05-23T08:00:00Z"
+  },
+  {
+    "_id": "30",
+    "name": "Daniel Baker",
+    "rating": 4.6,
+    "item_id": "15",
+    "type": "product",
+    "comment": "The 'Mona Lisa' is an iconic piece, and this print does it justice. Great quality!",
+    "img": "",
+    "created_at": "2024-05-02T08:00:00Z"
+  }
+]

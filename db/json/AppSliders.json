@@ -1,0 +1,45 @@
+[
+  {
+    "_id": "1",
+    "title": "Home Hero Slider",
+    "description": "",
+    "slides": [
+      {
+        "title": "Where Art Meets Infinity",
+        "subTitle": "A Canvas of Creativity",
+        "actionBtns": [
+          {
+            "title": "Start Exploring",
+            "href": "/arts",
+            "variant": "outline"
+          }
+        ],
+        "bg": "/assets/images/home-slider-1.jpg"
+      },
+      {
+        "title": "Discover Unique Creations",
+        "subTitle": "Find Artwork That Inspires You",
+        "actionBtns": [
+          {
+            "title": "See More Arts",
+            "href": "/arts",
+            "variant": "outline"
+          }
+        ],
+        "bg": "/assets/images/home-slider-2.jpg"
+      },
+      {
+        "title": "Join Our Artistic Community",
+        "subTitle": "Connect with Artists and Art Enthusiasts",
+        "actionBtns": [
+          {
+            "title": "Join Artfinity",
+            "href": "/register",
+            "variant": "outline"
+          }
+        ],
+        "bg": "/assets/images/home-slider-3.jpg"
+      }
+    ]
+  }
+]

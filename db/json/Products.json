@@ -1,0 +1,515 @@
+[
+  {
+    "_id": "8",
+    "title": "The Bedroom",
+    "img": "/uploads/arts/vincent_van_gogh/bedroom.webp",
+    "description": "My bedroom in Arles, France.",
+    "additional_info": [
+      { "key": "materials", "value": "" },
+      { "key": "genres", "value": "post-impressionist" }
+    ],
+
+    "variants": [
+      {
+        "title": "Print Size",
+        "type": "print_size",
+        "data": [
+          { "key": "a5", "value": "4.25 x 5.5", "price": 14.99 },
+          { "key": "a4", "value": "8.5 x 11", "price": 24.99 },
+          { "key": "a3", "value": "11 x 17", "price": 39.99 }
+        ]
+      }
+    ],
+    "original_size": "28 x 35",
+    "available": 100,
+    "seller": "3",
+    "is_active": true,
+    "slug": "the-bedroom"
+  },
+  {
+    "_id": "9",
+    "title": "Café Terrace at Night",
+    "img": "/uploads/arts/vincent_van_gogh/cafe_terrace_at_night.webp",
+    "description": "An outdoor scene of a café in Arles, France.",
+    "additional_info": [
+      { "key": "materials", "value": "" },
+      { "key": "genres", "value": "post-impressionist" }
+    ],
+
+    "variants": [
+      {
+        "title": "Print Size",
+        "type": "print_size",
+        "data": [
+          { "key": "a5", "value": "4.25 x 5.5", "price": 14.99 },
+          { "key": "a4", "value": "8.5 x 11", "price": 24.99 },
+          { "key": "a3", "value": "11 x 17", "price": 39.99 }
+        ]
+      }
+    ],
+    "original_size": "32 x 26",
+    "available": 100,
+    "seller": "3",
+    "is_active": true,
+    "slug": "café-terrace-at-night"
+  },
+  {
+    "_id": "10",
+    "title": "Portrait of Dr. Gachet",
+    "img": "/uploads/arts/vincent_van_gogh/Doctor-Gachet.webp",
+    "description": "The doctor.",
+    "additional_info": [
+      { "key": "materials", "value": "" },
+      { "key": "genres", "value": "post-impressionsim" }
+    ],
+
+    "variants": [
+      {
+        "title": "Print Size",
+        "type": "print_size",
+        "data": [
+          { "key": "a5", "value": "4.25 x 5.5", "price": 14.99 },
+          { "key": "a4", "value": "8.5 x 11", "price": 24.99 },
+          { "key": "a3", "value": "11 x 17", "price": 39.99 }
+        ]
+      }
+    ],
+    "original_size": "26 x 22",
+    "available": 0,
+    "seller": "3",
+    "is_active": true,
+    "slug": "portrait-of-dr.gachet"
+  },
+  {
+    "_id": "12",
+    "title": "Woman with a Parasol - Madame Monet and Her Son",
+    "img": "/uploads/arts/claude_monet/Woman-Parasol.webp",
+    "description": "capturing the light of figures with quick brushstrokes",
+    "additional_info": [
+      { "key": "materials", "value": "" },
+      { "key": "genres", "value": "impressionism" }
+    ],
+
+    "variants": [
+      {
+        "title": "Print Size",
+        "type": "print_size",
+        "data": [
+          { "key": "a5", "value": "4.25 x 5.5", "price": 14.99 },
+          { "key": "a4", "value": "8.5 x 11", "price": 24.99 },
+          { "key": "a3", "value": "11 x 17", "price": 39.99 }
+        ]
+      }
+    ],
+    "original_size": "39.3 x 31.8",
+    "available": 100,
+    "seller": "4",
+    "is_active": true,
+    "slug": "woman-with-a-parasol-madame-monet-and-her Son"
+  },
+  {
+    "_id": "13",
+    "title": "San Giorgio Maggiore at Dusk",
+    "img": "/uploads/arts/claude_monet/San-Giorgio-Maggiore-at-Dusk.webp",
+    "description": "capturing the effects of light and atmosphere",
+    "additional_info": [
+      { "key": "materials", "value": "" },
+      { "key": "genres", "value": "impressionism" }
+    ],
+
+    "variants": [
+      {
+        "title": "Print Size",
+        "type": "print_size",
+        "data": [
+          { "key": "a5", "value": "4.25 x 5.5", "price": 14.99 },
+          { "key": "a4", "value": "8.5 x 11", "price": 24.99 },
+          { "key": "a3", "value": "11 x 17", "price": 39.99 }
+        ]
+      }
+    ],
+    "original_size": "27.5 x 36.4",
+    "available": 0,
+    "seller": "4",
+    "is_active": true,
+    "slug": "san-giorgio-maggiore-at-dusk"
+  },
+  {
+    "_id": "14",
+    "title": "Last Supper",
+    "img": "/uploads/arts/leonardo_da_vinci/Last-Supper.webp",
+    "description": "The last supper of christ",
+    "additional_info": [
+      { "key": "materials", "value": "" },
+      { "key": "genres", "value": "renaissance" }
+    ],
+
+    "variants": [
+      {
+        "title": "Print Size",
+        "type": "print_size",
+        "data": [
+          { "key": "a5", "value": "4.25 x 5.5", "price": 14.99 },
+          { "key": "a4", "value": "8.5 x 11", "price": 24.99 },
+          { "key": "a3", "value": "11 x 17", "price": 39.99 }
+        ]
+      }
+    ],
+    "original_size": "181 x 346",
+    "available": 100,
+    "seller": "5",
+    "is_active": true,
+    "slug": "last-supper"
+  },
+  {
+    "_id": "15",
+    "title": "Mona Lisa",
+    "img": "/uploads/arts/leonardo_da_vinci/mona-lisa.webp",
+    "description": "Using sfumato, transitioning between colors and tones.",
+    "additional_info": [
+      { "key": "materials", "value": "" },
+      { "key": "genres", "value": "renaissance" }
+    ],
+
+    "variants": [
+      {
+        "title": "Print Size",
+        "type": "print_size",
+        "data": [
+          { "key": "a5", "value": "4.25 x 5.5", "price": 14.99 },
+          { "key": "a4", "value": "8.5 x 11", "price": 24.99 },
+          { "key": "a3", "value": "11 x 17", "price": 39.99 }
+        ]
+      }
+    ],
+    "original_size": "30 x 21",
+    "available": 100,
+    "seller": "5",
+    "is_active": true,
+    "slug": "mona-lisa"
+  },
+  {
+    "_id": "16",
+    "title": "Vitruvian Man",
+    "img": "/uploads/arts/leonardo_da_vinci/vetruvian_man.webp",
+    "description": "A study of the proportions of the human body, relating to the ideal human proportions with geometry described by the ancient Roman architect Vitruvius.",
+    "additional_info": [
+      { "key": "materials", "value": "" },
+      { "key": "genres", "value": "Renaissance,  science" }
+    ],
+
+    "variants": [
+      {
+        "title": "Print Size",
+        "type": "print_size",
+        "data": [
+          { "key": "a5", "value": "4.25 x 5.5", "price": 14.99 },
+          { "key": "a4", "value": "8.5 x 11", "price": 24.99 },
+          { "key": "a3", "value": "11 x 17", "price": 39.99 }
+        ]
+      }
+    ],
+    "original_size": "13.5 x 9.6",
+    "available": 0,
+    "seller": "5",
+    "is_active": true,
+    "slug": "vitruvian-man"
+  },
+  {
+    "_id": "17",
+    "title": "Louisiana",
+    "img": "/uploads/arts/craig_morley/louisiana_serou.webp",
+    "description": "Louisiana, 2018",
+    "additional_info": [
+      { "key": "materials", "value": "" },
+      { "key": "genres", "value": "surrealism" }
+    ],
+
+    "variants": [
+      {
+        "title": "Print Size",
+        "type": "print_size",
+        "data": [
+          { "key": "a5", "value": "4.25 x 5.5", "price": 19.99 },
+          { "key": "a4", "value": "8.5 x 11", "price": 29.99 },
+          { "key": "a3", "value": "11 x 17", "price": 44.99 }
+        ]
+      }
+    ],
+    "original_size": "20 x 24",
+    "available": 100,
+    "seller": "1",
+    "is_active": true,
+    "slug": "louisiana"
+  },
+  {
+    "_id": "18",
+    "title": "Japanese Bridge",
+    "img": "/uploads/arts/claude_monet/bridge_over_a_pond_of_waterlillies.webp",
+    "description": "ads",
+    "additional_info": [
+      { "key": "materials", "value": "" },
+      { "key": "genres", "value": "dfa" }
+    ],
+
+    "variants": [
+      {
+        "title": "Print Size",
+        "type": "print_size",
+        "data": [
+          { "key": "a5", "value": "4.25 x 5.5", "price": 14.99 },
+          { "key": "a4", "value": "8.5 x 11", "price": 24.99 },
+          { "key": "a3", "value": "11 x 17", "price": 39.99 }
+        ]
+      }
+    ],
+    "original_size": "asdf",
+    "available": 0,
+    "seller": "1",
+    "is_active": true,
+    "slug": "japanese-bridge"
+  },
+  {
+    "_id": "19",
+    "title": "Death and the Maiden",
+    "img": "/uploads/arts/egon_schiele/death_and_the_maiden.webp",
+    "description": "Created to memorialize the end of an affair with Wally Neuzil. Moody, symbolic expressions to create this artwork full of intertwined bodies. The mood of the painting is one of despair.",
+    "additional_info": [
+      { "key": "materials", "value": "" },
+      { "key": "genres", "value": "Expressionism" }
+    ],
+
+    "variants": [
+      {
+        "title": "Print Size",
+        "type": "print_size",
+        "data": [
+          { "key": "a5", "value": "4.25 x 5.5", "price": 14.99 },
+          { "key": "a4", "value": "8.5 x 11", "price": 24.99 },
+          { "key": "a3", "value": "11 x 17", "price": 39.99 }
+        ]
+      }
+    ],
+    "original_size": "59 x 71",
+    "available": 100,
+    "seller": "6",
+    "is_active": true,
+    "slug": "death-and-the-maiden"
+  },
+  {
+    "_id": "20",
+    "title": "Le Grand Canal",
+    "img": "/uploads/arts/claude_monet/venice.webp",
+    "description": "This painting depicts the view from the Palazzo Barbaro. Monet's series introduced a fresh approach to a theme that was painted by many notable artists before him. The series are a pictorial exploration of the light upon the ancient city. The painter captured the sensations according to how the appearance of the motif changed as the light shifted on the water and its surroundings. The painter used the mooring-poles to counterbalance the buildings on the other side of the canal. The Baroque architecture of the church of Santa Maria della Salute is prominent. Arguably, Monet was more preoccupied with capturing the light on the water than the well known panoramas and sights of Venice.[11][12][13] He certainly avoided painting the residents and tourists in the city; the absence of people gives an other-worldly impression.",
+    "additional_info": [
+      { "key": "materials", "value": "" },
+      { "key": "genres", "value": "Impressionism" }
+    ],
+
+    "variants": [
+      {
+        "title": "Print Size",
+        "type": "print_size",
+        "data": [
+          { "key": "a5", "value": "4.25 x 5.5", "price": 14.99 },
+          { "key": "a4", "value": "8.5 x 11", "price": 24.99 },
+          { "key": "a3", "value": "11 x 17", "price": 39.99 }
+        ]
+      }
+    ],
+    "original_size": "36.4 x 29",
+    "available": 100,
+    "seller": "4",
+    "is_active": true,
+    "slug": "le-grand-canal"
+  },
+  {
+    "_id": "21",
+    "title": "Flowers on the Riverbank at Argenteuil",
+    "img": "/uploads/arts/claude_monet/Flowers_on_the_Riverbank_at_Argenteuil.webp",
+    "description": "the painting features a bunch of grass and flowers in the foreground. From the angle it was painted, more than half of the canvas is covered by the flowers. Some parts of the riverbank and the river are covered by the flowers. In the distance is a silhouette of the structures that seem to fade.",
+    "additional_info": [
+      { "key": "materials", "value": "" },
+      { "key": "genres", "value": "Impressionism" }
+    ],
+
+    "variants": [
+      {
+        "title": "Print Size",
+        "type": "print_size",
+        "data": [
+          { "key": "a5", "value": "4.25 x 5.5", "price": 14.99 },
+          { "key": "a4", "value": "8.5 x 11", "price": 24.99 },
+          { "key": "a3", "value": "11 x 17", "price": 39.99 }
+        ]
+      }
+    ],
+    "original_size": "21.1 x 25.6",
+    "available": 100,
+    "seller": "4",
+    "is_active": true,
+    "slug": "flowers-on-the-riverbank-at-argenteuil"
+  },
+  {
+    "_id": "22",
+    "title": "The Water Lily Pond",
+    "img": "/uploads/arts/claude_monet/the_water_lily_pond.webp",
+    "description": "It took me some time to understand my water-lilies. It takes more than a day to get under your skin. And then all at once, I had the revelation - how wonderful my pond was - and reached for my palette. I've hardly had any other subject since that moment.",
+    "additional_info": [
+      { "key": "materials", "value": "" },
+      { "key": "genres", "value": "Impressionism" }
+    ],
+
+    "variants": [
+      {
+        "title": "Print Size",
+        "type": "print_size",
+        "data": [
+          { "key": "a5", "value": "4.25 x 5.5", "price": 14.99 },
+          { "key": "a4", "value": "8.5 x 11", "price": 24.99 },
+          { "key": "a3", "value": "11 x 17", "price": 39.99 }
+        ]
+      }
+    ],
+    "original_size": "35 x 39",
+    "available": 100,
+    "seller": "4",
+    "is_active": true,
+    "slug": "the-water-lily-pond"
+  },
+  {
+    "_id": "23",
+    "title": "Portrait of Wally",
+    "img": "/uploads/arts/egon_schiele/portrait_of_wally.webp",
+    "description": "A 1912 oil painting of Walburga \"Wally\" Neuzil, a woman whom I met in 1911 when I was 21 and she was 17. She became my lover and model for several years.",
+    "additional_info": [
+      { "key": "materials", "value": "" },
+      { "key": "genres", "value": "expressionism" }
+    ],
+
+    "variants": [
+      {
+        "title": "Print Size",
+        "type": "print_size",
+        "data": [
+          { "key": "a5", "value": "4.25 x 5.5", "price": 14.99 },
+          { "key": "a4", "value": "8.5 x 11", "price": 24.99 },
+          { "key": "a3", "value": "11 x 17", "price": 39.99 }
+        ]
+      }
+    ],
+    "original_size": "13 x 15.7",
+    "available": 100,
+    "seller": "6",
+    "is_active": true,
+    "slug": "portrait-of-wally"
+  },
+  {
+    "_id": "24",
+    "title": "Dame mit Fächer",
+    "img": "/uploads/arts/gustav_klimpt/Gustav_Klimt_-_Dame_mit_Facher.webp",
+    "description": "The square painting depicts a woman with chestnut curls against a yellow backdrop with Oriental motifs. As she gazes into the distance to the left, her patterned silk robe is slipping off her shoulder and she holds a fan concealing her bosom.",
+    "additional_info": [
+      { "key": "materials", "value": "" },
+      { "key": "genres", "value": "art nouveau" }
+    ],
+
+    "variants": [
+      {
+        "title": "Print Size",
+        "type": "print_size",
+        "data": [
+          { "key": "a5", "value": "4.25 x 5.5", "price": 14.99 },
+          { "key": "a4", "value": "8.5 x 11", "price": 24.99 },
+          { "key": "a3", "value": "11 x 17", "price": 39.99 }
+        ]
+      }
+    ],
+    "original_size": "39.4 x 39.4",
+    "available": 100,
+    "seller": "7",
+    "is_active": true,
+    "slug": "dame-mit-fächer"
+  },
+  {
+    "_id": "25",
+    "title": "The Golden Apple Tree",
+    "img": "/uploads/arts/gustav_klimpt/golden_apple_tree.webp",
+    "description": "The light paint strokes give the canvas a feeling of lightness and movement, as if the wind were making the branches of the tree dance. Klimt, with his keen sense of detail and colour, captures the energy and vitality of nature, making The Apple Tree both poetic and dazzling.",
+    "additional_info": [
+      { "key": "materials", "value": "" },
+      { "key": "genres", "value": "art nouveau" }
+    ],
+
+    "variants": [
+      {
+        "title": "Print Size",
+        "type": "print_size",
+        "data": [
+          { "key": "a5", "value": "4.25 x 5.5", "price": 14.99 },
+          { "key": "a4", "value": "8.5 x 11", "price": 24.99 },
+          { "key": "a3", "value": "11 x 17", "price": 39.99 }
+        ]
+      }
+    ],
+    "original_size": "39 x 39",
+    "available": 100,
+    "seller": "7",
+    "is_active": true,
+    "slug": "the-golden-apple-tree"
+  },
+  {
+    "_id": "26",
+    "title": "The Annunciation",
+    "img": "/uploads/arts/henry_ossawa_tanner/The_Annunciation_Philadelphia_Museum_of_Art_W1899-1-1-pma_by_Henry_Ossawa_Tanner.webp",
+    "description": "The Annunciation is an 1898 painting. It depicts the biblical scene of the Annunciation, where the archangel Gabriel visits Mary to announce that she will give birth to Jesus.",
+    "additional_info": [
+      { "key": "materials", "value": "" },
+      { "key": "genres", "value": "impressionism,  realism" }
+    ],
+
+    "variants": [
+      {
+        "title": "Print Size",
+        "type": "print_size",
+        "data": [
+          { "key": "a5", "value": "4.25 x 5.5", "price": 14.99 },
+          { "key": "a4", "value": "8.5 x 11", "price": 24.99 },
+          { "key": "a3", "value": "11 x 17", "price": 39.99 }
+        ]
+      }
+    ],
+    "original_size": "57 x 71.25",
+    "available": 100,
+    "seller": "8",
+    "is_active": true,
+    "slug": "the-annunciation"
+  },
+  {
+    "_id": "29",
+    "title": "Girl With the Peal Earring",
+    "img": "/uploads/arts/johannes_vermeer/Girl-with-a-Pearl-Earring-canvas-Johannes-1665.webp",
+    "description": "Girl with a Pearl Earring is an oil painting by Dutch Golden Age painter Johannes Vermeer, dated c. 1665. Going by various names over the centuries, it became known by its present title towards the end of the 20th century after the earring worn by the girl portrayed there.",
+    "additional_info": [
+      { "key": "materials", "value": "" },
+      { "key": "genres", "value": "Baroque,  Tronie" }
+    ],
+
+    "variants": [
+      {
+        "title": "Print Size",
+        "type": "print_size",
+        "data": [
+          { "key": "a5", "value": "4.25 x 5.5", "price": 14.99 },
+          { "key": "a4", "value": "8.5 x 11", "price": 24.99 },
+          { "key": "a3", "value": "11 x 17", "price": 39.99 }
+        ]
+      }
+    ],
+    "original_size": "36 x 33",
+    "available": 100,
+    "seller": "9",
+    "is_active": true,
+    "slug": "girl-with-the-peal-earring"
+  }
+]

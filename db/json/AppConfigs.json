@@ -1,0 +1,49 @@
+{
+  "app_name": "Artfinity",
+  "app_tagline": "To Artfinity and Beyond",
+  "app_description": "Discover and purchase prints of beautiful artworks from your local art scene or worldwide",
+  "business_name": "Artfinity",
+  "business_email": "contact@theartfinity.com",
+  "support_email": "support@theartfinity.com",
+  "business_phone": "(206) 475-6079",
+  "business_address": "Brooklyn, NY, 11249, United States",
+  "business_address_cords": { "lat": 40.7192, "lng": -73.962 },
+  "business_open_time": "Daily: 10:00 a.m. - 5:00 p.m. Monday & Holidays: Closed",
+  "social_accounts": [
+    { "platform": "facebook", "url": "https://www.facebook.com/#artfinity" },
+    { "platform": "instagram", "url": "https://www.instagram.com/#artfinity" },
+    { "platform": "twitter", "url": "https://www.twitter.com/#artfinity" },
+    { "platform": "linkedin", "url": "https://www.linkedin.com/#artfinity" }
+  ],
+  "header_logo": "/assets/images/logo.png",
+  "footer_logo": "/assets/images/logo.png",
+  "max_product_rating_stars": 5,
+  "max_seller_rating_stars": 5,
+  "product_price_float_points": 2,
+  "max_pagination_buttons": 5,
+  "currency": {
+    "name": "united states dollar",
+    "code": "usd",
+    "symbol": "$"
+  },
+  "sales_tax_rate": 0.1025,
+  "messages": {
+    "products": {
+      "not_found": "No Artworks Found"
+    },
+    "sellers": {
+      "not_found": "No Artists Found"
+    },
+    "scenes": {
+      "not_found": "No Scenes Found"
+    },
+    "collections": {
+      "not_found": "No Collections Found"
+    },
+    "reviews": {
+      "not_found": "No Reviews Found"
+    }
+  },
+  "search_query_key": "q",
+  "pagination_query_key": "page"
+}

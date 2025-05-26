@@ -1,0 +1,230 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --theme-primary-color: 0 25% 50%;
+
+    --background: 0 0% 100%;
+    --foreground: 0 68% 25%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 68% 25%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 68% 25%;
+
+    --primary: 0 64% 20%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 0 64% 20%;
+
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 0 64% 20%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 0 68% 25%;
+
+    --radius: 0.5rem;
+
+    --header-top-height: 38px;
+    --header-top-height-scrolled: 0px;
+    --header-middle-height: 98px;
+    --header-middle-height-scrolled: 65px;
+  }
+
+  .dark {
+    --background: 0, 68%, 25%;
+    --foreground: 0 0% 98%;
+
+    --card: 0, 68%, 25%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0, 68%, 25%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 0 0% 98%;
+    --primary-foreground: 0, 64%, 20%;
+
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+  }
+
+  ::selection {
+    @apply !bg-theme-primary !text-white;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-bold text-theme-primary;
+  }
+
+  h1 {
+    @apply text-4xl md:text-5xl xl:text-6xl;
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl xl:text-5xl;
+  }
+
+  h3 {
+    @apply text-2xl md:text-3xl xl:text-4xl;
+  }
+
+  h4 {
+    @apply text-lg md:text-xl xl:text-2xl;
+  }
+
+  h5 {
+    @apply text-base md:text-lg xl:text-xl;
+  }
+
+  h6 {
+    @apply text-xs md:text-sm xl:text-lg;
+  }
+
+  p {
+    @apply font-tertiary text-sm text-slate-800 dark:text-slate-100 md:text-base;
+  }
+
+  input.arrow-hide[type="number"]::-webkit-inner-spin-button,
+  input.arrow-hide[type="number"]::-webkit-outer-spin-button,
+  input.arrow-hide[type="number"] {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: textfield !important;
+    margin: 0;
+  }
+}
+
+@layer utilities {
+  .box-shadow-none {
+    @apply ![box-shadow:none];
+  }
+
+  .btn-close {
+    @apply !border-none text-theme-primary-50 !outline-none ![box-shadow:none];
+  }
+
+  .animation-xs {
+    animation-duration: 25s;
+  }
+  .animation-sl {
+    animation-duration: 20s;
+  }
+  .animation-fa {
+    animation-duration: 4s;
+  }
+  .animation-xf {
+    animation-duration: 2s;
+  }
+
+  .page-banner {
+    @apply flex min-h-[320px] flex-col items-center justify-center md:min-h-[68vh] [&_h1]:md:mt-header;
+  }
+}
+
+html body[data-scroll-locked] {
+  --removed-body-scroll-bar-size: 0 !important;
+  margin-right: 0 !important;
+  overflow-y: auto !important;
+}
+
+.lucide {
+  @apply text-theme-primary opacity-75 [a_&:where(:hover,_:focus-within,_:focus-visible)]:opacity-100;
+}
+
+header > *,
+header .app-logo {
+  @apply transition-all duration-150 ease-in-out;
+}
+
+.nav-list:not(.nav-item > .nav-list),
+.nav-item,
+.nav-link {
+  @apply md:min-h-full;
+}
+
+.nav-item {
+  @apply relative;
+}
+
+.nav-item.has-sub-menu > .nav-link::before {
+  content: "";
+  @apply absolute -left-2 top-1/2 aspect-square h-0.5 w-0.5 -translate-y-full rounded-full bg-current md:-left-0;
+}
+
+.nav-item > .nav-list {
+  @apply hidden gap-2 ps-2 duration-300 ease-in md:absolute md:left-0 md:top-full md:z-40 md:translate-y-8 md:bg-theme-primary-50 md:py-4 md:shadow-md md:transition md:delay-300;
+}
+
+.nav-item > .nav-list > .nav-item {
+  @apply md:px-5;
+}
+
+.nav-item > .nav-list > .nav-item > .nav-list {
+  @apply md:left-full md:top-0 md:translate-x-0 md:translate-y-0;
+}
+
+.nav-link {
+  @apply relative inline-block w-full cursor-pointer items-center justify-center whitespace-nowrap opacity-95 md:flex;
+}
+
+.nav-item > .nav-list .nav-link {
+  @apply justify-start;
+}
+
+.header-nav .nav-link {
+  @apply mb-3 pb-1 font-quaternary uppercase opacity-65 md:mb-0 md:px-1 lg:px-3;
+}
+
+.nav-link.active:not(.header-nav .nav-item > .nav-list .nav-link)::after {
+  content: "";
+  @apply absolute bottom-0 left-0 right-0 h-[0.225rem] bg-current;
+}
+.nav-link:is(:hover, :focus-within, :focus-visible),
+.nav-link.active,
+.nav-item:has(.nav-link.active) > .nav-link {
+  @apply opacity-100;
+}
+
+.nav-item:is(:hover, :focus-within, :focus-visible) > .nav-list,
+.nav-item:has(.nav-link.active) .nav-list:not(.header-nav .nav-item .nav-list) {
+  @apply grid md:translate-y-0;
+}

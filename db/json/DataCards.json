@@ -1,0 +1,28 @@
+{
+  "our_guarantee": [
+    {
+      "_id": "1",
+      "title": "Fast Shipping",
+      "description": "Fast shipping on all orders",
+      "img": "/assets/images/icons/fast-delivery-icon.webp"
+    },
+    {
+      "_id": "2",
+      "title": "100% Payment Secure",
+      "description": "We ensure secure payment",
+      "img": "/assets/images/icons/approved-badge-icon.webp"
+    },
+    {
+      "_id": "3",
+      "title": "Secure & Trusted Site",
+      "description": "We make people feel safe",
+      "img": "/assets/images/icons/secured-badge-icon.webp"
+    },
+    {
+      "_id": "5",
+      "title": "Support 24/7",
+      "description": "Contact us 24 hours a day, 7 days a week",
+      "img": "/assets/images/icons/customer-care-icon.webp"
+    }
+  ]
+}

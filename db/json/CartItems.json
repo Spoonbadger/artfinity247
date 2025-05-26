@@ -1,0 +1,47 @@
+[
+  {
+    "_id": "1",
+    "user_id": "1",
+    "product": {
+      "_id": "8",
+      "variants": [{ "type": "print_size", "key": "a4" }]
+    },
+    "quantity": 1
+  },
+  {
+    "_id": "2",
+    "user_id": "1",
+    "product": {
+      "_id": "12",
+      "variants": [{ "type": "print_size", "key": "a5" }]
+    },
+    "quantity": 5
+  },
+  {
+    "_id": "3",
+    "user_id": "2",
+    "product": {
+      "_id": "29",
+      "variants": [{ "type": "print_size", "key": "a5" }]
+    },
+    "quantity": 2
+  },
+  {
+    "_id": "4",
+    "user_id": "5",
+    "product": {
+      "_id": "26",
+      "variants": [{ "type": "print_size", "key": "a3" }]
+    },
+    "quantity": 3
+  },
+  {
+    "_id": "5",
+    "user_id": "7",
+    "product": {
+      "_id": "15",
+      "variants": [{ "type": "print_size", "key": "a4" }]
+    },
+    "quantity": 1
+  }
+]

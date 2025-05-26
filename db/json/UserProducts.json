@@ -1,0 +1,20 @@
+[
+  { "_id": 8, "user_id": 3, "product_id": 8 },
+  { "_id": 9, "user_id": 3, "product_id": 9 },
+  { "_id": 10, "user_id": 3, "product_id": 10 },
+  { "_id": 12, "user_id": 4, "product_id": 12 },
+  { "_id": 13, "user_id": 4, "product_id": 13 },
+  { "_id": 14, "user_id": 5, "product_id": 14 },
+  { "_id": 15, "user_id": 5, "product_id": 15 },
+  { "_id": 16, "user_id": 5, "product_id": 16 },
+  { "_id": 17, "user_id": 1, "product_id": 17 },
+  { "_id": 19, "user_id": 6, "product_id": 19 },
+  { "_id": 20, "user_id": 4, "product_id": 20 },
+  { "_id": 21, "user_id": 4, "product_id": 21 },
+  { "_id": 22, "user_id": 4, "product_id": 22 },
+  { "_id": 23, "user_id": 6, "product_id": 23 },
+  { "_id": 24, "user_id": 7, "product_id": 24 },
+  { "_id": 25, "user_id": 7, "product_id": 25 },
+  { "_id": 26, "user_id": 8, "product_id": 26 },
+  { "_id": 29, "user_id": 9, "product_id": 29 }
+]
