@@ -27,12 +27,10 @@ export async function POST(req: Request) {
             payment_method_types: ['card'],
             mode: 'payment',
             line_items,
-            success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/success`,
+            success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/thank-you?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/cancel`,
             locale: 'en'
         })
-
-        //ToDo Validate items, create session, return sessionId
 
 
         return new Response(JSON.stringify({ sessionId: session.id }), {

@@ -1,9 +1,13 @@
 import { NextRequest } from 'next/server'
 import { Stripe } from 'stripe'
+import { PrismaClient } from '@prisma/client'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: '2025-06-30.basil'
 })
+
+const prisma = new PrismaClient()
+
 
 export async function POST(req: NextRequest) {
     const rawBody = await req.text()
@@ -28,7 +32,21 @@ export async function POST(req: NextRequest) {
 
         console.log('Payment received 💰: ', session.id)
 
-        // ToDo add DB logic here
+        // DB logic here
+        try {
+            const order = await prisma.order.create({
+                data: {
+                    stripeSessionId: session.id,
+                    email: session.customer_details?.email ?? '',
+                    amountTotal: session.amount_total ?? 0,
+                    currency: session.currency ?? '',
+                    paymentStatus: session.payment_status ?? ''
+                }
+            })
+            console.log('Order is Saved:', order)
+        } catch (err) {
+            console.error('Error saving Order:', err)
+        }
     }
 
     return new Response(null, { status: 200 })
