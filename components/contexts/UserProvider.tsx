@@ -30,10 +30,22 @@ export const UserProvider = ({
 
   useEffect(() => {
     // Verify user-session and set current-user
-    const loggedInUser = getUser(); // For Development Only
+    const fetchUser = async () => {
+      try {
+        const res = await fetch('/api/auth/me')
+        if (!res.ok) return 
 
-    setCurrentUser(loggedInUser);
-  }, []);
+        const data = await res.json()
+        setCurrentUser(data)
+
+      } catch (err) {
+        console.error('Failed to fetch user', err)
+        setCurrentUser(null)
+      }
+    }
+
+    fetchUser()
+  }, [])
 
   return (
     <UserContext.Provider value={{ currentUser, setCurrentUser }}>

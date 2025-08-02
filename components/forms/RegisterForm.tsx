@@ -38,6 +38,7 @@ import {
 } from "@/types";
 import { getCities, getCountries, getStates } from "@/db/query";
 import { getAppPages } from "@/db/query";
+import { useRouter } from 'next/navigation'
 
 const AppPages = getAppPages();
 
@@ -64,7 +65,7 @@ const RegisterForm = ({
       password: "",
       confirm_password: "",
       avatar: "",
-      phone: undefined,
+      phone: "",
       city: "",
       state: "",
       country: "",
@@ -81,6 +82,8 @@ const RegisterForm = ({
   const [availCountries, setAvailCountries] = useState<CountryType[]>([]);
   const [availStates, setAvailStates] = useState<StateType[]>([]);
   const [availCities, setAvailCities] = useState<CityType[]>([]);
+
+  const router = useRouter()
 
   useEffect(() => {
     setCountries((prev) => getCountries());
@@ -110,11 +113,40 @@ const RegisterForm = ({
   };
 
   const handleSubmit: SubmitHandler<TRegisterFormSchema> = async (values) => {
-    toast.success("Registration successfull");
+    console.log('SUBMITTING', values)
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/JSON' }, 
+        body: JSON.stringify({
+          name: values.artist_name,
+          email: values.email,
+          password: values.password,
+          phone: values.phone,
+          city: values.city,
+          state: values.state,
+          country: values.country,
+          profileImage: values.avatar || null,
+        })
+      })
+      
+      if (!res.ok) {
+        const errorText = await res.text()
+        toast.error(`Registration failed: ${errorText}`)
+        return
+      }
+      
+      toast.success("Registration successfull")
+      
+      setTimeout(() => {
+        router.push('/')
+      }, 600)
 
-    setTimeout(() => {
       form.reset();
-    }, 2000);
+
+    } catch (err) {
+
+    }
   };
 
   return (

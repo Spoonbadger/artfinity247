@@ -29,7 +29,10 @@ export async function POST(req: Request) {
             line_items,
             success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/thank-you?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/cancel`,
-            locale: 'en'
+            locale: 'en',
+            metadata: {
+                artworkId: body.artworkId
+            }
         })
 
 

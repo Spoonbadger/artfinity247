@@ -55,10 +55,7 @@ export const registerFormSchema = z
       }),
     confirm_password: z.string().min(6).max(20),
     avatar: z.string().optional(),
-    phone: z
-      .string()
-      .transform((data) => Number(data))
-      .optional(),
+    phone: z.string().optional(),
     city: z.string().optional(),
     state: z.string().optional(),
     country: z.string().optional(),
@@ -72,7 +69,7 @@ export const registerFormSchema = z
       });
     }
   });
-export type TRegisterFormSchema = z.infer<typeof registerFormSchema>;
+export type TRegisterFormSchema = z.infer<typeof registerFormSchema>
 
 // Login Form with 'zod'
 export const loginFormSchema = z.object({

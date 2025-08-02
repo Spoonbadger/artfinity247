@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from '@/components/ui/button'
 import { MaxWidthWrapper } from "@/components/layout";
 import { ImageWithText } from "@/components/sections";
 import { ProductCard } from "@/components/cards";
@@ -26,6 +27,8 @@ import {
   getSeller,
 } from "@/db/query";
 import { UserType, ProductType, ReviewType } from "@/types";
+import { useUser } from '@/components/contexts/UserProvider'
+import { toast } from 'sonner'
 
 type ParamsPropsType = {
   slug: string;
@@ -37,12 +40,17 @@ const AppPages = getAppPages();
 const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
   const { slug: encodedSlug } = params;
   const slug = decodeURIComponent(encodedSlug);
+  const { currentUser } = useUser()
+  const isOwner = currentUser?.slug === slug
 
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const [seller, setSeller] = useState<UserType | null>(null);
   const [reviews, setReviews] = useState<ReviewType[]>([]);
+
+  const [isEditing, setIsEditing] = useState(false)
+  const [bioDraft, setBioDraft] = useState(seller?.bio || "")
 
   useEffect(() => {
     if (slug) {
@@ -105,6 +113,25 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
     }
   };
 
+  const handleSaveBio = async () => {
+    try {
+      const res = await fetch('/api/artists/update-bio', {
+        method: 'POST',
+        headers: { 'Content-Type': '/application/json' },
+        body: JSON.stringify({ bio: bioDraft })
+      })
+
+      if (!res.ok) throw new Error(await res.text())
+
+      toast.success('Bio updated')
+      setIsEditing(false)
+
+    } catch (err) {
+      console.error('Failed to update bio', err)
+      toast.error('Failed to update bio')
+    }
+  }
+
   return (
     <div>
       <title>{`${title || "Artist"} - ${seller?.seller_name || "Info"}: ${AppConfigs.app_name}`}</title>
@@ -116,12 +143,29 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
               "/uploads/users/generic-artist-profile-picture.webp"
             }
             title={seller?.seller_name || ""}
-            description={seller?.bio || ""}
             imgAlign={"left"}
             txtAlign={"left"}
             imgLoading="eager"
             className="[&_.area-content]:self-center [&_.area-image]:max-h-[60vh] [&_.area-image]:min-h-96 [&_.area-image]:object-contain"
           >
+            {
+              isOwner && isEditing ? (
+                <textarea
+                  value={bioDraft}
+                  onChange={(e) => setBioDraft(e.target.value)}
+                  className='w-full rounded border p-2 text-sm'
+                />
+              ) : (seller?.bio || "")
+            }
+            {isOwner && (
+              <div className='mt-2'>
+                {isEditing ? (
+                  <Button onClick={handleSaveBio}>save</Button>
+                ) : (
+                  <Button onClick={() => setIsEditing(true)}>edit</Button>
+                )}
+              </div>
+            )}
             <SocialAccountLinks
               links={seller?.social_accounts || []}
               className="justify-center md:justify-start"

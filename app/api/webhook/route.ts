@@ -40,7 +40,8 @@ export async function POST(req: NextRequest) {
                     email: session.customer_details?.email ?? '',
                     amountTotal: session.amount_total ?? 0,
                     currency: session.currency ?? '',
-                    paymentStatus: session.payment_status ?? ''
+                    paymentStatus: session.payment_status ?? '',
+                    artworkId: session.metadata?.artworkId ?? '',
                 }
             })
             console.log('Order is Saved:', order)

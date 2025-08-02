@@ -14,11 +14,37 @@ datasource db {
 }
 
 model Order {
-  id String @id @default(cuid())
-  stripeSessionId String @unique
-  email String?
-  amountTotal Int?
-  currency String?
-  paymentStatus String?
-  createdAt DateTime @default(now())
+  id              String   @id @default(cuid())
+  stripeSessionId String   @unique
+  email           String?
+  amountTotal     Int?
+  currency        String?
+  paymentStatus   String?
+  artworkId       String
+  artwork         Artwork  @relation(fields: [artworkId], references: [id])
+  createdAt       DateTime @default(now())
+}
+
+model Artist {
+  id       String    @id @default(cuid())
+  name     String
+  email    String    @unique
+  password String
+  profileImage String?
+  phone String
+  city String?
+  state String?
+  country String?
+  bio String?
+  artworks Artwork[] // one to many
+}
+
+model Artwork {
+  id       String  @id @default(cuid())
+  title    String
+  imageUrl String
+  price    Int
+  artistId String
+  artist   Artist  @relation(fields: [artistId], references: [id])
+  orders   Order[]
 }
