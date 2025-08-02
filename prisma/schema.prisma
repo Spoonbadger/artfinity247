@@ -35,7 +35,7 @@ model Artist {
   city String?
   state String?
   country String?
-  bio String?
+  bio String? @default("")
   artworks Artwork[] // one to many
 }
 
