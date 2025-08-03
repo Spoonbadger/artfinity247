@@ -1,11 +1,16 @@
 import { PrismaClient } from '@prisma/client'
 import { hash } from 'bcryptjs'
+import { SignJWT } from 'jose'
+import { cookies } from 'next/headers'
+import slugify from 'slugify'
+
 
 const prisma = new PrismaClient()
 
 export async function POST(req: Request) {
     const body = await req.json()
     const { name, email, password, city, state, country, phone, profileImage } = body
+    const slug = slugify(name, { lower: true })
 
     if (!name || !email || !password) {
         return new Response('Missing required fields', { status: 400 })
@@ -28,7 +33,19 @@ export async function POST(req: Request) {
             country,
             phone,
             profileImage,
+            slug
         },
     })
-    return Response.json({ success: true, artistId: artist.id })
+    const token = await new SignJWT({ id: artist.id, slug: artist.slug })
+        .setProtectedHeader({ alg: 'HS256' })
+        .setExpirationTime('7d')
+        .sign(new TextEncoder().encode(process.env.JWT_SECRET!))
+
+    cookies().set('auth-token', token, {
+        httpOnly: true,
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7
+    })
+
+    return Response.json({ success: true, artistId: artist.slug })
 }
