@@ -47,5 +47,6 @@ model Artwork {
   price    Int
   artistId String
   artist   Artist  @relation(fields: [artistId], references: [id])
+  createdAt DateTime @default(now())
   orders   Order[]
 }

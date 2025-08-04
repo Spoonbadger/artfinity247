@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 
 export async function GET(req: NextRequest) {
-    const token = req.cookies.get('auth-token')?.value
+    const authHeader = req.headers.get('authorization')
+    const token = authHeader?.startsWith('Bearer ')
+        ? authHeader.split(' ')[1]
+        : null
 
     if (!token) {
         return new NextResponse('Not authenticated', { status: 401 })
@@ -17,6 +20,7 @@ export async function GET(req: NextRequest) {
         // Return user data from token
         return NextResponse.json({
             id: payload.id,
+            slug: payload.slug,
             email: payload.email,
         })
 

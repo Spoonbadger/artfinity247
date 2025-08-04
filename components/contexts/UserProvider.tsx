@@ -32,11 +32,20 @@ export const UserProvider = ({
     // Verify user-session and set current-user
     const fetchUser = async () => {
       try {
-        const res = await fetch('/api/auth/me')
+        const token = localStorage.getItem('token')
+        console.log('stored token!: ', token)
+        if (!token) return
+
+        const res = await fetch('/api/auth/me', {
+          headers: { Authorization: `Bearer ${token}`}
+        })
+        console.log("Response status:", res.status)
+        
         if (!res.ok) return 
 
         const data = await res.json()
         setCurrentUser(data)
+        console.log("User from /me:", data)
 
       } catch (err) {
         console.error('Failed to fetch user', err)

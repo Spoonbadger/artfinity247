@@ -41,7 +41,14 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
   const { slug: encodedSlug } = params;
   const slug = decodeURIComponent(encodedSlug);
   const { currentUser } = useUser()
-  const isOwner = currentUser?.slug === slug
+
+  const [isOwner, setIsOwner] = useState(false)
+
+  useEffect(() => {
+    if (currentUser?.slug && slug) {
+      setIsOwner(currentUser.slug === slug)
+    }
+  }, [currentUser, slug])
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -89,21 +96,19 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
   }, [searchParams, queryPageKey, items_limit]);
 
   useEffect(() => {
-    const fetchProducts = () => {
-      const start = (currentPage - 1) * itemsPerPage;
-      const paginatedProducts = getProducts({
-        seller_ids: seller?._id ? [seller?._id] : [],
-        start,
-        limit: start + itemsPerPage,
-      });
-      setPaginatedProducts(paginatedProducts);
-    };
+    const fetchProducts = async () => {
+      if (!seller?.slug) return
 
-    fetchProducts();
-    setTotalSellerProducts(
-      getProducts({ ids: seller?._id ? [seller?._id] : [] }).length,
-    );
-  }, [seller, currentPage, itemsPerPage]);
+      const res = await fetch(`/api/artworks/by-artist/${seller.slug}?page=${currentPage}&limit=${itemsPerPage}`)
+      const { artworks, total } = await res.json()
+      if (!res.ok) return
+
+      setPaginatedProducts(artworks)
+      setTotalSellerProducts(total)
+    }
+
+    fetchProducts()
+  }, [seller, currentPage, itemsPerPage])
 
   const handlePageChange = (page: number) => {
     if (page > 0 && page <= Math.ceil(totalSellerProducts / itemsPerPage)) {
@@ -131,6 +136,34 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
       toast.error('Failed to update bio')
     }
   }
+
+  const handleEdit = (artworkId: string) => {
+    router.push(`dashboard/edit/${artworkId}`)
+  }
+
+  const handleDelete = async (artworkId: string) => {
+    if (!confirm("Are you sure you want to delete this artwork?")) return
+
+    const res = await fetch(`/api/artworks/${artworkId}`, {
+      method: 'DELETE'
+    })
+
+    if (res.ok) {
+      const updated = await fetch(`/api/by-artist/${seller?.slug}?page=${currentPage}&limit=${itemsPerPage}`)
+      const { artworks, total } = await res.json()
+
+      setPaginatedProducts(artworks)
+      setTotalSellerProducts(total)
+    } else {
+      alert('Failed to delete artwork')
+    }
+
+  }
+
+  console.log("currentUser.slug:", currentUser?.slug)
+  console.log("profile slug:", slug)
+  console.log("isOwner:", isOwner)
+
 
   return (
     <div>
@@ -223,22 +256,44 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
               />
             </div>
           </div>
-          {paginatedProducts.length > 0 ? (
-            <div className="products-area grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-6 xl:grid-cols-4">
-              {paginatedProducts.map((product) => (
-                <Link
-                  key={product._id}
-                  href={`/${productsPageSlug}/${product.slug}`}
-                >
-                  <ProductCard product={product} />
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="mb-6 w-full py-6 text-center text-lg capitalize md:mb-8 md:py-12 md:text-xl">
-              {AppConfigs?.messages?.products?.not_found || "No Products Found"}
-            </p>
-          )}
+ {paginatedProducts.length > 0 ? (
+  <div className="products-area grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-6 xl:grid-cols-4">
+    {paginatedProducts.map((product) => (
+      <div key={product._id} className="relative">
+        <Link href={`/${productsPageSlug}/${product.slug}`}>
+          <ProductCard product={product} />
+        </Link>
+
+        {isOwner && (
+          <div className="absolute top-2 right-2 flex gap-2">
+            <button
+              className="text-xs px-2 py-1 bg-blue-600 text-white rounded"
+              onClick={() => handleEdit(product._id)}
+            >
+              Edit
+            </button>
+            <button
+              className="text-xs px-2 py-1 bg-red-600 text-white rounded"
+              onClick={() => handleDelete(product._id)}
+            >
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
+    ))}
+  </div>
+) : (
+  isOwner && paginatedProducts.length === 0 && (
+    <div className="my-8 text-center">
+      <p className="mb-4 text-lg">You haven’t uploaded any artwork yet.</p>
+      <Link href="/dashboard/upload">
+        <Button>Upload Artwork</Button>
+      </Link>
+    </div>
+  )
+)}
+
           <div className="pagination-area flex items-center justify-center py-6">
             <Pagination
               totalItems={totalSellerProducts}

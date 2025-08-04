@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { loginFormSchema, TLoginFormSchema } from "@/types";
 import { getAppPages } from "@/db/query";
+import { useRouter } from 'next/navigation'
 
 const AppPages = getAppPages();
 
@@ -48,12 +49,28 @@ const LoginForm = ({
   const { slug: registerPageSlug } = AppPages.register;
   const { slug: recoverPageSlug } = AppPages.recover_password;
 
+  const router = useRouter()
+
   const handleSubmit: SubmitHandler<TLoginFormSchema> = async (values) => {
-    toast.success("Login successfull");
+    const res = await fetch('api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(values)
+    })
+
+    if (!res.ok) {
+      toast.error('Login failed')
+      return
+    }
+    toast.success("Login successfull")
+
+    const { artist, token } = await res.json()
+    localStorage.setItem('token', token)
 
     setTimeout(() => {
-      form.reset();
-    }, 2000);
+      form.reset()
+      router.push(`/artists/${artist.slug}`)
+    }, 1000);
   };
 
   return (

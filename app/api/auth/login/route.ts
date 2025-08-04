@@ -20,12 +20,21 @@ export async function POST(req: Request) {
         return new NextResponse('Invalid credentials', { status: 401})
     }
 
-    const token = await new SignJWT({ id: artist.id, email: artist.email })
+    const token = await new SignJWT({ id: artist.id, email: artist.email, slug: artist.slug })
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('7d')
       .sign(new TextEncoder().encode(process.env.JWT_SECRET!))
 
-    const response = NextResponse.json({ message: 'Logged in', artist: { id: artist.id, name: artist.name, email: artist.email } })
+    const response = NextResponse.json({
+      message: 'Logged in',
+      token,
+      artist: { 
+        id: artist.id,
+        name: artist.name,
+        slug: artist.slug,
+        email: artist.email,
+      } 
+    })
     response.cookies.set('auth-token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
