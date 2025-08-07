@@ -17,6 +17,9 @@ import { useUser } from "@/components/contexts/UserProvider";
 import { getCartItems, getProducts, updateCartItem } from "@/db/query";
 import { AppConfigs } from "@/db";
 
+import { getFinalPrice } from "@/lib/artwork_price";
+
+
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const useCart = () => {
@@ -93,13 +96,16 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
         const variantData = matchingProduct.variants?.find(
           (v) => v.type === variant.type,
         );
-        if (variantData) {
-          const variantPrice =
-            variantData.data.find((data) => data.key === variant.key)?.price ||
-            0;
-          productPrice += variantPrice;
+
+        if (variant.type === "size") {
+          const sizeKey = variant.key.toLowerCase() as "small" | "medium" | "large"
+          const markupField = `markup${sizeKey.charAt(0).toUpperCase() + sizeKey.slice(1)}` as keyof ProductType
+          const rawMarkup = matchingProduct[markupField]
+          const markup = typeof rawMarkup === "number" ? rawMarkup : 0
+
+          productPrice = getFinalPrice(sizeKey, markup)
         }
-      });
+      })
     }
 
     // Calculate total price

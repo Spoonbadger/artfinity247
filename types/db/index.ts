@@ -49,7 +49,10 @@ export type ProductType = {
   title: string;
   description?: string;
   price?: number;
-  img: string;
+  markupSmall?: number,
+  markupMedium?: number,
+  markupLarge?: number,
+  imageUrl: string;
   tags?: ProductTagType[];
   category?: ProductCategoryType[];
   additional_info?: ProductAdditionalInfo[];

@@ -192,7 +192,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
                 <div className="area-media max-h-fit w-full md:w-1/2">
                   <div className="sticky left-0 top-0 select-none md:py-4">
                     <InnerImageZoom
-                      src={product.img}
+                      src={product.imageUrl}
                       width={500}
                       height={500}
                       className="area-image mx-auto max-h-96 rounded-sm object-contain md:max-h-[80vh]"

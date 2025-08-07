@@ -26,10 +26,13 @@
     "@types/react-inner-image-zoom": "^3.0.3",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
+    "busboy": "^1.6.0",
     "class-variance-authority": "^0.7.0",
+    "cloudinary": "^2.7.0",
     "clsx": "^2.1.1",
     "embla-carousel-autoplay": "^8.0.4",
     "embla-carousel-react": "^8.0.4",
+    "formidable": "^3.5.4",
     "jose": "^6.0.12",
     "leaflet": "^1.9.4",
     "leaflet-defaulticon-compatibility": "^0.1.2",
@@ -51,6 +54,8 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/busboy": "^1.5.4",
+    "@types/formidable": "^3.4.5",
     "@types/leaflet": "^1.9.12",
     "@types/node": "^20",
     "@types/react": "^18",

@@ -43,7 +43,7 @@ const ProductCard = ({
   const MaxRatingStars =
     maxRatingStars || AppConfigs.max_product_rating_stars || 5;
 
-  const { seller: sellerId, title, description, img, variants } = product;
+  const { seller: sellerId, title, description, imageUrl, variants } = product;
   const seller = getSeller({ id: sellerId });
 
   const hasVariants = variants && Boolean(variants?.length);
@@ -71,13 +71,19 @@ const ProductCard = ({
     >
       <CardHeader className="card-header overflow-hidden rounded-sm px-0">
         <div className="product-media relative h-64 rounded-sm transition-all duration-200 ease-in-out">
-          <Image
-            src={img}
-            height={250}
-            width={250}
-            alt={title}
-            className="product-img h-full w-full rounded-sm object-cover object-top"
-          />
+{imageUrl ? (
+  <Image
+    src={imageUrl}
+    height={250}
+    width={250}
+    alt={title}
+    className="product-img h-full w-full rounded-sm object-cover object-top"
+  />
+) : (
+  <div className="product-img h-full w-full bg-gray-100 flex items-center justify-center">
+    <span className="text-gray-500 text-sm">No image</span>
+  </div>
+)}
           <div className="product-badges">
             {isOutOfStock && (
               <Badge

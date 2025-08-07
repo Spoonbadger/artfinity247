@@ -160,10 +160,6 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
 
   }
 
-  console.log("currentUser.slug:", currentUser?.slug)
-  console.log("profile slug:", slug)
-  console.log("isOwner:", isOwner)
-
 
   return (
     <div>
@@ -256,43 +252,46 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
               />
             </div>
           </div>
- {paginatedProducts.length > 0 ? (
-  <div className="products-area grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-6 xl:grid-cols-4">
-    {paginatedProducts.map((product) => (
-      <div key={product._id} className="relative">
-        <Link href={`/${productsPageSlug}/${product.slug}`}>
-          <ProductCard product={product} />
-        </Link>
+          {paginatedProducts.length > 0 ? (
+            <div className="products-area grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-6 xl:grid-cols-4">
+              {paginatedProducts.map((product) => (
+                <div key={product._id} className="relative">
+                  <Link href={`/${productsPageSlug}/${product.slug}`}>
+                    <ProductCard product={product} />
+                  </Link>
 
-        {isOwner && (
-          <div className="absolute top-2 right-2 flex gap-2">
-            <button
-              className="text-xs px-2 py-1 bg-blue-600 text-white rounded"
-              onClick={() => handleEdit(product._id)}
-            >
-              Edit
-            </button>
-            <button
-              className="text-xs px-2 py-1 bg-red-600 text-white rounded"
-              onClick={() => handleDelete(product._id)}
-            >
-              Delete
-            </button>
-          </div>
-        )}
-      </div>
-    ))}
-  </div>
-) : (
-  isOwner && paginatedProducts.length === 0 && (
-    <div className="my-8 text-center">
-      <p className="mb-4 text-lg">You haven’t uploaded any artwork yet.</p>
-      <Link href="/dashboard/upload">
-        <Button>Upload Artwork</Button>
-      </Link>
-    </div>
-  )
-)}
+                  {isOwner && (
+                    <div className="absolute top-2 right-2 flex gap-2">
+                      <button
+                        className="text-xs px-2 py-1 bg-blue-600 text-white rounded"
+                        onClick={() => handleEdit(product._id)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="text-xs px-2 py-1 bg-red-600 text-white rounded"
+                        onClick={() => handleDelete(product._id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                      <Link href="/dashboard/upload">
+                        <Button>Upload Artwork</Button>
+                      </Link>
+                </div>
+              ))}
+            </div>
+          ) : (
+            isOwner && paginatedProducts.length === 0 && (
+              <div className="my-8 text-center">
+                <p className="mb-4 text-lg">You haven’t uploaded any artwork yet.</p>
+                <Link href="/dashboard/upload">
+                  <Button>Upload Artwork</Button>
+                </Link>
+              </div>
+            )
+          )}
 
           <div className="pagination-area flex items-center justify-center py-6">
             <Pagination

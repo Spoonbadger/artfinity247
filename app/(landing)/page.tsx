@@ -216,7 +216,7 @@ const Home = (): ReactNode => {
           {featuredProducts.map((product, index) => (
             <ImageWithText
               key={index}
-              img={product.img}
+              img={product.imageUrl}
               title={product.title}
               description={product.description}
               imgAlign={index % 2 === 0 ? "left" : "right"}
@@ -237,7 +237,7 @@ const Home = (): ReactNode => {
       <section id="gallery-area" className="relative isolate">
         <MaxWidthWrapper>
           <ImageGallery
-            imgs={products.map((art) => art.img)}
+            imgs={products.map((art) => art.imageUrl)}
             title={gallerySecion.title}
             content={gallerySecion.content}
             shuffleImgs={true}

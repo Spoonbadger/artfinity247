@@ -33,7 +33,6 @@ export const UserProvider = ({
     const fetchUser = async () => {
       try {
         const token = localStorage.getItem('token')
-        console.log('stored token!: ', token)
         if (!token) return
 
         const res = await fetch('/api/auth/me', {
@@ -45,7 +44,6 @@ export const UserProvider = ({
 
         const data = await res.json()
         setCurrentUser(data)
-        console.log("User from /me:", data)
 
       } catch (err) {
         console.error('Failed to fetch user', err)

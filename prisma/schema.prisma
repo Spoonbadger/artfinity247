@@ -43,8 +43,12 @@ model Artist {
 model Artwork {
   id       String  @id @default(cuid())
   title    String
+  slug String? @unique // Unquestion mark this at some point.
+  description String
   imageUrl String
-  price    Int
+  markupSmall Int? @default(0)
+  markupMedium Int? @default(0)
+  markupLarge Int? @default(0)
   artistId String
   artist   Artist  @relation(fields: [artistId], references: [id])
   createdAt DateTime @default(now())

@@ -6,6 +6,8 @@ import ProductQuantityInput from "@/components/ProductQuantityInput";
 import { CartItemType } from "@/types";
 import { getAppPages, getProduct, getProducts, getSeller } from "@/db/query";
 import { cn } from "@/lib/utils";
+import { getFinalPrice } from "@/lib/artwork_price";
+
 
 const AppPages = getAppPages();
 
@@ -22,6 +24,16 @@ const CartItemCard = ({
 
   const product = getProduct({ id: item.product._id });
   const seller = getSeller({ id: product?.seller || null });
+
+
+  const size = item.product?.variants?.find(v => v.type === 'print_size')?.key as 'small' || 'medium' || 'large'
+  const markupMap = {
+    small: product?.markupSmall,
+    medium: product?.markupMedium,
+    large: product?.markupLarge,
+  }
+  const markup = markupMap[size] ?? 0;  const unitPrice = getFinalPrice(size, markup)
+
 
   // Input area configs
   const minQuantity = 1;
@@ -43,7 +55,7 @@ const CartItemCard = ({
         <Image
           width={100}
           height={100}
-          src={product?.img || ""}
+          src={product?.imageUrl || ""}
           alt={product?.title || ""}
           className="aspect-square w-full min-w-12 max-w-16 rounded-sm object-cover"
         />
@@ -67,6 +79,9 @@ const CartItemCard = ({
             const variantTitle = product?.variants?.find(
               (v) => v.type === variant.type,
             )?.title;
+            <p className="text-sm font-semibold">
+              Price: ${(unitPrice / 100).toFixed(2)}
+            </p>
 
             return (
               <p key={index} className="mx-auto capitalize md:mx-0">

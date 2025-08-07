@@ -117,7 +117,7 @@ export const getReview = (query: SingleReviewQuery = {}): ReviewType | null => {
 export const getProducts = (query: MultiProductsQuery = {}): ProductType[] => {
   const { ids, slugs, seller_ids, start, limit } = query;
 
-  let result = db.Products as ProductType[];
+  let result = db.Products as unknown as ProductType[]; // dangerous unknown here
 
   if (ids) {
     result = result.filter((product) => {
