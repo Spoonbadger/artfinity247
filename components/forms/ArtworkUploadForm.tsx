@@ -45,6 +45,11 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
         if (description) formData.set('description', description)
         if (artwork?.id) formData.set('artworkId', artwork.id)
 
+        formData.append('markupSmall', String(markupSmall))
+        formData.append('markupMedium', String(markupMedium))
+        formData.append('markupLarge', String(markupLarge))
+
+
         const endpoint = artwork
           ?  `/api/artworks/[id]`
           :  `/api/artworks/upload`
