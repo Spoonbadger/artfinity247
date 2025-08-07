@@ -45,7 +45,7 @@ export type CollectionType = {
 };
 
 export type ProductType = {
-  _id: string;
+  id: string;
   title: string;
   description?: string;
   price?: number;

@@ -80,7 +80,15 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json(artwork);
+    const artist = await prisma.artist.findUnique({
+      where: { id: payload.id as string },
+      select: { slug: true },
+    })
+
+    return NextResponse.json({
+      ...artwork,
+      artistSlug: artist?.slug
+    })
   } catch (err) {
     console.error('Upload error:', err);
     return new NextResponse('Server error', { status: 500 });

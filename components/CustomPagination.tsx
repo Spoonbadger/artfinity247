@@ -91,11 +91,11 @@ const CustomPagination = ({
         </PaginationItem>
         {renderPageNumbers().map((page, index) =>
           page === "ellipsis" ? (
-            <PaginationItem key={index}>
+            <PaginationItem key={`ellipsis-${index}`}>
               <PaginationEllipsis />
             </PaginationItem>
           ) : (
-            <PaginationItem key={page}>
+            <PaginationItem key={`page-${page}`}>
               <PaginationLink
                 className={cn(
                   "!text-theme-primary",

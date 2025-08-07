@@ -92,7 +92,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
     setSeller((prev) => getSeller({ id: product?.seller }));
     setReviews((prev) =>
       getReviews({
-        item_ids: product?._id ? [product._id] : [],
+        item_ids: product?.id ? [product.id] : [],
         types: ["product"],
       }),
     );
@@ -106,9 +106,9 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
   }, [product, variants]);
 
   useEffect(() => {
-    const totalPrice = product?._id
+    const totalPrice = product?.id
       ? calculateProductPrice({
-          _id: product?._id,
+          _id: product?.id,
           variants: selectedVariants,
         })
       : 0;
@@ -121,7 +121,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
     currency,
     priceFloatPoints,
     product?.price,
-    product?._id,
+    product?.id,
   ]);
 
   const handleVariantChange = (variantType: string, variantKey: string) => {
@@ -139,7 +139,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
 
     const productInCart = cartItems.find(
       (item) =>
-        item._id === product._id &&
+        item._id === product.id &&
         JSON.stringify(item.product.variants) ===
           JSON.stringify(selectedVariants),
     );
@@ -150,7 +150,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
 
     addToCart(
       {
-        _id: product._id,
+        _id: product.id,
         variants: selectedVariants,
       },
       newQuantity,
@@ -167,7 +167,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
 
     addToCart(
       {
-        _id: product._id,
+        _id: product.id,
         variants: selectedVariants,
       },
       minQuantity,

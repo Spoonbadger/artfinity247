@@ -59,8 +59,10 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
   const [isEditing, setIsEditing] = useState(false)
   const [bioDraft, setBioDraft] = useState(seller?.bio || "")
 
+
   useEffect(() => {
     if (slug) {
+
       const fetchedSeller = getSeller({ slug });
 
       if (!fetchedSeller) {
@@ -88,27 +90,18 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(items_limit || 10);
 
-  useEffect(() => {
-    setItemsPerPage(items_limit);
+  const fetchProducts = async (slug: string) => {
+    const res = await fetch(`/api/artworks/by-artist/${slug}?page=${currentPage}&limit=${itemsPerPage}`)
+    if (!res.ok) return
 
-    const queryPage = parseInt(searchParams.get(queryPageKey) || "1", 10);
-    setCurrentPage(queryPage > 0 ? queryPage : 1);
-  }, [searchParams, queryPageKey, items_limit]);
+    const { artworks, total } = await res.json()
+    setPaginatedProducts(artworks)
+    setTotalSellerProducts(total)
+  }
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      if (!seller?.slug) return
-
-      const res = await fetch(`/api/artworks/by-artist/${seller.slug}?page=${currentPage}&limit=${itemsPerPage}`)
-      const { artworks, total } = await res.json()
-      if (!res.ok) return
-
-      setPaginatedProducts(artworks)
-      setTotalSellerProducts(total)
-    }
-
-    fetchProducts()
-  }, [seller, currentPage, itemsPerPage])
+    useEffect(() => {
+      if (seller?.slug) fetchProducts(seller.slug)
+    }, [seller, currentPage, itemsPerPage])
 
   const handlePageChange = (page: number) => {
     if (page > 0 && page <= Math.ceil(totalSellerProducts / itemsPerPage)) {
@@ -117,6 +110,13 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
       router.push(`?${queryPageKey}=1`);
     }
   };
+
+    useEffect(() => {
+    setItemsPerPage(items_limit);
+
+    const queryPage = parseInt(searchParams.get(queryPageKey) || "1", 10);
+    setCurrentPage(queryPage > 0 ? queryPage : 1);
+  }, [searchParams, queryPageKey, items_limit]);
 
   const handleSaveBio = async () => {
     try {
@@ -137,27 +137,21 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
     }
   }
 
-  const handleEdit = (artworkId: string) => {
-    router.push(`dashboard/edit/${artworkId}`)
+  const handleEdit = (artworkSlug: string) => {
+    router.push(`/dashboard/edit/${artworkSlug}`)
   }
 
   const handleDelete = async (artworkId: string) => {
     if (!confirm("Are you sure you want to delete this artwork?")) return
 
     const res = await fetch(`/api/artworks/${artworkId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
     })
-
-    if (res.ok) {
-      const updated = await fetch(`/api/by-artist/${seller?.slug}?page=${currentPage}&limit=${itemsPerPage}`)
-      const { artworks, total } = await res.json()
-
-      setPaginatedProducts(artworks)
-      setTotalSellerProducts(total)
+    if (res.ok && seller?.slug) {
+      await fetchProducts(seller.slug)
     } else {
       alert('Failed to delete artwork')
     }
-
   }
 
 
@@ -252,10 +246,10 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
               />
             </div>
           </div>
-          {paginatedProducts.length > 0 ? (
+          {paginatedProducts?.length > 0 ? (
             <div className="products-area grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-6 xl:grid-cols-4">
               {paginatedProducts.map((product) => (
-                <div key={product._id} className="relative">
+                <div key={product.id} className="relative">
                   <Link href={`/${productsPageSlug}/${product.slug}`}>
                     <ProductCard product={product} />
                   </Link>
@@ -264,13 +258,13 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
                     <div className="absolute top-2 right-2 flex gap-2">
                       <button
                         className="text-xs px-2 py-1 bg-blue-600 text-white rounded"
-                        onClick={() => handleEdit(product._id)}
+                        onClick={() => handleEdit(product.slug)}
                       >
                         Edit
                       </button>
                       <button
                         className="text-xs px-2 py-1 bg-red-600 text-white rounded"
-                        onClick={() => handleDelete(product._id)}
+                        onClick={() => handleDelete(product.id)}
                       >
                         Delete
                       </button>
@@ -283,7 +277,7 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
               ))}
             </div>
           ) : (
-            isOwner && paginatedProducts.length === 0 && (
+            isOwner && paginatedProducts?.length === 0 && (
               <div className="my-8 text-center">
                 <p className="mb-4 text-lg">You haven’t uploaded any artwork yet.</p>
                 <Link href="/dashboard/upload">

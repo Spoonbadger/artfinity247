@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '../ui/button'
 import { Artwork } from '@prisma/client'
 import { basePrices } from '@/lib/artwork_price'
+import heic2any from 'heic2any'
 
 
 const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
@@ -16,6 +17,10 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
     const [markupLarge, setMarkupLarge] = useState(artwork?.markupLarge ?? 0)
     const [loading, setLoading] = useState(false)
     const [preview, setPreview] = useState<string | null>(null)
+    const [errorSmall, setErrorSmall] = useState(false)
+    const [errorMedium, setErrorMedium] = useState(false)
+    const [errorLarge, setErrorLarge] = useState(false)
+
 
     const router = useRouter()
 
@@ -65,20 +70,43 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
         if (res.ok) {
             const data = await res.json()
             console.log("uploaded??: ", data)
-            router.push(`/artists/${data.artwork.artworkId}`)
+            router.push(`/artists/${data.artistSlug}`)
         } else {
             alert('Upload failed')
         }
     }
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (file) {
-            const url = URL.createObjectURL(file)
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // If HEIC, convert to JPEG
+    if (file.type === 'image/heic' || file.name.endsWith('.heic')) {
+        try {
+            const convertedBlob = await heic2any({
+                blob: file,
+                toType: 'image/jpeg',
+                quality: 0.9,
+            }) as Blob
+
+            const convertedFile = new File([convertedBlob], file.name.replace(/\.heic$/i, '.jpg'), {
+                type: 'image/jpeg',
+            })
+
+            const url = URL.createObjectURL(convertedFile)
             setPreview(url)
-            setImage(file)
+            setImage(convertedFile)
+        } catch (err) {
+            console.error('HEIC conversion failed:', err)
+            alert('Could not preview HEIC image. Please use JPG or PNG.')
+        }
+    } else {
+        const url = URL.createObjectURL(file)
+        setPreview(url)
+        setImage(file)
         }
     }
+
 
     return (
         <form onSubmit={handleSubmit} className='space-y-4 max-w-md'>
@@ -113,10 +141,13 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                     value={(basePrices.small + markupSmall) / 100}
                     onChange={(e) => {
                         const value = Math.round(parseFloat(e.target.value) * 100)
+                        const markup = value - basePrices.small
                         setMarkupSmall(Math.max(0, value - basePrices.small))
+                        setErrorSmall(markup < 0)
                     }}
                 />
             </div>
+            {errorSmall && <p className="text-red-500 text-sm">Must be ≥ ${basePrices.small / 100}</p>}
             <div>
                 <label>Medium Print Price $</label>
                 <input
@@ -124,10 +155,13 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                     value={(basePrices.medium + markupMedium) / 100}
                     onChange={(e) => {
                         const value = Math.round(parseFloat(e.target.value) * 100)
+                        const markup = value - basePrices.medium
                         setMarkupMedium(Math.max(0, value - basePrices.medium))
+                        setErrorMedium(markup < 0)
                     }}
                 />
             </div>
+            {errorMedium && <p className='text-red-500 text-sm' >Must be ≥ ${basePrices.medium / 100}</p>}
             <div>
                 <label>Large Print Price $</label>
                 <input
@@ -135,11 +169,22 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                     value={(basePrices.large + markupLarge) / 100}
                     onChange={(e) => {
                         const value = Math.round(parseFloat(e.target.value) * 100)
+                        const markup = value - basePrices.large
                         setMarkupLarge(Math.max(0, value - basePrices.large))
+                        setErrorLarge(markup < 0)
                     }}
                 />
             </div>
-            <Button type='submit' disabled={loading || !title.trim() || !description }>
+            {errorLarge && <p className='text-red-500 text-sm'>Must be ≥ ${basePrices.large /100}</p>}
+
+            <Button type='submit' disabled={
+                loading ||
+                !title.trim() ||
+                !description ||
+                errorSmall ||
+                errorMedium ||
+                errorLarge
+                }>
                 {loading ? 'Uploading... ' : 'Upload'}
             </Button>
         </form>

@@ -33,6 +33,7 @@
     "embla-carousel-autoplay": "^8.0.4",
     "embla-carousel-react": "^8.0.4",
     "formidable": "^3.5.4",
+    "heic2any": "^0.0.4",
     "jose": "^6.0.12",
     "leaflet": "^1.9.4",
     "leaflet-defaulticon-compatibility": "^0.1.2",

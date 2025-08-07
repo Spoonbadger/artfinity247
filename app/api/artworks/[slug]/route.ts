@@ -9,32 +9,74 @@ import { toNodeReadable } from '@/lib/toNodeReadables'
 const prisma = new PrismaClient()
 
 
-export async function DELETE(
-    req: NextRequest,
-    { params }: { params: { id: string } }
-  ) {
-    const user = await getUserFromRequest(req)
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { slug: string } }
+) {
+  const token = req.cookies.get('auth-token')?.value;
+  if (!token) return new NextResponse('Not authenticated', { status: 401 })
+
+  try {
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+    const { payload } = await jwtVerify(token, secret);
 
     const artwork = await prisma.artwork.findUnique({
-        where: { id: params.id }
+      where: { slug: params.slug },
     })
 
-    if (!artwork || artwork.artistId !== user.id) {
-        return NextResponse.json({ error: 'Forbidden'}, { status: 403} )
+    if (!artwork) {
+      return new NextResponse('Artwork not found', { status: 404 })
+    }
+    if (artwork.artistId !== payload.id) {
+      return new NextResponse('Unauthorized', { status: 403 })
+    }
+
+    return NextResponse.json(artwork)
+  } catch (err) {
+    console.error('GET artwork failed', err)
+    return new NextResponse('Server error', { status: 500 })
+  }
+}
+
+
+export async function DELETE(
+    req: NextRequest,
+    { params }: { params: { slug: string } }
+  ) {
+  const token = req.cookies.get('auth-token')?.value
+  if (!token) return new NextResponse('Not authenticated', { status: 401 })
+
+  try {
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET)
+    const { payload } = await jwtVerify(token, secret)
+    
+    const artwork = await prisma.artwork.findUnique({
+      where: { slug: params.slug }
+    })
+
+    if (!artwork) {
+      return new NextResponse('Artwork not found', { status: 404 })
+    }
+
+    if (artwork.artistId !== payload.id) {
+      return new NextResponse('Unauthorized', { status: 403 })
     }
 
     await prisma.artwork.delete({
-        where: { id: params.id }
+      where: { slug: params.slug }
     })
-    
+
     return NextResponse.json({ success: true })
+  } catch (err) {
+    console.error('Delete failed:', err)
+    return new NextResponse('Server error', { status: 500 })
+  }
 }
 
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { slug: string } }
 ) {
   const token = req.cookies.get('auth-token')?.value
   if (!token) return new NextResponse('Not authenticated', { status: 401 })
@@ -85,18 +127,21 @@ export async function PUT(
     await done
 
     const artwork = await prisma.artwork.findUnique({
-      where: { id: params.id }
+      where: { slug: params.slug }
     })
+    console.log("Artwork SLUG??: ", artwork)
 
     if (!artwork || artwork.artistId !== payload.id)
       return new NextResponse('Forbidden', { status: 403 })
 
     const updated = await prisma.artwork.update({
-      where: { id: params.id },
+      where: { slug: params.slug },
       data: {
         title: fields.title,
         description: fields.description,
-        price: parseFloat(fields.price),
+        markupSmall: parseFloat(fields.markupSmall),
+        markupMedium: parseFloat(fields.markupMedium),
+        markupLarge: parseFloat(fields.markupLarge),
         imageUrl: uploadedImageUrl || artwork.imageUrl,
       },
     })
