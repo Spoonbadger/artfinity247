@@ -29,7 +29,7 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
         e.preventDefault()
         setLoading(true)
 
-        if (!title.trim() || !price || !preview || !description) {
+        if (!title.trim() || !preview || !description) {
             alert('Please complete all required fields')
             setLoading(false)
             return
@@ -43,7 +43,6 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
 
         if (title) formData.set('title', title)
         if (description) formData.set('description', description)
-        if (price) formData.set('price', String(price))
         if (artwork?.id) formData.set('artworkId', artwork.id)
 
         const endpoint = artwork
@@ -135,7 +134,7 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                     }}
                 />
             </div>
-            <Button type='submit' disabled={loading || !title.trim() || !description || !price }>
+            <Button type='submit' disabled={loading || !title.trim() || !description }>
                 {loading ? 'Uploading... ' : 'Upload'}
             </Button>
         </form>
