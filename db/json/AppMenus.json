@@ -2,8 +2,8 @@
   "primary": [
     { "title": "home", "href": "/" },
     {
-      "title": "arts",
-      "href": "/arts"
+      "title": "artwork",
+      "href": "/art"
     },
     {
       "title": "artists",

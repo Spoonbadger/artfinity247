@@ -147,7 +147,7 @@ const ScenePage = ({ params }: { params: ParamsPropsType }): ReactNode => {
             <div className="products-area grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-6 xl:grid-cols-4">
               {paginatedProducts.map((product) => (
                 <Link
-                  key={product._id}
+                  key={product.id}
                   href={`/${productsPageSlug}/${product.slug}`}
                 >
                   <ProductCard product={product} showSeller={true} />

@@ -36,10 +36,18 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
   const [cartItems, setCartItems] = useState<CartItemType[]>([]);
 
   useEffect(() => {
-    const fetchedCartItems = getCartItems({ user_id: currentUser?._id || "1" });
+    if (typeof window !== "undefined") {
+      const raw = localStorage.getItem("cartItems")
+      setCartItems(raw ? JSON.parse(raw) : [])
+    }
+  }, [])
 
-    setCartItems(fetchedCartItems);
-  }, [currentUser?._id]);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("cartItems", JSON.stringify(cartItems));
+    }
+  }, [cartItems])
+
 
   const addToCart = (product: CartItemProductType, quantity: number = 1) => {
     setCartItems((prev) =>
@@ -82,7 +90,7 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
     products: ProductType[] = getProducts(),
   ) => {
     // Find the corresponding product based on the _id
-    const matchingProduct = products.find((p) => p._id === product._id);
+    const matchingProduct = products.find((p) => p.id === product._id);
     if (!matchingProduct) {
       return 0; // Product not found, return 0 price
     }

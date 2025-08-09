@@ -22,6 +22,18 @@ export async function GET(
 
     const artwork = await prisma.artwork.findUnique({
       where: { slug: params.slug },
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          description: true,
+          imageUrl: true,
+          markupSmall: true,
+          markupMedium: true,
+          markupLarge: true,
+          artistId: true,
+    // include any other fields you rely on
+  },
     })
 
     if (!artwork) {

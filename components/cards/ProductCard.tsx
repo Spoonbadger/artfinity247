@@ -16,6 +16,7 @@ import { getLowestPrice } from "@/lib/price_utils";
 import StarRating from "@/components/StarRating";
 import { getAppConfigs, getReviews, getSeller } from "@/db/query";
 import { getRatingInPercentage } from "@/lib/review_utils";
+import { getFinalPrice } from '@/lib/artwork_price'
 
 const AppConfigs = getAppConfigs();
 
@@ -46,19 +47,15 @@ const ProductCard = ({
   const { seller: sellerId, title, description, imageUrl, variants } = product;
   const seller = getSeller({ id: sellerId });
 
-  const hasVariants = variants && Boolean(variants?.length);
-  const lowestProductPrice = hasVariants
-    ? getLowestPrice(variants, product.price)
-    : product?.price;
-
   const reviews =
-    product._id && getReviews({ item_ids: [product._id], types: ["product"] });
+    product.id && getReviews({ item_ids: [product.id], types: ["product"] });
   const ratings = reviews && reviews?.map((review) => review.rating);
   const totalRatings = ratings?.length ?? 0;
 
   const ratingInPercent = ratings ? getRatingInPercentage(ratings) : 0;
 
-  const isOutOfStock = product.available <= 0;
+  const mediumMarkup = product.markupMedium || 0;
+  const displayPrice = getFinalPrice("medium", mediumMarkup);
 
   return (
     <Card
@@ -85,14 +82,7 @@ const ProductCard = ({
   </div>
 )}
           <div className="product-badges">
-            {isOutOfStock && (
-              <Badge
-                variant="destructive"
-                className="card-badge absolute bottom-2 right-2 rounded-full"
-              >
-                Out of Stock
-              </Badge>
-            )}
+
             {featured && (
               <Badge
                 variant="secondary"
@@ -134,14 +124,13 @@ const ProductCard = ({
             <span className="rating-count">({totalRatings})</span>
           </div>
         )}
-        {lowestProductPrice && (
+        {(
           <div className="product-price line-clamp-2 font-bold uppercase text-slate-800 dark:text-slate-100">
             <span className="price-info">
               <span className="currency">
-                {hasVariants && <span>From&ensp;</span>}
                 {currency || "$"}
               </span>
-              <span className="price">{lowestProductPrice || 0}</span>
+                <span className="price">{displayPrice}</span>
             </span>
           </div>
         )}
@@ -151,7 +140,7 @@ const ProductCard = ({
           <Button
             className="add-to-cart-btn rounded-full"
             variant="default"
-            disabled={isOutOfStock}
+            // disabled={}
           >
             Add to Cart
           </Button>

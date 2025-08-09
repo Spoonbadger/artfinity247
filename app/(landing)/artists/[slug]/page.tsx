@@ -250,7 +250,8 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
             <div className="products-area grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-6 xl:grid-cols-4">
               {paginatedProducts.map((product) => (
                 <div key={product.id} className="relative">
-                  <Link href={`/${productsPageSlug}/${product.slug}`}>
+                  {/* is this link right?? */}
+                  <Link href={`/art/${product.slug}`}>
                     <ProductCard product={product} />
                   </Link>
 

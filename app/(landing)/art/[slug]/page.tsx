@@ -19,7 +19,6 @@ import {
   getAppConfigs,
   getAppPages,
   getCollectionData,
-  getProduct,
   getReviews,
   getSeller,
 } from "@/db/query";
@@ -32,6 +31,9 @@ import {
 } from "@/types/db";
 import { getAverageRating } from "@/lib/review_utils";
 import { formatCurrency } from "@/lib/formatters";
+import { getProduct } from '@/lib/api'
+import { getFinalPrice } from '@/lib/artwork_price'
+
 
 type ParamsPropsType = {
   slug: string;
@@ -56,8 +58,10 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
   const [product, setProduct] = useState<ProductType | null>(null);
   const [seller, setSeller] = useState<UserType | null>(null);
   const [reviews, setReviews] = useState<ReviewType[]>([]);
+  const [selectedSize, setSelectedSize] = useState<"small" | "medium" | "large">('medium')
   const [quantity, setQuantity] = useState<number>(1);
   const [purchaseNote, setPurchaseNote] = useState<string>("");
+
 
   const variants = useMemo<ProductVariantType[] | undefined>(
     () => product?.variants,
@@ -74,14 +78,17 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
 
   useEffect(() => {
     if (slug) {
-      const fetchedProduct = getProduct({ slug });
+      const fetchProduct = async () => {
+        const fetchedProduct = await getProduct({ slug })
 
-      if (!fetchedProduct) {
-        router.push("/");
-        return;
+        if (!fetchedProduct) {
+          router.push("/")
+          return
+        }
+
+        setProduct(fetchedProduct)
       }
-
-      setProduct((prev) => fetchedProduct);
+      fetchProduct()
     }
 
     const purchaseNote = AppPages.product.purchase_note;
@@ -113,16 +120,28 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
         })
       : 0;
 
-    setPrice((prev) => totalPrice || product?.price || 0);
+    setPrice((prev) => totalPrice || 0)
   }, [
     selectedVariants,
     calculateProductPrice,
     quantity,
     currency,
     priceFloatPoints,
-    product?.price,
     product?.id,
   ]);
+
+  // Update price on size change
+useEffect(() => {
+  if (!product) return;
+
+  const markup = selectedSize === 'small' ? product.markupSmall :
+    selectedSize === 'medium' ? product.markupMedium :
+    selectedSize === 'large' ? product.markupLarge : 0
+
+  const finalPrice = getFinalPrice(selectedSize, markup || 0);
+  setPrice(finalPrice);
+}, [selectedSize, product]);
+
 
   const handleVariantChange = (variantType: string, variantKey: string) => {
     setSelectedVariants((prev) =>
@@ -229,40 +248,26 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
                         </span>
                       </div>
                     </div>
-
-                    <div className="product-variants space-y-3">
-                      {variants?.map((variant, index) => (
-                        <div className="" key={index}>
-                          <RadioGroup
-                            by="key"
-                            value={selectedVariants?.find(
-                              (v) => v.type === variant.type,
-                            )}
-                            onChange={(data) =>
-                              handleVariantChange(variant.type, data.key)
-                            }
-                          >
-                            <Label className="mb-2 text-base font-bold uppercase">
-                              Choose {variant.title}
-                            </Label>
-                            <div className="flex flex-wrap items-center space-x-4">
-                              {variant.data.map((data, index) => (
-                                <Radio
-                                  key={index}
-                                  value={data}
-                                  className="group relative isolate flex cursor-pointer gap-1 rounded-lg border border-theme-primary bg-background p-2 text-theme-primary shadow-md transition focus:outline-none data-[checked]:bg-theme-primary data-[checked]:text-background data-[focus]:outline-1 data-[focus]:outline-theme-primary"
-                                >
-                                  {data.value}{" "}
-                                  <CheckCircle className="!text-background !opacity-0 transition group-data-[checked]:!opacity-100" />
-                                </Radio>
-                              ))}
-                            </div>
-                          </RadioGroup>
+                        {/* Radio buttons for size options */}
+                    <div className="product-size-options space-y-3">
+                      <RadioGroup className="mb-2 text-base font-bold uppercase">Choose Size</RadioGroup>
+                      <RadioGroup value={selectedSize} onChange={setSelectedSize}>
+                        <div className="flex flex-wrap gap-2">
+                          {["small", "medium", "large"].map((size) => (
+                            <Radio
+                              key={size}
+                              value={size}
+                              className="group relative isolate flex cursor-pointer gap-1 rounded-lg border border-theme-primary bg-background p-2 text-theme-primary shadow-md transition focus:outline-none data-[checked]:bg-theme-primary data-[checked]:text-background data-[focus]:outline-1 data-[focus]:outline-theme-primary"
+                            >
+                              {size.charAt(0).toUpperCase() + size.slice(1)}
+                              <CheckCircle className="!text-background !opacity-0 transition group-data-[checked]:!opacity-100" />
+                            </Radio>
+                          ))}
                         </div>
-                      ))}
+                      </RadioGroup>
                     </div>
+
                     <div className="product-quantity">
-                      {product?.available > 0 ? (
                         <ProductQuantityInput
                           title="Quantity"
                           quantity={quantity}
@@ -270,9 +275,6 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
                           minQuantity={minQuantity}
                           maxQuantity={maxQuantity}
                         />
-                      ) : (
-                        <div className="text-lg font-bold">Out of Stock</div>
-                      )}
                     </div>
 
                     <div className="purchase-note">
@@ -284,7 +286,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
                       ></p>
                     </div>
                     <div className={cn("grid grid-cols-1 items-center gap-2")}>
-                      {product?.available > 0 && (
+
                         <>
                           <Button
                             variant="outline"
@@ -300,7 +302,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
                             Buy Now
                           </Button>
                         </>
-                      )}
+
                     </div>
                     <p className="area-text mb-2 text-lg text-gray-600">
                       {product.description}

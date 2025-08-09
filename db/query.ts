@@ -121,7 +121,7 @@ export const getProducts = (query: MultiProductsQuery = {}): ProductType[] => {
 
   if (ids) {
     result = result.filter((product) => {
-      return product._id ? ids?.includes(product._id) : false;
+      return product.id ? ids?.includes(product.id) : false;
     });
   }
 
@@ -344,7 +344,7 @@ export const filterCartItems = (
         }
         return [];
       });
-      productVariantsMap.set(product._id, variants);
+      productVariantsMap.set(product.id, variants);
     }
   });
 
@@ -382,31 +382,34 @@ export const getCartItems = (
     user_id: null,
   },
 ): CartItemType[] => {
-  const { user_id = null, products = null, start, limit } = query;
+  return []
 
-  const user = getUser({ id: user_id });
 
-  if (!user) {
-    // throw new Error("User not found or has been removed.");
-    return [];
-  }
+  // const { user_id = null, products = null, start, limit } = query;
 
-  let result = db.CartItems as CartItemType[];
+  // const user = getUser({ id: user_id });
 
-  result = result.filter((item) => item.quantity > 0); // Only return items with positive quantity
-  result = filterCartItems(result); // Only return items which exists in the database
+  // if (!user) {
+  //   // throw new Error("User not found or has been removed.");
+  //   return [];
+  // }
 
-  if (user_id) {
-    result = result.filter((item) => user_id === item.user_id);
-  }
+  // let result = db.CartItems as CartItemType[];
 
-  if (products) {
-    result = result.filter((item) =>
-      products.map((item) => item._id).includes(item.product._id),
-    );
-  }
+  // result = result.filter((item) => item.quantity > 0); // Only return items with positive quantity
+  // result = filterCartItems(result); // Only return items which exists in the database
 
-  return result.slice(start || 0, limit || Infinity);
+  // if (user_id) {
+  //   result = result.filter((item) => user_id === item.user_id);
+  // }
+
+  // if (products) {
+  //   result = result.filter((item) =>
+  //     products.map((item) => item._id).includes(item.product._id),
+  //   );
+  // }
+
+  // return result.slice(start || 0, limit || Infinity);
 };
 
 export const updateCartItem = (query: UpdateCartItemQuery) => {
@@ -452,10 +455,10 @@ export const updateCartItem = (query: UpdateCartItemQuery) => {
         quantity,
       };
 
-      if (filterCartItems([newCartItem]).length) {
-        result?.push(newCartItem);
-        break;
-      }
+
+      result?.push(newCartItem)
+      break
+
 
       // throw new Error("Product not found or has been removed.");
       break;

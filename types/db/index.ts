@@ -48,7 +48,6 @@ export type ProductType = {
   id: string;
   title: string;
   description?: string;
-  price?: number;
   markupSmall?: number,
   markupMedium?: number,
   markupLarge?: number,
@@ -170,6 +169,11 @@ export type UserPurchaseHistoryType = {
 
 export type CartItemProductType = {
   _id: string;
+  slug: string
+  title: string
+  imageUrl: string
+  selectedSize: 'small' | 'medium' | 'large'
+  unitPrice: number // store in cents
   variants?: CartItemProductVariantType[];
 };
 
