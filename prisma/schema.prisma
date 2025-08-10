@@ -14,43 +14,60 @@ datasource db {
 }
 
 model Order {
-  id              String   @id @default(cuid())
-  stripeSessionId String   @unique
-  email           String?
-  amountTotal     Int?
-  currency        String?
-  paymentStatus   String?
-  artworkId       String
-  artwork         Artwork  @relation(fields: [artworkId], references: [id])
-  createdAt       DateTime @default(now())
+  id              String      @id @default(cuid())
+  stripeSessionId String      @unique
+  email           String
+  amountTotal     Int
+  currency        String
+  paymentStatus   String
+  createdAt       DateTime    @default(now())
+  items           OrderItem[]
+}
+
+model OrderItem {
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  artworkId String?
+  artwork   Artwork? @relation(fields: [artworkId], references: [id], onDelete: SetNull) // ← keep items if artwork removed
+
+  slug      String?
+  size      String? // small/medium/large
+  unitPrice Int? // cents
+  quantity  Int?
+  lineTotal Int?
+
+  @@index([orderId])
+  @@index([artworkId])
 }
 
 model Artist {
-  id       String    @id @default(cuid())
-  name     String
-  email    String    @unique
-  password String
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  password     String
   profileImage String?
-  phone String
-  city String
-  state String?
-  country String?
-  slug String @unique
-  bio String? @default("")
-  artworks Artwork[] // one to many
+  phone        String
+  city         String
+  state        String?
+  country      String?
+  slug         String    @unique
+  bio          String?   @default("")
+  artworks     Artwork[] // one to many
 }
 
 model Artwork {
-  id       String  @id @default(cuid())
-  title    String
-  slug String? @unique // Unquestion mark this at some point.
-  description String
-  imageUrl String
-  markupSmall Int? @default(0)
-  markupMedium Int? @default(0)
-  markupLarge Int? @default(0)
-  artistId String
-  artist   Artist  @relation(fields: [artistId], references: [id])
-  createdAt DateTime @default(now())
-  orders   Order[]
+  id           String      @id @default(cuid())
+  title        String
+  slug         String?     @unique // Unquestion mark this at some point.
+  description  String
+  imageUrl     String
+  markupSmall  Int?        @default(0)
+  markupMedium Int?        @default(0)
+  markupLarge  Int?        @default(0)
+  artistId     String
+  artist       Artist      @relation(fields: [artistId], references: [id])
+  createdAt    DateTime    @default(now())
+  OrderItem    OrderItem[]
 }

@@ -7,7 +7,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 export async function POST(req: Request) {
     try {
         const body = await req.json()
-
         const items = body.items
 
         const line_items = items.map((item: any) => ({
@@ -15,11 +14,16 @@ export async function POST(req: Request) {
                 currency: 'usd',
                 product_data: {
                     name: item.title,
-                    images: item.image ? [item.image] : []
+                    images: item.image ? [item.image] : [],
+                    metadata: {
+                        size: item.seletedSize ?? '',
+                        slug: item.slug ?? '',
+                        artworkId: item.slug ?? ''
+                    }
                 },
-                unit_amount: item.price,
+                unit_amount: item.unitPrice,
             },
-            quantity: item.quantity
+            quantity: item.quantity ?? 1
         }))
 
         // Create Session
@@ -34,7 +38,6 @@ export async function POST(req: Request) {
                 artworkId: body.artworkId
             }
         })
-
 
         return new Response(JSON.stringify({ sessionId: session.id }), {
             status: 200,

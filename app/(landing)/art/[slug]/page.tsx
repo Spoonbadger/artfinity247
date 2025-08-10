@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import InnerImageZoom from "react-inner-image-zoom";
 import "react-inner-image-zoom/lib/InnerImageZoom/styles.css";
@@ -23,13 +23,10 @@ import {
   getSeller,
 } from "@/db/query";
 import {
-  CartItemProductVariantType,
   ProductType,
-  ProductVariantType,
   ReviewType,
   UserType,
 } from "@/types/db";
-import { getAverageRating } from "@/lib/review_utils";
 import { formatCurrency } from "@/lib/formatters";
 import { getProduct } from '@/lib/api'
 import { getFinalPrice } from '@/lib/artwork_price'
@@ -39,12 +36,12 @@ type ParamsPropsType = {
   slug: string;
 };
 
-const AppConfigs = getAppConfigs();
-const AppPages = getAppPages();
+const AppConfigs = getAppConfigs()
+const AppPages = getAppPages()
 
 const ProductPage = ({ params }: { params: ParamsPropsType }) => {
-  const { slug: encodedSlug } = params;
-  const slug = decodeURIComponent(encodedSlug);
+  const { slug: encodedSlug } = params
+  const slug = decodeURIComponent(encodedSlug)
 
   const router = useRouter()
   const { addToCart } = useCart()
@@ -76,7 +73,6 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
           router.push("/")
           return
         }
-
         setProduct(fetchedProduct)
       }
       fetchProduct()
@@ -87,7 +83,8 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
   }, [slug, router]);
 
   useEffect(() => {
-    setSeller((prev) => getSeller({ id: product?.seller }));
+    if (!product) return
+    setSeller((prev) => getSeller({ id: product.seller }));
     setReviews((prev) =>
       getReviews({
         item_ids: product?.id ? [product.id] : [],
@@ -97,27 +94,16 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
   }, [product]);
 
   // Update price on size change
-useEffect(() => {
-  if (!product) return;
+  useEffect(() => {
+    if (!product) return;
 
-  const markup = selectedSize === 'small' ? product.markupSmall
-    : selectedSize === 'medium' ? product.markupMedium 
-    : selectedSize === 'large' ? product.markupLarge : 0
+    const markup = selectedSize === 'small' ? product.markupSmall
+      : selectedSize === 'medium' ? product.markupMedium 
+      : selectedSize === 'large' ? product.markupLarge : 0
 
-  const finalPrice = getFinalPrice(selectedSize, markup || 0)
-  setPrice(finalPrice)
-}, [selectedSize, product])
-
-
-  // inside the component
-  const resolveMarkupForSize = (size: 'small'|'medium'|'large') => {
-    if (!product) return 0;
-    return size === 'small' ? product.markupSmall
-        : size === 'medium' ? product.markupMedium
-        : product.markupLarge || 0;
-  };
-
-  const unitPrice = getFinalPrice(selectedSize, resolveMarkupForSize(selectedSize) || 0);
+    const finalPrice = getFinalPrice(selectedSize, markup || 0)
+    setPrice(finalPrice)
+  }, [selectedSize, product])
 
   // Add to cart
   const handleAddToCart = () => {
@@ -130,7 +116,7 @@ useEffect(() => {
         title: product.title,
         imageUrl: product.imageUrl,
         selectedSize, 
-        unitPrice, // In cents
+        unitPrice: price, // In cents
         // keep variants if you still compare by them elsewhere ??:
         variants: [{ type: "print_size", key: selectedSize}]
       },
@@ -150,11 +136,10 @@ useEffect(() => {
         title: product.title,
         imageUrl: product.imageUrl,
         selectedSize,
-        unitPrice,
+        unitPrice: price,
       },
-      1
+      quantity
     )
-
     router.push(`/${AppPages.cart.slug || "cart"}`)
   }
 
@@ -167,7 +152,6 @@ useEffect(() => {
       <section>
         <MaxWidthWrapper className="mx-auto py-8">
           {product && (
-            <>
               <div className="relative flex flex-col gap-8 md:flex-row">
                 {/* Product Media */}
                 <div className="area-media max-h-fit w-full md:w-1/2">
@@ -190,20 +174,7 @@ useEffect(() => {
                       <h1 className="area-title product-title font-semibold capitalize text-theme-primary">
                         {product.title}
                       </h1>
-                      {/* <div className="rating-overview font-tertiary text-xs capitalize tracking-tighter">
-                        <Badge className="rounded-sm !bg-theme-primary">
-                          {getAverageRating(
-                            reviews?.map((review) => review.rating) || [],
-                          )}
-                          &ensp;
-                          <StarIcon className="size-2 !fill-background !text-background" />
-                        </Badge>{" "}
-                        {reviews?.length ?? 0} Ratings &{" "}
-                        {reviews
-                          ?.map((review) => review.comment)
-                          .filter((x) => x).length ?? 0}{" "}
-                        Reviews
-                      </div> */}
+
                       <div className="product-price pt-2 font-primary text-foreground">
                         <span className="price text-xl md:text-3xl">
                           {formatCurrency(price, currency, priceFloatPoints)}
@@ -228,7 +199,6 @@ useEffect(() => {
                         </div>
                       </RadioGroup>
                     </div>
-
                     <div className="product-quantity">
                         <ProductQuantityInput
                           title="Quantity"
@@ -248,7 +218,6 @@ useEffect(() => {
                       ></p>
                     </div>
                     <div className={cn("grid grid-cols-1 items-center gap-2")}>
-
                         <>
                           <Button
                             variant="outline"
@@ -264,7 +233,6 @@ useEffect(() => {
                             Buy Now
                           </Button>
                         </>
-
                     </div>
                     <p className="area-text mb-2 text-lg text-gray-600">
                       {product.description}
@@ -272,7 +240,6 @@ useEffect(() => {
                   </div>
                 </div>
               </div>
-            </>
           )}
         </MaxWidthWrapper>
       </section>
@@ -321,21 +288,8 @@ useEffect(() => {
               />
             </MaxWidthWrapper>
           </section>
-        );
+        )
       })}
-
-      {/* Product Reviews */}
-      {/* <section>
-        <MaxWidthWrapper className="py-6 md:py-8">
-          <ReviewCarousel
-            title={sections?.reviews?.title || "Customer Reviews"}
-            reviews={reviews}
-            showLink={false}
-            className="[&_.area-title]:md:text-3xl"
-            notFoundMsg={AppConfigs?.messages?.reviews?.not_found}
-          />
-        </MaxWidthWrapper>
-      </section> */}
     </>
   );
 };

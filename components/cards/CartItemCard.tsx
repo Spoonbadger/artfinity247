@@ -32,8 +32,8 @@ const CartItemCard = ({
     medium: product?.markupMedium,
     large: product?.markupLarge,
   }
-  const markup = markupMap[sizeKey] ?? 0;  const unitPrice = getFinalPrice(sizeKey, markup)
 
+  const unitPrice = item.product.unitPrice
 
   // Input area configs
   const minQuantity = 1;
