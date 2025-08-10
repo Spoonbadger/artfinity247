@@ -46,8 +46,8 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
   const { slug: encodedSlug } = params;
   const slug = decodeURIComponent(encodedSlug);
 
-  const router = useRouter();
-  const { cartItems, addToCart, calculateProductPrice } = useCart();
+  const router = useRouter()
+  const { addToCart } = useCart()
 
   const { title, carousels, sections } = AppPages.product;
   const { slug: productsPageSlug } = AppPages.products;
@@ -61,15 +61,6 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
   const [selectedSize, setSelectedSize] = useState<"small" | "medium" | "large">('medium')
   const [quantity, setQuantity] = useState<number>(1);
   const [purchaseNote, setPurchaseNote] = useState<string>("");
-
-
-  const variants = useMemo<ProductVariantType[] | undefined>(
-    () => product?.variants,
-    [product],
-  );
-  const [selectedVariants, setSelectedVariants] = useState<
-    CartItemProductVariantType[] | undefined
-  >(undefined);
 
   const [price, setPrice] = useState<number>(0);
 
@@ -102,100 +93,71 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
         item_ids: product?.id ? [product.id] : [],
         types: ["product"],
       }),
-    );
-    setSelectedVariants(
-      (prev) =>
-        variants?.map((variant) => ({
-          type: variant.type,
-          key: variant.data[0]?.key,
-        })) || [],
-    );
-  }, [product, variants]);
-
-  useEffect(() => {
-    const totalPrice = product?.id
-      ? calculateProductPrice({
-          _id: product?.id,
-          variants: selectedVariants,
-        })
-      : 0;
-
-    setPrice((prev) => totalPrice || 0)
-  }, [
-    selectedVariants,
-    calculateProductPrice,
-    quantity,
-    currency,
-    priceFloatPoints,
-    product?.id,
-  ]);
+    )
+  }, [product]);
 
   // Update price on size change
 useEffect(() => {
   if (!product) return;
 
-  const markup = selectedSize === 'small' ? product.markupSmall :
-    selectedSize === 'medium' ? product.markupMedium :
-    selectedSize === 'large' ? product.markupLarge : 0
+  const markup = selectedSize === 'small' ? product.markupSmall
+    : selectedSize === 'medium' ? product.markupMedium 
+    : selectedSize === 'large' ? product.markupLarge : 0
 
-  const finalPrice = getFinalPrice(selectedSize, markup || 0);
-  setPrice(finalPrice);
-}, [selectedSize, product]);
+  const finalPrice = getFinalPrice(selectedSize, markup || 0)
+  setPrice(finalPrice)
+}, [selectedSize, product])
 
 
-  const handleVariantChange = (variantType: string, variantKey: string) => {
-    setSelectedVariants((prev) =>
-      prev
-        ? prev.map((v) =>
-            v.type === variantType ? { type: variantType, key: variantKey } : v,
-          )
-        : prev,
-    );
+  // inside the component
+  const resolveMarkupForSize = (size: 'small'|'medium'|'large') => {
+    if (!product) return 0;
+    return size === 'small' ? product.markupSmall
+        : size === 'medium' ? product.markupMedium
+        : product.markupLarge || 0;
   };
 
+  const unitPrice = getFinalPrice(selectedSize, resolveMarkupForSize(selectedSize) || 0);
+
+  // Add to cart
   const handleAddToCart = () => {
-    if (!product) return;
-
-    const productInCart = cartItems.find(
-      (item) =>
-        item._id === product.id &&
-        JSON.stringify(item.product.variants) ===
-          JSON.stringify(selectedVariants),
-    );
-
-    const newQuantity = productInCart
-      ? productInCart.quantity + quantity
-      : quantity;
+    if (!product) return
 
     addToCart(
       {
         _id: product.id,
-        variants: selectedVariants,
+        slug: product.slug,
+        title: product.title,
+        imageUrl: product.imageUrl,
+        selectedSize, 
+        unitPrice, // In cents
+        // keep variants if you still compare by them elsewhere ??:
+        variants: [{ type: "print_size", key: selectedSize}]
       },
-      newQuantity,
-    );
-    setTimeout(() => {
-      router.push(`/${AppPages.cart.slug || "cart"}`);
-    }, 1000);
-
-    toast.success("Product added to cart");
-  };
+      quantity
+    )
+    toast.success("Product added to cart")
+    router.push(`/${AppPages.cart.slug || "cart"}`)
+  }
 
   const handleBuyNow = () => {
-    if (!product) return;
+    if (!product) return
 
     addToCart(
       {
         _id: product.id,
-        variants: selectedVariants,
+        slug: product.slug,
+        title: product.title,
+        imageUrl: product.imageUrl,
+        selectedSize,
+        unitPrice,
       },
-      minQuantity,
-    );
+      1
+    )
 
-    setTimeout(() => {
-      router.push(`/${AppPages.cart.slug || "cart"}`);
-    }, 500);
-  };
+    router.push(`/${AppPages.cart.slug || "cart"}`)
+  }
+
 
   return (
     <>

@@ -84,56 +84,14 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
     );
   };
 
-  const calculateProductPrice = (
-    product: CartItemProductType,
-    quantity: number = 1,
-    products: ProductType[] = getProducts(),
-  ) => {
-    // Find the corresponding product based on the _id
-    const matchingProduct = products.find((p) => p.id === product._id);
-    if (!matchingProduct) {
-      return 0; // Product not found, return 0 price
-    }
+  const calculateProductPrice = (product: CartItemProductType,quantity: number = 1) => {
+    return (product.unitPrice ?? 0) * quantity
+  }
 
-    // Calculate the base product price
-    let productPrice = matchingProduct.price || 0;
-
-    // Add variant prices (if variants exist)
-    if (product.variants) {
-      product.variants.forEach((variant) => {
-        const variantData = matchingProduct.variants?.find(
-          (v) => v.type === variant.type,
-        );
-
-        if (variant.type === "size") {
-          const sizeKey = variant.key.toLowerCase() as "small" | "medium" | "large"
-          const markupField = `markup${sizeKey.charAt(0).toUpperCase() + sizeKey.slice(1)}` as keyof ProductType
-          const rawMarkup = matchingProduct[markupField]
-          const markup = typeof rawMarkup === "number" ? rawMarkup : 0
-
-          productPrice = getFinalPrice(sizeKey, markup)
-        }
-      })
-    }
-
-    // Calculate total price
-    const totalPrice = productPrice * quantity;
-    return totalPrice;
-  };
-
-  const calculateTotalPrice = (
-    cart_items: CartItemType[] = cartItems,
-    products: ProductType[] = getProducts(),
-  ) => {
-    let totalCartPrice = 0;
-
-    cart_items.forEach((cartItem) => {
-      const { product, quantity } = cartItem;
-      const itemPrice = calculateProductPrice(product, quantity, products);
-      totalCartPrice += itemPrice;
-    });
-
-    return totalCartPrice;
+  const calculateTotalPrice = (cart_items: CartItemType[] = cartItems) => {
+    return cart_items.reduce((sum, { product, quantity }) => {
+      return sum + calculateProductPrice(product, quantity)
+    }, 0)
   };
 
   const calculateTax = (

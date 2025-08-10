@@ -26,13 +26,13 @@ const CartItemCard = ({
   const seller = getSeller({ id: product?.seller || null });
 
 
-  const size = item.product?.variants?.find(v => v.type === 'print_size')?.key as 'small' || 'medium' || 'large'
+  const sizeKey = (item.product?.variants?.find(v => v.type === 'print_size')?.key?.toLowerCase() ?? 'medium') as 'small' | 'medium' | 'large';
   const markupMap = {
     small: product?.markupSmall,
     medium: product?.markupMedium,
     large: product?.markupLarge,
   }
-  const markup = markupMap[size] ?? 0;  const unitPrice = getFinalPrice(size, markup)
+  const markup = markupMap[sizeKey] ?? 0;  const unitPrice = getFinalPrice(sizeKey, markup)
 
 
   // Input area configs
@@ -74,14 +74,11 @@ const CartItemCard = ({
         >
           {item.product?.variants?.map((variant, index) => {
             const product = getProducts().find(
-              (p) => p._id === item.product?._id,
+              (p) => p.id === item.product?._id,
             );
             const variantTitle = product?.variants?.find(
               (v) => v.type === variant.type,
             )?.title;
-            <p className="text-sm font-semibold">
-              Price: ${(unitPrice / 100).toFixed(2)}
-            </p>
 
             return (
               <p key={index} className="mx-auto capitalize md:mx-0">
@@ -89,6 +86,9 @@ const CartItemCard = ({
               </p>
             );
           })}
+            <p className="text-sm font-semibold">
+              Price: ${(unitPrice / 100).toFixed(2)}
+            </p>
         </div>
       </div>
       <ProductQuantityInput
@@ -99,10 +99,7 @@ const CartItemCard = ({
         setQuantity={setQuantity}
         handleRemove={() => {
           product &&
-            removeFromCart({
-              _id: product._id,
-              variants: item.product?.variants,
-            });
+            removeFromCart(item.product)
         }}
         showRemoveBtn={true}
         className="col-span-2 flex justify-center space-x-2 md:col-span-1 md:justify-self-end"
@@ -111,4 +108,4 @@ const CartItemCard = ({
   );
 };
 
-export default CartItemCard;
+export default CartItemCard
