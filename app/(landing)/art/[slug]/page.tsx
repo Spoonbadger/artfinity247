@@ -83,14 +83,12 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
   }, [slug, router]);
 
   useEffect(() => {
-    if (!product) return
+    if (!product?.seller) return
+    const fetchedSeller = getSeller({ id: product.seller })
     setSeller((prev) => getSeller({ id: product.seller }));
-    setReviews((prev) =>
-      getReviews({
-        item_ids: product?.id ? [product.id] : [],
-        types: ["product"],
-      }),
-    )
+    if (fetchedSeller) {
+      setSeller(fetchedSeller)
+    }
   }, [product]);
 
   // Update price on size change
@@ -114,11 +112,10 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
         _id: product.id,
         slug: product.slug,
         title: product.title,
+        artist: seller?.seller_name || "",
         imageUrl: product.imageUrl,
         selectedSize, 
         unitPrice: price, // In cents
-        // keep variants if you still compare by them elsewhere ??:
-        variants: [{ type: "print_size", key: selectedSize}]
       },
       quantity
     )
@@ -134,6 +131,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
         _id: product.id,
         slug: product.slug,
         title: product.title,
+        artist: seller?.seller_name || "",
         imageUrl: product.imageUrl,
         selectedSize,
         unitPrice: price,
@@ -142,7 +140,6 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
     )
     router.push(`/${AppPages.cart.slug || "cart"}`)
   }
-
 
   return (
     <>
@@ -177,7 +174,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
 
                       <div className="product-price pt-2 font-primary text-foreground">
                         <span className="price text-xl md:text-3xl">
-                          {formatCurrency(price, currency, priceFloatPoints)}
+                          {formatCurrency(price / 100, currency, priceFloatPoints)}
                         </span>
                       </div>
                     </div>

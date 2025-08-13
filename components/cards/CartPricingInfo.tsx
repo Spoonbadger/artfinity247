@@ -57,4 +57,4 @@ const CartPricingInfo = ({
   );
 };
 
-export default CartPricingInfo;
+export default CartPricingInfo

@@ -54,10 +54,10 @@ const CartPage = (): ReactNode => {
                 </div>
                 <div className="cart-price-info relative -order-1 w-full items-start justify-center md:order-2 md:flex">
                   <CartPricingInfo
-                    subtotal={totalPrice}
+                    subtotal={(totalPrice / 100)}
                     shipping={0}
-                    estimatedTax={tax}
-                    total={totalPriceWithTax}
+                    estimatedTax={(tax / 100)}
+                    total={(totalPriceWithTax / 100)}
                     className="rigt-0 sticky left-0 top-0"
                   >
                     <Button className="mt-4 capitalize md:mx-auto md:mt-6">

@@ -170,12 +170,12 @@ export type UserPurchaseHistoryType = {
 export type CartItemProductType = {
   _id: string;
   slug: string
+  artist: string
   title: string
   imageUrl: string
   selectedSize: 'small' | 'medium' | 'large'
   unitPrice: number // store in cents
-  variants?: CartItemProductVariantType[];
-};
+}
 
 export type CartItemProductVariantType = { type: string; key: string };
 

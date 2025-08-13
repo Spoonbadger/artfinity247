@@ -59,7 +59,9 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
         prev_items: prev,
       }),
     );
+      console.log("addToCart()", product.title, "qty:", quantity);
   };
+
 
   const updateToCart = (product: CartItemProductType, quantity: number = 1) => {
     setCartItems((prev) =>

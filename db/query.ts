@@ -351,28 +351,15 @@ export const filterCartItems = (
   // Filter cart items
   const filteredItems = cartItems.filter((cartItem) => {
     const productId = cartItem.product._id;
-    const variantKey = cartItem.product.variants?.[0]?.key;
-    const variantType = cartItem.product.variants?.[0]?.type;
 
     // Check if the product exists
     if (productVariantsMap.has(productId)) {
       // If variant_key is provided, check if it exists for the product
-      if (variantKey && variantType) {
-        return productVariantsMap
-          .get(productId)
-          .some((variant: { type: string; keys: string[] }) => {
-            return (
-              variant.keys.includes(variantKey) && variant.type === variantType
-            );
-          });
+
       }
       // If no variant, consider the product exists
       return true;
     }
-
-    // Product doesn't exist, remove it from the cart
-    return false;
-  });
 
   return filteredItems;
 };
@@ -429,23 +416,18 @@ export const updateCartItem = (query: UpdateCartItemQuery) => {
 
   const existingItem = result?.find((item) => {
     const productMatched = product._id === item.product._id;
-    const variantMatched = product.variants?.every((variant) =>
-      item.product.variants?.some(
-        (itemVariant) =>
-          itemVariant.type === variant.type && itemVariant.key === variant.key,
-      ),
-    );
+  const sizeMatched = product.selectedSize
+    ? product.selectedSize === item.product.selectedSize
+    : true
 
-    return item.product.variants?.length
-      ? productMatched && variantMatched
-      : productMatched;
+    return productMatched && sizeMatched;
   });
 
   switch (operation) {
     case "add":
       if (existingItem) {
-        existingItem.quantity += quantity || 1;
-        break;
+        existingItem.quantity = quantity >= 1 ? quantity : 1
+        break
       }
 
       const newCartItem = {

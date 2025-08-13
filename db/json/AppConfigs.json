@@ -26,7 +26,7 @@
     "code": "usd",
     "symbol": "$"
   },
-  "sales_tax_rate": 0.1025,
+  "sales_tax_rate": 0.08875,
   "messages": {
     "products": {
       "not_found": "No Artworks Found"

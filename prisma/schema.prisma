@@ -38,6 +38,7 @@ model OrderItem {
   quantity  Int?
   lineTotal Int?
 
+  @@unique([orderId, artworkId, size])
   @@index([orderId])
   @@index([artworkId])
 }

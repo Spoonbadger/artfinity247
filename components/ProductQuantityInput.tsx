@@ -7,6 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+type ProductQuantityInputProps = {
+  title?: string;
+  quantity: number;
+  setQuantity: (value: number) => void
+  handleRemove?: () => void;
+  minQuantity?: number;
+  maxQuantity?: number;
+  step?: number;
+  inputDisabled?: boolean;
+  btnsDisabled?: boolean;
+  showRemoveBtn?: boolean;
+  className?: string;
+}
+
 const ProductQuantityInput = ({
   title,
   quantity,
@@ -19,38 +33,24 @@ const ProductQuantityInput = ({
   btnsDisabled = false,
   showRemoveBtn = false,
   className,
-}: {
-  title?: string;
-  quantity: number;
-  setQuantity: Dispatch<SetStateAction<number>>;
-  handleRemove?: () => void;
-  minQuantity?: number;
-  maxQuantity?: number;
-  step?: number;
-  inputDisabled?: boolean;
-  btnsDisabled?: boolean;
-  showRemoveBtn?: boolean;
-  className?: string;
-}) => {
+}: ProductQuantityInputProps) => {
   const handleIncrement = () =>
-    setQuantity((prev) =>
-      prev + step <= maxQuantity ? prev + step : maxQuantity,
-    );
+    setQuantity(quantity + step <= maxQuantity ? quantity + step : maxQuantity);
+
   const handleDecrement = () =>
-    setQuantity((prev) =>
-      prev - step >= minQuantity ? prev - step : minQuantity,
-    );
+    setQuantity(quantity - step >= minQuantity ? quantity - step : minQuantity);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setQuantity((prev) =>
-      e?.target?.value
-        ? parseInt(e.target.value) < minQuantity
-          ? minQuantity
-          : parseInt(e.target.value) > maxQuantity
-            ? maxQuantity
-            : parseInt(e.target.value)
-        : minQuantity,
-    );
+    const value = parseInt(e.target.value, 10);
+    if (isNaN(value)) {
+      setQuantity(minQuantity);
+    } else if (value < minQuantity) {
+      setQuantity(minQuantity);
+    } else if (value > maxQuantity) {
+      setQuantity(maxQuantity);
+    } else {
+      setQuantity(value);
+    }
   };
 
   return (
