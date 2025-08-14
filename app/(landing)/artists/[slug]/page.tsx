@@ -54,18 +54,37 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
   const pickImage = () => fileInputRef.current?.click();
 
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const orig = e.target.files?.[0];
+    if (!orig) return;
+
     setUploading(true);
     try {
+      let file = orig;
+
+      // HEIC detection (mime or extension)
+      const mime = (orig.type || "").toLowerCase();
+      const name = (orig.name || "").toLowerCase();
+      const isHeic = mime.includes("heic") || mime.includes("heif") || /\.hei[c|f]$/.test(name);
+
+      if (isHeic) {
+        const heic2any = (await import("heic2any")).default as any;
+        const converted = await heic2any({ blob: orig, toType: "image/jpeg", quality: 0.85 });
+        const blob = Array.isArray(converted) ? converted[0] : converted;
+        file = new File([blob], name.replace(/\.(heic|heif)$/i, ".jpg"), { type: "image/jpeg" });
+      }
+
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch("/api/artists/profile-image", { method: "POST", body: formData });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
+      const res = await fetch("/api/artists/profile-image", {
+        method: "POST",
+        body: formData,
+        credentials: "include", // send auth cookie
+      });
 
-      // update local state so the new avatar shows immediately
+      if (!res.ok) throw new Error(await res.text());
+
+      const data = await res.json();
       setSeller((prev) => (prev ? { ...prev, profileImage: data.artist.profileImage } : prev));
       toast.success("Profile image updated");
     } catch (err) {
@@ -76,7 +95,6 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
-
 
   useEffect(() => {
     setItemsPerPage(items_limit);
@@ -168,8 +186,8 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
               <>
                <input
                  ref={fileInputRef}
-                 type="file"
-                 accept="image/*"
+                 type="file" 
+                 accept="image/*,.heic,.heif"
                  className="hidden"
                  onChange={onFileChange}
                />
