@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -27,7 +27,10 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
   const { currentUser } = useUser();
 
   const [isOwner, setIsOwner] = useState(false);
-  useEffect(() => { if (currentUser?.slug && slug) setIsOwner(currentUser.slug === slug); }, [currentUser, slug]);
+  useEffect(() => {
+    const meSlug = currentUser?.slug
+    if (meSlug && slug) setIsOwner(meSlug === slug);
+  }, [currentUser, slug])
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -44,6 +47,35 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
   const [paginatedProducts, setPaginatedProducts] = useState<ProductType[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(items_limit);
+
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const pickImage = () => fileInputRef.current?.click();
+
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/artists/profile-image", { method: "POST", body: formData });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+
+      // update local state so the new avatar shows immediately
+      setSeller((prev) => (prev ? { ...prev, profileImage: data.artist.profileImage } : prev));
+      toast.success("Profile image updated");
+    } catch (err) {
+      console.error("Profile image upload failed", err);
+      toast.error("Upload failed");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
 
 
   useEffect(() => {
@@ -116,6 +148,14 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
 
       <section className="my-12 md:my-16">
         <MaxWidthWrapper>
+          {/* <ImageWithText
+            img={seller?.profileImage || "/uploads/users/generic-artist-profile-picture.webp"}
+            title={seller?.name || ""}
+            imgAlign="left"
+            txtAlign="left"
+            imgLoading="eager"
+            className="[&_.area-content]:self-center [&_.area-image]:max-h-[60vh] [&_.area-image]:min-h-96 [&_.area-image]:object-contain"
+          > */}
           <ImageWithText
             img={seller?.profileImage || "/uploads/users/generic-artist-profile-picture.webp"}
             title={seller?.name || ""}
@@ -124,6 +164,20 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
             imgLoading="eager"
             className="[&_.area-content]:self-center [&_.area-image]:max-h-[60vh] [&_.area-image]:min-h-96 [&_.area-image]:object-contain"
           >
+            {isOwner && (
+              <>
+               <input
+                 ref={fileInputRef}
+                 type="file"
+                 accept="image/*"
+                 className="hidden"
+                 onChange={onFileChange}
+               />
+               <Button variant="secondary" size="sm" onClick={pickImage} disabled={uploading}>
+                 {uploading ? "Uploading…" : "Update profile picture"}
+               </Button>
+              </>
+            )}
             {isOwner && isEditing ? (
               <textarea value={bioDraft} onChange={(e) => setBioDraft(e.target.value)} className="w-full rounded border p-2 text-sm" />
             ) : (

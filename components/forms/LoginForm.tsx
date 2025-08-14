@@ -62,7 +62,7 @@ const LoginForm = ({
       toast.error('Login failed')
       return
     }
-    toast.success("Login successfull")
+    toast.success("Login successful")
 
     const { artist, token } = await res.json()
     localStorage.setItem('token', token)

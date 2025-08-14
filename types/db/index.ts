@@ -141,7 +141,7 @@ export type UserType = {
   roles?: UserRoleType[];
   is_active: boolean;
   slug: string;
-};
+}
 
 export type UserProductsType = {
   _id: string;

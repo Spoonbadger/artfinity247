@@ -29,29 +29,17 @@ export const UserProvider = ({
   const [currentUser, setCurrentUser] = useState<UserType | null>(null);
 
   useEffect(() => {
-    // Verify user-session and set current-user
-    const fetchUser = async () => {
+    (async () => {
       try {
-        const token = localStorage.getItem('token')
-        if (!token) return
-
-        const res = await fetch('/api/auth/me', {
-          headers: { Authorization: `Bearer ${token}`}
-        })
-        console.log("Response status:", res.status)
-        
-        if (!res.ok) return 
-
-        const data = await res.json()
-        setCurrentUser(data)
-
-      } catch (err) {
-        console.error('Failed to fetch user', err)
-        setCurrentUser(null)
+        const res = await fetch('/api/auth/me', { cache: 'no-store' });
+        if (!res.ok) { setCurrentUser(null); return; }
+        const data = await res.json();
+        setCurrentUser(data); // { id, slug, email }
+      } catch (e) {
+        console.error('Failed to fetch user', e);
+        setCurrentUser(null);
       }
-    }
-
-    fetchUser()
+    })()
   }, [])
 
   return (
