@@ -45,6 +45,7 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(items_limit);
 
+
   useEffect(() => {
     setItemsPerPage(items_limit);
     const q = parseInt(searchParams.get(queryPageKey) || "1", 10);
@@ -111,13 +112,13 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
 
   return (
     <div>
-      <title>{`${title} - ${seller?.seller_name || "Info"}: ${AppConfigs.app_name}`}</title>
+      <title>{`${title} - ${seller?.name || "Info"}: ${AppConfigs.app_name}`}</title>
 
       <section className="my-12 md:my-16">
         <MaxWidthWrapper>
           <ImageWithText
             img={seller?.profile_picture || "/uploads/users/generic-artist-profile-picture.webp"}
-            title={seller?.seller_name || ""}
+            title={seller?.name || ""}
             imgAlign="left"
             txtAlign="left"
             imgLoading="eager"

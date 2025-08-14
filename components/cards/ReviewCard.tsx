@@ -42,7 +42,7 @@ const ReviewCard = ({
   switch (reviewItemType) {
     case "seller":
       reviewItem = getSeller({ id: review.item_id });
-      reviewItemTitle = reviewItem?.seller_name;
+      reviewItemTitle = reviewItem?.name;
       reviewItemLink = `/${AppPages.sellers.slug}/${reviewItem?.slug}`;
       break;
 

@@ -52,7 +52,7 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
   const addToCart = (product: CartItemProductType, quantity: number = 1) => {
     setCartItems((prev) =>
       updateCartItem({
-        user_id: currentUser?._id || "1",
+        user_id: currentUser?.id || "1",
         product,
         quantity,
         operation: "add",
@@ -66,7 +66,7 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
   const updateToCart = (product: CartItemProductType, quantity: number = 1) => {
     setCartItems((prev) =>
       updateCartItem({
-        user_id: currentUser?._id || "1",
+        user_id: currentUser?.id || "1",
         product,
         quantity,
         operation: "update",
@@ -78,7 +78,7 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
   const removeFromCart = (product: CartItemProductType) => {
     setCartItems((prev) =>
       updateCartItem({
-        user_id: currentUser?._id || "1",
+        user_id: currentUser?.id || "1",
         product,
         operation: "remove",
         prev_items: prev,

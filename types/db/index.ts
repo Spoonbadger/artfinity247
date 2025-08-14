@@ -120,7 +120,7 @@ export type StateType = {
 };
 
 export type UserType = {
-  _id: string;
+  id: string;
   username?: string;
   email: string;
   hash?: string;
@@ -134,7 +134,7 @@ export type UserType = {
   phone?: string;
   gender?: string;
   profile_picture: string;
-  seller_name?: string;
+  name?: string;
   bio: string;
   social_accounts?: { platform: string; url: string }[];
   zip_code?: number;

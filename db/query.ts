@@ -161,7 +161,7 @@ export const getUsers = (query: MultiUsersQuery = {}): UserType[] => {
 
   if (ids) {
     result = result.filter((user) =>
-      user._id ? ids?.includes(user._id) : false,
+      user.id ? ids?.includes(user.id) : false,
     );
   }
 

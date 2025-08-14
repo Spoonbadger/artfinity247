@@ -100,7 +100,7 @@ const ProductCard = ({
         </CardTitle>
         {showSeller && (
           <p className="product-title line-clamp-2 text-xs">
-            {seller?.seller_name || "Unknown"}
+            {seller?.name || "Unknown"}
           </p>
         )}
         {showDescription && (

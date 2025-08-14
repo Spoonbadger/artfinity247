@@ -112,7 +112,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
         _id: product.id,
         slug: product.slug,
         title: product.title,
-        artist: seller?.seller_name || "",
+        artist: seller?.name || "",
         imageUrl: product.imageUrl,
         selectedSize, 
         unitPrice: price, // In cents
@@ -131,7 +131,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
         _id: product.id,
         slug: product.slug,
         title: product.title,
-        artist: seller?.seller_name || "",
+        artist: seller?.name || "",
         imageUrl: product.imageUrl,
         selectedSize,
         unitPrice: price,
@@ -166,7 +166,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
                   <div className="space-y-4 md:py-4">
                     <div className="product-info-header space-y-1">
                       <h5 className="seller-name font-tertiary text-sm font-normal capitalize text-muted-foreground md:text-base">
-                        {seller?.seller_name}
+                        {seller?.name}
                       </h5>
                       <h1 className="area-title product-title font-semibold capitalize text-theme-primary">
                         {product.title}

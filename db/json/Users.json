@@ -1,6 +1,6 @@
 [
   {
-    "_id": "1",
+    "id": "1",
     "username": "",
     "email": "craig.adam.morley@gmail.com",
     "hash": "scrypt:32768:8:1$rZ80Bn6UM9iWQhYR$a8398e2e75656e4495f5f603dfbcce91bbdd4436598b94b5865e2b50db0e78b57aec25a5123f0281b13f7ec578495d5b21ade698db29fcf9c04d74ba2860836d",
@@ -14,7 +14,7 @@
     "phone": "",
     "gender": "",
     "profile_picture": "/uploads/users/craig_morley/profile-picture.webp",
-    "seller_name": "Craig Morley",
+    "name": "Craig Morley",
     "bio": "England is where I was born and now I live in America, New York, Seattle and LA in particular",
     "social_accounts": [
       { "platform": "facebook", "url": "http://www.facebook.com/" },
@@ -27,7 +27,7 @@
     "slug": "craig-morley"
   },
   {
-    "_id": "2",
+    "id": "2",
     "username": "",
     "email": "helenshete@gmail.com",
     "hash": "scrypt:32768:8:1$lySg7Ozz2M0cqvFp$942c3c38fcd66ae62680c6561486fe29992a9c0cbff2efc3e011f48b3882d6e7f1a1a8ddde0b0130e3bcf834edc7c6fd742556ff0416ccea3ef2003d28ebaa61",
@@ -41,7 +41,7 @@
     "phone": "",
     "gender": "",
     "profile_picture": "/uploads/users/generic-artist-profile-picture.webp",
-    "seller_name": "Madsy Shete",
+    "name": "Madsy Shete",
     "bio": "YOOHOOOO",
     "social_accounts": [
       { "platform": "facebook", "url": "http://www.facebook.com/" },
@@ -54,7 +54,7 @@
     "slug": "madsy-shete"
   },
   {
-    "_id": "3",
+    "id": "3",
     "username": "",
     "email": "vincentvangogh@gmail.com",
     "hash": "scrypt:32768:8:1$vVZ5tGOV9OdbHK03$386344ecaafbafb995f33f0bb54c45e5fc842266230b69e345e57e98818157abeb71b410037e14d6a36561e2edda948ef391741b6af572be37eaacff08cdf09f",
@@ -68,7 +68,7 @@
     "phone": "",
     "gender": "",
     "profile_picture": "/uploads/users/vincent_van_gogh/profile-picture.webp",
-    "seller_name": "Vincent Van Gogh",
+    "name": "Vincent Van Gogh",
     "bio": "Living in France",
     "social_accounts": [
       { "platform": "facebook", "url": "http://www.facebook.com/" },
@@ -81,7 +81,7 @@
     "slug": "vincent-van-gogh"
   },
   {
-    "_id": "4",
+    "id": "4",
     "username": "",
     "email": "claudemonet@gmail.com",
     "hash": "scrypt:32768:8:1$8WFewVab825oCwLv$c083ff7a22e29a76ce51782de7090417e33f972bd97a99861332fa0ab0097938f751f721a0b703281d846ed057eb4bca62db8ad81250b55bca719d856fff726e",
@@ -95,7 +95,7 @@
     "phone": "",
     "gender": "",
     "profile_picture": "/uploads/users/claude_monet/profile-picture.webp",
-    "seller_name": "Claude Monet",
+    "name": "Claude Monet",
     "bio": "I love my garden. I'm a French painter and founder of impressionist painting who is seen as a key precursor to modernism, especially in my attempts to paint nature as I perceived it.",
     "social_accounts": [
       { "platform": "facebook", "url": "http://www.facebook.com/" },
@@ -108,7 +108,7 @@
     "slug": "claude-monet"
   },
   {
-    "_id": "5",
+    "id": "5",
     "username": "",
     "email": "leonardodavinci@gmail.com",
     "hash": "scrypt:32768:8:1$XvnWvNhCVTvjEUY8$416dcc18876e1eb580bb6e869c55877230d9b174060f9f846e3e3b8dbdce445a59cf6a8df725bf6fd2ce968a16e28881aa3e767f7aa32c39b302f22dd04ccd0e",
@@ -122,7 +122,7 @@
     "phone": "",
     "gender": "",
     "profile_picture": "/uploads/users/leonardo_da_vinci/profile-picture.webp",
-    "seller_name": "Leonardo da Vinci",
+    "name": "Leonardo da Vinci",
     "bio": "I work all day, I work all night.",
     "social_accounts": [
       { "platform": "facebook", "url": "http://www.facebook.com/" },
@@ -135,7 +135,7 @@
     "slug": "leonardo-da-vinci"
   },
   {
-    "_id": "6",
+    "id": "6",
     "username": "",
     "email": "egonschiele@gmail.com",
     "hash": "scrypt:32768:8:1$lZRdnyd92yD3ZayX$9cc29f009ef1c0c9092e0e322579f31318c1044abc2783d0389d8312bd9ae888cf50ee3846f0910ac0055c737ef836faae71a69f88546802c8763447f1415c36",
@@ -149,7 +149,7 @@
     "phone": "",
     "gender": "",
     "profile_picture": "/uploads/users/egon_schiele/profile-picture.webp",
-    "seller_name": "Egon Schiele",
+    "name": "Egon Schiele",
     "bio": "I was an Austrian Expressionist painter. My work is noted for its intensity and its raw sexuality, and for the many self-portraits the artist produced, including nude self-portraits.",
     "social_accounts": [
       { "platform": "facebook", "url": "http://www.facebook.com/" },
@@ -162,7 +162,7 @@
     "slug": "egon-schiele"
   },
   {
-    "_id": "7",
+    "id": "7",
     "username": "",
     "email": "gustavklimpt@gmail.com",
     "hash": "scrypt:32768:8:1$qwijnZljayPg1lEf$9de149663457e71e075fca9409aa1ee259aef0ea16a1c8beecaf55cb3502e826a88c2702c2305581ab82f3216b8df6ba79802a7e96df5d9ca5371fac29c6b993",
@@ -176,7 +176,7 @@
     "phone": "",
     "gender": "",
     "profile_picture": "/uploads/users/gustav_klimpt/profile-picture.webp",
-    "seller_name": "Gustav Klimpt",
+    "name": "Gustav Klimpt",
     "bio": "Born July 14, 1862, Vienna, Austria—died February 6, 1918, Vienna. Austrian painter, founder of the school of painting known as the Vienna Sezession.\r\n\r\nAfter studying at the Vienna School of Decorative Arts, Klimt in 1883 opened an independent studio specializing in the execution of mural paintings. His early work had a classical style that was typical of late 19th-century academic painting, as can be seen in his murals for the Vienna Burgtheater (1888) and on the staircase of the Kunsthistorisches Museum.\r\n\r\nIn 1897 Klimt's mature style emerged, and he founded the Vienna Sezession, a group of painters who revolted against academic art in favour of a highly decorative style similar to Art Nouveau. Soon thereafter he painted three allegorical murals for the ceiling of the University of Vienna auditorium that were violently criticized; the erotic symbolism and pessimism of these works created such a scandal that the murals were rejected. His later murals, the Beethoven Frieze (1902) and the murals (1909-11) in the dining room of the Stoclet House in Brussels, are characterized by precisely linear drawing and the bold and arbitrary use of flat, decorative patterns of colour and gold leaf.",
     "social_accounts": [
       { "platform": "facebook", "url": "http://www.facebook.com/" },
@@ -189,7 +189,7 @@
     "slug": "gustav-klimpt"
   },
   {
-    "_id": "8",
+    "id": "8",
     "username": "",
     "email": "henryossawatanner@gmail.com",
     "hash": "scrypt:32768:8:1$cxvzyrdBIgt5QDgb$7f42d605be0900294619115987ff298f5e5bce4bc68dd39e094a2421753f32630948e66a9f6958961c177050b2a9a285de2886bf8dc6c0cddbb96c2e42675619",
@@ -203,7 +203,7 @@
     "phone": "",
     "gender": "",
     "profile_picture": "/uploads/users/henry_ossawa_tanner/profile-picture.webp",
-    "seller_name": "Henry Ossawa Tanner",
+    "name": "Henry Ossawa Tanner",
     "bio": "Henry Ossawa Tanner (June 21, 1859 - May 25, 1937) was an American artist who spent much of his career in France. He became the first African-American painter to gain international acclaim. Tanner moved to Paris, France, in 1891 to study at the Académie Julian and gained acclaim in French artistic circles. His painting Daniel in the Lions' Den (1895, location unknown) was accepted into the 1896 Salon, the official art exhibition of the Académie des Beaux-Arts in Paris. Tanner's Resurrection of Lazarus (1896, Musée d'Orsay, Paris) was purchased by the French government after winning the third-place medal at the 1897 Salon. In 1923, the French government elected Tanner chevalier of the Legion of Honor.\r\n\r\nAfter pursuing art on his own as a young man, Tanner enrolled at the Pennsylvania Academy of the Fine Arts in Philadelphia in 1879. The only black student, he became a favorite of the painter Thomas Eakins, who had recently started teaching there. Tanner made other connections among artists, including Robert Henri. In the late 1890s, art patron Rodman Wanamaker sponsored Tanner's trip to the Mutasarrifate of Jerusalem after seeing the artist's paintings of biblical themes.",
     "social_accounts": [
       { "platform": "facebook", "url": "http://www.facebook.com/" },
@@ -216,7 +216,7 @@
     "slug": "henry-ossawa-tanner"
   },
   {
-    "_id": "9",
+    "id": "9",
     "username": "",
     "email": "johannesvermeer@gmail.com",
     "hash": "scrypt:32768:8:1$erwrdsDLouLWCpBB$41ab4cff12fa697975ea9643e2f3b54af7ec3eaced6638482e763f159c9263066c5e409db1d29d0efa70e7475f529c8541b4be945f248159cc99a23a5c7e4401",
@@ -230,7 +230,7 @@
     "phone": "",
     "gender": "",
     "profile_picture": "/uploads/users/johannes_vermeer/profile-picture.webp",
-    "seller_name": "Johannes Vermeer",
+    "name": "Johannes Vermeer",
     "bio": "I'm Dutch YA. My friends call me Jan. ",
     "social_accounts": [
       { "platform": "facebook", "url": "http://www.facebook.com/" },
@@ -243,7 +243,7 @@
     "slug": "johannes-vermeer"
   },
   {
-    "_id": "10",
+    "id": "10",
     "username": "",
     "email": "jason@gmail.com",
     "hash": "scrypt:32768:8:1$LuWKZEsgnr8tYAEh$2678b8292052dbefa696df0e558668a51cde3b443a4e5d939c6c9071ee68b9c407f74c462b922bb6ebc53bf71dd9e83a541452942630504572de0250df50cd53",
@@ -257,7 +257,7 @@
     "phone": "",
     "gender": "",
     "profile_picture": "/uploads/users/jason_briesh/profile-picture.webp",
-    "seller_name": "Jason Briesh",
+    "name": "Jason Briesh",
     "bio": "None",
     "social_accounts": [
       { "platform": "facebook", "url": "http://www.facebook.com/" },

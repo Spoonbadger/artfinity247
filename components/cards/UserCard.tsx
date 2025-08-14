@@ -19,7 +19,7 @@ const UserCard = ({
   showBio?: boolean;
   className?: string;
 }): ReactNode => {
-  const { seller_name, bio, profile_picture } = user;
+  const { name, bio, profile_picture } = user;
 
   return (
     <Card
@@ -28,7 +28,7 @@ const UserCard = ({
         "[&>*]:px-0 [&_.user-media]:transition-all  [&_.user-media]:duration-500 [&_.user-media]:ease-in-out [&_.user-media]:hover:grayscale",
         className,
       )}
-      title={seller_name}
+      title={name}
     >
       <CardHeader className="card-header overflow-hidden rounded-sm px-0">
         <div className="user-media relative mx-auto aspect-square h-64 rounded-sm">
@@ -36,14 +36,14 @@ const UserCard = ({
             src={profile_picture}
             height={250}
             width={250}
-            alt={seller_name || "Seller Profile Picture"}
+            alt={name || "Seller Profile Picture"}
             className="user-img h-full w-full rounded-sm object-cover object-top"
           />
         </div>
       </CardHeader>
       <CardContent className="card-content grid gap-1 p-0">
         <CardTitle className="user-title line-clamp-2 font-bold md:text-xl">
-          {seller_name}
+          {name}
         </CardTitle>
         {showBio && (
           <CardDescription className="line-clamp-2 text-muted-foreground">

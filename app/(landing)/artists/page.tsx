@@ -117,7 +117,7 @@ const ArtistsPage = (): ReactNode => {
           {sellers.length > 0 ? (
             <div className="sellers-area grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-6 xl:grid-cols-4">
               {sellers.map((user) => (
-                <Link key={user._id} href={`/${sellersPageSlug}/${user.slug}`}>
+                <Link key={user.id} href={`/${sellersPageSlug}/${user.slug}`}>
                   <UserCard user={user} showBio={true} />
                 </Link>
               ))}
