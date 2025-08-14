@@ -10,7 +10,7 @@
         "actionBtns": [
           {
             "title": "Start Exploring",
-            "href": "/arts",
+            "href": "/art",
             "variant": "outline"
           }
         ],
@@ -21,8 +21,8 @@
         "subTitle": "Find Artwork That Inspires You",
         "actionBtns": [
           {
-            "title": "See More Arts",
-            "href": "/arts",
+            "title": "See More Art",
+            "href": "/art",
             "variant": "outline"
           }
         ],

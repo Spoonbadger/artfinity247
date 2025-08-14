@@ -100,7 +100,7 @@ const ProductCard = ({
         </CardTitle>
         {showSeller && (
           <p className="product-title line-clamp-2 text-xs">
-            Author: {seller?.seller_name || "Unknown"}
+            {seller?.seller_name || "Unknown"}
           </p>
         )}
         {showDescription && (
@@ -124,16 +124,16 @@ const ProductCard = ({
             <span className="rating-count">({totalRatings})</span>
           </div>
         )}
-        {(
+        {/* {(
           <div className="product-price line-clamp-2 font-bold uppercase text-slate-800 dark:text-slate-100">
             <span className="price-info">
               <span className="currency">
                 {currency || "$"}
               </span>
-                <span className="price">{displayPrice}</span>
+                <span className="price">{displayPrice / 100}</span>
             </span>
           </div>
-        )}
+        )} */}
       </CardContent>
       <CardFooter className="card-footer bg-transparent px-0 pb-0">
         {showAddToCardBtn && (

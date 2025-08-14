@@ -31,7 +31,7 @@ const CartPage = (): ReactNode => {
           <MinimalSection title={title || "Cart"} className="items-start gap-2">
             <div>
               <Link
-                href={`/${AppPages.products.slug}`}
+                href={`/art`}
                 className="mb-1 flex max-w-fit items-center gap-1 text-sm capitalize hover:opacity-85 md:text-lg"
               >
                 <ArrowLeft className="size-4 md:size-5" />

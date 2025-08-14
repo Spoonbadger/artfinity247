@@ -40,6 +40,7 @@ import { getCities, getCountries, getStates } from "@/db/query";
 import { getAppPages } from "@/db/query";
 import { useRouter } from 'next/navigation'
 
+
 const AppPages = getAppPages();
 
 const RegisterForm = ({
@@ -86,14 +87,14 @@ const RegisterForm = ({
   const router = useRouter()
 
   useEffect(() => {
-    setCountries((prev) => getCountries());
-    setStates((prev) => getStates());
-    setCities((prev) => getCities());
+    setCountries(getCountries());
+    setStates(getStates());
+    setCities(getCities());
+  }, [])
 
-    setAvailCountries((prev) =>
-      countries.sort((a, b) => a.name.localeCompare(b.name)),
-    );
-  }, [countries]);
+  useEffect(() => {
+    setAvailCountries([...countries].sort((a, b) => a.name.localeCompare(b.name)))
+  }, [countries])
 
   const handleCountryChange = (country_code: string) => {
     setAvailStates((prev) =>
@@ -113,11 +114,10 @@ const RegisterForm = ({
   };
 
   const handleSubmit: SubmitHandler<TRegisterFormSchema> = async (values) => {
-    console.log('SUBMITTING', values)
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/JSON' }, 
+        headers: { 'Content-Type': 'application/json' }, 
         body: JSON.stringify({
           name: values.artist_name,
           email: values.email,
@@ -136,18 +136,17 @@ const RegisterForm = ({
         return
       }
       
+      const data = await res.json()
       toast.success("Registration successfull")
       
-      setTimeout(() => {
-        router.push('/')
-      }, 600)
-
-      form.reset();
+      const slug = data?.artist?.slug
+      router.replace(slug ? `/artists/${slug}` : '/')
+      form.reset()
 
     } catch (err) {
-
+      console.log('Error with RegisterForm: ', err)
     }
-  };
+  }
 
   return (
     <div
@@ -383,7 +382,7 @@ const RegisterForm = ({
               />
               {/* City Field */}
               <FormField
-                name="state"
+                name="city"
                 control={form.control}
                 render={({ field }) => {
                   return (

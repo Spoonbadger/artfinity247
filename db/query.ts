@@ -326,43 +326,36 @@ export const getCollectionData = (
 
 /* Cart Queries */
 
-// Filter out Cart products & variants that don't exist in the database
-export const filterCartItems = (
-  cartItems: CartItemType[],
-  products: ProductType[] = getProducts(),
-) => {
-  // Create a map of product IDs to their variants
-  const productVariantsMap = new Map();
-  products.forEach((product) => {
-    if (product.variants) {
-      const variants = product.variants.flatMap((variant) => {
-        if (variant.data) {
-          return {
-            type: variant.type,
-            keys: variant.data.map((data) => data.key),
-          };
-        }
-        return [];
-      });
-      productVariantsMap.set(product.id, variants);
-    }
-  });
-
   // Filter cart items
-  const filteredItems = cartItems.filter((cartItem) => {
-    const productId = cartItem.product._id;
+// Filter out Cart products that don't exist in the database
+export const filterCartItems = (
+    cartItems: CartItemType[],
+    products: ProductType[] = getProducts(),
+  ) => {
+    // Create a set of valid product IDs
+    const validProductIds = new Set(products.map((product) => product.id));
 
-    // Check if the product exists
-    if (productVariantsMap.has(productId)) {
-      // If variant_key is provided, check if it exists for the product
+    const filteredItems = cartItems.filter((cartItem) => {
+      const productId = cartItem.product._id;
 
+      // Product must exist in DB
+      if (!validProductIds.has(productId)) {
+        return false;
       }
-      // If no variant, consider the product exists
-      return true;
-    }
 
-  return filteredItems;
-};
+      // If selectedSize exists, make sure it's valid
+      const matchingProduct = products.find((p) => p.id === productId);
+      if (
+        cartItem.product.selectedSize &&
+        matchingProduct &&
+        !["small", "medium", "large"].includes(cartItem.product.selectedSize)
+      ) {
+        return false;
+      }
+      return true;
+    })
+    return filteredItems;
+  }
 
 export const getCartItems = (
   query: GetCartItemsQuery = {

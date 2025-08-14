@@ -38,7 +38,7 @@
     "img": "/uploads/scenes/chicago.webp",
     "items": ["25", "29"],
     "items_type": "product",
-    "description": "Rich in cultural history, Chicago boasts renowned museums and a thriving arts community.",
+    "description": "Rich in cultural history, Chicago boasts renowned museums and a thriving art community.",
     "type": "scene",
     "is_active": true,
     "slug": "chicago"
@@ -49,7 +49,7 @@
     "img": "/uploads/scenes/denver.webp",
     "items": [],
     "items_type": "product",
-    "description": "Growing in prominence with a range of cultural events and a burgeoning arts community.",
+    "description": "Growing in prominence with a range of cultural events and a burgeoning art community.",
     "type": "scene",
     "is_active": true,
     "slug": "denver"
@@ -71,7 +71,7 @@
     "img": "/uploads/scenes/houston.webp",
     "items": [],
     "items_type": "product",
-    "description": "Home to the Museum of Fine Arts, Houston, and a growing arts community.",
+    "description": "Home to the Museum of Fine Art, Houston, and a growing art community.",
     "type": "scene",
     "is_active": true,
     "slug": "houston"
@@ -126,7 +126,7 @@
     "img": "/uploads/scenes/portland.webp",
     "items": [],
     "items_type": "product",
-    "description": "Known for its creative and diverse arts community, encompassing visual arts, theater, and music.",
+    "description": "Known for its creative and diverse art community, encompassing visual arts, theater, and music.",
     "type": "scene",
     "is_active": true,
     "slug": "portland"
@@ -166,7 +166,7 @@
   },
   {
     "_id": "16",
-    "title": "Populer Arts",
+    "title": "Populer Art",
     "img": "",
     "description": "Explore the latest trending artworks on our platform. From contemporary masterpieces to timeless classics, discover what's capturing the attention of art enthusiasts.",
     "items": [
@@ -195,7 +195,7 @@
     "category": [],
     "type": "collection",
     "is_active": true,
-    "slug": "populer-arts"
+    "slug": "populer-art"
   },
   {
     "_id": "17",
@@ -264,7 +264,7 @@
     "category": [],
     "type": "collection",
     "is_active": true,
-    "slug": "populer-arts"
+    "slug": "populer-art"
   },
   {
     "_id": "21",
@@ -277,6 +277,6 @@
     "category": [],
     "type": "collection",
     "is_active": true,
-    "slug": "populer-arts"
+    "slug": "populer-art"
   }
 ]

@@ -17,7 +17,7 @@ import { MinimalSection } from "@/components/sections";
 import { ProductCard } from "@/components/cards";
 import PageBreadcrumb from "@/components/PageBreadcrumb";
 import Pagination from "@/components/CustomPagination";
-import { getAppConfigs, getAppPages, getProducts } from "@/db/query";
+import { getAppConfigs, getAppPages } from "@/db/query";
 import { ProductType } from "@/types";
 
 const AppConfigs = getAppConfigs();
@@ -41,29 +41,50 @@ const ArtsPage = (): ReactNode => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(items_limit || 10);
 
-  useEffect(() => {
-    setTotalProducts(getProducts().length);
-  }, []);
 
   useEffect(() => {
     setItemsPerPage(items_limit);
 
     const queryPage = parseInt(searchParams.get(queryPageKey) || "1", 10);
     setCurrentPage(queryPage > 0 ? queryPage : 1);
-  }, [searchParams, queryPageKey, items_limit]);
+  }, [searchParams, queryPageKey, items_limit])
 
   useEffect(() => {
-    const fetchProducts = () => {
-      const start = (currentPage - 1) * itemsPerPage;
-      const paginatedProducts = getProducts({
-        start,
-        limit: start + itemsPerPage,
-      });
-      setPaginatedProducts(paginatedProducts);
-    };
+  const run = async () => {
+    const page = parseInt(searchParams.get(queryPageKey) || "1", 10);
+    const limit = items_limit || 12;
 
-    fetchProducts();
-  }, [currentPage, itemsPerPage]);
+    try {
+      const res = await fetch(`/api/artworks?page=${page}&limit=${limit}`, {
+        cache: "no-store",
+      });
+
+      if (!res.ok) {
+        // If your API currently requires auth or returns a different shape,
+        // you’ll see it here. We’ll adjust after this step if needed.
+        setPaginatedProducts([]);
+        setTotalProducts(0);
+        setCurrentPage(page);
+        setItemsPerPage(limit);
+        return;
+      }
+
+      const { artworks, total } = await res.json()
+      setPaginatedProducts(artworks);
+      setTotalProducts(total ?? artworks.length);
+      setCurrentPage(page);
+      setItemsPerPage(limit);
+    } catch {
+      setPaginatedProducts([]);
+      setTotalProducts(0);
+      setCurrentPage(1);
+    }
+  };
+
+  run();
+  // dependencies: rerun when the query string page changes or items_limit changes
+}, [searchParams, items_limit, queryPageKey])
+
 
   const handlePageChange = (page: number) => {
     if (page > 0 && page <= Math.ceil(totalProducts / itemsPerPage)) {
@@ -75,7 +96,7 @@ const ArtsPage = (): ReactNode => {
 
   return (
     <div>
-      <title>{`${title || "All Arts"}: ${AppConfigs.app_name}`}</title>
+      <title>{`${title || "All Art"}: ${AppConfigs.app_name}`}</title>
       <section>
         <MinimalSection className="page-banner" bg={banner}>
           <h1 className="text-center text-white">{title}</h1>
@@ -128,7 +149,7 @@ const ArtsPage = (): ReactNode => {
               {paginatedProducts.map((product) => (
                 <Link
                   key={product.id}
-                  href={`/${productsPageSlug}/${product.slug}`}
+                  href={`/art/${product.slug}`}
                 >
                   <ProductCard product={product} showSeller={true} />
                 </Link>

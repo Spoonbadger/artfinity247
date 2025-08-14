@@ -9,7 +9,7 @@
         "content": "Choose your local art scene your favorite artists or an artwork you enjoy",
         "actionBtn": {
           "title": "View All",
-          "href": "/arts"
+          "href": "/art"
         }
       },
       "discover": [
@@ -17,7 +17,7 @@
           "title": "Discover Artworks Online",
           "actionBtn": {
             "title": "EXPLORE ART",
-            "href": "/arts"
+            "href": "/art"
           },
           "bg": "/assets/images/block2-1.jpg"
         },
@@ -44,7 +44,7 @@
     },
     "carousels": {
       "products": {
-        "title": "Populer Arts",
+        "title": "Populer Art",
         "subTitle": "Here Are Some",
         "description": "Explore the latest trending artworks on our platform. From contemporary masterpieces to timeless classics, discover what's capturing the attention of art enthusiasts.",
         "collection_id": "16"
@@ -71,10 +71,10 @@
     "slug": "/"
   },
   "products": {
-    "title": "All Arts",
+    "title": "All Art",
     "items_limit": 12,
     "banner": "/assets/images/banner-1.jpg",
-    "slug": "arts"
+    "slug": "art"
   },
   "product": {
     "title": "Artwork",
@@ -128,7 +128,7 @@
     "items_limit": 12,
     "sections": {
       "products": {
-        "title": "Scene Arts"
+        "title": "Scene Art"
       }
     }
   },
