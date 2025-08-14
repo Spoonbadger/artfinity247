@@ -52,36 +52,48 @@ export async function GET(
 
 
 export async function DELETE(
-    req: NextRequest,
-    { params }: { params: { slug: string } }
-  ) {
-  const token = req.cookies.get('auth-token')?.value
-  if (!token) return new NextResponse('Not authenticated', { status: 401 })
+  req: NextRequest,
+  { params }: { params: { slug: string } } // keeps same route file
+) {
+  const token = req.cookies.get("auth-token")?.value;
+  if (!token) return new NextResponse("Not authenticated", { status: 401 });
 
   try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET)
-    const { payload } = await jwtVerify(token, secret)
-    
+    const { payload } = await jwtVerify(
+      token,
+      new TextEncoder().encode(process.env.JWT_SECRET!)
+    );
+
+    const idOrSlug = params.slug;
+
+    // crude cuid-ish check; adjust if you use UUIDs
+    const looksLikeId = /^c[0-9a-z]+$/i.test(idOrSlug) && idOrSlug.length >= 12;
+
+    // resolve the artwork by id or slug
     const artwork = await prisma.artwork.findUnique({
-      where: { slug: params.slug }
-    })
+      where: looksLikeId ? { id: idOrSlug } : { slug: idOrSlug },
+      select: { id: true, artistId: true },
+    });
 
-    if (!artwork) {
-      return new NextResponse('Artwork not found', { status: 404 })
+    if (!artwork) return new NextResponse("Artwork not found", { status: 404 });
+
+    // token was signed with { id, email, slug }
+    const currentArtistId =
+      (payload as any).id ||
+      (payload as any).artistId ||
+      (payload as any).userId ||
+      (payload as any).sub;
+
+    if (String(artwork.artistId) !== String(currentArtistId)) {
+      return new NextResponse("Unauthorized", { status: 403 });
     }
 
-    if (artwork.artistId !== payload.id) {
-      return new NextResponse('Unauthorized', { status: 403 })
-    }
+    await prisma.artwork.delete({ where: { id: artwork.id } });
 
-    await prisma.artwork.delete({
-      where: { slug: params.slug }
-    })
-
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
-    console.error('Delete failed:', err)
-    return new NextResponse('Server error', { status: 500 })
+    console.error("Delete failed:", err);
+    return new NextResponse("Server error", { status: 500 });
   }
 }
 

@@ -142,7 +142,10 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
   const handleEdit = (artworkSlug: string) => router.push(`/dashboard/edit/${artworkSlug}`);
   const handleDelete = async (artworkId: string) => {
     if (!confirm("Are you sure you want to delete this artwork?")) return;
-    const res = await fetch(`/api/artworks/${artworkId}`, { method: "DELETE" });
+    const res = await fetch(`/api/artworks/${artworkId}`, { 
+      method: "DELETE",
+      credentials: "include"
+    })
     if (res.ok && seller?.slug) {
       // refetch current page
       const r = await fetch(`/api/artists/${seller.slug}?page=${currentPage}&limit=${itemsPerPage}`, { cache: "no-store" });
@@ -151,6 +154,7 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
         setPaginatedProducts(data.artworks || []);
         setTotalSellerProducts(data.total || 0);
       }
+      toast("- Artwork deleted")
     } else {
       alert("Failed to delete artwork");
     }

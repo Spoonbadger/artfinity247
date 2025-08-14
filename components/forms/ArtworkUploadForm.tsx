@@ -6,6 +6,7 @@ import { Button } from '../ui/button'
 import { Artwork } from '@prisma/client'
 import { basePrices } from '@/lib/artwork_price'
 import heic2any from 'heic2any'
+import { toast } from 'sonner'
 
 
 const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
@@ -69,7 +70,7 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
 
         if (res.ok) {
             const data = await res.json()
-            console.log("uploaded??: ", data)
+            toast("- Artwork uploaded!")
             router.push(`/artists/${data.artistSlug}`)
         } else {
             alert('Upload failed')
