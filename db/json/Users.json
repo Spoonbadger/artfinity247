@@ -13,7 +13,7 @@
     "country": "",
     "phone": "",
     "gender": "",
-    "profile_picture": "/uploads/users/craig_morley/profile-picture.webp",
+    "profileImage": "/uploads/users/craig_morley/profile-picture.webp",
     "name": "Craig Morley",
     "bio": "England is where I was born and now I live in America, New York, Seattle and LA in particular",
     "social_accounts": [
@@ -40,7 +40,7 @@
     "country": "",
     "phone": "",
     "gender": "",
-    "profile_picture": "/uploads/users/generic-artist-profile-picture.webp",
+    "profileImage": "/uploads/users/generic-artist-profile-picture.webp",
     "name": "Madsy Shete",
     "bio": "YOOHOOOO",
     "social_accounts": [
@@ -67,7 +67,7 @@
     "country": "",
     "phone": "",
     "gender": "",
-    "profile_picture": "/uploads/users/vincent_van_gogh/profile-picture.webp",
+    "profileImage": "/uploads/users/vincent_van_gogh/profile-picture.webp",
     "name": "Vincent Van Gogh",
     "bio": "Living in France",
     "social_accounts": [
@@ -94,7 +94,7 @@
     "country": "",
     "phone": "",
     "gender": "",
-    "profile_picture": "/uploads/users/claude_monet/profile-picture.webp",
+    "profileImage": "/uploads/users/claude_monet/profile-picture.webp",
     "name": "Claude Monet",
     "bio": "I love my garden. I'm a French painter and founder of impressionist painting who is seen as a key precursor to modernism, especially in my attempts to paint nature as I perceived it.",
     "social_accounts": [
@@ -121,7 +121,7 @@
     "country": "",
     "phone": "",
     "gender": "",
-    "profile_picture": "/uploads/users/leonardo_da_vinci/profile-picture.webp",
+    "profileImage": "/uploads/users/leonardo_da_vinci/profile-picture.webp",
     "name": "Leonardo da Vinci",
     "bio": "I work all day, I work all night.",
     "social_accounts": [
@@ -148,7 +148,7 @@
     "country": "",
     "phone": "",
     "gender": "",
-    "profile_picture": "/uploads/users/egon_schiele/profile-picture.webp",
+    "profileImage": "/uploads/users/egon_schiele/profile-picture.webp",
     "name": "Egon Schiele",
     "bio": "I was an Austrian Expressionist painter. My work is noted for its intensity and its raw sexuality, and for the many self-portraits the artist produced, including nude self-portraits.",
     "social_accounts": [
@@ -175,7 +175,7 @@
     "country": "",
     "phone": "",
     "gender": "",
-    "profile_picture": "/uploads/users/gustav_klimpt/profile-picture.webp",
+    "profileImage": "/uploads/users/gustav_klimpt/profile-picture.webp",
     "name": "Gustav Klimpt",
     "bio": "Born July 14, 1862, Vienna, Austria—died February 6, 1918, Vienna. Austrian painter, founder of the school of painting known as the Vienna Sezession.\r\n\r\nAfter studying at the Vienna School of Decorative Arts, Klimt in 1883 opened an independent studio specializing in the execution of mural paintings. His early work had a classical style that was typical of late 19th-century academic painting, as can be seen in his murals for the Vienna Burgtheater (1888) and on the staircase of the Kunsthistorisches Museum.\r\n\r\nIn 1897 Klimt's mature style emerged, and he founded the Vienna Sezession, a group of painters who revolted against academic art in favour of a highly decorative style similar to Art Nouveau. Soon thereafter he painted three allegorical murals for the ceiling of the University of Vienna auditorium that were violently criticized; the erotic symbolism and pessimism of these works created such a scandal that the murals were rejected. His later murals, the Beethoven Frieze (1902) and the murals (1909-11) in the dining room of the Stoclet House in Brussels, are characterized by precisely linear drawing and the bold and arbitrary use of flat, decorative patterns of colour and gold leaf.",
     "social_accounts": [
@@ -202,7 +202,7 @@
     "country": "",
     "phone": "",
     "gender": "",
-    "profile_picture": "/uploads/users/henry_ossawa_tanner/profile-picture.webp",
+    "profileImage": "/uploads/users/henry_ossawa_tanner/profile-picture.webp",
     "name": "Henry Ossawa Tanner",
     "bio": "Henry Ossawa Tanner (June 21, 1859 - May 25, 1937) was an American artist who spent much of his career in France. He became the first African-American painter to gain international acclaim. Tanner moved to Paris, France, in 1891 to study at the Académie Julian and gained acclaim in French artistic circles. His painting Daniel in the Lions' Den (1895, location unknown) was accepted into the 1896 Salon, the official art exhibition of the Académie des Beaux-Arts in Paris. Tanner's Resurrection of Lazarus (1896, Musée d'Orsay, Paris) was purchased by the French government after winning the third-place medal at the 1897 Salon. In 1923, the French government elected Tanner chevalier of the Legion of Honor.\r\n\r\nAfter pursuing art on his own as a young man, Tanner enrolled at the Pennsylvania Academy of the Fine Arts in Philadelphia in 1879. The only black student, he became a favorite of the painter Thomas Eakins, who had recently started teaching there. Tanner made other connections among artists, including Robert Henri. In the late 1890s, art patron Rodman Wanamaker sponsored Tanner's trip to the Mutasarrifate of Jerusalem after seeing the artist's paintings of biblical themes.",
     "social_accounts": [
@@ -229,7 +229,7 @@
     "country": "",
     "phone": "",
     "gender": "",
-    "profile_picture": "/uploads/users/johannes_vermeer/profile-picture.webp",
+    "profileImage": "/uploads/users/johannes_vermeer/profile-picture.webp",
     "name": "Johannes Vermeer",
     "bio": "I'm Dutch YA. My friends call me Jan. ",
     "social_accounts": [
@@ -256,7 +256,7 @@
     "country": "",
     "phone": "",
     "gender": "",
-    "profile_picture": "/uploads/users/jason_briesh/profile-picture.webp",
+    "profileImage": "/uploads/users/jason_briesh/profile-picture.webp",
     "name": "Jason Briesh",
     "bio": "None",
     "social_accounts": [

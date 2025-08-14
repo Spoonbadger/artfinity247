@@ -117,7 +117,7 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
       <section className="my-12 md:my-16">
         <MaxWidthWrapper>
           <ImageWithText
-            img={seller?.profile_picture || "/uploads/users/generic-artist-profile-picture.webp"}
+            img={seller?.profileImage || "/uploads/users/generic-artist-profile-picture.webp"}
             title={seller?.name || ""}
             imgAlign="left"
             txtAlign="left"

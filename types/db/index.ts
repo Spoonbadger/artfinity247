@@ -133,7 +133,7 @@ export type UserType = {
   country?: string;
   phone?: string;
   gender?: string;
-  profile_picture: string;
+  profileImage: string;
   name?: string;
   bio: string;
   social_accounts?: { platform: string; url: string }[];
