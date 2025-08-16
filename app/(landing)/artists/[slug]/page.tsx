@@ -205,7 +205,7 @@ const handleSaveBio = async () => {
                  onChange={onFileChange}
                />
                <Button variant="secondary" size="sm" onClick={pickImage} disabled={uploading}>
-                 {uploading ? "Uploading…" : "Update profile picture"}
+                 {uploading ? "Uploading…" : "update profile picture"}
                </Button>
               </>
             )}

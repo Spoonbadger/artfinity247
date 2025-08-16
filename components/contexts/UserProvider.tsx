@@ -29,18 +29,29 @@ export const UserProvider = ({
   const [currentUser, setCurrentUser] = useState<UserType | null>(null);
 
   useEffect(() => {
-    (async () => {
+    const fetchUser = async () => {
       try {
-        const res = await fetch('/api/auth/me', { cache: 'no-store' });
-        if (!res.ok) { setCurrentUser(null); return; }
-        const data = await res.json();
-        setCurrentUser(data); // { id, slug, email }
-      } catch (e) {
-        console.error('Failed to fetch user', e);
-        setCurrentUser(null);
+        const token =
+          (typeof window !== 'undefined' && (sessionStorage.getItem('token') || localStorage.getItem('token')))
+          || null
+        if (!token) return
+
+        const res = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+        if (!res.ok) {
+          // stale token, clean up both
+          sessionStorage.removeItem('token')
+          localStorage.removeItem('token')
+          return
+        }
+        const data = await res.json()
+        setCurrentUser(data)
+      } catch {
+        setCurrentUser(null)
       }
-    })()
+    }
+    fetchUser()
   }, [])
+
 
   return (
     <UserContext.Provider value={{ currentUser, setCurrentUser }}>

@@ -13,13 +13,8 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { slug: string } }
 ) {
-  const token = req.cookies.get('auth-token')?.value;
-  if (!token) return new NextResponse('Not authenticated', { status: 401 })
 
   try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    const { payload } = await jwtVerify(token, secret);
-
     const artwork = await prisma.artwork.findUnique({
       where: { slug: params.slug },
         select: {
@@ -32,15 +27,11 @@ export async function GET(
           markupMedium: true,
           markupLarge: true,
           artistId: true,
-    // include any other fields you rely on
-  },
-    })
+        },
+      })
 
     if (!artwork) {
       return new NextResponse('Artwork not found', { status: 404 })
-    }
-    if (artwork.artistId !== payload.id) {
-      return new NextResponse('Unauthorized', { status: 403 })
     }
 
     return NextResponse.json(artwork)

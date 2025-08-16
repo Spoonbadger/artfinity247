@@ -60,7 +60,8 @@ const LoginForm = ({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: values.email.trim().toLowerCase(),
-        password: values.password
+        password: values.password,
+        remember: values.remember ?? false
       })
     })
 
@@ -71,7 +72,14 @@ const LoginForm = ({
     toast.success("Login successful")
 
     const { artist, token } = await res.json()
-    localStorage.setItem('token', token)
+    
+    if (values.remember) {
+      localStorage.setItem('token', token)
+      sessionStorage.removeItem('token')
+    } else {
+      sessionStorage.setItem('token', token)
+      localStorage.removeItem('token')
+    }
 
     setCurrentUser({
       id: artist.id,
@@ -158,21 +166,27 @@ const LoginForm = ({
             />
             {/* Remember Login Field & Additional Links */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 leading-none">
-                <Checkbox id="remember" name="remember" />
-                <label
-                  htmlFor="remember"
-                  className="select-none text-sm font-medium capitalize leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Remember me
-                </label>
-              </div>
+              <FormField
+                control={form.control}
+                name="remember"
+                render={({ field }) => (
+                  <div className="flex items-center gap-2 leading-none">
+                    <Checkbox
+                      id="remember"
+                      checked={!!field.value}
+                      onCheckedChange={(v) => field.onChange(Boolean(v))}
+                    />
+                    <label htmlFor="remember" className="select-none text-sm font-medium capitalize leading-none">
+                      Remember me
+                    </label>
+                  </div>
+                )}
+              />
               <div>
-                <Link href={`/${recoverPageSlug || "recover-password"}`}>
-                  Forgot your password?
-                </Link>
+                <Link href={`/${recoverPageSlug || "recover-password"}`}>Forgot your password?</Link>
               </div>
             </div>
+
             <Button
               type="submit"
               disabled={form.formState.isSubmitting}

@@ -7,7 +7,7 @@ const prisma = new PrismaClient()
 
 export async function POST(req: Request) {
   try {  
-    const { email, password } = await req.json()
+    const { email, password, remember = false } = await req.json()
     const artist = await prisma.artist.findUnique({ where: { email }})
 
     if (!artist || !artist.password ) {
@@ -19,6 +19,8 @@ export async function POST(req: Request) {
     if (!isValid) {
         return new NextResponse('Invalid credentials', { status: 401})
     }
+
+    const jwtExpire = remember ? '30d' : '3h'
 
     const token = await new SignJWT({ id: artist.id, email: artist.email, slug: artist.slug })
       .setProtectedHeader({ alg: 'HS256' })
@@ -35,12 +37,19 @@ export async function POST(req: Request) {
         email: artist.email,
       } 
     })
-    response.cookies.set('auth-token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 7
-    })
+
+    const cookieBase = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      sameSite: 'lax' as const
+    }
+
+    if (remember) {
+      response.cookies.set('auth-token', token, { ...cookieBase, maxAge: 60 * 60 * 24 * 30 }) // 30d
+    } else {
+      response.cookies.set('auth-token', token, cookieBase) // session cookie
+    }
 
     return response
   } catch (err) {
