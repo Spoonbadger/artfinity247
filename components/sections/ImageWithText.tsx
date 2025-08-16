@@ -37,7 +37,8 @@ const ImageWithText = ({
         className,
       )}
     >
-      <div className="area-media w-full md:w-1/2">
+    <div className="area-media w-full md:w-1/2">
+      {typeof img === "string" && img ? (
         <Image
           src={img}
           alt={title || ""}
@@ -46,7 +47,10 @@ const ImageWithText = ({
           height={400}
           loading={imgLoading}
         />
-      </div>
+        ) : (
+          <div className="area-image mx-auto h-64 w-full rounded-lg bg-slate-200 md:h-80" />
+        )}
+    </div>
       <div
         className={cn(
           "area-content grid w-full grid-cols-1 px-4 text-center md:w-1/2",

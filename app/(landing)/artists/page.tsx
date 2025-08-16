@@ -36,37 +36,39 @@ const ArtistsPage = (): ReactNode => {
     slug: sellersPageSlug,
   } = AppPages.sellers;
 
-  const [sellers, setSellers] = useState<UserType[]>([]);
+  const [sellers, setSellers] = useState<UserType[]>([])
+  const [totalArtists, setTotalArtists] = useState(0)
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(items_limit || 10);
 
   useEffect(() => {
-    setItemsPerPage(items_limit);
+    setItemsPerPage(items_limit)
 
-    const queryPage = parseInt(searchParams.get(queryPageKey) || "1", 10);
-    setCurrentPage(queryPage > 0 ? queryPage : 1);
-  }, [searchParams, queryPageKey, items_limit]);
+    const queryPage = parseInt(searchParams.get(queryPageKey) || "1", 10)
+    setCurrentPage(queryPage > 0 ? queryPage : 1)
+  }, [searchParams, queryPageKey, items_limit])
 
   useEffect(() => {
-    const fetchSellers = () => {
-      const start = (currentPage - 1) * itemsPerPage;
-      const paginatedSellers = getSellers({
-        start,
-        limit: start + itemsPerPage,
-      });
-      setSellers(paginatedSellers);
-    };
-
-    fetchSellers();
-  }, [currentPage, itemsPerPage]);
+    (async () => {
+      const res = await fetch(`/api/artists?page=${currentPage}&limit=${itemsPerPage}`, { cache: "no-store" });
+      if (!res.ok) { 
+        setSellers([])
+        setTotalArtists(0)
+        return 
+      }
+      const { artists, total } = await res.json()
+      setSellers(artists)
+      setTotalArtists(total)
+    })()
+  }, [currentPage, itemsPerPage])
 
   const handlePageChange = (page: number) => {
-    if (page > 0 && page <= Math.ceil(getSellers().length / itemsPerPage)) {
+    if (page > 0 && page <= Math.ceil(totalArtists / itemsPerPage)) {
       router.push(`?${queryPageKey}=${page}`);
     } else {
       router.push(`?${queryPageKey}=1`);
     }
-  };
+  }
 
   return (
     <div>
@@ -106,7 +108,7 @@ const ArtistsPage = (): ReactNode => {
             </div>
             <div>
               <Pagination
-                totalItems={getSellers().length}
+                totalItems={totalArtists}
                 itemsPerPage={itemsPerPage}
                 currentPage={currentPage}
                 onPageChange={handlePageChange}

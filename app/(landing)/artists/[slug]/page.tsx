@@ -122,22 +122,28 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
     else router.push(`?${queryPageKey}=1`);
   };
 
-  const [isEditing, setIsEditing] = useState(false);
-  const handleSaveBio = async () => {
-    try {
-      const res = await fetch("/api/artists/update-bio", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bio: bioDraft }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      toast.success("Bio updated");
-      setIsEditing(false);
-    } catch (err) {
-      console.error("Failed to update bio", err);
-      toast.error("Failed to update bio");
-    }
-  };
+  const [isEditing, setIsEditing] = useState(false)
+  
+const handleSaveBio = async () => {
+  try {
+    const res = await fetch("/api/artists/update-bio", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bio: bioDraft.trim() }),
+      credentials: "include",
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const { artist } = await res.json();
+    // update local seller so UI reflects the saved bio
+    setSeller((prev) => (prev ? { ...prev, bio: artist.bio } : prev));
+    toast.success("Bio updated");
+    setIsEditing(false);
+  } catch (err) {
+    console.error("Failed to update bio", err)
+    toast.error("Failed to update bio")
+  }
+}
+
 
   const handleEdit = (artworkSlug: string) => router.push(`/dashboard/edit/${artworkSlug}`);
   const handleDelete = async (artworkId: string) => {
@@ -179,7 +185,7 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
             className="[&_.area-content]:self-center [&_.area-image]:max-h-[60vh] [&_.area-image]:min-h-96 [&_.area-image]:object-contain"
           > */}
           <ImageWithText
-            img={seller?.profileImage || "/uploads/users/generic-artist-profile-picture.webp"}
+            img={seller?.profileImage || "/assets/images/icons/users/generic-user-profile-picture.png"}
             title={seller?.name || ""}
             imgAlign="left"
             txtAlign="left"
@@ -210,7 +216,7 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
                 {isEditing ? (
                   <Button onClick={handleSaveBio}>save</Button>
                 ) : (
-                  <Button onClick={() => setIsEditing(true)}>edit</Button>
+                  <Button onClick={() => setIsEditing(true)}>edit bio</Button>
                 )}
               </div>
             )}

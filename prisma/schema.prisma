@@ -55,6 +55,7 @@ model Artist {
   country      String?
   slug         String    @unique
   bio          String?   @default("")
+  createdAt    DateTime    @default(now())
   artworks     Artwork[] // one to many
 }
 

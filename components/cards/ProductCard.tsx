@@ -68,21 +68,21 @@ const ProductCard = ({
     >
       <CardHeader className="card-header overflow-hidden rounded-sm px-0">
         <div className="product-media relative h-64 rounded-sm transition-all duration-200 ease-in-out">
-{imageUrl ? (
-  <Image
-    src={imageUrl}
-    height={250}
-    width={250}
-    alt={title}
-    className="product-img h-full w-full rounded-sm object-cover object-top"
-  />
-) : (
-  <div className="product-img h-full w-full bg-gray-100 flex items-center justify-center">
-    <span className="text-gray-500 text-sm">No image</span>
-  </div>
-)}
-          <div className="product-badges">
+          {typeof imageUrl === "string" && imageUrl ? (
+            <Image
+              src={imageUrl}
+              height={250}
+              width={250}
+              alt={title || "Artwork"}
+              className="product-img h-full w-full rounded-sm object-cover object-top"
+            />
+          ) : (
+            <div className="product-img h-full w-full bg-gray-100 flex items-center justify-center">
+              <span className="text-gray-500 text-sm">No image</span>
+            </div>
+          )}
 
+          <div className="product-badges">
             {featured && (
               <Badge
                 variant="secondary"
@@ -94,6 +94,7 @@ const ProductCard = ({
           </div>
         </div>
       </CardHeader>
+
       <CardContent className="card-content grid gap-1 p-0">
         <CardTitle className="product-title line-clamp-2 font-bold md:text-xl">
           {title}

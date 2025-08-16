@@ -1,47 +1,16 @@
-"use client";
-
-import { ReactNode } from "react";
+// app/not-found.tsx
 import Link from "next/link";
-import Image from "next/image";
-import { cn } from "@/lib/utils";
-import { Home } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import notFoundImage from "@/public/assets/images/svgs/error-pages/404-error.svg";
 
-const notFoundPage = (): ReactNode => {
+export default function NotFound() {
   return (
-    <div
-      className={cn(
-        "grid min-h-screen items-center justify-center text-center",
-        "min-h-[100svh]",
-      )}
-    >
-      <Image
-        src={notFoundImage}
-        width={480}
-        height={480}
-        className="mb-5 aspect-square max-w-full fill-theme-primary object-contain px-8 md:px-3"
-        loading="eager"
-        alt="404 - Page not found"
-      />
-      <div className="text-lg md:text-2xl">
-        <Link
-          href="/"
-          className="font-bold hover:underline focus-visible:underline"
-        >
-          <Button type="button" className="font-quaternary uppercase">
-            <Home
-              strokeWidth={2.25}
-              width={15}
-              height={15}
-              className="!text-white"
-            />
-            &ensp;Go To Home
-          </Button>
-        </Link>
-      </div>
-    </div>
-  );
-};
-
-export default notFoundPage;
+    <main className="p-6 text-center">
+      <h1 className="text-xl font-semibold">Page not found</h1>
+      <p className="text-sm text-muted-foreground mb-4">
+        The page you’re looking for doesn’t exist.
+      </p>
+      <Link href="/" className="inline-block rounded bg-black px-4 py-2 text-white">
+        Go home
+      </Link>
+    </main>
+  )
+}

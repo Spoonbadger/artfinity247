@@ -22,8 +22,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { loginFormSchema, TLoginFormSchema } from "@/types";
 import { getAppPages } from "@/db/query";
 import { useRouter } from 'next/navigation'
+import { useUser } from '@/components/contexts/UserProvider'
 
-const AppPages = getAppPages();
+
+const AppPages = getAppPages()
 
 const LoginForm = ({
   title,
@@ -50,12 +52,16 @@ const LoginForm = ({
   const { slug: recoverPageSlug } = AppPages.recover_password;
 
   const router = useRouter()
+  const { setCurrentUser } = useUser()
 
   const handleSubmit: SubmitHandler<TLoginFormSchema> = async (values) => {
-    const res = await fetch('api/auth/login', {
+    const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(values)
+      body: JSON.stringify({
+        email: values.email.trim().toLowerCase(),
+        password: values.password
+      })
     })
 
     if (!res.ok) {
@@ -67,11 +73,18 @@ const LoginForm = ({
     const { artist, token } = await res.json()
     localStorage.setItem('token', token)
 
+    setCurrentUser({
+      id: artist.id,
+      slug: artist.slug,
+      email: artist.email,
+      name: artist.name
+    } as any)
+
     setTimeout(() => {
       form.reset()
       router.push(`/artists/${artist.slug}`)
-    }, 1000);
-  };
+    }, 500)
+  }
 
   return (
     <div
