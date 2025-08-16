@@ -168,7 +168,7 @@ export type UserPurchaseHistoryType = {
 };
 
 export type CartItemProductType = {
-  _id: string;
+  id: string;
   slug: string
   artist: string
   title: string

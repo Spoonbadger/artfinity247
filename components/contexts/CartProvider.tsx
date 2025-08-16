@@ -5,119 +5,158 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
+  useMemo,
 } from "react";
-import {
-  CartContextType,
-  CartItemProductType,
-  CartItemType,
-  ProductType,
-} from "@/types";
 import { useUser } from "@/components/contexts/UserProvider";
-import { getCartItems, getProducts, updateCartItem } from "@/db/query";
+import { CartContextType, CartItemType, CartItemProductType } from "@/types";
+import { updateCartItem } from "@/db/query";
 import { AppConfigs } from "@/db";
 
-import { getFinalPrice } from "@/lib/artwork_price";
-
-
 const CartContext = createContext<CartContextType | undefined>(undefined);
-
 export const useCart = () => {
-  const context = useContext(CartContext);
-  if (!context) {
-    throw new Error("useCart must be used within a CartProvider");
-  }
-  return context;
+  const ctx = useContext(CartContext);
+  if (!ctx) throw new Error("useCart must be used within a CartProvider");
+  return ctx;
 };
+
+const STORAGE_VERSION = "v1";
+const keyFor = (slug?: string) => `cart:${STORAGE_VERSION}:${slug ?? "guest"}`;
+
+function safeParse<T>(raw: string | null): T | [] {
+  try {
+    return raw ? (JSON.parse(raw) as T) : [];
+  } catch {
+    return [];
+  }
+}
 
 const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
   const { currentUser } = useUser();
+  const userKey = keyFor(currentUser?.slug);
+  const guestKey = keyFor();
 
   const [cartItems, setCartItems] = useState<CartItemType[]>([]);
+  const loadedKeyRef = useRef<string | null>(null);
+  const hasLoadedRef = useRef(false);
 
+  // Load from storage on mount / when the effective key changes
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const raw = localStorage.getItem("cartItems")
-      setCartItems(raw ? JSON.parse(raw) : [])
-    }
-  }, [])
+    const effectiveKey = currentUser?.slug ? userKey : guestKey;
+    if (loadedKeyRef.current === effectiveKey) return;
 
+    const fromLS = safeParse<CartItemType[]>(localStorage.getItem(effectiveKey));
+    setCartItems(Array.isArray(fromLS) ? fromLS : []);
+    loadedKeyRef.current = effectiveKey;
+    hasLoadedRef.current = true;
+  }, [currentUser?.slug, userKey, guestKey]);
+
+  // If user just logged in, merge guest cart into user cart once
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("cartItems", JSON.stringify(cartItems));
+    if (!currentUser?.slug) return;
+    const uKey = userKey;
+
+    const guestRaw = localStorage.getItem(guestKey);
+    if (!guestRaw) return;
+
+    const guestItems = safeParse<CartItemType[]>(guestRaw);
+    const userItems = safeParse<CartItemType[]>(localStorage.getItem(uKey));
+    if (!Array.isArray(guestItems) || guestItems.length === 0) {
+      localStorage.removeItem(guestKey);
+      return;
     }
-  }, [cartItems])
 
+    // merge by product id
+    const map = new Map<string, CartItemType>();
+    [...userItems, ...guestItems].forEach((ci) => {
+      const pid = ci.product.id as string;
+      const prev = map.get(pid);
+      if (prev) {
+        map.set(pid, { ...prev, quantity: prev.quantity + ci.quantity });
+      } else {
+        map.set(pid, ci);
+      }
+    });
 
-  const addToCart = (product: CartItemProductType, quantity: number = 1) => {
+    const merged = Array.from(map.values());
+    localStorage.setItem(uKey, JSON.stringify(merged));
+    localStorage.removeItem(guestKey);
+
+    // if we’re currently on the user key, reflect merged items in state
+    if (loadedKeyRef.current === uKey) setCartItems(merged);
+  }, [currentUser?.slug, userKey, guestKey]);
+
+  // Persist to storage whenever items change (but only after initial load)
+  useEffect(() => {
+    if (!hasLoadedRef.current) return;
+    const effectiveKey = currentUser?.slug ? userKey : guestKey;
+    try {
+      localStorage.setItem(effectiveKey, JSON.stringify(cartItems));
+    } catch {
+      // ignore quota errors
+    }
+  }, [cartItems, currentUser?.slug, userKey, guestKey]);
+
+  // Actions (keep using your updateCartItem helper)
+  const addToCart = (product: CartItemProductType, quantity = 1) => {
     setCartItems((prev) =>
       updateCartItem({
-        user_id: currentUser?.id || "1",
+        user_id: currentUser?.id || "guest",
         product,
         quantity,
         operation: "add",
         prev_items: prev,
-      }),
+      })
     );
-      console.log("addToCart()", product.title, "qty:", quantity);
   };
 
-
-  const updateToCart = (product: CartItemProductType, quantity: number = 1) => {
+  const updateToCart = (product: CartItemProductType, quantity = 1) => {
     setCartItems((prev) =>
       updateCartItem({
-        user_id: currentUser?.id || "1",
+        user_id: currentUser?.id || "guest",
         product,
         quantity,
         operation: "update",
         prev_items: prev,
-      }),
+      })
     );
   };
 
   const removeFromCart = (product: CartItemProductType) => {
     setCartItems((prev) =>
       updateCartItem({
-        user_id: currentUser?.id || "1",
+        user_id: currentUser?.id || "guest",
         product,
         operation: "remove",
         prev_items: prev,
-      }),
+      })
     );
   };
 
-  const calculateProductPrice = (product: CartItemProductType,quantity: number = 1) => {
-    return (product.unitPrice ?? 0) * quantity
-  }
+  const calculateProductPrice = (product: CartItemProductType, quantity = 1) =>
+    (product.unitPrice ?? 0) * quantity;
 
-  const calculateTotalPrice = (cart_items: CartItemType[] = cartItems) => {
-    return cart_items.reduce((sum, { product, quantity }) => {
-      return sum + calculateProductPrice(product, quantity)
-    }, 0)
-  };
+  const calculateTotalPrice = (items: CartItemType[] = cartItems) =>
+    items.reduce((sum, { product, quantity }) => sum + calculateProductPrice(product, quantity), 0);
 
-  const calculateTax = (
-    totalPrice: number,
-    taxRate: number = parseFloat(`${AppConfigs.sales_tax_rate || 0}`),
-  ) => {
-    return totalPrice * taxRate;
-  };
+  const calculateTax = (totalPrice: number, taxRate = Number(AppConfigs.sales_tax_rate || 0)) =>
+    totalPrice * taxRate;
 
-  return (
-    <CartContext.Provider
-      value={{
-        cartItems,
-        addToCart,
-        updateToCart,
-        removeFromCart,
-        calculateProductPrice,
-        calculateTotalPrice,
-        calculateTax,
-      }}
-    >
-      {children}
-    </CartContext.Provider>
+  const value = useMemo(
+    () => ({
+      cartItems,
+      addToCart,
+      updateToCart,
+      removeFromCart,
+      calculateProductPrice,
+      calculateTotalPrice,
+      calculateTax,
+    }),
+    [cartItems]
   );
+
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };
 
 export default CartProvider;
