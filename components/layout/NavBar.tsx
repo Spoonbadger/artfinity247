@@ -16,6 +16,7 @@ import SocialAccountLinks from "@/components/SocialAccountLinks";
 import { getAppConfigs, getAppMenus, getAppPages } from "@/db/query";
 import { SocialAccountType } from "@/types";
 import { Badge } from "@/components/ui/badge";
+import { useUser } from '@/components/contexts/UserProvider'
 
 const AppConfigs = getAppConfigs();
 const AppPages = getAppPages();
@@ -38,6 +39,10 @@ const NavBar = ({
   const [isScrolled, setIsScrolled] = useState(false);
 
   const { cartItems } = useCart();
+
+  const { currentUser } = useUser()
+  const loginSlug = AppPages.login.slug || "login"
+  const profileHref = currentUser?.slug ? `/artists/${currentUser.slug}` : `/${loginSlug}`
 
   useEffect(() => {
     const handleScroll = () => {
@@ -193,7 +198,7 @@ const NavBar = ({
               <div className="action-btns-wrapper max-w-fit space-x-2 ps-4">
                 <SearchArea />
                 <Link
-                  href={`/${AppPages.login.slug || "login"}`}
+                  href={profileHref}
                   className="hidden md:inline-block"
                 >
                   <User />
