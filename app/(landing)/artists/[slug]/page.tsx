@@ -16,6 +16,8 @@ import { getAppConfigs, getAppPages } from "@/db/query";
 import { UserType, ProductType } from "@/types";
 import { useUser } from "@/components/contexts/UserProvider";
 import { toast } from "sonner";
+import LogoutButton from '@/components/auth/LogoutButton'
+
 
 type ParamsPropsType = { slug: string };
 
@@ -120,7 +122,7 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
   const handlePageChange = (page: number) => {
     if (page > 0 && page <= Math.ceil(totalSellerProducts / itemsPerPage)) router.push(`?${queryPageKey}=${page}`);
     else router.push(`?${queryPageKey}=1`);
-  };
+  }
 
   const [isEditing, setIsEditing] = useState(false)
   
@@ -146,6 +148,7 @@ const handleSaveBio = async () => {
 
 
   const handleEdit = (artworkSlug: string) => router.push(`/dashboard/edit/${artworkSlug}`);
+
   const handleDelete = async (artworkId: string) => {
     if (!confirm("Are you sure you want to delete this artwork?")) return;
     const res = await fetch(`/api/artworks/${artworkId}`, { 
@@ -218,6 +221,7 @@ const handleSaveBio = async () => {
                 ) : (
                   <Button onClick={() => setIsEditing(true)}>edit bio</Button>
                 )}
+                <LogoutButton className='m-2' />
               </div>
             )}
             <SocialAccountLinks links={seller?.social_accounts ?? []} className="justify-center md:justify-start" />
