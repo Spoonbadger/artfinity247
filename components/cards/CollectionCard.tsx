@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { DEFAULT_SCENE_IMG } from '@/lib/sceneImages'
 
 const CollectionCard = ({
   collection,
@@ -36,7 +37,7 @@ const CollectionCard = ({
       <CardHeader className="card-header overflow-hidden p-0">
         <div className="collection-media relative h-48 transition-all duration-200 ease-in">
           <Image
-            src={img}
+            src={img || DEFAULT_SCENE_IMG}
             height={250}
             width={250}
             alt={title}

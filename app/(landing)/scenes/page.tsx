@@ -17,7 +17,7 @@ import { MinimalSection } from "@/components/sections";
 import { CollectionCard } from "@/components/cards";
 import PageBreadcrumb from "@/components/PageBreadcrumb";
 import Pagination from "@/components/CustomPagination";
-import { getAppConfigs, getAppPages, getScenes } from "@/db/query";
+import { getAppConfigs, getAppPages } from "@/db/query";
 import { CollectionType } from "@/types";
 
 const AppConfigs = getAppConfigs();
@@ -31,37 +31,33 @@ const AllScenesPage = (): ReactNode => {
 
   const { title, banner, items_limit, slug: scenesPageSlug } = AppPages.scenes;
 
-  const [scenes, setScenes] = useState<CollectionType[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(items_limit || 10);
 
-  useEffect(() => {
-    setItemsPerPage(items_limit);
-
-    const queryPage = parseInt(searchParams.get(queryPageKey) || "1", 10);
-    setCurrentPage(queryPage > 0 ? queryPage : 1);
-  }, [searchParams, queryPageKey, items_limit]);
+  const [allScenes, setAllScenes] = useState<CollectionType[]>([]);
+  const [scenes, setScenes] = useState<CollectionType[]>([]);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
-    const fetchScenes = () => {
-      const start = (currentPage - 1) * itemsPerPage;
-      const paginatedScenes = getScenes({
-        start,
-        limit: start + itemsPerPage,
-      });
-      setScenes(paginatedScenes);
-    };
+    const start = (currentPage - 1) * itemsPerPage;
+    setScenes(allScenes.slice(start, start + itemsPerPage));
+  }, [allScenes, currentPage, itemsPerPage]);
 
-    fetchScenes();
-  }, [currentPage, itemsPerPage]);
+  useEffect(() => {
+    (async () => {
+      const res = await fetch('/api/scenes', { cache: 'no-store' });
+      if (!res.ok) { setAllScenes([]); setTotal(0); return; }
+      const data = await res.json();
+      setAllScenes(data.scenes || []);
+      setTotal(data.total || 0);
+    })();
+  }, []);
+
 
   const handlePageChange = (page: number) => {
-    if (page > 0 && page <= Math.ceil(getScenes().length / itemsPerPage)) {
-      router.push(`?${queryPageKey}=${page}`);
-    } else {
-      router.push(`?${queryPageKey}=1`);
-    }
-  };
+    const max = Math.max(1, Math.ceil(total / itemsPerPage));
+    router.push(`?${queryPageKey}=${page > 0 && page <= max ? page : 1}`);
+  }
 
   return (
     <div>
@@ -98,7 +94,7 @@ const AllScenesPage = (): ReactNode => {
             </div>
             <div>
               <Pagination
-                totalItems={getScenes().length}
+                totalItems={total}
                 itemsPerPage={itemsPerPage}
                 currentPage={currentPage}
                 onPageChange={handlePageChange}
@@ -127,7 +123,7 @@ const AllScenesPage = (): ReactNode => {
           )}
           <div className="pagination-area flex items-center justify-center py-6">
             <Pagination
-              totalItems={getScenes().length}
+              totalItems={total}
               itemsPerPage={itemsPerPage}
               currentPage={currentPage}
               onPageChange={handlePageChange}

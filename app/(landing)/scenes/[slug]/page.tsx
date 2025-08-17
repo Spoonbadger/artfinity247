@@ -17,8 +17,9 @@ import { MinimalSection } from "@/components/sections";
 import { ProductCard } from "@/components/cards";
 import PageBreadcrumb from "@/components/PageBreadcrumb";
 import Pagination from "@/components/CustomPagination";
-import { getAppConfigs, getAppPages, getProducts, getScene } from "@/db/query";
+import { getAppConfigs, getAppPages, getProducts } from "@/db/query";
 import { CollectionType, ProductType } from "@/types";
+import { DEFAULT_SCENE_IMG, sceneImagePath } from '@/lib/sceneImages'
 
 type ParamsPropsType = {
   slug: string;
@@ -36,18 +37,6 @@ const ScenePage = ({ params }: { params: ParamsPropsType }): ReactNode => {
 
   const [scene, setScene] = useState<CollectionType | null>(null);
 
-  useEffect(() => {
-    if (slug) {
-      const fetchedScene = getScene({ slug });
-
-      if (!fetchedScene) {
-        router.push("/");
-        return;
-      }
-      setScene((prev) => fetchedScene);
-    }
-  }, [slug, router]);
-
   const queryPageKey = AppConfigs.pagination_query_key || "page";
 
   const { title, items_limit, sections } = AppPages.scene;
@@ -64,6 +53,12 @@ const ScenePage = ({ params }: { params: ParamsPropsType }): ReactNode => {
     const queryPage = parseInt(searchParams.get(queryPageKey) || "1", 10);
     setCurrentPage(queryPage > 0 ? queryPage : 1);
   }, [searchParams, queryPageKey, items_limit]);
+
+  const humanize = (s: string) =>
+  s.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+  const sceneTitle = humanize(slug)
+
 
 // ↓ replace the whole effect that uses getProducts(...)
   useEffect(() => {
@@ -94,19 +89,16 @@ const ScenePage = ({ params }: { params: ParamsPropsType }): ReactNode => {
     }
   };
 
+  const banner = sceneImagePath(slug) || DEFAULT_SCENE_IMG
+
   return (
     <div>
-      <title>{`${title || "Scene"} - ${scene?.title || "Info"}: ${AppConfigs.app_name}`}</title>
-      <section>
-        <MinimalSection
-          className="page-banner"
-          bg={scene?.img || ""}
-          shadowOpacity="normal"
-        >
-          <h1 className="text-center text-white">{`${scene?.title} - ${title}`}</h1>
-          <PageBreadcrumb type="page-banner" />
-        </MinimalSection>
-      </section>
+      <title>{`${title || "Scene"} - ${sceneTitle}: ${AppConfigs.app_name}`}</title>
+      <MinimalSection className="page-banner" bg={banner}>
+        <h1 className="text-center text-white">{`${sceneTitle} - ${title}`}</h1>
+        <PageBreadcrumb type="page-banner" />
+      </MinimalSection>
+
       <section>
         <MaxWidthWrapper className="space-y-4 py-10 md:space-y-6 md:py-14">
           <h2>{sections?.products?.title}</h2>
