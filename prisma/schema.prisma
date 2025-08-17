@@ -51,12 +51,15 @@ model Artist {
   profileImage String?
   phone        String
   city         String
+  citySlug     String @default("")
   state        String?
   country      String?
   slug         String    @unique
   bio          String?   @default("")
   createdAt    DateTime    @default(now())
   artworks     Artwork[] // one to many
+
+  @@index([citySlug])
 }
 
 model Artwork {

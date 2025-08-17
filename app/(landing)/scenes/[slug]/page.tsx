@@ -65,20 +65,26 @@ const ScenePage = ({ params }: { params: ParamsPropsType }): ReactNode => {
     setCurrentPage(queryPage > 0 ? queryPage : 1);
   }, [searchParams, queryPageKey, items_limit]);
 
+// ↓ replace the whole effect that uses getProducts(...)
   useEffect(() => {
-    const fetchProducts = () => {
-      const start = (currentPage - 1) * itemsPerPage;
-      const paginatedProducts = getProducts({
-        ids: scene?.items || [],
-        start,
-        limit: start + itemsPerPage,
-      });
-      setPaginatedProducts(paginatedProducts);
-    };
+    if (!slug) return
 
-    fetchProducts();
-    setTotalSceneProducts(getProducts({ ids: scene?.items || [] }).length);
-  }, [scene, currentPage, itemsPerPage]);
+    (async () => {
+      const res = await fetch(
+        `/api/artworks/by-city/${encodeURIComponent(slug)}?page=${currentPage}&limit=${itemsPerPage}`,
+        { cache: 'no-store' }
+      )
+      if (!res.ok) {
+        setPaginatedProducts([])
+        setTotalSceneProducts(0)
+        return
+      }
+      const data = await res.json()
+      setPaginatedProducts(data.artworks)
+      setTotalSceneProducts(data.total)
+    })()
+  }, [slug, currentPage, itemsPerPage])
+
 
   const handlePageChange = (page: number) => {
     if (page > 0 && page <= Math.ceil(totalSceneProducts / itemsPerPage)) {
@@ -148,7 +154,7 @@ const ScenePage = ({ params }: { params: ParamsPropsType }): ReactNode => {
               {paginatedProducts.map((product) => (
                 <Link
                   key={product.id}
-                  href={`/${productsPageSlug}/${product.slug}`}
+                  href={`/art/${product.slug}`}
                 >
                   <ProductCard product={product} showSeller={true} />
                 </Link>

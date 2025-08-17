@@ -23,12 +23,15 @@ export async function POST(req: Request) {
 
     const hashed = await hash(password, 10)
 
+    const citySlug = slugify(city || '', { lower: true, strict: true })
+
     const artist = await prisma.artist.create({
         data: {
             name,
             email,
             password: hashed,
             city,
+            citySlug,
             state,
             country,
             phone,

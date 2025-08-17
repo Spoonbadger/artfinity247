@@ -17,6 +17,7 @@ import { UserType, ProductType } from "@/types";
 import { useUser } from "@/components/contexts/UserProvider";
 import { toast } from "sonner";
 import LogoutButton from '@/components/auth/LogoutButton'
+import CITY_OPTIONS from "@/lib/constants/cities"
 
 
 type ParamsPropsType = { slug: string };
@@ -38,7 +39,7 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
   const searchParams = useSearchParams();
 
   const [seller, setSeller] = useState<UserType | null | undefined>(undefined); // undefined=loading, null=not found
-  const [bioDraft, setBioDraft] = useState("");
+  const [bioDraft, setBioDraft] = useState("")
 
   const queryPageKey = "page"; // stop relying on AppConfigs
   const title = AppPages.seller?.title || "Artist";
@@ -117,7 +118,28 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
     })();
   }, [slug, currentPage, itemsPerPage]);
 
-  useEffect(() => { setBioDraft(seller?.bio || ""); }, [seller?.bio]);
+  useEffect(() => { setBioDraft(seller?.bio || ""); }, [seller?.bio])
+
+  const [cityDraft, setCityDraft] = useState("")
+  useEffect(() => { setCityDraft(seller?.city || '') }, [seller?.city])
+
+  const handleSaveCity = async () => {
+    try {
+      const res = await fetch('/api/artists/update-city', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ city: cityDraft }),
+        credentials: 'include',
+      })
+      if (!res.ok) throw new Error(await res.text())
+      const { artist } = await res.json()
+      setSeller(prev => (prev ? { ...prev, city: artist.city } : prev))
+      toast.success('City updated')
+    } catch (e) {
+      console.error(e)
+      toast.error('Failed to update city')
+    }
+  }
 
   const handlePageChange = (page: number) => {
     if (page > 0 && page <= Math.ceil(totalSellerProducts / itemsPerPage)) router.push(`?${queryPageKey}=${page}`);
@@ -227,11 +249,33 @@ const handleSaveBio = async () => {
             <SocialAccountLinks links={seller?.social_accounts ?? []} className="justify-center md:justify-start" />
             <div className="seller-address-info mt-8 md:mt-12">
               <h4>
-                Based in:{" "}
-                <span className="font-tertiary text-xs font-normal text-slate-800 dark:text-slate-200 md:text-sm">
-                  {seller?.city || "unknown"}
-                </span>
+                Based in:{' '}
+                {isOwner ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Select value={cityDraft} onValueChange={setCityDraft}>
+                      <SelectTrigger className="max-w-[220px] capitalize">
+                        <SelectValue placeholder="Select city" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Cities</SelectLabel>
+                          {CITY_OPTIONS.map(c => (
+                            <SelectItem key={c} value={c}>{c}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    <Button size="sm" onClick={handleSaveCity} disabled={!cityDraft || cityDraft === seller?.city}>
+                      save
+                    </Button>
+                  </span>
+                ) : (
+                  <span className="font-tertiary text-xs md:text-sm text-slate-800 dark:text-slate-200">
+                    {seller?.city || 'unknown'}
+                  </span>
+                )}
               </h4>
+
             </div>
           </ImageWithText>
         </MaxWidthWrapper>

@@ -24,12 +24,12 @@ export async function POST(req: Request) {
 
     const token = await new SignJWT({ id: artist.id, email: artist.email, slug: artist.slug })
       .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('7d')
+      .setExpirationTime(jwtExpire)
       .sign(new TextEncoder().encode(process.env.JWT_SECRET!))
 
     const response = NextResponse.json({
       message: 'Logged in',
-      token,
+      // token,
       artist: { 
         id: artist.id,
         name: artist.name,
@@ -46,7 +46,9 @@ export async function POST(req: Request) {
     }
 
     if (remember) {
-      response.cookies.set('auth-token', token, { ...cookieBase, maxAge: 60 * 60 * 24 * 30 }) // 30d
+      response.cookies.set('auth-token', token, remember 
+        ? { ...cookieBase, maxAge: 60 * 60 * 24 * 30 } 
+        : { ...cookieBase, maxAge: 60*60*3 })
     } else {
       response.cookies.set('auth-token', token, cookieBase) // session cookie
     }

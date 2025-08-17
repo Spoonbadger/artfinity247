@@ -39,6 +39,8 @@ import {
 import { getCities, getCountries, getStates } from "@/db/query";
 import { getAppPages } from "@/db/query";
 import { useRouter } from 'next/navigation'
+import CITY_OPTIONS from '@/lib/constants/cities'
+import US_STATE_OPTIONS from "@/lib/constants/usa_states"
 
 
 const AppPages = getAppPages();
@@ -350,37 +352,31 @@ const RegisterForm = ({
               <FormField
                 name="state"
                 control={form.control}
-                render={({ field }) => {
-                  return (
-                    <FormItem className="[&_button]:rounded-sm [&_button]:capitalize">
-                      <FormLabel>State</FormLabel>
-                      <Select
-                        onValueChange={(newVal) => {
-                          field.onChange(newVal);
-                          handleStateChange(newVal);
-                        }}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="--Select Your State--" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="w-full rounded-sm capitalize">
-                          <SelectGroup>
-                            <SelectLabel>Your State</SelectLabel>
-                            {availStates.map((state, index) => (
-                              <SelectItem value={state.code} key={index}>
-                                {state.name}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  );
-                }}
+                render={({ field }) => (
+                  <FormItem className="[&_button]:rounded-sm [&_button]:capitalize">
+                    <FormLabel>State</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="--Select Your State--" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="w-full rounded-sm capitalize">
+                        <SelectGroup>
+                          <SelectLabel>Your State</SelectLabel>
+                          {US_STATE_OPTIONS.map((s) => (
+                            <SelectItem key={s.code} value={s.code}>
+                              {s.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
+
               {/* City Field */}
               <FormField
                 name="city"
@@ -398,9 +394,9 @@ const RegisterForm = ({
                         <SelectContent className="w-full rounded-sm capitalize">
                           <SelectGroup>
                             <SelectLabel>Your City</SelectLabel>
-                            {availCities.map((city, index) => (
-                              <SelectItem value={city.code} key={index}>
-                                {city.name}
+                            {CITY_OPTIONS.map((city, index) => (
+                              <SelectItem value={city} key={city}>
+                                {city}
                               </SelectItem>
                             ))}
                           </SelectGroup>
