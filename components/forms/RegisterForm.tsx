@@ -137,10 +137,11 @@ const RegisterForm = ({
       }
       
       const data = await res.json()
+      console.log("Register data response: ", data)
       toast.success("Registration successfull")
       
       const slug = data?.artist?.slug
-      router.replace(slug ? `/artists/${slug}` : '/')
+      window.location.assign(`/artists/${slug}`)
       form.reset()
 
     } catch (err) {

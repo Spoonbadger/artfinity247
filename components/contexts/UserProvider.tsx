@@ -34,13 +34,18 @@ export const UserProvider = ({
         const token =
           (typeof window !== 'undefined' && (sessionStorage.getItem('token') || localStorage.getItem('token')))
           || null
-        if (!token) return
 
-        const res = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+        const res = await fetch('/api/auth/me', { 
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          cache: 'no-store',
+          credentials: 'include'
+        })
+
         if (!res.ok) {
           // stale token, clean up both
           sessionStorage.removeItem('token')
           localStorage.removeItem('token')
+          setCurrentUser(null)
           return
         }
         const data = await res.json()

@@ -91,7 +91,7 @@ const LoginForm = ({
     setTimeout(() => {
       form.reset()
       router.push(`/artists/${artist.slug}`)
-    }, 500)
+    }, 50)
   }
 
   return (

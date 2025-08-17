@@ -36,16 +36,20 @@ export async function POST(req: Request) {
             slug
         },
     })
-    const token = await new SignJWT({ id: artist.id, slug: artist.slug })
+    const token = await new SignJWT({ id: artist.id, slug: artist.slug, email: artist.email })
         .setProtectedHeader({ alg: 'HS256' })
         .setExpirationTime('7d')
         .sign(new TextEncoder().encode(process.env.JWT_SECRET!))
 
     cookies().set('auth-token', token, {
         httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
         path: '/',
         maxAge: 60 * 60 * 24 * 7
     })
 
-    return Response.json({ success: true, artistId: artist.slug })
+    return Response.json({ 
+        artist: { slug: artist.slug }}, 
+        { status: 201 })
 }
