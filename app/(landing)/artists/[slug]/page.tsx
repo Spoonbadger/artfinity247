@@ -323,12 +323,38 @@ const handleSaveBio = async () => {
                   <Link href={`/art/${product.slug}`}>
                     <ProductCard product={product} />
                   </Link>
-                  {isOwner && (
-                    <div className="absolute top-2 right-2 flex gap-2">
-                      <button className="text-xs px-2 py-1 bg-blue-600 text-white rounded" onClick={() => handleEdit(product.slug)}>Edit</button>
-                      <button className="text-xs px-2 py-1 bg-red-600 text-white rounded" onClick={() => handleDelete(product.id)}>Delete</button>
-                    </div>
-                  )}
+                {isOwner && (
+                  <div className="absolute top-2 right-2 flex gap-2">
+                    <button
+                      className="text-xs px-2 py-1 bg-blue-600 text-white rounded"
+                      onClick={() => handleEdit(product.slug)}
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      className="text-xs px-2 py-1 bg-red-600 text-white rounded"
+                      onClick={() => handleDelete(product.id)}
+                    >
+                      Delete
+                    </button>
+
+                    {/* NEW: QR actions */}
+                    <button
+                      className="text-xs px-2 py-1 bg-slate-700 text-white rounded"
+                      onClick={() => window.open(`/api/artworks/${product.slug}/qr`, '_blank', 'noopener')}
+                    >
+                      View QR
+                    </button>
+
+                    <button
+                      className="text-xs px-2 py-1 bg-slate-900 text-white rounded"
+                      onClick={() => window.open(`/api/artworks/${product.slug}/qr?download=1`, '_blank', 'noopener')}
+                    >
+                      Download QR
+                    </button>
+                  </div>
+                )}
                 </div>
               ))}
             </div>
