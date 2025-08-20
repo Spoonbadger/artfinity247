@@ -1,94 +1,100 @@
-// lib/generateQrPdf.ts
-import PDFDocument from 'pdfkit'
 import QRCode from 'qrcode'
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 
-type GenerateQrPdfInput = {
-  title: string
-  artistName: string
-  url: string // absolute URL to /art/[slug]
-}
+type GenerateQrPdfInput = { title: string; artistName: string; url: string }
+
+// A6 portrait ~ 298 x 420 points
+const A6 = { w: 298, h: 420 }
+const MARGIN = 24
 
 export async function generateQrPdf({
   title,
   artistName,
   url,
-}: GenerateQrPdfInput): Promise<Buffer> {
-  // 1) Make QR as PNG buffer
-  const qrPng = await QRCode.toBuffer(url, {
-    errorCorrectionLevel: 'M',
-    margin: 1,
-    scale: 8,
-  })
+}: GenerateQrPdfInput): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create()
+  const page = pdfDoc.addPage([A6.w, A6.h])
+  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica)
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
 
-  // 2) Build a clean A6/Business-card-ish PDF (we’ll use A6 portrait)
-  const doc = new PDFDocument({
-    size: 'A6', // 105 x 148 mm
-    margins: { top: 24, left: 24, right: 24, bottom: 24 },
-    info: {
-      Title: `${title} — QR Card`,
-      Author: artistName,
-      Subject: 'Artfinity QR Display Card',
-    },
-  })
+  let y = A6.h - MARGIN
 
-  const chunks: Buffer[] = []
-  doc.on('data', (c) => chunks.push(c))
-  const done = new Promise<Buffer>((resolve) => {
-    doc.on('end', () => resolve(Buffer.concat(chunks)))
+  // Header: ARTFINITY (right aligned)
+  const header = 'ARTFINITY'
+  const headerSize = 10
+  const headerWidth = fontRegular.widthOfTextAtSize(header, headerSize)
+  page.drawText(header, {
+    x: A6.w - MARGIN - headerWidth,
+    y: y - headerSize,
+    size: headerSize,
+    font: fontRegular,
+    color: rgb(0.33, 0.33, 0.33),
   })
-
-  // Logo / header (optional – text for now)
-  doc
-    .fontSize(10)
-    .fillColor('#555')
-    .text('ARTFINITY', { align: 'right' })
-    .moveDown(0.5)
+  y -= headerSize + 6
 
   // Title
-  doc
-    .fontSize(16)
-    .fillColor('#000')
-    .text(title, { align: 'left' })
+  const titleSize = 16
+  page.drawText(title, {
+    x: MARGIN,
+    y: y - titleSize,
+    size: titleSize,
+    font: fontBold,
+    color: rgb(0, 0, 0),
+  })
+  y -= titleSize + 4
 
   // Artist
-  doc
-    .moveDown(0.25)
-    .fontSize(12)
-    .fillColor('#333')
-    .text(artistName, { align: 'left' })
+  const artistSize = 12
+  page.drawText(artistName, {
+    x: MARGIN,
+    y: y - artistSize,
+    size: artistSize,
+    font: fontRegular,
+    color: rgb(0.2, 0.2, 0.2),
+  })
+  y -= artistSize + 8
 
   // Divider
-  doc
-    .moveDown(0.5)
-    .moveTo(doc.page.margins.left, doc.y)
-    .lineTo(doc.page.width - doc.page.margins.right, doc.y)
-    .strokeColor('#e5e5e5')
-    .stroke()
-    .moveDown(0.5)
+  page.drawLine({
+    start: { x: MARGIN, y },
+    end: { x: A6.w - MARGIN, y },
+    thickness: 1,
+    color: rgb(0.9, 0.9, 0.9),
+  })
+  y -= 10
 
-  // QR centered
-  const qrSize = 160 // px in PDF points
-  const centerX =
-    (doc.page.width - doc.page.margins.left - doc.page.margins.right - qrSize) /
-      2 +
-    doc.page.margins.left
+  // QR image (centered)
+  const qrPng = await QRCode.toBuffer(url, { errorCorrectionLevel: 'M', margin: 1, scale: 8 })
+  const qrImage = await pdfDoc.embedPng(qrPng)
+  const qrSize = 160
+  const qrX = (A6.w - qrSize) / 2
+  const qrY = y - qrSize
+  page.drawImage(qrImage, { x: qrX, y: qrY, width: qrSize, height: qrSize })
+  y = qrY - 8
 
-  doc.image(qrPng, centerX, doc.y, { width: qrSize, height: qrSize })
-  doc.moveDown(0.5)
+  // CTA
+  const cta = 'Scan to order prints online'
+  const ctaSize = 10
+  const ctaWidth = fontRegular.widthOfTextAtSize(cta, ctaSize)
+  page.drawText(cta, {
+    x: (A6.w - ctaWidth) / 2,
+    y: y - ctaSize,
+    size: ctaSize,
+    font: fontRegular,
+    color: rgb(0.33, 0.33, 0.33),
+  })
+  y -= ctaSize + 2
 
-  // Call-to-action
-  doc
-    .fontSize(10)
-    .fillColor('#555')
-    .text('Scan to order prints online', { align: 'center' })
+  // URL (tiny)
+  const urlSize = 8
+  const urlWidth = fontRegular.widthOfTextAtSize(url, urlSize)
+  page.drawText(url, {
+    x: (A6.w - urlWidth) / 2,
+    y: y - urlSize,
+    size: urlSize,
+    font: fontRegular,
+    color: rgb(0.5, 0.5, 0.5),
+  })
 
-  // Tiny URL footer
-  doc
-    .moveDown(0.25)
-    .fontSize(8)
-    .fillColor('#888')
-    .text(url, { align: 'center' })
-
-  doc.end()
-  return done
+  return pdfDoc.save()
 }
