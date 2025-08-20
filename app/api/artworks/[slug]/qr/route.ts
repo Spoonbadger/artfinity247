@@ -51,14 +51,22 @@ export async function GET(
       return new NextResponse('Forbidden', { status: 403 })
     }
 
-    // Build absolute URL to /art/[slug]
-    const host =
-      req.headers.get('x-forwarded-host') || req.headers.get('host') || ''
-    const proto =
-      req.headers.get('x-forwarded-proto') || (host.startsWith('localhost') ? 'http' : 'https')
-    const base =
-      process.env.NEXT_PUBLIC_APP_URL || `${proto}://${host}`
-    const url = `${base}/art/${artwork.slug}`
+    // Build absolute URL to /art/[slug] with UTM tracking
+    const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || ''
+    const proto = req.headers.get('x-forwarded-proto') || (host.startsWith('localhost') ? 'http' : 'https')
+    const base = process.env.NEXT_PUBLIC_APP_URL || `${proto}://${host}`
+
+    if (!artwork.slug) {
+        return new NextResponse('Artwork has no slug', { status: 500 })
+    }
+    const artSlug = artwork.slug
+
+    const urlObj = new URL(`${base}/art/${artwork.slug}`)
+    urlObj.searchParams.set('utm_source', 'qr')
+    urlObj.searchParams.set('utm_medium', 'print')
+    urlObj.searchParams.set('utm_campaign', artSlug)
+    const url = urlObj.toString()
+
 
     // Generate PDF buffer
     const pdf = await generateQrPdf({
