@@ -100,6 +100,17 @@ export async function POST(req: Request) {
       success_url: `${baseUrl}/thank-you?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/cart`,
       locale: 'en',
+      shipping_address_collection: { allowed_countries: ['US'] },   // add more when needed
+      phone_number_collection: { enabled: true },
+      shipping_options: [
+        {
+          shipping_rate_data: {
+            display_name: 'Standard',
+            fixed_amount: { amount: 399, currency: 'usd' }, // Shipping initially set to $3.99
+            type: 'fixed_amount',
+          },
+        },
+      ],
     })
 
     return new Response(JSON.stringify({ url: session.url }), {
