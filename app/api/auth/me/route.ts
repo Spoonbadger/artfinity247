@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   const cookie = req.cookies.get('auth-token')?.value || null
   const token = bearer ?? cookie
 
-  if (!token) return new NextResponse('Not authenticated', { status: 401 })
+  if (!token) return NextResponse.json({ user: null }, { status: 200 })
 
   try {
     const { payload } = await jwtVerify(

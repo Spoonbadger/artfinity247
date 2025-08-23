@@ -37,6 +37,9 @@ model OrderItem {
   unitPrice Int? // cents
   quantity  Int?
   lineTotal Int?
+  title      String?
+  artistName String?
+  imageUrl   String?
 
   @@unique([orderId, artworkId, size])
   @@index([orderId])

@@ -5,8 +5,9 @@ import { PrismaClient } from '@prisma/client'
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-06-30.basil',
 })
-
 const prisma = new PrismaClient()
+export const runtime = 'nodejs'
+
 
 export async function POST(req: NextRequest) {
   const rawBody = await req.text()

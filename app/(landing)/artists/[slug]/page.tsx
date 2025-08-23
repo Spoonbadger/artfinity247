@@ -339,7 +339,7 @@ const handleSaveBio = async () => {
                       Delete
                     </button>
 
-                    {/* NEW: QR actions */}
+                    {/* QR actions */}
                     <button
                       className="text-xs px-2 py-1 bg-slate-700 text-white rounded"
                       onClick={() => window.open(`/api/artworks/${product.slug}/qr`, '_blank', 'noopener')}
@@ -370,8 +370,25 @@ const handleSaveBio = async () => {
           {isOwner && paginatedProducts.length > 0 && (
             <div className="mt-6 text-center">
               <Link href="/dashboard/upload"><Button>Upload Artwork</Button></Link>
+              <div className='m-6'>
+                <button
+                  className="text-xs px-3 py-2 bg-slate-700 text-white rounded"
+                  onClick={() => window.open('/api/artworks/qr/bulk?layout=4up', '_blank', 'noopener')}
+                >
+                  View all qr cards
+                </button>
+                <button
+                  className="text-xs px-3 py-2 bg-slate-900 text-white rounded"
+                  onClick={() => window.open('/api/artworks/qr/bulk?layout=4up&download=1', '_blank', 'noopener')}
+                >
+                  Download all qr cards
+                </button>
+              </div>
+
             </div>
+            
           )}
+
 
           <div className="pagination-area flex items-center justify-center py-6">
             <Pagination

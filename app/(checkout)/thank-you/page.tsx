@@ -1,36 +1,101 @@
-'use client'
+"use client"
 
-import { useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from "react"
+import { useSearchParams } from "next/navigation"
 
+type OrderItem = {
+  id: string
+  title: string
+  slug: string | null
+  size: "small" | "medium" | "large" | string
+  quantity: number
+  unitPrice: number // cents
+  lineTotal: number // cents
+  artwork?: { imageUrl?: string | null; title?: string | null; slug?: string | null; artist?: { name?: string | null } | null } | null
+}
 type Order = {
-    id: string,
-    createdAt: string
+  id: string
+  createdAt: string
+  email: string | null
+  amountTotal: number // cents
+  currency: string | null
+  paymentStatus: string | null
+  items: OrderItem[]
 }
 
+export default function ThankYouPage() {
+  const sp = useSearchParams()
+  const sessionId = sp.get("session_id") || ""
+  const [order, setOrder] = useState<Order | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [err, setErr] = useState<string | null>(null)
 
-const ThankYouPage = () => {
-    const searchParams = useSearchParams()
-    const sessionId = searchParams.get('session_id')
-    const [order, setOrder] = useState<Order | null>(null)
+  useEffect(() => {
+    if (!sessionId) { setErr("Missing session"); setLoading(false); return }
+    (async () => {
+      try {
+        const res = await fetch(`/api/thank-you?session_id=${encodeURIComponent(sessionId)}`, { cache: "no-store" })
+        if (!res.ok) throw new Error((await res.json()).message || "Failed")
+        const data: Order = await res.json()
+        setOrder(data)
+      } catch (e: any) {
+        setErr(e.message || "Order not found")
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [sessionId])
 
-    useEffect(() => {
-        if (!sessionId) return
+  const fmt = (cents: number, currency = order?.currency || "USD") =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency }).format((cents || 0) / 100)
 
-        fetch(`/api/thank-you?session_id=${sessionId}`)
-        .then(res => res.json())
-        .then(setOrder)
-    }, [sessionId])
+  if (loading) return <div className="p-6">Processing your order…</div>
+  if (err) return <div className="p-6">Order is still processing. Refresh in a moment.</div>
+  if (!order) return null
 
-    return (
-        <div className='p-6 text-center'>
-            <h1 className='text-2xl font-bold mb-4'>Thank you for your order!</h1>
-            {order ? (
-                <p>your confirmation code is <strong>{order.id}</strong></p> ) : (
-                <p>Loading your confirmation...</p>
-            )}
+  return (
+    <div className="mx-auto max-w-3xl p-6 space-y-6">
+      <h1 className="text-2xl font-semibold">Thank you for your order!</h1>
+      <p className="text-sm text-muted-foreground">
+        Confirmation code: <span className="font-mono">{order.id}</span>
+      </p>
+      {order.email && <p className="text-sm">Receipt sent to: {order.email}</p>}
+
+      <div className="mt-4 rounded border p-4">
+        <h2 className="mb-3 text-lg font-medium">Order summary</h2>
+        <ul className="divide-y">
+          {order.items.map((it) => (
+            <li key={it.id} className="flex gap-3 py-3">
+              {it.artwork?.imageUrl ? (
+                <img
+                  src={it.artwork.imageUrl}
+                  alt={it.title || it.artwork?.title || ""}
+                  className="h-16 w-16 rounded object-cover"
+                />
+              ) : null}
+              <div className="flex-1">
+                <div className="font-medium">{it.title}</div>
+                <div className="text-xs text-muted-foreground">
+                  Size: {it.size} • Qty: {it.quantity}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm">{fmt(it.unitPrice)}</div>
+                <div className="text-xs text-muted-foreground">Line: {fmt(it.lineTotal)}</div>
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-4 flex justify-end border-t pt-4">
+          <div className="text-right">
+            <div className="text-sm">Status: {order.paymentStatus || "paid"}</div>
+            <div className="text-lg font-semibold">Total: {fmt(order.amountTotal)}</div>
+          </div>
         </div>
-    )
-}
+      </div>
 
-export default ThankYouPage
+      <a href="/" className="underline">Continue browsing</a>
+    </div>
+  )
+}

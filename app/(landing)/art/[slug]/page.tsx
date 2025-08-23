@@ -6,7 +6,7 @@ import InnerImageZoom from "react-inner-image-zoom";
 import "react-inner-image-zoom/lib/InnerImageZoom/styles.css";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useCart } from "@/components/contexts";
+import { useCart, useUser } from "@/components/contexts";
 import { CheckCircle, StarIcon } from "lucide-react";
 import { MaxWidthWrapper } from "@/components/layout";
 import { ProductsCarousel, ReviewCarousel } from "@/components/carousels";
@@ -14,6 +14,7 @@ import { Label, Radio, RadioGroup } from "@headlessui/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ProductQuantityInput from "@/components/ProductQuantityInput";
+
 
 import {
   getAppConfigs,
@@ -41,7 +42,7 @@ const AppPages = getAppPages()
 
 const ProductPage = ({ params }: { params: ParamsPropsType }) => {
   const { slug: encodedSlug } = params
-  const slug = decodeURIComponent(encodedSlug)
+  const slug = decodeURIComponent(params.slug)
 
   const router = useRouter()
   const { addToCart } = useCart()
@@ -109,7 +110,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
 
     addToCart(
       {
-        _id: product.id,
+        id: product.id,
         slug: product.slug,
         title: product.title,
         artist: seller?.name || "",
@@ -128,7 +129,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
 
     addToCart(
       {
-        _id: product.id,
+        id: product.id,
         slug: product.slug,
         title: product.title,
         artist: seller?.name || "",
@@ -140,6 +141,18 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
     )
     router.push(`/${AppPages.cart.slug || "cart"}`)
   }
+
+    // Is Owner
+    const { currentUser } = useUser();
+  
+    const [isOwner, setIsOwner] = useState(false);
+    useEffect(() => {
+      // as any???
+      const bySlug = !!(currentUser?.slug && seller?.slug && currentUser.slug === seller.slug)
+      const byId =
+        !!(currentUser?.id && (product as any)?.artistId && currentUser.id === (product as any).artistId)
+      setIsOwner(bySlug || byId)
+    }, [currentUser?.slug, currentUser?.id, seller?.slug, (product as any)?.artistId])
 
   return (
     <>
@@ -161,6 +174,25 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
                     />
                   </div>
                 </div>
+                {isOwner && (
+                  <div className="absolute top-2 right-2 flex gap-2">
+
+                    {/* QR actions */}
+                    <button
+                      className="text-xs px-2 py-1 bg-slate-700 text-white rounded"
+                      onClick={() => window.open(`/api/artworks/${product.slug}/qr`, '_blank', 'noopener')}
+                    >
+                      View QR
+                    </button>
+
+                    <button
+                      className="text-xs px-2 py-1 bg-slate-900 text-white rounded"
+                      onClick={() => window.open(`/api/artworks/${product.slug}/qr?download=1`, '_blank', 'noopener')}
+                    >
+                      Download QR
+                    </button>
+                  </div>
+                )}
                 {/* Product Info */}
                 <div className="w-full md:w-1/2">
                   <div className="space-y-4 md:py-4">
