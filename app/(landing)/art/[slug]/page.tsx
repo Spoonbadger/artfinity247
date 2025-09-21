@@ -124,10 +124,12 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
     router.push(`/${AppPages.cart.slug || "cart"}`)
   }
 
-  const handleBuyNow = () => {
+  const handleBuyNow = async () => {
     if (!product) return
 
-    addToCart(
+    console.log("buy now pushed!!!")
+
+    const items = [
       {
         id: product.id,
         slug: product.slug,
@@ -136,10 +138,25 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
         imageUrl: product.imageUrl,
         selectedSize,
         unitPrice: price,
+        quantity
       },
-      quantity
-    )
-    router.push(`/${AppPages.cart.slug || "cart"}`)
+    ]
+
+    try {
+      const res = await fetch("/api/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items })
+      })
+
+      if (!res.ok) throw new Error(await res.text())
+      const { url } = await res.json()
+      console.log("Stripe checkout URL", url)
+      window.location.href = url
+    } catch (err) {
+      console.error("Buy Now failed", err)
+      toast.error("Could now Buy Now, try add to cart")
+    }
   }
 
     // Is Owner
