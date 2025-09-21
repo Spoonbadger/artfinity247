@@ -20,6 +20,9 @@ type Order = {
   amountTotal: number // cents
   currency: string | null
   paymentStatus: string | null
+  receiptSentAt?: string | null
+  shippingName?: string | null
+  shippingAddress?: string | null
   items: OrderItem[]
 }
 
@@ -59,7 +62,22 @@ export default function ThankYouPage() {
       <p className="text-sm text-muted-foreground">
         Confirmation code: <span className="font-mono">{order.id}</span>
       </p>
-      {order.email && <p className="text-sm">Receipt sent to: {order.email}</p>}
+      {order.receiptSentAt ? (
+        <p className="text-sm">Receipt sent to: {order.email}</p>
+      ) : order.email ? (
+        <p className="text-sm text-muted-foreground">
+          We’ll email your receipt shortly to {order.email}
+        </p>
+      ) : null}
+
+      {(order.shippingName || order.shippingAddress) && (
+        <div className="mt-4">
+          <h2 className="font-medium">Shipping To</h2>
+          {order.shippingName && <p>{order.shippingName}</p>}
+          {order.shippingAddress && <p>{order.shippingAddress}</p>}
+        </div>
+      )}
+
 
       <div className="mt-4 rounded border p-4">
         <h2 className="mb-3 text-lg font-medium">Order summary</h2>

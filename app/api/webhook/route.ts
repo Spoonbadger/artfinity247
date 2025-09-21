@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
       sig,
       process.env.STRIPE_WEBHOOK_SECRET!
     )
+      console.log("Incoming webhook:", event.type)
   } catch (err) {
     console.error('Webhook error:', err)
     return new Response(`Webhook error: ${(err as Error).message}`, { status: 400 })
@@ -33,15 +34,28 @@ export async function POST(req: NextRequest) {
       // 1) Idempotent order create (upsert by unique stripeSessionId)
       const order = await prisma.order.upsert({
         where: { stripeSessionId: session.id },
-        update: {}, // no updates on retry
+        update: {
+          // don’t touch totals on retry, but update shipping/email if missing
+          email: session.customer_details?.email ?? '',
+          paymentStatus: session.payment_status ?? '',
+          shippingName: session.customer_details?.name ?? null,
+          shippingAddress: session.customer_details?.address
+            ? `${session.customer_details.address.line1 ?? ''}, ${session.customer_details.address.city ?? ''}, ${session.customer_details.address.state ?? ''} ${session.customer_details.address.postal_code ?? ''}, ${session.customer_details.address.country ?? ''}`
+            : null,
+        },
         create: {
           stripeSessionId: session.id,
           email: session.customer_details?.email ?? '',
           amountTotal: session.amount_total ?? 0,
-          currency: session.currency ?? '',
+          currency: session.currency ?? 'usd',
           paymentStatus: session.payment_status ?? '',
+          shippingName: session.customer_details?.name ?? null,
+          shippingAddress: session.customer_details?.address
+            ? `${session.customer_details.address.line1 ?? ''}, ${session.customer_details.address.city ?? ''}, ${session.customer_details.address.state ?? ''} ${session.customer_details.address.postal_code ?? ''}, ${session.customer_details.address.country ?? ''}`
+            : null,
         },
       })
+
 
       // 2) Get line items with product expanded (so product.metadata is available)
       const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {

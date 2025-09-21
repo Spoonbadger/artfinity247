@@ -14,7 +14,15 @@ export async function GET(req: NextRequest) {
     order = await prisma.order.findUnique({
       where: { stripeSessionId: sessionId },
       select: {
-        id: true, createdAt: true, email: true, amountTotal: true, currency: true, paymentStatus: true,
+        id: true,
+        createdAt: true,
+        email: true,
+        amountTotal: true,
+        currency: true,
+        paymentStatus: true,
+        receiptSentAt: true,
+        shippingName: true,
+        shippingAddress: true,
         items: {
           select: {
             id: true, slug: true, size: true, quantity: true, unitPrice: true, lineTotal: true,

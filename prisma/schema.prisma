@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -21,6 +21,10 @@ model Order {
   currency        String
   paymentStatus   String
   createdAt       DateTime    @default(now())
+  shippingName    String?
+  shippingAddress String?
+  receiptSentAt   DateTime?
+  
   items           OrderItem[]
 }
 
