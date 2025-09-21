@@ -26,7 +26,19 @@ export async function GET(req: NextRequest) {
         items: {
           select: {
             id: true, slug: true, size: true, quantity: true, unitPrice: true, lineTotal: true,
-            artwork: { select: { imageUrl: true, title: true, slug: true, artist: { select: { name: true } } } },
+            artwork: { 
+              select: { 
+                imageUrl: true, 
+                title: true, 
+                slug: true, 
+                artist: { 
+                  select: { 
+                    name: true, 
+                    slug: true 
+                  } 
+                } 
+              } 
+            },
           }
         }
       },

@@ -11,7 +11,15 @@ type OrderItem = {
   quantity: number
   unitPrice: number // cents
   lineTotal: number // cents
-  artwork?: { imageUrl?: string | null; title?: string | null; slug?: string | null; artist?: { name?: string | null } | null } | null
+  artwork?: { 
+    imageUrl?: string | null; 
+    title?: string | null; 
+    slug?: string | null; 
+    artist?: { 
+      name?: string | null
+      slug?: string | null
+    } | null
+  } | null
 }
 type Order = {
   id: string
@@ -109,9 +117,12 @@ export default function ThankYouPage() {
               <div className="flex-1">
                 <div className="font-medium">{it.artwork?.title || it.title}</div>
                 {it.artwork?.artist?.name && (
-                  <div className="text-xs text-muted-foreground">
+                  <a
+                    href={`/artists/${it.artwork?.artist?.slug || ""}`}
+                    className="text-xs text-muted-foreground hover:underline"
+                  >
                     by {it.artwork.artist.name}
-                  </div>
+                  </a>
                 )}
                 <div className="text-xs text-muted-foreground">
                   Size: {it.size} • Qty: {it.quantity}
