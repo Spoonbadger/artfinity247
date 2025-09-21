@@ -250,6 +250,13 @@ const handleSaveBio = async () => {
                         View Sales
                       </Button>
                     </Link>
+
+
+                    <Link href="/dashboard/purchases">
+                      <Button size="sm" variant="default">
+                        View Purchases
+                      </Button>
+                    </Link>
                   </div>
               </div>
               
