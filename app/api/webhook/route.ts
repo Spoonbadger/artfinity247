@@ -20,7 +20,9 @@ export async function POST(req: NextRequest) {
       sig,
       process.env.STRIPE_WEBHOOK_SECRET!
     )
-      console.log("Incoming webhook:", event.type)
+
+    console.log("Incoming webhook:", event.type)
+
   } catch (err) {
     console.error('Webhook error:', err)
     return new Response(`Webhook error: ${(err as Error).message}`, { status: 400 })
@@ -49,6 +51,7 @@ export async function POST(req: NextRequest) {
           amountTotal: session.amount_total ?? 0,
           currency: session.currency ?? 'usd',
           paymentStatus: session.payment_status ?? '',
+          receiptSentAt: new Date(),
           shippingName: session.customer_details?.name ?? null,
           shippingAddress: session.customer_details?.address
             ? `${session.customer_details.address.line1 ?? ''}, ${session.customer_details.address.city ?? ''}, ${session.customer_details.address.state ?? ''} ${session.customer_details.address.postal_code ?? ''}, ${session.customer_details.address.country ?? ''}`
@@ -76,6 +79,9 @@ export async function POST(req: NextRequest) {
           unitPrice: unit,                 // cents
           quantity: qty,
           lineTotal: unit * qty,           // convenience
+          title: product?.metadata?.title || li.description || null,
+          artistName: product?.metadata?.artistName || null,
+          imageUrl: product?.metadata?.imageUrl || null,
         }
       })
 

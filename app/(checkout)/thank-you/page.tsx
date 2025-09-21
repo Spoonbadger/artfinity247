@@ -52,6 +52,21 @@ export default function ThankYouPage() {
   const fmt = (cents: number, currency = order?.currency || "USD") =>
     new Intl.NumberFormat("en-US", { style: "currency", currency }).format((cents || 0) / 100)
 
+  // merge items with same slug+size
+  const mergedItems = Object.values(
+    (order?.items || []).reduce((acc, it) => {
+      const key = `${it.slug}-${it.size}`
+      if (!acc[key]) {
+        acc[key] = { ...it }
+      } else {
+        acc[key].quantity += it.quantity
+        acc[key].lineTotal += it.lineTotal
+      }
+      return acc
+    }, {} as Record<string, OrderItem>)
+  )
+
+
   if (loading) return <div className="p-6">Processing your order…</div>
   if (err) return <div className="p-6">Order is still processing. Refresh in a moment.</div>
   if (!order) return null
@@ -82,8 +97,8 @@ export default function ThankYouPage() {
       <div className="mt-4 rounded border p-4">
         <h2 className="mb-3 text-lg font-medium">Order summary</h2>
         <ul className="divide-y">
-          {order.items.map((it) => (
-            <li key={it.id} className="flex gap-3 py-3">
+          {mergedItems.map((it) => (
+            <li key={it.slug + it.size} className="flex gap-3 py-3">
               {it.artwork?.imageUrl ? (
                 <img
                   src={it.artwork.imageUrl}
@@ -92,18 +107,26 @@ export default function ThankYouPage() {
                 />
               ) : null}
               <div className="flex-1">
-                <div className="font-medium">{it.title}</div>
+                <div className="font-medium">{it.artwork?.title || it.title}</div>
+                {it.artwork?.artist?.name && (
+                  <div className="text-xs text-muted-foreground">
+                    by {it.artwork.artist.name}
+                  </div>
+                )}
                 <div className="text-xs text-muted-foreground">
                   Size: {it.size} • Qty: {it.quantity}
                 </div>
               </div>
               <div className="text-right">
                 <div className="text-sm">{fmt(it.unitPrice)}</div>
-                <div className="text-xs text-muted-foreground">Line: {fmt(it.lineTotal)}</div>
+                <div className="text-xs text-muted-foreground">
+                  Qty x {it.quantity}: {fmt(it.lineTotal)}
+                </div>
               </div>
             </li>
           ))}
         </ul>
+
 
         <div className="mt-4 flex justify-end border-t pt-4">
           <div className="text-right">
@@ -113,7 +136,7 @@ export default function ThankYouPage() {
         </div>
       </div>
 
-      <a href="/" className="underline">Continue browsing</a>
+      <a href="/art" className="underline">Continue browsing</a>
     </div>
   )
 }
