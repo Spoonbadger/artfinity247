@@ -244,7 +244,15 @@ const handleSaveBio = async () => {
                   <Button onClick={() => setIsEditing(true)}>edit bio</Button>
                 )}
                 <LogoutButton className='m-2' />
+                  <div className="mt-2 flex gap-2">
+                    <Link href="/dashboard/sales">
+                      <Button size="sm" variant="default">
+                        View Sales
+                      </Button>
+                    </Link>
+                  </div>
               </div>
+              
             )}
             <SocialAccountLinks links={seller?.social_accounts ?? []} className="justify-center md:justify-start" />
             <div className="seller-address-info mt-8 md:mt-12">
