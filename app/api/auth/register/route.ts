@@ -36,7 +36,8 @@ export async function POST(req: Request) {
             country,
             phone,
             profileImage,
-            slug
+            slug,
+            role: "USER",
         },
     })
     const token = await new SignJWT({ id: artist.id, slug: artist.slug, email: artist.email })

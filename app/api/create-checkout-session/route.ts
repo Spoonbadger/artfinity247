@@ -30,7 +30,7 @@ export async function POST(req: Request) {
         items.map(async (item: any) => {
           const p = item.product ?? item
           const slug: string = String(p.slug ?? '').trim()
-          const size: Size = String(p.selectedSize ?? p.seletedSize ?? '').toLowerCase() as any
+          const size: Size = String(p.selectedSize ?? '').toLowerCase() as any
           if (!slug || !['small', 'medium', 'large'].includes(size)) return null
 
           // Fetch artwork + artist for pricing & metadata
@@ -67,7 +67,6 @@ export async function POST(req: Request) {
               product_data: {
                 name: art.title,
                 images: art.imageUrl ? [abs(art.imageUrl)!] : [],
-                // Webhook will persist these snapshots into OrderItem
                 metadata: {
                   artworkId: art.id,
                   slug: art.slug || '',

@@ -35,6 +35,7 @@ export async function POST(req: Request) {
         name: artist.name,
         slug: artist.slug,
         email: artist.email,
+        role: artist.role,
       } 
     })
 

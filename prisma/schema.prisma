@@ -24,7 +24,7 @@ model Order {
   shippingName    String?
   shippingAddress String?
   receiptSentAt   DateTime?
-  
+  shippingStatus  String      @default("pending") // "pending", "shipped", "delivered"
   items           OrderItem[]
 }
 
@@ -44,6 +44,10 @@ model OrderItem {
   title      String?
   artistName String?
   imageUrl   String?
+  printCost    Int?
+  shippingCost Int?
+  laborCost    Int?
+  websiteCost  Int?
 
   @@unique([orderId, artworkId, size])
   @@index([orderId])
@@ -65,8 +69,14 @@ model Artist {
   bio          String?   @default("")
   createdAt    DateTime    @default(now())
   artworks     Artwork[] // one to many
+  role      Role     @default(USER)
 
   @@index([citySlug])
+}
+
+enum Role {
+  USER
+  ADMIN
 }
 
 model Artwork {

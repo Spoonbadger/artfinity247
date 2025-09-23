@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
 
   // brief poll (webhook race)
   let order: any = null
+
   for (let i = 0; i < 6; i++) {
     order = await prisma.order.findUnique({
       where: { stripeSessionId: sessionId },

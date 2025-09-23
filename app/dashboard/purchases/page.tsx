@@ -18,6 +18,7 @@ type PurchaseItem = {
     email: string | null
     paymentStatus: string | null
     currency: string | null
+    shippingStatus: string
   }
 }
 
@@ -65,6 +66,7 @@ export default function PurchasesPage() {
               <th className="p-2">Size</th>
               <th className="p-2">Total</th>
               <th className="p-2">Status</th>
+              <th className="p-2">Shipping</th>
             </tr>
           </thead>
           <tbody>
@@ -90,6 +92,7 @@ export default function PurchasesPage() {
                   {fmt(p.lineTotal, p.order.currency || "USD")}
                 </td>
                 <td className="p-2 text-center">{p.order.paymentStatus}</td>
+                <td className="p-2 text-center">{p.order.shippingStatus || "pending"}</td>
               </tr>
             ))}
           </tbody>

@@ -8,6 +8,21 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 const prisma = new PrismaClient()
 export const runtime = 'nodejs'
 
+const COSTS = {
+  labor: 300,   // $3.00
+  website: 100, // $1.00
+  print: {
+    small: 300,   // $3.00
+    medium: 600,  // $6.00
+    large: 1000,  // $10.00
+  },
+  shipping: {
+    small: 500,   // $5.00
+    medium: 700,  // $7.00
+    large: 1000,  // $10.00
+  },
+} as const
+
 
 export async function POST(req: NextRequest) {
   const rawBody = await req.text()
@@ -70,18 +85,23 @@ export async function POST(req: NextRequest) {
         const product = li.price?.product as Stripe.Product | null
         const unit = li.price?.unit_amount ?? 0
         const qty = li.quantity ?? 1
+        const size = product?.metadata?.size || 'medium'
 
         return {
           orderId: order.id,
           artworkId: product?.metadata?.artworkId || '',
           slug: product?.metadata?.slug || '',
-          size: product?.metadata?.size || '',
+          size,
           unitPrice: unit,                 // cents
           quantity: qty,
           lineTotal: unit * qty,           // convenience
           title: product?.metadata?.title || li.description || null,
           artistName: product?.metadata?.artistName || null,
           imageUrl: product?.metadata?.imageUrl || null,
+          printCost: COSTS.print[size as keyof typeof COSTS.print] ?? 0,
+          shippingCost: COSTS.shipping[size as keyof typeof COSTS.shipping] ?? 0,
+          laborCost: COSTS.labor,
+          websiteCost: COSTS.website,
         }
       })
 
@@ -90,6 +110,7 @@ export async function POST(req: NextRequest) {
       await prisma.orderItem.deleteMany({ where: { orderId: order.id } })
 
       if (itemsToCreate.length > 0) {
+        console.log("itemsToCreate:", itemsToCreate)
         await prisma.orderItem.createMany({ data: itemsToCreate })
       }
 
