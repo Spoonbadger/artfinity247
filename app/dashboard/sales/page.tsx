@@ -74,15 +74,23 @@ export default function SalesPage() {
         >
           View Report
         </button>
+        <h1 className="text-2xl font-semibold mb-4 flex items-center justify-between">
+          <a
+            href="/dashboard/payouts"
+            className="px-10 text-blue-600 text-sm underline hover:no-underline"
+          >View Payout History →
+          </a>
+        </h1>
+
       </div>
 
       {report && (
         <div className="space-y-2">
           <div><strong>Gross:</strong> ${(report.gross/100).toFixed(2)}</div>
-          <div><strong>Expenses:</strong> ${(report.expenses/100).toFixed(2)}</div>
+          <div><strong>Expenses:</strong> ${(report.expenses/100).toFixed(2)} (materials, packaging, website costs)</div>
           <div><strong>Profit:</strong> ${(report.profit/100).toFixed(2)}</div>
           <div><strong>Your Share:</strong> <u>${(report.artistShare/100).toFixed(2)}</u></div>
-          payments to you made by the 5th of each month
+          payments are made by the 5th of each month
           <div><br></br></div>
         </div>
       )}
