@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client'
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 const prisma = new PrismaClient()
 
@@ -21,10 +21,65 @@ export async function GET(req: NextRequest) {
     if (before) filters.createdAt.lte = new Date(before)
   }
 
-  const orders = await prisma.order.findMany({
-    where: filters,
-    orderBy: { createdAt: 'desc' },
-  })
+const orders = await prisma.order.findMany({
+  where: filters,
+  orderBy: { createdAt: 'desc' },
+  include: {
+    items: {
+      select: {
+        id: true,
+        slug: true,
+        size: true,
+        quantity: true,
+        unitPrice: true,
+        lineTotal: true,
+        printCost: true,
+        shippingCost: true,
+        laborCost: true,
+        websiteCost: true,
+        artwork: {
+          select: {
+            artistId: true,
+          },
+        },
+      },
+    },
+  },
+})
 
-  return Response.json(orders) // full, private data
+const month = new Date().toISOString().slice(0, 7)
+const payouts = await prisma.payout.findMany({
+  where: { month },
+  select: { artistId: true, paidAt: true },
+})
+const paidLookup = new Map(payouts.map(p => [p.artistId, p.paidAt]))
+
+  // add profit + shares per item
+  const withShares = orders.map(order => ({
+    ...order,
+    items: order.items.map(item => {
+      const expenses =
+        (item.printCost ?? 0) +
+        (item.shippingCost ?? 0) +
+        (item.laborCost ?? 0) +
+        (item.websiteCost ?? 0)
+
+      const profit = (item.lineTotal ?? 0) - expenses
+      const artistShare = Math.floor(profit / 2)
+      const companyShare = profit - artistShare
+
+      return {
+        ...item,
+        profit,
+        artistShare,
+        companyShare,
+        payoutStatus: item.artwork && paidLookup.get(item.artwork.artistId)
+          ? 'PAID'
+          : 'UNPAID',
+      }
+    }),
+  })) 
+
+
+  return NextResponse.json(withShares)
 }

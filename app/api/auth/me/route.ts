@@ -16,9 +16,10 @@ export async function GET(req: NextRequest) {
       new TextEncoder().encode(process.env.JWT_SECRET!)
     )
     return NextResponse.json({
-      id: payload.id,           // you sign { id, email, slug }
+      id: payload.id,
       slug: payload.slug,
       email: payload.email,
+      role: payload.role
     })
   } catch {
     return new NextResponse('Invalid token', { status: 401 })

@@ -22,7 +22,7 @@ export async function POST(req: Request) {
 
     const jwtExpire = remember ? '30d' : '3h'
 
-    const token = await new SignJWT({ id: artist.id, email: artist.email, slug: artist.slug })
+    const token = await new SignJWT({ id: artist.id, email: artist.email, slug: artist.slug, role: artist.role })
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime(jwtExpire)
       .sign(new TextEncoder().encode(process.env.JWT_SECRET!))

@@ -138,9 +138,10 @@ export type UserType = {
   bio: string;
   social_accounts?: { platform: string; url: string }[];
   zip_code?: number;
-  roles?: UserRoleType[];
+  role?: "ADMIN" | "USER"
   is_active: boolean;
   slug: string;
+  venmoHandle: string
 }
 
 export type UserProductsType = {
@@ -202,8 +203,6 @@ export type ProductVariantDataType = CommonKeyDataType & {
 };
 
 export type ReviewDataType = "product" | "seller";
-
-export type UserRoleType = "subscriber" | "seller" | "editor" | "admin";
 
 export type CommonAreaLocationType = CommonTaggingType & {
   img?: string;

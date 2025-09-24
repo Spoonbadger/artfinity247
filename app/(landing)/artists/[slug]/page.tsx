@@ -46,6 +46,10 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
   const items_limit = AppPages.seller?.items_limit || 12;
   const sections = AppPages.seller?.sections || { products: { title: "Artworks" }, reviews: { title: "Reviews" } };
 
+  const [venmoHandle, setVenmoHandle] = useState("")
+  const [saving, setSaving] = useState(false)
+  const [isEditingHandle, setIsEditingHandle] = useState(false)
+
   const [totalSellerProducts, setTotalSellerProducts] = useState(0);
   const [paginatedProducts, setPaginatedProducts] = useState<ProductType[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -191,9 +195,43 @@ const handleSaveBio = async () => {
     }
   };
 
+  useEffect(() => {
+    if (seller?.venmoHandle) {
+      setVenmoHandle(seller.venmoHandle)
+    }
+  }, [seller?.venmoHandle])
+  
+  const saveHandle = async () => {
+    setSaving(true)
+    try {
+      const normalized = venmoHandle.startsWith("@")
+      ? venmoHandle
+      : `@${venmoHandle}`
+
+      const res = await fetch(`/api/artists/${seller?.slug}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ venmoHandle: normalized }),
+      })
+      if (!res.ok) throw new Error("Failed to save Venmo handle")
+
+      const updated = await res.json()
+      setVenmoHandle(updated.venmoHandle || normalized)
+      setIsEditingHandle(false)
+      setSeller(prev => (prev ? { ...prev, venmoHandle: updated.venmoHandle } : prev))
+      toast.success("Venmo handle saved")
+    } catch (err) {
+      console.error(err)
+      toast.error("Could not save Venmo handle - Venmo handle can only contain letters, numbers, dashes and underscores")
+    } finally {
+      setSaving(false)
+    }
+  }
+
   // guards
   if (seller === undefined) return <div className="p-6">Loading…</div>;
   if (seller === null) return <div className="p-6">Artist not found.</div>;
+
 
   return (
     <div>
@@ -217,8 +255,23 @@ const handleSaveBio = async () => {
             imgLoading="eager"
             className="[&_.area-content]:self-center [&_.area-image]:max-h-[60vh] [&_.area-image]:min-h-96 [&_.area-image]:object-contain"
           >
+            {isOwner && currentUser?.role === "ADMIN" && (
+              <div className="mt-4 flex gap-2">
+                <Link href="/admin/orders">
+                  <Button size="sm" variant="destructive">
+                    Admin Orders
+                  </Button>
+                </Link>
+                <Link href="/admin/payouts">
+                  <Button size="sm" variant="destructive">
+                    Admin Payouts
+                  </Button>
+                </Link>
+              </div>
+            )}
+
             {isOwner && (
-              <>
+              <div>
                <input
                  ref={fileInputRef}
                  type="file" 
@@ -228,14 +281,15 @@ const handleSaveBio = async () => {
                />
                <Button variant="secondary" size="sm" onClick={pickImage} disabled={uploading}>
                  {uploading ? "Uploading…" : "update profile picture"}
-               </Button>
-              </>
+               </Button><div className="pt-4"></div>
+              </div>
             )}
             {isOwner && isEditing ? (
               <textarea value={bioDraft} onChange={(e) => setBioDraft(e.target.value)} className="w-full rounded border p-2 text-sm" />
             ) : (
               seller?.bio || ""
             )}
+
             {isOwner && (
               <div className="mt-2">
                 {isEditing ? (
@@ -258,8 +312,50 @@ const handleSaveBio = async () => {
                       </Button>
                     </Link>
                   </div>
+
+                    {isOwner && (
+                      <div className="mt-4">
+                        <label className="block mb-2">Venmo:</label>
+                        {seller?.venmoHandle && isEditingHandle ? (
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={venmoHandle}
+                              onChange={(e) => setVenmoHandle(e.target.value)}
+                              className="border rounded w-full px-2 py-1"
+                              placeholder="@username"
+                            />
+                            <button
+                              onClick={saveHandle}
+                              disabled={saving}
+                              className="px-3 py-1 bg-blue-600 text-white rounded"
+                            >
+                              {saving ? "Saving…" : "Save"}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setIsEditingHandle(false)
+                                setVenmoHandle(seller?.venmoHandle || "")
+                              }}
+                              className="px-3 py-1 bg-gray-400 text-white rounded"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span>{venmoHandle || "No handle set"}</span>
+                            <button
+                              onClick={() => setIsEditingHandle(true)}
+                              className="px-2 py-1 bg-blue-600 text-white rounded text-sm"
+                            >
+                              Edit
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
               </div>
-              
             )}
             <SocialAccountLinks links={seller?.social_accounts ?? []} className="justify-center md:justify-start" />
             <div className="seller-address-info mt-8 md:mt-12">

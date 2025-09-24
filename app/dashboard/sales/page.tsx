@@ -21,10 +21,24 @@ type SaleItem = {
   }
 }
 
+const months = Array.from({ length: 12 }).map((_, i) => {
+  const d = new Date()
+  d.setMonth(d.getMonth() - i)
+  return d.toISOString().slice(0, 7) // YYYY-MM
+})
+
 
 export default function SalesPage() {
     const [sales, setSales] = useState<SaleItem[]>([])
     const [loading, setLoading] = useState(true)
+    const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))
+    const [report, setReport] = useState<any>(null)
+
+    const fetchReport = async () => {
+      const res = await fetch(`/api/artist/payouts?month=${month}`)
+      if (!res.ok) return alert("Could not fetch")
+      setReport(await res.json())
+    }
 
     useEffect(() => {
       (async () => {
@@ -50,6 +64,29 @@ export default function SalesPage() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-semibold mb-4">My Sales</h1>
+      <div className="flex gap-2 mb-4">
+        <select value={month} onChange={e => setMonth(e.target.value)}>
+          {months.map(m => <option key={m}>{m}</option>)}
+        </select>
+        <button
+          onClick={fetchReport}
+          className="px-4 py-2 bg-blue-600 text-white rounded"
+        >
+          View Report
+        </button>
+      </div>
+
+      {report && (
+        <div className="space-y-2">
+          <div><strong>Gross:</strong> ${(report.gross/100).toFixed(2)}</div>
+          <div><strong>Expenses:</strong> ${(report.expenses/100).toFixed(2)}</div>
+          <div><strong>Profit:</strong> ${(report.profit/100).toFixed(2)}</div>
+          <div><strong>Your Share:</strong> <u>${(report.artistShare/100).toFixed(2)}</u></div>
+          payments to you made by the 5th of each month
+          <div><br></br></div>
+        </div>
+      )}
+
       {sales.length === 0 ? (
         <p>No sales yet.</p>
       ) : (

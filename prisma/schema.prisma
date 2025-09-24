@@ -54,6 +54,19 @@ model OrderItem {
   @@index([artworkId])
 }
 
+model Payout {
+  id         String   @id @default(cuid())
+  artistId   String
+  artist     Artist   @relation(fields: [artistId], references: [id])
+  month      String   // e.g. "2025-09"
+  amountCents Int
+  paidAt     DateTime?  // null = unpaid, date = when marked paid
+  createdAt  DateTime   @default(now())
+
+  @@unique([artistId, month])
+}
+
+
 model Artist {
   id           String    @id @default(cuid())
   name         String
@@ -70,6 +83,8 @@ model Artist {
   createdAt    DateTime    @default(now())
   artworks     Artwork[] // one to many
   role      Role     @default(USER)
+  venmoHandle  String? @unique
+  payouts   Payout[]
 
   @@index([citySlug])
 }

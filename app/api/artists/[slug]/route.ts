@@ -23,8 +23,9 @@ export async function GET(
         state: true,
         country: true,
         profileImage: true,
+        venmoHandle: true,
       },
-    });
+    })
 
     if (!artist) return new NextResponse("Artist not found", { status: 404 });
 
@@ -51,5 +52,52 @@ export async function GET(
   } catch (e) {
     console.error("GET /api/artists/[slug] failed", e);
     return new NextResponse("Server error", { status: 500 });
+  }
+}
+
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { slug: string } }
+) {
+  try {
+    const body = await req.json()
+    let { venmoHandle } = body
+
+    if (!venmoHandle || typeof venmoHandle !== "string") {
+      return NextResponse.json({ error: "Invalid venmoHandle" }, { status: 400 })
+    }
+
+    if (!venmoHandle.startsWith("@")) {
+      venmoHandle = "@" + venmoHandle
+    }
+
+    venmoHandle = venmoHandle.replace(/\s+/g, "")
+
+    // Only letters, numbers, underscores, dashes after "@"
+    if (!/^@[A-Za-z0-9_-]+$/.test(venmoHandle)) {
+      return NextResponse.json(
+        { error: "Venmo handle can only contain letters, numbers, dashes and underscores" },
+        { status: 400 }
+      )
+    }
+
+    const artist = await prisma.artist.update({
+      where: { slug: params.slug },
+      data: { venmoHandle },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        venmoHandle: true,
+      },
+    })
+
+    return NextResponse.json(artist)
+  } catch (err: any) {
+    if (err.code === "P2002") {
+      return NextResponse.json({ error: "That Venmo handle is already in use." }, { status: 400 })
+    }
+    console.error("Error updating venmoHandle:", err)
+    return NextResponse.json({ error: "Server error" }, { status: 500 })
   }
 }
