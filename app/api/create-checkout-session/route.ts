@@ -99,6 +99,7 @@ export async function POST(req: Request) {
       success_url: `${baseUrl}/thank-you?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/cart`,
       locale: 'en',
+      customer_creation: 'always',
       shipping_address_collection: { allowed_countries: ['US'] },   // add more when needed
       phone_number_collection: { enabled: true },
       shipping_options: [
