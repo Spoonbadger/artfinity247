@@ -299,14 +299,13 @@ const handleSaveBio = async () => {
                 )}
                 <LogoutButton className='m-2' />
                   <div className="mt-2 flex gap-2">
-                    <Link href="/dashboard/sales">
+                    <Link href={`/dashboard/sales?slug=${seller?.slug}`}>
                       <Button size="sm" variant="default">
                         View Sales
                       </Button>
                     </Link>
 
-
-                    <Link href="/dashboard/purchases">
+                    <Link href={`/dashboard/purchases?slug=${seller?.slug}`}>
                       <Button size="sm" variant="default">
                         View Purchases
                       </Button>

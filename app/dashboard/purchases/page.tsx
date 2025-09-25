@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useEffect, useState } from "react"
 
 type PurchaseItem = {
@@ -25,6 +26,9 @@ type PurchaseItem = {
 export default function PurchasesPage() {
   const [purchases, setPurchases] = useState<PurchaseItem[]>([])
   const [loading, setLoading] = useState(true)
+
+  const params = new URLSearchParams(window.location.search)
+  const slug = params.get("slug")
 
   useEffect(() => {
     (async () => {
@@ -53,6 +57,9 @@ export default function PurchasesPage() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-semibold mb-4">My Purchases</h1>
+            <Link className="hover:underline" href={`/artists/${slug}`}>
+              Back to profile
+            </Link>
       {purchases.length === 0 ? (
         <p>You haven’t bought anything yet.</p>
       ) : (

@@ -1,5 +1,7 @@
 "use client"
 
+import { Button } from "@/components/ui/button"
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 type SaleItem = {
@@ -33,6 +35,9 @@ export default function SalesPage() {
     const [loading, setLoading] = useState(true)
     const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))
     const [report, setReport] = useState<any>(null)
+
+    const params = new URLSearchParams(window.location.search)
+    const slug = params.get("slug")
 
     const fetchReport = async () => {
       const res = await fetch(`/api/artist/payouts?month=${month}`)
@@ -94,7 +99,9 @@ export default function SalesPage() {
           <div><br></br></div>
         </div>
       )}
-
+      <Link className="hover:underline" href={`/artists/${slug}`}>
+        Back to profile
+      </Link>
       {sales.length === 0 ? (
         <p>No sales yet.</p>
       ) : (
