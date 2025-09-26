@@ -40,7 +40,29 @@ const ArtsPage = (): ReactNode => {
   const [paginatedProducts, setPaginatedProducts] = useState<ProductType[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(items_limit || 10);
+  const [loading, setLoading] = useState(true)
 
+  useEffect(() => {
+    const run = async () => {
+      setLoading(true) // start
+      try {
+        const res = await fetch(`/api/artworks?page=${currentPage}&limit=${itemsPerPage}`, {
+          cache: "no-store",
+        })
+        if (res.ok) {
+          const { artworks, total } = await res.json()
+          setPaginatedProducts(artworks)
+          setTotalProducts(total ?? artworks.length)
+        } else {
+          setPaginatedProducts([])
+          setTotalProducts(0)
+        }
+      } finally {
+        setLoading(false) // end
+      }
+    }
+    run()
+  }, [searchParams, items_limit, queryPageKey])
 
   useEffect(() => {
     setItemsPerPage(items_limit);
@@ -144,13 +166,14 @@ const ArtsPage = (): ReactNode => {
               />
             </div>
           </div>
-          {paginatedProducts.length > 0 ? (
+          {loading ? (
+            <p className="mb-6 w-full py-6 text-center text-lg md:mb-8 md:py-12">
+              Loading…
+            </p>
+          ) : paginatedProducts.length > 0 ? (
             <div className="products-area grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-6 xl:grid-cols-4">
               {paginatedProducts.map((product) => (
-                <Link
-                  key={product.id}
-                  href={`/art/${product.slug}`}
-                >
+                <Link key={product.id} href={`/art/${product.slug}`}>
                   <ProductCard product={product} showSeller={true} />
                 </Link>
               ))}

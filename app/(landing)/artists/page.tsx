@@ -40,6 +40,25 @@ const ArtistsPage = (): ReactNode => {
   const [totalArtists, setTotalArtists] = useState(0)
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(items_limit || 10);
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let ignore = false
+    const run = async () => {
+      setLoading(true)
+      try {
+        const res = await fetch(`/api/artists?page=${currentPage}&limit=${itemsPerPage}`, { cache: "no-store" })
+        if (!res.ok) { if (!ignore) { setSellers([]); setTotalArtists(0) } ; return }
+        const { artists, total } = await res.json()
+        if (!ignore) { setSellers(artists || []); setTotalArtists(total || 0) }
+      } finally {
+        if (!ignore) setLoading(false)
+      }
+    }
+    run()
+    return () => { ignore = true }
+  }, [currentPage, itemsPerPage])
+
 
   useEffect(() => {
     setItemsPerPage(items_limit)
@@ -72,7 +91,7 @@ const ArtistsPage = (): ReactNode => {
 
   return (
     <div>
-      <title>All Artists: Artistfinity</title>
+      <title>All Artists: Artfinity</title>
       <section>
         <MinimalSection className="page-banner" bg={banner}>
           <h1 className="text-center text-white">{title}</h1>
@@ -116,7 +135,10 @@ const ArtistsPage = (): ReactNode => {
               />
             </div>
           </div>
-          {sellers.length > 0 ? (
+          
+          {loading ? (
+            <p className="mb-6 w-full py-6 text-center text-lg md:mb-8 md:py-12">Loading…</p>
+          ) : sellers.length > 0 ? (
             <div className="sellers-area grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-6 xl:grid-cols-4">
               {sellers.map((user) => (
                 <Link key={user.id} href={`/${sellersPageSlug}/${user.slug}`}>
@@ -130,8 +152,9 @@ const ArtistsPage = (): ReactNode => {
             </p>
           )}
           <div className="pagination-area flex items-center justify-center py-6">
+            
             <Pagination
-              totalItems={getSellers().length}
+              totalItems={totalArtists}
               itemsPerPage={itemsPerPage}
               currentPage={currentPage}
               onPageChange={handlePageChange}
