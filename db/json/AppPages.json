@@ -35,7 +35,7 @@
         "product_ids": ["12", "15"],
         "actionBtn": { "title": "Check Now" }
       },
-      "our_guarantee": { "title": "Our Gaurantee" },
+      "our_guarantee": { "title": "Our Guarantee" },
       "gallery": {
         "title": "ARTISTIC SHOWCASE",
         "subTitle": "",
@@ -44,14 +44,14 @@
     },
     "carousels": {
       "products": {
-        "title": "Populer Art",
+        "title": "Popular Art",
         "subTitle": "Here Are Some",
         "description": "Explore the latest trending artworks on our platform. From contemporary masterpieces to timeless classics, discover what's capturing the attention of art enthusiasts.",
         "collection_id": "16"
       },
       "sellers": {
         "title": "Featured Artists",
-        "subTitle": "Discover The Talents",
+        "subTitle": "Discover the Talent",
         "description": "Meet the talented artists behind the captivating artworks on Artfinity. From emerging talents to seasoned professionals, explore a diverse range of artistic styles and expressions.",
         "collection_id": "17"
       },
@@ -223,9 +223,16 @@
   "cookie_policy": {
     "title": "Cookie Policy",
     "subTitle": "",
-    "content": "<div><br/><h4 style=\"margin-bottom: 0.75rem;\">What are Cookies?</h4><p>Cookies are small pieces of data stored on your device (computer or mobile device) when you visit a website. They are widely used to make websites work more efficiently and to provide information to the website owners.</p>  </div>  <div><br/><h4 style=\"margin-bottom: 0.75rem;\">How We Use Cookies</h4><p>We use cookies for various purposes, including:</p><ul><li>Understanding and analyzing how you use our website.</li><li>Improving the performance and functionality of our website.</li><li>Personalizing your experience on our website.</li><li>Providing targeted advertising based on your interests.</li></ul>  </div>  <div><br/><h4 style=\"margin-bottom: 0.75rem;\">Types of Cookies We Use</h4><p>We use the following types of cookies:</p><ul><li><strong>Essential Cookies:</strong> These cookies are necessary for the website to function properly.</li><li><strong>Analytical/Performance Cookies:</strong> These cookies allow us to analyze how users interact with our website and improve its performance.</li><li><strong>Functionality Cookies:</strong> These cookies enable enhanced functionality and personalization of the website.</li><li><strong>Targeting/Advertising Cookies:</strong> These cookies are used to deliver advertisements relevant to your interests.</li></ul>  </div>  <div><br/><h4 style=\"margin-bottom: 0.75rem;\">Managing Cookies</h4><p>You can control and/or delete cookies as you wish. For details, see <a href=\"https://www.aboutcookies.org/\">aboutcookies.org</a>.</p><p>You can delete all cookies that are already on your device and set most browsers to prevent them from being placed. However, if you do so, you may have to manually adjust some preferences every time you visit a site, and some services and functionalities may not work.</p>  </div>  <div><br/><h4 style=\"margin-bottom: 0;\">Changes to Our Cookie Policy</h4><p>We may update our Cookie Policy from time to time. Any changes will be posted on this page.</p>  </div>",
+    "content": "<div><br/><h4 style=\"margin-bottom: 0.75rem;\">What Are Cookies?</h4><p>Cookies are small text files stored on your device when you visit a website. They help websites function properly, improve performance, and provide information to site owners.</p></div><div><br/><h4 style=\"margin-bottom: 0.75rem;\">How We Use Cookies</h4><p>We use cookies to:</p><ul><li>Ensure the website works correctly (essential cookies).</li><li>Understand and improve site performance (analytics).</li><li>Remember your preferences (functionality).</li><li>Show you relevant content and ads (targeting/advertising).</li></ul></div><div><br/><h4 style=\"margin-bottom: 0.75rem;\">Managing Cookies</h4><p>By using this website, you consent to our use of cookies unless you disable them. You can control cookies through your browser settings:</p><ul><li><a href=\"https://support.google.com/chrome/answer/95647\" target=\"_blank\">Chrome</a></li><li><a href=\"https://support.apple.com/guide/safari/sfri11471/mac\" target=\"_blank\">Safari</a></li><li><a href=\"https://support.mozilla.org/en-US/kb/clear-cookies-and-site-data-firefox\" target=\"_blank\">Firefox</a></li></ul><p>Note: Blocking cookies may affect site functionality.</p></div><div><br/><h4 style=\"margin-bottom: 0.75rem;\">Updates</h4><p>We may update this Cookie Policy from time to time. Changes will be posted on this page.</p></div>",
     "slug": "cookie-policy"
   },
+    "cookie_banner": {
+    "title": "Cookie Policy",
+    "subTitle": "",
+      "content": "<div id=\"cookie-banner\" role=\"dialog\" aria-live=\"polite\" style=\"position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#111;color:#fff;padding:12px 16px;font-size:14px;display:none;box-shadow:0 -2px 12px rgba(0,0,0,.2)\"><div style=\"max-width:1100px;margin:0 auto;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap\"><p style=\"margin:0;line-height:1.4\">This site uses cookies to improve your experience. By clicking <strong>Accept</strong>, you consent to cookies. <a href=\"/cookie-policy\" style=\"color:#9dd1ff;text-decoration:underline\">Learn more</a>.</p><button id=\"cookie-accept\" style=\"background:#fff;color:#111;border:0;border-radius:6px;padding:8px 14px;font-weight:600;cursor:pointer\">Accept</button></div></div><script>(function(){try{var k='cookieConsent',b=document.getElementById('cookie-banner'),btn=document.getElementById('cookie-accept');if(!b||!btn) return; if(localStorage.getItem(k)==='accepted'){b.remove();return;} b.style.display='block'; btn.addEventListener('click',function(){localStorage.setItem(k,'accepted');b.remove();});}catch(e){/* no-op */}})();</script>",
+    "slug": "cookie-policy"
+  },
+
   "privacy_policy": {
     "title": "Privacy Policy",
     "subTitle": "",

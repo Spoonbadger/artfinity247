@@ -65,7 +65,7 @@ const HeroSlider = ({
                 <p className="area-sub-title text-muted md:text-lg lg:text-xl">
                   {slide.subTitle}
                 </p>
-                <h1 className="area-title shadow-white xl:text-7xl">
+                <h1 className="area-title text-[#e88b8c] shadow-white xl:text-7xl">
                   {slide.title}
                 </h1>
                 <ActionButtons

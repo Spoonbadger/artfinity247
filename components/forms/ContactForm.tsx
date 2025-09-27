@@ -96,7 +96,7 @@ const ContactForm = ({
                       <Input
                         {...field}
                         type="text"
-                        placeholder="John"
+                        placeholder="Alice"
                         className="form-input rounded-sm"
                       />
                     </FormControl>
@@ -116,7 +116,7 @@ const ContactForm = ({
                       <Input
                         {...field}
                         type="text"
-                        placeholder="Deo"
+                        placeholder="Art"
                         className="form-input rounded-sm"
                       />
                     </FormControl>
@@ -137,7 +137,7 @@ const ContactForm = ({
                     <Input
                       {...field}
                       type="email"
-                      placeholder="johndeo@gmail.com"
+                      placeholder="alice.art@email.com"
                       className="form-input rounded-sm"
                     />
                   </FormControl>

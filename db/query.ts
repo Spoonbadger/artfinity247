@@ -173,7 +173,7 @@ export const getUsers = (query: MultiUsersQuery = {}): UserType[] => {
 
   if (roles) {
     result = result.filter((user) =>
-      user.roles ? roles.every((role) => user.roles?.includes(role)) : false,
+      user.role ? roles.every((role) => user.role?.includes(role)) : false,
     );
   }
 

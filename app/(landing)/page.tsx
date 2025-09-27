@@ -234,7 +234,7 @@ const Home = (): ReactNode => {
           ))}
         </MaxWidthWrapper>
       </section>
-      <section id="gallery-area" className="relative isolate">
+      {/* <section id="gallery-area" className="relative isolate">
         <MaxWidthWrapper>
           <ImageGallery
             imgs={products.map((art) => art.imageUrl)}
@@ -250,8 +250,8 @@ const Home = (): ReactNode => {
           />
         </MaxWidthWrapper>
         <BackgroundShadow />
-      </section>
-      <section id="review-area">
+      </section> */}
+      {/* <section id="review-area">
         <MaxWidthWrapper className="py-20">
           <ReviewCarousel
             subTitle={reviewsCarousel.subTitle}
@@ -262,8 +262,8 @@ const Home = (): ReactNode => {
             notFoundMsg={AppConfigs?.messages?.reviews?.not_found}
           />
         </MaxWidthWrapper>
-      </section>
-      <section id="our-guarantee-area">
+      </section> */}
+      {/* <section id="our-guarantee-area">
         <MaxWidthWrapper>
           <h2 className="area-title mb-4 text-center">
             {ourGuaranteeSection.title || "Our Guarantee"}
@@ -281,7 +281,7 @@ const Home = (): ReactNode => {
               ))}
           </div>
         </MaxWidthWrapper>
-      </section>
+      </section> */}
     </div>
   );
 };

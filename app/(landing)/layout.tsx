@@ -7,6 +7,7 @@ import { useLoadingStatus } from "@/components/contexts";
 import { NavBar, Footer } from "@/components/layout";
 import PageLoading from "@/components/PageLoading";
 import { getAppPages } from "@/db/query";
+import CookieBanner from "@/components/CookieBanner";
 
 
 const AppPages = getAppPages();
@@ -40,6 +41,7 @@ const Layout = ({ children }: { children: ReactNode }) => {
       <NavBar fixedNav={fixedNavPage} />
       <main>{children}</main>
       <Footer />
+      <CookieBanner />
       {isLoading && <PageLoading />}
     </div>
   );
