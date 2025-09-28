@@ -6,7 +6,7 @@
       "welcome": {
         "title": "Welcome To Artfinity",
         "subTitle": "Explore a World of Creativity",
-        "content": "Choose your local art scene your favorite artists or an artwork you enjoy",
+"content": "Welcome to Artfinity — where local creativity meets global reach. We connect art lovers with talented artists through high-quality, made-to-order prints. Artists upload their work directly, earn a 50/50 profit share, showcasing pieces with QR codes beside the original — making it easy to scan and order instantly. Browse by city to explore your local scene or discover emerging talent worldwide. Whether you’re a collector or a first-time buyer, Artfinity makes it simple to support artists and bring their vision into your home."  ,
         "actionBtn": {
           "title": "View All",
           "href": "/art"
@@ -44,7 +44,7 @@
     },
     "carousels": {
       "products": {
-        "title": "Popular Art",
+        "title": "Popular Artworks",
         "subTitle": "Here Are Some",
         "description": "Explore the latest trending artworks on our platform. From contemporary masterpieces to timeless classics, discover what's capturing the attention of art enthusiasts.",
         "collection_id": "16"
@@ -154,7 +154,7 @@
   "about_us": {
     "title": "About Us",
     "banner": "/assets/images/banner-2.jpg",
-    "content": "Welcome to Artfinity, your premier destination for discovering and purchasing beautiful artworks from talented artists worldwide. Our platform bridges the gap between art enthusiasts and artists, fostering a vibrant community where creativity thrives.<br/><br/>Artfinity was founded with the vision to make art accessible to everyone, no matter where they are. We believe that art has the power to inspire, heal, and transform lives. Our curated collection features a diverse range of styles, mediums, and genres, ensuring there's something for every taste and preference.<br/><br/>Our mission is to support emerging and established artists by providing them with a platform to showcase their work to a global audience. We are committed to offering a seamless and enjoyable experience for both artists and buyers. From browsing the latest artworks to making secure purchases, Artfinity is designed to cater to all your art needs.<br/><br/>Our team is passionate about art and dedicated to promoting artistic talent. We work closely with artists to understand their vision and help them reach new heights. At Artfinity, we are more than just an online gallery; we are a community that celebrates art in all its forms.<br/><br/>Join us on this artistic journey and explore the world of Artfinity. Discover new artists, find inspiration, and bring beautiful artworks into your life. Whether you're an art collector, a first-time buyer, or simply someone who appreciates the beauty of art, Artfinity is here for you.<br/><br/>Thank you for being a part of our community. Together, let's celebrate and support the incredible talent of artists from around the world.",
+"content": "Welcome to Artfinity — a platform where local creativity meets global reach. We connect art lovers with talented artists by making it simple to discover, purchase, and enjoy beautiful artworks as high-quality prints.<br/><br/>Artfinity was founded with a clear vision: to make local art accessible to everyone, everywhere. Each artwork on our site is uploaded directly by the artist and available as a made-to-order print in multiple sizes. This ensures quality, affordability, and a fair 50/50 profit share between artist and platform.<br/><br/>Beyond the online gallery, Artfinity lives in the real world. Many artists showcase their work with QR codes beside the original piece — allowing you to scan, explore the story behind the art, and order a print instantly.<br/><br/>You can browse by city to explore your local art scene or discover emerging talent from across the world. Our mission is to support artists by giving them visibility and fair earnings, while giving buyers an easy and inspiring way to bring art into their lives.<br/><br/>Whether you’re a collector, a first-time buyer, or simply someone who appreciates creativity, Artfinity makes it simple to connect with artists and bring their vision into your home.<br/><br/>Thank you for supporting independent artists and being part of the Artfinity community."  ,
     "sections": {
       "stats": [
         { "title": "Paintings", "value": 800, "suffix": "+" },
