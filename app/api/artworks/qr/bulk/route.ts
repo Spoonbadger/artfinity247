@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from "@/lib/prisma";
 import { jwtVerify } from 'jose'
 import QRCode from 'qrcode'
 import { PDFDocument, StandardFonts, rgb, type PDFPage } from 'pdf-lib'
 
 export const runtime = 'nodejs'
-const prisma = new PrismaClient()
 
 // A4 portrait ~ 595 x 842 pts; A6 ~ 298 x 420 pts
 const A4 = { w: 595, h: 842 }

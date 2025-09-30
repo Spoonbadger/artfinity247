@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from "@/lib/prisma";
 import { generateQrPdf } from '@/lib/generateQrPdf'
 
 export const runtime = 'nodejs'
 
-const prisma = new PrismaClient()
 
 export async function GET(
   req: NextRequest,

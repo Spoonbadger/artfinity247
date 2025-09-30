@@ -113,51 +113,13 @@ export const getReview = (query: SingleReviewQuery = {}): ReviewType | null => {
   return result[0] || null;
 };
 
-/* Product Queries */
-export const getProducts = (query: MultiProductsQuery = {}): ProductType[] => {
-  const { ids, slugs, seller_ids, start, limit } = query;
 
-  let result = db.Products as unknown as ProductType[]; // dangerous unknown here
-
-  if (ids) {
-    result = result.filter((product) => {
-      return product.id ? ids?.includes(product.id) : false;
-    });
-  }
-
-  if (slugs) {
-    result = result.filter((product) =>
-      product.slug ? slugs?.includes(product.slug) : false,
-    );
-  }
-
-  if (seller_ids) {
-    result = result.filter((product) =>
-      product.seller ? seller_ids.includes(product.seller) : false,
-    );
-  }
-
-  return result.slice(start || 0, limit || Infinity);
-};
-
-export const getProduct = (
-  query: SingleProductQuery = {},
-): ProductType | null => {
-  const { id, slug } = query;
-
-  let result = getProducts({
-    ids: id ? [id] : null,
-    slugs: slug ? [slug] : null,
-  });
-
-  return result[0] || null;
-};
 
 /* User Queries */
 export const getUsers = (query: MultiUsersQuery = {}): UserType[] => {
   const { ids, slugs, roles, start, limit } = query;
 
-  let result = db.Users as UserType[];
+  let result = db.Users as unknown as UserType[];
 
   if (ids) {
     result = result.filter((user) =>
@@ -336,7 +298,7 @@ export const filterCartItems = (
     const validProductIds = new Set(products.map((product) => product.id));
 
     const filteredItems = cartItems.filter((cartItem) => {
-      const productId = cartItem.product._id;
+      const productId = cartItem.product.id;
 
       // Product must exist in DB
       if (!validProductIds.has(productId)) {
@@ -408,7 +370,7 @@ export const updateCartItem = (query: UpdateCartItemQuery) => {
   let result = prev_items || getCartItems({ user_id });
 
   const existingItem = result?.find((item) => {
-    const productMatched = product._id === item.product._id;
+    const productMatched = product.id === item.product.id;
   const sizeMatched = product.selectedSize
     ? product.selectedSize === item.product.selectedSize
     : true

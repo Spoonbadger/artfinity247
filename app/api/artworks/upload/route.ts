@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from "@/lib/prisma"
 import { jwtVerify } from 'jose'
 import cloudinary from '@/lib/cloudinary'
 import Busboy from 'busboy'
 import { toNodeReadable } from '@/lib/toNodeReadables'
 import slugify from 'slugify'
-
-const prisma = new PrismaClient()
 
 export async function POST(req: NextRequest) {
   const token = req.cookies.get('auth-token')?.value;

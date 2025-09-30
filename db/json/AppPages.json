@@ -45,7 +45,7 @@
     "carousels": {
       "products": {
         "title": "Popular Artworks",
-        "subTitle": "Here Are Some",
+        "subTitle": "",
         "description": "Explore the latest trending artworks on our platform. From contemporary masterpieces to timeless classics, discover what's capturing the attention of art enthusiasts.",
         "collection_id": "16"
       },
@@ -102,7 +102,7 @@
   "sellers": {
     "title": "All Artists",
     "items_limit": 12,
-    "banner": "/assets/images/banner-1.jpg",
+    "banner": "/assets/images/banner-3.jpg",
     "slug": "artists"
   },
   "seller": {
@@ -120,7 +120,7 @@
   "scenes": {
     "title": "All Scenes",
     "items_limit": 12,
-    "banner": "/assets/images/banner-1.jpg",
+    "banner": "/assets/images/block2-1.jpg",
     "slug": "scenes"
   },
   "scene": {

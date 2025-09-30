@@ -1,8 +1,7 @@
-import { PrismaClient } from "@prisma/client"
+import { prisma } from "@/lib/prisma"
 import { NextRequest, NextResponse } from "next/server"
 import { jwtVerify } from 'jose'
 
-const prisma = new PrismaClient()
 
 function monthRange(ym: string) {
   const [y, m] = ym.split("-").map(Number)

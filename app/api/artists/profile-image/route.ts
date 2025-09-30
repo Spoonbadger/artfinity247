@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { jwtVerify } from "jose";
 import { v2 as cloudinary } from "cloudinary";
 
 export const runtime = "nodejs";
 
-const prisma = new PrismaClient();
 
 cloudinary.config({
   // Prefer server-side vars; fall back to NEXT_PUBLIC if you really set only that

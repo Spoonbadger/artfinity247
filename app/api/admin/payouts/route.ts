@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from "@/lib/prisma";
 import { jwtVerify } from 'jose'
 
-const prisma = new PrismaClient()
 export const runtime = 'nodejs'
 
 // Helper: parse ?month=YYYY-MM -> [start,end)

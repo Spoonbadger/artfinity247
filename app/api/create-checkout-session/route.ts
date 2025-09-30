@@ -1,12 +1,11 @@
 import Stripe from 'stripe'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from "@/lib/prisma";
 
 export const runtime = 'nodejs'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-06-30.basil',
 })
-const prisma = new PrismaClient()
 
 // TODO: move to AppConfigs.json (prices in cents)
 const BASE = { small: 2499, medium: 3999, large: 5999 } as const

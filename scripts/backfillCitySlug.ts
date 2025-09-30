@@ -1,6 +1,5 @@
-import { PrismaClient } from '@prisma/client'
+import { prisma } from "@/lib/prisma";
 import slugify from 'slugify'
-const prisma = new PrismaClient()
 
 async function run() {
 const artists = await prisma.artist.findMany({ where: { citySlug: '' } })

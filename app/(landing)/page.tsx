@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
@@ -32,7 +32,6 @@ import {
   getCollectionData,
   getDataCards,
   getSlider,
-  getProducts,
 } from "@/db/query";
 
 const AppConfigs = getAppConfigs();
@@ -73,11 +72,10 @@ const Home = (): ReactNode => {
     setOurGuaranteeCards(getDataCards().our_guarantee);
     setHeroSlider(getSlider({ id: heroSliderId }));
 
-    setProducts(
-      getCollectionData({
-        id: productsCarousel.collection_id,
-      }) as ProductType[],
-    );
+  fetch("/api/artworks?limit=12")
+    .then((res) => res.json())
+    .then((data) => setProducts(data.artworks || []));
+
 
     setSellers(
       getCollectionData({
@@ -105,10 +103,12 @@ const Home = (): ReactNode => {
   ]);
 
   useEffect(() => {
-    setFeaturedProducts(
-      getProducts({ ids: featuredProductsSection.product_ids }),
-    );
-  }, [featuredProductsSection?.product_ids]);
+    (async () => {
+      const res = await fetch("/api/artworks");
+      const data = await res.json();
+      setProducts(data);
+    })();
+  }, []);
 
   return (
     <div className="pb-16">

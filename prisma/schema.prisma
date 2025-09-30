@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -24,30 +18,28 @@ model Order {
   shippingName    String?
   shippingAddress String?
   receiptSentAt   DateTime?
-  shippingStatus  String      @default("pending") // "pending", "shipped", "delivered"
+  shippingStatus  String      @default("pending")
   items           OrderItem[]
 }
 
 model OrderItem {
-  id      String @id @default(cuid())
-  orderId String
-  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  artworkId String?
-  artwork   Artwork? @relation(fields: [artworkId], references: [id], onDelete: SetNull) // ← keep items if artwork removed
-
-  slug      String?
-  size      String? // small/medium/large
-  unitPrice Int? // cents
-  quantity  Int?
-  lineTotal Int?
-  title      String?
-  artistName String?
-  imageUrl   String?
+  id           String   @id @default(cuid())
+  orderId      String
+  artworkId    String?
+  slug         String?
+  size         String?
+  unitPrice    Int?
+  quantity     Int?
+  lineTotal    Int?
+  title        String?
+  artistName   String?
+  imageUrl     String?
+  laborCost    Int?
   printCost    Int?
   shippingCost Int?
-  laborCost    Int?
   websiteCost  Int?
+  artwork      Artwork? @relation(fields: [artworkId], references: [id])
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@unique([orderId, artworkId, size])
   @@index([orderId])
@@ -55,17 +47,16 @@ model OrderItem {
 }
 
 model Payout {
-  id         String   @id @default(cuid())
-  artistId   String
-  artist     Artist   @relation(fields: [artistId], references: [id])
-  month      String   // e.g. "2025-09"
+  id          String    @id @default(cuid())
+  artistId    String
+  month       String
   amountCents Int
-  paidAt     DateTime?  // null = unpaid, date = when marked paid
-  createdAt  DateTime   @default(now())
+  paidAt      DateTime?
+  createdAt   DateTime  @default(now())
+  artist      Artist    @relation(fields: [artistId], references: [id])
 
   @@unique([artistId, month])
 }
-
 
 model Artist {
   id           String    @id @default(cuid())
@@ -75,36 +66,36 @@ model Artist {
   profileImage String?
   phone        String
   city         String
-  citySlug     String @default("")
+  citySlug     String    @default("")
   state        String?
   country      String?
   slug         String    @unique
   bio          String?   @default("")
-  createdAt    DateTime    @default(now())
-  artworks     Artwork[] // one to many
-  role      Role     @default(USER)
-  venmoHandle  String? @unique
-  payouts   Payout[]
+  createdAt    DateTime  @default(now())
+  role         Role      @default(USER)
+  venmoHandle  String?   @unique
+  artworks     Artwork[]
+  payouts      Payout[]
 
   @@index([citySlug])
-}
-
-enum Role {
-  USER
-  ADMIN
 }
 
 model Artwork {
   id           String      @id @default(cuid())
   title        String
-  slug         String?     @unique // Unquestion mark this at some point.
+  slug         String?     @unique
   description  String
   imageUrl     String
   markupSmall  Int?        @default(0)
   markupMedium Int?        @default(0)
   markupLarge  Int?        @default(0)
   artistId     String
-  artist       Artist      @relation(fields: [artistId], references: [id])
   createdAt    DateTime    @default(now())
+  artist       Artist      @relation(fields: [artistId], references: [id])
   OrderItem    OrderItem[]
+}
+
+enum Role {
+  USER
+  ADMIN
 }

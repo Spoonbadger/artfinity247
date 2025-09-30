@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from "@/lib/prisma";
 import { getUserFromRequest } from '@/lib/auth'
 import { jwtVerify } from 'jose'
 import cloudinary from '@/lib/cloudinary'
 import Busboy from 'busboy'
 import { toNodeReadable } from '@/lib/toNodeReadables'
-
-const prisma = new PrismaClient()
 
 
 export async function GET(

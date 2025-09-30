@@ -1,11 +1,9 @@
-import { PrismaClient } from '@prisma/client'
+import { prisma } from "@/lib/prisma";
 import { hash } from 'bcryptjs'
 import { SignJWT } from 'jose'
 import { cookies } from 'next/headers'
 import slugify from 'slugify'
 
-
-const prisma = new PrismaClient()
 
 export async function POST(req: Request) {
     const body = await req.json()

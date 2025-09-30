@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from "@/lib/prisma";
 import { sceneImagePath, DEFAULT_SCENE_IMG } from '@/lib/sceneImages'
-
-const prisma = new PrismaClient()
 
 export async function GET() {
   // artists who have at least one artwork

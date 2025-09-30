@@ -1,11 +1,10 @@
 import { NextRequest } from 'next/server'
 import { Stripe } from 'stripe'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from "@/lib/prisma";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-06-30.basil',
 })
-const prisma = new PrismaClient()
 export const runtime = 'nodejs'
 
 const COSTS = {

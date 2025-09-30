@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from "@/lib/prisma";
 import { jwtVerify } from 'jose'
 
 export const runtime = "nodejs"
-const prisma = new PrismaClient()
 
 async function getUserFromCookie(req: NextRequest) {
     const token = req.cookies.get("auth-token")?.value

@@ -24,7 +24,8 @@
     "zip_code": 98115,
     "roles": ["seller", "admin"],
     "is_active": true,
-    "slug": "craig-morley"
+    "slug": "craig-morley",
+    "venmoHandle": null
   },
   {
     "id": "2",
@@ -51,7 +52,8 @@
     "zip_code": 98115,
     "roles": ["seller"],
     "is_active": true,
-    "slug": "madsy-shete"
+    "slug": "madsy-shete",
+    "venmoHandle": null
   },
   {
     "id": "3",
@@ -78,7 +80,8 @@
     "zip_code": 98115,
     "roles": ["seller"],
     "is_active": true,
-    "slug": "vincent-van-gogh"
+    "slug": "vincent-van-gogh",
+    "venmoHandle": null
   },
   {
     "id": "4",
@@ -105,7 +108,8 @@
     "zip_code": 98115,
     "roles": ["seller", "editor"],
     "is_active": true,
-    "slug": "claude-monet"
+    "slug": "claude-monet",
+    "venmoHandle": null
   },
   {
     "id": "5",
@@ -132,7 +136,8 @@
     "zip_code": 98115,
     "roles": ["seller"],
     "is_active": true,
-    "slug": "leonardo-da-vinci"
+    "slug": "leonardo-da-vinci",
+    "venmoHandle": null
   },
   {
     "id": "6",
@@ -159,7 +164,8 @@
     "zip_code": 98115,
     "roles": ["seller"],
     "is_active": true,
-    "slug": "egon-schiele"
+    "slug": "egon-schiele",
+    "venmoHandle": null
   },
   {
     "id": "7",
@@ -186,7 +192,8 @@
     "zip_code": 98115,
     "roles": ["seller", "editor"],
     "is_active": true,
-    "slug": "gustav-klimpt"
+    "slug": "gustav-klimpt",
+    "venmoHandle": null
   },
   {
     "id": "8",
@@ -213,7 +220,8 @@
     "zip_code": 98115,
     "roles": ["seller"],
     "is_active": true,
-    "slug": "henry-ossawa-tanner"
+    "slug": "henry-ossawa-tanner",
+    "venmoHandle": null
   },
   {
     "id": "9",
@@ -240,7 +248,8 @@
     "zip_code": 98115,
     "roles": ["seller"],
     "is_active": true,
-    "slug": "johannes-vermeer"
+    "slug": "johannes-vermeer",
+    "venmoHandle": null
   },
   {
     "id": "10",
@@ -267,6 +276,7 @@
     "zip_code": 98103,
     "roles": ["seller"],
     "is_active": true,
-    "slug": "jason-briesh"
+    "slug": "jason-briesh",
+    "venmoHandle": null
   }
 ]
