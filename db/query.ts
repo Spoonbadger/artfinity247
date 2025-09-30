@@ -269,8 +269,6 @@ export const getCollectionData = (
   const collectionDataIds = collection.items;
 
   switch (collectionItemsType) {
-    case "product":
-      return getProducts({ ids: collectionDataIds });
     case "user":
       return getUsers({ ids: collectionDataIds });
     case "seller":
@@ -290,34 +288,7 @@ export const getCollectionData = (
 
   // Filter cart items
 // Filter out Cart products that don't exist in the database
-export const filterCartItems = (
-    cartItems: CartItemType[],
-    products: ProductType[] = getProducts(),
-  ) => {
-    // Create a set of valid product IDs
-    const validProductIds = new Set(products.map((product) => product.id));
 
-    const filteredItems = cartItems.filter((cartItem) => {
-      const productId = cartItem.product.id;
-
-      // Product must exist in DB
-      if (!validProductIds.has(productId)) {
-        return false;
-      }
-
-      // If selectedSize exists, make sure it's valid
-      const matchingProduct = products.find((p) => p.id === productId);
-      if (
-        cartItem.product.selectedSize &&
-        matchingProduct &&
-        !["small", "medium", "large"].includes(cartItem.product.selectedSize)
-      ) {
-        return false;
-      }
-      return true;
-    })
-    return filteredItems;
-  }
 
 export const getCartItems = (
   query: GetCartItemsQuery = {
