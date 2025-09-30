@@ -41,28 +41,41 @@ const ArtsPage = (): ReactNode => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(items_limit || 10);
   const [loading, setLoading] = useState(true)
+  const [sort, setSort] = useState("newest")
+
 
   useEffect(() => {
     const run = async () => {
-      setLoading(true) // start
+      setLoading(true);
       try {
-        const res = await fetch(`/api/artworks?page=${currentPage}&limit=${itemsPerPage}`, {
+        const page = parseInt(searchParams.get(queryPageKey) || "1", 10);
+        const limit = items_limit || 12;
+
+        const res = await fetch(`/api/artworks?page=${page}&limit=${limit}&sort=${sort}`, {
           cache: "no-store",
-        })
+        });
+
         if (res.ok) {
-          const { artworks, total } = await res.json()
-          setPaginatedProducts(artworks)
-          setTotalProducts(total ?? artworks.length)
+          const { artworks, total } = await res.json();
+          setPaginatedProducts(artworks);
+          setTotalProducts(total ?? artworks.length);
+          setCurrentPage(page);
+          setItemsPerPage(limit);
         } else {
-          setPaginatedProducts([])
-          setTotalProducts(0)
+          setPaginatedProducts([]);
+          setTotalProducts(0);
         }
+      } catch {
+        setPaginatedProducts([]);
+        setTotalProducts(0);
       } finally {
-        setLoading(false) // end
+        setLoading(false);
       }
-    }
-    run()
-  }, [searchParams, items_limit, queryPageKey])
+    };
+
+    run();
+  }, [searchParams, items_limit, queryPageKey, sort])
+
 
   useEffect(() => {
     setItemsPerPage(items_limit);
@@ -129,31 +142,18 @@ const ArtsPage = (): ReactNode => {
         <MaxWidthWrapper className="space-y-4 py-10 md:space-y-6 md:py-14">
           <div className="page-top grid grid-cols-1 items-center justify-between gap-x-4 gap-y-2 space-y-2 md:grid-cols-2 md:gap-6">
             <div>
-              <div className="filter-area relative isolate">
-                <Select>
-                  <SelectTrigger className="max-w-[180px] capitalize">
-                    <SelectValue
-                      className="capitalize"
-                      placeholder="Default Sorting"
-                    />
-                  </SelectTrigger>
-                  <SelectContent className="capitalize">
-                    <SelectGroup>
-                      <SelectLabel>Sort By</SelectLabel>
-                      <SelectItem value="popularity">popularity</SelectItem>
-                      <SelectItem value="rating_average">
-                        average rating
-                      </SelectItem>
-                      <SelectItem value="latest">latest</SelectItem>
-                      <SelectItem value="price_low_to_high">
-                        price: low to high
-                      </SelectItem>
-                      <SelectItem value="price_high_to_low">
-                        price: high to low
-                      </SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+
+              <div className="flex mb-4">
+                <select
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value)}
+                  className="border rounded px-2 py-1"
+                >
+                  <option value="newest">Latest</option>
+                  <option value="oldest">The Ogs</option>
+                  <option value="random">Random</option>
+                  <option value="popular">Most Popular</option>
+                </select>
               </div>
             </div>
             <div>

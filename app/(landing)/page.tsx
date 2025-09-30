@@ -67,15 +67,12 @@ const Home = (): ReactNode => {
   const [sellers, setSellers] = useState<UserType[]>([]);
   const [scenes, setScenes] = useState<CollectionType[]>([]);
   const [reviews, setReviews] = useState<ReviewType[]>([]);
+  const [sort, setSort] = useState("newest")
+
 
   useEffect(() => {
     setOurGuaranteeCards(getDataCards().our_guarantee);
     setHeroSlider(getSlider({ id: heroSliderId }));
-
-  fetch("/api/artworks?limit=12")
-    .then((res) => res.json())
-    .then((data) => setProducts(data.artworks || []));
-
 
     setSellers(
       getCollectionData({
@@ -104,11 +101,16 @@ const Home = (): ReactNode => {
 
   useEffect(() => {
     (async () => {
-      const res = await fetch("/api/artworks");
-      const data = await res.json();
-      setProducts(data);
-    })();
-  }, []);
+      try {
+        const res = await fetch(`/api/artworks?limit=12&sort=${sort}`)
+        if (!res.ok) throw new Error("Failed to fetch artworks")
+        const data = await res.json()
+        setProducts(data.artworks || [])
+      } catch (err) {
+        console.error("Error fetching artworks:", err)
+      }
+    })()
+  }, [sort])
 
   return (
     <div className="pb-16">
