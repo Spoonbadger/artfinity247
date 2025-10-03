@@ -313,60 +313,36 @@ const RegisterForm = ({
                 "[&>*]:md:col-span-1 [&>:first-child]:col-span-3 [&>:first-child]:md:col-span-1",
               )}
             >
-              {/* Country Field */}
+
+            {/* City Field */}
               <FormField
-                name="country"
-                control={form.control}
-                render={({ field }) => {
-                  return (
-                    <FormItem className="[&_button]:rounded-sm [&_button]:capitalize">
-                      <FormLabel>Country</FormLabel>
-                      <Select
-                        onValueChange={(newVal) => {
-                          field.onChange(newVal);
-                          handleCountryChange(newVal);
-                        }}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="--Select Your Country--" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="w-full rounded-sm capitalize">
-                          <SelectGroup>
-                            <SelectLabel>Your Country</SelectLabel>
-                            {availCountries.map((country, index) => (
-                              <SelectItem value={country.code} key={index}>
-                                {country.name}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  );
-                }}
-              />
-              {/* State Field */}
-              <FormField
-                name="state"
+                name="city"
                 control={form.control}
                 render={({ field }) => (
-                  <FormItem className="[&_button]:rounded-sm [&_button]:capitalize">
-                    <FormLabel>State</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
+                  <FormItem>
+                    <FormLabel>City</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={(val) => {
+                        field.onChange(val);
+                        const found = CITY_OPTIONS.find((c) => c.name === val);
+                        if (found?.state) {
+                          form.setValue("state", found.state);
+                        }
+                        form.setValue("country", "US");
+                      }}
+                    >
                       <FormControl>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="--Select Your State--" />
+                          <SelectValue placeholder="--Select Your City--" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="w-full rounded-sm capitalize">
                         <SelectGroup>
-                          <SelectLabel>Your State</SelectLabel>
-                          {US_STATE_OPTIONS.map((s) => (
-                            <SelectItem key={s.code} value={s.code}>
-                              {s.name}
+                          <SelectLabel>Your City</SelectLabel>
+                          {CITY_OPTIONS.map((city) => (
+                            <SelectItem key={city.name} value={city.name}>
+                              {city.name}
                             </SelectItem>
                           ))}
                         </SelectGroup>
@@ -377,37 +353,77 @@ const RegisterForm = ({
                 )}
               />
 
-              {/* City Field */}
+              {/* State Field – left blank for now, user picks manually */}
               <FormField
-                name="city"
+                name="state"
                 control={form.control}
-                render={({ field }) => {
-                  return (
-                    <FormItem className="[&_button]:rounded-sm [&_button]:capitalize">
-                      <FormLabel>City</FormLabel>
-                      <Select onValueChange={field.onChange}>
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="--Select Your City--" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="w-full rounded-sm capitalize">
-                          <SelectGroup>
-                            <SelectLabel>Your City</SelectLabel>
-                            {CITY_OPTIONS.map((city, index) => (
-                              <SelectItem value={city} key={city}>
-                                {city}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>State</FormLabel>
+                    <FormControl>
+                      <Select
+                        value={field.value}
+                        onValueChange={(val) => {
+                          field.onChange(val);
+                          // reset city when state changes
+                          form.setValue("city", "");
+                        }}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="--Select Your State--" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {US_STATE_OPTIONS.map((s) => (
+                            <SelectItem key={s.code} value={s.code}>
+                              {s.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Country Field – hidden */}
+                <FormField
+                  name="country"
+                  control={form.control}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Country</FormLabel>
+                      <FormControl>
+                        <Select
+                          value={field.value || "US"}
+                          onValueChange={(val) => {
+                            if (val !== "US") {
+                              toast.info("Artfinity is only available in the US... for now");
+                              // force back to US
+                              form.setValue("country", "US");
+                            } else {
+                              field.onChange(val);
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select Country" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              <SelectItem value="US">United States</SelectItem>
+                              {/* could include others but they’ll trigger the message */}
+                              <SelectItem value="OTHER">Other</SelectItem>
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
-                  );
-                }}
-              />
+                  )}
+                />
             </div>
+
             {/* Phone Number Field */}
             <FormField
               control={form.control}
@@ -429,23 +445,28 @@ const RegisterForm = ({
               )}
             />
             {/* Accept Terms and Conditions Field */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 leading-none">
-                <Checkbox id="remember" name="remember" />
-                <label
-                  htmlFor="remember"
-                  className="select-none text-sm font-medium capitalize leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Agree to{" "}
-                  <Link
-                    href={`/${tacPageSlug || "terms-and-conditions"}`}
-                    target="_blank"
-                  >
-                    Terms And Conditions
-                  </Link>
-                </label>
-              </div>
-            </div>
+            <FormField
+              control={form.control}
+              name="tc_accept"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="tc_accept"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                    <label htmlFor="agree_tos" className="text-sm">
+                      Agree to{" "}
+                      <Link href={`/${tacPageSlug || "terms-and-conditions"}`} target="_blank">
+                        Terms And Conditions
+                      </Link>
+                    </label>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <Button
               type="submit"
               disabled={form.formState.isSubmitting}

@@ -56,10 +56,10 @@ export const registerFormSchema = z
     confirm_password: z.string().min(6).max(20),
     avatar: z.string().optional(),
     phone: z.string().optional(),
-    city: z.string().optional(),
+    city: z.string(),
     state: z.string().optional(),
     country: z.string().optional(),
-    tc_accept: z.boolean().optional(),
+    tc_accept: z.boolean(),
   })
   .superRefine(({ confirm_password, password }, ctx) => {
     if (confirm_password !== password) {
