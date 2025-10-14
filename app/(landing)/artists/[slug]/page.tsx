@@ -18,6 +18,7 @@ import { useUser } from "@/components/contexts/UserProvider";
 import { toast } from "sonner";
 import LogoutButton from '@/components/auth/LogoutButton'
 import CITY_OPTIONS from "@/lib/constants/cities"
+import US_STATE_OPTIONS from "@/lib/constants/usa_states";
 
 
 type ParamsPropsType = { slug: string };
@@ -27,13 +28,9 @@ const AppPages = getAppPages();
 
 const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
   const slug = decodeURIComponent(params.slug);
-  const { currentUser } = useUser();
+  const { currentUser, refreshUser } = useUser()
 
   const [isOwner, setIsOwner] = useState(false);
-  useEffect(() => {
-    const meSlug = currentUser?.slug
-    if (meSlug && slug) setIsOwner(meSlug === slug);
-  }, [currentUser, slug])
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -41,14 +38,14 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
   const [seller, setSeller] = useState<UserType | null | undefined>(undefined); // undefined=loading, null=not found
   const [bioDraft, setBioDraft] = useState("")
 
+  const [nameDraft, setNameDraft] = useState("");
+
   const queryPageKey = "page"; // stop relying on AppConfigs
   const title = AppPages.seller?.title || "Artist";
   const items_limit = AppPages.seller?.items_limit || 12;
   const sections = AppPages.seller?.sections || { products: { title: "Artworks" }, reviews: { title: "Reviews" } };
 
   const [venmoHandle, setVenmoHandle] = useState("")
-  const [saving, setSaving] = useState(false)
-  const [isEditingHandle, setIsEditingHandle] = useState(false)
 
   const [totalSellerProducts, setTotalSellerProducts] = useState(0);
   const [paginatedProducts, setPaginatedProducts] = useState<ProductType[]>([]);
@@ -59,6 +56,16 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const pickImage = () => fileInputRef.current?.click();
+
+    useEffect(() => {
+    const meSlug = currentUser?.slug
+    if (meSlug && slug) setIsOwner(meSlug === slug);
+  }, [currentUser, slug])
+
+  useEffect(() => { 
+    setNameDraft(seller?.name || ""); 
+  }, [seller?.name])
+
 
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const orig = e.target.files?.[0];
@@ -111,7 +118,7 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
 
   // SINGLE FETCH: profile + artworks
   useEffect(() => {
-    if (!slug) return;
+    if (!slug) return
     (async () => {
       const res = await fetch(`/api/artists/${slug}?page=${currentPage}&limit=${itemsPerPage}`, { cache: "no-store" });
       if (!res.ok) { setSeller(null); setPaginatedProducts([]); setTotalSellerProducts(0); return; }
@@ -120,28 +127,162 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
       setPaginatedProducts(data.artworks || []);
       setTotalSellerProducts(data.total || 0);
     })();
-  }, [slug, currentPage, itemsPerPage]);
+  }, [slug, currentPage, itemsPerPage])
+
+  useEffect(() => {
+    if (seller) {
+      setFirstNameDraft(seller.first_name || "");
+      setLastNameDraft(seller.last_name || "");
+      setArtistNameDraft(seller.artist_name || seller.name || "");
+      setPhoneDraft(seller.phone || "");
+      setBioDraft(seller.bio || "");
+      setCityDraft(seller.city || "");
+      setStateDraft(seller.state || "");
+      setCountryDraft(seller.country || "US");
+    }
+  }, [seller])
 
   useEffect(() => { setBioDraft(seller?.bio || ""); }, [seller?.bio])
 
   const [cityDraft, setCityDraft] = useState("")
+  const [stateDraft, setStateDraft] = useState("")
+  const [countryDraft, setCountryDraft] = useState("US")
+  const [firstNameDraft, setFirstNameDraft] = useState("")
+  const [lastNameDraft, setLastNameDraft] = useState("")
+  const [artistEmailDraft, setArtistEmailDraft] = useState("")
+  const [phoneDraft, setPhoneDraft] = useState("")
+  const [artistNameDraft, setArtistNameDraft] = useState("")
+  const [errors, setErrors] = useState<{
+    first_name?: string;
+    last_name?: string;
+    artist_name?: string;
+    email?: string;
+    phone?: string;
+    city?: string;
+    state?: string;
+  }>({})
+
+
   useEffect(() => { setCityDraft(seller?.city || '') }, [seller?.city])
 
-  const handleSaveCity = async () => {
+  const phonePattern = /^[+]?[0-9\s\-()]{7,20}$/;
+  const isValidPhone = !!phoneDraft.trim() && phonePattern.test(phoneDraft.trim())
+
+  const emailPattern = /^[^\s@]+@[^\s@]{2,}\.[^\s@]{2,}$/
+  const isValidEmail =
+    !!artistEmailDraft.trim() &&
+    emailPattern.test(artistEmailDraft.trim().toLowerCase())
+
+  const isFormComplete =
+    !!firstNameDraft.trim() &&
+    !!lastNameDraft.trim() &&
+    !!artistNameDraft.trim() &&
+    !!artistEmailDraft.trim() &&
+    !!phoneDraft.trim() &&
+    !!cityDraft.trim() &&
+    !!stateDraft.trim() &&
+    !!countryDraft.trim() &&
+    venmoHandle.trim()
+
+    const resetDraftsFromSeller = () => {
+      if (!seller) return;
+      setFirstNameDraft(seller.first_name || "");
+      setLastNameDraft(seller.last_name || "");
+      setArtistNameDraft(seller.artist_name || seller.name || "");
+      setArtistEmailDraft(seller.email || "")
+      setPhoneDraft(seller.phone || "");
+      setBioDraft(seller.bio || "");
+      setCityDraft(seller.city || "");
+      setStateDraft(seller.state || "");
+      setCountryDraft(seller.country || "US");
+      setVenmoHandle(seller.venmoHandle || "")
+      setErrors({})
+    }
+
+    function validateProfile() {
+      const next: typeof errors = {}
+
+      if (!firstNameDraft.trim()) next.first_name = "First name is required.";
+      if (!lastNameDraft.trim())  next.last_name  = "Last name is required.";
+      if (!artistNameDraft.trim()) next.artist_name = "Artist name is required.";
+
+      if (!artistEmailDraft.trim()) next.email = "Email is required.";
+      else if (!emailPattern.test(artistEmailDraft.trim().toLowerCase()))
+        next.email = "Enter a valid email.";
+
+      if (!phoneDraft.trim()) next.phone = "Phone number is required.";
+      else if (!phonePattern.test(phoneDraft.trim()))
+        next.phone = "Enter a valid phone number (digits, +, spaces, dashes).";
+
+      if (!cityDraft.trim())  next.city  = "City is required.";
+      if (!stateDraft.trim()) next.state = "State is required.";
+
+      setErrors(next);
+      return Object.keys(next).length === 0;
+    }
+                    
+
+  const handleSaveProfile = async () => {
+    // Validation
+    const normalizedVenmo = venmoHandle.trim().startsWith("@")
+    ? venmoHandle.trim()
+    : "@" + venmoHandle.trim()
+
+    const venmoPattern = /^@[A-Za-z0-9_-]{1,29}$/
+    if (normalizedVenmo && !venmoPattern.test(normalizedVenmo)) {
+      toast.error("Venmo handle can only contain letters, numbers, dashes, and underscores (max 30 chars)")
+      return
+    }
+
+    if (!validateProfile()) {
+      toast.error("Please fix the highlighted fields.");
+      return
+    }
+
+    const cleanedPhone = phoneDraft.trim()
+    if (cleanedPhone) {
+      const phonePattern = /^[+]?[0-9\s\-()]{7,20}$/  // allows +, digits, (), spaces, dashes
+      if (!phonePattern.test(cleanedPhone)) {
+        toast.error("Please enter a valid phone number (digits, +, spaces, or dashes only)")
+        return
+      }
+    }
+
     try {
-      const res = await fetch('/api/artists/update-city', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ city: cityDraft }),
-        credentials: 'include',
+      const res = await fetch("/api/artists/update-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          first_name: firstNameDraft.trim(),
+          last_name: lastNameDraft.trim(),
+          artist_name: artistNameDraft.trim(),
+          email: artistEmailDraft.trim().toLowerCase(),
+          phone: cleanedPhone.trim(),
+          city: cityDraft,
+          state: stateDraft,
+          country: countryDraft,
+          bio: bioDraft.trim(),
+          venmoHandle: normalizedVenmo,
+        }),
+        credentials: "include",
       })
       if (!res.ok) throw new Error(await res.text())
+
       const { artist } = await res.json()
-      setSeller(prev => (prev ? { ...prev, city: artist.city } : prev))
-      toast.success('City updated')
-    } catch (e) {
-      console.error(e)
-      toast.error('Failed to update city')
+
+      setSeller(artist)
+      toast.success("Profile updated")
+      setIsEditing(false)
+
+      if (artist.slug && artist.slug !== seller?.slug) {
+        await refreshUser()   // Comes from useUser()
+        router.replace(`/artists/${artist.slug}`)
+        return
+      }
+
+    } catch (err) {
+      console.error(err)
+      toast.error("Failed to update profile")
     }
   }
 
@@ -152,27 +293,6 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
 
   const [isEditing, setIsEditing] = useState(false)
   
-const handleSaveBio = async () => {
-  try {
-    const res = await fetch("/api/artists/update-bio", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bio: bioDraft.trim() }),
-      credentials: "include",
-    });
-    if (!res.ok) throw new Error(await res.text());
-    const { artist } = await res.json();
-    // update local seller so UI reflects the saved bio
-    setSeller((prev) => (prev ? { ...prev, bio: artist.bio } : prev));
-    toast.success("Bio updated");
-    setIsEditing(false);
-  } catch (err) {
-    console.error("Failed to update bio", err)
-    toast.error("Failed to update bio")
-  }
-}
-
-
   const handleEdit = (artworkSlug: string) => router.push(`/dashboard/edit/${artworkSlug}`);
 
   const handleDelete = async (artworkId: string) => {
@@ -195,43 +315,9 @@ const handleSaveBio = async () => {
     }
   };
 
-  useEffect(() => {
-    if (seller?.venmoHandle) {
-      setVenmoHandle(seller.venmoHandle)
-    }
-  }, [seller?.venmoHandle])
-  
-  const saveHandle = async () => {
-    setSaving(true)
-    try {
-      const normalized = venmoHandle.startsWith("@")
-      ? venmoHandle
-      : `@${venmoHandle}`
-
-      const res = await fetch(`/api/artists/${seller?.slug}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ venmoHandle: normalized }),
-      })
-      if (!res.ok) throw new Error("Failed to save Venmo handle")
-
-      const updated = await res.json()
-      setVenmoHandle(updated.venmoHandle || normalized)
-      setIsEditingHandle(false)
-      setSeller(prev => (prev ? { ...prev, venmoHandle: updated.venmoHandle } : prev))
-      toast.success("Venmo handle saved")
-    } catch (err) {
-      console.error(err)
-      toast.error("Could not save Venmo handle - Venmo handle can only contain letters, numbers, dashes and underscores")
-    } finally {
-      setSaving(false)
-    }
-  }
-
   // guards
   if (seller === undefined) return <div className="p-6">Loading…</div>;
   if (seller === null) return <div className="p-6">Artist not found.</div>;
-
 
   return (
     <div>
@@ -239,154 +325,174 @@ const handleSaveBio = async () => {
 
       <section className="my-12 md:my-16">
         <MaxWidthWrapper>
-          {/* <ImageWithText
-            img={seller?.profileImage || "/uploads/users/generic-artist-profile-picture.webp"}
-            title={seller?.name || ""}
-            imgAlign="left"
-            txtAlign="left"
-            imgLoading="eager"
-            className="[&_.area-content]:self-center [&_.area-image]:max-h-[60vh] [&_.area-image]:min-h-96 [&_.area-image]:object-contain"
-          > */}
           <ImageWithText
             img={seller?.profileImage || "/assets/images/icons/users/generic-user-profile-picture.png"}
             title={seller?.name || ""}
             imgAlign="left"
             txtAlign="left"
             imgLoading="eager"
-            className="[&_.area-content]:self-center [&_.area-image]:max-h-[60vh] [&_.area-image]:min-h-96 [&_.area-image]:object-contain"
+            className="[&_.area-content]:self-center [&_.area-media]:relative [&_.area-image]:object-contain"
+            onEditPhoto={isOwner ? pickImage : undefined}
           >
-            {isOwner && currentUser?.role === "ADMIN" && (
-              <div className="mt-4 flex gap-2">
-                <Link href="/admin/orders">
-                  <Button size="sm" variant="destructive">
-                    Admin Orders
-                  </Button>
-                </Link>
-                <Link href="/admin/payouts">
-                  <Button size="sm" variant="destructive">
-                    Admin Payouts
-                  </Button>
-                </Link>
-              </div>
-            )}
 
+            {/* Hidden input for file upload */}
             {isOwner && (
-              <div>
-               <input
-                 ref={fileInputRef}
-                 type="file" 
-                 accept="image/*,.heic,.heif"
-                 className="hidden"
-                 onChange={onFileChange}
-               />
-               <Button variant="secondary" size="sm" onClick={pickImage} disabled={uploading}>
-                 {uploading ? "Uploading…" : "update profile picture"}
-               </Button><div className="pt-4"></div>
-              </div>
-            )}
-            {isOwner && isEditing ? (
-              <textarea value={bioDraft} onChange={(e) => setBioDraft(e.target.value)} className="w-full rounded border p-2 text-sm" />
-            ) : (
-              seller?.bio || ""
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,.heic,.heif"
+                className="hidden"
+                onChange={onFileChange}
+              />
             )}
 
-            {isOwner && (
-              <div className="mt-2">
-                {isEditing ? (
-                  <Button onClick={handleSaveBio}>save</Button>
-                ) : (
-                  <Button onClick={() => setIsEditing(true)}>edit bio</Button>
-                )}
-                <LogoutButton className='m-2' />
-                  <div className="mt-2 flex gap-2">
-                    <Link href={`/dashboard/sales?slug=${seller?.slug}`}>
-                      <Button size="sm" variant="default">
-                        View Sales
-                      </Button>
-                    </Link>
+            {/* When 'editing', buttons here */}
+            {isOwner ? (
+              isEditing ? (
+                <div className="space-y-3 mt-4">
+                  <input value={firstNameDraft} onChange={e=>setFirstNameDraft(e.target.value)} className="border rounded px-2 py-1 text-sm w-full" placeholder="First Name" />
+                  <input value={lastNameDraft} onChange={e=>setLastNameDraft(e.target.value)} className="border rounded px-2 py-1 text-sm w-full" placeholder="Last Name" />
+                  <input value={artistNameDraft} onChange={e=>setArtistNameDraft(e.target.value)} className="border rounded px-2 py-1 text-sm w-full" placeholder="Artist Name" />
+                  <input
+                    value={artistEmailDraft}
+                    onChange={(e) => {
+                      setArtistEmailDraft(e.target.value);
+                      if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
+                    }}
+                    className={`border rounded px-2 py-1 text-sm w-full ${errors.email ? "border-red-500" : ""}`}
+                    placeholder="Email"
+                    type="email"
+                    aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? "email-error" : undefined}
+                  />
+                  {errors.email && (
+                    <p id="email-error" className="text-xs text-red-600 mt-1">{errors.email}</p>
+                  )}
 
-                    <Link href={`/dashboard/purchases?slug=${seller?.slug}`}>
-                      <Button size="sm" variant="default">
-                        View Purchases
-                      </Button>
-                    </Link>
-                  </div>
+                  <input
+                    value={phoneDraft}
+                    onChange={(e) => {
+                      setPhoneDraft(e.target.value);
+                      if (errors.phone) setErrors(prev => ({ ...prev, phone: undefined }));
+                    }}
+                    className={`border rounded px-2 py-1 text-sm w-full ${errors.phone ? "border-red-500" : ""}`}
+                    placeholder="Phone Number"
+                  />
+                  {errors.phone && (
+                    <p className="text-xs text-red-600 mt-1">{errors.phone}</p>
+                  )}
+                  <textarea value={bioDraft} onChange={e=>setBioDraft(e.target.value)} className="w-full rounded border p-2 text-sm" placeholder="Bio" />
 
-                    {isOwner && (
-                      <div className="mt-4">
-                        <label className="block mb-2">Venmo:</label>
-                        {seller?.venmoHandle && isEditingHandle ? (
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              value={venmoHandle}
-                              onChange={(e) => setVenmoHandle(e.target.value)}
-                              className="border rounded w-full px-2 py-1"
-                              placeholder="@username"
-                            />
-                            <button
-                              onClick={saveHandle}
-                              disabled={saving}
-                              className="px-3 py-1 bg-blue-600 text-white rounded"
-                            >
-                              {saving ? "Saving…" : "Save"}
-                            </button>
-                            <button
-                              onClick={() => {
-                                setIsEditingHandle(false)
-                                setVenmoHandle(seller?.venmoHandle || "")
-                              }}
-                              className="px-3 py-1 bg-gray-400 text-white rounded"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <span>{venmoHandle || "No handle set"}</span>
-                            <button
-                              onClick={() => setIsEditingHandle(true)}
-                              className="px-2 py-1 bg-blue-600 text-white rounded text-sm"
-                            >
-                              Edit
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-              </div>
-            )}
-            <SocialAccountLinks links={seller?.social_accounts ?? []} className="justify-center md:justify-start" />
-            <div className="seller-address-info mt-8 md:mt-12">
-              <h4>
-                Based in:{' '}
-                {isOwner ? (
-                  <span className="inline-flex items-center gap-2">
-                    <Select value={cityDraft} onValueChange={setCityDraft}>
+                    <Select
+                      value={cityDraft}
+                      onValueChange={(val) => {
+                        setCityDraft(val);
+                        const found = CITY_OPTIONS.find((c) => c.name === val);
+                        if (found?.state) setStateDraft(found.state);
+                        setCountryDraft("US")
+                      }}
+                    >
                       <SelectTrigger className="max-w-[220px] capitalize">
                         <SelectValue placeholder="Select city" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>
                           <SelectLabel>Cities</SelectLabel>
-                          {CITY_OPTIONS.map(c => (
-                            <SelectItem key={c} value={c}>{c}</SelectItem>
+                          {CITY_OPTIONS.map((c) => (
+                            <SelectItem key={c.name} value={c.name}>
+                              {c.name}
+                            </SelectItem>
                           ))}
                         </SelectGroup>
                       </SelectContent>
                     </Select>
-                    <Button size="sm" onClick={handleSaveCity} disabled={!cityDraft || cityDraft === seller?.city}>
-                      save
-                    </Button>
-                  </span>
-                ) : (
-                  <span className="font-tertiary text-xs md:text-sm text-slate-800 dark:text-slate-200">
-                    {seller?.city || 'unknown'}
-                  </span>
-                )}
-              </h4>
 
-            </div>
+                    <Select
+                      value={stateDraft}
+                      onValueChange={(val) => {
+                        setStateDraft(val)
+                        setCityDraft("")
+                      }}
+                    >
+                      <SelectTrigger className="max-w-[220px] capitalize">
+                        <SelectValue placeholder="Select state" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>States</SelectLabel>
+                          {US_STATE_OPTIONS.map((s) => (
+                            <SelectItem key={s.code} value={s.code}>
+                              {s.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+
+                  <Select value={countryDraft} onValueChange={setCountryDraft}>
+                    <SelectTrigger><SelectValue placeholder="Country" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="US">United States</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <input
+                    value={venmoHandle}
+                    onChange={(e) => setVenmoHandle(e.target.value)}
+                    className="border rounded px-2 py-1 text-sm w-full"
+                    placeholder="Venmo handle (e.g. @artistname)"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleSaveProfile}
+                    disabled={!isFormComplete || !isValidEmail || !isValidPhone}
+                    aria-disabled={!isFormComplete || !isValidEmail || !isValidPhone}
+                  >
+                    Save All
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={()=> { resetDraftsFromSeller(), setIsEditing(false) }}>
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <div className="mt-2 space-y-2">
+                  <p className="text-sm">{seller?.bio}</p>
+                  <p className="text-xs text-slate-600">Based in {seller?.city}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Button size="sm" onClick={() => { resetDraftsFromSeller(), setIsEditing(true) }}>
+                      Edit Profile
+                    </Button>
+                    <LogoutButton />
+
+                    {isOwner && !seller?.venmoHandle && (
+                      <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 p-3 rounded mb-4 text-sm">
+                        ⚠ You haven’t added your Venmo handle yet. Add it in “Edit Profile” to receive payouts.
+                      </div>
+                    )}
+
+                    {currentUser?.role === "ADMIN" && (
+                      <>
+                        <Link href="/admin/orders">
+                          <Button size="sm" variant="destructive">Admin Orders</Button>
+                        </Link>
+                        <Link href="/admin/payouts">
+                          <Button size="sm" variant="destructive">Admin Payouts</Button>
+                        </Link>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )
+            ) : (
+              <>
+                <p className="text-sm">{seller?.bio}</p>
+                <p className="text-xs text-slate-600">Based in {seller?.city}</p>
+              </>
+            )}
+
+            <SocialAccountLinks
+              links={seller?.social_accounts ?? []}
+              className="justify-center md:justify-start mt-6"
+            />
           </ImageWithText>
         </MaxWidthWrapper>
       </section>
@@ -394,7 +500,6 @@ const handleSaveBio = async () => {
       <section className="my-12 md:my-16">
         <MaxWidthWrapper className="space-y-4 md:space-y-6">
           <h2>{sections?.products?.title || "Artworks"}</h2>
-
           <div className="page-top grid grid-cols-1 items-center justify-between gap-x-4 gap-y-2 space-y-2 md:grid-cols-2 md:gap-6">
             <div>
               <div className="filter-area relative isolate">
@@ -494,11 +599,8 @@ const handleSaveBio = async () => {
                   Download all qr cards
                 </button>
               </div>
-
             </div>
-            
           )}
-
 
           <div className="pagination-area flex items-center justify-center py-6">
             <Pagination
@@ -511,7 +613,7 @@ const handleSaveBio = async () => {
         </MaxWidthWrapper>
       </section>
     </div>
-  );
-};
+  )
+}
 
 export default SellerPage

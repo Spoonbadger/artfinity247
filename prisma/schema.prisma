@@ -60,7 +60,10 @@ model Payout {
 
 model Artist {
   id           String    @id @default(cuid())
-  name         String
+  name         String    // here for backwards compatability - delete later
+  first_name   String?
+  last_name    String?
+  artist_name  String?
   email        String    @unique
   password     String
   profileImage String?

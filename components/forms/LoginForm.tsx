@@ -61,17 +61,28 @@ const LoginForm = ({
       body: JSON.stringify({
         email: values.email.trim().toLowerCase(),
         password: values.password,
-        remember: values.remember ?? false
-      })
-    })
+        remember: values.remember ?? false,
+      }),
+    });
+
+    let data: any = null;
+    try { data = await res.json(); } catch {}
 
     if (!res.ok) {
-      toast.error('Login failed')
-      return
+      const code = data?.code;
+      toast.error(
+        code === 'user_not_found' ? 'No account with that email.' :
+        code === 'bad_password'  ? 'Incorrect password.' :
+        code === 'missing_fields'? 'Please enter email and password.' :
+        'Login failed.'
+      );
+      console.error('LOGIN_FAIL', code, data);
+      return;
     }
-    toast.success("Login successful")
 
-    const { artist, token } = await res.json()
+    toast.success('Login successful')
+    const { artist, token } = data
+
     
     if (values.remember) {
       localStorage.setItem('token', token)

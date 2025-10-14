@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/card";
 import { ReviewType } from "@/types";
 import StarRating from "@/components/StarRating";
-import { getAppConfigs, getAppPages, getProduct, getSeller } from "@/db/query";
+import { getAppConfigs, getAppPages, getSeller } from "@/db/query";
 
 const AppConfigs = getAppConfigs();
 const AppPages = getAppPages();
@@ -46,11 +46,6 @@ const ReviewCard = ({
       reviewItemLink = `/${AppPages.sellers.slug}/${reviewItem?.slug}`;
       break;
 
-    default:
-      reviewItem = getProduct({ id: review.item_id });
-      reviewItemTitle = reviewItem?.title;
-      reviewItemLink = `/${AppPages.products.slug}/${reviewItem?.slug}`;
-      break;
   }
 
   return (
@@ -111,7 +106,7 @@ const ReviewCard = ({
         </CardDescription>
         {showLink && (
           <CardFooter className="line-clamp-1 px-0 py-0 pt-1 text-xs font-light text-gray-500 underline md:text-sm">
-            <Link href={reviewItemLink}>{reviewItemTitle}</Link>
+
           </CardFooter>
         )}
       </CardContent>

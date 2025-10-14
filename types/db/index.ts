@@ -124,6 +124,7 @@ export type UserType = {
   username?: string;
   email: string;
   hash?: string;
+  artist_name?: string
   first_name?: string;
   last_name?: string;
   address_line1?: string;

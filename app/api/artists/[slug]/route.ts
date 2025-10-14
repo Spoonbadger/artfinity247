@@ -16,7 +16,13 @@ export async function GET(
       select: {
         id: true,
         slug: true,
+        artist_name: true,
+        first_name: true,
+        last_name: true,
         name: true,
+        email: true,
+        role: true,
+        phone: true,
         bio: true,
         city: true,
         state: true,
