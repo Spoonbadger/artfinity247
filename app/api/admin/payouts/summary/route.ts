@@ -1,140 +1,145 @@
-import { NextRequest, NextResponse } from "next/server"
+// /app/api/admin/payouts/summary/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { jwtVerify } from "jose";
+import { calcItemProfitCents, type PrintSize } from "@/lib/revenue";
 
-export const runtime = "nodejs"
-
-// month="YYYY-MM" -> [start, end)
 function monthRange(ym: string) {
-  const [y, m] = ym.split("-").map(Number)
-  if (!y || !m || m < 1 || m > 12) throw new Error("Invalid month format. Use YYYY-MM")
-  const start = new Date(Date.UTC(y, m - 1, 1))
-  const end = m === 12 ? new Date(Date.UTC(y + 1, 0, 1)) : new Date(Date.UTC(y, m, 1))
-  return { start, end }
+  const [y, m] = ym.split("-").map(Number);
+  if (!y || !m || m < 1 || m > 12) throw new Error("Invalid month format. Use YYYY-MM");
+  const start = new Date(Date.UTC(y, m - 1, 1));
+  const end = m === 12 ? new Date(Date.UTC(y + 1, 0, 1)) : new Date(Date.UTC(y, m, 1));
+  return { start, end };
+}
+
+async function requireAdmin(req: NextRequest) {
+  const token = req.cookies.get("auth-token")?.value;
+  if (!token) return null;
+  const { payload } = await jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET!));
+  return payload.role === "ADMIN" ? payload : null;
+}
+
+function normalizeSize(raw: string | null): PrintSize {
+  const v = (raw || "").toUpperCase();
+  if (v.startsWith("S")) return "S";
+  if (v.startsWith("L")) return "L";
+  return "M";
 }
 
 export async function GET(req: NextRequest) {
+  const admin = await requireAdmin(req);
+  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   try {
-    const { searchParams } = new URL(req.url)
-    const month = searchParams.get("month")
-    if (!month) return NextResponse.json({ error: "Missing ?month=YYYY-MM" }, { status: 400 })
+    const { searchParams } = new URL(req.url);
+    const month = searchParams.get("month");
+    if (!month) return NextResponse.json({ error: "month required (YYYY-MM)" }, { status: 400 });
 
-    const { start, end } = monthRange(month)
+    const { start, end } = monthRange(month);
 
-    // Pull all PAID items in the month
-    const items = await prisma.orderItem.findMany({
-      where: {
-        order: {
-          createdAt: { gte: start, lt: end },
-          paymentStatus: "paid",
+    // Get all paid orders (or all orders—adjust if you only want captured/paid)
+    const orders = await prisma.order.findMany({
+      where: { createdAt: { gte: start, lt: end } },
+      orderBy: { createdAt: "desc" },
+      include: {
+        items: {
+          include: {
+            artwork: { select: { artistId: true } },
+          },
         },
       },
-      select: {
-        lineTotal: true,
-        printCost: true,
-        shippingCost: true,
-        laborCost: true,
-        websiteCost: true,
-        artwork: { select: { artistId: true } },
-        artistName: true, // snapshot
-      },
-    })
+    });
 
-    // Aggregate by artistId
-    type Tot = {
-      artistId: string
-      artistName: string
-      itemsCount: number
-      gross: number
-      expenses: number
-      profit: number
-      artistShare: number
-      companyShare: number
-    }
-    const byArtist = new Map<string, Tot>()
+    // Aggregate per artist
+    type RowAgg = {
+      artistId: string;
+      itemsCount: number;
+      gross: number;     // sum(lineTotal)
+      expenses: number;  // sum of all costs
+      profit: number;    // sum(profit)
+      artistShare: number;
+      companyShare: number;
+    };
 
-    for (const it of items) {
-      const artistId = it.artwork?.artistId ?? "unknown"
-      const gross = it.lineTotal ?? 0
-      const expenses =
-        (it.printCost ?? 0) +
-        (it.shippingCost ?? 0) +
-        (it.laborCost ?? 0) +
-        (it.websiteCost ?? 0)
-      const profit = gross - expenses
-      const artistShare = Math.floor(profit / 2)
-      const companyShare = profit - artistShare
+    const byArtist = new Map<string, RowAgg>();
 
-      const curr = byArtist.get(artistId) ?? {
-        artistId,
-        artistName: it.artistName ?? "",
-        itemsCount: 0,
-        gross: 0,
-        expenses: 0,
-        profit: 0,
-        artistShare: 0,
-        companyShare: 0,
+    for (const order of orders) {
+      for (const item of order.items) {
+        const artistId = item.artwork?.artistId ?? "__unknown__"
+        const qty = item.quantity ?? 0;
+        const unit = item.unitPrice ?? 0;
+        const lineTotal = item.lineTotal ?? qty * unit;
+        const size = normalizeSize(item.size as string | null);
+
+        const b = calcItemProfitCents({ lineTotal, size });
+        const expenses = b.printCost + b.shippingCost + b.laborCost + b.websiteCost;
+
+        const row = byArtist.get(artistId) ?? {
+          artistId,
+          itemsCount: 0,
+          gross: 0,
+          expenses: 0,
+          profit: 0,
+          artistShare: 0,
+          companyShare: 0,
+        };
+
+        row.itemsCount += qty || 1; // if qty null, count at least 1
+        row.gross += lineTotal;
+        row.expenses += expenses;
+        row.profit += b.profit;
+        row.artistShare += b.artistShare;
+
+        byArtist.set(artistId, row);
       }
-
-      curr.itemsCount += 1
-      curr.gross += gross
-      curr.expenses += expenses
-      curr.profit += profit
-      curr.artistShare += artistShare
-      curr.companyShare += companyShare
-      if (!curr.artistName && it.artistName) curr.artistName = it.artistName
-
-      byArtist.set(artistId, curr)
     }
 
-    // Get artist details for display (name/email/venmoHandle)
-    const artistIds = Array.from(byArtist.keys()).filter(id => id !== "unknown")
-    const artists = artistIds.length
-      ? await prisma.artist.findMany({
-          where: { id: { in: artistIds } },
-          select: { id: true, name: true, email: true, venmoHandle: true, slug: true },
-        })
-      : []
+    const artistIds = Array.from(byArtist.keys());
+    if (artistIds.length === 0) {
+      return NextResponse.json({ rows: [] });
+    }
 
-    const artistLookup = new Map(artists.map(a => [a.id, a]))
+    // Fetch artist info in one go
+    const artists = await prisma.artist.findMany({
+      where: { id: { in: artistIds } },
+      select: { id: true, artist_name: true, email: true, venmoHandle: true },
+    });
+    const artistMap = new Map(artists.map(a => [a.id, a]));
 
-    // Get payout status for this month
+    // Fetch payout statuses for the month in one go
     const payouts = await prisma.payout.findMany({
-      where: { month },
+      where: { artistId: { in: artistIds }, month },
       select: { artistId: true, paidAt: true, amountCents: true },
-    })
-    const payoutLookup = new Map(payouts.map(p => [p.artistId, p]))
+    });
+    const payoutMap = new Map(payouts.map(p => [p.artistId, p]));
 
-    // Build response rows
-    const rows = Array.from(byArtist.values()).map(row => {
-      const a = artistLookup.get(row.artistId)
-      const p = payoutLookup.get(row.artistId)
+
+    const rows = artistIds.map(artistId => {
+      const agg = byArtist.get(artistId)!;
+      const a = artistMap.get(artistId);
+      const p = payoutMap.get(artistId);
+
       return {
-        month,
-        artistId: row.artistId,
-        artistName: a?.name || row.artistName || "",
+        artistId,
+        artistName: a?.artist_name || "(unknown)",
         artistEmail: a?.email || "",
         venmoHandle: a?.venmoHandle || "",
-        itemsCount: row.itemsCount,
-        gross: row.gross,
-        expenses: row.expenses,
-        profit: row.profit,
-        artistShare: row.artistShare,
-        companyShare: row.companyShare,
+        itemsCount: agg.itemsCount,
+        gross: agg.gross,
+        expenses: agg.expenses,
+        profit: agg.profit,
+        artistShare: agg.artistShare,
         payout: {
           status: p?.paidAt ? "PAID" : "UNPAID",
           paidAt: p?.paidAt || null,
-          amountCents: p?.amountCents ?? row.artistShare, // fallback
+          amountCents: p?.amountCents ?? agg.artistShare,
         },
-        artistSlug: a?.slug || null,
-      }
-    })
+      };
+    });
 
-    // Sort nicely by artist name
-    rows.sort((a, b) => a.artistName.localeCompare(b.artistName))
-
-    return NextResponse.json({ month, rows })
-  } catch (err: any) {
-    console.error("admin payouts summary error:", err)
-    return NextResponse.json({ error: "Server error" }, { status: 500 })
+    return NextResponse.json({ rows });
+  } catch (err) {
+    console.error("payouts summary error:", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

@@ -458,16 +458,29 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
                   <p className="text-sm">{seller?.bio}</p>
                   <p className="text-xs text-slate-600">Based in {seller?.city}</p>
                   <div className="flex items-center gap-2 flex-wrap">
+                    {isOwner && (
+                      <div>
+                        <Link href="/my-sales">
+                          <Button className="mx-2" size="sm">Sales</Button>
+                        </Link>
+                        <Link href="/my-purchases">
+                          <Button size="sm">Your Purchases</Button>
+                        </Link>
+                      </div>
+                    )}
+                    <div>
                     <Button size="sm" onClick={() => { resetDraftsFromSeller(), setIsEditing(true) }}>
                       Edit Profile
                     </Button>
-                    <LogoutButton />
+                    <LogoutButton  className='mx-2'/>
+                    </div>
 
                     {isOwner && !seller?.venmoHandle && (
                       <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 p-3 rounded mb-4 text-sm">
                         ⚠ You haven’t added your Venmo handle yet. Add it in “Edit Profile” to receive payouts.
                       </div>
                     )}
+
 
                     {currentUser?.role === "ADMIN" && (
                       <>
