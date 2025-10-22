@@ -14,8 +14,6 @@ import { Label, Radio, RadioGroup } from "@headlessui/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ProductQuantityInput from "@/components/ProductQuantityInput";
-
-
 import {
   getAppConfigs,
   getAppPages,
@@ -31,6 +29,16 @@ import {
 import { formatCurrency } from "@/lib/formatters";
 import { getProduct } from '@/lib/api'
 import { getFinalPrice } from '@/lib/artwork_price'
+
+type PrintSize = "small" | "medium" | "large"
+
+const SIZE_DIMENSIONS: Record<PrintSize, string> = {
+  small: "5×7 in",
+  medium: "8.5×11 in",
+  large: "11×17 in",
+}
+
+const SIZES: PrintSize[] = ["small", "medium", "large"]
 
 
 type ParamsPropsType = {
@@ -126,8 +134,6 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
 
   const handleBuyNow = async () => {
     if (!product) return
-
-    console.log("buy now pushed!!!")
 
     const items = [
       {
@@ -232,14 +238,18 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
                       <RadioGroup className="mb-2 text-base font-bold uppercase">Choose Size</RadioGroup>
                       <RadioGroup value={selectedSize} onChange={setSelectedSize}>
                         <div className="flex flex-wrap gap-2">
-                          {["small", "medium", "large"].map((size) => (
+                          {SIZES.map((size) => (
                             <Radio
                               key={size}
                               value={size}
-                              className="group relative isolate flex cursor-pointer gap-1 rounded-lg border border-theme-primary bg-background p-2 text-theme-primary shadow-md transition focus:outline-none data-[checked]:bg-theme-primary data-[checked]:text-background data-[focus]:outline-1 data-[focus]:outline-theme-primary"
+                              className="group relative isolate flex items-start gap-2 rounded-lg border border-theme-primary bg-background p-2 text-theme-primary shadow-md transition focus:outline-none data-[checked]:bg-theme-primary data-[checked]:text-background data-[focus]:outline-1 data-[focus]:outline-theme-primary w-28"
                             >
-                              {size.charAt(0).toUpperCase() + size.slice(1)}
-                              <CheckCircle className="!text-background !opacity-0 transition group-data-[checked]:!opacity-100" />
+                              <div className="flex flex-col leading-tight">
+                                <span className="font-semibold capitalize">{size}</span>
+                                <span className="text-xs opacity-80">{SIZE_DIMENSIONS[size]}</span>
+                              </div>
+
+                              <CheckCircle className="absolute right-1 top-1 h-4 w-4 !text-background opacity-0 transition group-data-[checked]:opacity-100" />
                             </Radio>
                           ))}
                         </div>

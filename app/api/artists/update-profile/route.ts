@@ -67,17 +67,26 @@ export async function POST(req: NextRequest) {
     // --- find current artist ---
     const current = await prisma.artist.findUnique({
       where: { id: artistId },
-      select: { artist_name: true, slug: true },
+      select: { artist_name: true, slug: true, city: true, citySlug: true },
     })
     if (!current)
       return new NextResponse("Artist not found", { status: 404 })
 
-    // --- slug generation ---
+    // --- slug generation (you already have this above) ---
     const base = slugify(artistName, { lower: true, strict: true })
     let newSlug = current.slug
     if (current.artist_name !== artistName) {
       newSlug = await makeUniqueSlug(base, artistId)
     }
+
+    // --- city + citySlug calc (ADD THIS BLOCK) ---
+    const incomingCity = (data.city ?? "").trim()
+    const cityChanged = !!incomingCity && incomingCity !== current.city
+    const newCity = cityChanged ? incomingCity : current.city
+    const newCitySlug = cityChanged
+      ? slugify(newCity, { lower: true, strict: true })
+      : current.citySlug
+
 
     // --- update artist ---
     const artist = await prisma.artist.update({
@@ -89,7 +98,8 @@ export async function POST(req: NextRequest) {
         name: artistName, // keeping legacy sync... for now
         email: rawEmail,
         phone: data.phone?.trim() || null,
-        city: data.city?.trim() || null,
+        city: newCity,
+        citySlug: newCitySlug,
         state: data.state?.trim() || null,
         country: data.country?.trim() || null,
         bio: data.bio?.trim() || null,

@@ -17,7 +17,7 @@ import { MinimalSection } from "@/components/sections";
 import { ProductCard } from "@/components/cards";
 import PageBreadcrumb from "@/components/PageBreadcrumb";
 import Pagination from "@/components/CustomPagination";
-import { getAppConfigs, getAppPages, getProducts } from "@/db/query";
+import { getAppConfigs, getAppPages } from "@/db/query";
 import { CollectionType, ProductType } from "@/types";
 import { DEFAULT_SCENE_IMG, sceneImagePath } from '@/lib/sceneImages'
 
