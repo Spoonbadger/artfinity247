@@ -210,16 +210,15 @@ const NavBar = ({
                   className="relative isolate"
                 >
                   <ShoppingCart />
+                  { cartItems.length > 0 && (
                   <Badge
                     variant="destructive"
                     className="absolute -right-2 -top-2 flex aspect-square size-5 items-center justify-center rounded-full !p-0.5"
                   >
-                    {!cartItems?.length
-                      ? "0"
-                      : cartItems?.length < 9
-                        ? cartItems?.length
-                        : "9+"}
+                    {cartItems?.length < 9 ? cartItems?.length : "9+"}
                   </Badge>
+                  )
+                }
                 </Link>
               </div>
             </div>

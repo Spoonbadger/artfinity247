@@ -34,7 +34,6 @@ type Order = {
   items: OrderItem[]
 }
 
-
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [selectedMonth, setSelectedMonth] = useState(

@@ -27,7 +27,7 @@ function normalizeSize(raw: string | null): PrintSize {
 }
 
 export async function GET(req: NextRequest) {
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin(req)
   if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   try {
