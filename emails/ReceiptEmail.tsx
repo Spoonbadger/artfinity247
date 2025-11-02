@@ -1,4 +1,5 @@
 import * as React from "react";
+import Image from 'next/image'
 
 type Item = {
   title: string | null;
@@ -33,7 +34,7 @@ export default function ReceiptEmail({
 
   return (
     <div style={{ fontFamily: "ui-sans-serif, system-ui", color: "#222" }}>
-      <h2 style={{ margin: 0, color: "#b05c5c" }}>Thank you for your order!</h2>
+      <h2 style={{ margin: 0, color: "#b05c5cff" }}>Thank you for your order!</h2>
       <p style={{ margin: "8px 0 16px" }}>Receipt sent to: {email}</p>
 
       {shippingName || shippingAddressLine ? (
@@ -57,14 +58,17 @@ export default function ReceiptEmail({
                 Size: {it.size} • Qty: {it.quantity ?? 1}
               </div>
             </div>
-            <div style={{ whiteSpace: "nowrap" }}>{fmt((it.unitPrice ?? 0) * (it.quantity ?? 1))}</div>
+            <div style={{ whiteSpace: "nowrap" }}>{fmt(((it.unitPrice ?? 0)/100) * (it.quantity ?? 1))}</div>
           </div>
         ))}
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, fontWeight: 700 }}>
           <span>Total</span>
-          <span>{fmt(totalCents)}</span>
+          <span>{fmt(totalCents/100)}</span>
         </div>
       </div>
+
+      {/* TODO: ADD Artfinity Logo to email receipts */}
+      {/* <img src="/favicons/apple-touch-icon.png" alt="Artfinity" width={56} height={56} /> */}
 
       <p style={{ marginTop: 16, fontSize: 12, opacity: 0.8 }}>
         Order ID: {orderId}

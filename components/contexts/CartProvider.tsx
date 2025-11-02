@@ -143,6 +143,16 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
   const calculateTax = (totalPrice: number, taxRate = Number(AppConfigs.sales_tax_rate || 0)) =>
     totalPrice * taxRate;
 
+  const clearCart = () => {
+    setCartItems([]);
+    try {
+      localStorage.removeItem(userKey);
+      localStorage.removeItem(guestKey);
+    } catch {}
+    loadedKeyRef.current = currentUser?.slug ? userKey : guestKey;
+    hasLoadedRef.current = true;
+  }
+
   const value = useMemo(
     () => ({
       cartItems,
@@ -152,9 +162,10 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
       calculateProductPrice,
       calculateTotalPrice,
       calculateTax,
+      clearCart,
     }),
     [cartItems]
-  );
+  )
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };

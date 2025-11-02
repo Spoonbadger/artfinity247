@@ -21,6 +21,7 @@ export type CartContextType = {
     products?: ProductType[],
   ) => number;
   calculateTax: (totalPrice: number, taxRate?: number) => number;
+  clearCart: () => void
 };
 
 export type UserContextProps = {

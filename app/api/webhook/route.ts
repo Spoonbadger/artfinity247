@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { Stripe } from 'stripe'
 import { prisma } from "@/lib/prisma";
+import { sendReceiptEmail } from "@/lib/email"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-06-30.basil',
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
       process.env.STRIPE_WEBHOOK_SECRET!
     )
 
-    console.log("Incoming webhook:", event.type)
+    console.log("Incoming webhook: ", event.type)
 
   } catch (err) {
     console.error('Webhook error:', err)
@@ -65,14 +66,12 @@ export async function POST(req: NextRequest) {
           amountTotal: session.amount_total ?? 0,
           currency: session.currency ?? 'usd',
           paymentStatus: session.payment_status ?? '',
-          receiptSentAt: new Date(),
           shippingName: session.customer_details?.name ?? null,
           shippingAddress: session.customer_details?.address
             ? `${session.customer_details.address.line1 ?? ''}, ${session.customer_details.address.city ?? ''}, ${session.customer_details.address.state ?? ''} ${session.customer_details.address.postal_code ?? ''}, ${session.customer_details.address.country ?? ''}`
             : null,
         },
       })
-
 
       // 2) Get line items with product expanded (so product.metadata is available)
       const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
@@ -88,7 +87,7 @@ export async function POST(req: NextRequest) {
 
         return {
           orderId: order.id,
-          artworkId: product?.metadata?.artworkId || '',
+          artworkId: product?.metadata?.artworkId ?? null,
           slug: product?.metadata?.slug || '',
           size,
           unitPrice: unit,                 // cents
@@ -112,8 +111,16 @@ export async function POST(req: NextRequest) {
         console.log("itemsToCreate:", itemsToCreate)
         await prisma.orderItem.createMany({ data: itemsToCreate })
       }
-
       console.log(`✅ Saved order ${order.id} with ${itemsToCreate.length} items`)
+
+      // Send receipt (idempotent inside helper via receiptSentAt)
+      try {
+        await sendReceiptEmail(order.id)
+        console.log("📧 Receipt email queued/sent")
+      } catch (e) {
+        console.error("Email send failed (non-blocking):", e)
+      }
+
     } catch (err) {
       console.error('❌ Error persisting order:', err)
       // Still return 200 so Stripe doesn’t hammer retries forever

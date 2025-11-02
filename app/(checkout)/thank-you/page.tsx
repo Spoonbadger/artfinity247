@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useSearchParams } from "next/navigation"
+import { useCart } from "@/components/contexts"
 
 type OrderItem = {
   id: string
@@ -35,6 +36,9 @@ type Order = {
 }
 
 export default function ThankYouPage() {
+  const { clearCart } = useCart()
+  const clearedRef = useRef(false)
+
   const sp = useSearchParams()
   const sessionId = sp.get("session_id") || ""
   const [order, setOrder] = useState<Order | null>(null)
@@ -49,13 +53,20 @@ export default function ThankYouPage() {
         if (!res.ok) throw new Error((await res.json()).message || "Failed")
         const data: Order = await res.json()
         setOrder(data)
+
+        const paid = (data as any).order?.paymentStatus === "paid" || data.paymentStatus === "paid"
+        if (paid && !clearedRef.current) {
+          clearedRef.current = true
+          clearCart?.()
+        }
+
       } catch (e: any) {
         setErr(e.message || "Order not found")
       } finally {
         setLoading(false)
       }
     })()
-  }, [sessionId])
+  }, [sessionId, clearCart])
 
   const fmt = (cents: number, currency = order?.currency || "USD") =>
     new Intl.NumberFormat("en-US", { style: "currency", currency }).format((cents || 0) / 100)

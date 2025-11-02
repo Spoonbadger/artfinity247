@@ -3,7 +3,7 @@ import ReceiptEmail from "@/emails/ReceiptEmail"
 import { prisma } from "@/lib/prisma";
 
 const resendKey = process.env.RESEND_API_KEY;
-const from = process.env.EMAIL_FROM || "Artfinity <receipts@example.com>";
+const from = process.env.EMAIL_FROM || "Artfinity <onboarding@resend.com>"
 
 export async function sendReceiptEmail(orderId: string) {
   if (!resendKey) {
@@ -19,7 +19,7 @@ export async function sendReceiptEmail(orderId: string) {
       amountTotal: true,
       currency: true,
       shippingName: true,
-      shippingAddress: true, // stored as string line already in your webhook
+      shippingAddress: true, // stored as string line already in webhook
       receiptSentAt: true,
       items: {
         select: {
