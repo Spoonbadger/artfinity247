@@ -161,21 +161,21 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
       window.location.href = url
     } catch (err) {
       console.error("Buy Now failed", err)
-      toast.error("Could now Buy Now, try add to cart")
+      toast.error("Could not Buy Now, try add to cart")
     }
   }
 
-    // Is Owner
-    const { currentUser } = useUser();
-  
-    const [isOwner, setIsOwner] = useState(false);
-    useEffect(() => {
-      // as any???
-      const bySlug = !!(currentUser?.slug && seller?.slug && currentUser.slug === seller.slug)
-      const byId =
-        !!(currentUser?.id && (product as any)?.artistId && currentUser.id === (product as any).artistId)
-      setIsOwner(bySlug || byId)
-    }, [currentUser?.slug, currentUser?.id, seller?.slug, (product as any)?.artistId])
+  // Is Owner
+  const { currentUser } = useUser();
+
+  const [isOwner, setIsOwner] = useState(false);
+  useEffect(() => {
+    // as any???
+    const bySlug = !!(currentUser?.slug && seller?.slug && currentUser.slug === seller.slug)
+    const byId =
+      !!(currentUser?.id && (product as any)?.artistId && currentUser.id === (product as any).artistId)
+    setIsOwner(bySlug || byId)
+  }, [currentUser?.slug, currentUser?.id, seller?.slug, (product as any)?.artistId])
 
   return (
     <>
@@ -347,7 +347,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
         )
       })}
     </>
-  );
-};
+  )
+}
 
-export default ProductPage;
+export default ProductPage

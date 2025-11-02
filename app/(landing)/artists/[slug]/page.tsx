@@ -461,7 +461,7 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
                     {isOwner && (
                       <div>
                         <Link href="/my-sales">
-                          <Button className="mx-2" size="sm">Sales</Button>
+                          <Button className="mr-2" size="sm">Sales</Button>
                         </Link>
                         <Link href="/my-purchases">
                           <Button size="sm">Your Purchases</Button>
@@ -483,14 +483,14 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
 
 
                     {currentUser?.role === "ADMIN" && (
-                      <>
+                      <div>
                         <Link href="/admin/orders">
-                          <Button size="sm" variant="destructive">Admin Orders</Button>
+                          <Button size="sm" variant="destructive" className='mr-2'>Admin Orders</Button>
                         </Link>
                         <Link href="/admin/payouts">
                           <Button size="sm" variant="destructive">Admin Payouts</Button>
                         </Link>
-                      </>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -630,3 +630,4 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
 }
 
 export default SellerPage
+

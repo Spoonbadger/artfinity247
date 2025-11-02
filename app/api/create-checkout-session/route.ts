@@ -19,6 +19,13 @@ function abs(url?: string | null) {
 }
 
 export async function POST(req: Request) {
+  if (!process.env.STRIPE_SECRET_KEY) {
+  console.error("STRIPE_SECRET_KEY is missing");
+  return new Response(JSON.stringify({ error: "Server misconfigured: STRIPE_SECRET_KEY missing" }), {
+    status: 500, headers: { "Content-Type": "application/json" }
+  });
+}
+
   try {
     const body = await req.json()
     const items = Array.isArray(body.items) ? body.items : []
@@ -93,7 +100,6 @@ export async function POST(req: Request) {
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
-      payment_method_types: ['card'],
       line_items,
       success_url: `${baseUrl}/thank-you?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/cart`,
