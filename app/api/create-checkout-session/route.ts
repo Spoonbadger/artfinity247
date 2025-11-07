@@ -29,6 +29,12 @@ export async function POST(req: Request) {
   try {
     const body = await req.json()
     const items = Array.isArray(body.items) ? body.items : []
+    const buyer: { id?: string | null; email?: string | null } = body.buyer || {}
+
+    const buyerEmail =
+      (typeof buyer?.email === "string" ? buyer.email : "")
+        .trim()
+        .toLowerCase() || undefined
 
     // Build line_items from authoritative DB values (ignore client price/title)
     const line_items = (
@@ -105,18 +111,24 @@ export async function POST(req: Request) {
       cancel_url: `${baseUrl}/cart`,
       locale: 'en',
       customer_creation: 'always',
-      shipping_address_collection: { allowed_countries: ['US'] },   // add more when needed
+      customer_email: buyerEmail,
+      metadata: {
+        userId: buyer?.id || '',
+        buyerEmail: buyerEmail ?? '',
+      },
+      shipping_address_collection: { allowed_countries: ['US'] },
       phone_number_collection: { enabled: true },
       shipping_options: [
         {
           shipping_rate_data: {
             display_name: 'Standard',
-            fixed_amount: { amount: 399, currency: 'usd' }, // Shipping initially set to $3.99
+            fixed_amount: { amount: 399, currency: 'usd' },
             type: 'fixed_amount',
           },
         },
       ],
     })
+
 
     return new Response(JSON.stringify({ url: session.url }), {
       status: 200,

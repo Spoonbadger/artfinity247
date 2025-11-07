@@ -1,6 +1,4 @@
-// app/(account)/my-sales/page.tsx
 "use client";
-
 import { useEffect, useMemo, useState } from "react";
 
 type SaleRow = {
@@ -10,9 +8,9 @@ type SaleRow = {
   quantity: number;
   buyerEmail: string | null;
   total_cents: number;
+  expenses_cents: number;
   artist_share_cents: number;
   currency: string;
-  expenses_cents: number
 };
 
 type ApiResponse = {
@@ -21,10 +19,10 @@ type ApiResponse = {
     items: number;
     quantity: number;
     gross_cents: number;
+    expenses_cents: number;
     artist_share_cents: number;
-    expenses_cents: number
   };
-  month: string; // "all" or "YYYY-MM"
+  month: string;
 };
 
 function monthOptions() {
@@ -45,6 +43,7 @@ export default function MySalesPage() {
   const [month, setMonth] = useState<string>("all");
   const [err, setErr] = useState<string | null>(null);
   const months = useMemo(() => monthOptions(), []);
+  const yearForCsv = month !== "all" ? month.slice(0, 4) : null;
 
   useEffect(() => {
     (async () => {
@@ -52,7 +51,10 @@ export default function MySalesPage() {
         setErr(null);
         setRows(null);
         const qs = month === "all" ? "" : `?month=${month}`;
-        const res = await fetch(`/api/my-sales${qs}`, { credentials: "include", cache: "no-store" });
+        const res = await fetch(`/api/my-sales${qs}`, {
+          credentials: "include",
+          cache: "no-store",
+        });
         if (!res.ok) throw new Error(await res.text());
         const data: ApiResponse = await res.json();
         setRows(data.items || []);
@@ -67,7 +69,8 @@ export default function MySalesPage() {
 
   if (err) return <div className="p-6 text-red-600">{err}</div>;
   if (!rows) return <div className="p-6">Loading…</div>;
-  if (!rows.length)
+
+  if (!rows.length) {
     return (
       <div className="p-6">
         <div className="mb-3 flex items-center gap-2">
@@ -87,11 +90,21 @@ export default function MySalesPage() {
         No sales yet.
       </div>
     );
+  }
 
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Sales</h1>
+
+        <a
+          href={`/api/my-sales/export${yearForCsv ? `?year=${yearForCsv}` : ""}`}
+          download
+          className="inline-flex items-center px-3 py-1.5 rounded border text-sm hover:bg-gray-50"
+        >
+          Download CSV
+        </a>
+
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium">Month:</label>
           <select
@@ -110,21 +123,11 @@ export default function MySalesPage() {
 
       {totals && (
         <div className="rounded border p-3 text-sm bg-white/50">
-          <span className="mr-4">
-            Orders: <strong>{totals.items}</strong>
-          </span>
-          <span className="mr-4">
-            Qty: <strong>{totals.quantity}</strong>
-          </span>
-          <span className="mr-4">
-            Gross: <strong>${fmtUsd(totals.gross_cents)}</strong>
-          </span>
-          <span className="mr-4">
-            Expenses: <strong>${fmtUsd(totals.expenses_cents)}</strong>
-          </span>
-          <span>
-            Your share: <strong>${fmtUsd(totals.artist_share_cents)}</strong>
-          </span>
+          <span className="mr-4">Orders: <strong>{totals.items}</strong></span>
+          <span className="mr-4">Qty: <strong>{totals.quantity}</strong></span>
+          <span className="mr-4">Gross: <strong>${fmtUsd(totals.gross_cents)}</strong></span>
+          <span className="mr-4">Expenses: <strong>${fmtUsd(totals.expenses_cents)}</strong></span>
+          <span>Your share: <strong>${fmtUsd(totals.artist_share_cents)}</strong></span>
         </div>
       )}
 
@@ -159,5 +162,5 @@ export default function MySalesPage() {
         </table>
       </div>
     </div>
-  )
+  );
 }

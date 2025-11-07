@@ -1,10 +1,19 @@
 "use client";
+
 import { useEffect, useState } from "react";
 
-type PurchaseRow = any;
+type Row = {
+  id: string;
+  title: string;
+  quantity: number;
+  artistName: string | null;
+  lineTotal: number; // cents
+  createdAt: string | null; // ISO
+  paymentStatus: string | null;
+};
 
 export default function MyPurchasesPage() {
-  const [rows, setRows] = useState<PurchaseRow[] | null>(null);
+  const [rows, setRows] = useState<Row[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
@@ -13,7 +22,22 @@ export default function MyPurchasesPage() {
         const res = await fetch("/api/my-purchases", { credentials: "include" });
         if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
-        setRows(data?.items || data || []);
+
+        // API returns array of orderItems with nested order
+        const arr = Array.isArray(data) ? data : data?.items || [];
+        const normalized: Row[] = arr.map((r: any) => ({
+          id: r.id,
+          title: r.title ?? r.artworkTitle ?? "-",
+          quantity: r.quantity ?? 1,
+          artistName: r.artistName ?? null,
+          lineTotal:
+            typeof r.lineTotal === "number"
+              ? r.lineTotal
+              : (r.unitPrice ?? 0) * (r.quantity ?? 1),
+          createdAt: r.order?.createdAt ?? null,
+          paymentStatus: r.order?.paymentStatus ?? null,
+        }));
+        setRows(normalized);
       } catch (e: any) {
         setErr(e?.message || "Failed to load purchases");
       }
@@ -24,7 +48,7 @@ export default function MyPurchasesPage() {
   if (!rows) return <div className="p-6">Loading…</div>;
   if (!rows.length) return <div className="p-6">No purchases yet.</div>;
 
-  const fmt = (cents: number) => (cents ?? 0) / 100;
+  const fmt = (cents: number) => ((cents ?? 0) / 100).toFixed(2);
 
   return (
     <div className="p-6 space-y-4">
@@ -42,14 +66,16 @@ export default function MyPurchasesPage() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((r: any) => (
+            {rows.map((r) => (
               <tr key={r.id} className="border-b">
-                <td className="py-2 pr-4">{r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "-"}</td>
-                <td className="py-2 pr-4">{r.title || r.artworkTitle || "-"}</td>
-                <td className="py-2 pr-4">{r.quantity ?? 1}</td>
-                <td className="py-2 pr-4">{r.artistName || "-"}</td>
-                <td className="py-2 pr-4">{fmt(r.total_cents).toFixed(2)}</td>
-                <td className="py-2">{r.status || "—"}</td>
+                <td className="py-2 pr-4">
+                  {r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "—"}
+                </td>
+                <td className="py-2 pr-4">{r.title}</td>
+                <td className="py-2 pr-4">{r.quantity}</td>
+                <td className="py-2 pr-4">{r.artistName ?? "—"}</td>
+                <td className="py-2 pr-4">{fmt(r.lineTotal)}</td>
+                <td className="py-2">{r.paymentStatus ?? "—"}</td>
               </tr>
             ))}
           </tbody>

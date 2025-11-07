@@ -47,13 +47,24 @@ export async function POST(req: NextRequest) {
     const session = event.data.object as Stripe.Checkout.Session
     console.log('Payment received 💰:', session.id)
 
+
+    const buyerEmail = (
+      session.metadata?.buyerEmail ||
+      session.customer_details?.email ||
+      (typeof session.customer_email === "string" ? session.customer_email : "") ||
+      ""
+    ).trim().toLowerCase();
+
+    
+console.log("webhook saved order email =", buyerEmail);
+
     try {
       // 1) Idempotent order create (upsert by unique stripeSessionId)
       const order = await prisma.order.upsert({
         where: { stripeSessionId: session.id },
         update: {
           // don’t touch totals on retry, but update shipping/email if missing
-          email: session.customer_details?.email ?? '',
+          email: buyerEmail,
           paymentStatus: session.payment_status ?? '',
           shippingName: session.customer_details?.name ?? null,
           shippingAddress: session.customer_details?.address
@@ -62,7 +73,7 @@ export async function POST(req: NextRequest) {
         },
         create: {
           stripeSessionId: session.id,
-          email: session.customer_details?.email ?? '',
+          email: buyerEmail,
           amountTotal: session.amount_total ?? 0,
           currency: session.currency ?? 'usd',
           paymentStatus: session.payment_status ?? '',
