@@ -9,7 +9,6 @@ import { toast } from "sonner";
 import { useCart, useUser } from "@/components/contexts";
 import { CheckCircle, StarIcon } from "lucide-react";
 import { MaxWidthWrapper } from "@/components/layout";
-import { ProductsCarousel, ReviewCarousel } from "@/components/carousels";
 import { Label, Radio, RadioGroup } from "@headlessui/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -299,53 +298,6 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
           )}
         </MaxWidthWrapper>
       </section>
-
-      {/* Additional Info */}
-      <section>
-        <MaxWidthWrapper className="py-6 md:py-8">
-          <div className="mt-8 capitalize">
-            <h4 className="mb-2 uppercase text-theme-primary">
-              <span className="underline">Additional Info</span>:-
-            </h4>
-            <ul className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {product?.additional_info?.map((info, index) => (
-                <li
-                  key={index}
-                  className="rounded-lg border border-gray-200 p-4"
-                >
-                  <span className="mr-2 text-lg font-semibold text-theme-primary">
-                    {info.key}:
-                  </span>
-                  <span className="text-lg text-gray-600">{info.value}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </MaxWidthWrapper>
-      </section>
-
-      {/* Recommended Products Carousel */}
-      {carousels.map((carousel, index) => {
-        const products = getCollectionData({
-          id: carousel.collection_id,
-        }) as ProductType[];
-
-        return (
-          <section key={index} id="products-area">
-            <MaxWidthWrapper className="py-8">
-              <ProductsCarousel
-                title={carousel.title}
-                description={carousel?.description}
-                products={products}
-                baseUrl={`/${productsPageSlug}`}
-                showActionBtns={false}
-                className="[&_.area-title]:md:text-2xl"
-                notFoundMsg={AppConfigs?.messages?.products?.not_found}
-              />
-            </MaxWidthWrapper>
-          </section>
-        )
-      })}
     </>
   )
 }

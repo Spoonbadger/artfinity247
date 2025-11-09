@@ -28,7 +28,7 @@ const SocialAccountLinks = ({
         className,
       )}
     >
-      {links.map((linkObj, index) => (
+      {/* {links.map((linkObj, index) => (
         <Link key={index} href={linkObj.url} target="_blank">
           {linkObj.platform?.toLowerCase() === "facebook" ? (
             <Facebook />
@@ -44,7 +44,7 @@ const SocialAccountLinks = ({
             <Earth />
           )}
         </Link>
-      ))}
+      ))} */}
     </div>
   ) : (
     <ul className={cn("social-list capitalize", className)}>
