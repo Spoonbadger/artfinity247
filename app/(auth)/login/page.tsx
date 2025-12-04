@@ -29,4 +29,4 @@ const LoginPage = (): ReactNode => {
   );
 };
 
-export default LoginPage;
+export default LoginPage

@@ -58,7 +58,7 @@ export async function POST(req: Request) {
     if (remember) {
       response.cookies.set("auth-token", token, {
         ...cookieBase,
-        maxAge: 60 * 60 * 24 * 30,
+        maxAge: 60 * 60 * 24 * 30, // 30 days
       });
     } else {
       // session cookie (expires with browser session)

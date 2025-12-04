@@ -102,7 +102,7 @@ const LoginForm = ({
     setTimeout(() => {
       form.reset()
       router.push(`/artists/${artist.slug}`)
-    }, 50)
+    }, 20)
   }
 
   return (
@@ -221,4 +221,4 @@ const LoginForm = ({
   );
 };
 
-export default LoginForm;
+export default LoginForm
