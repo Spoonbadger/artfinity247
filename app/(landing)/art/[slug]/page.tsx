@@ -222,7 +222,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
                       <h5 className="seller-name font-tertiary text-sm font-normal capitalize text-muted-foreground md:text-base">
                         {seller?.name}
                       </h5>
-                      <h1 className="area-title product-title font-semibold capitalize text-theme-primary">
+                      <h1 className="area-title product-title font-semibold capitalize text-theme-secondary-500">
                         {product.title}
                       </h1>
 
