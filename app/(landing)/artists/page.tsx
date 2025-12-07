@@ -41,13 +41,17 @@ const ArtistsPage = (): ReactNode => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(items_limit || 10);
   const [loading, setLoading] = useState(true)
+  const [sort, setSort] = useState<"name_az" | "name_za">("name_az")
 
   useEffect(() => {
     let ignore = false
     const run = async () => {
       setLoading(true)
       try {
-        const res = await fetch(`/api/artists?page=${currentPage}&limit=${itemsPerPage}`, { cache: "no-store" })
+        const res = await fetch(
+          `/api/artists?page=${currentPage}&limit=${itemsPerPage}&sort=${sort}`,
+          { cache: "no-store" }
+        )
         if (!res.ok) { if (!ignore) { setSellers([]); setTotalArtists(0) } ; return }
         const { artists, total } = await res.json()
         if (!ignore) { setSellers(artists || []); setTotalArtists(total || 0) }
@@ -57,7 +61,7 @@ const ArtistsPage = (): ReactNode => {
     }
     run()
     return () => { ignore = true }
-  }, [currentPage, itemsPerPage])
+  }, [currentPage, itemsPerPage, sort])
 
 
   useEffect(() => {
@@ -67,20 +71,7 @@ const ArtistsPage = (): ReactNode => {
     setCurrentPage(queryPage > 0 ? queryPage : 1)
   }, [searchParams, queryPageKey, items_limit])
 
-  useEffect(() => {
-    (async () => {
-      const res = await fetch(`/api/artists?page=${currentPage}&limit=${itemsPerPage}`, { cache: "no-store" });
-      if (!res.ok) { 
-        setSellers([])
-        setTotalArtists(0)
-        return 
-      }
-      const { artists, total } = await res.json()
-      setSellers(artists)
-      setTotalArtists(total)
-    })()
-  }, [currentPage, itemsPerPage])
-
+  
   const handlePageChange = (page: number) => {
     if (page > 0 && page <= Math.ceil(totalArtists / itemsPerPage)) {
       router.push(`?${queryPageKey}=${page}`);
@@ -102,24 +93,19 @@ const ArtistsPage = (): ReactNode => {
         <MaxWidthWrapper className="space-y-4 py-10 md:space-y-6 md:py-14">
           <div className="page-top grid grid-cols-1 items-center justify-between gap-x-4 gap-y-2 space-y-2 md:grid-cols-2 md:gap-6">
             <div>
-              <div className="filter-area relative isolate">
-                <Select>
+              <div className="filter-area relative isolate text-theme-secondary-500">
+                <Select
+                  value={sort}
+                  onValueChange={(v) => setSort(v as "name_az" | "name_za")}
+                >
                   <SelectTrigger className="max-w-[180px] capitalize">
-                    <SelectValue
-                      className="capitalize"
-                      placeholder="Default Sorting"
-                    />
+                    <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
-                  <SelectContent className="capitalize">
+                  <SelectContent className="capitalize text-theme-secondary-500">
                     <SelectGroup>
                       <SelectLabel>Sort By</SelectLabel>
-                      <SelectItem value="popularity">popularity</SelectItem>
-                      <SelectItem value="rating_average">
-                        average rating
-                      </SelectItem>
-                      <SelectItem value="verified">verified</SelectItem>
-                      <SelectItem value="new_to_old">new to old</SelectItem>
-                      <SelectItem value="old_to_new">old to new</SelectItem>
+                      <SelectItem value="name_az">Name A-Z</SelectItem>
+                      <SelectItem value="name_za">Name Z–A</SelectItem>
                     </SelectGroup>
                   </SelectContent>
                 </Select>

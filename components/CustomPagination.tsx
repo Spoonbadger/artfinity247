@@ -98,7 +98,7 @@ const CustomPagination = ({
             <PaginationItem key={`page-${page}`}>
               <PaginationLink
                 className={cn(
-                  "!text-theme-primary",
+                  "!text-theme-secondary-500",
                   currentPage === page && "pointer-events-none",
                 )}
                 onClick={() => onPageChange(page as number)}
