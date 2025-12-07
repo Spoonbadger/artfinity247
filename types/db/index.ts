@@ -42,6 +42,8 @@ export type CollectionType = {
   type: CollectionDataType;
   is_active: boolean;
   slug: string;
+  artistCount?: number;
+  artworkCount?: number;
 };
 
 export type ProductType = {

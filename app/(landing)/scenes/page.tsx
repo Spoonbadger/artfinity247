@@ -36,7 +36,10 @@ const AllScenesPage = (): ReactNode => {
 
   const [allScenes, setAllScenes] = useState<CollectionType[]>([]);
   const [scenes, setScenes] = useState<CollectionType[]>([]);
-  const [total, setTotal] = useState(0);
+  const [total, setTotal] = useState(0)
+  const [sort, setSort] = useState<"alpha" | "most_artists" | "most_artworks">("alpha");
+  const [search, setSearch] = useState("");
+
 
   useEffect(() => {
     const start = (currentPage - 1) * itemsPerPage;
@@ -72,7 +75,7 @@ const AllScenesPage = (): ReactNode => {
         <MaxWidthWrapper className="space-y-4 py-10 md:space-y-6 md:py-14">
           <div className="page-top grid grid-cols-1 items-center justify-between gap-x-4 gap-y-2 space-y-2 md:grid-cols-2 md:gap-6">
             <div>
-              <div className="filter-area relative isolate">
+              {/* <div className="filter-area relative isolate">
                 <Select>
                   <SelectTrigger className="max-w-[180px] capitalize">
                     <SelectValue
@@ -90,7 +93,7 @@ const AllScenesPage = (): ReactNode => {
                     </SelectGroup>
                   </SelectContent>
                 </Select>
-              </div>
+              </div> */}
             </div>
             <div>
               <Pagination

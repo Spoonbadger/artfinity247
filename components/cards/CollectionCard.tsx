@@ -56,7 +56,7 @@ const CollectionCard = ({
         </div>
       </CardHeader>
       <CardContent className="card-content grid gap-1 py-3">
-        <CardTitle className="collection-title line-clamp-2 font-bold md:text-xl">
+        <CardTitle className="collection-title line-clamp-2 font-bold md:text-xl text-theme-secondary-500">
           {title}
         </CardTitle>
         {showDescription && (
