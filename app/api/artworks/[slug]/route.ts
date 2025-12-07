@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from "@/lib/prisma";
-import { getUserFromRequest } from '@/lib/auth'
+import {  } from '@/lib/auth'
 import { jwtVerify } from 'jose'
 import cloudinary from '@/lib/cloudinary'
 import Busboy from 'busboy'

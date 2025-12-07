@@ -100,7 +100,7 @@ const ProductCard = ({
       </CardHeader>
 
       <CardContent className="card-content grid gap-1 p-0">
-        <CardTitle className="product-title line-clamp-2 font-bold md:text-xl">
+        <CardTitle className="product-title line-clamp-2 font-bold md:text-xl text-theme-secondary-500">
           {title}
         </CardTitle>
         {showSeller && (
