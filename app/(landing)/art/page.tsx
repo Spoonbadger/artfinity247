@@ -143,7 +143,7 @@ const ArtsPage = (): ReactNode => {
           <div className="page-top grid grid-cols-1 items-center justify-between gap-x-4 gap-y-2 space-y-2 md:grid-cols-2 md:gap-6">
             <div>
 
-              <div className="flex mb-4">
+              <div className="flex mb-4 text-theme-secondary-600">
                 <select
                   value={sort}
                   onChange={(e) => setSort(e.target.value)}
@@ -167,7 +167,7 @@ const ArtsPage = (): ReactNode => {
             </div>
           </div>
           {loading ? (
-            <p className="mb-6 w-full py-6 text-center text-lg md:mb-8 md:py-12">
+            <p className="mb-6 w-full py-6 text-center text-lg md:mb-8 md:py-12 text-theme-secondary-500">
               Loading…
             </p>
           ) : paginatedProducts.length > 0 ? (

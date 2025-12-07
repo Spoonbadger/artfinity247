@@ -72,7 +72,7 @@ const ProductQuantityInput = ({
           <Button
             onClick={handleDecrement}
             disabled={btnsDisabled || quantity === minQuantity}
-            className="rounded-none first:rounded-s-lg last:rounded-e-lg"
+            className="rounded-none first:rounded-s-lg last:rounded-e-lg [&>svg]:text-theme-secondary-600"
           >
             <Minus />
           </Button>
@@ -89,7 +89,7 @@ const ProductQuantityInput = ({
           <Button
             onClick={handleIncrement}
             disabled={btnsDisabled || quantity === maxQuantity}
-            className="rounded-none first:rounded-s-lg last:rounded-e-lg"
+            className="rounded-none first:rounded-s-lg last:rounded-e-lg [&>svg]:text-theme-secondary-600"
           >
             <Plus />
           </Button>

@@ -81,7 +81,7 @@ const NavBar = ({
     >
       <div
         className={cn(
-          "hover grid font-quaternary font-bold text-theme-primary md:grid-rows-header",
+          "hover grid font-quaternary font-bold text-theme-secondary-500 md:grid-rows-header",
           "border-opacity-40",
           "[&>*]:border-b",
           fixedNav &&

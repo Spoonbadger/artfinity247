@@ -227,21 +227,21 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
                       </h1>
 
                       <div className="product-price pt-2 font-primary text-foreground">
-                        <span className="price text-xl md:text-3xl">
+                        <span className="price text-xl md:text-3xl text-theme-secondary-600">
                           {formatCurrency(price / 100, currency, priceFloatPoints)}
                         </span>
                       </div>
                     </div>
                         {/* Radio buttons for size options */}
                     <div className="product-size-options space-y-3">
-                      <RadioGroup className="mb-2 text-base font-bold uppercase">Choose Size</RadioGroup>
+                      <RadioGroup className="mb-2 text-base font-bold uppercase text-theme-secondary-600">Choose Size</RadioGroup>
                       <RadioGroup value={selectedSize} onChange={setSelectedSize}>
                         <div className="flex flex-wrap gap-2">
                           {SIZES.map((size) => (
                             <Radio
                               key={size}
                               value={size}
-                              className="group relative isolate flex items-start gap-2 rounded-lg border border-theme-primary bg-background p-2 text-theme-primary shadow-md transition focus:outline-none data-[checked]:bg-theme-primary data-[checked]:text-background data-[focus]:outline-1 data-[focus]:outline-theme-primary w-28"
+                              className="group relative isolate flex items-start gap-2 rounded-lg border border-theme-secondary-500 bg-background p-2 text-theme-secondary-600 shadow-md transition focus:outline-none data-[checked]:bg-theme-secondary-500 data-[checked]:text-background data-[focus]:outline-1 data-[focus]:outline-theme-primary w-28"
                             >
                               <div className="flex flex-col leading-tight">
                                 <span className="font-semibold capitalize">{size}</span>
@@ -254,7 +254,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
                         </div>
                       </RadioGroup>
                     </div>
-                    <div className="product-quantity">
+                    <div className="product-quantity text-theme-secondary-600">
                         <ProductQuantityInput
                           title="Quantity"
                           quantity={quantity}
@@ -276,7 +276,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
                         <>
                           <Button
                             variant="outline"
-                            className="w-full max-w-md border-theme-primary font-semibold text-theme-primary"
+                            className="w-full max-w-md border-theme-secondary-600 font-semibold text-theme-secondary-500"
                             onClick={handleAddToCart}
                           >
                             Add to Cart

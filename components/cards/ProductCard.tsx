@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getLowestPrice } from "@/lib/price_utils";
 import StarRating from "@/components/StarRating";
-import { getAppConfigs, getReviews, getSeller } from "@/db/query";
+import { getAppConfigs, getReviews } from "@/db/query";
 import { getRatingInPercentage } from "@/lib/review_utils";
 import { getFinalPrice } from '@/lib/artwork_price'
 
@@ -44,8 +44,12 @@ const ProductCard = ({
   const MaxRatingStars =
     maxRatingStars || AppConfigs.max_product_rating_stars || 5;
 
-  const { seller: sellerId, title, description, imageUrl, variants } = product;
-  const seller = getSeller({ id: sellerId });
+  const { title, description, imageUrl } = product
+  const artist = (product as any).artist
+  const sellerName =
+  artist?.artist_name ||
+  artist?.name ||
+  "Unknown";
 
   const reviews =
     product.id && getReviews({ item_ids: [product.id], types: ["product"] });
@@ -101,7 +105,7 @@ const ProductCard = ({
         </CardTitle>
         {showSeller && (
           <p className="product-title line-clamp-2 text-xs">
-            {seller?.name || "Unknown"}
+            {sellerName || "Unknown"}
           </p>
         )}
         {showDescription && (
