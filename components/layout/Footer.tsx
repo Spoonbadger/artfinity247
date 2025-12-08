@@ -22,7 +22,7 @@ const Footer = () => {
         "font-secondary dark:bg-background [&>*:not(:last-child)]:mb-5 [&>*]:border-t-2 [&>*]:border-theme-primary-100 [&>*]:border-opacity-50",
       )}
     >
-      <div className="footer-top relative isolate !mb-0">
+      {/* <div className="footer-top relative isolate !mb-0">
         <MaxWidthWrapper className="py-12 md:py-16">
           <MinimalSection className="mx-auto max-w-screen-lg items-center justify-center md:grid-cols-2 md:gap-8">
             <div className="space-y-2">
@@ -43,7 +43,7 @@ const Footer = () => {
             </div>
           </MinimalSection>
         </MaxWidthWrapper>
-      </div>
+      </div> */}
       <div
         className={cn(
           "footer-middle",
@@ -84,26 +84,27 @@ const Footer = () => {
                 flatten={true}
               />
             </div>
-            <div className="footer-wrapper whitespace-nowrap">
+            {/* TODO: */}
+            {/* <div className="footer-wrapper whitespace-nowrap">
               <h4>Connect with Us</h4>
               <SocialAccountLinks
                 links={socialMediaLinks}
                 className="[&_a.nav-link]:text-sm"
                 icons={false}
               />
-            </div>
+            </div> */}
             <div className="footer-wrapper">
               <h4>Contacts</h4>
               <ul className="nav-list">
                 <li className="nav-item">
                   <div className="business-info max-w-96 text-sm leading-loose">
                     <p className="contact">
-                      <span className="business-email">
+                      {/* <span className="business-email">
                         <Link href={`tel:${AppConfigs.business_phone}`}>
                           {AppConfigs.business_phone}
                         </Link>
                       </span>
-                      <br />
+                      <br /> */}
                       <span className="business-email">
                         <Link href={`mailto:${AppConfigs.business_email}`}>
                           {AppConfigs.business_email}

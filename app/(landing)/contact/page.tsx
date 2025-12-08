@@ -69,7 +69,7 @@ const ContactPage = (): ReactNode => {
                 suppressHydrationWarning={true}
               ></p>
               <div className="business-info mt-4 space-y-4">
-                <h5>Address:</h5>
+                {/* <h5 className="text-theme-secondary-500">Address:</h5> */}
                 <div className="text-start md:ms-8">
                   <p className="contact">
                     <span className="business-email">
@@ -77,8 +77,9 @@ const ContactPage = (): ReactNode => {
                         href={`tel:${AppConfigs?.business_phone || ""}`}
                         className="mb-4 flex gap-2"
                       >
-                        <Phone />
-                        {AppConfigs?.business_phone || ""}
+                        {/* Maybe when I have a business phone */}
+                        {/* <Phone /> */}
+                        {/* {AppConfigs?.business_phone || ""} */}
                       </Link>
                     </span>
                     <span className="business-email">
@@ -119,10 +120,11 @@ const ContactPage = (): ReactNode => {
             </div>
             <div className="area-right grid grid-cols-1 place-content-center">
               <div className="mx-auto w-full md:max-w-screen-sm">
-                <ContactForm
+                {/* TODO: Complete form later */}
+                {/* <ContactForm
                   title={formSection?.subTitle || ""}
                   className="[&_.area-title]:text-lg [&_.area-title]:md:text-2xl"
-                />
+                /> */}
               </div>
             </div>
           </div>

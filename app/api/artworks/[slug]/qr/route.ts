@@ -39,7 +39,7 @@ export async function GET(
         slug: true,
         title: true,
         artistId: true,
-        artist: { select: { name: true } },
+        artist: { select: { name: true, artist_name: true, slug: true, id: true } }
       },
     })
 

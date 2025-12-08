@@ -46,7 +46,7 @@ const AboutPage = (): ReactNode => {
       </section>
       <section className="bg-gray-100">
         <MaxWidthWrapper className="py-12 md:py-16">
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-4">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-4 text-theme-secondary-500">
             {stats?.map((stat, index) => (
               <AnimatedCounter
                 key={index}
@@ -65,13 +65,14 @@ const AboutPage = (): ReactNode => {
           shadowOpacity="lightest"
         />
       </section>
-      <section className="bg-gray-100 py-8">
+      {/* team members - not needed and I don't have a team... yet */}
+      {/* <section className="bg-gray-100 py-8">
         <MaxWidthWrapper>
           <MinimalSection
             title={team_members?.title}
             content={team_members?.description}
           >
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 ">
               {teamMembers.map((member, index) => (
                 <Link href={`/${sellers_page_slug}/${member.slug}`} key={index}>
                   <UserCard user={member} className="rounded-sm p-6" />
@@ -80,8 +81,8 @@ const AboutPage = (): ReactNode => {
             </div>
           </MinimalSection>
         </MaxWidthWrapper>
-      </section>
-      <section className="whats-on py-10">
+      </section> */}
+      {/* <section className="whats-on py-10 ">
         <MaxWidthWrapper>
           <MinimalSection
             title={team_leader?.title}
@@ -105,7 +106,7 @@ const AboutPage = (): ReactNode => {
             </ImageWithText>
           </MinimalSection>
         </MaxWidthWrapper>
-      </section>
+      </section> */}
     </div>
   );
 };

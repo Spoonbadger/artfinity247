@@ -15,7 +15,7 @@ export async function GET(
   try {
     const artwork = await prisma.artwork.findUnique({
       where: { slug: params.slug },
-        select: {
+      select: {
           id: true,
           slug: true,
           title: true,
@@ -25,8 +25,17 @@ export async function GET(
           markupMedium: true,
           markupLarge: true,
           artistId: true,
+          artist: {
+            select: {
+              id: true,
+              slug: true,
+              name: true,
+              artist_name: true,
+            },
+          },
         },
       })
+
 
     if (!artwork) {
       return new NextResponse('Artwork not found', { status: 404 })

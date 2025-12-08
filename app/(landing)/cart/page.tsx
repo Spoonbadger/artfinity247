@@ -60,7 +60,7 @@ const CartPage = (): ReactNode => {
             <div>
               <Link
                 href={`/art`}
-                className="mb-1 flex max-w-fit items-center gap-1 text-sm capitalize hover:opacity-85 md:text-lg"
+                className="mb-1 flex max-w-fit items-center gap-1 text-sm capitalize hover:opacity-85 md:text-lg text-theme-secondary-500"
               >
                 <ArrowLeft className="size-4 md:size-5" />
                 Continue shopping

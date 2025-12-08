@@ -8,7 +8,7 @@ const PageLoading = (): ReactNode => {
   return (
     <div
       className={cn(
-        "absolute inset-0 z-50 flex h-full min-h-screen w-full items-center justify-center bg-theme-primary",
+        "absolute inset-0 z-50 flex h-full min-h-screen w-full items-center justify-center bg-theme-secondary-300",
         "min-h-[100svh]",
       )}
     >

@@ -47,7 +47,7 @@ const AnimatedCounterCard = ({
         <span className="count">{count}</span>
         <span className="suffix text-xl md:text-4xl">{suffix}</span>
       </div>
-      <h3 className="area-title">{title}</h3>
+      <h3 className="area-title text-theme-secondary-500">{title}</h3>
       <p className="area-text text-muted-foreground">{content}</p>
     </div>
   );

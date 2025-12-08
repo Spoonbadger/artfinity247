@@ -28,6 +28,7 @@ import {
 import { formatCurrency } from "@/lib/formatters";
 import { getProduct } from '@/lib/api'
 import { getFinalPrice } from '@/lib/artwork_price'
+import Link from 'next/link'
 
 type PrintSize = "small" | "medium" | "large"
 
@@ -61,7 +62,6 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
   const priceFloatPoints = AppConfigs?.product_price_float_points ?? 2;
 
   const [product, setProduct] = useState<ProductType | null>(null);
-  const [seller, setSeller] = useState<UserType | null>(null);
   const [reviews, setReviews] = useState<ReviewType[]>([]);
   const [selectedSize, setSelectedSize] = useState<"small" | "medium" | "large">('medium')
   const [quantity, setQuantity] = useState<number>(1);
@@ -90,14 +90,6 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
     setPurchaseNote((prev) => purchaseNote || "");
   }, [slug, router]);
 
-  useEffect(() => {
-    if (!product?.seller) return
-    const fetchedSeller = getSeller({ id: product.seller })
-    setSeller((prev) => getSeller({ id: product.seller }));
-    if (fetchedSeller) {
-      setSeller(fetchedSeller)
-    }
-  }, [product]);
 
   // Update price on size change
   useEffect(() => {
@@ -111,6 +103,9 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
     setPrice(finalPrice)
   }, [selectedSize, product])
 
+  const artist = product ? (product as any).artist : null;
+  const artistName = artist?.artist_name || artist?.name || "";
+
   // Add to cart
   const handleAddToCart = () => {
     if (!product) return
@@ -120,7 +115,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
         id: product.id,
         slug: product.slug,
         title: product.title,
-        artist: seller?.name || "",
+        artist: artistName || "",
         imageUrl: product.imageUrl,
         selectedSize, 
         unitPrice: price, // In cents
@@ -139,7 +134,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
         id: product.id,
         slug: product.slug,
         title: product.title,
-        artist: seller?.name || "",
+        artist: artistName || "",
         imageUrl: product.imageUrl,
         selectedSize,
         unitPrice: price,
@@ -168,13 +163,16 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
   const { currentUser } = useUser();
 
   const [isOwner, setIsOwner] = useState(false);
+
   useEffect(() => {
-    // as any???
-    const bySlug = !!(currentUser?.slug && seller?.slug && currentUser.slug === seller.slug)
-    const byId =
-      !!(currentUser?.id && (product as any)?.artistId && currentUser.id === (product as any).artistId)
-    setIsOwner(bySlug || byId)
-  }, [currentUser?.slug, currentUser?.id, seller?.slug, (product as any)?.artistId])
+    if (!currentUser || !product) {
+      setIsOwner(false);
+      return;
+    }
+
+    const byId = currentUser.id === (product as any).artistId;
+    setIsOwner(byId);
+  }, [currentUser, product]);
 
   return (
     <>
@@ -220,8 +218,14 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
                   <div className="space-y-4 md:py-4">
                     <div className="product-info-header space-y-1">
                       <h5 className="seller-name font-tertiary text-sm font-normal capitalize text-muted-foreground md:text-base">
-                        {seller?.name}
+                        <Link
+                          href={`/artists/${artist?.slug}`}
+                          className="hover:underline hover:text-theme-secondary-600 transition"
+                        >
+                          {artistName}
+                        </Link>
                       </h5>
+
                       <h1 className="area-title product-title font-semibold capitalize text-theme-secondary-500">
                         {product.title}
                       </h1>
