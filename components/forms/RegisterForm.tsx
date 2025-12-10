@@ -455,6 +455,7 @@ const RegisterForm = ({
                       id="tc_accept"
                       checked={field.value}
                       onCheckedChange={field.onChange}
+                      required
                     />
                     <label htmlFor="agree_tos" className="text-sm">
                       Agree to{" "}

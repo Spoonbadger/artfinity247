@@ -315,6 +315,37 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
     }
   };
 
+const handleDeleteAccount = async () => {
+  const sure = confirm(
+    "Are you absolutely sure? This will permanently delete your profile and all your artworks."
+  );
+  if (!sure) return;
+
+  try {
+    const res = await fetch("/api/artists/delete-profile", {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      toast.error(`Delete failed: ${text}`);
+      return;
+    }
+
+    toast.success("Account deleted");
+
+    // optional: clear user context
+    await refreshUser();
+
+    // log user out & redirect
+    window.location.replace("/");
+  } catch (err) {
+    console.error("Delete account error:", err);
+    toast.error("Something went wrong");
+  }
+}
+
   // guards
   if (seller === undefined) return <div className="p-6">Loading…</div>;
   if (seller === null) return <div className="p-6">Artist not found.</div>;
@@ -452,6 +483,18 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
                   <Button size="sm" variant="secondary" onClick={()=> { resetDraftsFromSeller(), setIsEditing(false) }}>
                     Cancel
                   </Button>
+                  <div>
+                    {isOwner && isEditing && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="mt-4"
+                        onClick={handleDeleteAccount}
+                      >
+                        Delete account
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="mt-2 space-y-2">
