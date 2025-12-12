@@ -8,7 +8,7 @@
         "subTitle": "Explore a World of Creativity",
 "content": "Welcome to Artfinity — where local creativity meets global reach. We connect art lovers with talented artists through high-quality, made-to-order prints. Artists upload their work directly, earn a 50/50 profit share, showcasing pieces with QR codes beside the original — making it easy to scan and order instantly. Browse by city to explore your local scene or discover emerging talent worldwide. Whether you’re a collector or a first-time buyer, Artfinity makes it simple to support artists and bring their vision into your home."  ,
         "actionBtn": {
-          "title": "View All",
+          "title": "View Art",
           "href": "/art"
         }
       },
@@ -71,7 +71,7 @@
     "slug": "/"
   },
   "products": {
-    "title": "All Art",
+    "title": "Artworks",
     "items_limit": 12,
     "banner": "/assets/images/banner-1.jpg",
     "slug": "art"
