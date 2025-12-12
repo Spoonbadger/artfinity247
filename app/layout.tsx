@@ -1,11 +1,12 @@
 import { ReactNode } from "react";
 import { type Metadata } from "next";
-import { Crimson_Text, Karla, Roboto, Roboto_Mono } from "next/font/google";
+import { Crimson_Text, Karla, Roboto, Roboto_Mono, Libre_Bodoni } from "next/font/google"
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 import { getAppConfigs } from "@/db/query";
 import Provider from "@/components/contexts";
 import "./globals.css";
+
 
 const crimsonText = Crimson_Text({
   subsets: ["latin"],
@@ -28,6 +29,12 @@ const karla = Karla({
   variable: "--font-quaternary",
 });
 
+const libreBodoni = Libre_Bodoni({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-quinary",
+})
+
 const AppConfigs = getAppConfigs();
 
 export const metadata: Metadata = {
@@ -48,11 +55,12 @@ const RootLayout = ({
     <html lang="en">
       <body
         className={cn(
-          "font-primary",
+          "font-quinary",
           crimsonText.variable,
           roboto.variable,
           robotoMono.variable,
           karla.variable,
+          libreBodoni.variable,
         )}
       >
         <Provider>{children}</Provider>

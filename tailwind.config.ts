@@ -23,6 +23,7 @@ const config = {
         secondary: ["var(--font-secondary)"],
         tertiary: ["var(--font-tertiary)"],
         quaternary: ["var(--font-quaternary)"],
+        quinary: ["var(--font-quinary)"],
       },
       colors: {
         border: "hsl(var(--border))",
