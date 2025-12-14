@@ -51,6 +51,8 @@ const LoginForm = ({
   const { slug: registerPageSlug } = AppPages.register;
   const { slug: recoverPageSlug } = AppPages.recover_password;
 
+  const [showPassword, setShowPassword] = useState(false)
+
   const router = useRouter()
   const { setCurrentUser } = useUser()
 
@@ -164,12 +166,21 @@ const LoginForm = ({
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input
-                      {...field}
-                      type="password"
-                      placeholder="Enter Your Password"
-                      className="form-input rounded-sm"
-                    />
+                    <div className="relative">
+                      <Input
+                        {...field}
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Enter Your Password"
+                        className="form-input rounded-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        className="absolute inset-y-0 right-3 my-auto text-[10px] text-muted-foreground"
+                      >   
+                        {showPassword ? "hide" : "show"}
+                      </button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

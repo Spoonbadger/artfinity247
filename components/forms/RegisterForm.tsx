@@ -86,6 +86,9 @@ const RegisterForm = ({
   const [availStates, setAvailStates] = useState<StateType[]>([]);
   const [availCities, setAvailCities] = useState<CityType[]>([]);
 
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
   const router = useRouter()
 
   useEffect(() => {
@@ -198,7 +201,7 @@ const RegisterForm = ({
                         className="form-input rounded-sm"
                       />
                     </FormControl>
-                    <FormDescription>Your first name</FormDescription>
+                    {/* <FormDescription>Your first name</FormDescription> */}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -217,7 +220,7 @@ const RegisterForm = ({
                         className="form-input rounded-sm"
                       />
                     </FormControl>
-                    <FormDescription>Your last name</FormDescription>
+                    {/* <FormDescription>Your last name</FormDescription> */}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -258,7 +261,7 @@ const RegisterForm = ({
                       className="form-input rounded-sm"
                     />
                   </FormControl>
-                  <FormDescription>Your email address</FormDescription>
+                  {/* <FormDescription>Your email address</FormDescription> */}
                   <FormMessage />
                 </FormItem>
               )}
@@ -272,16 +275,23 @@ const RegisterForm = ({
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input
-                        {...field}
-                        type="password"
-                        placeholder="Enter Password"
-                        className="form-input rounded-sm"
-                        title="Your password must be 6-20 characters long, contain letters and numbers,
-                        can include special characters, and must not contain spaces or emoji."
-                      />
+                      <div className="relative">
+                        <Input
+                          {...field}
+                          type={showConfirmPassword ? "text" : "password"}
+                          placeholder="Enter Password Again"
+                          className="form-input rounded-sm pr-16"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword((prev) => !prev)}
+                          className="absolute inset-y-0 right-3 my-auto text-[10px] text-muted-foreground"
+                        >
+                          {showConfirmPassword ? "hide" : "show"}
+                        </button>
+                      </div>
                     </FormControl>
-                    <FormDescription>Your new password</FormDescription>
+                    {/* <FormDescription>Your new password</FormDescription> */}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -294,14 +304,23 @@ const RegisterForm = ({
                   <FormItem>
                     <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
-                      <Input
-                        {...field}
-                        type="password"
-                        placeholder="Enter Password Again"
-                        className="form-input rounded-sm"
-                      />
+                      <div className="relative">
+                        <Input
+                          {...field}
+                          type={showConfirmPassword ? "text" : "password"}
+                          placeholder="Enter Password Again"
+                          className="form-input rounded-sm pr-16"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword((prev) => !prev)}
+                          className="absolute inset-y-0 right-3 my-auto text-[10px] text-muted-foreground"
+                        >
+                          {showConfirmPassword ? "hide" : "show"}
+                        </button>
+                      </div>
                     </FormControl>
-                    <FormDescription>Confirm your password</FormDescription>
+                    {/* <FormDescription>Confirm your password</FormDescription> */}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -439,7 +458,7 @@ const RegisterForm = ({
                       className="form-input rounded-sm"
                     />
                   </FormControl>
-                  <FormDescription>Your phone Number</FormDescription>
+                  {/* <FormDescription>Your phone Number</FormDescription> */}
                   <FormMessage />
                 </FormItem>
               )}
