@@ -202,14 +202,14 @@
     "banner": "/assets/images/banner-2.jpg",
     "sections": {
       "map": {
-        "title": "Get In Touch With Us",
+        "title": "Get In Touch",
         "subTitle": "",
         "content": "To learn more about our services and how we can help you with your digital art needs. We look forward to hearing from you."
       },
       "form": {
-        "title": "Got Some Questions For Us?",
+        "title": "",
         "subTitle": "Send Us A Message",
-        "content": "Please fill out the form to send us a message. We will get back to you as soon as possible."
+        "content": ""
       }
     },
     "slug": "contact"
