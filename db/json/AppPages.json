@@ -100,7 +100,7 @@
     "purchase_note": "<strong>Note:</strong><br />Maximum print dimensions above are listed in inches. Actual print size is based on the original image aspect ratio. <br /> Dimensions: Each print retains the art&apos;s original proportion/aspect ratio within the selected print size. <br /> The print has a 1/2 inch handling border."
   },
   "sellers": {
-    "title": "All Artists",
+    "title": "Artists",
     "items_limit": 12,
     "banner": "/assets/images/banner-3.jpg",
     "slug": "artists"

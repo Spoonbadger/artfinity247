@@ -45,3 +45,9 @@ tmp/
 
 # local database
 dev.db
+
+
+# Seed artist profiles
+artists.md
+
+TODO.md
