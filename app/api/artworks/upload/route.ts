@@ -53,18 +53,21 @@ export async function POST(req: NextRequest) {
             console.log('✅ Uploaded to Cloudinary:', uploadedImageUrl);
 
             // 🔍 Read moderation decision from Cloudinary
-            const mod = (result.moderation && result.moderation[0]) || null;
+            const moderationArr =
+              (Array.isArray((result as any).moderation)
+                ? ((result as any).moderation as { status: string; kind?: string }[])
+                : []) || [];
+
+            const mod = moderationArr[0];
+
             if (mod) {
-              const isRejected = mod.status === 'rejected';
+              const isRejected = mod.status === "rejected";
               moderationResult = {
                 flagged: isRejected,
-                reason: isRejected
-                  ? `auto:${mod.kind || 'moderation'}`
-                  : null,
+                reason: isRejected ? `auto:${mod.kind || "moderation"}` : null,
               };
-              console.log('🔎 Moderation result:', mod);
+              console.log("🔎 Moderation result:", mod);
             }
-
             resolve();
           }
         );
