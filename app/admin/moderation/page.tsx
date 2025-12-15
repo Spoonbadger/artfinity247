@@ -73,6 +73,33 @@ export default function ModerationPage() {
     }
     };
 
+    const handleDelete = async (id: string) => {
+      const sure = confirm("Permanently delete this artwork? This cannot be undone.");
+      if (!sure) return;
+
+      try {
+        setUpdatingId(id);
+        const res = await fetch(`/api/admin/moderation/artworks/${id}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+
+        if (!res.ok && res.status !== 204) {
+          const text = await res.text();
+          toast.error(`Delete failed: ${text}`);
+          return;
+        }
+
+        toast.success("Artwork deleted");
+        setArtworks((prev) => prev.filter((a) => a.id !== id));
+      } catch (err) {
+        console.error("Delete error", err);
+        toast.error("Server error");
+      } finally {
+        setUpdatingId(null);
+      }
+    };
+
 
   useEffect(() => {
     if (!currentUser) return;
@@ -181,20 +208,28 @@ export default function ModerationPage() {
                   {/* Actions will be wired next step */}
                   <div className="flex gap-2 pt-1">
                     <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={updatingId === art.id}
-                        onClick={() => handleModeration(art.id, "approve")}
+                      size="sm"
+                      variant="outline"
+                      disabled={updatingId === art.id}
+                      onClick={() => handleModeration(art.id, "approve")}
                     >
-                        {updatingId === art.id ? "Approving…" : "Approve"}
+                      {updatingId === art.id ? "Approving…" : "Approve"}
                     </Button>
                     <Button
-                        size="sm"
-                        variant="destructive"
-                        disabled={updatingId === art.id}
-                        onClick={() => handleModeration(art.id, "reject")}
+                      size="sm"
+                      variant="destructive"
+                      disabled={updatingId === art.id}
+                      onClick={() => handleModeration(art.id, "reject")}
                     >
-                        {updatingId === art.id ? "Rejecting…" : "Reject"}
+                      {updatingId === art.id ? "Rejecting…" : "Reject"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      disabled={updatingId === art.id}
+                      onClick={() => handleDelete(art.id)}
+                    >
+                      {updatingId === art.id ? "Deleting…" : "Delete"}
                     </Button>
                   </div>
                 </div>

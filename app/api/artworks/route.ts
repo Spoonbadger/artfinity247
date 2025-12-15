@@ -21,9 +21,7 @@ export async function GET(req: NextRequest) {
         LIMIT ${limit} OFFSET ${skip}
       `)
 
-      total = await prisma.artwork.count({
-        where: { status: "APPROVED" }
-      })
+      total = await prisma.artwork.count()
     } else {
       let orderBy: any = { createdAt: "desc" } // default newest
       if (sort === "oldest") orderBy = { createdAt: "asc" };
@@ -35,6 +33,7 @@ export async function GET(req: NextRequest) {
       [artworks, total] = await Promise.all([
         prisma.artwork.findMany({
           skip,
+          where: { status: "APPROVED" },
           take: limit,
           orderBy,
           include: { artist: { select: { name: true, slug: true } } },

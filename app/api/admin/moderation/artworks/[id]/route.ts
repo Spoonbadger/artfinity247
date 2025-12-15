@@ -50,3 +50,36 @@ export async function PATCH(
     return new NextResponse("Server error", { status: 500 });
   }
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    await requireAdmin();
+    const { id } = params;
+
+    await prisma.$transaction(async (tx) => {
+      // Detach any order items so historical orders still exist
+      await tx.orderItem.updateMany({
+        where: { artworkId: id },
+        data: { artworkId: null },
+      });
+
+      // TODO: if you want to free Cloudinary storage,
+      // you need to store public_id on Artwork and call cloudinary.uploader.destroy() here.
+
+      await tx.artwork.delete({
+        where: { id },
+      });
+    });
+
+    return new NextResponse(null, { status: 204 });
+  } catch (err: any) {
+    console.error("DELETE /api/admin/moderation/artworks/[id] error:", err);
+    if (err?.status === 401 || err?.status === 403) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+    return new NextResponse("Server error", { status: 500 });
+  }
+}
