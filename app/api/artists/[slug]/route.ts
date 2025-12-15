@@ -34,7 +34,7 @@ export async function GET(
 
     if (!artist) return new NextResponse("Artist not found", { status: 404 });
 
-    const where = { artistId: artist.id };
+    const where = { artistId: artist.id, status: "APPROVED" };
 
     const [artworks, total] = await Promise.all([
       prisma.artwork.findMany({
@@ -53,10 +53,10 @@ export async function GET(
       prisma.artwork.count({ where }),
     ]);
 
-    return NextResponse.json({ artist, artworks, total }, { status: 200 });
+    return NextResponse.json({ artist, artworks, total }, { status: 200 })
   } catch (e) {
-    console.error("GET /api/artists/[slug] failed", e);
-    return new NextResponse("Server error", { status: 500 });
+    console.error("GET /api/artists/[slug] failed", e)
+    return new NextResponse("Server error", { status: 500 })
   }
 }
 

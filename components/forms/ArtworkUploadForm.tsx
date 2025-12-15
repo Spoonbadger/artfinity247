@@ -133,7 +133,7 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                 placeholder="Description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded h-64"
             />
             <div>
                 <label>Small Print Price $</label>

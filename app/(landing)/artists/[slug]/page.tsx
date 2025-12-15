@@ -567,7 +567,7 @@ const handleDeleteAccount = async () => {
                     <SelectGroup>
                       <SelectLabel>Sort By</SelectLabel>
                       <SelectItem value="popularity">popularity</SelectItem>
-                      <SelectItem value="rating_average">average rating</SelectItem>
+                      {/* <SelectItem value="rating_average">average rating</SelectItem> */}
                       <SelectItem value="latest">latest</SelectItem>
                       <SelectItem value="price_low_to_high">price: low to high</SelectItem>
                       <SelectItem value="price_high_to_low">price: high to low</SelectItem>

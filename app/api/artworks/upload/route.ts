@@ -6,6 +6,14 @@ import Busboy from 'busboy'
 import { toNodeReadable } from '@/lib/toNodeReadables'
 import slugify from 'slugify'
 
+async function checkImageModeration(imageUrl: string) {
+  // TODO: call real service (Cloudinary moderation)
+  return {
+    flagged: false,
+    reason: null as string | null,
+  }
+}
+
 export async function POST(req: NextRequest) {
   const token = req.cookies.get('auth-token')?.value;
   if (!token) return new NextResponse('Not authenticated', { status: 401 });
@@ -65,6 +73,10 @@ export async function POST(req: NextRequest) {
 
     const title = fields.title
     const slug = slugify(title, { lower: true, strict: true }) + '-' + Date.now().toString(36).slice(-4) // To be unique
+
+    // Run the image safety filter
+    const { flagged, reason } = await checkImageModeration(uploadedImageUrl)
+
     const artwork = await prisma.artwork.create({
       data: {
         title,

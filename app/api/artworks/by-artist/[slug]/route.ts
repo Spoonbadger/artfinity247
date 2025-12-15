@@ -21,7 +21,7 @@ export async function GET(
 
     const [artworks, total] = await Promise.all([
         prisma.artwork.findMany({
-            where: { artistId: artist.id },
+            where: { artistId: artist.id, status: "APPROVED" },
             orderBy: { createdAt: 'desc'},
             skip,
             take: limit,

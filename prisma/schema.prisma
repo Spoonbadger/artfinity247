@@ -96,6 +96,15 @@ model Artwork {
   createdAt    DateTime    @default(now())
   artist       Artist      @relation(fields: [artistId], references: [id])
   OrderItem    OrderItem[]
+  status        ArtworkStatus @default(PENDING)
+  flaggedReason String?
+  flaggedBy     String?
+}
+
+enum ArtworkStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum Role {

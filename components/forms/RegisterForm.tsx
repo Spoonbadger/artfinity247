@@ -125,6 +125,9 @@ const RegisterForm = ({
         headers: { 'Content-Type': 'application/json' }, 
         body: JSON.stringify({
           name: values.artist_name,
+          first_name: values.first_name,
+          last_name: values.last_name,
+          artist_name: values.artist_name,
           email: values.email,
           password: values.password,
           phone: values.phone,

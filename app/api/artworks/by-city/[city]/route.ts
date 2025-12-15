@@ -12,7 +12,10 @@ export async function GET(
   const limit = Math.max(1, parseInt(url.searchParams.get('limit') || '12', 10))
   const skip = (page - 1) * limit
 
-  const where = { artist: { is: { citySlug: citySlug } } }
+  const where = {
+    status: "APPROVED",
+    artist: { is: { citySlug: citySlug } } 
+  }
 
   const total = await prisma.artwork.count({ where })
   const rows = await prisma.artwork.findMany({

@@ -7,7 +7,19 @@ import slugify from 'slugify'
 
 export async function POST(req: Request) {
     const body = await req.json()
-    const { name, email, password, city, state, country, phone, profileImage } = body
+    const { 
+        name, 
+        first_name, 
+        last_name, 
+        artist_name, 
+        email, 
+        password, 
+        city, 
+        state, 
+        country, 
+        phone, 
+        profileImage
+     } = body
     const slug = slugify(name, { lower: true })
 
     if (!name || !email || !password) {
@@ -26,6 +38,9 @@ export async function POST(req: Request) {
     const artist = await prisma.artist.create({
         data: {
             name,
+            first_name: first_name,
+            last_name: last_name,
+            artist_name: artist_name,
             email,
             password: hashed,
             city,
