@@ -6,8 +6,6 @@ import Busboy from 'busboy'
 import { toNodeReadable } from '@/lib/toNodeReadables'
 import slugify from 'slugify'
 
-// You can delete this now if you want – we're using Cloudinary's result directly.
-// async function checkImageModeration(imageUrl: string) { ... }
 
 export async function POST(req: NextRequest) {
   const token = req.cookies.get('auth-token')?.value;
@@ -18,6 +16,21 @@ export async function POST(req: NextRequest) {
       token,
       new TextEncoder().encode(process.env.JWT_SECRET!)
     );
+
+    // 64 uploads per day limit
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const uploadCount = await prisma.artwork.count({
+      where: {
+        artistId: payload.id as string,
+        createdAt: { gte: todayStart }
+      }
+    });
+
+    if (uploadCount >= 64) {
+      return new NextResponse("Daily upload limit reached (50)", { status: 429 });
+    }
 
     const stream = toNodeReadable(req.body as ReadableStream<any>);
     const busboy = Busboy({ headers: Object.fromEntries(req.headers) });
@@ -33,6 +46,16 @@ export async function POST(req: NextRequest) {
             ? String(info.filename)
             : 'unnamed';
 
+        // File size limiter
+        let totalBytes = 0;
+          file.on("data", (chunk) => {
+            totalBytes += chunk.length;
+            if (totalBytes > 18 * 1024 * 1024) {   // 18 MB
+              file.unpipe();                      // stop reading
+              return reject(new Error("File too large, under 18 MB please"))
+            }
+          })
+        
         console.log('🖼️ file received:', filename);
 
         const cloudStream = cloudinary.uploader.upload_stream(
@@ -40,8 +63,8 @@ export async function POST(req: NextRequest) {
             folder: 'artfinity',
             resource_type: 'image',
             public_id: filename.split('.')[0] || 'unnamed',
-            // 👇 enable your Cloudinary moderation add-on (must be turned on in dashboard)
-            moderation: 'aws_rek', // or 'google_vision_ai', 'imagga', etc.
+            // Enable Cloudinary moderation add-on in line below when upgraded to Cloudinary $99 per month plan
+            // moderation: 'aws_rek', 
           },
           (err, result) => {
             if (err || !result) {
