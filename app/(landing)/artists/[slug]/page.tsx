@@ -381,16 +381,19 @@ const handleDeleteAccount = async () => {
             {isOwner ? (
               isEditing ? (
                 <div className="space-y-3 mt-4">
-                  <input value={firstNameDraft} onChange={e=>setFirstNameDraft(e.target.value)} className="border rounded px-2 py-1 text-sm w-full" placeholder="First Name" />
-                  <input value={lastNameDraft} onChange={e=>setLastNameDraft(e.target.value)} className="border rounded px-2 py-1 text-sm w-full" placeholder="Last Name" />
-                  <input value={artistNameDraft} onChange={e=>setArtistNameDraft(e.target.value)} className="border rounded px-2 py-1 text-sm w-full" placeholder="Artist Name" />
+                  <input value={firstNameDraft} onChange={e=>setFirstNameDraft(e.target.value)} className="border rounded px-2 py-1 text-sm w-full text-theme-secondary-500" placeholder="First Name" />
+                  <input value={lastNameDraft} onChange={e=>setLastNameDraft(e.target.value)} className="border rounded px-2 py-1 text-sm w-full text-theme-secondary-500" placeholder="Last Name" />
+                  <label className="text-sm font-medium text-theme-secondary-600">
+                    Artist name (public)
+                  <input value={artistNameDraft} onChange={e=>setArtistNameDraft(e.target.value)} className="border rounded px-2 py-1 text-sm w-full text-theme-secondary-500" placeholder="Artist Name" />
+                  </label>
                   <input
                     value={artistEmailDraft}
                     onChange={(e) => {
                       setArtistEmailDraft(e.target.value);
                       if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
                     }}
-                    className={`border rounded px-2 py-1 text-sm w-full ${errors.email ? "border-red-500" : ""}`}
+                    className={`text-theme-secondary-500 border rounded px-2 py-1 text-sm w-full ${errors.email ? "border-red-500" : ""}`}
                     placeholder="Email"
                     type="email"
                     aria-invalid={!!errors.email}
@@ -406,13 +409,13 @@ const handleDeleteAccount = async () => {
                       setPhoneDraft(e.target.value);
                       if (errors.phone) setErrors(prev => ({ ...prev, phone: undefined }));
                     }}
-                    className={`border rounded px-2 py-1 text-sm w-full ${errors.phone ? "border-red-500" : ""}`}
+                    className={`text-theme-secondary-500 border rounded px-2 py-1 text-sm w-full ${errors.phone ? "border-red-500" : ""}`}
                     placeholder="Phone Number"
                   />
                   {errors.phone && (
                     <p className="text-xs text-red-600 mt-1">{errors.phone}</p>
                   )}
-                  <textarea value={bioDraft} onChange={e=>setBioDraft(e.target.value)} className="w-full rounded border p-2 text-sm" placeholder="Bio" />
+                  <textarea value={bioDraft} onChange={e=>setBioDraft(e.target.value)} className="text-theme-secondary-500 w-full rounded border p-2 text-sm" placeholder="Bio" />
 
                     <Select
                       value={cityDraft}
@@ -423,7 +426,7 @@ const handleDeleteAccount = async () => {
                         setCountryDraft("US")
                       }}
                     >
-                      <SelectTrigger className="max-w-[220px] capitalize">
+                      <SelectTrigger className="max-w-[220px] capitalize text-theme-secondary-500">
                         <SelectValue placeholder="Select city" />
                       </SelectTrigger>
                       <SelectContent>
@@ -445,7 +448,7 @@ const handleDeleteAccount = async () => {
                         setCityDraft("")
                       }}
                     >
-                      <SelectTrigger className="max-w-[220px] capitalize">
+                      <SelectTrigger className="max-w-[220px] capitalize text-theme-secondary-500">
                         <SelectValue placeholder="Select state" />
                       </SelectTrigger>
                       <SelectContent>
@@ -461,7 +464,9 @@ const handleDeleteAccount = async () => {
                     </Select>
 
                   <Select value={countryDraft} onValueChange={setCountryDraft}>
-                    <SelectTrigger><SelectValue placeholder="Country" /></SelectTrigger>
+                    <SelectTrigger className="text-theme-secondary-500">
+                      <SelectValue placeholder="Country" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="US">United States</SelectItem>
                     </SelectContent>
@@ -469,7 +474,7 @@ const handleDeleteAccount = async () => {
                   <input
                     value={venmoHandle}
                     onChange={(e) => setVenmoHandle(e.target.value)}
-                    className="border rounded px-2 py-1 text-sm w-full"
+                    className="border rounded px-2 py-1 text-sm w-full text-theme-secondary-500"
                     placeholder="Venmo handle (e.g. @artistname)"
                   />
                   <Button
