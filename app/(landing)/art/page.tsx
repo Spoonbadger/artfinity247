@@ -152,7 +152,7 @@ const ArtsPage = (): ReactNode => {
                   <option value="newest">Latest</option>
                   <option value="oldest">The Ogs</option>
                   <option value="random">Random</option>
-                  <option value="popular">Most Popular</option>
+                  {/* <option value="popular">Most Popular</option> */}
                 </select>
               </div>
             </div>
