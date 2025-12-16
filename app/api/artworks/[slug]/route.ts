@@ -109,6 +109,13 @@ export async function PUT(
       new TextEncoder().encode(process.env.JWT_SECRET!)
     )
 
+    const currentArtistId =
+      (payload as any).id ||
+      (payload as any).artistId ||
+      (payload as any).userId ||
+      (payload as any).sub
+
+
     const stream = toNodeReadable(req.body as ReadableStream<any>)
     const busboy = Busboy({ headers: Object.fromEntries(req.headers) })
 
@@ -117,9 +124,20 @@ export async function PUT(
 
     const done = new Promise<void>((resolve, reject) => {
       busboy.on('file', (_fieldname, file, info) => {
-        const filename = typeof info === 'object' && 'filename' in info
-          ? String(info.filename)
-          : 'unnamed'
+        const filename =
+          typeof info === 'object' && 'filename' in info
+            ? String(info.filename)
+            : 'unnamed'
+
+        // Optional: same 18 MB guard as POST
+        let totalBytes = 0
+        file.on('data', (chunk) => {
+          totalBytes += chunk.length
+          if (totalBytes > 18 * 1024 * 1024) {
+            file.unpipe()
+            return reject(new Error('File too large, under 18 MB please'))
+          }
+        })
 
         const cloudStream = cloudinary.uploader.upload_stream(
           {
@@ -127,7 +145,16 @@ export async function PUT(
             public_id: filename.split('.')[0] || 'unnamed',
           },
           (err, result) => {
-            if (err || !result) return reject(err)
+            if (err || !result) {
+              // Treat "Empty file" as "no new image selected"
+              if ((err as any).http_code === 400 && (err as any).message === 'Empty file') {
+                console.log('No new file selected, keeping existing image.')
+                return resolve()
+              }
+
+              return reject(err)
+            }
+
             uploadedImageUrl = result.secure_url
             resolve()
           }
@@ -153,22 +180,43 @@ export async function PUT(
     })
     console.log("Artwork SLUG??: ", artwork)
 
+    if (!artwork || String(artwork.artistId) !== String(currentArtistId)) {
+      return new NextResponse('Forbidden', { status: 403 })
+    }
+
     if (!artwork || artwork.artistId !== payload.id)
       return new NextResponse('Forbidden', { status: 403 })
 
     const updated = await prisma.artwork.update({
       where: { slug: params.slug },
       data: {
-        title: fields.title,
-        description: fields.description,
-        markupSmall: parseFloat(fields.markupSmall),
-        markupMedium: parseFloat(fields.markupMedium),
-        markupLarge: parseFloat(fields.markupLarge),
+        title: fields.title ?? artwork.title,
+        description: fields.description ?? artwork.description,
+        markupSmall:
+          fields.markupSmall !== undefined
+            ? parseInt(fields.markupSmall, 10) || artwork.markupSmall
+            : artwork.markupSmall,
+        markupMedium:
+          fields.markupMedium !== undefined
+            ? parseInt(fields.markupMedium, 10) || artwork.markupMedium
+            : artwork.markupMedium,
+        markupLarge:
+          fields.markupLarge !== undefined
+            ? parseInt(fields.markupLarge, 10) || artwork.markupLarge
+            : artwork.markupLarge,
         imageUrl: uploadedImageUrl || artwork.imageUrl,
       },
     })
 
-    return NextResponse.json(updated)
+    const artist = await prisma.artist.findUnique({
+      where: { id: updated.artistId },
+      select: { slug: true },
+    })
+
+    return NextResponse.json({
+      ...updated,
+      artistSlug: artist?.slug,
+    })
   } catch (err) {
     console.error('Editing error', err)
     return new NextResponse('Server error', { status: 500 })

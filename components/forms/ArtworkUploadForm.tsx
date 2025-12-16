@@ -22,7 +22,6 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
     const [errorMedium, setErrorMedium] = useState(false)
     const [errorLarge, setErrorLarge] = useState(false)
 
-
     const router = useRouter()
 
     useEffect(() => {
@@ -57,7 +56,7 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
 
 
         const endpoint = artwork
-          ?  `/api/artworks/[id]`
+          ?  `/api/artworks/${artwork.slug}`
           :  `/api/artworks/upload`
 
         const method = artwork ? 'PUT' : 'POST'
@@ -110,7 +109,7 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
 
 
     return (
-        <form onSubmit={handleSubmit} className='space-y-4 max-w-md'>
+        <form onSubmit={handleSubmit} className='space-y-4 max-w-md mx-auto'>
             <input
               type='text'
               placeholder='Title'
