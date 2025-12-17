@@ -17,7 +17,7 @@ const SearchArea = ({ className }: { className?: string }): ReactNode => {
         <DialogContent className="search-area box-shadow-none z-40 min-h-full min-w-full scale-[1.001]  !rounded-none !border-none  bg-theme-secondary-400 bg-opacity-95">
           <div className="flex h-1/2 items-center justify-center space-y-8 px-4 md:h-full md:space-x-6 md:space-y-0">
             <SearchBar
-              inputClassName="text-theme-secondary-500 box-shadow-none h-full w-[10ch] appearance-none overflow-x-hidden border-none outline-none md:w-[8ch] text-3xl md:text-6xl"
+              inputClassName="text-white box-shadow-none h-full w-[10ch] appearance-none overflow-x-hidden border-none outline-none md:w-[8ch] text-3xl md:text-6xl"
               btnClassName="!size-5 md:!h-12 md:!w-12"
             />
           </div>

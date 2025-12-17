@@ -116,7 +116,7 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
               placeholder='Title'
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className='w-full p-2 border rounded'
+              className='text-theme-secondary-600 w-full p-2 border rounded'
             />
             <input
               type='file'
@@ -134,7 +134,7 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                 name="upload-art-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full p-2 border rounded h-64"
+                className="text-theme-secondary-600 w-full p-2 border rounded h-64"
             />
             {/* Pricing section */}
             <div className="mt-6 space-y-3">
@@ -146,7 +146,7 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                 </p>
 
                 <div className="space-y-2">
-                    <label className="block text-sm font-medium text-theme-secondary">
+                    <label className="block text-sm font-medium text-theme-secondary-600">
                     Small print price ($)
                     {/* <span className="ml-2 text-xs text-gray-500">
                         Base ${basePrices.small / 100}
@@ -154,7 +154,7 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                     </label>
                     <input
                     type="number"
-                    className="w-full p-2 border rounded text-theme-secondary"
+                    className="w-full p-2 border rounded text-theme-secondary-600"
                     value={(basePrices.small + markupSmall) / 100}
                     onChange={(e) => {
                         const value = Math.round(parseFloat(e.target.value) * 100)
@@ -171,7 +171,7 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                 </div>
 
                 <div className="space-y-2">
-                    <label className="block text-sm font-medium text-theme-secondary">
+                    <label className="block text-sm font-medium text-theme-secondary-600">
                     Medium print price ($)
                     {/* <span className="ml-2 text-xs text-gray-500">
                         Base ${basePrices.medium / 100}
@@ -179,7 +179,7 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                     </label>
                     <input
                     type="number"
-                    className="w-full p-2 border rounded text-theme-secondary"
+                    className="w-full p-2 border rounded text-theme-secondary-600"
                     value={(basePrices.medium + markupMedium) / 100}
                     onChange={(e) => {
                         const value = Math.round(parseFloat(e.target.value) * 100)
@@ -196,7 +196,7 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                 </div>
 
                 <div className="space-y-2">
-                    <label className="block text-sm font-medium text-theme-secondary">
+                    <label className="block text-sm font-medium text-theme-secondary-600">
                     Large print price ($)
                     {/* <span className="ml-2 text-xs text-gray-500">
                         Base ${basePrices.large / 100}
@@ -204,7 +204,7 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                     </label>
                     <input
                     type="number"
-                    className="w-full p-2 border rounded text-theme-secondary"
+                    className="w-full p-2 border rounded text-theme-secondary-600"
                     value={(basePrices.large + markupLarge) / 100}
                     onChange={(e) => {
                         const value = Math.round(parseFloat(e.target.value) * 100)

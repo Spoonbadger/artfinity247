@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from "@/lib/prisma";
+import { prisma } from '@/lib/prisma'
 import { jwtVerify } from 'jose'
 import QRCode from 'qrcode'
 import { PDFDocument, StandardFonts, rgb, type PDFPage } from 'pdf-lib'
+import fs from 'fs/promises'
+import path from 'path'
 
 export const runtime = 'nodejs'
 
-// A4 portrait ~ 595 x 842 pts; A6 ~ 298 x 420 pts
+// A4 portrait ~ 595 x 842 pts
 const A4 = { w: 595, h: 842 }
-const A6 = { w: 298, h: 420 }
+// horizontal single card (same as generateQrPdf)
+const CARD = { w: 420, h: 210 }
 const MARGIN = 24
-const GUTTER = 16 // spacing between cards (4-up)
+const GUTTER = 16
+const PAD = 20
 
 export async function GET(req: NextRequest) {
   try {
@@ -41,12 +45,18 @@ export async function GET(req: NextRequest) {
       select: { slug: true, title: true, artist: { select: { name: true } } },
       orderBy: { createdAt: 'desc' },
     })
-    const artworks = rows.filter(a => a.slug) as { slug: string; title: string; artist: { name: string } }[]
+    const artworks = rows.filter(a => a.slug) as {
+      slug: string
+      title: string
+      artist: { name: string }
+    }[]
     if (!artworks.length) return new NextResponse('No artworks found', { status: 404 })
 
     // Base URL
     const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || ''
-    const proto = req.headers.get('x-forwarded-proto') || (host.startsWith('localhost') ? 'http' : 'https')
+    const proto =
+      req.headers.get('x-forwarded-proto') ||
+      (host.startsWith('localhost') ? 'http' : 'https')
     const base = process.env.NEXT_PUBLIC_APP_URL || `${proto}://${host}`
 
     // Build PDF + fonts
@@ -54,148 +64,173 @@ export async function GET(req: NextRequest) {
     const fontRegular = await pdf.embedFont(StandardFonts.Helvetica)
     const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold)
 
-    // helper (function expression to avoid ES5 strict error)
+    // Favicon logo
+    const faviconPath = path.join(
+      process.cwd(),
+      'public',
+      'favicons',
+      'apple-touch-icon.png'
+    )
+    const faviconBytes = await fs.readFile(faviconPath)
+    const faviconImg = await pdf.embedPng(faviconBytes)
+
+    // Card drawer shared by 1up + 4up
     const drawCard = async (
-      page: PDFPage | any,
+      page: PDFPage,
       box: { x: number; y: number; w: number; h: number },
-      art: { slug: string; title: string; artistName: string }
+      art: { slug: string; title: string; artistName: string },
+      favicon: any
     ) => {
-      const pad = 14
-      let y = box.y + box.h - pad
+      const pad = PAD
 
-      // Header
-      const header = 'ARTFINITY'
-      const headerSize = 9
-      const headerWidth = fontRegular.widthOfTextAtSize(header, headerSize)
-      page.drawText(header, {
-        x: box.x + box.w - pad - headerWidth,
-        y: y - headerSize,
-        size: headerSize,
-        font: fontRegular,
-        color: rgb(0.33, 0.33, 0.33),
+      // background
+      page.drawRectangle({
+        x: box.x,
+        y: box.y,
+        width: box.w,
+        height: box.h,
+        color: rgb(1, 1, 1),
+        borderColor: rgb(0.9, 0.9, 0.9),
+        borderWidth: 1,
       })
-      y -= headerSize + 6
 
-      // Title
-      const titleSize = 14
+      // left/right columns (same proportions as single)
+      const leftW = box.w * 0.55
+      const rightW = box.w - leftW
+
+      // logo
+      const logoSize = 40
+      const logoX = box.x + pad
+      const logoY = box.y + box.h - pad - logoSize
+
+      page.drawImage(favicon, {
+        x: logoX,
+        y: logoY,
+        width: logoSize,
+        height: logoSize,
+      })
+
+      // title + artist (scaled like single card)
+      let textY = logoY - 30
+
+      const titleSize = 18
       page.drawText(art.title, {
         x: box.x + pad,
-        y: y - titleSize,
+        y: textY,
         size: titleSize,
         font: fontBold,
         color: rgb(0, 0, 0),
       })
-      y -= titleSize + 4
+      textY -= titleSize + 4
 
-      // Artist
-      const artistSize = 11
+      const artistSize = 14
       page.drawText(art.artistName, {
         x: box.x + pad,
-        y: y - artistSize,
+        y: textY,
         size: artistSize,
         font: fontRegular,
-        color: rgb(0.2, 0.2, 0.2),
+        color: rgb(0.25, 0.25, 0.25),
       })
-      y -= artistSize + 8
 
-      // Divider
-      page.drawLine({
-        start: { x: box.x + pad, y },
-        end: { x: box.x + box.w - pad, y },
-        thickness: 1,
-        color: rgb(0.9, 0.9, 0.9),
-      })
-      y -= 8
-
-      // Link + QR
+      // link + QR
       const link = new URL(`${base}/art/${art.slug}`)
       link.searchParams.set('utm_source', 'qr')
       link.searchParams.set('utm_medium', 'print')
       link.searchParams.set('utm_campaign', art.slug)
 
-      const qrPng = await QRCode.toBuffer(link.toString(), { errorCorrectionLevel: 'M', margin: 1, scale: 6 })
+      const qrPng = await QRCode.toBuffer(link.toString(), {
+        errorCorrectionLevel: 'M',
+        margin: 1,
+        scale: 6,
+      })
       const qrImg = await pdf.embedPng(qrPng)
-      const qrSize = Math.min(140, box.w - pad * 2)
-      const qrX = box.x + (box.w - qrSize) / 2
-      const qrY = y - qrSize
-      page.drawImage(qrImg, { x: qrX, y: qrY, width: qrSize, height: qrSize })
-      y = qrY - 6
 
-      // CTA
-      const cta = 'Scan to order prints online'
-      const ctaSize = 9
+      // same QR proportion as single card (*0.7)
+      const qrSize = Math.min(box.h - pad * 2, rightW - pad * 2) * 0.7
+      const qrX = box.x + leftW + (rightW - qrSize) / 2
+      const qrY = box.y + (box.h - qrSize) / 2
+
+      page.drawImage(qrImg, {
+        x: qrX,
+        y: qrY,
+        width: qrSize,
+        height: qrSize,
+      })
+
+      // CTA only (no URL, to match single)
+      const cta = 'Scan to view this artwork and order prints'
+      const ctaSize = 8
       const ctaWidth = fontRegular.widthOfTextAtSize(cta, ctaSize)
+      const ctaY = box.y + pad / 2 + 10
+
       page.drawText(cta, {
-        x: box.x + (box.w - ctaWidth) / 2,
-        y: y - ctaSize,
+        x: box.x + leftW + (rightW - ctaWidth) / 2,
+        y: ctaY,
         size: ctaSize,
         font: fontRegular,
-        color: rgb(0.33, 0.33, 0.33),
-      })
-      y -= ctaSize + 2
-
-      // URL
-      const urlSize = 7
-      const urlText = link.toString()
-      const urlWidth = fontRegular.widthOfTextAtSize(urlText, urlSize)
-      page.drawText(urlText, {
-        x: box.x + (box.w - urlWidth) / 2,
-        y: y - urlSize,
-        size: urlSize,
-        font: fontRegular,
-        color: rgb(0.5, 0.5, 0.5),
+        color: rgb(0.35, 0.35, 0.35),
       })
     }
 
-    if (layout === '4up') {
-      // A4 2x2 grid
-      const cardW = (A4.w - 2 * MARGIN - GUTTER) / 2
-      const cardH = (A4.h - 2 * MARGIN - GUTTER) / 2
+   if (layout === '4up') {
+  // Four horizontal cards stacked down the A4 page
+  const cardH = (A4.h - 2 * MARGIN - 3 * GUTTER) / 4
+  const cardW = A4.w - 2 * MARGIN
+  const page = pdf.addPage([A4.w, A4.h])
 
-      for (let i = 0; i < artworks.length; i += 4) {
-        const page = pdf.addPage([A4.w, A4.h])
-        const group = artworks.slice(i, i + 4)
-        const positions = [
-          { x: MARGIN, y: A4.h - MARGIN - cardH },                   // top-left
-          { x: MARGIN + cardW + GUTTER, y: A4.h - MARGIN - cardH },  // top-right
-          { x: MARGIN, y: MARGIN },                                  // bottom-left
-          { x: MARGIN + cardW + GUTTER, y: MARGIN },                 // bottom-right
-        ]
-        for (let j = 0; j < group.length; j++) {
-          const a = group[j]
-          await drawCard(page, { x: positions[j].x, y: positions[j].y, w: cardW, h: cardH }, {
-            slug: a.slug,
-            title: a.title,
-            artistName: a.artist?.name || '',
-          })
-        }
-      }
-    } else {
-      // 1-up: one A6 per artwork
-      for (const a of artworks) {
-        const page = pdf.addPage([A6.w, A6.h])
-        await drawCard(page, { x: 0, y: 0, w: A6.w, h: A6.h }, {
-          slug: a.slug,
-          title: a.title,
-          artistName: a.artist?.name || '',
-        })
-      }
-    }
+  const maxPerPage = 4
+  const count = Math.min(maxPerPage, artworks.length)
+
+  for (let i = 0; i < count; i++) {
+    const a = artworks[i]
+
+    const x = MARGIN
+    const y = A4.h - MARGIN - cardH - i * (cardH + GUTTER)
+
+    await drawCard(
+      page,
+      { x, y, w: cardW, h: cardH },
+      {
+        slug: a.slug,
+        title: a.title,
+        artistName: a.artist?.name || '',
+      },
+      faviconImg
+    )
+  }
+} else {
+  // 1-up: keep as you have it
+  for (const a of artworks) {
+    const page = pdf.addPage([CARD.w, CARD.h])
+    await drawCard(
+      page,
+      { x: 0, y: 0, w: CARD.w, h: CARD.h },
+      {
+        slug: a.slug,
+        title: a.title,
+        artistName: a.artist?.name || '',
+      },
+      faviconImg
+    )
+  }
+}
+    
 
     // Return
     const bytes = await pdf.save()
     const body = new Uint8Array(bytes)
 
-    const mode = urlIn.searchParams.get('download') === '1' ? 'attachment' : 'inline'
+    const mode =
+      urlIn.searchParams.get('download') === '1' ? 'attachment' : 'inline'
     const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '')
 
     return new NextResponse(body, {
-    status: 200,
-    headers: {
+      status: 200,
+      headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `${mode}; filename="artfinity-qr-cards-${layout}-${stamp}.pdf"`,
         'Cache-Control': 'no-store',
-        },
+      },
     })
   } catch (err) {
     console.error('Bulk QR PDF error', err)

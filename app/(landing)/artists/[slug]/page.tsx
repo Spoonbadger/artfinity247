@@ -609,7 +609,7 @@ const handleDeleteAccount = async () => {
                     </button>
 
                     <button
-                      className="text-xs px-2 py-1 bg-red-600 text-white rounded"
+                      className="text-xs px-2 py-1 bg-red-900 text-white rounded"
                       onClick={() => handleDelete(product.id)}
                     >
                       Delete
