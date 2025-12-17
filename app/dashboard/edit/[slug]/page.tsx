@@ -18,7 +18,7 @@ const EditArtworkPage = () => {
     fetchArtwork()
   }, [slug])
 
-  if (!artwork) return <p>Loading...</p>
+  if (!artwork) return <p className="text-theme-secondary">Loading...</p>
 
   return <ArtworkUploadForm artwork={artwork} />
 }

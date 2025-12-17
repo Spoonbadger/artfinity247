@@ -491,9 +491,9 @@ const handleDeleteAccount = async () => {
                   <div>
                     {isOwner && isEditing && (
                       <Button
-                        variant="destructive"
+                        variant="ghost"
                         size="sm"
-                        className="mt-4"
+                        className="mt-4 mt-10"
                         onClick={handleDeleteAccount}
                       >
                         Delete account

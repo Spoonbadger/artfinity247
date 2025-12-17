@@ -112,6 +112,7 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
         <form onSubmit={handleSubmit} className='space-y-4 max-w-md mx-auto'>
             <input
               type='text'
+              name="upload-art-title"
               placeholder='Title'
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -130,14 +131,30 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
             )}
             <textarea
                 placeholder="Description"
+                name="upload-art-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full p-2 border rounded h-64"
             />
-            <div>
-                <label>Small Print Price $</label>
-                <input
+            {/* Pricing section */}
+            <div className="mt-6 space-y-3">
+                <p className="text-sm font-semibold">
+                    Set your print prices
+                </p>
+                <p className="text-xs text-gray-500">
+                    These are the final prices buyers see. You can increase them above the default base prices.
+                </p>
+
+                <div className="space-y-2">
+                    <label className="block text-sm font-medium text-theme-secondary">
+                    Small print price ($)
+                    {/* <span className="ml-2 text-xs text-gray-500">
+                        Base ${basePrices.small / 100}
+                    </span> */}
+                    </label>
+                    <input
                     type="number"
+                    className="w-full p-2 border rounded text-theme-secondary"
                     value={(basePrices.small + markupSmall) / 100}
                     onChange={(e) => {
                         const value = Math.round(parseFloat(e.target.value) * 100)
@@ -145,13 +162,24 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                         setMarkupSmall(Math.max(0, value - basePrices.small))
                         setErrorSmall(markup < 0)
                     }}
-                />
-            </div>
-            {errorSmall && <p className="text-red-500 text-sm">Must be ≥ ${basePrices.small / 100}</p>}
-            <div>
-                <label>Medium Print Price $</label>
-                <input
-                    type='number'
+                    />
+                    {errorSmall && (
+                    <p className="text-red-500 text-xs">
+                        Must be ≥ ${basePrices.small / 100}
+                    </p>
+                    )}
+                </div>
+
+                <div className="space-y-2">
+                    <label className="block text-sm font-medium text-theme-secondary">
+                    Medium print price ($)
+                    {/* <span className="ml-2 text-xs text-gray-500">
+                        Base ${basePrices.medium / 100}
+                    </span> */}
+                    </label>
+                    <input
+                    type="number"
+                    className="w-full p-2 border rounded text-theme-secondary"
                     value={(basePrices.medium + markupMedium) / 100}
                     onChange={(e) => {
                         const value = Math.round(parseFloat(e.target.value) * 100)
@@ -159,13 +187,24 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                         setMarkupMedium(Math.max(0, value - basePrices.medium))
                         setErrorMedium(markup < 0)
                     }}
-                />
-            </div>
-            {errorMedium && <p className='text-red-500 text-sm' >Must be ≥ ${basePrices.medium / 100}</p>}
-            <div>
-                <label>Large Print Price $</label>
-                <input
-                    type='number'
+                    />
+                    {errorMedium && (
+                    <p className="text-red-500 text-xs">
+                        Must be ≥ ${basePrices.medium / 100}
+                    </p>
+                    )}
+                </div>
+
+                <div className="space-y-2">
+                    <label className="block text-sm font-medium text-theme-secondary">
+                    Large print price ($)
+                    {/* <span className="ml-2 text-xs text-gray-500">
+                        Base ${basePrices.large / 100}
+                    </span> */}
+                    </label>
+                    <input
+                    type="number"
+                    className="w-full p-2 border rounded text-theme-secondary"
                     value={(basePrices.large + markupLarge) / 100}
                     onChange={(e) => {
                         const value = Math.round(parseFloat(e.target.value) * 100)
@@ -173,7 +212,13 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                         setMarkupLarge(Math.max(0, value - basePrices.large))
                         setErrorLarge(markup < 0)
                     }}
-                />
+                    />
+                    {errorLarge && (
+                    <p className="text-red-500 text-xs">
+                        Must be ≥ ${basePrices.large / 100}
+                    </p>
+                    )}
+                </div>
             </div>
             {errorLarge && <p className='text-red-500 text-sm'>Must be ≥ ${basePrices.large /100}</p>}
 
