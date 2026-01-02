@@ -187,7 +187,7 @@ const RegisterForm = ({
           <form
             method="POST"
             onSubmit={form.handleSubmit(handleSubmit)}
-            className="register-form mx-auto grid w-full grid-cols-1 items-center gap-2 text-start md:gap-4"
+            className="register-form mx-auto grid w-full grid-cols-1 items-center gap-2 text-start md:gap-4 text-theme-secondary-600"
           >
             <div className="grid grid-cols-2 gap-2 md:gap-4">
               {/* First Name Field */}

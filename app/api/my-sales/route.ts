@@ -1,7 +1,8 @@
 // app/api/my-sales/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { jwtVerify } from "jose";
+import { requireUser } from "@/lib/auth";
+
 
 export const runtime = "nodejs";
 
@@ -30,18 +31,6 @@ const totalsInit: Totals = {
 }
 
 
-async function getUserFromCookie(req: NextRequest): Promise<JwtPayload | null> {
-  const token = req.cookies.get("auth-token")?.value;
-  if (!token) return null;
-  try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    const { payload } = await jwtVerify(token, secret);
-    return payload as JwtPayload;
-  } catch {
-    return null;
-  }
-}
-
 function monthRangeOrNull(month?: string) {
   // month in "YYYY-MM"
   if (!month) return null;
@@ -54,10 +43,12 @@ function monthRangeOrNull(month?: string) {
 }
 
 export async function GET(req: NextRequest) {
-  const user = await getUserFromCookie(req);
-  if (!user?.id) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
+    let user
+    try {
+      user = await requireUser();
+    } catch {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
 
   const { searchParams } = new URL(req.url);
   const month = searchParams.get("month") || undefined;

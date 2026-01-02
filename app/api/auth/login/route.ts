@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { compare } from "bcryptjs";
 import { SignJWT } from "jose";
 import { NextResponse } from "next/server";
+export const runtime = "nodejs";
+
 
 export async function POST(req: Request) {
   try {
@@ -44,7 +46,7 @@ export async function POST(req: Request) {
         name: artist.name,
         slug: artist.slug,
         email: artist.email,
-        role: artist.role,
+        role: artist.role.toUpperCase(),
       },
     });
 
@@ -57,9 +59,12 @@ export async function POST(req: Request) {
 
     if (remember) {
       response.cookies.set("auth-token", token, {
-        ...cookieBase,
-        maxAge: 60 * 60 * 24 * 30, // 30 days
-      });
+        httpOnly: true,
+        secure: false, // localhost
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      })
     } else {
       // session cookie (expires with browser session)
       response.cookies.set("auth-token", token, cookieBase);

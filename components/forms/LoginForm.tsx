@@ -137,7 +137,7 @@ const LoginForm = ({
           <form
             method="POST"
             onSubmit={form.handleSubmit(handleSubmit)}
-            className="login-form mx-auto grid w-full grid-cols-1 items-center gap-2 text-start md:gap-4"
+            className="login-form mx-auto grid w-full grid-cols-1 items-center gap-2 text-start md:gap-4 text-theme-secondary-600"
           >
             {/* Email Field */}
             <FormField

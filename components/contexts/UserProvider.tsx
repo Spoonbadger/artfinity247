@@ -19,17 +19,19 @@ export const useUser = () => {
 
 export const UserProvider = ({ children }: { children: ReactNode }): ReactNode => {
   const [currentUser, setCurrentUser] = useState<UserType | null>(null);
+  const [loading, setLoading] = useState(true);
+
 
   // 🔄 helper: refresh user from /api/auth/me
   async function refreshUser() {
     try {
       const res = await fetch("/api/auth/me", { credentials: "include", cache: "no-store" });
       const data = await res.json();
-      if (data.user) setCurrentUser(data.user);
-      else setCurrentUser(null);
-    } catch (err) {
-      console.error("Failed to refresh user:", err);
+      setCurrentUser(data.user ?? null);
+    } catch {
       setCurrentUser(null);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -38,8 +40,16 @@ export const UserProvider = ({ children }: { children: ReactNode }): ReactNode =
     refreshUser();
   }, []);
 
+  // inside UserProvider, just before return (
+console.log("UserProvider render", {
+  loading,
+  currentUser,
+  role: currentUser?.role,
+});
+
+
   return (
-    <UserContext.Provider value={{ currentUser, setCurrentUser, refreshUser }}>
+    <UserContext.Provider value={{ currentUser, setCurrentUser, refreshUser, loading }}>
       {children}
     </UserContext.Provider>
   );

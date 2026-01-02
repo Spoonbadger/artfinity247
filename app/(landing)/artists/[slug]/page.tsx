@@ -28,7 +28,7 @@ const AppPages = getAppPages();
 
 const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
   const slug = decodeURIComponent(params.slug);
-  const { currentUser, refreshUser } = useUser()
+  const { currentUser, refreshUser, loading } = useUser()
 
   const [isOwner, setIsOwner] = useState(false);
 
@@ -347,8 +347,9 @@ const handleDeleteAccount = async () => {
 }
 
   // guards
-  if (seller === undefined) return <div className="p-6">Loading…</div>;
+  if (seller === undefined) return <div className="p-6 text-theme-secondary-600">Loading…</div>;
   if (seller === null) return <div className="p-6">Artist not found.</div>;
+
 
   return (
     <div>
@@ -530,7 +531,7 @@ const handleDeleteAccount = async () => {
                     )}
 
 
-                    {currentUser?.role === "ADMIN" && (
+                    {!loading && currentUser?.role === "ADMIN" && (
                       <div>
                         <Link href="/admin/orders">
                           <Button size="sm" variant="destructive" className='mr-2'>Admin Orders</Button>

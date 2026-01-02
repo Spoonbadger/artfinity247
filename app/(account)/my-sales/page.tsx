@@ -68,7 +68,7 @@ export default function MySalesPage() {
   const fmtUsd = (cents = 0) => (cents / 100).toFixed(2);
 
   if (err) return <div className="p-6 text-red-600">{err}</div>;
-  if (!rows) return <div className="p-6">Loading…</div>;
+  if (!rows) return <div className="p-6 text-theme-secondary-600">Loading…</div>;
 
   if (!rows.length) {
     return (

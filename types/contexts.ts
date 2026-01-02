@@ -28,6 +28,7 @@ export type UserContextProps = {
   currentUser: UserType | null;
   setCurrentUser: Dispatch<SetStateAction<UserType | null>>;
   refreshUser: () => Promise<void>;
+  loading: boolean;
 };
 
 export type LoadingStatusContextProps = {

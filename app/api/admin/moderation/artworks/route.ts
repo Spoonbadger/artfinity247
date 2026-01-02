@@ -38,8 +38,11 @@ export async function GET() {
 
     return NextResponse.json({ artworks }, { status: 200 });
   } catch (err: any) {
-    if (err?.status === 401 || err?.status === 403) {
+    if (err?.status === 401) {
       return new NextResponse("Unauthorized", { status: 401 });
+    }
+    if (err?.status === 403) {
+      return new NextResponse("Forbidden", { status: 403 });
     }
     console.error("GET /api/admin/moderation/artworks error:", err);
     return new NextResponse("Server error", { status: 500 });

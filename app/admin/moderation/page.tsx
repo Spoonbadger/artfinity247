@@ -101,16 +101,18 @@ export default function ModerationPage() {
     };
 
 
-  useEffect(() => {
-    if (!currentUser) return;
-    if (currentUser.role !== "ADMIN") {
-      router.replace("/");
-      return;
-    }
+    useEffect(() => {
+      if (!currentUser) return;          // wait for context
+      if (currentUser.role !== "ADMIN") {
+        router.replace("/");
+        return;
+      }
 
     const fetchData = async () => {
       try {
-        const res = await fetch("/api/admin/moderation/artworks");
+        const res = await fetch("/api/admin/moderation/artworks", {
+          credentials: "include",
+        });
         if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
         setArtworks(data.artworks || []);
@@ -124,13 +126,15 @@ export default function ModerationPage() {
     fetchData();
   }, [currentUser, router]);
 
-  if (!currentUser) {
+
+  if (loading) {
     return <div className="p-6">Checking permissions…</div>;
   }
 
-  if (currentUser.role !== "ADMIN") {
-    return <div className="p-6">Unauthorized</div>;
+  if (!currentUser || currentUser.role !== "ADMIN") {
+    return null
   }
+
 
   return (
     <section className="my-8 md:my-12">
@@ -143,7 +147,7 @@ export default function ModerationPage() {
         </div>
 
         {loading ? (
-          <div className="p-6">Loading…</div>
+          <div className="p-6 text-theme-secondary-600">Loading…</div>
         ) : artworks.length === 0 ? (
           <div className="p-6 text-sm text-muted-foreground">
             No artworks to review.

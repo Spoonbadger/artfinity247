@@ -141,7 +141,7 @@ export type UserType = {
   bio: string;
   social_accounts?: { platform: string; url: string }[];
   zip_code?: number;
-  role?: "ADMIN" | "USER"
+  role: "ADMIN" | "USER"
   is_active: boolean;
   slug: string;
   venmoHandle: string

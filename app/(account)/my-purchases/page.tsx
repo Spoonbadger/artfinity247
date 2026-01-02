@@ -45,7 +45,7 @@ export default function MyPurchasesPage() {
   }, []);
 
   if (err) return <div className="p-6 text-red-600">{err}</div>;
-  if (!rows) return <div className="p-6">Loading…</div>;
+  if (!rows) return <div className="p-6 text-theme-secondary-600">Loading…</div>;
   if (!rows.length) return <div className="p-6">No purchases yet.</div>;
 
   const fmt = (cents: number) => ((cents ?? 0) / 100).toFixed(2);
