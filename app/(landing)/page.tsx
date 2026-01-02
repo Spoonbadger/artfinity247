@@ -14,6 +14,7 @@ import {
   ProductsCarousel,
   CollectionsCarousel,
   ReviewCarousel,
+  UsersCarousel,
 } from "@/components/carousels";
 import ImageGallery from "@/components/sections/ImageGallery";
 import { MaxWidthWrapper } from "@/components/layout";
@@ -57,40 +58,35 @@ const Home = (): ReactNode => {
     reviews: reviewsCarousel,
   } = AppPages.home.carousels;
 
-  const [ourGuaranteeCards, setOurGuaranteeCards] = useState<
-    OurGuaranteeCardType[]
-  >([]);
+  // const [ourGuaranteeCards, setOurGuaranteeCards] = useState<
+  //   OurGuaranteeCardType[]
+  // >([])
   const [featuredProducts, setFeaturedProducts] = useState<ProductType[]>([]);
   const [heroSlider, setHeroSlider] = useState<SliderType | null>(null);
 
   const [products, setProducts] = useState<ProductType[]>([]);
-  const [sellers, setSellers] = useState<UserType[]>([]);
+  const [artists, setArtists] = useState<UserType[]>([]);
   const [scenes, setScenes] = useState<CollectionType[]>([]);
-  const [reviews, setReviews] = useState<ReviewType[]>([]);
+  // const [reviews, setReviews] = useState<ReviewType[]>([]);
   const [sort, setSort] = useState("newest")
 
 
   useEffect(() => {
-    setOurGuaranteeCards(getDataCards().our_guarantee);
+    // setOurGuaranteeCards(getDataCards().our_guarantee);
     setHeroSlider(getSlider({ id: heroSliderId }));
 
-    setSellers(
+    setArtists(
       getCollectionData({
         id: sellersCarousel.collection_id,
       }) as UserType[],
-    );
+    )
 
-    setScenes(
-      getCollectionData({
-        id: scenesCarousel.collection_id,
-      }) as CollectionType[],
-    );
+    // setReviews(
+    //   getCollectionData({
+    //     id: reviewsCarousel.collection_id,
+    //   }) as ReviewType[],
+    // );
 
-    setReviews(
-      getCollectionData({
-        id: reviewsCarousel.collection_id,
-      }) as ReviewType[],
-    );
   }, [
     heroSliderId,
     productsCarousel?.collection_id,
@@ -111,6 +107,33 @@ const Home = (): ReactNode => {
       }
     })()
   }, [sort])
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/artists?limit=8&sort=random") // Make random?
+        if (!res.ok) throw new Error("Failed to fetch artists")
+        const data = await res.json()
+        setArtists(data.artists || [])
+      } catch (err) {
+        console.error("Error fetching artists:", err)
+      }
+    })()
+  }, [])
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/scenes?limit=10")
+        if (!res.ok) throw new Error("Failed to fetch scenes")
+        const data = await res.json()
+        setScenes(data.scenes || [])
+      } catch (err) {
+        console.error("Error fetching scenes:", err)
+      }
+    })()
+  }, [])
+
 
   return (
     <div className="pb-16">
@@ -185,20 +208,14 @@ const Home = (): ReactNode => {
       </section>
       <section id="artists-area">
         <MaxWidthWrapper className="py-8">
-          <CardGridSection
+          <UsersCarousel
             title={sellersCarousel.title}
             subTitle={sellersCarousel.subTitle}
             description={sellersCarousel.description}
+            users={artists}
             baseUrl={`/${sellersPageSlug}`}
-          >
-            <>
-              {sellers.map((seller, index) => (
-                <Link key={index} href={`${sellersPageSlug}/${seller.slug}`}>
-                  <UserCard user={seller} />
-                </Link>
-              ))}
-            </>
-          </CardGridSection>
+            notFoundMsg={AppConfigs?.messages?.sellers?.not_found || "No Artists Found"}
+          />
         </MaxWidthWrapper>
       </section>
       <section id="scenes-area">
