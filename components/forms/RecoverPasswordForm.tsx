@@ -48,14 +48,25 @@ const RecoverPasswordForm = ({
   const handleSubmit: SubmitHandler<TForgotPasswordFormSchema> = async (
     values,
   ) => {
-    toast.success(
-      "Password change link has been sent to your registered email",
-    );
 
-    setTimeout(() => {
-      form.reset();
-    }, 2000);
-  };
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values)
+      })
+      
+      if (!res.ok) throw new Error("Request failed")
+
+      toast.success("Password change link has been sent to your registered email")
+      setTimeout(() => {
+        form.reset();
+      }, 1000)
+
+    } catch(e) {
+      toast.error("Something went wrong. Please try again.")
+    }
+  }
 
   return (
     <div
@@ -87,7 +98,7 @@ const RecoverPasswordForm = ({
           <form
             method="POST"
             onSubmit={form.handleSubmit(handleSubmit)}
-            className="login-form mx-auto grid w-full grid-cols-1 items-center gap-2 text-start md:gap-4"
+            className="login-form mx-auto grid w-full grid-cols-1 items-center gap-2 text-start md:gap-4 text-theme-secondary-600"
           >
             {/* Email Field */}
             <FormField

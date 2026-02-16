@@ -80,6 +80,8 @@ model Artist {
   artworks     Artwork[]
   payouts      Payout[]
 
+  passwordResetTokens PasswordResetToken[]
+
   @@index([citySlug])
 }
 
@@ -110,4 +112,17 @@ enum ArtworkStatus {
 enum Role {
   USER
   ADMIN
+}
+
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  artistId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@index([artistId])
 }
