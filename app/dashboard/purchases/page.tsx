@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useState } from "react"
+import { useSearchParams } from 'next/navigation'
 
 export const dynamic = "force-dynamic"
 
@@ -29,8 +30,8 @@ export default function PurchasesPage() {
   const [purchases, setPurchases] = useState<PurchaseItem[]>([])
   const [loading, setLoading] = useState(true)
 
-  const params = new URLSearchParams(window.location.search)
-  const slug = params.get("slug")
+  const searchParams = useSearchParams()
+  const slug = searchParams.get("slug")
 
   useEffect(() => {
     (async () => {
