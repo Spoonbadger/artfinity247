@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from "@/lib/prisma";
-
+import { ArtworkStatus } from '@prisma/client';
 
 export async function GET(
   req: Request, 
@@ -13,7 +13,7 @@ export async function GET(
   const skip = (page - 1) * limit
 
   const where = {
-    status: "APPROVED",
+    status: ArtworkStatus.APPROVED,
     artist: { is: { citySlug: citySlug } } 
   }
 

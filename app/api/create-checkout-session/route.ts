@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 export const runtime = 'nodejs'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-06-30.basil',
+  apiVersion: '2025-08-27.basil',
 })
 
 // TODO: move to AppConfigs.json (prices in cents)
