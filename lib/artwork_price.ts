@@ -2,7 +2,8 @@
 export const basePrices = {
   small: 2499,
   medium: 3999,
-  large: 5999,
+  large: 6999,
+  // x-large: 8999
 };
 
 export const getFinalPrice = (
