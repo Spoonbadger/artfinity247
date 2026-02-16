@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { Button } from '../ui/button'
 import { Artwork } from '@prisma/client'
 import { basePrices } from '@/lib/artwork_price'
-import heic2any from 'heic2any'
 import { toast } from 'sonner'
 
 
@@ -83,6 +82,8 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
     // If HEIC, convert to JPEG
     if (file.type === 'image/heic' || file.name.endsWith('.heic')) {
         try {
+            const heic2any = (await import('heic2any')).default
+
             const convertedBlob = await heic2any({
                 blob: file,
                 toType: 'image/jpeg',
@@ -96,6 +97,7 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
             const url = URL.createObjectURL(convertedFile)
             setPreview(url)
             setImage(convertedFile)
+
         } catch (err) {
             console.error('HEIC conversion failed:', err)
             alert('Could not preview HEIC image. Please use JPG or PNG.')
