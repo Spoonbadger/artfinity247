@@ -23,12 +23,33 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true }, { status: 200 });
     }
 
+    // Rate limit: max 3 reset emails per artist per hour
+    const oneHourAgo = new Date(Date.now() - 1000 * 60 * 60)
+
+    const attemptsLastHour = await prisma.passwordResetToken.count({
+      where: {
+        artistId: artist.id,
+        createdAt: { gte: oneHourAgo },
+      },
+    })
+
+    if (attemptsLastHour >= 3) {
+      // still return 200 to prevent email enumeration
+      return NextResponse.json({ ok: true }, { status: 200 })
+    }
+
+
     const rawToken = crypto.randomBytes(32).toString("hex");
     const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
     const expiresAt = new Date(Date.now() + 1000 * 60 * 30); // 30 mins
 
-    // Optional: invalidate old tokens for this user
-    await prisma.passwordResetToken.deleteMany({ where: { artistId: artist.id } });
+    // Invalidate old tokens for this user
+    await prisma.passwordResetToken.deleteMany({ 
+      where: { 
+        artistId: artist.id, 
+        expiresAt: { lt: new Date() },
+      } 
+    })
 
     await prisma.passwordResetToken.create({
       data: {
@@ -49,9 +70,9 @@ export async function POST(req: Request) {
 
     const resend = new Resend(resendKey);
 
-    console.log("API KEY:", process.env.RESEND_API_KEY);
-    console.log("FROM EMAIL:", process.env.RESEND_FROM_EMAIL);
-    console.log("APP URL:", process.env.NEXT_PUBLIC_APP_URL);
+    // console.log("API KEY:", process.env.RESEND_API_KEY);
+    // console.log("FROM EMAIL:", process.env.RESEND_FROM_EMAIL);
+    // console.log("APP URL:", process.env.NEXT_PUBLIC_APP_URL);
 
     await resend.emails.send({
       from: fromEmail,
