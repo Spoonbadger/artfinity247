@@ -21,6 +21,7 @@ import {
   SingleUserQuery,
   UpdateCartItemQuery,
 } from "@/types/db/query";
+import { Role } from '@prisma/client'
 
 /* App Info Queries */
 export const getAppConfigs = () => {
@@ -158,12 +159,12 @@ export const getUser = (query: SingleUserQuery = {}): UserType | null => {
 };
 
 export const getSellers = (query: MultiUsersQuery = {}): UserType[] => {
-  const { ids, slugs } = query;
+  const { ids, slugs } = query
 
-  let result = getUsers({ ids, slugs, roles: ["seller"] });
+  let result = getUsers({ ids, slugs, roles: [Role.USER] })
 
-  return result;
-};
+  return result
+}
 
 export const getSeller = (query: SingleUserQuery = {}): UserType | null => {
   const { id, slug } = query;
