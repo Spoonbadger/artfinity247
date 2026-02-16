@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma"
+import { ArtworkStatus } from "@prisma/client";
 
 
 export async function GET(
@@ -34,7 +35,7 @@ export async function GET(
 
     if (!artist) return new NextResponse("Artist not found", { status: 404 });
 
-    const where = { artistId: artist.id, status: "APPROVED" };
+    const where = { artistId: artist.id, status: ArtworkStatus.APPROVED };
 
     const [artworks, total] = await Promise.all([
       prisma.artwork.findMany({

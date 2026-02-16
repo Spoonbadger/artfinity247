@@ -164,7 +164,14 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
       calculateTax,
       clearCart,
     }),
-    [cartItems]
+    [
+      cartItems, 
+      addToCart,
+      removeFromCart,
+      updateToCart,
+      clearCart,
+      calculateTotalPrice
+    ]
   )
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
