@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
@@ -6,7 +6,9 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@/components/contexts/UserProvider";
 import { MaxWidthWrapper } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { toast } from "sonner"
+
+export const dynamic = "force-dynamic"
 
 type ModerationArtwork = {
   id: string;

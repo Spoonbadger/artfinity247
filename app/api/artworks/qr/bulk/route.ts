@@ -7,6 +7,7 @@ import fs from 'fs/promises'
 import path from 'path'
 
 export const runtime = 'nodejs'
+export const dynamic = "force-dynamic"
 
 // A4 portrait ~ 595 x 842 pts
 const A4 = { w: 595, h: 842 }

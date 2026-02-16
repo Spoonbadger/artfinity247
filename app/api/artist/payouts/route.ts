@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { jwtVerify } from 'jose'
 
 export const runtime = 'nodejs'
+export const dynamic = "force-dynamic"
 
 function monthRange(ym: string) {
   const [y, m] = ym.split('-').map(Number)
