@@ -1,10 +1,10 @@
 import {
-  UserRoleType,
   CollectionDataType,
   ReviewDataType,
   CartItemType,
   CartItemProductType,
 } from "@/types";
+import { Role } from "@prisma/client"
 
 export type CommonSingleItemQuery = {
   id?: string | null;
@@ -37,11 +37,11 @@ export type MultiProductsQuery = CommonMultiItemQuery & {
 };
 
 export type SingleUserQuery = CommonSingleItemQuery & {
-  roles?: UserRoleType[] | null;
+  roles?: Role[] | null;
 };
 
 export type MultiUsersQuery = CommonMultiItemQuery & {
-  roles?: UserRoleType[] | null;
+  roles?: Role[] | null;
 };
 
 export type SingleCollectionQuery = CommonSingleItemQuery & {
