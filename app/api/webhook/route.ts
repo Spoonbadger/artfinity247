@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { sendReceiptEmail } from "@/lib/email"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-06-30.basil',
+  apiVersion: '2025-08-27.basil',
 })
 export const runtime = 'nodejs'
 
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       process.env.STRIPE_WEBHOOK_SECRET!
     )
 
-    console.log("Incoming webhook: ", event.type)
+    // console.log("Incoming webhook: ", event.type)
 
   } catch (err) {
     console.error('Webhook error:', err)
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session
-    console.log('Payment received 💰:', session.id)
+    // console.log('Payment received 💰:', session.id)
 
 
     const buyerEmail = (
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     ).trim().toLowerCase();
 
     
-console.log("webhook saved order email =", buyerEmail);
+// console.log("webhook saved order email =", buyerEmail)
 
     try {
       // 1) Idempotent order create (upsert by unique stripeSessionId)
@@ -119,15 +119,13 @@ console.log("webhook saved order email =", buyerEmail);
       await prisma.orderItem.deleteMany({ where: { orderId: order.id } })
 
       if (itemsToCreate.length > 0) {
-        console.log("itemsToCreate:", itemsToCreate)
         await prisma.orderItem.createMany({ data: itemsToCreate })
       }
-      console.log(`✅ Saved order ${order.id} with ${itemsToCreate.length} items`)
 
       // Send receipt (idempotent inside helper via receiptSentAt)
       try {
         await sendReceiptEmail(order.id)
-        console.log("📧 Receipt email queued/sent")
+        // console.log("📧 Receipt email queued/sent")
       } catch (e) {
         console.error("Email send failed (non-blocking):", e)
       }

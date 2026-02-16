@@ -40,12 +40,12 @@ export const UserProvider = ({ children }: { children: ReactNode }): ReactNode =
     refreshUser();
   }, []);
 
-  // inside UserProvider, just before return (
-console.log("UserProvider render", {
-  loading,
-  currentUser,
-  role: currentUser?.role,
-});
+//   // inside UserProvider, just before return (
+// console.log("UserProvider render", {
+//   loading,
+//   currentUser,
+//   role: currentUser?.role,
+// });
 
 
   return (

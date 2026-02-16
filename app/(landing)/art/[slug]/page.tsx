@@ -151,7 +151,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
 
       if (!res.ok) throw new Error(await res.text())
       const { url } = await res.json()
-      console.log("Stripe checkout URL", url)
+
       window.location.href = url
     } catch (err) {
       console.error("Buy Now failed", err)

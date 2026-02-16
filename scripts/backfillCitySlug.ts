@@ -10,6 +10,5 @@ for (const a of artists) {
     data: { citySlug: slugify(a.city || '', { lower: true, strict: true }) },
   })
 }
-  console.log('Backfill done:', artists.length)
 }
 run().finally(() => prisma.$disconnect())

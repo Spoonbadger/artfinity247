@@ -178,7 +178,7 @@ export async function PUT(
     const artwork = await prisma.artwork.findUnique({
       where: { slug: params.slug }
     })
-    console.log("Artwork SLUG??: ", artwork)
+    // console.log("Artwork SLUG??: ", artwork)
 
     if (!artwork || String(artwork.artistId) !== String(currentArtistId)) {
       return new NextResponse('Forbidden', { status: 403 })

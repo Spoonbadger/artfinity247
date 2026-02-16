@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
             }
           })
         
-        console.log('🖼️ file received:', filename);
+        // console.log('🖼️ file received:', filename)
 
         const cloudStream = cloudinary.uploader.upload_stream(
           {
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
             }
 
             uploadedImageUrl = result.secure_url;
-            console.log('✅ Uploaded to Cloudinary:', uploadedImageUrl);
+            // console.log('✅ Uploaded to Cloudinary:', uploadedImageUrl)
 
             // 🔍 Read moderation decision from Cloudinary
             const moderationArr =
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
                 flagged: isRejected,
                 reason: isRejected ? `auto:${mod.kind || "moderation"}` : null,
               };
-              console.log("🔎 Moderation result:", mod);
+              // console.log("Moderation result:", mod)
             }
             resolve();
           }

@@ -27,10 +27,10 @@ export default function CheckoutPage() {
       }),
     })
 
-    if (!res.ok) {
-      console.error('Failed to create session', await res.text())
-      return
-    }
+    // if (!res.ok) {
+    //   console.error('Failed to create session', await res.text())
+    //   return
+    // }
 
     const { url } = await res.json()
     if (url) window.location.href = url

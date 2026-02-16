@@ -145,7 +145,6 @@ const RegisterForm = ({
       }
       
       const data = await res.json()
-      console.log("Register data response: ", data)
       toast.success("Registration successfull")
       
       const slug = data?.artist?.slug
@@ -153,7 +152,7 @@ const RegisterForm = ({
       form.reset()
 
     } catch (err) {
-      console.log('Error with RegisterForm: ', err)
+      console.error('Error with RegisterForm: ', err)
     }
   }
 
