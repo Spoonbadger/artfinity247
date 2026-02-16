@@ -53,7 +53,12 @@ export async function POST(req: Request) {
             role: "USER",
         },
     })
-    const token = await new SignJWT({ id: artist.id, slug: artist.slug, email: artist.email })
+    const token = await new SignJWT({ 
+        id: artist.id, 
+        slug: artist.slug, 
+        email: artist.email,
+        role: artist.role
+    })
         .setProtectedHeader({ alg: 'HS256' })
         .setExpirationTime('7d')
         .sign(new TextEncoder().encode(process.env.JWT_SECRET!))

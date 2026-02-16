@@ -5,6 +5,7 @@ import cloudinary from '@/lib/cloudinary'
 import Busboy from 'busboy'
 import { toNodeReadable } from '@/lib/toNodeReadables'
 import slugify from 'slugify'
+import { rateLimit } from '@/lib/rateLimit'
 
 
 export async function POST(req: NextRequest) {
@@ -12,12 +13,18 @@ export async function POST(req: NextRequest) {
   if (!token) return new NextResponse('Not authenticated', { status: 401 });
 
   try {
+    const rawIp = req.headers.get("x-forwarded-for");
+    const ip = rawIp?.split(",")[0]?.trim() || "unknown";
+    if (!rateLimit(ip)) {
+      return new NextResponse("Too many requests", { status: 429 });
+    }
+
     const { payload } = await jwtVerify(
       token,
       new TextEncoder().encode(process.env.JWT_SECRET!)
-    );
+    )
 
-    // 64 uploads per day limit
+    // 50 uploads per day limit
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
@@ -28,7 +35,7 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    if (uploadCount >= 64) {
+    if (uploadCount >= 50) {
       return new NextResponse("Daily upload limit reached (50)", { status: 429 });
     }
 

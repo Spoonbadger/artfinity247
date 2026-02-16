@@ -3,6 +3,7 @@ import { z } from "zod";
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { Resend } from "resend";
+import { rateLimit } from "@/lib/rateLimit";
 
 const schema = z.object({
   email: z.string().email(),
@@ -10,6 +11,12 @@ const schema = z.object({
 
 export async function POST(req: Request) {
   try {
+    const rawIp = req.headers.get("x-forwarded-for")
+    const ip = rawIp?.split(",")[0]?.trim() || "unknown"
+    if (!rateLimit(ip)) {
+      return new NextResponse("Too many requests", { status: 429 });
+    }
+
     const body = await req.json();
     const { email } = schema.parse(body);
 

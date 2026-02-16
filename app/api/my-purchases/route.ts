@@ -23,10 +23,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
   }
 
- 
-
-    // Debug & case-insensitive email match
-  console.log("my-purchases jwt email =", user.email)
 
   const items = await prisma.orderItem.findMany({
     where: {

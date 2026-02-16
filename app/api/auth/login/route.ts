@@ -1,12 +1,20 @@
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rateLimit";
 import { compare } from "bcryptjs";
 import { SignJWT } from "jose";
 import { NextResponse } from "next/server";
-export const runtime = "nodejs";
+export const runtime = "nodejs"
 
 
 export async function POST(req: Request) {
   try {
+    const rawIp = req.headers.get("x-forwarded-for");
+    const ip = rawIp?.split(",")[0]?.trim() || "unknown";
+    if (!rateLimit(ip)) {
+      return new NextResponse("Too many requests", { status: 429 });
+    }
+
+
     const { email, password, remember = false } = await req.json();
     const emailTrim = (email || "").trim();
 

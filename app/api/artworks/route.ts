@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
     const skip = (page - 1) * limit;
     const sort = searchParams.get("sort") || "newest";
 
-    let artworks, total;
+    let artworks, total
 
     if (sort === "random") {
       // raw SQL for random ordering
