@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button"
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
+export const dynamic = "force-dynamic"
+
 type SaleItem = {
   id: string
   slug: string | null
