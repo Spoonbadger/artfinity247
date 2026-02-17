@@ -75,19 +75,7 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
     try {
       let file = orig;
 
-      // HEIC detection (mime or extension)
-      const mime = (orig.type || "").toLowerCase();
-      const name = (orig.name || "").toLowerCase();
-      const isHeic = mime.includes("heic") || mime.includes("heif") || /\.hei[c|f]$/.test(name);
-
-      if (isHeic) {
-        const heic2any = (await import("heic2any")).default as any;
-        const converted = await heic2any({ blob: orig, toType: "image/jpeg", quality: 0.85 });
-        const blob = Array.isArray(converted) ? converted[0] : converted;
-        file = new File([blob], name.replace(/\.(heic|heif)$/i, ".jpg"), { type: "image/jpeg" });
-      }
-
-      // 1️⃣ Get signed upload params
+      // Get signed upload params
       const sigRes = await fetch("/api/cloudinary/signature", {
         credentials: "include",
       });
@@ -95,7 +83,7 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
 
       const { timestamp, signature, cloudName, apiKey } = await sigRes.json();
 
-      // 2️⃣ Upload directly to Cloudinary
+      // Upload directly to Cloudinary
       const formData = new FormData();
       formData.append("file", file);
       formData.append("api_key", apiKey);
@@ -116,7 +104,7 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
       const uploadData = await uploadRes.json();
       const imageUrl = uploadData.secure_url;
 
-      // 3️⃣ Save URL to DB
+      // Save URL to DB
       const dbRes = await fetch("/api/artists/update-profile-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
