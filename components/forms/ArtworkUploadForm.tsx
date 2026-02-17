@@ -21,6 +21,9 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
     const [errorMedium, setErrorMedium] = useState(false)
     const [errorLarge, setErrorLarge] = useState(false)
 
+    const [imageUrl, setImageUrl] = useState<string | null>(artwork?.imageUrl || null)
+
+
     const router = useRouter()
 
     useEffect(() => {
@@ -42,15 +45,12 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
             return
         }
 
-        console.log("Submitting with image:", image)
-
 
         const formData = new FormData(e.currentTarget as HTMLFormElement)
 
-        if (image instanceof File) {
-          formData.set('image', image)
+        if (imageUrl) {
+            formData.set("imageUrl", imageUrl)
         }
-
         if (title) formData.set('title', title)
         if (description) formData.set('description', description)
         if (artwork?.id) formData.set('artworkId', artwork.id)
@@ -81,21 +81,57 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
         }
     }
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
 
-    setImage(file)
+        setLoading(true)
 
-    // Only preview if browser can render it
-    if (!file.type.includes("heic")) {
-        const url = URL.createObjectURL(file)
-        setPreview(url)
-        } else {
-            setPreview(null)
-            toast("HEIC preview not supported. Image will appear after upload.")
+        try {
+            // 1️⃣ Get signed upload params
+            const sigRes = await fetch("/api/cloudinary/signature", {
+            credentials: "include",
+            })
+            if (!sigRes.ok) throw new Error("Failed to get signature")
+
+            const { timestamp, signature, cloudName, apiKey } = await sigRes.json()
+
+            // 2️⃣ Upload directly to Cloudinary
+            const formData = new FormData()
+            formData.append("file", file)
+            formData.append("api_key", apiKey)
+            formData.append("timestamp", timestamp)
+            formData.append("signature", signature)
+            formData.append("folder", "artfinity")
+
+            const uploadRes = await fetch(
+            `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+            {
+                method: "POST",
+                body: formData,
+            }
+            )
+
+            if (!uploadRes.ok) throw new Error("Upload failed")
+
+            const uploadData = await uploadRes.json()
+
+            const transformedUrl = uploadData.secure_url.replace(
+            "/upload/",
+            "/upload/f_auto,q_auto/"
+            )
+
+            setPreview(transformedUrl)
+            setImage(null) // important — prevent double upload via busboy
+            setImageUrl(transformedUrl) // you'll add this state next
+
+        } catch (err) {
+            console.error(err)
+            toast.error("Image upload failed")
+        } finally {
+            setLoading(false)
         }
-    }
+        }
 
     return (
         <form onSubmit={handleSubmit} className='space-y-4 max-w-md mx-auto'>
