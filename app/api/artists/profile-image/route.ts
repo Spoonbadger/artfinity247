@@ -5,6 +5,7 @@ import { v2 as cloudinary } from "cloudinary";
 
 export const runtime = "nodejs";
 
+// APPARENTLY IM NOT USING THIS ANYMORE BUT ONE THAT SKIPS VERCEL TO CLOUDINARY FOR FILE SIZE REASONS
 
 cloudinary.config({
   // Prefer server-side vars; fall back to NEXT_PUBLIC if you really set only that

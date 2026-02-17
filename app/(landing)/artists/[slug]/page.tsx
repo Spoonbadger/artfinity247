@@ -87,20 +87,50 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
         file = new File([blob], name.replace(/\.(heic|heif)$/i, ".jpg"), { type: "image/jpeg" });
       }
 
+      // 1️⃣ Get signed upload params
+      const sigRes = await fetch("/api/cloudinary/signature", {
+        credentials: "include",
+      });
+      if (!sigRes.ok) throw new Error("Failed to get upload signature");
+
+      const { timestamp, signature, cloudName, apiKey } = await sigRes.json();
+
+      // 2️⃣ Upload directly to Cloudinary
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("api_key", apiKey);
+      formData.append("timestamp", timestamp);
+      formData.append("signature", signature);
+      formData.append("folder", "artfinity/profile");
 
-      const res = await fetch("/api/artists/profile-image", {
+      const uploadRes = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      if (!uploadRes.ok) throw new Error("Cloudinary upload failed");
+
+      const uploadData = await uploadRes.json();
+      const imageUrl = uploadData.secure_url;
+
+      // 3️⃣ Save URL to DB
+      const dbRes = await fetch("/api/artists/update-profile-image", {
         method: "POST",
-        body: formData,
-        credentials: "include", // send auth cookie
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ imageUrl }),
       });
 
-      if (!res.ok) throw new Error(await res.text());
+      if (!dbRes.ok) throw new Error("DB update failed");
 
-      const data = await res.json();
-      setSeller((prev) => (prev ? { ...prev, profileImage: data.artist.profileImage } : prev));
-      toast.success("Profile image updated");
+      const { artist } = await dbRes.json();
+      setSeller((prev) => (prev ? { ...prev, profileImage: artist.profileImage } : prev));
+
+      toast.success("Profile image updated")
+
     } catch (err) {
       console.error("Profile image upload failed", err);
       toast.error("Upload failed");
