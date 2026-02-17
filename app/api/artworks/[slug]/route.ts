@@ -155,7 +155,10 @@ export async function PUT(
               return reject(err)
             }
 
-            uploadedImageUrl = result.secure_url
+            uploadedImageUrl = result.secure_url.replace(
+              "/upload/",
+              "/upload/f_auto,q_auto/"
+            )
             resolve()
           }
         )

@@ -79,7 +79,10 @@ export async function POST(req: NextRequest) {
               return reject(err);
             }
 
-            uploadedImageUrl = result.secure_url;
+            uploadedImageUrl = result.secure_url.replace(
+              "/upload/",
+              "/upload/f_auto,q_auto/"
+            )
             // console.log('✅ Uploaded to Cloudinary:', uploadedImageUrl)
 
             // 🔍 Read moderation decision from Cloudinary

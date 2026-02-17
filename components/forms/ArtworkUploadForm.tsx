@@ -75,38 +75,13 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
         }
     }
 
-    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // If HEIC, convert to JPEG
-    if (file.type === 'image/heic' || file.name.endsWith('.heic')) {
-        try {
-            const heic2any = (await import('heic2any')).default
-
-            const convertedBlob = await heic2any({
-                blob: file,
-                toType: 'image/jpeg',
-                quality: 0.9,
-            }) as Blob
-
-            const convertedFile = new File([convertedBlob], file.name.replace(/\.heic$/i, '.jpg'), {
-                type: 'image/jpeg',
-            })
-
-            const url = URL.createObjectURL(convertedFile)
-            setPreview(url)
-            setImage(convertedFile)
-
-        } catch (err) {
-            console.error('HEIC conversion failed:', err)
-            alert('Could not preview HEIC image. Please use JPG or PNG.')
-        }
-    } else {
-        const url = URL.createObjectURL(file)
-        setPreview(url)
-        setImage(file)
-        }
+    const url = URL.createObjectURL(file)
+    setPreview(url)
+    setImage(file)
     }
 
 
