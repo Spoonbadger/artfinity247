@@ -61,7 +61,7 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
 
 
         const endpoint = artwork
-          ?  `/api/artworks/${artwork.slug}`
+          ?  `/api/artworks/update/${artwork.slug}`
           :  `/api/artworks/upload`
 
         const method = 'POST'
