@@ -39,6 +39,9 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
             return
         }
 
+        console.log("Submitting with image:", image)
+
+
         const formData = new FormData(e.currentTarget as HTMLFormElement)
 
         if (image instanceof File) {
