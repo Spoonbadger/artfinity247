@@ -102,7 +102,8 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
       if (!uploadRes.ok) throw new Error("Cloudinary upload failed");
 
       const uploadData = await uploadRes.json();
-      const imageUrl = uploadData.secure_url;
+      const imageUrl = uploadData.secure_url.replace("/upload/", "/upload/f_auto,q_auto/");
+
 
       // Save URL to DB
       const dbRes = await fetch("/api/artists/update-profile-image", {
