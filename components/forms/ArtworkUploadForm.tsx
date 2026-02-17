@@ -33,7 +33,7 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
         e.preventDefault()
         setLoading(true)
 
-        if (!title.trim() || !preview || !description) {
+        if (!title.trim() || !image || !description) {
             alert('Please complete all required fields')
             setLoading(false)
             return
