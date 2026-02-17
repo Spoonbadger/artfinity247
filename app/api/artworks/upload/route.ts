@@ -63,8 +63,6 @@ export async function POST(req: NextRequest) {
             }
           })
         
-        // console.log('🖼️ file received:', filename)
-
         const cloudStream = cloudinary.uploader.upload_stream(
           {
             folder: 'artfinity',
@@ -83,9 +81,8 @@ export async function POST(req: NextRequest) {
               "/upload/",
               "/upload/f_auto,q_auto/"
             )
-            // console.log('✅ Uploaded to Cloudinary:', uploadedImageUrl)
 
-            // 🔍 Read moderation decision from Cloudinary
+            // Read moderation decision from Cloudinary
             const moderationArr =
               (Array.isArray((result as any).moderation)
                 ? ((result as any).moderation as { status: string; kind?: string }[])
@@ -99,7 +96,6 @@ export async function POST(req: NextRequest) {
                 flagged: isRejected,
                 reason: isRejected ? `auto:${mod.kind || "moderation"}` : null,
               };
-              // console.log("Moderation result:", mod)
             }
             resolve();
           }

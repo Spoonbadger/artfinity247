@@ -34,56 +34,36 @@ export async function POST(
     const fields: Record<string, string> = {}
     let uploadedImageUrl: string | null = null
 
+    let fileHandled = false;
+
     const done = new Promise<void>((resolve, reject) => {
-      busboy.on('file', (_fieldname, file, info) => {
-        const filename =
-          typeof info === 'object' && 'filename' in info
-            ? String(info.filename)
-            : 'unnamed'
-
-        // Optional: same 18 MB guard as POST
-        let totalBytes = 0
-        file.on('data', (chunk) => {
-          totalBytes += chunk.length
-          if (totalBytes > 18 * 1024 * 1024) {
-            file.unpipe()
-            return reject(new Error('File too large, under 18 MB please'))
-          }
-        })
-
-        const cloudStream = cloudinary.uploader.upload_stream(
-          {
-            folder: 'artfinity',
-            public_id: filename.split('.')[0] || 'unnamed',
-          },
-          (err, result) => {
-            if (err || !result) {
-              // Treat "Empty file" as "no new image selected"
-              if ((err as any).http_code === 400 && (err as any).message === 'Empty file') {
-                console.log('No new file selected, keeping existing image.')
-                return resolve()
-              }
-
-              return reject(err)
-            }
-
-            uploadedImageUrl = result.secure_url.replace(
-              "/upload/",
-              "/upload/f_auto,q_auto/"
-            )
-            resolve()
-          }
-        )
-
-        file.pipe(cloudStream)
-      })
 
       busboy.on('field', (name, value) => {
         fields[name] = value
       })
 
       busboy.on('error', reject)
-      busboy.on('finish', resolve)
+
+    busboy.on("file", (_fieldname, file, info) => {
+    fileHandled = true;
+
+    const cloudStream = cloudinary.uploader.upload_stream(
+        { folder: "artfinity", public_id: String(info?.filename || "unnamed").split(".")[0] },
+        (err, result) => {
+        if (err || !result) return reject(err);
+
+        uploadedImageUrl = result.secure_url.replace("/upload/", "/upload/f_auto,q_auto/");
+        return resolve();
+        }
+    );
+
+    file.pipe(cloudStream);
+    })
+
+    busboy.on("finish", () => {
+    // If no new file was uploaded, we still need to resolve so title/desc updates work
+    if (!fileHandled) resolve();
+    })
 
       stream.pipe(busboy)
     })
