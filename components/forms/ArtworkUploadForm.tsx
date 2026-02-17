@@ -39,7 +39,7 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
         console.log("HANDLE SUBMIT TRIGGERED")
 
 
-        if (!title.trim() || !image || !description) {
+        if (!title.trim() || !imageUrl || !description) {
             alert('Please complete all required fields')
             setLoading(false)
             return
