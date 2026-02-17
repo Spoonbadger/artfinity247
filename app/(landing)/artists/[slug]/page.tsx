@@ -76,7 +76,8 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
       let file = orig;
 
       // Get signed upload params
-      const sigRes = await fetch("/api/cloudinary/signature", {
+      const sigRes = await fetch("/api/cloudinary/signature?folder=artfinity/profile", {
+
         credentials: "include",
       });
       if (!sigRes.ok) throw new Error("Failed to get upload signature");

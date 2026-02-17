@@ -8,6 +8,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+
 export async function GET(req: Request) {
   try {
     const token = req.headers.get("cookie")?.match(/auth-token=([^;]+)/)?.[1];
@@ -20,10 +21,13 @@ export async function GET(req: Request) {
 
     const timestamp = Math.round(Date.now() / 1000);
 
+    const { searchParams } = new URL(req.url)
+    const folder = searchParams.get("folder") || "artfinity"
+
     const signature = cloudinary.utils.api_sign_request(
       {
         timestamp,
-        folder: "artfinity/profile",
+        folder,
       },
       process.env.CLOUDINARY_API_SECRET!
     );

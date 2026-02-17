@@ -36,15 +36,12 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
         e.preventDefault()
         setLoading(true)
 
-        console.log("HANDLE SUBMIT TRIGGERED")
-
 
         if (!title.trim() || !imageUrl || !description) {
             alert('Please complete all required fields')
             setLoading(false)
             return
         }
-
 
         const formData = new FormData(e.currentTarget as HTMLFormElement)
 
@@ -89,7 +86,8 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
 
         try {
             // 1️⃣ Get signed upload params
-            const sigRes = await fetch("/api/cloudinary/signature", {
+            const sigRes = await fetch("/api/cloudinary/signature?folder=artfinity", {
+
             credentials: "include",
             })
             if (!sigRes.ok) throw new Error("Failed to get signature")
