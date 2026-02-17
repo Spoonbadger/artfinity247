@@ -178,6 +178,8 @@ export async function PUT(
 
     await done
 
+    console.log("uploadedImageUrl:", uploadedImageUrl)
+
     const artwork = await prisma.artwork.findUnique({
       where: { slug: params.slug }
     })

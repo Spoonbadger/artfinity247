@@ -79,11 +79,17 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    const url = URL.createObjectURL(file)
-    setPreview(url)
     setImage(file)
-    }
 
+    // Only preview if browser can render it
+    if (!file.type.includes("heic")) {
+        const url = URL.createObjectURL(file)
+        setPreview(url)
+        } else {
+            setPreview(null)
+            toast("HEIC preview not supported. Image will appear after upload.")
+        }
+    }
 
     return (
         <form onSubmit={handleSubmit} className='space-y-4 max-w-md mx-auto'>
