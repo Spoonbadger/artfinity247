@@ -46,6 +46,7 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
   const sections = AppPages.seller?.sections || { products: { title: "Artworks" }, reviews: { title: "Reviews" } };
 
   const [venmoHandle, setVenmoHandle] = useState("")
+  const [sort, setSort] = useState("latest")
 
   const [totalSellerProducts, setTotalSellerProducts] = useState(0);
   const [paginatedProducts, setPaginatedProducts] = useState<ProductType[]>([]);
@@ -66,6 +67,10 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
     setNameDraft(seller?.name || ""); 
   }, [seller?.name])
 
+  const handleSortChange = (value: string) => {
+    setSort(value);
+    router.push(`?page=1&sort=${value}`);
+  }
 
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const orig = e.target.files?.[0];
@@ -140,14 +145,19 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
   useEffect(() => {
     if (!slug) return
     (async () => {
-      const res = await fetch(`/api/artists/${slug}?page=${currentPage}&limit=${itemsPerPage}`, { cache: "no-store" });
+      const currentSort = searchParams.get("sort") || "default"
+      const res = await fetch(
+        `/api/artists/${slug}?page=${currentPage}&limit=${itemsPerPage}&sort=${currentSort}`,
+        { cache: "no-store" }
+      )
+
       if (!res.ok) { setSeller(null); setPaginatedProducts([]); setTotalSellerProducts(0); return; }
       const data = await res.json();
       setSeller(data.artist);
       setPaginatedProducts(data.artworks || []);
       setTotalSellerProducts(data.total || 0);
     })();
-  }, [slug, currentPage, itemsPerPage])
+  }, [slug, currentPage, itemsPerPage, searchParams])
 
   useEffect(() => {
     if (seller) {
@@ -437,61 +447,50 @@ const handleDeleteAccount = async () => {
                     <p className="text-xs text-red-600 mt-1">{errors.phone}</p>
                   )}
                   <textarea value={bioDraft} onChange={e=>setBioDraft(e.target.value)} className="text-theme-secondary-500 w-full rounded border p-2 text-sm" placeholder="Bio" />
-
-                    <Select
-                      value={cityDraft}
-                      onValueChange={(val) => {
-                        setCityDraft(val);
-                        const found = CITY_OPTIONS.find((c) => c.name === val);
-                        if (found?.state) setStateDraft(found.state);
-                        setCountryDraft("US")
-                      }}
-                    >
-                      <SelectTrigger className="max-w-[220px] capitalize text-theme-secondary-500">
-                        <SelectValue placeholder="Select city" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>Cities</SelectLabel>
-                          {CITY_OPTIONS.map((c) => (
-                            <SelectItem key={c.name} value={c.name}>
-                              {c.name}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-
-                    <Select
+                  {/* City */}
+                  <select
+                    value={cityDraft}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setCityDraft(val);
+                      const found = CITY_OPTIONS.find((c) => c.name === val);
+                      if (found?.state) setStateDraft(found.state);
+                      setCountryDraft("US");
+                    }}
+                    className="border rounded px-2 py-2 text-sm w-full text-theme-secondary-500"
+                  >
+                    <option value="">Select city</option>
+                    {CITY_OPTIONS.map((c) => (
+                      <option key={c.name} value={c.name}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                    {/* State */}
+                    <select
                       value={stateDraft}
-                      onValueChange={(val) => {
-                        setStateDraft(val)
-                        setCityDraft("")
+                      onChange={(e) => {
+                        setStateDraft(e.target.value);
+                        setCityDraft("");
                       }}
+                      className="border rounded px-2 py-2 text-sm w-full text-theme-secondary-500"
                     >
-                      <SelectTrigger className="max-w-[220px] capitalize text-theme-secondary-500">
-                        <SelectValue placeholder="Select state" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>States</SelectLabel>
-                          {US_STATE_OPTIONS.map((s) => (
-                            <SelectItem key={s.code} value={s.code}>
-                              {s.name}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-
-                  <Select value={countryDraft} onValueChange={setCountryDraft}>
-                    <SelectTrigger className="text-theme-secondary-500">
-                      <SelectValue placeholder="Country" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="US">United States</SelectItem>
-                    </SelectContent>
-                  </Select>
+                      <option value="">Select state</option>
+                      {US_STATE_OPTIONS.map((s) => (
+                        <option key={s.code} value={s.code}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                    {/* Country */}
+                    <select
+                      value={countryDraft}
+                      onChange={(e) => setCountryDraft(e.target.value)}
+                      className="border rounded px-2 py-2 text-sm w-full text-theme-secondary-500"
+                    >
+                      <option value="US">United States</option>
+                    </select>
+                  {/* Venmo */}
                   <input
                     value={venmoHandle}
                     onChange={(e) => setVenmoHandle(e.target.value)}
@@ -585,21 +584,16 @@ const handleDeleteAccount = async () => {
           <div className="page-top grid grid-cols-1 items-center justify-between gap-x-4 gap-y-2 space-y-2 md:grid-cols-2 md:gap-6">
             <div>
               <div className="filter-area relative isolate">
-                <Select>
-                  <SelectTrigger className="max-w-[180px] capitalize">
-                    <SelectValue className="capitalize" placeholder="Default Sorting" />
-                  </SelectTrigger>
-                  <SelectContent className="capitalize">
-                    <SelectGroup>
-                      <SelectLabel>Sort By</SelectLabel>
-                      <SelectItem value="popularity">popularity</SelectItem>
-                      {/* <SelectItem value="rating_average">average rating</SelectItem> */}
-                      <SelectItem value="latest">latest</SelectItem>
-                      <SelectItem value="price_low_to_high">price: low to high</SelectItem>
-                      <SelectItem value="price_high_to_low">price: high to low</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                <select
+                  value={sort}
+                  onChange={(e) => handleSortChange(e.target.value)}
+                  className="border rounded px-2 py-2 text-sm capitalize max-w-[180px]"
+                >
+                  <option value="latest">Latest Uploads</option>
+                  <option value="oldest">Oldest Uploads</option>
+                  <option value="az">A–Z</option>
+                  <option value="za">Z–A</option>
+                </select>
               </div>
             </div>
             <div>

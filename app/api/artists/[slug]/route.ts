@@ -11,6 +11,7 @@ export async function GET(
     const page = Math.max(parseInt(req.nextUrl.searchParams.get("page") || "1", 10), 1);
     const limit = Math.min(Math.max(parseInt(req.nextUrl.searchParams.get("limit") || "12", 10), 1), 48);
     const skip = (page - 1) * limit;
+    const sort = req.nextUrl.searchParams.get("sort") || "latest"
 
     const artist = await prisma.artist.findUnique({
       where: { slug: params.slug },
@@ -37,10 +38,30 @@ export async function GET(
 
     const where = { artistId: artist.id, status: ArtworkStatus.APPROVED };
 
+
+    let orderBy: any = { createdAt: "desc" };
+
+    if (sort === "latest") {
+      orderBy = { createdAt: "desc" };
+    }
+
+    if (sort === "oldest") {
+      orderBy = { createdAt: "asc" };
+    }
+
+    if (sort === "az") {
+      orderBy = { title: "asc" };
+    }
+
+    if (sort === "za") {
+      orderBy = { title: "desc" };
+    }
+
+
     const [artworks, total] = await Promise.all([
       prisma.artwork.findMany({
         where,
-        orderBy: { createdAt: "desc" },
+        orderBy,
         skip,
         take: limit,
         select: {
