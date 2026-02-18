@@ -94,21 +94,16 @@ const ArtistsPage = (): ReactNode => {
           <div className="page-top grid grid-cols-1 items-center justify-between gap-x-4 gap-y-2 space-y-2 md:grid-cols-2 md:gap-6">
             <div>
               <div className="filter-area relative isolate text-theme-secondary-500">
-                <Select
+                <select
                   value={sort}
-                  onValueChange={(v) => setSort(v as "name_az" | "name_za")}
+                  onChange={(e) =>
+                    setSort(e.target.value as "name_az" | "name_za")
+                  }
+                  className="max-w-[180px] rounded border px-2 py-1 capitalize text-theme-secondary-500"
                 >
-                  <SelectTrigger className="max-w-[180px] capitalize">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent className="capitalize text-theme-secondary-500">
-                    <SelectGroup>
-                      <SelectLabel>Sort By</SelectLabel>
-                      <SelectItem value="name_az">Name A-Z</SelectItem>
-                      <SelectItem value="name_za">Name Z–A</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                  <option value="name_az">Name A–Z</option>
+                  <option value="name_za">Name Z–A</option>
+                </select>
               </div>
             </div>
             <div>
