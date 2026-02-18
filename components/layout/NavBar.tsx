@@ -201,7 +201,7 @@ const NavBar = ({
                 <SearchArea />
                 <Link
                   href={profileHref}
-                  className="hidden md:inline-block"
+                  className="inline-block"
                 >
                   <User />
                 </Link>
