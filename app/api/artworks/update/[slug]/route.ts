@@ -8,6 +8,15 @@ import { toNodeReadable } from '@/lib/toNodeReadables'
 
 export const runtime = "nodejs"
 
+function extractPublicId(url: string) {
+  const parts = url.split("/upload/")[1]
+  if (!parts) return null
+
+  const segments = parts.split("/")
+  segments.shift() // remove transformation part if present
+  return segments.join("/").split(".")[0]
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { slug: string } }
@@ -28,54 +37,19 @@ export async function POST(
       (payload as any).sub
 
 
-    const stream = toNodeReadable(req.body as ReadableStream<any>)
-    const busboy = Busboy({ headers: Object.fromEntries(req.headers) })
+    const form = await req.formData()
 
-    const fields: Record<string, string> = {}
-    let uploadedImageUrl: string | null = null
+    const title = form.get("title") as string | null
+    const description = form.get("description") as string | null
+    const imageUrl = form.get("imageUrl") as string | null
+    const markupSmall = form.get("markupSmall") as string | null
+    const markupMedium = form.get("markupMedium") as string | null
+    const markupLarge = form.get("markupLarge") as string | null
 
-    let fileHandled = false;
-
-    const done = new Promise<void>((resolve, reject) => {
-
-      busboy.on('field', (name, value) => {
-        fields[name] = value
-      })
-
-      busboy.on('error', reject)
-
-    busboy.on("file", (_fieldname, file, info) => {
-    fileHandled = true;
-
-    const cloudStream = cloudinary.uploader.upload_stream(
-        { folder: "artfinity", public_id: String(info?.filename || "unnamed").split(".")[0] },
-        (err, result) => {
-        if (err || !result) return reject(err);
-
-        uploadedImageUrl = result.secure_url.replace("/upload/", "/upload/f_auto,q_auto/");
-        return resolve();
-        }
-    );
-
-    file.pipe(cloudStream);
-    })
-
-    busboy.on("finish", () => {
-    // If no new file was uploaded, we still need to resolve so title/desc updates work
-    if (!fileHandled) resolve();
-    })
-
-      stream.pipe(busboy)
-    })
-
-    await done
-
-    console.log("uploadedImageUrl:", uploadedImageUrl)
 
     const artwork = await prisma.artwork.findUnique({
       where: { slug: params.slug }
     })
-    // console.log("Artwork SLUG??: ", artwork)
 
     if (!artwork || String(artwork.artistId) !== String(currentArtistId)) {
       return new NextResponse('Forbidden', { status: 403 })
@@ -87,23 +61,35 @@ export async function POST(
     const updated = await prisma.artwork.update({
       where: { slug: params.slug },
       data: {
-        title: fields.title ?? artwork.title,
-        description: fields.description ?? artwork.description,
+        title: title ?? artwork.title,
+        description: description ?? artwork.description,
         markupSmall:
-          fields.markupSmall !== undefined
-            ? parseInt(fields.markupSmall, 10) || artwork.markupSmall
+            markupSmall !== null
+            ? parseInt(markupSmall, 10) || artwork.markupSmall
             : artwork.markupSmall,
         markupMedium:
-          fields.markupMedium !== undefined
-            ? parseInt(fields.markupMedium, 10) || artwork.markupMedium
+            markupMedium !== null
+            ? parseInt(markupMedium, 10) || artwork.markupMedium
             : artwork.markupMedium,
         markupLarge:
-          fields.markupLarge !== undefined
-            ? parseInt(fields.markupLarge, 10) || artwork.markupLarge
+            markupLarge !== null
+            ? parseInt(markupLarge, 10) || artwork.markupLarge
             : artwork.markupLarge,
-        imageUrl: uploadedImageUrl || artwork.imageUrl,
-      },
+        imageUrl: imageUrl || artwork.imageUrl,
+        },
     })
+
+    // Delete old Cloudinary image if replaced
+    if (imageUrl && artwork.imageUrl && imageUrl !== artwork.imageUrl) {
+    try {
+        const oldPublicId = extractPublicId(artwork.imageUrl)
+        if (oldPublicId) {
+        await cloudinary.uploader.destroy(oldPublicId)
+        }
+    } catch (err) {
+        console.error("Cloudinary deletion failed:", err)
+    }
+    }
 
     const artist = await prisma.artist.findUnique({
       where: { id: updated.artistId },
