@@ -8,13 +8,17 @@ import { toNodeReadable } from '@/lib/toNodeReadables'
 
 export const runtime = "nodejs"
 
-function extractPublicId(url: string) {
-  const parts = url.split("/upload/")[1]
-  if (!parts) return null
 
-  const segments = parts.split("/")
-  segments.shift() // remove transformation part if present
-  return segments.join("/").split(".")[0]
+function extractPublicId(url: string) {
+  const afterUpload = url.split("/upload/")[1]
+  if (!afterUpload) return null
+
+  const parts = afterUpload.split("/")
+  
+  // Remove transformation + version (if present)
+  const filtered = parts.filter(p => !p.startsWith("v") && !p.includes(","))
+
+  return filtered.join("/").split(".")[0]
 }
 
 export async function POST(
