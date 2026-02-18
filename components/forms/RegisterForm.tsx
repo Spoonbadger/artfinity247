@@ -358,7 +358,7 @@ const RegisterForm = ({
                           <SelectValue placeholder="--Select Your City--" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="w-full max-h-60 overflow-y-auto rounded-sm capitalize">
+                      <SelectContent position="popper" className="w-full max-h-60 overflow-y-auto rounded-sm capitalize">
                         <SelectGroup>
                           <SelectLabel>Your City</SelectLabel>
                           {CITY_OPTIONS.map((city) => (
