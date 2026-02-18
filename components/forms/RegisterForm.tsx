@@ -342,33 +342,28 @@ const RegisterForm = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>City</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={(val) => {
-                        field.onChange(val);
-                        const found = CITY_OPTIONS.find((c) => c.name === val);
-                        if (found?.state) {
-                          form.setValue("state", found.state);
-                        }
-                        form.setValue("country", "US");
-                      }}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="--Select Your City--" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent position="popper" className="w-full max-h-60 overflow-y-auto rounded-sm capitalize">
-                        <SelectGroup>
-                          <SelectLabel>Your City</SelectLabel>
-                          {CITY_OPTIONS.map((city) => (
-                            <SelectItem key={city.name} value={city.name}>
-                              {city.name}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <select
+                        value={field.value || ""}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          field.onChange(val)
+                          const found = CITY_OPTIONS.find((c) => c.name === val)
+                          if (found?.state) form.setValue("state", found.state)
+                          form.setValue("country", "US")
+                        }}
+                        className="w-full rounded-sm border px-3 py-2 text-sm"
+                      >
+                        <option value="" disabled>
+                          --Select Your City--
+                        </option>
+                        {CITY_OPTIONS.map((city) => (
+                          <option key={city.name} value={city.name}>
+                            {city.name}
+                          </option>
+                        ))}
+                      </select>
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
