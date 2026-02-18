@@ -358,7 +358,7 @@ const RegisterForm = ({
                           <SelectValue placeholder="--Select Your City--" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="w-full rounded-sm capitalize">
+                      <SelectContent className="w-full max-h-60 overflow-y-auto rounded-sm capitalize">
                         <SelectGroup>
                           <SelectLabel>Your City</SelectLabel>
                           {CITY_OPTIONS.map((city) => (
@@ -393,7 +393,7 @@ const RegisterForm = ({
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="--Select Your State--" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="max-h-60 overflow-y-auto">
                           {US_STATE_OPTIONS.map((s) => (
                             <SelectItem key={s.code} value={s.code}>
                               {s.name}
@@ -430,7 +430,7 @@ const RegisterForm = ({
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select Country" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="max-h-60 overflow-y-auto">
                             <SelectGroup>
                               <SelectItem value="US">United States</SelectItem>
                               {/* could include others but they’ll trigger the message */}
