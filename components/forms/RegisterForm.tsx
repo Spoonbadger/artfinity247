@@ -377,25 +377,26 @@ const RegisterForm = ({
                   <FormItem>
                     <FormLabel>State</FormLabel>
                     <FormControl>
-                      <Select
-                        value={field.value}
-                        onValueChange={(val) => {
-                          field.onChange(val);
-                          // reset city when state changes
-                          form.setValue("city", "");
-                        }}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="--Select Your State--" />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-60 overflow-y-auto">
+                      <FormControl>
+                        <select
+                          value={field.value || ""}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            field.onChange(val)
+                            form.setValue("city", "")
+                          }}
+                          className="w-full rounded-sm border px-3 py-2 text-sm"
+                        >
+                          <option value="" disabled>
+                            --Select Your State--
+                          </option>
                           {US_STATE_OPTIONS.map((s) => (
-                            <SelectItem key={s.code} value={s.code}>
+                            <option key={s.code} value={s.code}>
                               {s.name}
-                            </SelectItem>
+                            </option>
                           ))}
-                        </SelectContent>
-                      </Select>
+                        </select>
+                      </FormControl>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -410,29 +411,23 @@ const RegisterForm = ({
                     <FormItem>
                       <FormLabel>Country</FormLabel>
                       <FormControl>
-                        <Select
+                        <select
                           value={field.value || "US"}
-                          onValueChange={(val) => {
+                          onChange={(e) => {
+                            const val = e.target.value
+
                             if (val !== "US") {
-                              toast.info("Artfinity is only available in the US... for now");
-                              // force back to US
-                              form.setValue("country", "US");
+                              toast.info("Artfinity is only available in the US... for now")
+                              form.setValue("country", "US")
                             } else {
-                              field.onChange(val);
+                              field.onChange(val)
                             }
                           }}
+                          className="w-full rounded-sm border px-3 py-2 text-sm"
                         >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select Country" />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-60 overflow-y-auto">
-                            <SelectGroup>
-                              <SelectItem value="US">United States</SelectItem>
-                              {/* could include others but they’ll trigger the message */}
-                              <SelectItem value="OTHER">Other</SelectItem>
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
+                          <option value="US">United States</option>
+                          <option value="OTHER">Other</option>
+                        </select>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
