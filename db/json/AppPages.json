@@ -72,7 +72,7 @@
   },
   "products": {
     "title": "Artworks",
-    "items_limit": 12,
+    "items_limit": 20,
     "banner": "/assets/images/banner-1.jpg",
     "slug": "art"
   },
