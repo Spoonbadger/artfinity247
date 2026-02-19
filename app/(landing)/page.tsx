@@ -68,7 +68,7 @@ const Home = (): ReactNode => {
   const [artists, setArtists] = useState<UserType[]>([]);
   const [scenes, setScenes] = useState<CollectionType[]>([]);
   // const [reviews, setReviews] = useState<ReviewType[]>([]);
-  const [sort, setSort] = useState("newest")
+  const [sort, setSort] = useState("random")
 
 
   useEffect(() => {
