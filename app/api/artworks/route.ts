@@ -15,13 +15,20 @@ export async function GET(req: NextRequest) {
 
     if (sort === "random") {
       // raw SQL for random ordering
-      artworks = await prisma.$queryRawUnsafe(`
+      artworks = await prisma.$queryRawUnsafe<any[]>(`
         SELECT a.*, ar."name" as "artistName", ar."slug" as "artistSlug"
         FROM "Artwork" a
         LEFT JOIN "Artist" ar ON a."artistId" = ar."id"
         ORDER BY RANDOM()
         LIMIT ${limit} OFFSET ${skip}
       `)
+      artworks = artworks.map((a: any) => ({
+        ...a,
+        artist: {
+          name: a.artistName,
+          slug: a.artistSlug,
+        },
+      }))
 
       total = await prisma.artwork.count()
     } else {
