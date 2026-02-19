@@ -4,9 +4,7 @@ import { prisma } from "@/lib/prisma";
 export async function GET() {
   try {
     const [artworks, artists, scenes] = await Promise.all([
-      prisma.artwork.count({
-        where: { status: "APPROVED" },
-      }),
+      prisma.artwork.count(),
       prisma.artist.count(),
       prisma.artist.findMany({
         distinct: ["city"],

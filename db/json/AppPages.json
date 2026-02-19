@@ -159,8 +159,7 @@
       "stats": [
         { "title": "Paintings", "value": 800, "suffix": "+" },
         { "title": "Artists", "value": 90, "suffix": "+" },
-        { "title": "Scenes", "value": 150, "suffix": "+" },
-        { "title": "Partners", "value": 20, "suffix": "+" }
+        { "title": "Scenes", "value": 150, "suffix": "+" }
       ],
       "empty_section_imgs": ["/assets/images/banner-3.jpg"],
       "team_members": {

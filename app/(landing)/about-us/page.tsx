@@ -14,7 +14,7 @@ import { getAppConfigs, getAppPages, getUsers } from "@/db/query";
 
 const AppConfigs = getAppConfigs();
 const AppPages = getAppPages();
-// Comment to re-deploy - delete now
+
 const AboutPage = (): ReactNode => {
   const { title, content, banner, sections } = AppPages.about_us;
   const { stats, empty_section_imgs, team_members, team_leader } = sections;
