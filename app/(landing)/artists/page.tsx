@@ -41,7 +41,7 @@ const ArtistsPage = (): ReactNode => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(items_limit || 10);
   const [loading, setLoading] = useState(true)
-  const [sort, setSort] = useState<"name_az" | "name_za">("name_az")
+  const [sort, setSort] = useState<"name_az" | "name_za" | "random">("name_az")
 
   useEffect(() => {
     let ignore = false
@@ -97,12 +97,13 @@ const ArtistsPage = (): ReactNode => {
                 <select
                   value={sort}
                   onChange={(e) =>
-                    setSort(e.target.value as "name_az" | "name_za")
+                    setSort(e.target.value as "name_az" | "name_za" | "random")
                   }
                   className="max-w-[180px] rounded border px-2 py-1 capitalize text-theme-secondary-500"
                 >
                   <option value="name_az">Name A–Z</option>
                   <option value="name_za">Name Z–A</option>
+                  <option value="random">Random</option>
                 </select>
               </div>
             </div>

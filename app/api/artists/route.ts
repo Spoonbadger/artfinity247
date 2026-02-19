@@ -11,29 +11,47 @@ export async function GET(req: NextRequest) {
 
     const sort = req.nextUrl.searchParams.get("sort") || "name_az"
 
-    let orderBy: any = {}
+if (sort === "random") {
+  const artists = await prisma.$queryRaw<any[]>`
+    SELECT id, slug, name, bio, "profileImage", city, state, country
+    FROM "Artist"
+    ORDER BY RANDOM()
+    LIMIT ${limit} OFFSET ${skip}
+  `
 
-    if (sort === "name_az") {
-      orderBy = { name: "asc" } // Maybe not name - capitilizaiton issue?
-    } 
-    else if (sort === "name_za") {
-      orderBy = { name: "desc" };
-    }
-    else {
-      orderBy = { createdAt: "desc" }
-    }
+  const total = await prisma.artist.count()
 
-    const [artists, total] = await Promise.all([
-      prisma.artist.findMany({
-        skip, take: limit,
-        orderBy,
-        select: {
-          id: true, slug: true, name: true, bio: true,
-          profileImage: true, city: true, state: true, country: true,
-        },
-      }),
-      prisma.artist.count(),
-    ]);
+  return NextResponse.json({ artists, total }, { status: 200 });
+}
+
+  let orderBy: any = {}
+
+  if (sort === "name_az") {
+    orderBy = { name: "asc" }
+  } else if (sort === "name_za") {
+    orderBy = { name: "desc" }
+  } else {
+    orderBy = { createdAt: "desc" }
+  }
+
+  const [artists, total] = await Promise.all([
+    prisma.artist.findMany({
+      skip,
+      take: limit,
+      orderBy,
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        bio: true,
+        profileImage: true,
+        city: true,
+        state: true,
+        country: true,
+      },
+    }),
+    prisma.artist.count(),
+  ])
 
     return NextResponse.json({ artists, total }, { status: 200 });
   } catch (e) {
