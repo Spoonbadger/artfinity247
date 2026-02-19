@@ -62,7 +62,7 @@ const AboutPage = (): ReactNode => {
       </section>
       <section className="bg-gray-100">
         <MaxWidthWrapper className="py-12 md:py-16">
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-1 md:grid-cols-3 text-theme-secondary-500">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 md:grid-cols-3 text-theme-secondary-500">
             {stats?.map((stat, index) => {
               let value = stat?.value ?? 0
 
