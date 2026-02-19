@@ -23,7 +23,7 @@ const ContactPage = (): ReactNode => {
   const [formSection, setFormSection] = useState<GenericSectonType | null>(
     null,
   );
-  const [mapSection, setMapSection] = useState<GenericSectonType | null>(null);
+  const [mapSection, setMapSection] = useState<GenericSectonType | null>(null)
 
   useEffect(() => {
     const { title, banner, sections } = AppPages.contact;

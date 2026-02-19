@@ -101,13 +101,13 @@
   },
   "sellers": {
     "title": "Artists",
-    "items_limit": 12,
+    "items_limit": 20,
     "banner": "/assets/images/banner-3.jpg",
     "slug": "artists"
   },
   "seller": {
     "title": "Artist",
-    "items_limit": 12,
+    "items_limit": 20,
     "sections": {
       "products": {
         "title": "My Artworks"
@@ -119,13 +119,13 @@
   },
   "scenes": {
     "title": "All Scenes",
-    "items_limit": 12,
+    "items_limit": 20,
     "banner": "/assets/images/block2-1.jpg",
     "slug": "scenes"
   },
   "scene": {
     "title": "Art Scene",
-    "items_limit": 12,
+    "items_limit": 20,
     "sections": {
       "products": {
         "title": "Scene Art"
@@ -134,7 +134,7 @@
   },
   "collections": {
     "title": "All collections",
-    "items_limit": 12,
+    "items_limit": 20,
     "slug": "collections"
   },
   "cart": {

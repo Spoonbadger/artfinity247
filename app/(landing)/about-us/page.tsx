@@ -21,6 +21,22 @@ const AboutPage = (): ReactNode => {
   const { slug: sellers_page_slug } = AppPages.sellers;
 
   const [teamMembers, setTeamMembers] = useState<UserType[]>([]);
+    const [liveStats, setLiveStats] = useState({
+      artworks: 0,
+      artists: 0,
+      scenes: 0,
+    })
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const res = await fetch("/api/stats", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      setLiveStats(data);
+    };
+
+    fetchStats();
+  }, [])
 
   useEffect(() => {
     setTeamMembers((prev) => getUsers({ ids: team_members.ids }));
@@ -47,14 +63,22 @@ const AboutPage = (): ReactNode => {
       <section className="bg-gray-100">
         <MaxWidthWrapper className="py-12 md:py-16">
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-4 text-theme-secondary-500">
-            {stats?.map((stat, index) => (
-              <AnimatedCounter
-                key={index}
-                title={stat?.title ?? ""}
-                value={stat?.value ?? 0}
-                suffix={stat?.suffix ?? ""}
-              />
-            )) ?? []}
+            {stats?.map((stat, index) => {
+              let value = stat?.value ?? 0
+
+              if (stat?.title === "Paintings") value = liveStats.artworks
+              if (stat?.title === "Artists") value = liveStats.artists
+              if (stat?.title === "Scenes") value = liveStats.scenes
+
+              return (
+                <AnimatedCounter
+                  key={index}
+                  title={stat?.title ?? ""}
+                  value={value}
+                  suffix={stat?.suffix ?? ""}
+                />
+              )
+            })}
           </div>
         </MaxWidthWrapper>
       </section>
