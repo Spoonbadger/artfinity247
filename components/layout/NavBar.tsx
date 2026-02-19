@@ -36,6 +36,7 @@ const NavBar = ({
 }): ReactNode => {
   const pathname = usePathname();
 
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false);
 
   const { cartItems } = useCart();
@@ -65,6 +66,10 @@ const NavBar = ({
       window.removeEventListener("resize", handleScroll);
     };
   }, []);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname])
 
   return (
     <header
@@ -133,7 +138,7 @@ const NavBar = ({
             >
               <div className="nav-wrapper">
                 <div className="monile-nav-menu md:hidden">
-                  <Sheet>
+                  <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
                     <SheetTrigger asChild>
                       <Button
                         className="!bg-transparent !outline-none"
