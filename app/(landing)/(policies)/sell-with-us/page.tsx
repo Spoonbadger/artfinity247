@@ -69,8 +69,8 @@ export default function SellWithUsPage() {
           </h2>
           <p>
             This model allows you to earn from your work without paying upfront
-            for printing, shipping, or marketing. Every sale is upside — no
-            inventory risk, no production management.
+            for printing, shipping, or marketing and no sign-up fees or subscriptions. Every sale is upside — no
+            inventory risk or no production management.
           </p>
         </section>
 
