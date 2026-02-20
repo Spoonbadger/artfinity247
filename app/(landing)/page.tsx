@@ -68,7 +68,7 @@ const Home = (): ReactNode => {
   const [artists, setArtists] = useState<UserType[]>([]);
   const [scenes, setScenes] = useState<CollectionType[]>([]);
   // const [reviews, setReviews] = useState<ReviewType[]>([]);
-  const [sort, setSort] = useState("random")
+  const [sort, setSort] = useState("random") // Might want to actually feature art in future
 
 
   useEffect(() => {

@@ -59,7 +59,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
   const { slug: productsPageSlug } = AppPages.products;
 
   const currency = AppConfigs?.currency.code || "USD";
-  const priceFloatPoints = AppConfigs?.product_price_float_points ?? 2;
+  const priceFloatPoints = AppConfigs?.product_price_float_points ?? 2
 
   const [product, setProduct] = useState<ProductType | null>(null);
   const [reviews, setReviews] = useState<ReviewType[]>([]);
@@ -88,7 +88,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
 
     const purchaseNote = AppPages.product.purchase_note;
     setPurchaseNote((prev) => purchaseNote || "");
-  }, [slug, router]);
+  }, [slug, router])
 
 
   // Update price on size change

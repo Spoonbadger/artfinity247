@@ -1,10 +1,11 @@
 
 export const basePrices = {
-  small: 2499,
+  small: 2999,
   medium: 3999,
-  large: 6999,
-  // x-large: 8999
-};
+  large: 5499,
+  xl: 6999,
+  xxl: 7999
+}
 
 export const getFinalPrice = (
   size: 'small' | 'medium' | 'large',
