@@ -72,11 +72,16 @@ const RegisterForm = ({
       city: "",
       state: "",
       country: "",
+      tc_accept: false,
+      artist_terms_accept: false,
     },
   });
 
   const { slug: loginPageSlug } = AppPages.login;
   const { slug: tacPageSlug } = AppPages.terms_and_conditions;
+  const { slug: artistTermsSlug } = AppPages.artist_terms || {
+    slug: "artist-terms-and-agreement",
+  };
 
   const [countries, setCountries] = useState<CountryType[]>([]);
   const [states, setStates] = useState<StateType[]>([]);
@@ -458,20 +463,23 @@ const RegisterForm = ({
             {/* Accept Terms and Conditions Field */}
             <FormField
               control={form.control}
-              name="tc_accept"
+              name="artist_terms_accept"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-start gap-2">
                     <Checkbox
-                      id="tc_accept"
+                      id="artist_terms_accept"
                       checked={field.value}
                       onCheckedChange={field.onChange}
-                      required
                     />
-                    <label htmlFor="agree_tos" className="text-sm">
-                      Agree to{" "}
-                      <Link href={`/${tacPageSlug || "terms-and-conditions"}`} target="_blank">
-                        Terms And Conditions
+                    <label htmlFor="artist_terms_accept" className="text-sm leading-5">
+                      I agree to the{" "}
+                      <Link
+                        href={`/${artistTermsSlug}`}
+                        target="_blank"
+                        className="underline"
+                      >
+                        Artist Terms & Agreement
                       </Link>
                     </label>
                   </div>

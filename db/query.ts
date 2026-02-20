@@ -52,6 +52,7 @@ export const getCountries = () => {
   return db.Countries;
 };
 
+
 /* Slider Queries */
 export const getSliders = (query: CommonMultiItemQuery = {}): SliderType[] => {
   const { ids, start, limit } = query;

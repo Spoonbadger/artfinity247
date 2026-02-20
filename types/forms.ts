@@ -53,6 +53,9 @@ export const registerFormSchema = z
         message:
           "Your password must be 6-20 characters long, contain letters and numbers, can include special characters, and must not contain spaces or emoji.",
       }),
+    artist_terms_accept: z.boolean().refine(val => val === true, {
+      message: "You must agree to the Artist Terms",
+    }),
     confirm_password: z.string().min(6).max(20),
     avatar: z.string().optional(),
     phone: z.string().optional(),

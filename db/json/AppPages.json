@@ -244,6 +244,10 @@
 "content": "<div><br/><h4 style=\"margin-bottom: 0.75rem;\">Returns</h4><p>Each Artfinity print is produced on demand, especially for you. For this reason, we cannot accept returns or exchanges for change of mind or incorrect size selection. However, if your order arrives damaged, misprinted, or incorrect, we will make it right.</p></div><div><br/><h4 style=\"margin-bottom: 0.75rem;\">Refunds & Replacements</h4><p>If your item is damaged, misprinted, or incorrect, please contact us at <a href=\"mailto:support@theartfinity.com\">support@theartfinity.com</a> within 14 days of delivery. Include your order number and a photo of the issue. Once reviewed, we will either send you a replacement at no extra cost or issue a refund to your original payment method.</p></div><div><br/><h4 style=\"margin-bottom: 0.75rem;\">Shipping Costs</h4><p>Shipping costs are non-refundable, except in cases where the error was ours (damaged, defective, or incorrect items).</p></div><div><br/><h4 style=\"margin-bottom: 0.75rem;\">Contact Us</h4><p>If you have any questions about returns or refunds, please contact us at <a href=\"mailto:support@theartfinity.com\">support@theartfinity.com</a>.</p></div>",
     "slug": "return-policy"
   },
+  "artist_terms": {
+    "title": "Artist Terms & Agreement",
+    "slug": "artist-terms-and-agreement"
+  },
   "login": { "title": "Login", "slug": "login" },
   "register": { "title": "Register", "slug": "register" },
   "recover_password": {

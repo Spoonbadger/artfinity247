@@ -30,7 +30,7 @@ export const COSTS = {
 
   // Optional: per-item website/overhead cost in cents (set 0 if unused)
   HOSTING_PER_ITEM: 100,
-};
+}
 
 /** Stripe-like fee in cents, from a gross charge amount (in cents). */
 export function paymentFeeCents(amountCents: number): number {
