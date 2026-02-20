@@ -248,6 +248,10 @@
     "title": "Artist Terms & Agreement",
     "slug": "artist-terms-and-agreement"
   },
+  "sell_with_us": {
+    "title": "Sell With Us",
+    "slug": "sell-with-us"
+  },
   "login": { "title": "Login", "slug": "login" },
   "register": { "title": "Register", "slug": "register" },
   "recover_password": {
