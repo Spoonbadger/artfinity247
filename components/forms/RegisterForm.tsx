@@ -461,6 +461,7 @@ const RegisterForm = ({
               )}
             />
             {/* Accept Terms and Conditions Field */}
+            {/* Artist Terms & Agreement */}
             <FormField
               control={form.control}
               name="artist_terms_accept"
@@ -469,17 +470,37 @@ const RegisterForm = ({
                   <div className="flex items-start gap-2">
                     <Checkbox
                       id="artist_terms_accept"
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
+                      checked={!!field.value}
+                      onCheckedChange={(v) => field.onChange(!!v)}
                     />
                     <label htmlFor="artist_terms_accept" className="text-sm leading-5">
                       I agree to the{" "}
-                      <Link
-                        href={`/${artistTermsSlug}`}
-                        target="_blank"
-                        className="underline"
-                      >
+                      <Link href={`/${artistTermsSlug}`} target="_blank" className="underline">
                         Artist Terms & Agreement
+                      </Link>
+                    </label>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Website Terms & Conditions */}
+            <FormField
+              control={form.control}
+              name="tc_accept"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      id="tc_accept"
+                      checked={!!field.value}
+                      onCheckedChange={(v) => field.onChange(!!v)}
+                    />
+                    <label htmlFor="tc_accept" className="text-sm leading-5">
+                      I agree to the{" "}
+                      <Link href={`/${tacPageSlug || "terms-and-conditions"}`} target="_blank" className="underline">
+                        Terms & Conditions
                       </Link>
                     </label>
                   </div>
