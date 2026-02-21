@@ -30,17 +30,18 @@ import { getProduct } from '@/lib/api'
 import { getFinalPrice } from '@/lib/artwork_price'
 import Link from 'next/link'
 
-type PrintSize = "small" | "medium" | "large" | "xl" | "xxl"
+type PrintSize = "small" | "medium" | "large"
 
 const SIZE_DIMENSIONS: Record<PrintSize, string> = {
   small: "5×7 in",
   medium: "8×12 in",
   large: "11×17 in",
-  xl: "18x24 in",
-  xxl: "24x32 in",
+  // xl: "18x24 in",
+  // xxl: "24x32 in",
 }
 
-const SIZES: PrintSize[] = ["small", "medium", "large", "xl", "xxl"]
+const SIZES: PrintSize[] = ["small", "medium", "large"]
+// const SIZES: PrintSize[] = ["small", "medium", "large", "XL", "XXL"]
 
 
 type ParamsPropsType = {
