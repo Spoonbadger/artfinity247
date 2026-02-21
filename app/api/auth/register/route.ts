@@ -3,7 +3,10 @@ import { hash } from 'bcryptjs'
 import { SignJWT } from 'jose'
 import { cookies } from 'next/headers'
 import slugify from 'slugify'
+import { Resend } from "resend";
+import NewArtistNotificationEmail from "@/emails/NewArtistNotificationEmail"
 
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: Request) {
     const body = await req.json()
@@ -70,6 +73,19 @@ export async function POST(req: Request) {
         path: '/',
         maxAge: 60 * 60 * 24 * 7
     })
+
+    await resend.emails.send({
+        from: "Artfinity <notifications@theartfinity.com>",
+        to: "contact@theartfinity.com",
+        subject: `New Artist Registration – ${artist_name}`,
+        react: NewArtistNotificationEmail({
+            artistName: artist_name,
+            email,
+            city,
+            state,
+            createdAt: new Date().toLocaleString(),
+        }),
+        })
 
     return Response.json({ 
         artist: { slug: artist.slug }}, 
