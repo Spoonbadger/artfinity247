@@ -5,6 +5,7 @@ import { cookies } from 'next/headers'
 import slugify from 'slugify'
 import { Resend } from "resend";
 import NewArtistNotificationEmail from "@/emails/NewArtistNotificationEmail"
+import WelcomeArtistEmail from "@/emails/WelcomeArtistEmail"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -85,7 +86,17 @@ export async function POST(req: Request) {
             state,
             createdAt: new Date().toLocaleString(),
         }),
-        })
+    })
+
+    await resend.emails.send({
+        from: "Artfinity <notifications@theartfinity.com>",
+        to: email,
+        subject: "Welcome to Artfinity",
+        react: WelcomeArtistEmail({
+            artistName: artist_name,
+        }),
+    })
+
 
     return Response.json({ 
         artist: { slug: artist.slug }}, 
