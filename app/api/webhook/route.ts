@@ -2,6 +2,12 @@ import { NextRequest } from 'next/server'
 import { Stripe } from 'stripe'
 import { prisma } from "@/lib/prisma";
 import { sendReceiptEmail } from "@/lib/email"
+import { Resend } from "resend"
+import NewSaleNotificationEmail from "@/emails/NewSaleNotificationEmail"
+import ArtistSaleNotificationEmail from "@/emails/ArtistSaleNotificationEmail"
+
+
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-08-27.basil',
@@ -84,6 +90,92 @@ export async function POST(req: NextRequest) {
         },
       })
 
+      try {
+        const rawItems = await prisma.orderItem.findMany({
+          where: { orderId: order.id },
+          select: {
+            title: true,
+            size: true,
+            quantity: true,
+            unitPrice: true,
+          },
+        })
+
+        const items = rawItems.map(i => ({
+          title: i.title ?? "",
+          size: i.size ?? "",
+          quantity: i.quantity ?? 1,
+          unitPrice: i.unitPrice ?? 0,
+        }))
+
+        await resend.emails.send({
+          from: "Artfinity <notifications@theartfinity.com>",
+          to: "craig@theartfinity.com",
+          subject: `New Sale – $${((order.amountTotal ?? 0)/100).toFixed(2)}`,
+          react: NewSaleNotificationEmail({
+            orderId: order.id,
+            buyerEmail: order.email,
+            totalCents: order.amountTotal ?? 0,
+            items,
+          }),
+        })
+      } catch (err) {
+        console.error("Admin sale email failed", err)
+      }
+
+      // Get items with artist IDs
+      const soldItems = await prisma.orderItem.findMany({
+        where: { orderId: order.id },
+        include: {
+          artwork: {
+            include: {
+              artist: true,
+            },
+          },
+        },
+      })
+
+      // Group by artist (important if multi-artist order later)
+      const byArtist = new Map()
+
+      for (const item of soldItems) {
+        const artist = item.artwork?.artist
+        if (!artist) continue
+
+        if (!byArtist.has(artist.id)) {
+          byArtist.set(artist.id, {
+            artist,
+            items: [],
+          })
+        }
+
+        byArtist.get(artist.id).items.push({
+          title: item.title ?? "",
+          size: item.size ?? "",
+          quantity: item.quantity ?? 1,
+          lineTotal: item.lineTotal ?? 0,
+        })
+      }
+
+      // Send one email per artist
+      for (const { artist, items } of byArtist.values()) {
+        try {
+          await resend.emails.send({
+            from: "Artfinity <notifications@theartfinity.com>",
+            to: artist.email,
+            subject: "Your artwork sold on Artfinity!",
+            react: ArtistSaleNotificationEmail({
+              artistName: artist.artist_name ?? "Artist",
+              items,
+              totalCents: items.reduce((sum: number, i: any) => sum + i.lineTotal, 0),
+            }),
+          })
+        } catch (err) {
+          console.error("Artist sale email failed", err)
+        }
+      }
+
+
       // 2) Get line items with product expanded (so product.metadata is available)
       const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
         expand: ['data.price.product'],
@@ -125,7 +217,6 @@ export async function POST(req: NextRequest) {
       // Send receipt (idempotent inside helper via receiptSentAt)
       try {
         await sendReceiptEmail(order.id)
-        // console.log("📧 Receipt email queued/sent")
       } catch (e) {
         console.error("Email send failed (non-blocking):", e)
       }

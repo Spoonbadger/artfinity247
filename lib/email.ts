@@ -38,7 +38,7 @@ export async function sendReceiptEmail(orderId: string) {
   // Idempotency: don’t resend if already sent
   if (order.receiptSentAt) return { alreadySent: true };
 
-  const resend = new Resend(resendKey);
+  const resend = new Resend(resendKey)
 
   const { data, error } = await resend.emails.send({
     from,
