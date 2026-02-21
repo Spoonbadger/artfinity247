@@ -674,6 +674,12 @@ const handleDeleteAccount = async () => {
                 >
                   Download all qr cards
                 </button>
+                                <button
+                  className="text-xs px-3 py-2 bg-slate-500 text-white rounded"
+                  onClick={() => window.open('/api/artworks/qr/bulk?layout=4up&download=1', '_blank', 'noopener')}
+                >
+                  Purchase all qr cards
+                </button>
               </div>
             </div>
           )}
