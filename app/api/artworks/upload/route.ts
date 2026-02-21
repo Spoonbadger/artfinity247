@@ -3,7 +3,12 @@ import { prisma } from "@/lib/prisma"
 import { jwtVerify } from 'jose'
 import slugify from 'slugify'
 import { rateLimit } from '@/lib/rateLimit'
+import { Resend } from "resend";
+import NewArtworkUploadedEmail from "@/emails/NewArtworkUploadedEmail"
+import ArtworkLiveWithQrEmail from "@/emails/ArtworkLiveWithQrEmail";
 
+
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: NextRequest) {
   const token = req.cookies.get('auth-token')?.value;
@@ -63,17 +68,64 @@ export async function POST(req: NextRequest) {
         artistId: payload.id as string,
         status: "APPROVED",
       },
-    })
-
-    const artist = await prisma.artist.findUnique({
-      where: { id: payload.id as string },
-      select: { slug: true },
+      include: {
+        artist: {
+          select: {
+            slug: true,
+            artist_name: true,
+            city: true,
+            state: true,
+            email: true,
+          },
+        },
+      },
     });
+
+    const base =
+  process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com";
+
+  const artworkUrl = `${base}/art/${artwork.slug}`;
+
+  const qrDownloadUrl = `${base}/api/qr?layout=1up&slugs=${artwork.slug}&download=1`;
+
+  try {
+    await resend.emails.send({
+      from: "Artfinity <notifications@theartfinity.com>",
+      to: artwork.artist?.email, // if included — otherwise use payload email
+      subject: `Your artwork is live – ${artwork.title}`,
+      react: ArtworkLiveWithQrEmail({
+        artistName: artwork.artist?.artist_name || "",
+        title: artwork.title,
+        artworkUrl,
+        qrDownloadUrl,
+      }),
+    });
+  } catch (err) {
+    console.error("Artist QR email failed", err);
+  }
+
+    try {
+      await resend.emails.send({
+        from: "Artfinity <notifications@theartfinity.com>",
+        to: "craig@theartfinity.com",
+        subject: `New Artwork – ${artwork.title}`,
+        react: NewArtworkUploadedEmail({
+          artistName: artwork?.artist.artist_name || "unknown",
+          title: artwork.title,
+          imageUrl: artwork.imageUrl,
+          city: artwork.artist.city,
+          state: artwork.artist.state,
+          createdAt: new Date().toLocaleString(),
+        }),
+      })
+    } catch (err) {
+      console.error("Artwork notification email failed", err)
+    }
 
     return NextResponse.json({
       ...artwork,
-      artistSlug: artist?.slug,
-    });
+      artistSlug: artwork.artist?.slug,
+    })
   } catch (err) {
     console.error('Upload error:', err);
     return new NextResponse('Server error', { status: 500 });
