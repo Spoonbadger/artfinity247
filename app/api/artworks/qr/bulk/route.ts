@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     if (!artistId) return new NextResponse('Invalid token', { status: 401 })
 
     const urlIn = new URL(req.url)
-    const layout = (urlIn.searchParams.get('layout') || '1up').toLowerCase() // '1up' | '4up'
+    const layout = (urlIn.searchParams.get('layout') || '8up').toLowerCase()
     const slugsParam = urlIn.searchParams.get('slugs')
     const slugFilter = slugsParam
       ? slugsParam.split(',').map(s => s.trim()).filter(Boolean)
@@ -100,7 +100,7 @@ export async function GET(req: NextRequest) {
       const rightW = box.w - leftW
 
       // logo
-      const logoSize = 40
+      const logoSize = 24
       const logoX = box.x + pad
       const logoY = box.y + box.h - pad - logoSize
 
@@ -114,7 +114,7 @@ export async function GET(req: NextRequest) {
       // title + artist (scaled like single card)
       let textY = logoY - 30
 
-      const titleSize = 18
+      const titleSize = 14
       page.drawText(art.title, {
         x: box.x + pad,
         y: textY,
@@ -124,7 +124,7 @@ export async function GET(req: NextRequest) {
       })
       textY -= titleSize + 4
 
-      const artistSize = 14
+      const artistSize = 10
       page.drawText(art.artistName, {
         x: box.x + pad,
         y: textY,
@@ -173,48 +173,54 @@ export async function GET(req: NextRequest) {
       })
     }
 
-   if (layout === '4up') {
-  // Four horizontal cards stacked down the A4 page
-  const cardH = (A4.h - 2 * MARGIN - 3 * GUTTER) / 4
-  const cardW = A4.w - 2 * MARGIN
-  const page = pdf.addPage([A4.w, A4.h])
+  if (layout === '8up') {
+    const cols = 2
+    const rows = 4
 
-  const maxPerPage = 4
-  const count = Math.min(maxPerPage, artworks.length)
+    const cardW = (A4.w - 2 * MARGIN - (cols - 1) * GUTTER) / cols
+    const cardH = (A4.h - 2 * MARGIN - (rows - 1) * GUTTER) / rows
 
-  for (let i = 0; i < count; i++) {
-    const a = artworks[i]
+    const page = pdf.addPage([A4.w, A4.h])
 
-    const x = MARGIN
-    const y = A4.h - MARGIN - cardH - i * (cardH + GUTTER)
+    const maxPerPage = cols * rows
+    const count = Math.min(maxPerPage, artworks.length)
 
-    await drawCard(
-      page,
-      { x, y, w: cardW, h: cardH },
-      {
-        slug: a.slug,
-        title: a.title,
-        artistName: a.artist?.name || '',
-      },
-      faviconImg
-    )
+    for (let i = 0; i < count; i++) {
+      const a = artworks[i]
+
+      const col = i % cols
+      const row = Math.floor(i / cols)
+
+      const x = MARGIN + col * (cardW + GUTTER)
+      const y = A4.h - MARGIN - cardH - row * (cardH + GUTTER)
+
+      await drawCard(
+        page,
+        { x, y, w: cardW, h: cardH },
+        {
+          slug: a.slug,
+          title: a.title,
+          artistName: a.artist?.name || '',
+        },
+        faviconImg
+      )
+    }
+  } else {
+    // 1-up: keep as you have it
+    for (const a of artworks) {
+      const page = pdf.addPage([CARD.w, CARD.h])
+      await drawCard(
+        page,
+        { x: 0, y: 0, w: CARD.w, h: CARD.h },
+        {
+          slug: a.slug,
+          title: a.title,
+          artistName: a.artist?.name || '',
+        },
+        faviconImg
+      )
+    }
   }
-} else {
-  // 1-up: keep as you have it
-  for (const a of artworks) {
-    const page = pdf.addPage([CARD.w, CARD.h])
-    await drawCard(
-      page,
-      { x: 0, y: 0, w: CARD.w, h: CARD.h },
-      {
-        slug: a.slug,
-        title: a.title,
-        artistName: a.artist?.name || '',
-      },
-      faviconImg
-    )
-  }
-}
     
 
     // Return
