@@ -115,14 +115,34 @@ export async function GET(req: NextRequest) {
       let textY = logoY - 30
 
       const titleSize = 14
-      page.drawText(art.title, {
-        x: box.x + pad,
-        y: textY,
-        size: titleSize,
-        font: fontBold,
-        color: rgb(0, 0, 0),
-      })
-      textY -= titleSize + 4
+      const maxWidth = leftW - pad * 2
+
+      const words = art.title.split(' ')
+      let line = ''
+      let lines: string[] = []
+
+      for (const word of words) {
+        const testLine = line ? line + ' ' + word : word
+        const width = fontBold.widthOfTextAtSize(testLine, titleSize)
+
+        if (width > maxWidth) {
+          lines.push(line)
+          line = word
+        } else {
+          line = testLine
+        }
+      }
+      if (line) lines.push(line)
+
+      for (const l of lines) {
+        page.drawText(l, {
+          x: box.x + pad,
+          y: textY,
+          size: titleSize,
+          font: fontBold,
+        })
+        textY -= titleSize + 4
+      }
 
       const artistSize = 10
       page.drawText(art.artistName, {
