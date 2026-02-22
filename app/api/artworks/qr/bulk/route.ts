@@ -115,11 +115,12 @@ export async function GET(req: NextRequest) {
       let textY = logoY - 30
 
       const titleSize = 14
-      const maxWidth = leftW - pad * 2
+      const maxWidth = leftW - pad * 3
 
       const words = art.title.split(' ')
       let line = ''
       let lines: string[] = []
+      lines = lines.slice(0, 2)
 
       for (const word of words) {
         const testLine = line ? line + ' ' + word : word
