@@ -96,7 +96,7 @@ export async function GET(req: NextRequest) {
       })
 
       // left/right columns (same proportions as single)
-      const leftW = box.w * 0.55
+      const leftW = box.w * 0.5
       const rightW = box.w - leftW
 
       // logo
