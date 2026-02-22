@@ -57,28 +57,42 @@ export async function generateQrPdf({
     height: logoSize,
   })
 
-  // Brand text
-  // const brandSize = 12
-  // page.drawText('Artfinity', {
-  //   x: logoX + logoSize + 10,
-  //   y: logoY + logoSize / 2 - brandSize / 2,
-  //   size: brandSize,
-  //   font: fontBold,
-  //   color: rgb(0.35, 0.35, 0.35),
-  // })
-
-  // Title + artist
   let textY = logoY - 30
 
   const titleSize = 18
-  page.drawText(title, {
-    x: PAD,
-    y: textY,
-    size: titleSize,
-    font: fontBold,
-    color: rgb(0, 0, 0),
-  })
-  textY -= titleSize + 4
+  const maxWidth = leftW - PAD * 1.2
+
+  const words = title.split(' ')
+  let line = ''
+  let lines: string[] = []
+
+  for (const word of words) {
+    const testLine = line ? line + ' ' + word : word
+    const width = fontBold.widthOfTextAtSize(testLine, titleSize)
+
+    if (width > maxWidth) {
+      lines.push(line)
+      line = word
+    } else {
+      line = testLine
+    }
+  }
+  if (line) lines.push(line)
+
+  // Limit to 2 lines max
+  lines = lines.slice(0, 3)
+
+
+  for (const l of lines) {
+    page.drawText(l, {
+      x: PAD,
+      y: textY,
+      size: titleSize,
+      font: fontBold,
+      color: rgb(0, 0, 0),
+    })
+    textY -= titleSize + 4
+  }
 
   const artistSize = 14
   page.drawText(artistName, {

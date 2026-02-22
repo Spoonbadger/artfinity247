@@ -34,7 +34,8 @@ export async function GET(req: NextRequest) {
     if (!artistId) return new NextResponse('Invalid token', { status: 401 })
 
     const urlIn = new URL(req.url)
-    const layout = (urlIn.searchParams.get('layout') || '8up').toLowerCase()
+    // const layout = (urlIn.searchParams.get('layout') || '8up').toLowerCase()
+        const layout = ('8up').toLowerCase()
     const slugsParam = urlIn.searchParams.get('slugs')
     const slugFilter = slugsParam
       ? slugsParam.split(',').map(s => s.trim()).filter(Boolean)
@@ -75,7 +76,7 @@ export async function GET(req: NextRequest) {
     const faviconBytes = await fs.readFile(faviconPath)
     const faviconImg = await pdf.embedPng(faviconBytes)
 
-    // Card drawer shared by 1up + 4up
+    // Card drawer shared by 1up + 8up
     const drawCard = async (
       page: PDFPage,
       box: { x: number; y: number; w: number; h: number },
@@ -83,6 +84,17 @@ export async function GET(req: NextRequest) {
       favicon: any
     ) => {
       const pad = PAD
+
+      page.drawRectangle({
+  x: box.x,
+  y: box.y,
+  width: box.w,
+  height: box.h,
+  borderColor: rgb(1,0,0),
+  borderWidth: 2,
+})
+console.log("Artwork count:", artworks.length)
+
 
       // background
       page.drawRectangle({
@@ -96,7 +108,7 @@ export async function GET(req: NextRequest) {
       })
 
       // left/right columns (same proportions as single)
-      const leftW = box.w * 0.5
+      const leftW = box.w * 0.3
       const rightW = box.w - leftW
 
       // logo
