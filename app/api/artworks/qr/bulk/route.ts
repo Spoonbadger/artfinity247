@@ -34,8 +34,7 @@ export async function GET(req: NextRequest) {
     if (!artistId) return new NextResponse('Invalid token', { status: 401 })
 
     const urlIn = new URL(req.url)
-    // const layout = (urlIn.searchParams.get('layout') || '8up').toLowerCase()
-        const layout = ('8up').toLowerCase()
+    const layout = ('8up').toLowerCase()
     const slugsParam = urlIn.searchParams.get('slugs')
     const slugFilter = slugsParam
       ? slugsParam.split(',').map(s => s.trim()).filter(Boolean)
@@ -85,17 +84,6 @@ export async function GET(req: NextRequest) {
     ) => {
       const pad = PAD
 
-      page.drawRectangle({
-  x: box.x,
-  y: box.y,
-  width: box.w,
-  height: box.h,
-  borderColor: rgb(1,0,0),
-  borderWidth: 2,
-})
-console.log("Artwork count:", artworks.length)
-
-
       // background
       page.drawRectangle({
         x: box.x,
@@ -108,7 +96,7 @@ console.log("Artwork count:", artworks.length)
       })
 
       // left/right columns (same proportions as single)
-      const leftW = box.w * 0.3
+      const leftW = box.w * 0.55
       const rightW = box.w - leftW
 
       // logo
@@ -123,16 +111,18 @@ console.log("Artwork count:", artworks.length)
         height: logoSize,
       })
 
-      // title + artist (scaled like single card)
-      let textY = logoY - 30
+      // title + artist (scaled like single card?)
+      let textY = logoY - (logoSize)
 
-      const titleSize = 14
-      const maxWidth = leftW - pad * 3
+
+      // const titleSize = 14
+      const titleSize = Math.round(box.h * 0.1)
+
+      const maxWidth = leftW - pad * 0.8
 
       const words = art.title.split(' ')
       let line = ''
       let lines: string[] = []
-      lines = lines.slice(0, 2)
 
       for (const word of words) {
         const testLine = line ? line + ' ' + word : word
@@ -146,6 +136,10 @@ console.log("Artwork count:", artworks.length)
         }
       }
       if (line) lines.push(line)
+
+      if (lines.length > 3) {
+        lines = [lines[0], lines[1], lines[2] + "…"]
+      }
 
       for (const l of lines) {
         page.drawText(l, {
@@ -180,7 +174,7 @@ console.log("Artwork count:", artworks.length)
       const qrImg = await pdf.embedPng(qrPng)
 
       // same QR proportion as single card (*0.7)
-      const qrSize = Math.min(box.h - pad * 2, rightW - pad * 2) * 0.7
+      const qrSize = Math.min(box.h - pad * 2, rightW - pad * 2) * 0.9
       const qrX = box.x + leftW + (rightW - qrSize) / 2
       const qrY = box.y + (box.h - qrSize) / 2
 
@@ -193,12 +187,13 @@ console.log("Artwork count:", artworks.length)
 
       // CTA only (no URL, to match single)
       const cta = 'Scan to view this artwork and order prints'
-      const ctaSize = 8
+      const ctaSize = Math.round(box.h * 0.042)
       const ctaWidth = fontRegular.widthOfTextAtSize(cta, ctaSize)
-      const ctaY = box.y + pad / 2 + 10
+      const ctaY = box.y + pad - 8
+
 
       page.drawText(cta, {
-        x: box.x + leftW + (rightW - ctaWidth) / 2,
+        x: box.x + leftW + (rightW - ctaWidth) / 2 - 6,
         y: ctaY,
         size: ctaSize,
         font: fontRegular,
@@ -210,8 +205,16 @@ console.log("Artwork count:", artworks.length)
     const cols = 2
     const rows = 4
 
-    const cardW = (A4.w - 2 * MARGIN - (cols - 1) * GUTTER) / cols
-    const cardH = (A4.h - 2 * MARGIN - (rows - 1) * GUTTER) / rows
+    const maxW = (A4.w - 2 * MARGIN - (cols - 1) * GUTTER) / cols
+    const maxH = (A4.h - 2 * MARGIN - (rows - 1) * GUTTER) / rows
+
+    let cardW = maxW
+    let cardH = cardW / 2
+
+    if (cardH > maxH) {
+      cardH = maxH
+      cardW = cardH * 2
+    }
 
     const page = pdf.addPage([A4.w, A4.h])
 
@@ -254,7 +257,6 @@ console.log("Artwork count:", artworks.length)
       )
     }
   }
-    
 
     // Return
     const bytes = await pdf.save()

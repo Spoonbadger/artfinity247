@@ -79,9 +79,10 @@ export async function generateQrPdf({
   }
   if (line) lines.push(line)
 
-  // Limit to 2 lines max
-  lines = lines.slice(0, 3)
-
+  // Limit to 3 lines max
+  if (lines.length > 3) {
+    lines = [lines[0], lines[1], lines[2] + "…"]
+  }
 
   for (const l of lines) {
     page.drawText(l, {
