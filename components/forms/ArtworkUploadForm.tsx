@@ -89,23 +89,14 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
         setLoading(true)
 
         try {
-            // 1️⃣ Get signed upload params
-            const sigRes = await fetch("/api/cloudinary/signature?folder=artfinity", {
-
-            credentials: "include",
-            })
-            if (!sigRes.ok) throw new Error("Failed to get signature")
-
-            const { timestamp, signature, cloudName, apiKey } = await sigRes.json()
-
-            // 2️⃣ Upload directly to Cloudinary
+            // Upload directly to Cloudinary
             const formData = new FormData()
             formData.append("file", file)
             formData.append("upload_preset", "artfinity_unsigned")
             formData.append("folder", "artfinity")
 
             const uploadRes = await fetch(
-                `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+                `https://api.cloudinary.com/v1_1/datt62wse/image/upload`,
                 {
                     method: "POST",
                     body: formData,

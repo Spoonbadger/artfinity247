@@ -80,32 +80,21 @@ const SellerPage = ({ params }: { params: ParamsPropsType }): ReactNode => {
     try {
       let file = orig;
 
-      // Get signed upload params
-      const sigRes = await fetch("/api/cloudinary/signature?folder=artfinity/profile", {
-
-        credentials: "include",
-      });
-      if (!sigRes.ok) throw new Error("Failed to get upload signature");
-
-      const { timestamp, signature, cloudName, apiKey } = await sigRes.json();
-
       // Upload directly to Cloudinary
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("api_key", apiKey);
-      formData.append("timestamp", timestamp);
-      formData.append("signature", signature);
-      formData.append("folder", "artfinity/profile");
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("upload_preset", "artfinity_unsigned")
+      formData.append("folder", "artfinity/profile")
 
       const uploadRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+        `https://api.cloudinary.com/v1_1/datt62wse/image/upload`,
         {
           method: "POST",
           body: formData,
         }
-      );
+      )
 
-      if (!uploadRes.ok) throw new Error("Cloudinary upload failed");
+      if (!uploadRes.ok) throw new Error("Cloudinary upload failed")
 
       const uploadData = await uploadRes.json();
       const imageUrl = uploadData.secure_url.replace("/upload/", "/upload/f_auto,q_auto/");
