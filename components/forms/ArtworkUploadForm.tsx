@@ -81,6 +81,10 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (!file) return
+        if (file.size > 10 * 1024 * 1024) {
+            toast.error("Maximum file size is 10MB")
+            return
+        }
 
         setLoading(true)
 
@@ -110,7 +114,17 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
             }
             )
 
-            if (!uploadRes.ok) throw new Error("Upload failed")
+            if (!uploadRes.ok) {
+                const errorData = await uploadRes.json()
+
+                if (errorData?.error?.message?.includes("File size too large")) {
+                    toast.error("Maximum file size is 10MB")
+                } else {
+                    toast.error("Image upload failed")
+                }
+
+                return
+            }
 
             const uploadData = await uploadRes.json()
 
