@@ -18,14 +18,14 @@ const COSTS = {
   labor: 300,   // $3.00
   website: 100, // $1.00
   print: {
-    small: 300,   // $3.00
-    medium: 600,  // $6.00
-    large: 1000,  // $10.00
+    small: 1520,   // $15.20 inc. shipping
+    medium: 1803,  // $18.03 inc. shipping
+    large: 2065,  // $20.65 inc. shipping
   },
   shipping: {
-    small: 500,   // $5.00
-    medium: 700,  // $7.00
-    large: 1000,  // $10.00
+    small: 0,   // $0.00
+    medium: 0,  // $0.00
+    large: 0,  // $0.00
   },
 } as const
 
@@ -174,7 +174,6 @@ export async function POST(req: NextRequest) {
           console.error("Artist sale email failed", err)
         }
       }
-
 
       // 2) Get line items with product expanded (so product.metadata is available)
       const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
