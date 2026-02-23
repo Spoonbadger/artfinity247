@@ -238,6 +238,16 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
                           {formatCurrency(price / 100, currency, priceFloatPoints)}
                         </span>
                       </div>
+                      <div className="product-price pt-0 font-primary text-foreground">
+                        <div className="mt-0">
+                          {/* <Badge className="bg-red-300 text-white font-semibold px-3 py-1">
+                            FREE SHIPPING
+                          </Badge> */}
+                          <p className="text-xs text-muted-foreground mt-0">
+                            Free shipping and no hidden fees at checkout.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                         {/* Radio buttons for size options */}
                     <div className="product-size-options space-y-3">
