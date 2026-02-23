@@ -8,13 +8,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 })
 
 // TODO: move to AppConfigs.json (prices in cents)
-const BASE = { small: 2499, medium: 3999, large: 5999 } as const
+const BASE = { small: 3499, medium: 4499, large: 5499 } as const
 type Size = keyof typeof BASE
 
 function abs(url?: string | null) {
   if (!url) return undefined
   if (url.startsWith('http://') || url.startsWith('https://')) return url
-  const base = (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000').replace(/\/$/, '')
+  const base = (process.env.NEXT_PUBLIC_APP_URL || 'http://theartfinity.com').replace(/\/$/, '')
   return url.startsWith('/') ? base + url : `${base}/${url}`
 }
 
@@ -102,7 +102,7 @@ export async function POST(req: Request) {
       })
     }
 
-    const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000').replace(/\/$/, '')
+    const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://theartfinity.com').replace(/\/$/, '')
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
@@ -122,7 +122,7 @@ export async function POST(req: Request) {
         {
           shipping_rate_data: {
             display_name: 'Standard',
-            fixed_amount: { amount: 399, currency: 'usd' },
+            fixed_amount: { amount: 0, currency: 'usd' },
             type: 'fixed_amount',
           },
         },
