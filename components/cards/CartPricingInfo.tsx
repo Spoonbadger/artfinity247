@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 const CartPricingInfo = ({
   subtotal,
   shipping,
-  estimatedTax,
+  // estimatedTax,
   total,
   currency = "$",
   decimalPrecision = 2,
@@ -13,7 +13,7 @@ const CartPricingInfo = ({
 }: {
   subtotal: number;
   shipping: number;
-  estimatedTax: number;
+  // estimatedTax: number;
   total: number;
   currency?: string;
   decimalPrecision?: number;
@@ -37,11 +37,11 @@ const CartPricingInfo = ({
         </span>
       </div>
       <div className="mb-2 flex justify-between">
-        <span>Estimated Tax:</span>
+        {/* <span>Estimated Tax:</span>
         <span className="font-medium">
           {currency}
           {estimatedTax.toFixed(decimalPrecision)}
-        </span>
+        </span> */}
       </div>
       <div className="flex justify-between">
         <span>Total:</span>

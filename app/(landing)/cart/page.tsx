@@ -27,8 +27,8 @@ const CartPage = (): ReactNode => {
   const router = useRouter()
 
   const totalPrice = calculateTotalPrice();
-  const tax = calculateTax(totalPrice);
-  const totalPriceWithTax = totalPrice + tax;
+  // const tax = calculateTax(totalPrice); - later
+  // const totalPriceWithTax = totalPrice + tax; - later
 
   const [isCheckingOut, setIsCheckingOut] = useState(false)
 
@@ -86,8 +86,8 @@ const CartPage = (): ReactNode => {
                   <CartPricingInfo
                     subtotal={totalPrice / 100}
                     shipping={0}
-                    estimatedTax={tax / 100}
-                    total={totalPriceWithTax / 100}
+                    // estimatedTax={tax / 100}
+                    total={totalPrice / 100}
                     className="rigt-0 sticky left-0 top-0"
                   >
                     <Button
