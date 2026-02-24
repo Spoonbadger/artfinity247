@@ -2,7 +2,7 @@
 export const basePrices = {
   small: 3499,
   medium: 4499,
-  large: 5499,
+  large: 5999,
   xl: 6499,
   xxl: 7999
 }

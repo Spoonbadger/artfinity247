@@ -14,8 +14,8 @@
         "title": "Print Size",
         "type": "print_size",
         "data": [
-          { "key": "a5", "value": "4.25 x 5.5", "price": 24.99 },
-          { "key": "a4", "value": "8.5 x 11", "price": 39.99 },
+          { "key": "a5", "value": "4.25 x 5.5", "price": 34.99 },
+          { "key": "a4", "value": "8.5 x 12", "price": 44.99 },
           { "key": "a3", "value": "11 x 17", "price": 59.99 }
         ]
       }
@@ -41,8 +41,8 @@
         "title": "Print Size",
         "type": "print_size",
         "data": [
-          { "key": "a5", "value": "4.25 x 5.5", "price": 24.99 },
-          { "key": "a4", "value": "8.5 x 11", "price": 39.99 },
+          { "key": "a5", "value": "4.25 x 5.5", "price": 34.99 },
+          { "key": "a4", "value": "8.5 x 12", "price": 44.99 },
           { "key": "a3", "value": "11 x 17", "price": 59.99 }
         ]
       }
@@ -68,8 +68,8 @@
         "title": "Print Size",
         "type": "print_size",
         "data": [
-          { "key": "a5", "value": "4.25 x 5.5", "price": 24.99 },
-          { "key": "a4", "value": "8.5 x 11", "price": 39.99 },
+          { "key": "a5", "value": "4.25 x 5.5", "price": 34.99 },
+          { "key": "a4", "value": "8.5 x 12", "price": 44.99 },
           { "key": "a3", "value": "11 x 17", "price": 59.99 }
         ]
       }
@@ -95,8 +95,8 @@
         "title": "Print Size",
         "type": "print_size",
         "data": [
-          { "key": "a5", "value": "4.25 x 5.5", "price": 24.99 },
-          { "key": "a4", "value": "8.5 x 11", "price": 39.99 },
+          { "key": "a5", "value": "4.25 x 5.5", "price": 34.99 },
+          { "key": "a4", "value": "8.5 x 12", "price": 44.99 },
           { "key": "a3", "value": "11 x 17", "price": 59.99 }
         ]
       }
@@ -122,8 +122,8 @@
         "title": "Print Size",
         "type": "print_size",
         "data": [
-          { "key": "a5", "value": "4.25 x 5.5", "price": 24.99 },
-          { "key": "a4", "value": "8.5 x 11", "price": 39.99 },
+          { "key": "a5", "value": "4.25 x 5.5", "price": 34.99 },
+          { "key": "a4", "value": "8.5 x 12", "price": 44.99 },
           { "key": "a3", "value": "11 x 17", "price": 59.99 }
         ]
       }
@@ -149,8 +149,8 @@
         "title": "Print Size",
         "type": "print_size",
         "data": [
-          { "key": "a5", "value": "4.25 x 5.5", "price": 24.99 },
-          { "key": "a4", "value": "8.5 x 11", "price": 39.99 },
+          { "key": "a5", "value": "4.25 x 5.5", "price": 34.99 },
+          { "key": "a4", "value": "8.5 x 12", "price": 44.99 },
           { "key": "a3", "value": "11 x 17", "price": 59.99 }
         ]
       }
@@ -176,8 +176,8 @@
         "title": "Print Size",
         "type": "print_size",
         "data": [
-          { "key": "a5", "value": "4.25 x 5.5", "price": 24.99 },
-          { "key": "a4", "value": "8.5 x 11", "price": 39.99 },
+          { "key": "a5", "value": "4.25 x 5.5", "price": 34.99 },
+          { "key": "a4", "value": "8.5 x 12", "price": 44.99 },
           { "key": "a3", "value": "11 x 17", "price": 59.99 }
         ]
       }
@@ -203,8 +203,8 @@
         "title": "Print Size",
         "type": "print_size",
         "data": [
-          { "key": "a5", "value": "4.25 x 5.5", "price": 24.99 },
-          { "key": "a4", "value": "8.5 x 11", "price": 39.99 },
+          { "key": "a5", "value": "4.25 x 5.5", "price": 34.99 },
+          { "key": "a4", "value": "8.5 x 12", "price": 44.99 },
           { "key": "a3", "value": "11 x 17", "price": 59.99 }
         ]
       }
@@ -230,8 +230,8 @@
         "title": "Print Size",
         "type": "print_size",
         "data": [
-          { "key": "a5", "value": "4.25 x 5.5", "price": 24.99 },
-          { "key": "a4", "value": "8.5 x 11", "price": 39.99 },
+          { "key": "a5", "value": "4.25 x 5.5", "price": 34.99 },
+          { "key": "a4", "value": "8.5 x 12", "price": 44.99 },
           { "key": "a3", "value": "11 x 17", "price": 59.99 }
         ]
       }
@@ -257,8 +257,8 @@
         "title": "Print Size",
         "type": "print_size",
         "data": [
-          { "key": "a5", "value": "4.25 x 5.5", "price": 24.99 },
-          { "key": "a4", "value": "8.5 x 11", "price": 39.99 },
+          { "key": "a5", "value": "4.25 x 5.5", "price": 34.99 },
+          { "key": "a4", "value": "8.5 x 12", "price": 44.99 },
           { "key": "a3", "value": "11 x 17", "price": 59.99 }
         ]
       }
@@ -284,8 +284,8 @@
         "title": "Print Size",
         "type": "print_size",
         "data": [
-          { "key": "a5", "value": "4.25 x 5.5", "price": 24.99 },
-          { "key": "a4", "value": "8.5 x 11", "price": 39.99 },
+          { "key": "a5", "value": "4.25 x 5.5", "price": 34.99 },
+          { "key": "a4", "value": "8.5 x 12", "price": 44.99 },
           { "key": "a3", "value": "11 x 17", "price": 59.99 }
         ]
       }
@@ -311,8 +311,8 @@
         "title": "Print Size",
         "type": "print_size",
         "data": [
-          { "key": "a5", "value": "4.25 x 5.5", "price": 24.99 },
-          { "key": "a4", "value": "8.5 x 11", "price": 39.99 },
+          { "key": "a5", "value": "4.25 x 5.5", "price": 34.99 },
+          { "key": "a4", "value": "8.5 x 12", "price": 44.99 },
           { "key": "a3", "value": "11 x 17", "price": 59.99 }
         ]
       }
@@ -338,8 +338,8 @@
         "title": "Print Size",
         "type": "print_size",
         "data": [
-          { "key": "a5", "value": "4.25 x 5.5", "price": 24.99 },
-          { "key": "a4", "value": "8.5 x 11", "price": 39.99 },
+          { "key": "a5", "value": "4.25 x 5.5", "price": 34.99 },
+          { "key": "a4", "value": "8.5 x 12", "price": 44.99 },
           { "key": "a3", "value": "11 x 17", "price": 59.99 }
         ]
       }
@@ -365,8 +365,8 @@
         "title": "Print Size",
         "type": "print_size",
         "data": [
-          { "key": "a5", "value": "4.25 x 5.5", "price": 24.99 },
-          { "key": "a4", "value": "8.5 x 11", "price": 39.99 },
+          { "key": "a5", "value": "4.25 x 5.5", "price": 34.99 },
+          { "key": "a4", "value": "8.5 x 12", "price": 44.99 },
           { "key": "a3", "value": "11 x 17", "price": 59.99 }
         ]
       }
@@ -392,8 +392,8 @@
         "title": "Print Size",
         "type": "print_size",
         "data": [
-          { "key": "a5", "value": "4.25 x 5.5", "price": 24.99 },
-          { "key": "a4", "value": "8.5 x 11", "price": 39.99 },
+          { "key": "a5", "value": "4.25 x 5.5", "price": 34.99 },
+          { "key": "a4", "value": "8.5 x 12", "price": 44.99 },
           { "key": "a3", "value": "11 x 17", "price": 59.99 }
         ]
       }
@@ -419,8 +419,8 @@
         "title": "Print Size",
         "type": "print_size",
         "data": [
-          { "key": "a5", "value": "4.25 x 5.5", "price": 24.99 },
-          { "key": "a4", "value": "8.5 x 11", "price": 39.99 },
+          { "key": "a5", "value": "4.25 x 5.5", "price": 34.99 },
+          { "key": "a4", "value": "8.5 x 12", "price": 44.99 },
           { "key": "a3", "value": "11 x 17", "price": 59.99 }
         ]
       }
@@ -446,8 +446,8 @@
         "title": "Print Size",
         "type": "print_size",
         "data": [
-          { "key": "a5", "value": "4.25 x 5.5", "price": 24.99 },
-          { "key": "a4", "value": "8.5 x 11", "price": 39.99 },
+          { "key": "a5", "value": "4.25 x 5.5", "price": 34.99 },
+          { "key": "a4", "value": "8.5 x 12", "price": 44.99 },
           { "key": "a3", "value": "11 x 17", "price": 59.99 }
         ]
       }
@@ -473,8 +473,8 @@
         "title": "Print Size",
         "type": "print_size",
         "data": [
-          { "key": "a5", "value": "4.25 x 5.5", "price": 24.99 },
-          { "key": "a4", "value": "8.5 x 11", "price": 39.99 },
+          { "key": "a5", "value": "4.25 x 5.5", "price": 34.99 },
+          { "key": "a4", "value": "8.5 x 12", "price": 44.99 },
           { "key": "a3", "value": "11 x 17", "price": 59.99 }
         ]
       }
@@ -500,8 +500,8 @@
         "title": "Print Size",
         "type": "print_size",
         "data": [
-          { "key": "a5", "value": "4.25 x 5.5", "price": 24.99 },
-          { "key": "a4", "value": "8.5 x 11", "price": 39.99 },
+          { "key": "a5", "value": "4.25 x 5.5", "price": 34.99 },
+          { "key": "a4", "value": "8.5 x 12", "price": 44.99 },
           { "key": "a3", "value": "11 x 17", "price": 59.99 }
         ]
       }
