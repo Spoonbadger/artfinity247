@@ -5,6 +5,7 @@ import { sendReceiptEmail } from "@/lib/email"
 import { Resend } from "resend"
 import NewSaleNotificationEmail from "@/emails/NewSaleNotificationEmail"
 import ArtistSaleNotificationEmail from "@/emails/ArtistSaleNotificationEmail"
+import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
 
 
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -14,20 +15,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 })
 export const runtime = 'nodejs'
 
-const COSTS = {
-  labor: 300,   // $3.00
-  website: 100, // $1.00
-  print: {
-    small: 1520,   // $15.20 inc. shipping
-    medium: 1803,  // $18.03 inc. shipping
-    large: 2065,  // $20.65 inc. shipping
-  },
-  shipping: {
-    small: 0,   // $0.00
-    medium: 0,  // $0.00
-    large: 0,  // $0.00
-  },
-} as const
+function normalizeSize(raw: string | null): PrintSize {
+  const v = (raw || "").toUpperCase();
+  if (v.startsWith("S")) return "S";
+  if (v.startsWith("L")) return "L";
+  return "M"
+}
+
 
 
 export async function POST(req: NextRequest) {
@@ -182,31 +176,35 @@ export async function POST(req: NextRequest) {
 
       // 3) Map each line item → OrderItem
       const itemsToCreate = lineItems.data.map((li) => {
-        const product = li.price?.product as Stripe.Product | null
-        const unit = li.price?.unit_amount ?? 0
-        const qty = li.quantity ?? 1
-        const size = product?.metadata?.size || 'medium'
+      const product = li.price?.product as Stripe.Product | null
+      const unit = li.price?.unit_amount ?? 0
+      const qty = li.quantity ?? 1
+      const rawSize = product?.metadata?.size || 'medium'
 
-        return {
-          orderId: order.id,
-          artworkId: product?.metadata?.artworkId ?? null,
-          slug: product?.metadata?.slug || '',
-          size,
-          unitPrice: unit,                 // cents
-          quantity: qty,
-          lineTotal: unit * qty,           // convenience
-          title: product?.metadata?.title || li.description || null,
-          artistName: product?.metadata?.artistName || null,
-          imageUrl: product?.metadata?.imageUrl || null,
-          printCost: COSTS.print[size as keyof typeof COSTS.print] ?? 0,
-          shippingCost: COSTS.shipping[size as keyof typeof COSTS.shipping] ?? 0,
-          laborCost: COSTS.labor,
-          websiteCost: COSTS.website,
-        }
-      })
+      const sizeNorm = normalizeSize(rawSize)
+      const lineTotal = unit * qty
+      const b = calcItemProfitCents({ lineTotal, size: sizeNorm })
 
-      // Optional: skip if we already created items (handles webhook retries)
-      // If you want strict idempotency, you could check if items exist for this order.
+      return {
+        orderId: order.id,
+        artworkId: product?.metadata?.artworkId ?? null,
+        slug: product?.metadata?.slug || '',
+        size: sizeNorm,
+        unitPrice: unit,
+        quantity: qty,
+        lineTotal,
+        title: product?.metadata?.title || li.description || null,
+        artistName: product?.metadata?.artistName || null,
+        imageUrl: product?.metadata?.imageUrl || null,
+
+        printCost: b.printCost,
+        shippingCost: b.shippingCost,
+        laborCost: b.laborCost,
+        websiteCost: b.websiteCost,
+      }
+    })
+
+      // For want strict idempotency, you could check if items exist for this order.
       await prisma.orderItem.deleteMany({ where: { orderId: order.id } })
 
       if (itemsToCreate.length > 0) {

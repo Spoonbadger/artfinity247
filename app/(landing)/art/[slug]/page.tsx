@@ -93,8 +93,6 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
     setPurchaseNote((prev) => purchaseNote || "");
   }, [slug, router])
 
-// delete this comment - its here for a redeploy
-
   // Update price on size change
   useEffect(() => {
     if (!product) return;

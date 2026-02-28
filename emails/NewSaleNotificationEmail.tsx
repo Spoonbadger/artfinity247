@@ -1,11 +1,11 @@
 import * as React from "react";
 
 type Item = {
-  title: string | null;
-  size: string | null;
-  quantity: number;
-  unitPrice: number;
-};
+  title: string | null
+  size: string | null
+  quantity: number
+  unitPrice: number
+}
 
 export default function NewSaleNotificationEmail({
   orderId,

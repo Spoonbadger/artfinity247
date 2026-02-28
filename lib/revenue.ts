@@ -11,25 +11,25 @@ export const ARTIST_SPLIT = 0.5 as const;
  */
 export const COSTS = {
   PRINT: {
-    S: 0,   // e.g. 800 = $8.00
-    M: 0,   // e.g. 1100
-    L: 0,   // e.g. 1500
+    S: 1520,   // $15.20
+    M: 1803,   // $18.03
+    L: 2065,   // $20.65
+    // XL: 1111 
+    // XXL: 11111
   } as Record<PrintSize, number>,
 
   SHIPPING: {
-    S: 0,   // e.g. 500 = $5.00
-    M: 0,   // e.g. 700
-    L: 0,   // e.g. 900
+    S: 0,   //  $0.00
+    M: 0,   // $0.00
+    L: 0,   // $0.00
   } as Record<PrintSize, number>,
 
-  LABOR_PER_ITEM: 300,      // e.g. 300 = $3.00 (packing, handling)
+  LABOR_PER_ITEM: 100,      // $1.00 (packing, handling/placing online order)
+  HOSTING_PER_ITEM: 100, // $1.00 Web hosting
 
-  // Stripe (or payment) fee. If you used 2.9% + 30¢, set these:
+  // Stripe payment fee. 
   STRIPE_PERCENT: 0.029,  // 2.9%
   STRIPE_FIXED: 30,       // 30 cents
-
-  // Optional: per-item website/overhead cost in cents (set 0 if unused)
-  HOSTING_PER_ITEM: 100,
 }
 
 /** Stripe-like fee in cents, from a gross charge amount (in cents). */

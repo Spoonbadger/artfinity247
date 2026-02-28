@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from "@/lib/prisma";
 import { jwtVerify } from 'jose'
+import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
 
 export const runtime = 'nodejs'
 
@@ -25,10 +26,17 @@ function csvEscape(val: string | number | null | undefined) {
 }
 
 async function requireAdmin(req: NextRequest) {
-  const token = req.cookies.get("auth-token")?.value;
+  const token = req.cookies.get("auth-token")?.value
   if (!token) return null;
-  const { payload } = await jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET));
-  return payload.role === "ADMIN" ? payload : null;  // 🔹 simple
+  const { payload } = await jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET))
+  return payload.role === "ADMIN" ? payload : null  // 🔹 simple
+}
+
+function normalizeSize(raw: string | null): PrintSize {
+  const v = (raw || "").toUpperCase();
+  if (v.startsWith("S")) return "S";
+  if (v.startsWith("L")) return "L";
+  return "M"; // default
 }
 
 
@@ -62,13 +70,9 @@ export async function GET(req: NextRequest) {
     select: {
       // cents
       lineTotal: true,
-      printCost: true,
-      shippingCost: true,
-      laborCost: true,
-      websiteCost: true,
-      // for grouping
-      artistName: true, // snapshot saved at checkout
-      artwork: { select: { artistId: true } }, // robust grouping key
+      size: true,
+      artistName: true,
+      artwork: { select: { artistId: true } },
     },
   })
 
@@ -95,14 +99,12 @@ export async function GET(req: NextRequest) {
     const artistId = it.artwork?.artistId ?? 'unknown'
     const key = artistId
     const gross = it.lineTotal ?? 0
-    const expenses =
-      (it.printCost ?? 0) +
-      (it.shippingCost ?? 0) +
-      (it.laborCost ?? 0) +
-      (it.websiteCost ?? 0)
-    const profit = gross - expenses
-    const artistShare = Math.floor(profit / 2)
-    const companyShare = profit - artistShare
+    const size = normalizeSize(it.size ?? null) // you'll need to SELECT size below
+    const b = calcItemProfitCents({ lineTotal: gross, size })
+    const expenses = b.printCost + b.shippingCost + b.laborCost + b.websiteCost
+    const profit = b.profit
+    const artistShare = b.artistShare
+    const companyShare = b.companyShare
 
     const current = byArtist.get(key) ?? {
       artistId,
