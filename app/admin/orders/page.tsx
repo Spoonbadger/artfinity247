@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 type OrderItem = {
+  imageUrl: any
   id: string
   slug: string | null
   size: string | null
@@ -23,6 +24,8 @@ type OrderItem = {
 }
 
 type Order = {
+  shippingAddress: string | null
+  shippingName: string | null
   id: string
   stripeSessionId: string
   email: string | null
@@ -112,6 +115,9 @@ export default function AdminOrdersPage() {
             </div>
             <div><strong>Stripe ID:</strong> {order.stripeSessionId}</div>
             <div><strong>Created:</strong> {new Date(order.createdAt).toLocaleString()}</div>
+            <div><strong>Ship To:</strong></div>
+            <div>{order.shippingName}</div>
+            <div>{order.shippingAddress}</div>
             <div><strong>Shipping:</strong>
               <select
                 value={order.shippingStatus || 'pending'}
@@ -130,6 +136,17 @@ export default function AdminOrdersPage() {
               {order.items.map(item => (
                 <div key={item.id} className="ml-4 mt-2 border-t pt-2 text-sm">
                   <div><strong>Artwork:</strong> {item.slug} ({item.size})</div>
+                  {item.imageUrl && (
+                    <div>
+                      <a
+                        href={item.imageUrl}
+                        target="_blank"
+                        className="text-blue-600 underline"
+                      >
+                        Download Artwork
+                      </a>
+                    </div>
+                  )}
                   <div><strong>Line Total:</strong> ${((item.lineTotal ?? 0) / 100).toFixed(2)}</div>
                   <div><strong>Costs:</strong>{' '}
                     print ${(item.printCost ?? 0)/100},{' '}

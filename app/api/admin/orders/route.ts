@@ -19,7 +19,7 @@ async function requireAdmin(req: NextRequest) {
   return payload.role === "ADMIN" ? payload : null;
 }
 
-// Normalize your stored item.size into "S" | "M" | "L"
+// Normalize stored item.size into "S" | "M" | "L"
 function normalizeSize(raw: string | null): PrintSize {
   const v = (raw || "").toUpperCase();
   if (v.startsWith("S")) return "S";
@@ -71,7 +71,6 @@ export async function GET(req: NextRequest) {
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           lineTotal,
-          // override any stored costs with computed values
           printCost: b.printCost,
           shippingCost: b.shippingCost,
           laborCost: b.laborCost,
@@ -79,9 +78,10 @@ export async function GET(req: NextRequest) {
           profit: b.profit,
           artistShare: b.artistShare,
           companyShare: b.companyShare,
+          imageUrl: item.imageUrl,
           artwork: { artistId: item.artwork?.artistId ?? "unknown"},
-        };
-      });
+        }
+      })
 
       return {
         id: order.id,
@@ -92,9 +92,11 @@ export async function GET(req: NextRequest) {
         paymentStatus: order.paymentStatus,
         createdAt: order.createdAt,
         shippingStatus: order.shippingStatus,
+        shippingName: order.shippingName,
+        shippingAddress: order.shippingAddress,
         items,
-      };
-    });
+      }
+    })
 
     return NextResponse.json(shaped);
   } catch (err) {
