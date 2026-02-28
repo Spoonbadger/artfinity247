@@ -23,7 +23,6 @@ function normalizeSize(raw: string | null): PrintSize {
 }
 
 
-
 export async function POST(req: NextRequest) {
   const rawBody = await req.text()
   const sig = req.headers.get('stripe-signature')!
@@ -35,7 +34,6 @@ export async function POST(req: NextRequest) {
       sig,
       process.env.STRIPE_WEBHOOK_SECRET!
     )
-
 
   } catch (err) {
     console.error('Webhook error:', err)
@@ -88,33 +86,40 @@ export async function POST(req: NextRequest) {
 
       // 3) Map each line item → OrderItem
       const itemsToCreate = lineItems.data.map((li) => {
-      const product = li.price?.product as Stripe.Product | null
-      const unit = li.price?.unit_amount ?? 0
-      const qty = li.quantity ?? 1
-      const rawSize = product?.metadata?.size || 'medium'
+        const product = li.price?.product as Stripe.Product | null
+        const unit = li.price?.unit_amount ?? 0
+        const qty = li.quantity ?? 1
+        const rawSize = product?.metadata?.size || 'medium'
 
-      const sizeNorm = normalizeSize(rawSize)
-      const lineTotal = unit * qty
-      const b = calcItemProfitCents({ lineTotal, size: sizeNorm })
+        const sizeNorm = normalizeSize(rawSize)
+        const lineTotal = unit * qty
+        const b = calcItemProfitCents({ lineTotal, size: sizeNorm })
 
-      return {
-        orderId: order.id,
-        artworkId: product?.metadata?.artworkId ?? null,
-        slug: product?.metadata?.slug || '',
-        size: sizeNorm,
-        unitPrice: unit,
-        quantity: qty,
-        lineTotal,
-        title: product?.metadata?.title || li.description || null,
-        artistName: product?.metadata?.artistName || null,
-        imageUrl: product?.metadata?.imageUrl || null,
+        return {
+          orderId: order.id,
+          artworkId: product?.metadata?.artworkId ?? null,
+          slug: product?.metadata?.slug || '',
+          size: sizeNorm,
+          unitPrice: unit,
+          quantity: qty,
+          lineTotal,
+          title: product?.metadata?.title || li.description || null,
+          artistName: product?.metadata?.artistName || null,
+          imageUrl: product?.metadata?.imageUrl || null,
 
-        printCost: b.printCost,
-        shippingCost: b.shippingCost,
-        laborCost: b.laborCost,
-        websiteCost: b.websiteCost,
+          printCost: b.printCost,
+          shippingCost: b.shippingCost,
+          laborCost: b.laborCost,
+          websiteCost: b.websiteCost,
+        }
+      })
+
+      // For want strict idempotency, you could check if items exist for this order.
+      await prisma.orderItem.deleteMany({ where: { orderId: order.id } })
+
+      if (itemsToCreate.length > 0) {
+        await prisma.orderItem.createMany({ data: itemsToCreate })
       }
-    })
 
       try {
         const rawItems = await prisma.orderItem.findMany({
@@ -199,13 +204,6 @@ export async function POST(req: NextRequest) {
         } catch (err) {
           console.error("Artist sale email failed", err)
         }
-      }
-
-      // For want strict idempotency, you could check if items exist for this order.
-      await prisma.orderItem.deleteMany({ where: { orderId: order.id } })
-
-      if (itemsToCreate.length > 0) {
-        await prisma.orderItem.createMany({ data: itemsToCreate })
       }
 
       // Send receipt (idempotent inside helper via receiptSentAt)
