@@ -36,7 +36,6 @@ export async function POST(req: NextRequest) {
       process.env.STRIPE_WEBHOOK_SECRET!
     )
 
-    // console.log("Incoming webhook: ", event.type)
 
   } catch (err) {
     console.error('Webhook error:', err)
@@ -55,8 +54,6 @@ export async function POST(req: NextRequest) {
       ""
     ).trim().toLowerCase();
 
-    
-// console.log("webhook saved order email =", buyerEmail)
 
     try {
       // 1) Idempotent order create (upsert by unique stripeSessionId)
@@ -83,6 +80,41 @@ export async function POST(req: NextRequest) {
             : null,
         },
       })
+
+      // 2) Get line items with product expanded (so product.metadata is available)
+      const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
+        expand: ['data.price.product'],
+      })
+
+      // 3) Map each line item → OrderItem
+      const itemsToCreate = lineItems.data.map((li) => {
+      const product = li.price?.product as Stripe.Product | null
+      const unit = li.price?.unit_amount ?? 0
+      const qty = li.quantity ?? 1
+      const rawSize = product?.metadata?.size || 'medium'
+
+      const sizeNorm = normalizeSize(rawSize)
+      const lineTotal = unit * qty
+      const b = calcItemProfitCents({ lineTotal, size: sizeNorm })
+
+      return {
+        orderId: order.id,
+        artworkId: product?.metadata?.artworkId ?? null,
+        slug: product?.metadata?.slug || '',
+        size: sizeNorm,
+        unitPrice: unit,
+        quantity: qty,
+        lineTotal,
+        title: product?.metadata?.title || li.description || null,
+        artistName: product?.metadata?.artistName || null,
+        imageUrl: product?.metadata?.imageUrl || null,
+
+        printCost: b.printCost,
+        shippingCost: b.shippingCost,
+        laborCost: b.laborCost,
+        websiteCost: b.websiteCost,
+      }
+    })
 
       try {
         const rawItems = await prisma.orderItem.findMany({
@@ -168,41 +200,6 @@ export async function POST(req: NextRequest) {
           console.error("Artist sale email failed", err)
         }
       }
-
-      // 2) Get line items with product expanded (so product.metadata is available)
-      const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
-        expand: ['data.price.product'],
-      })
-
-      // 3) Map each line item → OrderItem
-      const itemsToCreate = lineItems.data.map((li) => {
-      const product = li.price?.product as Stripe.Product | null
-      const unit = li.price?.unit_amount ?? 0
-      const qty = li.quantity ?? 1
-      const rawSize = product?.metadata?.size || 'medium'
-
-      const sizeNorm = normalizeSize(rawSize)
-      const lineTotal = unit * qty
-      const b = calcItemProfitCents({ lineTotal, size: sizeNorm })
-
-      return {
-        orderId: order.id,
-        artworkId: product?.metadata?.artworkId ?? null,
-        slug: product?.metadata?.slug || '',
-        size: sizeNorm,
-        unitPrice: unit,
-        quantity: qty,
-        lineTotal,
-        title: product?.metadata?.title || li.description || null,
-        artistName: product?.metadata?.artistName || null,
-        imageUrl: product?.metadata?.imageUrl || null,
-
-        printCost: b.printCost,
-        shippingCost: b.shippingCost,
-        laborCost: b.laborCost,
-        websiteCost: b.websiteCost,
-      }
-    })
 
       // For want strict idempotency, you could check if items exist for this order.
       await prisma.orderItem.deleteMany({ where: { orderId: order.id } })

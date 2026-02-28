@@ -33,10 +33,10 @@ async function requireAdmin(req: NextRequest) {
 }
 
 function normalizeSize(raw: string | null): PrintSize {
-  const v = (raw || "").toUpperCase();
-  if (v.startsWith("S")) return "S";
-  if (v.startsWith("L")) return "L";
-  return "M"; // default
+  const v = (raw || "").toUpperCase()
+  if (v.startsWith("S")) return "S"
+  if (v.startsWith("L")) return "L"
+  return "M" // default
 }
 
 
