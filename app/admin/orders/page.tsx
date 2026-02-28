@@ -139,7 +139,7 @@ export default function AdminOrdersPage() {
                   {item.imageUrl && (
                     <div>
                       <a
-                        href={item.imageUrl}
+                        href={item.imageUrl?.replace("/upload/f_auto,q_auto/", "/upload/fl_attachment/")}
                         target="_blank"
                         className="text-blue-600 underline"
                       >
