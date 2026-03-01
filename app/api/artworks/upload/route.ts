@@ -86,7 +86,8 @@ export async function POST(req: NextRequest) {
 
   const artworkUrl = `${base}/art/${artwork.slug}`;
 
-  const qrDownloadUrl = `${base}/api/qr?layout=1up&slugs=${artwork.slug}&download=1`;
+  // const qrDownloadUrl = `${base}/api/qr?layout=1up&slugs=${artwork.slug}&download=1`
+  const qrDownloadUrl = `${base}/api/artworks/${artwork.slug}/qr?download=1`
 
   try {
     await resend.emails.send({
