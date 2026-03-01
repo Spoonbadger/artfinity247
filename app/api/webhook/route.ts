@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { Stripe } from 'stripe'
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma"
 import { sendReceiptEmail } from "@/lib/email"
 import { Resend } from "resend"
 import NewSaleNotificationEmail from "@/emails/NewSaleNotificationEmail"
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       const order = await prisma.order.upsert({
         where: { stripeSessionId: session.id },
         update: {
-          // don’t touch totals on retry, but update shipping/email if missing
+          // Don’t touch totals on retry, but update shipping/email if missing
           email: buyerEmail,
           paymentStatus: session.payment_status ?? '',
 

@@ -41,7 +41,6 @@ model OrderItem {
   artwork      Artwork? @relation(fields: [artworkId], references: [id])
   order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  @@unique([orderId, artworkId, size])
   @@index([orderId])
   @@index([artworkId])
 }
