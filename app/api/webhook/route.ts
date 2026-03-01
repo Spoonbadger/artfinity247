@@ -144,17 +144,17 @@ export async function POST(req: NextRequest) {
           unitPrice: i.unitPrice ?? 0,
         }))
 
-        await resend.emails.send({
-          from: "Artfinity <notifications@theartfinity.com>",
-          to: "craig@theartfinity.com",
-          subject: `New Sale – $${((order.amountTotal ?? 0)/100).toFixed(2)}`,
-          react: NewSaleNotificationEmail({
-            orderId: order.id,
-            buyerEmail: order.email,
-            totalCents: order.amountTotal ?? 0,
-            items,
-          }),
-        })
+        // await resend.emails.send({
+        //   from: "Artfinity <notifications@theartfinity.com>",
+        //   to: "craig@theartfinity.com",
+        //   subject: `New Sale – $${((order.amountTotal ?? 0)/100).toFixed(2)}`,
+        //   react: NewSaleNotificationEmail({
+        //     orderId: order.id,
+        //     buyerEmail: order.email,
+        //     totalCents: order.amountTotal ?? 0,
+        //     items,
+        //   }),
+        // })
       } catch (err) {
         console.error("Admin sale email failed", err)
       }
@@ -194,22 +194,22 @@ export async function POST(req: NextRequest) {
       }
 
       // Send one email per artist
-      for (const { artist, items } of byArtist.values()) {
-        try {
-          await resend.emails.send({
-            from: "Artfinity <notifications@theartfinity.com>",
-            to: artist.email,
-            subject: "Your artwork sold on Artfinity!",
-            react: ArtistSaleNotificationEmail({
-              artistName: artist.artist_name ?? "Artist",
-              items,
-              totalCents: items.reduce((sum: number, i: any) => sum + i.lineTotal, 0),
-            }),
-          })
-        } catch (err) {
-          console.error("Artist sale email failed", err)
-        }
-      }
+      // for (const { artist, items } of byArtist.values()) {
+      //   try {
+      //     await resend.emails.send({
+      //       from: "Artfinity <notifications@theartfinity.com>",
+      //       to: artist.email,
+      //       subject: "Your artwork sold on Artfinity!",
+      //       react: ArtistSaleNotificationEmail({
+      //         artistName: artist.artist_name ?? "Artist",
+      //         items,
+      //         totalCents: items.reduce((sum: number, i: any) => sum + i.lineTotal, 0),
+      //       }),
+      //     })
+      //   } catch (err) {
+      //     console.error("Artist sale email failed", err)
+      //   }
+      // }
 
       // Send receipt (idempotent inside helper via receiptSentAt)
       try {
