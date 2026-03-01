@@ -48,11 +48,6 @@ export async function GET(
 
     if (!artwork) return new NextResponse('Artwork not found', { status: 404 })
 
-    // Ownership check
-    if (artwork.artistId !== requesterArtistId) {
-      return new NextResponse('Forbidden', { status: 403 })
-    }
-
     // Build absolute URL to /art/[slug] with UTM tracking
     const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || ''
     const proto = req.headers.get('x-forwarded-proto') || (host.startsWith('localhost') ? 'http' : 'https')
