@@ -41,9 +41,14 @@ export async function POST(req: NextRequest) {
   }
 
   if (event.type === 'checkout.session.completed') {
-    const session = event.data.object as Stripe.Checkout.Session
-    // console.log('Payment received 💰:', session.id)
+    // const session = event.data.object as Stripe.Checkout.Session
 
+    const basicSession = event.data.object as Stripe.Checkout.Session
+
+    const session = await stripe.checkout.sessions.retrieve(
+      basicSession.id,
+      { expand: ["shipping_details"] }
+    )
 
     const buyerEmail = (
       session.metadata?.buyerEmail ||
@@ -51,7 +56,6 @@ export async function POST(req: NextRequest) {
       (typeof session.customer_email === "string" ? session.customer_email : "") ||
       ""
     ).trim().toLowerCase();
-
 
     try {
         const shipping = (session as any).shipping_details
