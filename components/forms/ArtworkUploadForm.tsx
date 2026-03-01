@@ -91,6 +91,17 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
         try {
             // Upload directly to Cloudinary
             const formData = new FormData()
+
+            formData.set("title", title)
+            formData.set("description", description)
+            formData.set("imageUrl", imageUrl!)
+            formData.set("markupSmall", String(markupSmall))
+            formData.set("markupMedium", String(markupMedium))
+            formData.set("markupLarge", String(markupLarge))
+
+            if (artwork?.id) {
+            formData.set("artworkId", artwork.id)
+            }
             formData.append("file", file)
             formData.append("upload_preset", "artfinity_unsigned")
             formData.append("folder", "artfinity")
