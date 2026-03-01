@@ -123,7 +123,6 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                 } else {
                     toast.error("Image upload failed")
                 }
-
                 return
             }
 
@@ -159,7 +158,6 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
             <input
               type='file'
               accept='image/*'
-              name='image'
               placeholder='image URL'
               onChange={handleFileChange}
               className='w-full p-2 border rounded'
