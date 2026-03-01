@@ -24,7 +24,6 @@ export async function GET(
       return new NextResponse("Invalid token", { status: 403 })
     }
 
-
     // Fetch artwork + owner + display fields
     const artwork = await prisma.artwork.findUnique({
       where: { slug },

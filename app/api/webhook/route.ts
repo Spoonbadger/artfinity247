@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
 
 
     try {
+        const shipping = (session as any).shipping_details
       // 1) Idempotent order create (upsert by unique stripeSessionId)
       const order = await prisma.order.upsert({
         where: { stripeSessionId: session.id },
@@ -61,9 +62,11 @@ export async function POST(req: NextRequest) {
           // don’t touch totals on retry, but update shipping/email if missing
           email: buyerEmail,
           paymentStatus: session.payment_status ?? '',
-          shippingName: session.customer_details?.name ?? null,
-          shippingAddress: session.customer_details?.address
-            ? `${session.customer_details.address.line1 ?? ''}, ${session.customer_details.address.city ?? ''}, ${session.customer_details.address.state ?? ''} ${session.customer_details.address.postal_code ?? ''}, ${session.customer_details.address.country ?? ''}`
+
+          shippingName: shipping?.name ?? null,
+
+          shippingAddress: shipping?.address
+            ? `${shipping.address.line1 ?? ''}, ${shipping.address.city ?? ''}, ${shipping.address.state ?? ''} ${shipping.address.postal_code ?? ''}, ${shipping.address.country ?? ''}`
             : null,
         },
         create: {
