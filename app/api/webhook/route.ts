@@ -89,6 +89,9 @@ export async function POST(req: NextRequest) {
         expand: ['data.price.product'],
       })
 
+      console.log("SESSION ID:", session.id)
+console.log("LINE ITEMS RAW:", lineItems.data)
+
       // 3) Map each line item → OrderItem
       const itemsToCreate = lineItems.data.map((li) => {
         const product = li.price?.product as Stripe.Product | null
