@@ -24,15 +24,6 @@ export async function GET(
       return new NextResponse("Invalid token", { status: 403 })
     }
 
-    // Try common fields where your artist id might live
-    const requesterArtistId =
-      (payload as any).artistId ||
-      (payload as any).id ||
-      (payload as any).sub
-
-    if (!requesterArtistId) {
-      return new NextResponse('Invalid token payload', { status: 401 })
-    }
 
     // Fetch artwork + owner + display fields
     const artwork = await prisma.artwork.findUnique({
