@@ -11,32 +11,59 @@ export async function GET(
 ) {
   try {
     const { slug } = params
-    if (!slug) return new NextResponse('Missing slug', { status: 400 })
+    if (!slug) return new NextResponse("Missing slug", { status: 400 })
 
-    // Auth
+    // Get token
     const token = new URL(req.url).searchParams.get("token")
-    if (!token) return new NextResponse("Missing token", { status: 401 })
+    let payload: any = null
 
     const secret = new TextEncoder().encode(process.env.JWT_SECRET!)
-    const { payload } = await jwtVerify(token, secret)
 
+    if (token) {
+      const verified = await jwtVerify(token, secret)
+      payload = verified.payload
+    } else {
+      // fallback to auth cookie
+      const authToken = req.cookies.get("auth-token")?.value
+      if (!authToken) return new NextResponse("Unauthorized", { status: 401 })
+
+      const verified = await jwtVerify(authToken, secret)
+      payload = verified.payload
+    }
+
+    // Fetch artwork
+    const artwork = await prisma.artwork.findUnique({
+      where: { slug },
+      select: {
+        slug: true,
+        title: true,
+        artistId: true,
+        artist: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    })
+
+    if (!artwork) return new NextResponse("Artwork not found", { status: 404 })
+
+    // Now validate access
     if (payload.slug !== slug) {
       return new NextResponse("Invalid token", { status: 403 })
     }
 
-    // Fetch artwork + owner + display fields
-    const artwork = await prisma.artwork.findUnique({
-      where: { slug },
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        artistId: true,
-        artist: { select: { name: true, artist_name: true, slug: true, id: true } }
-      },
-    })
+    if (payload.type !== "qr_download") {
+      return new NextResponse("Invalid token type", { status: 403 })
+    }
 
-    if (!artwork) return new NextResponse('Artwork not found', { status: 404 })
+    if (
+      payload.role !== "ADMIN" &&
+      payload.artistId !== artwork.artistId
+    ) {
+      return new NextResponse("Forbidden", { status: 403 })
+    }
+
 
     // Build absolute URL to /art/[slug] with UTM tracking
     const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || ''

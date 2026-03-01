@@ -196,7 +196,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
                     />
                   </div>
                 </div>
-                {isOwner && (
+                {(isOwner || currentUser?.role === "ADMIN") && (
                   <div className="absolute top-2 right-2 flex gap-2">
 
                     {/* QR actions */}

@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
             city: true,
             state: true,
             email: true,
+            role: true,
           },
         },
       },
@@ -90,9 +91,12 @@ export async function POST(req: NextRequest) {
 
     const qrToken = await new SignJWT({
       slug: artwork.slug,
+      artistId: artwork.artistId,
+      role: artwork.artist?.role || "ARTIST",
+      type: "qr_download",
     })
       .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime("1d")
+      .setExpirationTime("7d")
       .sign(secret)
 
     const qrDownloadUrl =

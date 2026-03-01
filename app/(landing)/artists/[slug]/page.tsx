@@ -355,7 +355,7 @@ const handleDeleteAccount = async () => {
     toast.success("Account deleted");
 
     // optional: clear user context
-    await refreshUser();
+    await refreshUser()
 
     // log user out & redirect
     window.location.replace("/");
@@ -603,7 +603,7 @@ const handleDeleteAccount = async () => {
                   <Link href={`/art/${product.slug}`}>
                     <ProductCard product={product} />
                   </Link>
-                {isOwner && (
+                {(isOwner || currentUser?.role === "ADMIN") && (
                   <div className="absolute top-2 right-2 flex gap-2">
                     <button
                       className="text-xs px-2 py-1 bg-blue-600 text-white rounded"
