@@ -5,7 +5,6 @@ import { generateQrPdf } from '@/lib/generateQrPdf'
 
 export const runtime = 'nodejs'
 
-
 export async function GET(
   req: NextRequest,
   { params }: { params: { slug: string } }
@@ -15,11 +14,15 @@ export async function GET(
     if (!slug) return new NextResponse('Missing slug', { status: 400 })
 
     // Auth
-    const token = req.cookies.get('auth-token')?.value
-    if (!token) return new NextResponse('Not authenticated', { status: 401 })
+    const token = new URL(req.url).searchParams.get("token")
+    if (!token) return new NextResponse("Missing token", { status: 401 })
 
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET)
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET!)
     const { payload } = await jwtVerify(token, secret)
+
+    if (payload.slug !== slug) {
+      return new NextResponse("Invalid token", { status: 403 })
+    }
 
     // Try common fields where your artist id might live
     const requesterArtistId =

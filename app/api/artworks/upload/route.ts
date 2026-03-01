@@ -6,6 +6,7 @@ import { rateLimit } from '@/lib/rateLimit'
 import { Resend } from "resend";
 import NewArtworkUploadedEmail from "@/emails/NewArtworkUploadedEmail"
 import ArtworkLiveWithQrEmail from "@/emails/ArtworkLiveWithQrEmail";
+import { SignJWT } from "jose"
 
 
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -81,29 +82,37 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const base =
-  process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com";
+    const base = process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com"
 
-  const artworkUrl = `${base}/art/${artwork.slug}`;
+    const artworkUrl = `${base}/art/${artwork.slug}`
 
-  // const qrDownloadUrl = `${base}/api/qr?layout=1up&slugs=${artwork.slug}&download=1`
-  const qrDownloadUrl = `${base}/api/artworks/${artwork.slug}/qr?download=1`
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET!)
 
-  try {
-    await resend.emails.send({
-      from: "Artfinity <notifications@theartfinity.com>",
-      to: artwork.artist?.email, // if included — otherwise use payload email
-      subject: `Your artwork is live – ${artwork.title}`,
-      react: ArtworkLiveWithQrEmail({
-        artistName: artwork.artist?.artist_name || "",
-        title: artwork.title,
-        artworkUrl,
-        qrDownloadUrl,
-      }),
-    });
-  } catch (err) {
-    console.error("Artist QR email failed", err);
-  }
+    const qrToken = await new SignJWT({
+      slug: artwork.slug,
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .setExpirationTime("1d")
+      .sign(secret)
+
+    const qrDownloadUrl =
+      `${base}/api/artworks/${artwork.slug}/qr?download=1&token=${qrToken}`
+
+    try {
+      await resend.emails.send({
+        from: "Artfinity <notifications@theartfinity.com>",
+        to: artwork.artist?.email, // if included — otherwise use payload email
+        subject: `Your artwork is live – ${artwork.title}`,
+        react: ArtworkLiveWithQrEmail({
+          artistName: artwork.artist?.artist_name || "",
+          title: artwork.title,
+          artworkUrl,
+          qrDownloadUrl,
+        }),
+      });
+    } catch (err) {
+      console.error("Artist QR email failed", err);
+    }
 
     try {
       await resend.emails.send({
