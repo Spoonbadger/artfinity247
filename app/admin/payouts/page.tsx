@@ -6,7 +6,7 @@ export default function AdminPayoutsPage() {
   const months = Array.from({ length: 12 }).map((_, i) => {
     const d = new Date()
     d.setMonth(d.getMonth() - i)
-    return d.toISOString().slice(0, 7) // YYYY-MM
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
   })
 
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))

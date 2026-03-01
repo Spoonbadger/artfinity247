@@ -46,7 +46,7 @@ export default function AdminOrdersPage() {
   const months = ["all", ...Array.from({ length: 12 }).map((_, i) => {
     const d = new Date()
     d.setMonth(d.getMonth() - i)
-    return d.toISOString().slice(0, 7) // YYYY-MM
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
   })]
 
   useEffect(() => {
@@ -132,7 +132,7 @@ export default function AdminOrdersPage() {
 
             {/* --- Items breakdown --- */}
             <div className="mt-4">
-              <h2 className="font-semibold">Items</h2>
+              <h3 className="font-semibold">Items</h3>
               {order.items.map(item => (
                 <div key={item.id} className="ml-4 mt-2 border-t pt-2 text-sm">
                   <div><strong>Artwork:</strong> {item.slug} ({item.size})</div>
