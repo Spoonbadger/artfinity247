@@ -48,13 +48,31 @@ export async function GET(
 
     if (!artwork) return new NextResponse("Artwork not found", { status: 404 })
 
-    // Now validate access
-    if (payload.slug !== slug) {
-      return new NextResponse("Invalid token", { status: 403 })
-    }
+    // ===== ACCESS CONTROL =====
+    if (token) {
+      // Email token flow
+      if (payload.slug !== slug) {
+        return new NextResponse("Invalid token", { status: 403 })
+      }
 
-    if (payload.type !== "qr_download") {
-      return new NextResponse("Invalid token type", { status: 403 })
+      if (payload.type !== "qr_download") {
+        return new NextResponse("Invalid token type", { status: 403 })
+      }
+
+      if (
+        payload.role !== "ADMIN" &&
+        payload.artistId !== artwork.artistId
+      ) {
+        return new NextResponse("Forbidden", { status: 403 })
+      }
+    } else {
+      // Logged-in flow
+      if (
+        payload.role !== "ADMIN" &&
+        payload.id !== artwork.artistId
+      ) {
+        return new NextResponse("Forbidden", { status: 403 })
+      }
     }
 
     if (
