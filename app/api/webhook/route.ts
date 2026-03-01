@@ -41,8 +41,6 @@ export async function POST(req: NextRequest) {
   }
 
   if (event.type === 'checkout.session.completed') {
-    // const session = event.data.object as Stripe.Checkout.Session
-
     const basicSession = event.data.object as Stripe.Checkout.Session
 
     const session = await stripe.checkout.sessions.retrieve(
