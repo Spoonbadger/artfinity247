@@ -70,40 +70,52 @@ export async function POST(req: NextRequest) {
     return sum + b.artistShare
   }, 0)
 
+
   if (unmark) {
     const payout = await prisma.payout.upsert({
       where: { artistId_month: { artistId, month } },
       update: { paidAt: null, amountCents },
       create: { artistId, month, amountCents, paidAt: null },
     })
-    // Only send email if it was previously unpaid
-    if (!existing?.paidAt) {
-      const artist = await prisma.artist.findUnique({
-        where: { id: artistId },
-        select: { email: true, artist_name: true },
-      })
 
-      if (artist?.email) {
-        await resend.emails.send({
-          from: "Artfinity <notifications@theartfinity.com>",
-          to: artist.email,
-          subject: `Your Artfinity payout for ${month} has been sent`,
-          react: PayoutSentEmail({
-            artistName: artist.artist_name ?? "Artist",
-            month,
-            amountCents,
-          }),
-        })
-      }
-    }
-    return NextResponse.json({ payout, wasPaidBefore: !!existing?.paidAt, markedPaid: true })
+    return NextResponse.json({
+      payout,
+      wasPaidBefore: !!existing?.paidAt,
+      markedPaid: false,
+    })
   }
 
+  // MARK AS PAID
   const payout = await prisma.payout.upsert({
     where: { artistId_month: { artistId, month } },
     update: { paidAt: new Date(), amountCents },
     create: { artistId, month, amountCents, paidAt: new Date() },
   })
 
-  return NextResponse.json({ payout, wasPaidBefore: !!existing?.paidAt, markedPaid: true })
-}
+  // send email ONLY when transitioning unpaid → paid
+  if (!existing?.paidAt) {
+    const artist = await prisma.artist.findUnique({
+      where: { id: artistId },
+      select: { email: true, artist_name: true },
+    })
+
+    if (artist?.email) {
+      await resend.emails.send({
+        from: "Artfinity <notifications@theartfinity.com>",
+        to: artist.email,
+        subject: `Your Artfinity payout for ${month} has been sent`,
+        react: PayoutSentEmail({
+          artistName: artist.artist_name ?? "Artist",
+          month,
+          amountCents,
+        }),
+      })
+    }
+  }
+
+  return NextResponse.json({
+    payout,
+    wasPaidBefore: !!existing?.paidAt,
+    markedPaid: true,
+  }
+)}
