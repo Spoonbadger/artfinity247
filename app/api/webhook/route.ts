@@ -168,7 +168,7 @@ console.log("SENDING ADMIN EMAIL")
       } catch (err) {
         console.error("Admin sale email failed", err)
       }
-      await sleep(350)
+      await sleep(1001)
 
       // Get items with artist IDs
       const soldItems = await prisma.orderItem.findMany({
@@ -223,7 +223,7 @@ console.log("SENDING ARTIST EMAIL")
           console.error("Artist sale email failed", err)
         }
       }
-      await sleep(350)
+      await sleep(1001)
 
       // Send receipt (idempotent inside helper via receiptSentAt)
       try {
