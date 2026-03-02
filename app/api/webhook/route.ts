@@ -10,6 +10,8 @@ import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-08-27.basil',
 })
@@ -42,7 +44,6 @@ export async function POST(req: NextRequest) {
 
   if (event.type === 'checkout.session.completed') {
     console.log("EVENT TYPE:", event.type)
-console.log("ENTERED SESSION COMPLETED BLOCK")
 
     const session = event.data.object as Stripe.Checkout.Session & {
       shipping_details?: {
@@ -167,6 +168,7 @@ console.log("SENDING ADMIN EMAIL")
       } catch (err) {
         console.error("Admin sale email failed", err)
       }
+      await sleep(350)
 
       // Get items with artist IDs
       const soldItems = await prisma.orderItem.findMany({
@@ -221,6 +223,7 @@ console.log("SENDING ARTIST EMAIL")
           console.error("Artist sale email failed", err)
         }
       }
+      await sleep(350)
 
       // Send receipt (idempotent inside helper via receiptSentAt)
       try {
