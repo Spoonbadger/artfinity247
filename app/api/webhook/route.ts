@@ -41,6 +41,8 @@ export async function POST(req: NextRequest) {
   }
 
   if (event.type === 'checkout.session.completed') {
+    console.log("EVENT TYPE:", event.type)
+console.log("ENTERED SESSION COMPLETED BLOCK")
     const basicSession = event.data.object as Stripe.Checkout.Session
 
     const session = await stripe.checkout.sessions.retrieve(basicSession.id)
@@ -50,7 +52,7 @@ export async function POST(req: NextRequest) {
       session.customer_details?.email ||
       (typeof session.customer_email === "string" ? session.customer_email : "") ||
       ""
-    ).trim().toLowerCase();
+    ).trim().toLowerCase()
 
     try {
         const shipping = (session as any).shipping_details
@@ -140,7 +142,7 @@ export async function POST(req: NextRequest) {
           quantity: i.quantity ?? 1,
           unitPrice: i.unitPrice ?? 0,
         }))
-
+console.log("SENDING ADMIN EMAIL")
         await resend.emails.send({
           from: "Artfinity <notifications@theartfinity.com>",
           to: "craig@theartfinity.com",
@@ -193,6 +195,8 @@ export async function POST(req: NextRequest) {
       // Send one email per artist
       for (const { artist, items } of byArtist.values()) {
         try {
+
+console.log("SENDING ARTIST EMAIL")
           await resend.emails.send({
             from: "Artfinity <notifications@theartfinity.com>",
             to: artist.email,
@@ -210,6 +214,7 @@ export async function POST(req: NextRequest) {
 
       // Send receipt (idempotent inside helper via receiptSentAt)
       try {
+console.log("SENDING RECEIPT")
         await sendReceiptEmail(order.id)
       } catch (e) {
         console.error("Email send failed (non-blocking):", e)
