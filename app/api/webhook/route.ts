@@ -43,10 +43,7 @@ export async function POST(req: NextRequest) {
   if (event.type === 'checkout.session.completed') {
     const basicSession = event.data.object as Stripe.Checkout.Session
 
-    const session = await stripe.checkout.sessions.retrieve(
-      basicSession.id,
-      { expand: ["shipping_details"] }
-    )
+    const session = await stripe.checkout.sessions.retrieve(basicSession.id)
 
     const buyerEmail = (
       session.metadata?.buyerEmail ||
@@ -88,9 +85,6 @@ export async function POST(req: NextRequest) {
       const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
         expand: ['data.price.product'],
       })
-
-      console.log("SESSION ID:", session.id)
-console.log("LINE ITEMS RAW:", lineItems.data)
 
       // 3) Map each line item → OrderItem
       const itemsToCreate = lineItems.data.map((li) => {
@@ -147,17 +141,17 @@ console.log("LINE ITEMS RAW:", lineItems.data)
           unitPrice: i.unitPrice ?? 0,
         }))
 
-        // await resend.emails.send({
-        //   from: "Artfinity <notifications@theartfinity.com>",
-        //   to: "craig@theartfinity.com",
-        //   subject: `New Sale – $${((order.amountTotal ?? 0)/100).toFixed(2)}`,
-        //   react: NewSaleNotificationEmail({
-        //     orderId: order.id,
-        //     buyerEmail: order.email,
-        //     totalCents: order.amountTotal ?? 0,
-        //     items,
-        //   }),
-        // })
+        await resend.emails.send({
+          from: "Artfinity <notifications@theartfinity.com>",
+          to: "craig@theartfinity.com",
+          subject: `New Sale – $${((order.amountTotal ?? 0)/100).toFixed(2)}`,
+          react: NewSaleNotificationEmail({
+            orderId: order.id,
+            buyerEmail: order.email,
+            totalCents: order.amountTotal ?? 0,
+            items,
+          }),
+        })
       } catch (err) {
         console.error("Admin sale email failed", err)
       }
@@ -197,22 +191,22 @@ console.log("LINE ITEMS RAW:", lineItems.data)
       }
 
       // Send one email per artist
-      // for (const { artist, items } of byArtist.values()) {
-      //   try {
-      //     await resend.emails.send({
-      //       from: "Artfinity <notifications@theartfinity.com>",
-      //       to: artist.email,
-      //       subject: "Your artwork sold on Artfinity!",
-      //       react: ArtistSaleNotificationEmail({
-      //         artistName: artist.artist_name ?? "Artist",
-      //         items,
-      //         totalCents: items.reduce((sum: number, i: any) => sum + i.lineTotal, 0),
-      //       }),
-      //     })
-      //   } catch (err) {
-      //     console.error("Artist sale email failed", err)
-      //   }
-      // }
+      for (const { artist, items } of byArtist.values()) {
+        try {
+          await resend.emails.send({
+            from: "Artfinity <notifications@theartfinity.com>",
+            to: artist.email,
+            subject: "Your artwork sold on Artfinity!",
+            react: ArtistSaleNotificationEmail({
+              artistName: artist.artist_name ?? "Artist",
+              items,
+              totalCents: items.reduce((sum: number, i: any) => sum + i.lineTotal, 0),
+            }),
+          })
+        } catch (err) {
+          console.error("Artist sale email failed", err)
+        }
+      }
 
       // Send receipt (idempotent inside helper via receiptSentAt)
       try {
