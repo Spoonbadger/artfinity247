@@ -43,9 +43,19 @@ export async function POST(req: NextRequest) {
   if (event.type === 'checkout.session.completed') {
     console.log("EVENT TYPE:", event.type)
 console.log("ENTERED SESSION COMPLETED BLOCK")
-    const basicSession = event.data.object as Stripe.Checkout.Session
 
-    const session = await stripe.checkout.sessions.retrieve(basicSession.id)
+    const session = event.data.object as Stripe.Checkout.Session & {
+      shipping_details?: {
+        name?: string
+        address?: {
+          line1?: string
+          city?: string
+          state?: string
+          postal_code?: string
+          country?: string
+        }
+      }
+    }
 
     const buyerEmail = (
       session.metadata?.buyerEmail ||
@@ -55,7 +65,7 @@ console.log("ENTERED SESSION COMPLETED BLOCK")
     ).trim().toLowerCase()
 
     try {
-        const shipping = (session as any).shipping_details
+        const shipping = session.shipping_details
       // 1) Idempotent order create (upsert by unique stripeSessionId)
       const order = await prisma.order.upsert({
         where: { stripeSessionId: session.id },
