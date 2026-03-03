@@ -150,7 +150,7 @@ const RegisterForm = ({
       }
       
       const data = await res.json()
-      toast.success("Registration successfull")
+      toast.success("Registration successful")
       
       const slug = data?.artist?.slug
       window.location.assign(`/artists/${slug}`)
@@ -381,7 +381,6 @@ const RegisterForm = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>State</FormLabel>
-                    <FormControl>
                       <FormControl>
                         <select
                           value={field.value || ""}
@@ -402,7 +401,6 @@ const RegisterForm = ({
                           ))}
                         </select>
                       </FormControl>
-                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
