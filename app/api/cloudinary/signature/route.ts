@@ -11,18 +11,22 @@ cloudinary.config({
 
 export async function GET(req: Request) {
   try {
-    const token = req.headers.get("cookie")?.match(/auth-token=([^;]+)/)?.[1];
-    if (!token) return new NextResponse("Unauthorized", { status: 401 });
+    const token = req.headers.get("cookie")?.match(/auth-token=([^;]+)/)?.[1]
+    if (!token) return new NextResponse("Unauthorized", { status: 401 })
 
-    await jwtVerify(
+
+    const { payload } = await jwtVerify(
       token,
       new TextEncoder().encode(process.env.JWT_SECRET!)
     );
 
+    const artistSlug = payload.slug
+    if (!artistSlug) return new NextResponse("Unauthorized", { status: 401 })
+
     const timestamp = Math.round(Date.now() / 1000);
 
     const { searchParams } = new URL(req.url)
-    const folder = searchParams.get("folder") || "artfinity"
+    const folder = `artfinity/artists/${artistSlug}/artworks`
 
     const signature = cloudinary.utils.api_sign_request(
       {
@@ -30,7 +34,7 @@ export async function GET(req: Request) {
         folder,
       },
       process.env.CLOUDINARY_API_SECRET!
-    );
+    )
 
     return NextResponse.json({
       timestamp,
