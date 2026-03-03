@@ -5,7 +5,7 @@ type Item = {
   size: string;
   quantity: number;
   lineTotal: number;
-};
+}
 
 export default function ArtistSaleNotificationEmail({
   artistName,
