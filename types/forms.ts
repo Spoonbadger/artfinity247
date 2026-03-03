@@ -49,7 +49,7 @@ export const registerFormSchema = z
         message:
           "Your password must be 6-20 characters long, contain letters and numbers, can include special characters, and must not contain spaces or emoji.",
       })
-      .regex(/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/, {
+      .regex(/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[^A-Za-z\d])[^\s]+$/, {
         message:
           "Your password must be 6-20 characters long, contain letters and numbers, can include special characters, and must not contain spaces or emoji.",
       }),
