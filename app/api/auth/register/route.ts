@@ -24,7 +24,15 @@ export async function POST(req: Request) {
         phone, 
         profileImage
      } = body
-    const slug = slugify(name, { lower: true })
+
+    const baseSlug = slugify(artist_name || name, { lower: true, strict: true })
+    let slug = baseSlug
+    let counter = 1
+
+    while (await prisma.artist.findUnique({ where: { slug } })) {
+        slug = `${baseSlug}-${counter}`
+        counter++
+    }
 
     if (!name || !email || !password) {
         return new Response('Missing required fields', { status: 400 })
