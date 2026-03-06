@@ -53,7 +53,7 @@ export async function POST(req: Request) {
             first_name: first_name,
             last_name: last_name,
             artist_name: artist_name,
-            email,
+            email: email.toLowerCase(),
             password: hashed,
             city,
             citySlug,
