@@ -184,16 +184,18 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                 <div className="space-y-2">
                     <label className="block text-sm font-medium text-theme-secondary-600">
                     Small print price ($)
-                    {/* <span className="ml-2 text-xs text-gray-500">
+                    <span className="ml-2 text-xs text-gray-500">
                         Base ${basePrices.small / 100}
-                    </span> */}
+                    </span>
                     </label>
                     <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
                     className="w-full p-2 border rounded text-theme-secondary-600"
                     value={(basePrices.small + markupSmall) / 100}
                     onChange={(e) => {
-                        const value = Math.round(parseFloat(e.target.value) * 100)
+                        const value = Math.round((parseFloat(e.target.value) || 0) * 100)
                         const markup = value - basePrices.small
                         setMarkupSmall(Math.max(0, value - basePrices.small))
                         setErrorSmall(markup < 0)
@@ -209,16 +211,18 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                 <div className="space-y-2">
                     <label className="block text-sm font-medium text-theme-secondary-600">
                     Medium print price ($)
-                    {/* <span className="ml-2 text-xs text-gray-500">
+                    <span className="ml-2 text-xs text-gray-500">
                         Base ${basePrices.medium / 100}
-                    </span> */}
+                    </span>
                     </label>
                     <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
                     className="w-full p-2 border rounded text-theme-secondary-600"
                     value={(basePrices.medium + markupMedium) / 100}
                     onChange={(e) => {
-                        const value = Math.round(parseFloat(e.target.value) * 100)
+                        const value = Math.round((parseFloat(e.target.value) || 0) * 100)
                         const markup = value - basePrices.medium
                         setMarkupMedium(Math.max(0, value - basePrices.medium))
                         setErrorMedium(markup < 0)
@@ -234,16 +238,18 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                 <div className="space-y-2">
                     <label className="block text-sm font-medium text-theme-secondary-600">
                     Large print price ($)
-                    {/* <span className="ml-2 text-xs text-gray-500">
+                    <span className="ml-2 text-xs text-gray-500">
                         Base ${basePrices.large / 100}
-                    </span> */}
+                    </span>
                     </label>
                     <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
                     className="w-full p-2 border rounded text-theme-secondary-600"
                     value={(basePrices.large + markupLarge) / 100}
                     onChange={(e) => {
-                        const value = Math.round(parseFloat(e.target.value) * 100)
+                        const value = Math.round((parseFloat(e.target.value) || 0) * 100)
                         const markup = value - basePrices.large
                         setMarkupLarge(Math.max(0, value - basePrices.large))
                         setErrorLarge(markup < 0)
