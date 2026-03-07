@@ -148,7 +148,12 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items })
+        body: JSON.stringify({
+          items: items.map(i => ({
+            product: i,
+            quantity: i.quantity
+          }))
+        })
       })
 
       if (!res.ok) throw new Error(await res.text())

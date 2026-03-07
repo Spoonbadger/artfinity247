@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     const line_items = (
       await Promise.all(
         items.map(async (item: any) => {
-          const p = item.product ?? item
+          const p = item.product
           const slug: string = String(p.slug ?? '').trim()
           const size: Size = String(p.selectedSize ?? '').toLowerCase() as any
           if (!slug || !['small', 'medium', 'large'].includes(size)) return null
