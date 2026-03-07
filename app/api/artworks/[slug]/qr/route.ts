@@ -61,7 +61,7 @@ export async function GET(
 
       if (
         payload.role !== "ADMIN" &&
-        payload.artistId !== artwork.artistId
+        payload.id !== artwork.artistId
       ) {
         return new NextResponse("Forbidden", { status: 403 })
       }
@@ -73,13 +73,6 @@ export async function GET(
       ) {
         return new NextResponse("Forbidden", { status: 403 })
       }
-    }
-
-    if (
-      payload.role !== "ADMIN" &&
-      payload.artistId !== artwork.artistId
-    ) {
-      return new NextResponse("Forbidden", { status: 403 })
     }
 
 
