@@ -168,9 +168,9 @@ const NavBar = ({
                           )}
                         >
                           <div className="additional-links">
-                            <Link href="/login" className="flex gap-3">
+                            <Link href={profileHref} className="flex gap-3">
                               <User />
-                              Login
+                              {currentUser ? "Profile" : "Login"}
                             </Link>
                           </div>
                           <SocialAccountLinks icons={true} className="gap-3" />
