@@ -146,7 +146,7 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
         }
 
     return (
-        <form onSubmit={handleSubmit} className='space-y-4 max-w-md mx-auto'>
+        <form onSubmit={handleSubmit} className='space-y-4 w-full max-w-md mx-auto px-4'>
             <input
               type='text'
               name="upload-art-title"
@@ -181,25 +181,26 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                     These are the final prices buyers see. You can increase them above the default base prices.
                 </p>
 
-                <div className="space-y-2">
-                    <label className="block text-sm font-medium text-theme-secondary-600">
+                <div className="space-y-2 max-w-sm">
+                    <label className="block text-sm font-medium text-theme-secondary-600 flex justify-between items-center">
                     Small print price ($)
                     <span className="ml-2 text-xs text-gray-500">
                         Base ${basePrices.small / 100}
                     </span>
                     </label>
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">$</span>
                     <input
-                    type="text"
-                    inputMode="decimal"
-                    pattern="[0-9]*\.?[0-9]*"
-                    className="w-full p-2 border rounded text-theme-secondary-600"
-                    value={(basePrices.small + markupSmall) / 100}
-                    onChange={(e) => {
-                        const value = Math.round((parseFloat(e.target.value) || 0) * 100)
-                        const markup = value - basePrices.small
-                        setMarkupSmall(Math.max(0, value - basePrices.small))
-                        setErrorSmall(markup < 0)
-                    }}
+                        type="text"
+                        inputMode="decimal"
+                        pattern="[0-9]*\.?[0-9]*"
+                        className="w-full p-2 border rounded text-theme-secondary-600"
+                        value={(basePrices.small + markupSmall) / 100}
+                        onChange={(e) => {
+                            const value = Math.round((parseFloat(e.target.value) || 0) * 100)
+                            const markup = value - basePrices.small
+                            setMarkupSmall(Math.max(0, value - basePrices.small))
+                            setErrorSmall(markup < 0)
+                        }}
                     />
                     {errorSmall && (
                     <p className="text-red-500 text-xs">
@@ -208,13 +209,14 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                     )}
                 </div>
 
-                <div className="space-y-2">
-                    <label className="block text-sm font-medium text-theme-secondary-600">
+                <div className="space-y-2 max-w-sm">
+                    <label className="block text-sm font-medium text-theme-secondary-600 flex justify-between items-center">
                     Medium print price ($)
                     <span className="ml-2 text-xs text-gray-500">
                         Base ${basePrices.medium / 100}
                     </span>
                     </label>
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">$</span>
                     <input
                     type="text"
                     inputMode="decimal"
@@ -235,13 +237,14 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                     )}
                 </div>
 
-                <div className="space-y-2">
-                    <label className="block text-sm font-medium text-theme-secondary-600">
+                <div className="space-y-2 max-w-sm">
+                    <label className="block text-sm font-medium text-theme-secondary-600 flex justify-between items-center">
                     Large print price ($)
                     <span className="ml-2 text-xs text-gray-500">
                         Base ${basePrices.large / 100}
                     </span>
                     </label>
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">$</span>
                     <input
                     type="text"
                     inputMode="decimal"
