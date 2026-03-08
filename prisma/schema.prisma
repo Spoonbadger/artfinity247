@@ -20,6 +20,7 @@ model Order {
   receiptSentAt   DateTime?
   shippingStatus  String      @default("pending")
   items           OrderItem[]
+  sentToPrinter Boolean @default(false)
 }
 
 model OrderItem {

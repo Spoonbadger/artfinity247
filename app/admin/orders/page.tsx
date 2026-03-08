@@ -34,6 +34,7 @@ type Order = {
   paymentStatus: string
   createdAt: string
   shippingStatus: string
+  sentToPrinter: Boolean
   items: OrderItem[]
 }
 
@@ -79,6 +80,25 @@ export default function AdminOrdersPage() {
     }
   }
 
+  const toggleSent = async (orderId: string) => {
+    const order = orders.find(o => o.id === orderId)
+    if (!order) return
+
+    const newValue = !order.sentToPrinter
+
+    await fetch(`/api/orders/${orderId}/sent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sent: newValue })
+    })
+
+    setOrders(prev =>
+      prev.map(o =>
+        o.id === orderId ? { ...o, sentToPrinter: newValue } : o
+      )
+    )
+  }
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Admin Orders View</h1>
@@ -118,6 +138,16 @@ export default function AdminOrdersPage() {
             <div><strong>Ship To:</strong></div>
             <div>{order.shippingName}</div>
             <div>{order.shippingAddress}</div>
+            <div className="mt-2">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={!!order.sentToPrinter}
+                  onChange={() => toggleSent(order.id)}
+                />
+                Sent to printer
+              </label>
+            </div>
             <div><strong>Shipping:</strong>
               <select
                 value={order.shippingStatus || 'pending'}

@@ -92,6 +92,7 @@ export async function GET(req: NextRequest) {
         paymentStatus: order.paymentStatus,
         createdAt: order.createdAt,
         shippingStatus: order.shippingStatus,
+        sentToPrinter: order.sentToPrinter,
         shippingName: order.shippingName,
         shippingAddress: order.shippingAddress,
         items,
