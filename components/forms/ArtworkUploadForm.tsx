@@ -23,6 +23,15 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
 
     const [imageUrl, setImageUrl] = useState<string | null>(artwork?.imageUrl || null)
 
+    const [smallInput, setSmallInput] = useState(
+      ((basePrices.small + markupSmall) / 100).toString()
+    )
+    const [mediumInput, setMediumInput] = useState(
+      ((basePrices.medium + markupMedium) / 100).toString()
+    )
+    const [largeInput, setLargeInput] = useState(
+      ((basePrices.large + markupLarge) / 100).toString()
+    )
 
     const router = useRouter()
 
@@ -194,11 +203,13 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                         inputMode="decimal"
                         pattern="[0-9]*\.?[0-9]*"
                         className="w-full p-2 border rounded text-theme-secondary-600"
-                        value={(basePrices.small + markupSmall) / 100}
+                        value={smallInput}
                         onChange={(e) => {
-                            const value = Math.round((parseFloat(e.target.value) || 0) * 100)
-                            const markup = value - basePrices.small
-                            setMarkupSmall(Math.max(0, value - basePrices.small))
+                            const v = e.target.value
+                            setSmallInput(v)
+                            const cents = Math.round((parseFloat(v) || 0) * 100)
+                            const markup = cents - basePrices.small
+                            setMarkupSmall(Math.max(0, markup))
                             setErrorSmall(markup < 0)
                         }}
                     />
@@ -222,13 +233,17 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                     inputMode="decimal"
                     pattern="[0-9]*\.?[0-9]*"
                     className="w-full p-2 border rounded text-theme-secondary-600"
-                    value={(basePrices.medium + markupMedium) / 100}
+                    value={mediumInput}
                     onChange={(e) => {
-                        const value = Math.round((parseFloat(e.target.value) || 0) * 100)
-                        const markup = value - basePrices.medium
-                        setMarkupMedium(Math.max(0, value - basePrices.medium))
+                        const v = e.target.value
+                        setMediumInput(v)
+
+                        const cents = Math.round((parseFloat(v) || 0) * 100)
+                        const markup = cents - basePrices.medium
+
+                        setMarkupMedium(Math.max(0, markup))
                         setErrorMedium(markup < 0)
-                    }}
+                        }}
                     />
                     {errorMedium && (
                     <p className="text-red-500 text-xs">
@@ -250,13 +265,17 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                     inputMode="decimal"
                     pattern="[0-9]*\.?[0-9]*"
                     className="w-full p-2 border rounded text-theme-secondary-600"
-                    value={(basePrices.large + markupLarge) / 100}
+                    value={largeInput}
                     onChange={(e) => {
-                        const value = Math.round((parseFloat(e.target.value) || 0) * 100)
-                        const markup = value - basePrices.large
-                        setMarkupLarge(Math.max(0, value - basePrices.large))
+                        const v = e.target.value
+                        setLargeInput(v)
+
+                        const cents = Math.round((parseFloat(v) || 0) * 100)
+                        const markup = cents - basePrices.large
+
+                        setMarkupLarge(Math.max(0, markup))
                         setErrorLarge(markup < 0)
-                    }}
+                      }}
                     />
                     {errorLarge && (
                     <p className="text-red-500 text-xs">

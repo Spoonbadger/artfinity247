@@ -9,11 +9,24 @@ export const ARTIST_SPLIT = 0.5 as const;
  * TODO: Replace the placeholder cost values below with the values
  * you agreed earlier. Keep everything in cents.
  */
-export const COSTS = {
+
+  // WITH GELATO NOT GOOD PRINTS
+// export const COSTS = {
+//   PRINT: {
+//     S: 1520,   // $15.20
+//     M: 1803,   // $18.03
+//     L: 2065,   // $20.65
+//     // XL: 1111 
+//     // XXL: 11111
+//   } as Record<PrintSize, number>,
+
+  // TODO TODO TODO: NOW TESTING WITH PRODIGI - prices keep changing??? confused
+  // S: M: 25.63 L: XL: XXL: 
+  export const COSTS = {
   PRINT: {
-    S: 1520,   // $15.20
-    M: 1803,   // $18.03
-    L: 2065,   // $20.65
+    S: 1520,   // $15.20??
+    M: 2063,   // $25.63??? needs looking at properly
+    L: 2355,   // $20.65??
     // XL: 1111 
     // XXL: 11111
   } as Record<PrintSize, number>,
@@ -24,7 +37,7 @@ export const COSTS = {
     L: 0,   // $0.00
   } as Record<PrintSize, number>,
 
-  LABOR_PER_ITEM: 100,      // $1.00 (packing, handling/placing online order)
+  LABOR_PER_ITEM: 0,      // $1.00 (packing, handling/placing online order) PUTTING ZERO FOR NOW WHY NOT.
   HOSTING_PER_ITEM: 100, // $1.00 Web hosting
 
   // Stripe payment fee. 
