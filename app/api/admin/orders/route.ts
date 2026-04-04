@@ -46,12 +46,21 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
       include: {
         items: {
-          include: {
+          select: {
+            id: true,
+            slug: true,
+            size: true,
+            frameChosen: true,
+            frameColor: true,
+            quantity: true,
+            unitPrice: true,
+            lineTotal: true,
+            imageUrl: true,
             artwork: { select: { artistId: true } },
           },
         },
       },
-    });
+    })
 
     const shaped = orders.map((order) => {
       const items = order.items.map((item) => {
