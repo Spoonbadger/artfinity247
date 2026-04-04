@@ -8,6 +8,8 @@ type OrderItem = {
   id: string
   slug: string | null
   size: string | null
+  frameChosen: boolean
+  frameColor: string | null
   quantity: number | null
   unitPrice: number | null
   lineTotal: number | null
@@ -166,6 +168,10 @@ export default function AdminOrdersPage() {
               {order.items.map(item => (
                 <div key={item.id} className="ml-4 mt-2 border-t pt-2 text-sm">
                   <div><strong>Artwork:</strong> {item.slug} ({item.size})</div>
+                  <div>
+                    <strong>Frame:</strong>{" "}
+                    {item.frameChosen ? `Yes${item.frameColor ? ` — ${item.frameColor}` : ""}` : "No"}
+                  </div>
                   {item.imageUrl && (
                     <div>
                       <a

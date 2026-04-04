@@ -8,8 +8,10 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 })
 
 // TODO: move to AppConfigs.json (prices in cents)
-const BASE = { small: 3499, medium: 4499, large: 5499 } as const
+const BASE = { small: 3500, medium: 4500, large: 6000 } as const
 type Size = keyof typeof BASE
+
+const FRAME_COST = 2500
 
 function abs(url?: string | null) {
   if (!url) return undefined
@@ -41,6 +43,11 @@ export async function POST(req: Request) {
       await Promise.all(
         items.map(async (item: any) => {
           const p = item.product
+          const frameChosen = Boolean(p.frameChosen)
+          const frameColor =
+            frameChosen && ["black", "white", "natural"].includes(String(p.frameColor))
+              ? String(p.frameColor)
+              : null
           const slug: string = String(p.slug ?? '').trim()
           const size: Size = String(p.selectedSize ?? '').toLowerCase() as any
           if (!slug || !['small', 'medium', 'large'].includes(size)) return null
@@ -67,7 +74,7 @@ export async function POST(req: Request) {
             size === 'medium' ? (art.markupMedium ?? 0) :
             (art.markupLarge ?? 0)
 
-          const unit_amount = BASE[size] + markup
+          const unit_amount = BASE[size] + markup + (frameChosen ? FRAME_COST : 0)
           const quantity = Math.max(1, Math.min(10, Number(item.quantity ?? p.quantity ?? 1)))
 
           return {
@@ -87,6 +94,8 @@ export async function POST(req: Request) {
                   artistName: art.artist?.name ?? '',
                   imageUrl: art.imageUrl ?? '',
                   artistId: art.artistId,
+                  frameChosen: frameChosen ? 'true' : 'false',
+                  frameColor: frameColor ?? '',
                 },
               },
             },

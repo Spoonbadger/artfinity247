@@ -3,7 +3,10 @@
 
 export type PrintSize = "S" | "M" | "L";
 
-export const ARTIST_SPLIT = 0.5 as const;
+export const ARTIST_SPLIT = 0.5 as const
+
+export const FRAME_COST = 2500
+export const FRAME_ARTIST_BONUS = 500
 
 /**
  * TODO: Replace the placeholder cost values below with the values
@@ -73,15 +76,17 @@ export function costBreakdownBySize(size: PrintSize) {
  * Website cost is always derived from lineTotal.
  */
 export function calcItemProfitCents(args: {
-  lineTotal: number;              // cents
-  size?: PrintSize;               // optional; used to pull default costs
-  printCost?: number;             // optional override (cents)
-  shippingCost?: number;          // optional override (cents)
-  laborCost?: number;             // optional override (cents)
+  lineTotal: number;
+  size?: PrintSize;
+  frameChosen?: boolean;
+  printCost?: number;
+  shippingCost?: number;
+  laborCost?: number;
 }) {
   const {
     lineTotal,
     size,
+    frameChosen = false,
     printCost: pOverride,
     shippingCost: sOverride,
     laborCost: lOverride,
@@ -94,12 +99,18 @@ export function calcItemProfitCents(args: {
   const laborCost   = lOverride ?? bySize.laborCost;
 
   const webCost = websiteCostCents(lineTotal);
+  const frameCost = frameChosen ? FRAME_COST : 0
 
-  const expenses = (printCost || 0) + (shippingCost || 0) + (laborCost || 0) + webCost;
+  const expenses = (printCost || 0) + (shippingCost || 0) + (laborCost || 0) + webCost + frameCost
   const profit = Math.max(0, (lineTotal || 0) - expenses);
 
-  const artistShare = Math.round(profit * ARTIST_SPLIT);
-  const companyShare = profit - artistShare;
+  let artistShare = Math.round(profit * ARTIST_SPLIT);
+  let companyShare = profit - artistShare;
+  if (frameChosen) {
+    const safeBonus = Math.min(FRAME_ARTIST_BONUS, companyShare);
+    artistShare += safeBonus;
+    companyShare -= safeBonus;
+  }
 
   return {
     // costs
@@ -107,6 +118,7 @@ export function calcItemProfitCents(args: {
     shippingCost,
     laborCost,
     websiteCost: webCost,
+    frameCost,
 
     // totals
     expenses,

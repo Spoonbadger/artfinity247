@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import InnerImageZoom from "react-inner-image-zoom";
-import "react-inner-image-zoom/lib/InnerImageZoom/styles.css";
+import "react-inner-image-zoom/lib/InnerImageZoom/styles.css"
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useCart, useUser } from "@/components/contexts";
@@ -75,6 +75,9 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
   const minQuantity = 1;
   const maxQuantity = product?.available;
 
+  const [frameChosen, setFrameChosen] = useState(false)
+  const [frameColor, setFrameColor] = useState<"white" | "black" | "natural">("black")
+
   useEffect(() => {
     if (slug) {
       const fetchProduct = async () => {
@@ -95,15 +98,19 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
 
   // Update price on size change
   useEffect(() => {
-    if (!product) return;
+    if (!product) return
 
-    const markup = selectedSize === 'small' ? product.markupSmall
-      : selectedSize === 'medium' ? product.markupMedium 
-      : selectedSize === 'large' ? product.markupLarge : 0
+    const markup =
+      selectedSize === "small"
+        ? Number(product.markupSmall ?? 0)
+        : selectedSize === "medium"
+        ? Number(product.markupMedium ?? 0)
+        : Number(product.markupLarge ?? 0)
 
-    const finalPrice = getFinalPrice(selectedSize, markup || 0)
-    setPrice(finalPrice)
-  }, [selectedSize, product])
+    const finalPrice = getFinalPrice(selectedSize, markup, frameChosen)
+
+    setPrice(Number.isFinite(finalPrice) ? finalPrice : 0)
+  }, [selectedSize, product, frameChosen])
 
   const artist = product ? (product as any).artist : null;
   const artistName = artist?.artist_name || artist?.name || "";
@@ -121,6 +128,8 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
         imageUrl: product.imageUrl,
         selectedSize, 
         unitPrice: price, // In cents
+        frameChosen,
+        frameColor: frameChosen ? frameColor: null,
       },
       quantity
     )
@@ -140,7 +149,9 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
         imageUrl: product.imageUrl,
         selectedSize,
         unitPrice: price,
-        quantity
+        quantity,
+        frameChosen: false,
+        frameColor: null,
       },
     ]
 
@@ -274,6 +285,39 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
                           ))}
                         </div>
                       </RadioGroup>
+                    </div>
+                    <div className="space-y-3">
+                      <label className="flex items-center gap-2 text-sm font-medium text-theme-secondary-600">
+                        <input
+                          type="checkbox"
+                          checked={frameChosen}
+                          onChange={(e) => setFrameChosen(e.target.checked)}
+                        />
+                        Add frame
+                      </label>
+
+                      {frameChosen && (
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium text-theme-secondary-600">Frame color</p>
+                          <div className="flex flex-wrap gap-2">
+                            {(["black", "white", "natural"] as const).map((color) => (
+                              <button
+                                key={color}
+                                type="button"
+                                onClick={() => setFrameColor(color)}
+                                className={cn(
+                                  "rounded border px-3 py-2 text-sm capitalize",
+                                  frameColor === color
+                                    ? "border-theme-secondary-600 bg-theme-secondary-500 text-white"
+                                    : "border-theme-secondary-300 bg-white text-theme-secondary-600"
+                                )}
+                              >
+                                {color}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="product-quantity text-theme-secondary-600">
                         <ProductQuantityInput

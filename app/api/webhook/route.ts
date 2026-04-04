@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     ).trim().toLowerCase()
 
     try {
-        const shipping = session.shipping_details
+      const shipping = session.shipping_details
       // 1) Idempotent order create (upsert by unique stripeSessionId)
       const order = await prisma.order.upsert({
         where: { stripeSessionId: session.id },
@@ -101,33 +101,42 @@ export async function POST(req: NextRequest) {
 
       // 3) Map each line item → OrderItem
       const itemsToCreate = lineItems.data.map((li) => {
-        const product = li.price?.product as Stripe.Product | null
-        const unit = li.price?.unit_amount ?? 0
-        const qty = li.quantity ?? 1
-        const rawSize = product?.metadata?.size || 'medium'
+      const product = li.price?.product as Stripe.Product | null
+      const unit = li.price?.unit_amount ?? 0
+      const qty = li.quantity ?? 1
+      const rawSize = product?.metadata?.size || 'medium'
 
-        const sizeNorm = normalizeSize(rawSize)
-        const lineTotal = unit * qty
-        const b = calcItemProfitCents({ lineTotal, size: sizeNorm })
+      const sizeNorm = normalizeSize(rawSize)
+      const lineTotal = unit * qty
 
-        return {
-          orderId: order.id,
-          artworkId: product?.metadata?.artworkId ?? null,
-          slug: product?.metadata?.slug || '',
-          size: sizeNorm,
-          unitPrice: unit,
-          quantity: qty,
-          lineTotal,
-          title: product?.metadata?.title || li.description || null,
-          artistName: product?.metadata?.artistName || null,
-          imageUrl: product?.metadata?.imageUrl || null,
+      const frameChosen = product?.metadata?.frameChosen === "true"
+      const rawFrameColor = product?.metadata?.frameColor || ""
+      const frameColor =
+        frameChosen && ["black", "white", "natural"].includes(rawFrameColor)
+          ? rawFrameColor
+          : null
+      const b = calcItemProfitCents({ lineTotal, size: sizeNorm, frameChosen })
 
-          printCost: b.printCost,
-          shippingCost: b.shippingCost,
-          laborCost: b.laborCost,
-          websiteCost: b.websiteCost,
-        }
-      })
+      return {
+        orderId: order.id,
+        artworkId: product?.metadata?.artworkId ?? null,
+        slug: product?.metadata?.slug || '',
+        size: sizeNorm,
+        frameChosen,
+        frameColor,
+        unitPrice: unit,
+        quantity: qty,
+        lineTotal,
+        title: product?.metadata?.title || li.description || null,
+        artistName: product?.metadata?.artistName || null,
+        imageUrl: product?.metadata?.imageUrl || null,
+
+        printCost: b.printCost,
+        shippingCost: b.shippingCost,
+        laborCost: b.laborCost,
+        websiteCost: b.websiteCost,
+      }
+    })
 
       // For want strict idempotency, you could check if items exist for this order.
       await prisma.orderItem.deleteMany({ where: { orderId: order.id } })

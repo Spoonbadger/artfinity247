@@ -29,6 +29,8 @@ model OrderItem {
   artworkId    String?
   slug         String?
   size         String?
+  frameChosen  Boolean @default(false)
+  frameColor   String?
   unitPrice    Int?
   quantity     Int?
   lineTotal    Int?

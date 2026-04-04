@@ -62,12 +62,14 @@ export async function GET(req: NextRequest) {
         const size = normalizeSize(item.size as string | null);
 
         // >>> authoritative breakdown from /lib/revenue.ts <<<
-        const b = calcItemProfitCents({ lineTotal, size });
+        const b = calcItemProfitCents({ lineTotal, size, frameChosen: item.frameChosen });
 
         return {
           id: item.id,
           slug: item.slug,
           size,
+          frameChosen: item.frameChosen,
+          frameColor: item.frameColor,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           lineTotal,

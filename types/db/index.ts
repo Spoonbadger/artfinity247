@@ -179,6 +179,8 @@ export type CartItemProductType = {
   imageUrl: string
   selectedSize: 'small' | 'medium' | 'large'
   unitPrice: number // store in cents
+  frameChosen: boolean
+  frameColor: 'white' | 'natural' | 'black' | null
 }
 
 export type CartItemProductVariantType = { type: string; key: string };
