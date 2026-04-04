@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { ArtworkStatus } from '@prisma/client';
 
 export const dynamic = "force-dynamic"
+export const dynamicParams = true
 
 export async function GET(
   req: Request, 

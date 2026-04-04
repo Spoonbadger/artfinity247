@@ -7,6 +7,7 @@ import Busboy from 'busboy'
 import { toNodeReadable } from '@/lib/toNodeReadables'
 
 export const dynamic = "force-dynamic"
+export const dynamicParams = true
 export const runtime = "nodejs"
 
 

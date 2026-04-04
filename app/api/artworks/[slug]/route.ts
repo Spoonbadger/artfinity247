@@ -5,6 +5,7 @@ import { jwtVerify } from 'jose'
 import cloudinary from '@/lib/cloudinary'
 
 export const dynamic = "force-dynamic"
+export const dynamicParams = true
 
 export async function GET(
   req: NextRequest,
