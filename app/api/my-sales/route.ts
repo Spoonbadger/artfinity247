@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
     orderBy: [{ order: { createdAt: "desc" } }],
   });
 
-  const rows = items.map((it: Prisma.TransactionClient) => {
+  const rows = items.map((it: any) => {
     const qty = it.quantity ?? 1;
     const unit = it.unitPrice ?? 0;
     const total = it.lineTotal ?? unit * qty;
