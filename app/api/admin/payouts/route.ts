@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
     where: { month },
     select: { artistId: true, paidAt: true },
   })
-  const paidLookup = new Map(payouts.map(p => [p.artistId, p.paidAt]))
+  const paidLookup = new Map(payouts.map((p: any) => [p.artistId, p.paidAt]))
 
   for (const it of items) {
     const artistId = it.artwork?.artistId ?? 'unknown'

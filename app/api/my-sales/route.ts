@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
+import { Prisma } from "@prisma/client";
+
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs";
@@ -82,7 +84,7 @@ export async function GET(req: NextRequest) {
     orderBy: [{ order: { createdAt: "desc" } }],
   });
 
-  const rows = items.map((it) => {
+  const rows = items.map((it: Prisma.TransactionClient) => {
     const qty = it.quantity ?? 1;
     const unit = it.unitPrice ?? 0;
     const total = it.lineTotal ?? unit * qty;
@@ -112,7 +114,7 @@ export async function GET(req: NextRequest) {
   })
 
 const totals = rows.reduce(
-  (acc, r) => {
+  (acc: any, r: any) => {
     acc.items += 1
     acc.quantity += r.quantity ?? 0
     acc.gross_cents += r.total_cents ?? 0

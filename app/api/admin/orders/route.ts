@@ -64,8 +64,8 @@ export async function GET(req: NextRequest) {
       },
     })
 
-    const shaped = orders.map((order) => {
-      const items = order.items.map((item) => {
+    const shaped = orders.map((order: any) => {
+      const items = order.items.map((item: any) => {
         const qty = item.quantity ?? 0;
         const unit = item.unitPrice ?? 0;
         const lineTotal = item.lineTotal ?? qty * unit;

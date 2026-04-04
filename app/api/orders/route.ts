@@ -57,12 +57,12 @@ export async function GET(req: NextRequest) {
     where: { month },
     select: { artistId: true, paidAt: true },
   })
-  const paidLookup = new Map(payouts.map(p => [p.artistId, p.paidAt]))
+  const paidLookup = new Map(payouts.map((p: any) => [p.artistId, p.paidAt]))
 
     // add profit + shares per item
-    const withShares = orders.map(order => ({
+    const withShares = orders.map((order: any) => ({
       ...order,
-      items: order.items.map(item => {
+      items: order.items.map((item: any) => {
         const expenses =
           (item.printCost ?? 0) +
           (item.shippingCost ?? 0) +

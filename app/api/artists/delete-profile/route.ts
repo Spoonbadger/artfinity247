@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth"
+import { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic"
 
@@ -9,13 +10,13 @@ export async function DELETE(req: NextRequest) {
     const user = await requireUser();
     const artistId = user.id;
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1) Find this artist's artworks
       const artworks = await tx.artwork.findMany({
         where: { artistId },
         select: { id: true },
       });
-      const artworkIds = artworks.map((a) => a.id);
+      const artworkIds = artworks.map((a: any) => a.id);
 
       // 2) Detach OrderItems from those artworks (keep order history)
       if (artworkIds.length > 0) {

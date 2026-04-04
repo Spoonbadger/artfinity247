@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     return "M"
   }
 
-  const amountCents = items.reduce((sum, item) => {
+  const amountCents = items.reduce((sum: any, item: any) => {
     const sizeNorm = normalizeSize(item.size)
     const b = calcItemProfitCents({
       lineTotal: item.lineTotal ?? 0,

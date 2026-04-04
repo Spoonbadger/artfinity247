@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
           },
         })
 
-        const items = rawItems.map(i => ({
+        const items = rawItems.map((i: any) => ({
           title: i.title ?? "",
           size: i.size ?? "",
           quantity: i.quantity ?? 1,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth"
+import { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
@@ -66,7 +67,7 @@ export async function DELETE(
     await requireAdmin();
     const { id } = params;
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Detach any order items so historical orders still exist
       await tx.orderItem.updateMany({
         where: { artworkId: id },

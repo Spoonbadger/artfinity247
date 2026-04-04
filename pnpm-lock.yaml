@@ -193,7 +193,7 @@ importers:
         specifier: ^0.5.14
         version: 0.5.14(prettier@3.7.4)
       prisma:
-        specifier: ^5.22.0
+        specifier: 5.22.0
         version: 5.22.0
       tailwindcss:
         specifier: ^3.4.1

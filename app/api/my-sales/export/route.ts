@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
 
   // Totals (still aggregate in cents, then convert to $)
   const totals = items.reduce(
-    (acc, it) => {
+    (acc: any, it: any) => {
       const qty = it.quantity ?? 1;
       const total = it.lineTotal ?? (it.unitPrice ?? 0) * qty;
       const expenses =

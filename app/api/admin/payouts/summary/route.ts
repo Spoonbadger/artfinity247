@@ -105,14 +105,18 @@ export async function GET(req: NextRequest) {
       where: { id: { in: artistIds } },
       select: { id: true, artist_name: true, email: true, venmoHandle: true },
     });
-    const artistMap = new Map(artists.map(a => [a.id, a]));
+    const artistMap = new Map<string, (typeof artists)[number]>(
+      artists.map((a: any) => [a.id, a])
+    )
 
     // Fetch payout statuses for the month in one go
     const payouts = await prisma.payout.findMany({
       where: { artistId: { in: artistIds }, month },
       select: { artistId: true, paidAt: true, amountCents: true },
     });
-    const payoutMap = new Map(payouts.map(p => [p.artistId, p]));
+    const payoutMap = new Map<string, (typeof payouts)[number]>(
+      payouts.map((p: any) => [p.artistId, p])
+    )
 
 
     const rows = artistIds.map(artistId => {
