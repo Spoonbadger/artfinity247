@@ -7,7 +7,11 @@ export const dynamicParams = true
 
 export async function GET() {
   try {
-    await requireAdmin();
+    const admin = await requireAdmin().catch(() => null);
+
+    if (!admin) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
 
     const artworks = await prisma.artwork.findMany({
       where: {

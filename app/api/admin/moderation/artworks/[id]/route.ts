@@ -10,7 +10,11 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const admin = await requireAdmin();
+    const admin = await requireAdmin().catch(() => null);
+
+    if (!admin) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
     const { id } = params;
     const body = await req.json();
     const action = body.action as "approve" | "reject";
