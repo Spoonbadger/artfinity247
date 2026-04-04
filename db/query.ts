@@ -1,6 +1,7 @@
 import * as db from ".";
 import {
   CartItemType,
+  CartItemProductType,
   CollectionType,
   ReviewType,
   ProductType,
