@@ -250,7 +250,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
 
                       <div className="product-price pt-2 font-primary text-foreground">
                         <span className="price text-xl md:text-3xl text-theme-secondary-600">
-                          {formatCurrency(price / 100, currency, priceFloatPoints)}
+                          {formatCurrency((price * quantity) / 100, currency, priceFloatPoints)}
                         </span>
                       </div>
                       <div className="product-price pt-0 font-primary text-foreground">
