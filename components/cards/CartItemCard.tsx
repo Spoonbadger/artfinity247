@@ -65,7 +65,9 @@ const CartItemCard = ({
         <div className={cn("additional-info", "[&>*]:text-xs [&>*]:md:text-sm")}>
           <p className="text-xs font-thin">Size: {item.product.selectedSize}</p>
           <p className="text-xs font-thin">
-            Frame: {item.product.frameChosen ? item.product.frameColor ?? "Yes" : "No"}
+            Frame: {item.product.frameChosen
+              ? `${item.product.frameColor ? ` ${item.product.frameColor}` : ""}`
+              : "No"}
           </p>
           <p className="text-sm font-semibold">
             Price: ${((unitPrice / 100) * quantity).toFixed(2)}

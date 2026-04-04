@@ -350,7 +350,7 @@ export const updateCartItem = (query: UpdateCartItemQuery) => {
     return [];
   }
 
-  let result = prev_items || getCartItems({ user_id });
+  let result = prev_items ? [...prev_items] : getCartItems({ user_id });
 
   const existingItem = result?.find((item) => {
     return getCartItemKey(product) === getCartItemKey(item.product);
