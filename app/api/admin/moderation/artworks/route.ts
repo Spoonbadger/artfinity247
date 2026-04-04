@@ -13,6 +13,9 @@ export async function GET() {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
+    if (process.env.NEXT_PHASE === "phase-production-build") {
+      return NextResponse.json({ artworks: [] })
+    }
     const artworks = await prisma.artwork.findMany({
       where: {
         OR: [
