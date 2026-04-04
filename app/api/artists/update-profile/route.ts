@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma"
 import { jwtVerify, SignJWT } from "jose"
 import slugify from "slugify"
 
+export const dynamic = "force-dynamic"
+
 async function makeUniqueSlug(base: string, selfId: string) {
   let slug = base
   let i = 2

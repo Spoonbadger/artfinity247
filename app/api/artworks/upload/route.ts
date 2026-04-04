@@ -8,6 +8,7 @@ import NewArtworkUploadedEmail from "@/emails/NewArtworkUploadedEmail"
 import ArtworkLiveWithQrEmail from "@/emails/ArtworkLiveWithQrEmail";
 import { SignJWT } from "jose"
 
+export const dynamic = "force-dynamic"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 

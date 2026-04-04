@@ -1,10 +1,9 @@
-// /app/api/admin/payouts/summary/route.ts
-export const dynamic = "force-dynamic"
-
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { jwtVerify } from "jose";
-import { calcItemProfitCents, type PrintSize } from "@/lib/revenue";
+import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
+
+export const dynamic = "force-dynamic"
 
 function monthRange(ym: string) {
   const [y, m] = ym.split("-").map(Number);

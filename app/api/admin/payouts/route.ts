@@ -1,10 +1,9 @@
-export const dynamic = "force-dynamic"
-
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from "@/lib/prisma";
 import { jwtVerify } from 'jose'
 import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
 
+export const dynamic = "force-dynamic"
 export const runtime = 'nodejs'
 
 // Helper: parse ?month=YYYY-MM -> [start,end)

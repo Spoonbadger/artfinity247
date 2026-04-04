@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { jwtVerify } from "jose";
 import { v2 as cloudinary } from "cloudinary";
 
+export const dynamic = "force-dynamic"
 export const runtime = "nodejs";
 
 // APPARENTLY IM NOT USING THIS ANYMORE BUT ONE THAT SKIPS VERCEL TO CLOUDINARY FOR FILE SIZE REASONS

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 
-
+export const dynamic = "force-dynamic"
 export const runtime = "nodejs";
 
 type JwtPayload = { id?: string; slug?: string; email?: string };

@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic"
-
 import { NextRequest } from 'next/server'
 import { Stripe } from 'stripe'
 import { prisma } from "@/lib/prisma"
@@ -9,6 +7,7 @@ import NewSaleNotificationEmail from "@/emails/NewSaleNotificationEmail"
 import ArtistSaleNotificationEmail from "@/emails/ArtistSaleNotificationEmail"
 import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
 
+export const dynamic = "force-dynamic"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 

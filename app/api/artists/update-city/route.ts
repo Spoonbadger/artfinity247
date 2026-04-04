@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { jwtVerify } from 'jose'
 import slugify from 'slugify'
 
+export const dynamic = "force-dynamic"
 
 export async function POST(req: NextRequest) {
   const token = req.cookies.get('auth-token')?.value

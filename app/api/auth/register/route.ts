@@ -7,6 +7,7 @@ import { Resend } from "resend";
 import NewArtistNotificationEmail from "@/emails/NewArtistNotificationEmail"
 import WelcomeArtistEmail from "@/emails/WelcomeArtistEmail"
 
+export const dynamic = "force-dynamic"
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: Request) {

@@ -6,6 +6,7 @@ import { Resend } from "resend";
 import { rateLimit } from "@/lib/rateLimit"
 import PasswordResetEmail from "@/emails/PasswordResetEmail"
 
+export const dynamic = "force-dynamic"
 
 const schema = z.object({
   email: z.string().email(),

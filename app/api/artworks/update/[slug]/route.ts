@@ -6,6 +6,7 @@ import cloudinary from '@/lib/cloudinary'
 import Busboy from 'busboy'
 import { toNodeReadable } from '@/lib/toNodeReadables'
 
+export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
 

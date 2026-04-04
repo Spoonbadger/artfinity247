@@ -1,6 +1,7 @@
 import Stripe from 'stripe'
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic"
 export const runtime = 'nodejs'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {

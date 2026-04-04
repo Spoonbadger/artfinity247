@@ -3,6 +3,7 @@ import { jwtVerify } from 'jose'
 import { prisma } from "@/lib/prisma";
 import { generateQrPdf } from '@/lib/generateQrPdf'
 
+export const dynamic = "force-dynamic"
 export const runtime = 'nodejs'
 
 export async function GET(
