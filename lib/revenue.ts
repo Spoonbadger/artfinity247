@@ -50,7 +50,7 @@ export const FRAME_ARTIST_BONUS = 500
 
 /** Stripe-like fee in cents, from a gross charge amount (in cents). */
 export function paymentFeeCents(amountCents: number): number {
-  const percent = Math.round(amountCents * COSTS.STRIPE_PERCENT);
+  const percent = Math.ceil(amountCents * COSTS.STRIPE_PERCENT);
   return percent + COSTS.STRIPE_FIXED;
 }
 
