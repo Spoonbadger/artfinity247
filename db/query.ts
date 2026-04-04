@@ -327,6 +327,15 @@ export const getCartItems = (
   // return result.slice(start || 0, limit || Infinity);
 };
 
+const getCartItemKey = (product: CartItemProductType) => {
+  return [
+    product.id,
+    product.selectedSize ?? "",
+    product.frameChosen ? "framed" : "unframed",
+    product.frameColor ?? "",
+  ].join("|");
+}
+
 export const updateCartItem = (query: UpdateCartItemQuery) => {
   const {
     user_id = null,
@@ -343,18 +352,13 @@ export const updateCartItem = (query: UpdateCartItemQuery) => {
   let result = prev_items || getCartItems({ user_id });
 
   const existingItem = result?.find((item) => {
-    const productMatched = product.id === item.product.id;
-  const sizeMatched = product.selectedSize
-    ? product.selectedSize === item.product.selectedSize
-    : true
-
-    return productMatched && sizeMatched;
-  });
+    return getCartItemKey(product) === getCartItemKey(item.product);
+  })
 
   switch (operation) {
     case "add":
       if (existingItem) {
-        existingItem.quantity = quantity >= 1 ? quantity : 1
+        existingItem.quantity += quantity >= 1 ? quantity : 1
         break
       }
 
@@ -362,13 +366,11 @@ export const updateCartItem = (query: UpdateCartItemQuery) => {
         _id: Math.random().toString(36).substring(2, 9),
         product,
         user_id,
-        quantity,
+        quantity: quantity >= 1 ? quantity: 1,
       };
-
 
       result?.push(newCartItem)
       break
-
 
       // throw new Error("Product not found or has been removed.");
       break;

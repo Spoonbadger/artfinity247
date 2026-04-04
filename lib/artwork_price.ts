@@ -1,9 +1,9 @@
 export const basePrices = {
-  small: 3499,
-  medium: 4499,
-  large: 5999,
-  xl: 6999,
-  xxl: 7999,
+  small: 3500,
+  medium: 4500,
+  large: 6000,
+  xl: 7000,
+  xxl: 8000,
 } as const
 
 const FRAME_COST = 2500 // $25.00
