@@ -6,7 +6,8 @@ import path from 'path'
 type GenerateQrPdfInput = { title: string; artistName: string; url: string }
 
 // Horizontal business-card style
-const CARD = { w: 420, h: 210 }
+// const CARD = { w: 420, h: 210 }
+const CARD = { w: 265.5, h: 132.75 }
 const PAD = 20
 
 export async function generateQrPdf({
@@ -16,7 +17,14 @@ export async function generateQrPdf({
 }: GenerateQrPdfInput): Promise<Uint8Array> {
 
   const pdfDoc = await PDFDocument.create()
-  const page = pdfDoc.addPage([CARD.w, CARD.h])
+const PAGE = { w: 595, h: 842 }
+const PAGE_PAD_X = 24
+const PAGE_PAD_Y = 24
+
+const page = pdfDoc.addPage([PAGE.w, PAGE.h])
+
+const x = PAGE_PAD_X
+const y = PAGE.h - PAGE_PAD_Y - CARD.h
 
   const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica)
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
@@ -33,7 +41,7 @@ export async function generateQrPdf({
 
   // Background card
   page.drawRectangle({
-    x: 0, y: 0,
+    x: x, y: y,
     width: CARD.w,
     height: CARD.h,
     color: rgb(1, 1, 1),
@@ -46,9 +54,13 @@ export async function generateQrPdf({
   const rightW = CARD.w - leftW
 
   // --- Logo (top left)
-  const logoSize = 40
-  const logoX = PAD
-  const logoY = CARD.h - PAD - logoSize
+  const logoSize = 24
+const titleSize = 14
+const artistSize = 10
+const ctaSize = 6
+  // const logoSize = 40
+const logoX = x + PAD
+const logoY = y + CARD.h - PAD - logoSize
 
   page.drawImage(faviconImg, {
     x: logoX,
@@ -57,9 +69,9 @@ export async function generateQrPdf({
     height: logoSize,
   })
 
-  let textY = logoY - 30
+let textY = logoY - logoSize
 
-  const titleSize = 18
+  // const titleSize = 18
   const maxWidth = leftW - PAD * 1.2
 
   const words = title.split(' ')
@@ -86,7 +98,7 @@ export async function generateQrPdf({
 
   for (const l of lines) {
     page.drawText(l, {
-      x: PAD,
+x: x + PAD,
       y: textY,
       size: titleSize,
       font: fontBold,
@@ -95,9 +107,9 @@ export async function generateQrPdf({
     textY -= titleSize + 4
   }
 
-  const artistSize = 14
+  // const artistSize = 14
   page.drawText(artistName, {
-    x: PAD,
+x: x + PAD,
     y: textY,
     size: artistSize,
     font: fontRegular,
@@ -112,9 +124,9 @@ export async function generateQrPdf({
   })
   const qrImg = await pdfDoc.embedPng(qrPng)
 
-  const qrSize = Math.min(CARD.h - PAD * 2, rightW - PAD * 2) * .7
-  const qrX = leftW + (rightW - qrSize) / 2
-  const qrY = (CARD.h - qrSize) / 2
+const qrSize = Math.min(CARD.h - PAD * 2, rightW - PAD * 2) * 0.9
+  const qrX = x + leftW + (rightW - qrSize) / 2
+const qrY = y + (CARD.h - qrSize) / 2
 
   page.drawImage(qrImg, {
     x: qrX,
@@ -125,12 +137,12 @@ export async function generateQrPdf({
 
   // --- CTA under QR
   const cta = 'Scan to view this artwork and order prints'
-  const ctaSize = 8
+  // const ctaSize = 8
   const ctaWidth = fontRegular.widthOfTextAtSize(cta, ctaSize)
 
   page.drawText(cta, {
-    x: leftW + (rightW - ctaWidth) / 2,
-    y: PAD / 2 + 10,
+x: x + leftW + (rightW - ctaWidth) / 2,
+y: y + PAD / 2 + 10,
     size: ctaSize,
     font: fontRegular,
     color: rgb(0.35, 0.35, 0.35),
