@@ -297,24 +297,37 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
                       </label>
 
                       {frameChosen && (
-                        <div className="space-y-2">
-                          <p className="text-sm font-medium text-theme-secondary-600">Frame color</p>
-                          <div className="flex flex-wrap gap-2">
-                            {(["black", "white", "natural"] as const).map((color) => (
-                              <button
-                                key={color}
-                                type="button"
-                                onClick={() => setFrameColor(color)}
-                                className={cn(
-                                  "rounded border px-3 py-2 text-sm capitalize",
-                                  frameColor === color
-                                    ? "border-theme-secondary-600 bg-theme-secondary-500 text-white"
-                                    : "border-theme-secondary-300 bg-white text-theme-secondary-600"
-                                )}
-                              >
-                                {color}
-                              </button>
-                            ))}
+                        <div className="space-y-3">
+                          <p className="text-sm font-medium text-theme-secondary-600">
+                            Frame color
+                          </p>
+
+                          <div className="flex items-start gap-4">
+                            {/* Color buttons */}
+                            <div className="flex flex-wrap gap-2">
+                              {(["black", "white", "natural"] as const).map((color) => (
+                                <button
+                                  key={color}
+                                  type="button"
+                                  onClick={() => setFrameColor(color)}
+                                  className={cn(
+                                    "rounded border px-3 py-2 text-sm capitalize",
+                                    frameColor === color
+                                      ? "border-theme-secondary-600 bg-theme-secondary-500 text-white"
+                                      : "border-theme-secondary-300 bg-white text-theme-secondary-600"
+                                  )}
+                                >
+                                  {color}
+                                </button>
+                              ))}
+                            </div>
+
+                            {/* Frame preview image */}
+                            <img
+                              src="/assets/images/frame-options.webp"
+                              alt="Frame color options"
+                              className="w-20 h-auto rounded-md border object-contain"
+                            />
                           </div>
                         </div>
                       )}
