@@ -6,7 +6,7 @@ export const basePrices = {
   xxl: 7999,
 } as const
 
-const FRAME_COST = 2500 // $25.00
+const FRAME_COST = 4500 // $45.00
 
 export const getFinalPrice = (
   size: keyof typeof basePrices,

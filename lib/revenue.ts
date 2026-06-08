@@ -5,7 +5,7 @@ export type PrintSize = "S" | "M" | "L";
 
 export const ARTIST_SPLIT = 0.5 as const
 
-export const FRAME_COST = 2500
+export const FRAME_COST = 4500
 export const FRAME_ARTIST_BONUS = 500
 
 /**
