@@ -1,12 +1,12 @@
 export const basePrices = {
   small: 3499,
   medium: 4499,
-  large: 5999,
-  xl: 6999,
-  xxl: 7999,
+  large: 6499,
+  xl: 7999,
+  xxl: 8999,
 } as const
 
-const FRAME_COST = 12000 // $45.00
+const FRAME_COST = 12000 // $45.00 + shipping ($75 for large!)
 
 export const getFinalPrice = (
   size: keyof typeof basePrices,
