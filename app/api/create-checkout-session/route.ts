@@ -12,7 +12,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 const BASE = { small: 3499, medium: 4499, large: 5999 } as const
 type Size = keyof typeof BASE
 
-const FRAME_COST = 2500
+const FRAME_COST = 4500
 
 function abs(url?: string | null) {
   if (!url) return undefined
