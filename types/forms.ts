@@ -43,15 +43,15 @@ export const registerFormSchema = z
       .string()
       .min(6, {
         message:
-          "Your password must be 6-20 characters long, contain letters and numbers, can include special characters, and must not contain spaces or emoji.",
+          "Your password must be 6-20 characters long, contain letters and numbers, must include a special character, and must not contain spaces or emoji.",
       })
       .max(20, {
         message:
-          "Your password must be 6-20 characters long, contain letters and numbers, can include special characters, and must not contain spaces or emoji.",
+          "Your password must be 6-20 characters long, contain letters and numbers, must include a special character, and must not contain spaces or emoji.",
       })
       .regex(/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[^A-Za-z\d])[^\s]+$/, {
         message:
-          "Your password must be 6-20 characters long, contain letters and numbers, can include special characters, and must not contain spaces or emoji.",
+          "Your password must be 6-20 characters long, contain letters and numbers, must include a special character, and must not contain spaces or emoji.",
       }),
     artist_terms_accept: z.boolean().refine(val => val === true, {
       message: "You must agree to the Artist Terms",
