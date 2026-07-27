@@ -287,7 +287,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
                       </RadioGroup>
                     </div>
                     <div className="space-y-3">
-                      <label className="flex items-center gap-2 text-sm font-medium text-theme-secondary-600">
+                      <label className="flex items-center gap-2 text-lg font-medium text-theme-secondary-600">
                         <input
                           type="checkbox"
                           checked={frameChosen}
