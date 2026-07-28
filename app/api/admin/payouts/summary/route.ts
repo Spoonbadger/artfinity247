@@ -30,18 +30,21 @@ function normalizeSize(raw: string | null): PrintSize {
 
 export async function GET(req: NextRequest) {
   const admin = await requireAdmin(req)
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
   try {
     const { searchParams } = new URL(req.url);
     const month = searchParams.get("month");
-    if (!month) return NextResponse.json({ error: "month required (YYYY-MM)" }, { status: 400 });
+    if (!month) return NextResponse.json({ error: "month required (YYYY-MM)" }, { status: 400 })
 
     const { start, end } = monthRange(month);
 
     // Get all paid orders (or all orders—adjust if you only want captured/paid)
     const orders = await prisma.order.findMany({
-      where: { createdAt: { gte: start, lt: end } },
+      where: {
+        createdAt: { gte: start, lt: end },
+        paymentStatus: "paid",
+      },
       orderBy: { createdAt: "desc" },
       include: {
         items: {
@@ -77,6 +80,7 @@ export async function GET(req: NextRequest) {
           lineTotal,
           size,
           frameChosen: item.frameChosen,
+          quantity: qty | 1,
         })
         const expenses = b.printCost + b.shippingCost + b.laborCost + b.websiteCost;
 

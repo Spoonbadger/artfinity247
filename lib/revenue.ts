@@ -46,19 +46,25 @@ export function calcItemProfitCents(args: {
   lineTotal: number
   size: PrintSize
   frameChosen?: boolean
+  quantity?: number
 }) {
   const {
     lineTotal,
     size,
     frameChosen = false,
+    quantity = 1,
   } = args
 
-  const itemCost = frameChosen
+  const unitItemCost = frameChosen
     ? COSTS.ITEM.FRAMED[size]
     : COSTS.ITEM.UNFRAMED[size]
 
-  const laborCost = COSTS.LABOR_PER_ITEM
-  const websiteCost = websiteCostCents(lineTotal)
+  const itemCost = unitItemCost * quantity
+  const laborCost = COSTS.LABOR_PER_ITEM * quantity
+
+  const websiteCost =
+    paymentFeeCents(lineTotal) +
+    COSTS.HOSTING_PER_ITEM * quantity
 
   const expenses =
     itemCost +

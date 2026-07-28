@@ -72,23 +72,32 @@ export async function POST(
         description: description ?? artwork.description,
         markupSmall:
             markupSmall !== null
-            ? parseInt(markupSmall, 10) || artwork.markupSmall
+              ? Number.isNaN(parseInt(markupSmall, 10))
+              ? artwork.markupSmall
+              : parseInt(markupSmall, 10)
             : artwork.markupSmall,
         markupMedium:
             markupMedium !== null
-            ? parseInt(markupMedium, 10) || artwork.markupMedium
+              ? Number.isNaN(parseInt(markupMedium, 10))
+              ? artwork.markupMedium
+              : parseInt(markupMedium, 10)
             : artwork.markupMedium,
         markupLarge:
             markupLarge !== null
-            ? parseInt(markupLarge, 10) || artwork.markupLarge
+              ? Number.isNaN(parseInt(markupLarge, 10))
+              ? artwork.markupLarge
+              : parseInt(markupLarge, 10)
             : artwork.markupLarge,
-        markupxL:
+        markupXl:
             markupXl !== null
-            ? parseInt(markupXl, 10) || artwork.markupXl
+              ? Number.isNaN(parseInt(markupXl, 10))
+              ? artwork.markupXl
+              : parseInt(markupXl, 10)
             : artwork.markupXl,
         imageUrl: imageUrl || artwork.imageUrl,
         },
     })
+
 
     // Delete old Cloudinary image if replaced
     if (imageUrl && artwork.imageUrl && imageUrl !== artwork.imageUrl) {

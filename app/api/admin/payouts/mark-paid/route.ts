@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
       lineTotal: true,
       size: true,
       frameChosen: true,
+      quantity: true,
     },
   })
 
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest) {
       lineTotal: item.lineTotal ?? 0,
       size: sizeNorm,
       frameChosen: item.frameChosen,
+      quantity: item.quantity || 1,
     })
     return sum + b.artistShare
   }, 0)
