@@ -23,6 +23,7 @@ async function requireAdmin(req: NextRequest) {
 function normalizeSize(raw: string | null): PrintSize {
   const v = (raw || "").toUpperCase();
   if (v.startsWith("S")) return "S";
+  if (v.startsWith("XL")) return "XL"
   if (v.startsWith("L")) return "L";
   return "M";
 }
@@ -72,7 +73,11 @@ export async function GET(req: NextRequest) {
         const lineTotal = item.lineTotal ?? qty * unit;
         const size = normalizeSize(item.size as string | null);
 
-        const b = calcItemProfitCents({ lineTotal, size });
+        const b = calcItemProfitCents({
+          lineTotal,
+          size,
+          frameChosen: item.frameChosen,
+        })
         const expenses = b.printCost + b.shippingCost + b.laborCost + b.websiteCost;
 
         const row = byArtist.get(artistId) ?? {

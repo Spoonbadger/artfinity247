@@ -24,6 +24,7 @@ export async function GET(
           markupSmall: true,
           markupMedium: true,
           markupLarge: true,
+          markupXl: true,
           artistId: true,
           artist: {
             select: {

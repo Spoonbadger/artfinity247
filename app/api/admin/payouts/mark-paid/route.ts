@@ -52,12 +52,14 @@ export async function POST(req: NextRequest) {
     select: {
       lineTotal: true,
       size: true,
+      frameChosen: true,
     },
   })
 
   function normalizeSize(raw: string | null): PrintSize {
     const v = (raw || "").toUpperCase()
     if (v.startsWith("S")) return "S"
+    if (v.startsWith("XL")) return "XL"
     if (v.startsWith("L")) return "L"
     return "M"
   }
@@ -67,6 +69,7 @@ export async function POST(req: NextRequest) {
     const b = calcItemProfitCents({
       lineTotal: item.lineTotal ?? 0,
       size: sizeNorm,
+      frameChosen: item.frameChosen,
     })
     return sum + b.artistShare
   }, 0)

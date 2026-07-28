@@ -30,17 +30,17 @@ import { getProduct } from '@/lib/api'
 import { getFinalPrice } from '@/lib/artwork_price'
 import Link from 'next/link'
 
-type PrintSize = "small" | "medium" | "large"
+type PrintSize = "small" | "medium" | "large" | "xl"
 
 const SIZE_DIMENSIONS: Record<PrintSize, string> = {
   small: "5×7 in",
   medium: "8×12 in",
   large: "11×17 in",
-  // xl: "18x24 in",
+  xl: "18x24 in",
   // xxl: "24x32 in",
 }
 
-const SIZES: PrintSize[] = ["small", "medium", "large"]
+const SIZES: PrintSize[] = ["small", "medium", "large", "xl"]
 // const SIZES: PrintSize[] = ["small", "medium", "large", "XL", "XXL"]
 
 
@@ -65,8 +65,8 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
   const priceFloatPoints = AppConfigs?.product_price_float_points ?? 2
 
   const [product, setProduct] = useState<ProductType | null>(null);
-  const [reviews, setReviews] = useState<ReviewType[]>([]);
-  const [selectedSize, setSelectedSize] = useState<"small" | "medium" | "large">('medium')
+  // const [reviews, setReviews] = useState<ReviewType[]>([]);
+  const [selectedSize, setSelectedSize] = useState<PrintSize>('medium')
   const [quantity, setQuantity] = useState<number>(1);
   const [purchaseNote, setPurchaseNote] = useState<string>("");
 
@@ -105,7 +105,9 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
         ? Number(product.markupSmall ?? 0)
         : selectedSize === "medium"
         ? Number(product.markupMedium ?? 0)
-        : Number(product.markupLarge ?? 0)
+        : selectedSize === "large"
+        ? Number(product.markupLarge ?? 0)
+        : Number(product.markupXl ?? 0)
 
     const finalPrice = getFinalPrice(selectedSize, markup, frameChosen)
 
@@ -150,8 +152,8 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
         selectedSize,
         unitPrice: price,
         quantity,
-        frameChosen: false,
-        frameColor: null,
+        frameChosen,
+        frameColor: frameChosen ? frameColor: null,
       },
     ]
 
@@ -293,7 +295,7 @@ const ProductPage = ({ params }: { params: ParamsPropsType }) => {
                           checked={frameChosen}
                           onChange={(e) => setFrameChosen(e.target.checked)}
                         />
-                        Add frame
+                        ← Add frame
                       </label>
 
                       {frameChosen && (

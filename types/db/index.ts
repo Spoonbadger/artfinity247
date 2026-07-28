@@ -53,6 +53,7 @@ export type ProductType = {
   markupSmall?: number,
   markupMedium?: number,
   markupLarge?: number,
+  markupXl?: number,
   imageUrl: string;
   tags?: ProductTagType[];
   category?: ProductCategoryType[];
@@ -177,7 +178,7 @@ export type CartItemProductType = {
   artist: string
   title: string
   imageUrl: string
-  selectedSize: 'small' | 'medium' | 'large'
+  selectedSize: 'small' | 'medium' | 'large' | 'xl'
   unitPrice: number // store in cents
   frameChosen: boolean
   frameColor: 'white' | 'natural' | 'black' | null

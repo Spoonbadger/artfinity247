@@ -34,7 +34,10 @@ export async function GET(
     slug: a.slug!, 
     title: a.title, 
     imageUrl: a.imageUrl,
-    markupSmall: a.markupSmall, markupMedium: a.markupMedium, markupLarge: a.markupLarge,
+    markupSmall: a.markupSmall, 
+    markupMedium: a.markupMedium, 
+    markupLarge: a.markupLarge, 
+    markupXl: a.markupXl,
     artist: { 
       name: a.artist.name, 
       slug: a.artist.slug, 

@@ -1,5 +1,7 @@
 import Stripe from 'stripe'
 import { prisma } from "@/lib/prisma";
+import { basePrices, getFinalPrice } from "@/lib/artwork_price"
+
 
 export const dynamic = "force-dynamic"
 export const runtime = 'nodejs'
@@ -8,11 +10,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-08-27.basil',
 })
 
-// TODO: move to AppConfigs.json (prices in cents)
-const BASE = { small: 3499, medium: 4499, large: 6499 } as const
-type Size = keyof typeof BASE
-
-const FRAME_COST = 12000
+type Size = keyof typeof basePrices
 
 function abs(url?: string | null) {
   if (!url) return undefined
@@ -51,7 +49,7 @@ export async function POST(req: Request) {
               : null
           const slug: string = String(p.slug ?? '').trim()
           const size: Size = String(p.selectedSize ?? '').toLowerCase() as any
-          if (!slug || !['small', 'medium', 'large'].includes(size)) return null
+          if (!slug || !['small', 'medium', 'large', 'xl'].includes(size)) return null
 
           // Fetch artwork + artist for pricing & metadata
           const art = await prisma.artwork.findUnique({
@@ -65,6 +63,7 @@ export async function POST(req: Request) {
               markupSmall: true,
               markupMedium: true,
               markupLarge: true,
+              markupXl: true,
               artist: { select: { name: true } },
             },
           })
@@ -73,9 +72,10 @@ export async function POST(req: Request) {
           const markup =
             size === 'small' ? (art.markupSmall ?? 0) :
             size === 'medium' ? (art.markupMedium ?? 0) :
-            (art.markupLarge ?? 0)
+            size === 'large' ? (art.markupLarge ?? 0) :
+            (art.markupXl ?? 0)
 
-          const unit_amount = BASE[size] + markup + (frameChosen ? FRAME_COST : 0)
+          const unit_amount = getFinalPrice(size, markup, frameChosen)
           const quantity = Math.max(1, Math.min(10, Number(item.quantity ?? p.quantity ?? 1)))
 
           return {

@@ -19,9 +19,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 export const runtime = 'nodejs'
 
 function normalizeSize(raw: string | null): PrintSize {
-  const v = (raw || "").toUpperCase();
-  if (v.startsWith("S")) return "S";
-  if (v.startsWith("L")) return "L";
+  const v = (raw || "").toUpperCase()
+  if (v.startsWith("S")) return "S"
+  if (v.startsWith("L")) return "L"
   return "M"
 }
 
@@ -163,7 +163,7 @@ export async function POST(req: NextRequest) {
           quantity: i.quantity ?? 1,
           unitPrice: i.unitPrice ?? 0,
         }))
-console.log("SENDING ADMIN EMAIL")
+
         await resend.emails.send({
           from: "Artfinity <notifications@theartfinity.com>",
           to: "craig@theartfinity.com",
@@ -218,7 +218,6 @@ console.log("SENDING ADMIN EMAIL")
       for (const { artist, items } of byArtist.values()) {
         try {
 
-console.log("SENDING ARTIST EMAIL")
           await resend.emails.send({
             from: "Artfinity <notifications@theartfinity.com>",
             to: artist.email,
@@ -237,7 +236,6 @@ console.log("SENDING ARTIST EMAIL")
 
       // Send receipt (idempotent inside helper via receiptSentAt)
       try {
-console.log("SENDING RECEIPT")
         await sendReceiptEmail(order.id)
       } catch (e) {
         console.error("Email send failed (non-blocking):", e)

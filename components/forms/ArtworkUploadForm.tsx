@@ -15,11 +15,13 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
     const [markupSmall, setMarkupSmall] = useState(artwork?.markupSmall ?? 0)
     const [markupMedium, setMarkupMedium] = useState(artwork?.markupMedium ?? 0)
     const [markupLarge, setMarkupLarge] = useState(artwork?.markupLarge ?? 0)
+    const [markupXl, setMarkupXl] = useState(artwork?.markupXl ?? 0)
     const [loading, setLoading] = useState(false)
     const [preview, setPreview] = useState<string | null>(null)
     const [errorSmall, setErrorSmall] = useState(false)
     const [errorMedium, setErrorMedium] = useState(false)
     const [errorLarge, setErrorLarge] = useState(false)
+    const [errorXl, setErrorXl] = useState(false)
 
     const [imageUrl, setImageUrl] = useState<string | null>(artwork?.imageUrl || null)
 
@@ -31,6 +33,9 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
     )
     const [largeInput, setLargeInput] = useState(
       ((basePrices.large + markupLarge) / 100).toString()
+    )
+    const [xlInput, setXlInput] = useState(
+      ((basePrices.xl + markupXl) / 100).toString()
     )
 
     const router = useRouter()
@@ -64,6 +69,7 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
         formData.append('markupSmall', String(markupSmall))
         formData.append('markupMedium', String(markupMedium))
         formData.append('markupLarge', String(markupLarge))
+        formData.append('markupXl', String(markupXl))
 
 
         const endpoint = artwork
@@ -107,6 +113,7 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
             formData.set("markupSmall", String(markupSmall))
             formData.set("markupMedium", String(markupMedium))
             formData.set("markupLarge", String(markupLarge))
+            formData.set("markupXl", String(markupXl))
 
             if (artwork?.id) {
             formData.set("artworkId", artwork.id)
@@ -283,8 +290,40 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
                     </p>
                     )}
                 </div>
+                
+                <div className="space-y-2 max-w-sm">
+                    <label className="block text-sm font-medium text-theme-secondary-600 flex justify-between items-center">
+                    Xl print price ($)
+                    <span className="ml-2 text-xs text-gray-500">
+                        Base ${basePrices.xl / 100}
+                    </span>
+                    </label>
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+                    <input
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
+                    className="w-full p-2 border rounded text-theme-secondary-600"
+                    value={xlInput}
+                    onChange={(e) => {
+                        const v = e.target.value
+                        setXlInput(v)
+
+                        const cents = Math.round((parseFloat(v) || 0) * 100)
+                        const markup = cents - basePrices.xl
+
+                        setMarkupXl(Math.max(0, markup))
+                        setErrorXl(markup < 0)
+                      }}
+                    />
+                    {errorXl && (
+                    <p className="text-red-500 text-xs">
+                        Must be ≥ ${basePrices.xl / 100}
+                    </p>
+                    )}
+                </div>
             </div>
-            {errorLarge && <p className='text-red-500 text-sm'>Must be ≥ ${basePrices.large /100}</p>}
+            {errorXl && <p className='text-red-500 text-sm'>Must be ≥ ${basePrices.xl /100}</p>}
 
             <Button type='submit' disabled={
                 loading ||

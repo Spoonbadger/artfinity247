@@ -21,10 +21,11 @@ async function requireAdmin(req: NextRequest) {
   return payload.role === "ADMIN" ? payload : null;
 }
 
-// Normalize stored item.size into "S" | "M" | "L"
+// Normalize stored item.size into "S" | "M" | "L" | "XL"
 function normalizeSize(raw: string | null): PrintSize {
   const v = (raw || "").toUpperCase();
   if (v.startsWith("S")) return "S";
+  if (v.startsWith("XL")) return "XL"
   if (v.startsWith("L")) return "L";
   return "M"; // default
 }

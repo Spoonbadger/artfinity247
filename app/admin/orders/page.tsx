@@ -185,10 +185,11 @@ export default function AdminOrdersPage() {
                   )}
                   <div><strong>Line Total:</strong> ${((item.lineTotal ?? 0) / 100).toFixed(2)}</div>
                   <div><strong>Costs:</strong>{' '}
-                    print ${(item.printCost ?? 0)/100},{' '}
-                    ship ${(item.shippingCost ?? 0)/100},{' '}
+                    print+shipping cost ${(item.printCost ?? 0)/100},{' '}
+                    {/* ship ${(item.shippingCost ?? 0)/100},{' '} */}
                     labor ${(item.laborCost ?? 0)/100},{' '}
-                    site ${(item.websiteCost ?? 0)/100}
+                    site+stripe ${(item.websiteCost ?? 0)/100},
+                     Total expenses: ${((item.printCost ?? 0)/100) + ((item.laborCost ?? 0)/100) + ((item.websiteCost ?? 0)/100)}
                   </div>
                   <div><strong>Profit:</strong> ${(item.profit/100).toFixed(2)} →{' '}
                     Artist ${(item.artistShare/100).toFixed(2)} /{' '}

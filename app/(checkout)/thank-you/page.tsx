@@ -8,7 +8,7 @@ type OrderItem = {
   id: string
   title: string
   slug: string | null
-  size: "small" | "medium" | "large" | string
+  size: "small" | "medium" | "large" | "xl" | string
   quantity: number
   unitPrice: number // cents
   lineTotal: number // cents

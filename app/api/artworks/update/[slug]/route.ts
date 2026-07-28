@@ -51,6 +51,7 @@ export async function POST(
     const markupSmall = form.get("markupSmall") as string | null
     const markupMedium = form.get("markupMedium") as string | null
     const markupLarge = form.get("markupLarge") as string | null
+    const markupXl = form.get("markupXl") as string | null
 
 
     const artwork = await prisma.artwork.findUnique({
@@ -81,6 +82,10 @@ export async function POST(
             markupLarge !== null
             ? parseInt(markupLarge, 10) || artwork.markupLarge
             : artwork.markupLarge,
+        markupxL:
+            markupXl !== null
+            ? parseInt(markupXl, 10) || artwork.markupXl
+            : artwork.markupXl,
         imageUrl: imageUrl || artwork.imageUrl,
         },
     })

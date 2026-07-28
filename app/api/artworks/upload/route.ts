@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
     const markupSmall = parseInt(form.get("markupSmall") as string) || 0;
     const markupMedium = parseInt(form.get("markupMedium") as string) || 0;
     const markupLarge = parseInt(form.get("markupLarge") as string) || 0;
+    const markupXl = parseInt(form.get("markupXl") as string) || 0
 
 
     const slug =
@@ -65,6 +66,7 @@ export async function POST(req: NextRequest) {
         markupSmall,
         markupMedium,
         markupLarge,
+        markupXl,
         description: description || '',
         imageUrl: imageUrl,
         artistId: payload.id as string,
