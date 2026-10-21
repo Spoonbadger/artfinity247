@@ -36,8 +36,9 @@ async function requireAdmin(req: NextRequest) {
 function normalizeSize(raw: string | null): PrintSize {
   const v = (raw || "").toUpperCase()
   if (v.startsWith("S")) return "S"
+  if (v.startsWith("XL")) return "XL"
   if (v.startsWith("L")) return "L"
-  return "M" // default
+  return "M"
 }
 
 
@@ -69,11 +70,13 @@ export async function GET(req: NextRequest) {
       },
     },
     select: {
-      // cents
       lineTotal: true,
       size: true,
+      quantity: true,
+      frameChosen: true,
       artistName: true,
       artwork: { select: { artistId: true } },
+      order: { select: { createdAt: true } },
     },
   })
 
@@ -101,7 +104,13 @@ export async function GET(req: NextRequest) {
     const key = artistId
     const gross = it.lineTotal ?? 0
     const size = normalizeSize(it.size ?? null) // you'll need to SELECT size below
-    const b = calcItemProfitCents({ lineTotal: gross, size })
+    const b = calcItemProfitCents({
+      lineTotal: gross,
+      size,
+      frameChosen: it.frameChosen,
+      quantity: it.quantity || 1,
+      orderDate: it.order.createdAt,
+    })
     const expenses = b.printCost + b.shippingCost + b.laborCost + b.websiteCost
     const profit = b.profit
     const artistShare = b.artistShare
@@ -118,7 +127,7 @@ export async function GET(req: NextRequest) {
       companyShare: 0,
     }
 
-    current.itemsCount += 1
+    current.itemsCount += it.quantity || 1
     current.gross += gross
     current.expenses += expenses
     current.profit += profit

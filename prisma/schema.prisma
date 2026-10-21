@@ -21,6 +21,8 @@ model Order {
   shippingStatus  String      @default("pending")
   items           OrderItem[]
   sentToPrinter Boolean @default(false)
+  adminNotificationSentAt  DateTime?
+  artistNotificationsSentAt DateTime?
 }
 
 model OrderItem {

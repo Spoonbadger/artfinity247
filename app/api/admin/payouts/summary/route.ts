@@ -80,7 +80,8 @@ export async function GET(req: NextRequest) {
           lineTotal,
           size,
           frameChosen: item.frameChosen,
-          quantity: qty | 1,
+          quantity: qty || 1,
+          orderDate: order.createdAt,
         })
         const expenses = b.printCost + b.shippingCost + b.laborCost + b.websiteCost;
 

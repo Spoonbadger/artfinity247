@@ -3,7 +3,11 @@
 
 export type PrintSize = "S" | "M" | "L" | "XL"
 
-export const ARTIST_SPLIT = 0.5 as const
+export function getArtistSplit(orderDate: Date): number {
+  const changeDate = new Date("2026-10-21T00:00:00-04:00")
+
+  return orderDate >= changeDate ? 0.6 : 0.5
+}
 
 // export const FRAME_ARTIST_BONUS = 500
 
@@ -47,12 +51,14 @@ export function calcItemProfitCents(args: {
   size: PrintSize
   frameChosen?: boolean
   quantity?: number
+  orderDate: Date
 }) {
   const {
     lineTotal,
     size,
     frameChosen = false,
     quantity = 1,
+    orderDate,
   } = args
 
   const unitItemCost = frameChosen
@@ -73,7 +79,7 @@ export function calcItemProfitCents(args: {
 
   const profit = Math.max(0, lineTotal - expenses)
 
-  const artistShare = Math.round(profit * ARTIST_SPLIT)
+  const artistShare = Math.round(profit * getArtistSplit(orderDate))
   const companyShare = profit - artistShare
 
 

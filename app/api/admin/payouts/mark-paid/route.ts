@@ -54,6 +54,11 @@ export async function POST(req: NextRequest) {
       size: true,
       frameChosen: true,
       quantity: true,
+      order: {
+        select: {
+          createdAt: true,
+        },
+      },
     },
   })
 
@@ -72,6 +77,7 @@ export async function POST(req: NextRequest) {
       size: sizeNorm,
       frameChosen: item.frameChosen,
       quantity: item.quantity || 1,
+      orderDate: item.order.createdAt,
     })
     return sum + b.artistShare
   }, 0)

@@ -21,6 +21,7 @@ export const runtime = 'nodejs'
 function normalizeSize(raw: string | null): PrintSize {
   const v = (raw || "").toUpperCase()
   if (v.startsWith("S")) return "S"
+  if (v.startsWith("XL")) return "XL"
   if (v.startsWith("L")) return "L"
   return "M"
 }
@@ -95,6 +96,14 @@ export async function POST(req: NextRequest) {
         },
       })
 
+      const existingItems = await prisma.orderItem.count({
+          where: { orderId: order.id },
+        })
+
+        if (existingItems > 0 && order.receiptSentAt) {
+          console.log("Order already processed:", order.id)
+          return new Response(null, { status: 200 })
+        }
       // 2) Get line items with product expanded (so product.metadata is available)
       const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
         expand: ['data.price.product'],
@@ -116,7 +125,13 @@ export async function POST(req: NextRequest) {
         frameChosen && ["black", "white", "natural"].includes(rawFrameColor)
           ? rawFrameColor
           : null
-      const b = calcItemProfitCents({ lineTotal, size: sizeNorm, frameChosen })
+      const b = calcItemProfitCents({
+        lineTotal,
+        size: sizeNorm,
+        frameChosen,
+        quantity: qty,
+        orderDate: order.createdAt,
+      })
 
       return {
         orderId: order.id,
@@ -139,13 +154,11 @@ export async function POST(req: NextRequest) {
       }
     })
 
-      // For want strict idempotency, you could check if items exist for this order.
-      await prisma.orderItem.deleteMany({ where: { orderId: order.id } })
+    if (existingItems === 0 && itemsToCreate.length > 0) {
+      await prisma.orderItem.createMany({ data: itemsToCreate })
+    }
 
-      if (itemsToCreate.length > 0) {
-        await prisma.orderItem.createMany({ data: itemsToCreate })
-      }
-
+    if (!order.adminNotificationSentAt) {
       try {
         const rawItems = await prisma.orderItem.findMany({
           where: { orderId: order.id },
@@ -177,9 +190,12 @@ export async function POST(req: NextRequest) {
         })
       } catch (err) {
         console.error("Admin sale email failed", err)
-      }
+        }
+      } // Close admin notification condition
       await sleep(1001)
+    
 
+      if (!order.artistNotificationsSentAt) {
       // Get items with artist IDs
       const soldItems = await prisma.orderItem.findMany({
         where: { orderId: order.id },
@@ -217,17 +233,21 @@ export async function POST(req: NextRequest) {
       // Send one email per artist
       for (const { artist, items } of byArtist.values()) {
         try {
-
-          await resend.emails.send({
+          const { error } = await resend.emails.send({
             from: "Artfinity <notifications@theartfinity.com>",
             to: artist.email,
             subject: "Your artwork sold on Artfinity!",
             react: ArtistSaleNotificationEmail({
               artistName: artist.artist_name ?? "Artist",
               items,
-              totalCents: items.reduce((sum: number, i: any) => sum + i.lineTotal, 0),
+              totalCents: items.reduce(
+                (sum: number, i: any) => sum + i.lineTotal,
+                0
+              ),
             }),
           })
+
+          if (error) throw error
         } catch (err) {
           console.error("Artist sale email failed", err)
         }
@@ -240,10 +260,10 @@ export async function POST(req: NextRequest) {
       } catch (e) {
         console.error("Email send failed (non-blocking):", e)
       }
-
+    }
     } catch (err) {
       console.error('❌ Error persisting order:', err)
-      // Still return 200 so Stripe doesn’t hammer retries forever
+      return new Response('Order processing failed', { status: 500 })
     }
   }
 

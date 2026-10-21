@@ -74,7 +74,13 @@ export async function GET(req: NextRequest) {
         const size = normalizeSize(item.size as string | null);
 
         // >>> authoritative breakdown from /lib/revenue.ts <<<
-        const b = calcItemProfitCents({ lineTotal, size, frameChosen: item.frameChosen });
+        const b = calcItemProfitCents({
+          lineTotal,
+          size,
+          frameChosen: item.frameChosen,
+          quantity: qty || 1,
+          orderDate: order.createdAt,
+        })
 
         return {
           id: item.id,
