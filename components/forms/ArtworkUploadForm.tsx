@@ -46,6 +46,37 @@ const ArtworkUploadForm = ({ artwork }: { artwork? : Artwork }) => {
         }
     }, [artwork])
 
+
+    useEffect(() => {
+    // Only load previous prices when creating new artwork
+        if (artwork) return
+
+        const loadLastPrices = async () => {
+            try {
+            const res = await fetch("/api/artworks/last-prices")
+            if (!res.ok) return
+
+            const prices = await res.json()
+            if (!prices) return
+
+            setMarkupSmall(prices.markupSmall)
+            setMarkupMedium(prices.markupMedium)
+            setMarkupLarge(prices.markupLarge)
+            setMarkupXl(prices.markupXl)
+
+            setSmallInput(((basePrices.small + prices.markupSmall) / 100).toString())
+            setMediumInput(((basePrices.medium + prices.markupMedium) / 100).toString())
+            setLargeInput(((basePrices.large + prices.markupLarge) / 100).toString())
+            setXlInput(((basePrices.xl + prices.markupXl) / 100).toString())
+            } catch (err) {
+            console.error("Failed to load previous prices:", err)
+            }
+        }
+
+        loadLastPrices()
+    }, [artwork])
+
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
