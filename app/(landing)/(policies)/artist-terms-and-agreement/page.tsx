@@ -73,8 +73,8 @@ export default function ArtistTermsPage() {
           </p>
 
           <ul className="list-disc ml-6 space-y-1 mt-2">
-            <li><strong>50% to the Artist</strong></li>
-            <li><strong>50% to Artfinity</strong></li>
+            <li><strong>60% to the Artist</strong></li>
+            <li><strong>40% to Artfinity</strong></li>
           </ul>
 
           <p className="mt-4">

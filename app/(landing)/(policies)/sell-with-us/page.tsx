@@ -35,8 +35,8 @@ export default function SellWithUsPage() {
             each sale is split:
           </p>
           <ul className="list-disc ml-6 mt-2 space-y-1">
-            <li><strong>50% to you (the artist)</strong></li>
-            <li><strong>50% to Artfinity</strong></li>
+            <li><strong>60% to you (the artist)</strong></li>
+            <li><strong>40% to Artfinity</strong></li>
           </ul>
           <p className="mt-3">
             Payouts are calculated monthly and sent via Venmo by the 5th of the
@@ -55,7 +55,7 @@ export default function SellWithUsPage() {
           <ul className="list-disc ml-6 mt-2 space-y-1">
             <li>Production, shipping, and payment costs are deducted first</li>
             <li>Remaining net profit is approximately $21</li>
-            <li>Your share: approximately <strong>$10–11 per print</strong></li>
+            <li>Your share: approximately <strong>$12–13 per print</strong></li>
           </ul>
           <p className="mt-3">
             Larger print sizes generate higher payouts.
