@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
       order: {
         createdAt: { gte: start, lt: end },
         paymentStatus: "paid",
+        kind: { not: "bulk" },
       },
     },
     select: {

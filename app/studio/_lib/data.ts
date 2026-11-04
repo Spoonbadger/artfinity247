@@ -69,7 +69,7 @@ export async function getSales(artistId: string, since?: Date): Promise<Sale[]> 
   const items = await prisma.orderItem.findMany({
     where: {
       artwork: { artistId },
-      order: { paymentStatus: "paid", ...(since ? { createdAt: { gte: since } } : {}) },
+      order: { paymentStatus: "paid", kind: { not: "bulk" }, ...(since ? { createdAt: { gte: since } } : {}) },
     },
     select: {
       id: true, title: true, slug: true, size: true, frameChosen: true, quantity: true,

@@ -46,7 +46,7 @@ export default function ArtistTabs({ tabs }: { tabs: Tab[] }) {
             >
               {t.label}
               {t.count != null && <span className="num ml-1.5 text-[13px] font-semibold text-ink-2">{t.count}</span>}
-              {on && <BrushStroke className="absolute -bottom-[3px] -left-1 h-[9px] w-[calc(100%+8px)]" color="var(--af-ink)" />}
+              {on && <BrushStroke className="absolute -bottom-[3px] -left-1 h-[9px] w-[calc(100%+8px)]" color="var(--accent, var(--af-ink))" />}
             </button>
           );
         })}

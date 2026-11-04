@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
       // Only paid orders count toward earnings (matches admin payouts)
       order: {
         paymentStatus: "paid",
+        kind: { not: "bulk" },
         ...(createdAtFilter ? { createdAt: createdAtFilter } : {}),
       },
     },

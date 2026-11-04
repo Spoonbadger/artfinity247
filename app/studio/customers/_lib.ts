@@ -1,16 +1,10 @@
 // Server-only data for the Studio customers pages and /api/studio/customers.
 import { prisma } from "@/lib/prisma";
-import { toPrintSize, type StudioArtist } from "../_lib/data";
+import { toPrintSize } from "../_lib/data";
 import type { PrintSize } from "@/lib/revenue";
+import type { Stage } from "@/components/crm/format";
 
-export type OrderStage = "paid" | "printing" | "shipped" | "delivered";
-
-export const STAGES: { key: OrderStage; label: string; dab: string }[] = [
-  { key: "paid", label: "Paid", dab: "#ffd43b" },
-  { key: "printing", label: "At the printer", dab: "#e8743b" },
-  { key: "shipped", label: "Shipped", dab: "#2b37f0" },
-  { key: "delivered", label: "Delivered", dab: "#15161b" },
-];
+export type OrderStage = Stage;
 
 export function stageOf(o: { shippingStatus: string; sentToPrinter: boolean }): OrderStage {
   if (o.shippingStatus === "delivered") return "delivered";
@@ -20,16 +14,14 @@ export function stageOf(o: { shippingStatus: string; sentToPrinter: boolean }): 
 
 /** City and state only from "1 Main St, Asheville, NC 28801, US". Never the street. */
 export function cityOf(address: string | null | undefined) {
-  const parts = String(address || "").split(",").map((p) => p.trim()).filter(Boolean);
-  if (parts.length >= 3) {
-    // [..., city, "ST 12345", country?]
-    const hasCountry = parts.length >= 4 || /^[A-Z]{2,3}$/.test(parts[parts.length - 1]) && !/\d/.test(parts[parts.length - 1]) && parts.length > 3;
-    const stateIdx = hasCountry ? parts.length - 2 : parts.length - 1;
-    const state = parts[stateIdx].replace(/\s*\d[\d-]*$/, "").trim();
-    const city = parts[stateIdx - 1];
-    if (city && !/^\d/.test(city)) return state ? `${city}, ${state}` : city;
-  }
-  return "";
+  let p = String(address || "").split(",").map((x) => x.trim()).filter(Boolean);
+  // Drop a trailing country after "NC 28801".
+  if (p.length >= 3 && !/\d/.test(p[p.length - 1]) && /\d/.test(p[p.length - 2])) p = p.slice(0, -1);
+  if (p.length < 2) return "";
+  const state = p[p.length - 1].replace(/\s*\d[\d\s-]*$/, "").trim();
+  const city = p[p.length - 2];
+  if (/^\d/.test(city)) return /^\d/.test(state) ? "" : state;
+  return state ? `${city}, ${state}` : city;
 }
 
 /** m•••@example.com */
@@ -156,4 +148,3 @@ export function emailFromParam(param: string) {
 
 export const customerHref = (email: string) => `/studio/customers/${encodeURIComponent(email)}`;
 
-export type ArtistLite = Pick<StudioArtist, "id">;

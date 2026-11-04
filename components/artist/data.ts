@@ -2,6 +2,8 @@ import { cache } from "react";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { basePrices, getFinalPrice } from "@/lib/artwork_price";
+import { getArtistTrust, type Trust } from "@/lib/artistTrust";
+import { parseTheme, paint, type PageTheme } from "./theme";
 
 export type ArtistWork = {
   id: string;
@@ -24,7 +26,10 @@ export type ArtistPageData = {
   memberSince: Date;
   works: ArtistWork[];
   sales: number;
-  verified: boolean;
+  /** Medal, prints sold and real verification (Artist.verification === "VERIFIED"). */
+  trust: Trust;
+  /** Saved page design, with defaults filled in. */
+  theme: PageTheme;
   banner: ArtistWork | null;
 };
 
@@ -56,6 +61,7 @@ export const getArtistPage = cache(async (rawSlug: string): Promise<ArtistPageDa
       bio: true,
       profileImage: true,
       createdAt: true,
+      pageTheme: true,
       artworks: {
         where: { status: "APPROVED" },
         orderBy: { createdAt: "desc" },
@@ -82,7 +88,7 @@ export const getArtistPage = cache(async (rawSlug: string): Promise<ArtistPageDa
   // Paid prints per artwork (sum of quantities on paid orders).
   const soldRows = await prisma.orderItem.groupBy({
     by: ["artworkId"],
-    where: { artwork: { artistId: artist.id }, order: { paymentStatus: "paid" } },
+    where: { artwork: { artistId: artist.id }, order: { paymentStatus: "paid", kind: { not: "bulk" } } },
     _sum: { quantity: true },
     _count: { _all: true },
   });
@@ -102,9 +108,8 @@ export const getArtistPage = cache(async (rawSlug: string): Promise<ArtistPageDa
 
   const sales = soldRows.reduce((n, r) => n + (r._sum.quantity ?? r._count._all), 0);
 
-  // Banner + og:image: the best-selling piece that isn't marked sensitive, else the newest safe one.
-  const safe = works.filter((w) => w.sensitive.length === 0);
-  const banner = [...safe].sort((a, b) => b.sold - a.sold)[0] ?? null;
+  const theme = parseTheme(artist.pageTheme, works.map((w) => w.id));
+  const trust = await getArtistTrust(artist.id);
 
   const name = artist.artist_name || artist.name;
   const city = [artist.city, artist.state].filter(Boolean).join(", ");
@@ -120,10 +125,31 @@ export const getArtistPage = cache(async (rawSlug: string): Promise<ArtistPageDa
     memberSince: artist.createdAt,
     works,
     sales,
-    verified: sales > 0,
-    banner,
+    trust,
+    theme,
+    banner: resolveBanner(works, theme),
   };
 });
+
+/**
+ * The banner picture for a theme: the piece the artist chose, nothing for a solid paint banner,
+ * else the best-selling piece that isn't marked sensitive (also used for og:image).
+ */
+export function resolveBanner(works: ArtistWork[], theme: PageTheme): ArtistWork | null {
+  if (theme.banner.kind === "color") return null;
+  if (theme.banner.kind === "art") {
+    const id = theme.banner.artworkId;
+    const chosen = works.find((w) => w.id === id);
+    if (chosen) return chosen;
+  }
+  const safe = works.filter((w) => w.sensitive.length === 0);
+  return [...safe].sort((a, b) => b.sold - a.sold)[0] ?? null;
+}
+
+/** Solid paint color for the banner, when the theme asks for one. */
+export function bannerColor(theme: PageTheme) {
+  return theme.banner.kind === "color" ? paint(theme.banner.paint).color : null;
+}
 
 /**
  * Placeholder venues for the seeded demo artists until a venue model exists.

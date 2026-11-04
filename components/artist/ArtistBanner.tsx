@@ -5,10 +5,19 @@ import Image from "next/image";
  * scaled up past the frame, a canvas-grain overlay, and a brushed bottom edge
  * that bleeds into the page.
  */
-export default function ArtistBanner({ src, alt }: { src: string | null; alt: string }) {
+export default function ArtistBanner({ src, alt, color }: { src: string | null; alt: string; color?: string | null }) {
   return (
     <div className="relative h-[168px] overflow-hidden bg-gallery sm:h-[240px] lg:h-[300px]">
-      {src ? (
+      {color ? (
+        // A solid paint banner, laid on with a wide brush: a base wash, a lighter drag and a darker pooled edge.
+        <div className="absolute inset-0" style={{ background: color }}>
+          <svg className="absolute inset-0 h-full w-full" viewBox="0 0 1440 300" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M-20 70C240 40 520 92 820 60S1260 30 1460 66V128C1200 104 980 140 700 122S220 92-20 130Z" fill="#fff" opacity=".16" />
+            <path d="M-20 196C300 170 560 214 900 186S1300 168 1460 190V250C1180 232 940 262 640 246S200 222-20 252Z" fill="#000" opacity=".1" />
+            <path d="M80 150C380 136 700 160 1000 142S1340 132 1400 140" stroke="#fff" strokeOpacity=".18" strokeWidth="10" strokeLinecap="round" fill="none" />
+          </svg>
+        </div>
+      ) : src ? (
         <Image
           src={src}
           alt={alt}

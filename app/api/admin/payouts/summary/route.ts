@@ -38,6 +38,7 @@ export async function GET(req: NextRequest) {
       where: {
         createdAt: { gte: start, lt: end },
         paymentStatus: "paid",
+        kind: { not: "bulk" }, // an artist's own at-cost order earns nothing
       },
       orderBy: { createdAt: "desc" },
       include: {

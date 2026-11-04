@@ -63,6 +63,7 @@ export async function GET(req: NextRequest) {
       // Only paid orders count toward earnings (matches admin payouts)
       order: {
         paymentStatus: "paid",
+        kind: { not: "bulk" },
         ...(range && { createdAt: { gte: range.start, lt: range.end } }),
       },
     },

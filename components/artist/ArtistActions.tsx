@@ -53,11 +53,13 @@ export default function ArtistActions({ slug, firstName, className }: { slug: st
         type="button"
         onClick={toggleFollow}
         aria-pressed={following}
-        className={cn("btn btn-sm min-h-[44px] px-4 md:min-h-0", following ? "btn-blue" : "btn-ghost")}
+        className={cn("btn btn-sm min-h-[44px] px-4 md:min-h-0", following && "btn-ghost")}
+        // Follow wears the artist's accent color (pageTheme), falling back to Scan Blue.
+        style={following ? undefined : { background: "var(--accent, var(--af-scan))", borderColor: "var(--accent, var(--af-scan))", color: "var(--accent-ink, #fff)" }}
       >
         {following ? "Following" : "Follow"}
       </button>
-      <button type="button" onClick={share} className="btn btn-sm min-h-[44px] px-4 md:min-h-0">
+      <button type="button" onClick={share} className="btn btn-ghost btn-sm min-h-[44px] px-4 md:min-h-0">
         Share page
       </button>
     </div>

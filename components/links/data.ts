@@ -8,7 +8,7 @@ const artSelect = { id: true, slug: true, title: true, imageUrl: true, sensitive
 /** Paid prints sold (sum of quantities), the number medals are based on. */
 async function printsSold(artistId: string) {
   const r = await prisma.orderItem.aggregate({
-    where: { artwork: { artistId }, order: { paymentStatus: "paid" } },
+    where: { artwork: { artistId }, order: { paymentStatus: "paid", kind: { not: "bulk" } } },
     _sum: { quantity: true },
   });
   return r._sum.quantity ?? 0;
