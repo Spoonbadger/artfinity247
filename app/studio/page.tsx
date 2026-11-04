@@ -71,7 +71,7 @@ export default async function StudioHome() {
 
       <section aria-label="Last 30 days" className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
         <PaintChip color="#e8743b" value={prints.toLocaleString("en-US")} label="prints sold" note={`Cadmium · ${sales.length} ${sales.length === 1 ? "order" : "orders"}`} />
-        <PaintChip color="#0f7a55" value={money(earned)} label="you earned" note="Viridian · 60% of profit" earned />
+        <PaintChip color="#0f7a55" value={money(earned)} label="you earned" note="Viridian · your share of profit" earned />
         <PaintChip color="#ffd43b" value={best ? best.title : "None yet"} label="best seller" note={best ? `Naples Yellow · ${best.prints} sold` : "Naples Yellow · hang a code"} />
         <div className="relative">
           <PaintChip color="#2b37f0" value="1,284" label="scans" note="Preview, tracking coming soon" />

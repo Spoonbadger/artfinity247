@@ -1,141 +1,59 @@
-"use client";
-
-import { ReactNode, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { MaxWidthWrapper } from "@/components/layout";
-import { MinimalSection } from "@/components/sections";
-import { CollectionCard } from "@/components/cards";
-import PageBreadcrumb from "@/components/PageBreadcrumb";
-import Pagination from "@/components/CustomPagination";
-import { getAppConfigs, getAppPages } from "@/db/query";
-import { CollectionType } from "@/types";
+import { BrushStroke } from "@/components/af/Brush";
+import PageHead, { EmptyCanvas } from "@/components/browse/PageHead";
+import SensitiveImage from "@/components/site/SensitiveImage";
+import { getArt, getCities } from "@/components/browse/data";
+import { cn } from "@/lib/utils";
 
-const AppConfigs = getAppConfigs();
-const AppPages = getAppPages();
+export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Scenes by city", description: "Local art, city by city. Prints made to order." };
 
-const AllScenesPage = (): ReactNode => {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+const STROKES = ["var(--af-sticker)", "var(--af-scan)", "var(--af-coral)", "var(--af-earned)"];
+const HANG = ["left-[8%] top-[18%] w-[27%] -rotate-[2deg]", "left-[38%] top-[10%] w-[25%] rotate-[1deg]", "left-[67%] top-[22%] w-[24%] -rotate-[1deg]"];
 
-  const queryPageKey = AppConfigs.pagination_query_key || "page";
-
-  const { title, banner, items_limit, slug: scenesPageSlug } = AppPages.scenes;
-
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [itemsPerPage, setItemsPerPage] = useState<number>(items_limit || 10);
-
-  const [allScenes, setAllScenes] = useState<CollectionType[]>([]);
-  const [scenes, setScenes] = useState<CollectionType[]>([]);
-  const [total, setTotal] = useState(0)
-  const [sort, setSort] = useState<"alpha" | "most_artists" | "most_artworks">("alpha");
-  const [search, setSearch] = useState("");
-
-
-  useEffect(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    setScenes(allScenes.slice(start, start + itemsPerPage));
-  }, [allScenes, currentPage, itemsPerPage]);
-
-  useEffect(() => {
-    (async () => {
-      const res = await fetch('/api/scenes', { cache: 'no-store' });
-      if (!res.ok) { setAllScenes([]); setTotal(0); return; }
-      const data = await res.json();
-      setAllScenes(data.scenes || []);
-      setTotal(data.total || 0);
-    })();
-  }, []);
-
-
-  const handlePageChange = (page: number) => {
-    const max = Math.max(1, Math.ceil(total / itemsPerPage));
-    router.push(`?${queryPageKey}=${page > 0 && page <= max ? page : 1}`);
-  }
+export default async function ScenesPage() {
+  const cities = await getCities();
+  const withArt = await Promise.all(cities.map(async (c) => ({ ...c, art: (await getArt({ city: c.slug, perPage: 3 })).art })));
 
   return (
-    <div>
-      <title>{`${title || "All Scenes"}: ${AppConfigs.app_name}`}</title>
-      <section>
-        <MinimalSection className="page-banner" bg={banner}>
-          <h1 className="text-center text-white">{title}</h1>
-          <PageBreadcrumb type="page-banner" />
-        </MinimalSection>
-      </section>
-      <section>
-        <MaxWidthWrapper className="space-y-4 py-10 md:space-y-6 md:py-14">
-          <div className="page-top grid grid-cols-1 items-center justify-between gap-x-4 gap-y-2 space-y-2 md:grid-cols-2 md:gap-6">
-            <div>
-              {/* <div className="filter-area relative isolate">
-                <Select>
-                  <SelectTrigger className="max-w-[180px] capitalize">
-                    <SelectValue
-                      className="capitalize"
-                      placeholder="Default Sorting"
-                    />
-                  </SelectTrigger>
-                  <SelectContent className="capitalize">
-                    <SelectGroup>
-                      <SelectLabel>Sort By</SelectLabel>
-                      <SelectItem value="popularity">popularity</SelectItem>
-                      <SelectItem value="rating_average">
-                        average rating
-                      </SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div> */}
-            </div>
-            <div>
-              <Pagination
-                totalItems={total}
-                itemsPerPage={itemsPerPage}
-                currentPage={currentPage}
-                onPageChange={handlePageChange}
-                className="hidden justify-end md:flex"
-              />
-            </div>
+    <div className="pb-20">
+      <PageHead eyebrow="Local art, city by city" title="Scenes" sub="Find the artists on the walls near you." stroke="var(--af-scan)" />
+      <section className="mx-auto mt-2 max-w-[1240px] px-4 sm:px-6" aria-label="Cities">
+        {withArt.length ? (
+          <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-8">
+            {withArt.map((c, i) => (
+              <Link key={c.slug} href={`/scenes/${c.slug}`} className="group grid content-start gap-3 text-ink no-underline">
+                <div className="relative aspect-[16/11] overflow-hidden rounded-md bg-wall">
+                  <BrushStroke className="absolute -left-6 top-[54%] h-[16%] w-[80%] -rotate-[4deg] opacity-50" color={STROKES[i % 4]} />
+                  {c.art.map((a, k) => (
+                    <div key={a.id} className={cn("absolute aspect-[4/5] bg-white shadow-[0_12px_22px_-8px_rgba(21,22,27,.45)] transition duration-500 group-hover:-translate-y-1", HANG[k])}>
+                      {a.sensitive.length ? (
+                        <SensitiveImage labels={a.sensitive} light>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={a.imageUrl} alt={a.title} className="h-full w-full object-cover" loading="lazy" />
+                        </SensitiveImage>
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={a.imageUrl} alt={a.title} className="h-full w-full object-cover" loading="lazy" />
+                      )}
+                    </div>
+                  ))}
+                  <div className="absolute inset-x-0 bottom-0 h-[12%] bg-[#dcd6ca]" aria-hidden="true" />
+                </div>
+                <div className="flex items-baseline justify-between gap-3">
+                  <h2 className="display truncate text-[34px] group-hover:text-scan">{c.name}</h2>
+                  <span className="num shrink-0 text-[14px] text-ink-2">{c.pieces} pieces · {c.artists} {c.artists === 1 ? "artist" : "artists"}</span>
+                </div>
+              </Link>
+            ))}
           </div>
-          {scenes.length > 0 ? (
-            <div className="scenes-area grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-6 xl:grid-cols-4">
-              {scenes.map((collection) => (
-                <Link
-                  key={collection._id}
-                  href={`/${scenesPageSlug}/${collection.slug}`}
-                >
-                  <CollectionCard
-                    collection={collection}
-                    showDescription={true}
-                  />
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="mb-6 w-full py-6 text-center text-lg capitalize md:mb-8 md:py-12 md:text-xl">
-              {AppConfigs?.messages?.scenes?.not_found || "No Scenes Found"}
-            </p>
-          )}
-          <div className="pagination-area flex items-center justify-center py-6">
-            <Pagination
-              totalItems={total}
-              itemsPerPage={itemsPerPage}
-              currentPage={currentPage}
-              onPageChange={handlePageChange}
-            />
-          </div>
-        </MaxWidthWrapper>
+        ) : (
+          <EmptyCanvas title="No scenes yet">
+            <Link href="/register" className="btn btn-blue">Be the first in your city</Link>
+          </EmptyCanvas>
+        )}
       </section>
     </div>
   );
-};
-
-export default AllScenesPage;
+}

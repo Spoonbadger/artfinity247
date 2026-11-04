@@ -76,7 +76,7 @@ export default function StudioShell({ artist, children }: { artist: ShellArtist;
   }
 
   return (
-    <div className="min-h-screen bg-white lg:grid lg:grid-cols-[244px_minmax(0,1fr)]">
+    <div className="min-h-screen bg-white lg:grid lg:grid-cols-[244px_minmax(0,1fr)] lg:bg-[linear-gradient(to_right,var(--af-wall)_244px,#fff_244px)]">
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-screen flex-col gap-7 border-r border-line bg-wall px-4 py-6 lg:flex" style={canvasTexture}>
         <Logo href="/studio" className="pl-2 text-[22px]" />

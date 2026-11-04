@@ -1,158 +1,88 @@
-"use client"
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Search } from "lucide-react";
+import { ArtGrid } from "@/components/browse/ArtCard";
+import { Avatar } from "@/components/browse/ArtistCard";
+import PageHead, { EmptyCanvas, Pager } from "@/components/browse/PageHead";
+import { getArt, getArtists, getCities } from "@/components/browse/data";
 
-import { ReactNode, useEffect, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { MaxWidthWrapper } from "@/components/layout"
-import { MinimalSection } from "@/components/sections"
-import PageBreadcrumb from "@/components/PageBreadcrumb"
-import { getAppConfigs, getAppPages } from "@/db/query"
-import Pagination from "@/components/CustomPagination"
-import Link from "next/link"
-import Image from "next/image"
+export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Search" };
 
-const AppConfigs = getAppConfigs()
-const AppPages = getAppPages()
-
-type Artwork = { slug: string; title: string; imageUrl: string | null; artist: { name: string; slug: string } }
-type Artist = { slug: string; name: string; profileImage: string | null }
-
-const SearchPage = (): ReactNode => {
-  const { title, banner, items_limit } = AppPages.search
-  const router = useRouter()
-  const searchParams = useSearchParams()
-
-  const searchQueryKey = AppConfigs.search_query_key || "q"
-  const queryPageKey = AppConfigs.pagination_query_key || "page"
-
-  const [totalItems, setTotalItems] = useState(0)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [searchQuery, setSearchQuery] = useState<string | null>(null)
-  const [itemsPerPage, setItemsPerPage] = useState(items_limit || 10)
-  const [artworks, setArtworks] = useState<Artwork[]>([])
-  const [artists, setArtists] = useState<Artist[]>([])
-  const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    setItemsPerPage(items_limit)
-
-    const queryPage = parseInt(searchParams.get(queryPageKey) || "1", 10)
-    const query = searchParams.get(searchQueryKey)
-
-    setCurrentPage(queryPage > 0 ? queryPage : 1)
-
-    if (!query) {
-      router.push("/")
-      return
-    }
-
-    setSearchQuery(decodeURIComponent(query))
-  }, [searchParams, searchQueryKey, queryPageKey, items_limit, router])
-
-  useEffect(() => {
-    if (!searchQuery) return
-    setLoading(true)
-
-    fetch(`/api/search?q=${encodeURIComponent(searchQuery)}&page=${currentPage}&limit=${itemsPerPage}`, {
-      cache: "no-store",
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setArtworks(data.artworks || [])
-        setArtists(data.artists || [])
-        setTotalItems(data.total || 0)
-      })
-      .finally(() => setLoading(false))
-  }, [searchQuery, currentPage, itemsPerPage])
-
-  const handlePageChange = (page: number) => {
-    if (page > 0 && page <= Math.ceil(totalItems / itemsPerPage)) {
-      router.push(`?${queryPageKey}=${page}&${searchQueryKey}=${encodeURIComponent(searchQuery || "")}`)
-    } else {
-      router.push(`?${queryPageKey}=1`)
-    }
-  }
+export default async function SearchPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+  const q = (searchParams.q || "").trim().slice(0, 80);
+  const page = Math.max(1, parseInt(searchParams.page || "1", 10) || 1);
+  const [{ art, total, pages }, artists, cities] = q
+    ? await Promise.all([getArt({ q, page }), page === 1 ? getArtists({ q, pieces: 0, take: 12 }) : Promise.resolve([]), getCities()])
+    : [{ art: [], total: 0, pages: 1 }, [], await getCities()];
+  const matchCities = q ? cities.filter((c) => c.name.toLowerCase().includes(q.toLowerCase())) : [];
 
   return (
-    <div>
-      <title>{`${title || "Search"}: ${AppConfigs.app_name}`}</title>
-      <section>
-        <MinimalSection className="page-banner" bg={banner}>
-          <h1 className="text-center text-white">
-            {title} – {searchQuery || ""}
-          </h1>
-          <PageBreadcrumb type="page-banner" />
-        </MinimalSection>
-      </section>
+    <div className="pb-20">
+      <PageHead
+        eyebrow="Search"
+        title={q ? <>“{q.length > 22 ? q.slice(0, 22) + "…" : q}”</> : "Find art"}
+        sub={q ? <><span className="num">{total}</span> {total === 1 ? "piece" : "pieces"}, <span className="num">{artists.length}</span> {artists.length === 1 ? "artist" : "artists"}.</> : "Search titles, artists and cities."}
+      />
+      <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
+        <form action="/search" method="get" role="search" className="max-w-xl">
+          <label className="flex items-center gap-2 rounded-full border-2 border-ink bg-white p-[5px] pl-4 focus-within:border-scan focus-within:shadow-[0_0_0_4px_#d9dcff]">
+            <Search className="h-5 w-5 shrink-0 text-ink-2" aria-hidden="true" />
+            <span className="sr-only">Search</span>
+            <input name="q" type="search" defaultValue={q} autoFocus={!q} placeholder="Mountains, Austin, Maya…" className="w-full min-w-0 border-0 bg-transparent py-2 text-[17px] outline-none placeholder:text-ink-2" />
+            <button type="submit" className="btn btn-blue shrink-0">Search</button>
+          </label>
+        </form>
 
-      <section>
-        <MaxWidthWrapper className="py-10 md:py-14">
-          {loading ? (
-            <p>Loading results…</p>
-          ) : (
-            <>
-              <h2 className="font-semibold mb-4 text-lg">Artworks</h2>
-              {artworks.length === 0 ? (
-                <p>No artworks found.</p>
-              ) : (
-                <ul className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-                  {artworks.map((a) => (
-                    <li key={a.slug} className="border rounded p-2">
-                      <Link href={`/art/${a.slug}`}>
-                        {a.imageUrl && (
-                          <Image
-                            src={a.imageUrl}
-                            alt={a.title}
-                            width={300}
-                            height={200}
-                            className="h-40 w-full object-cover rounded"
-                          />
-                        )}
-                        <div className="mt-2 font-medium">{a.title}</div>
-                        <div className="text-sm text-gray-600">by {a.artist.name}</div>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              <h2 className="font-semibold mt-10 mb-4 text-lg">Artists</h2>
-              {artists.length === 0 ? (
-                <p>No artists found.</p>
-              ) : (
-                <ul className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-                  {artists.map((a) => (
-                    <li key={a.slug} className="border rounded p-2">
-                      <Link href={`/artists/${a.slug}`}>
-                        {a.profileImage && (
-                          <Image
-                            src={a.profileImage}
-                            alt={a.name}
-                            width={150}
-                            height={150}
-                            className="h-32 w-full object-cover rounded-full mx-auto"
-                          />
-                        )}
-                        <div className="mt-2 text-center font-medium">{a.name}</div>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </>
-          )}
-
-          <div className="pagination-area flex items-center justify-center py-6">
-            <Pagination
-              totalItems={totalItems}
-              itemsPerPage={itemsPerPage}
-              currentPage={currentPage}
-              onPageChange={handlePageChange}
-            />
+        {!q && cities.length > 0 && (
+          <div className="mt-8">
+            <span className="eyebrow">Or browse a city</span>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {cities.map((c) => <Link key={c.slug} href={`/scenes/${c.slug}`} className="rounded-full border-[1.5px] border-line bg-white px-3.5 py-1.5 text-[14px] font-semibold text-ink no-underline hover:border-ink">{c.name}</Link>)}
+            </div>
           </div>
-        </MaxWidthWrapper>
-      </section>
-    </div>
-  )
-}
+        )}
 
-export default SearchPage
+        {(artists.length > 0 || matchCities.length > 0) && (
+          <section className="mt-10" aria-label="Artists and cities">
+            <h2 className="display mb-4 text-[30px]">Artists</h2>
+            <ul className="flex flex-wrap gap-2.5">
+              {artists.map((a) => (
+                <li key={a.slug}>
+                  <Link href={`/@${a.slug}`} className="flex items-center gap-2.5 rounded-full border-[1.5px] border-line bg-white py-1 pl-1 pr-4 text-ink no-underline hover:border-ink">
+                    <Avatar src={a.avatar} name={a.name} className="h-9 w-9 ring-0" />
+                    <span className="grid leading-tight"><b className="text-[15px]">{a.name}</b><span className="text-[12.5px] text-ink-2">{a.city}</span></span>
+                  </Link>
+                </li>
+              ))}
+              {matchCities.map((c) => (
+                <li key={c.slug}>
+                  <Link href={`/scenes/${c.slug}`} className="flex h-full items-center gap-2 rounded-full border-[1.5px] border-ink bg-sticker px-4 py-2 text-[15px] font-bold text-ink no-underline">
+                    Art from {c.name} <span className="num text-[12.5px] font-semibold">{c.pieces}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {q && (
+          <section className="mt-12" aria-label="Artworks">
+            {art.length ? (
+              <>
+                <h2 className="display mb-6 text-[30px]">Art</h2>
+                <ArtGrid art={art} />
+                <Pager page={page} pages={pages} href={(p) => `/search?q=${encodeURIComponent(q)}${p > 1 ? `&page=${p}` : ""}`} />
+              </>
+            ) : (
+              <EmptyCanvas title="Nothing on this wall">
+                <p className="text-ink-2">Try fewer words, or browse everything.</p>
+                <Link href="/art" className="btn btn-ghost">Browse all art</Link>
+              </EmptyCanvas>
+            )}
+          </section>
+        )}
+      </div>
+    </div>
+  );
+}

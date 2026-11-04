@@ -5,6 +5,7 @@ import { jwtVerify } from 'jose'
 import cloudinary from '@/lib/cloudinary'
 import Busboy from 'busboy'
 import { toNodeReadable } from '@/lib/toNodeReadables'
+import { parseSensitive } from '@/components/studio/sensitive'
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
@@ -52,6 +53,8 @@ export async function POST(
     const markupMedium = form.get("markupMedium") as string | null
     const markupLarge = form.get("markupLarge") as string | null
     const markupXl = form.get("markupXl") as string | null
+    // Content labels, comma-separated. Send an empty value to clear them; leave the field out to keep them.
+    const sensitiveRaw = form.get("sensitive")
 
 
     const artwork = await prisma.artwork.findUnique({
@@ -95,6 +98,7 @@ export async function POST(
               : parseInt(markupXl, 10)
             : artwork.markupXl,
         imageUrl: imageUrl || artwork.imageUrl,
+        ...(sensitiveRaw !== null ? { sensitive: parseSensitive(sensitiveRaw) } : {}),
         },
     })
 

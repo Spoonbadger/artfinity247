@@ -8,6 +8,8 @@ const RESERVED = new Set([
   "account", "auth", "cart", "checkout", "contact", "dashboard", "help", "home", "info", "login", "logout",
   "me", "new", "orders", "payouts", "privacy", "qr", "register", "root", "scan", "scenes", "search",
   "settings", "shop", "signup", "sign-up", "staff", "store", "studio", "support", "terms", "upload", "uploads", "www",
+  // kept in step with /api/handles/check
+  "assets", "billing", "blog", "null", "q", "seed", "static", "team", "undefined",
 ]);
 
 export type HandleCheck = { available: boolean; reason?: "invalid" | "reserved" | "taken"; suggestions?: string[] };

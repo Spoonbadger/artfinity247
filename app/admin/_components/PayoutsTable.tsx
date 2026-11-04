@@ -1,0 +1,159 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { PaintChip } from "@/components/af/Brush";
+import { cn } from "@/lib/utils";
+import { monthLabel, usd } from "./util";
+
+type Row = {
+  artistId: string;
+  artistName: string;
+  artistEmail: string;
+  venmoHandle: string;
+  itemsCount: number;
+  gross: number;
+  expenses: number;
+  profit: number;
+  artistShare: number;
+  payout: { status: "PAID" | "UNPAID"; paidAt: string | null; amountCents: number };
+};
+
+export default function PayoutsTable({ month }: { month: string }) {
+  const [rows, setRows] = useState<Row[] | null>(null);
+  const [error, setError] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const r = await fetch(`/api/admin/payouts/summary?month=${month}`, { credentials: "include", cache: "no-store" });
+      if (!r.ok) throw new Error();
+      const d = await r.json();
+      setRows(((d.rows || []) as Row[]).sort((a, b) => b.artistShare - a.artistShare));
+      setError(false);
+    } catch {
+      setError(true);
+      setRows([]);
+    }
+  }, [month]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const toggle = async (r: Row) => {
+    const paid = r.payout.status === "PAID";
+    if (!paid && !confirm(`Mark ${usd(r.artistShare)} to ${r.artistName} as paid? They'll get an email.`)) return;
+    setBusy(r.artistId);
+    try {
+      const res = await fetch("/api/admin/payouts/mark-paid", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ artistId: r.artistId, month, unmark: paid }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(paid ? `${r.artistName} marked unpaid` : `${r.artistName} marked paid. Email sent.`);
+      await load();
+    } catch {
+      toast.error("Couldn't update the payout.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const list = rows ?? [];
+  const owed = list.reduce((n, r) => n + r.artistShare, 0);
+  const paid = list.filter((r) => r.payout.status === "PAID").reduce((n, r) => n + r.payout.amountCents, 0);
+  const gross = list.reduce((n, r) => n + r.gross, 0);
+  const unpaidCount = list.filter((r) => r.payout.status !== "PAID").length;
+
+  return (
+    <div className="grid gap-6">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <PaintChip color="#a8dcc4" value={usd(gross)} label="sales" earned />
+        <PaintChip color="#f7c8a8" value={usd(owed)} label="artist share" earned />
+        <PaintChip color="#b8c4ff" value={usd(paid)} label="paid out" earned />
+        <PaintChip color="var(--af-sticker)" value={unpaidCount} label={unpaidCount === 1 ? "artist to pay" : "artists to pay"} />
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-line bg-white">
+        {rows === null ? (
+          <p className="px-4 py-14 text-center text-ink-2">Loading {monthLabel(month)}…</p>
+        ) : error ? (
+          <p className="px-4 py-14 text-center text-coral">Couldn&apos;t load payouts.</p>
+        ) : list.length === 0 ? (
+          <div className="grid justify-items-center gap-2 px-4 py-14 text-center">
+            <span className="paint-dab h-6 w-6" style={{ ["--dab" as string]: "var(--af-sticker)" }} />
+            <p className="font-semibold">No paid sales in {monthLabel(month)}.</p>
+          </div>
+        ) : (
+          <>
+            {/* desktop table */}
+            <table className="num hidden w-full text-left text-[14px] md:table">
+              <thead className="border-b border-line bg-wall/60 text-[12px] uppercase tracking-[0.06em] text-ink-2">
+                <tr>
+                  <th className="px-4 py-2.5 font-bold">Artist</th>
+                  <th className="px-3 py-2.5 font-bold">Venmo</th>
+                  <th className="px-3 py-2.5 text-right font-bold">Prints</th>
+                  <th className="px-3 py-2.5 text-right font-bold">Sales</th>
+                  <th className="px-3 py-2.5 text-right font-bold">Costs</th>
+                  <th className="px-3 py-2.5 text-right font-bold">Profit</th>
+                  <th className="px-3 py-2.5 text-right font-bold">To artist</th>
+                  <th className="px-4 py-2.5 text-right font-bold">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {list.map((r) => (
+                  <tr key={r.artistId}>
+                    <td className="px-4 py-3">
+                      <b className="block">{r.artistName}</b>
+                      <span className="text-[12.5px] text-ink-2">{r.artistEmail}</span>
+                    </td>
+                    <td className="px-3 py-3">{r.venmoHandle ? `@${r.venmoHandle.replace(/^@/, "")}` : <span className="text-coral">Missing</span>}</td>
+                    <td className="px-3 py-3 text-right">{r.itemsCount}</td>
+                    <td className="px-3 py-3 text-right">{usd(r.gross)}</td>
+                    <td className="px-3 py-3 text-right text-ink-2">{usd(r.expenses)}</td>
+                    <td className="px-3 py-3 text-right">{usd(r.profit)}</td>
+                    <td className="px-3 py-3 text-right text-[16px] font-bold text-earned">{usd(r.artistShare)}</td>
+                    <td className="px-4 py-3 text-right"><PayButton r={r} busy={busy === r.artistId} onClick={() => toggle(r)} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* mobile cards */}
+            <ul className="divide-y divide-line md:hidden">
+              {list.map((r) => (
+                <li key={r.artistId} className="grid gap-2 px-4 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <b className="block truncate">{r.artistName}</b>
+                      <span className="text-[13px] text-ink-2">{r.venmoHandle ? `Venmo @${r.venmoHandle.replace(/^@/, "")}` : "No Venmo"} · {r.itemsCount} prints</span>
+                    </div>
+                    <b className="num shrink-0 text-[18px] text-earned">{usd(r.artistShare)}</b>
+                  </div>
+                  <div className="num text-[12.5px] text-ink-2">{usd(r.gross)} sales · {usd(r.expenses)} costs · {usd(r.profit)} profit</div>
+                  <PayButton r={r} busy={busy === r.artistId} onClick={() => toggle(r)} />
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PayButton({ r, busy, onClick }: { r: Row; busy: boolean; onClick: () => void }) {
+  const paid = r.payout.status === "PAID";
+  return (
+    <div className="inline-flex flex-wrap items-center justify-end gap-2">
+      {paid && (
+        <span className="rounded-full bg-earned-soft px-2.5 py-1 text-[12.5px] font-bold text-earned">
+          Paid {r.payout.paidAt ? new Date(r.payout.paidAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}
+        </span>
+      )}
+      <button type="button" disabled={busy} onClick={onClick} className={cn("btn btn-sm", paid ? "btn-ghost" : "btn-blue")}>
+        {paid ? "Undo" : "Mark paid"}
+      </button>
+    </div>
+  );
+}

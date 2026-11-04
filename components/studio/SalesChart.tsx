@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type DayPoint = { key: string; label: string; prints: number; earnedCents: number };
 
-const W = 560, H = 190, PAD_L = 26, PAD_R = 6, PAD_T = 12, PAD_B = 24;
+const PAD_L = 26, PAD_R = 6, PAD_T = 12, PAD_B = 24;
 const BAR = "#d0611f"; // cadmium, matches the "prints sold" chip
 
 const money = (c: number) => "$" + (c / 100).toFixed(2);
@@ -12,17 +12,27 @@ const money = (c: number) => "$" + (c / 100).toFixed(2);
 /** Daily prints sold, last 30 days. One series, so no legend box: the card title names it. */
 export default function SalesChart({ days }: { days: DayPoint[] }) {
   const [hover, setHover] = useState<number | null>(null);
+  const box = useRef<HTMLDivElement>(null);
+  const [W, setW] = useState(560);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setW(Math.max(260, Math.round(e.contentRect.width))));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const H = W < 480 ? 170 : 200;
   const max = Math.max(2, ...days.map((d) => d.prints));
   const top = max <= 4 ? max : Math.ceil(max / 2) * 2;
   const ticks = top <= 4 ? Array.from({ length: top + 1 }, (_, i) => i) : [0, top / 2, top];
   const plotW = W - PAD_L - PAD_R, plotH = H - PAD_T - PAD_B;
   const step = plotW / days.length;
-  const barW = Math.max(4, step - 4);
+  const barW = Math.max(3, step - (step > 10 ? 4 : 2));
   const y = (v: number) => PAD_T + plotH - (v / top) * plotH;
   const h = hover !== null ? days[hover] : null;
 
   return (
-    <div className="relative">
+    <div className="relative" ref={box}>
       <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full" role="img" aria-label={`Prints sold per day, last 30 days. ${days.reduce((s, d) => s + d.prints, 0)} in all.`} onPointerLeave={() => setHover(null)}>
         {ticks.map((t) => (
           <g key={t}>

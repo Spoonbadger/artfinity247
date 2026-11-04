@@ -17,7 +17,7 @@ export function AuthCard({ children, className }: { children: ReactNode; classNa
   );
 }
 
-type FieldProps = InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string | null; hint?: ReactNode; prefix?: ReactNode; trailing?: ReactNode };
+type FieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, "prefix"> & { label: string; error?: string | null; hint?: ReactNode; prefix?: ReactNode; trailing?: ReactNode };
 
 /** Label-in-box text field (the .af-field look) with an inline error line. */
 export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field({ label, error, hint, prefix, trailing, className, id, ...rest }, ref) {
@@ -26,14 +26,23 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field({ l
   const msgId = `${fid}-msg`;
   return (
     <div className={cn("grid gap-1.5", className)}>
-      <label htmlFor={fid} className={cn("af-field cursor-text", error && "!border-coral focus-within:!shadow-[0_0_0_3px_#ffd9cf]")}>
-        <small>{label}</small>
+      <div
+        className={cn("af-field cursor-text", error && "!border-coral focus-within:!shadow-[0_0_0_3px_#ffd9cf]")}
+        onMouseDown={(e) => {
+          // Clicking anywhere in the box focuses the input, like a label would.
+          const t = e.target as HTMLElement;
+          if (t.closest("input,button,label")) return;
+          e.preventDefault();
+          (e.currentTarget.querySelector("input") as HTMLInputElement | null)?.focus();
+        }}
+      >
+        <label htmlFor={fid} className="text-xs text-ink-2">{label}</label>
         <span className="flex min-w-0 items-baseline">
           {prefix && <span className="shrink-0 text-[17px] text-ink-2">{prefix}</span>}
           <input ref={ref} id={fid} aria-invalid={error ? true : undefined} aria-describedby={error || hint ? msgId : undefined} {...rest} />
           {trailing}
         </span>
-      </label>
+      </div>
       {(error || hint) && (
         <div id={msgId} className={cn("px-1 text-[13.5px]", error ? "font-semibold text-coral" : "text-ink-2")} aria-live="polite">
           {error || hint}

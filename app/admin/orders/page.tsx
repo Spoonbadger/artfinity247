@@ -1,206 +1,103 @@
-'use client'
+import type { Metadata } from "next";
+import { prisma } from "@/lib/prisma";
+import { calcItemProfitCents } from "@/lib/revenue";
+import { PaintChip } from "@/components/af/Brush";
+import MonthPicker from "../_components/MonthPicker";
+import OrdersBoard, { type AdminOrder } from "../_components/OrdersBoard";
+import { currentMonth, monthLabel, monthRange, normalizeSize, usd } from "../_components/util";
 
-import Link from 'next/link'
-import { useEffect, useState } from 'react'
+export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Orders" };
 
-type OrderItem = {
-  imageUrl: any
-  id: string
-  slug: string | null
-  size: string | null
-  frameChosen: boolean
-  frameColor: string | null
-  quantity: number | null
-  unitPrice: number | null
-  lineTotal: number | null
-  printCost: number | null
-  shippingCost: number | null
-  laborCost: number | null
-  websiteCost: number | null
-  profit: number
-  artistShare: number
-  companyShare: number
-  artwork: {
-    artistId: string
-  }
-}
+export default async function AdminOrdersPage({ searchParams }: { searchParams: { month?: string } }) {
+  const monthRows = await prisma.$queryRaw<{ m: string }[]>`
+    SELECT DISTINCT to_char("createdAt" AT TIME ZONE 'UTC', 'YYYY-MM') AS m FROM "Order" ORDER BY m DESC`;
+  const months = Array.from(new Set([currentMonth(), ...monthRows.map((r) => r.m)])).sort().reverse();
+  const month = searchParams.month === "all" || (searchParams.month && monthRange(searchParams.month))
+    ? searchParams.month!
+    : monthRows[0]?.m ?? currentMonth();
+  const range = month === "all" ? null : monthRange(month);
 
-type Order = {
-  shippingAddress: string | null
-  shippingName: string | null
-  id: string
-  stripeSessionId: string
-  email: string | null
-  amountTotal: number | null
-  currency: string | null
-  paymentStatus: string
-  createdAt: string
-  shippingStatus: string
-  sentToPrinter: Boolean
-  items: OrderItem[]
-}
+  const orders = await prisma.order.findMany({
+    where: range ? { createdAt: { gte: range.start, lt: range.end } } : undefined,
+    orderBy: { createdAt: "desc" },
+    include: {
+      items: {
+        include: { artwork: { select: { title: true, sensitive: true, artist: { select: { artist_name: true, name: true, slug: true } } } } },
+      },
+    },
+  });
 
-export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([])
-  const [selectedMonth, setSelectedMonth] = useState(
-    new Date().toISOString().slice(0, 7) // current month YYYY-MM
-  )
+  const shaped: AdminOrder[] = orders.map((o) => {
+    const items = o.items.map((it) => {
+      const qty = it.quantity ?? 1;
+      const lineTotal = it.lineTotal ?? qty * (it.unitPrice ?? 0);
+      const size = normalizeSize(it.size);
+      const b = calcItemProfitCents({ lineTotal, size, frameChosen: it.frameChosen, quantity: qty || 1, orderDate: o.createdAt });
+      return {
+        id: it.id,
+        slug: it.slug,
+        title: it.title || it.artwork?.title || it.slug || "Untitled",
+        artistName: it.artistName || it.artwork?.artist.artist_name || it.artwork?.artist.name || "",
+        artistSlug: it.artwork?.artist.slug ?? null,
+        imageUrl: it.imageUrl,
+        sensitive: it.artwork?.sensitive ?? [],
+        size,
+        frameChosen: it.frameChosen,
+        frameColor: it.frameColor,
+        quantity: qty,
+        lineTotal,
+        itemCost: b.itemCost,
+        websiteCost: b.websiteCost,
+        profit: b.profit,
+        artistShare: b.artistShare,
+        companyShare: b.companyShare,
+      };
+    });
+    return {
+      id: o.id,
+      stripeSessionId: o.stripeSessionId,
+      email: o.email,
+      amountTotal: o.amountTotal,
+      paymentStatus: o.paymentStatus,
+      createdAt: o.createdAt.toISOString(),
+      shippingName: o.shippingName,
+      shippingAddress: o.shippingAddress,
+      shippingStatus: o.shippingStatus,
+      sentToPrinter: o.sentToPrinter,
+      items,
+    };
+  });
 
-  const months = ["all", ...Array.from({ length: 12 }).map((_, i) => {
-    const d = new Date()
-    d.setMonth(d.getMonth() - i)
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-  })]
-
-  useEffect(() => {
-    const url = selectedMonth === "all"
-      ? "/api/admin/orders"
-      : `/api/admin/orders?month=${selectedMonth}`
-
-    fetch(url)
-      .then(res => res.json())
-      .then(setOrders)
-  }, [selectedMonth])
-
-
-  const updateStatus = async (orderId: string, newStatus: string) => {
-    try {
-      const res = await fetch(`/api/orders/${orderId}/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shippingStatus: newStatus }),
-      })
-      if (!res.ok) throw new Error('Failed to update')
-      setOrders(prev =>
-        prev.map(o =>
-          o.id === orderId ? { ...o, shippingStatus: newStatus } : o
-        )
-      )
-    } catch (err) {
-      console.error(err)
-      alert('Could not update shipping status')
-    }
-  }
-
-  const toggleSent = async (orderId: string) => {
-    const order = orders.find(o => o.id === orderId)
-    if (!order) return
-
-    const newValue = !order.sentToPrinter
-
-    await fetch(`/api/orders/${orderId}/sent`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sent: newValue })
-    })
-
-    setOrders(prev =>
-      prev.map(o =>
-        o.id === orderId ? { ...o, sentToPrinter: newValue } : o
-      )
-    )
-  }
+  const paid = shaped.filter((o) => o.paymentStatus === "paid");
+  const gross = paid.reduce((n, o) => n + o.amountTotal, 0);
+  const artistTotal = paid.reduce((n, o) => n + o.items.reduce((m, i) => m + i.artistShare, 0), 0);
+  const companyTotal = paid.reduce((n, o) => n + o.items.reduce((m, i) => m + i.companyShare, 0), 0);
+  const prints = paid.reduce((n, o) => n + o.items.reduce((m, i) => m + i.quantity, 0), 0);
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Admin Orders View</h1>
-      <div className="flex items-center gap-2 mb-4">
-        <label htmlFor="month" className="font-medium">Select month:</label>
-        <select
-          id="month"
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(e.target.value)}
-          className="border rounded px-2 py-1"
-        >
-          {months.map(m => (
-            <option key={m} value={m}>{m}</option>
-          ))}
-        </select>
-
-        <Link
-          href={`/api/admin/payouts?month=${selectedMonth}`}
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-        >
-          Export CSV
-        </Link>
+    <div className="grid gap-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow">{month === "all" ? "All time" : monthLabel(month)}</p>
+          <h1 className="display text-[44px] sm:text-[56px]">Orders</h1>
+        </div>
+        <div className="flex flex-wrap items-end gap-2">
+          <MonthPicker months={months} value={month} />
+          {month !== "all" && (
+            <a href={`/api/admin/payouts?month=${month}`} className="btn btn-ghost btn-sm mb-1">Export CSV</a>
+          )}
+        </div>
       </div>
-      <div className="space-y-4">
-        {orders.map(order => (
-          <div key={order.id} className="border rounded p-4 shadow">
-            <div><strong>Email:</strong> {order.email}</div>
-            <div><strong>Status:</strong> {order.paymentStatus}</div>
-            <div><strong>Amount:</strong>{' '}
-              {new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: order.currency || 'USD',
-              }).format((order.amountTotal || 0) / 100)}
-            </div>
-            <div><strong>Stripe ID:</strong> {order.stripeSessionId}</div>
-            <div><strong>Created:</strong> {new Date(order.createdAt).toLocaleString()}</div>
-            <div><strong>Ship To:</strong></div>
-            <div>{order.shippingName}</div>
-            <div>{order.shippingAddress}</div>
-            <div className="mt-2">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={!!order.sentToPrinter}
-                  onChange={() => toggleSent(order.id)}
-                />
-                Sent to printer
-              </label>
-            </div>
-            <div><strong>Shipping:</strong>
-              <select
-                value={order.shippingStatus || 'pending'}
-                onChange={e => updateStatus(order.id, e.target.value)}
-                className="ml-2 border rounded px-2 py-1"
-              >
-                <option value="pending">Pending</option>
-                <option value="shipped">Shipped</option>
-                <option value="delivered">Delivered</option>
-              </select>
-            </div>
 
-            {/* --- Items breakdown --- */}
-            <div className="mt-4">
-              <h3 className="font-semibold">Items</h3>
-              {order.items.map(item => (
-                <div key={item.id} className="ml-4 mt-2 border-t pt-2 text-sm">
-                  <div><strong>Artwork:</strong> {item.slug} ({item.size})</div>
-                  <div>
-                    <strong>Frame:</strong>{" "}
-                    {item.frameChosen ? `Yes${item.frameColor ? ` — ${item.frameColor}` : ""}` : "No"}
-                  </div>
-                  {item.imageUrl && (
-                    <div>
-                      <a
-                        href={item.imageUrl?.replace("/upload/f_auto,q_auto/", "/upload/fl_attachment/")}
-                        target="_blank"
-                        className="text-blue-600 underline"
-                      >
-                        Download Artwork
-                      </a>
-                    </div>
-                  )}
-                  <div><strong>Line Total:</strong> ${((item.lineTotal ?? 0) / 100).toFixed(2)}</div>
-                  <div><strong>Costs:</strong>{' '}
-                    print+shipping cost ${(item.printCost ?? 0)/100},{' '}
-                    {/* ship ${(item.shippingCost ?? 0)/100},{' '} */}
-                    labor ${(item.laborCost ?? 0)/100},{' '}
-                    site+stripe ${(item.websiteCost ?? 0)/100},
-                     Total expenses: ${((item.printCost ?? 0)/100) + ((item.laborCost ?? 0)/100) + ((item.websiteCost ?? 0)/100)}
-                  </div>
-                  <div><strong>Profit:</strong> ${(item.profit/100).toFixed(2)} →{' '}
-                    Artist ${(item.artistShare/100).toFixed(2)} /{' '}
-                    Company ${(item.companyShare/100).toFixed(2)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <PaintChip color="#b8c4ff" value={paid.length} label="paid orders" note={`${prints} prints`} />
+        <PaintChip color="#a8dcc4" value={usd(gross)} label="sales" earned />
+        <PaintChip color="#f7c8a8" value={usd(artistTotal)} label="owed to artists" earned />
+        <PaintChip color="var(--af-sticker)" value={usd(companyTotal)} label="Artfinity share" earned />
       </div>
+
+      <OrdersBoard key={month} orders={shaped} />
     </div>
-  )
+  );
 }

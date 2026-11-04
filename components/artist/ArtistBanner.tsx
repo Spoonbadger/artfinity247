@@ -15,8 +15,8 @@ export default function ArtistBanner({ src, alt }: { src: string | null; alt: st
           fill
           priority
           sizes="100vw"
-          className="scale-[1.18] object-cover [filter:saturate(1.08)_contrast(1.02)]"
-          style={{ objectPosition: "50% 58%" }}
+          className="scale-[1.04] object-cover [filter:saturate(1.08)_contrast(1.02)]"
+          style={{ objectPosition: "50% 36%" }}
         />
       ) : (
         <div className="absolute inset-0 bg-[radial-gradient(120%_90%_at_20%_10%,#f7c8a8,transparent_60%),radial-gradient(90%_80%_at_85%_30%,#b8c4ff,transparent_60%),#e9e6df]" />

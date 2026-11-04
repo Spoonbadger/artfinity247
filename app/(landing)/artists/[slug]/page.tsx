@@ -122,7 +122,7 @@ export default async function ArtistPage({ params }: Props) {
         <div className="mt-8 grid gap-10 sm:mt-10 lg:grid-cols-[270px_minmax(0,1fr)] lg:gap-12">
           {/* Left column */}
           <aside className="grid content-start gap-7">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-[auto_auto_minmax(0,1fr)] gap-x-7 gap-y-4">
               <Stat value={artist.works.length} label={artist.works.length === 1 ? "work" : "works"} dab="#f7c8a8" />
               <Stat value={artist.sales} label={artist.sales === 1 ? "sale" : "sales"} dab="var(--af-sticker)" />
               {cityShort ? <Stat value={cityShort} label="city" dab="#b8c4ff" /> : null}

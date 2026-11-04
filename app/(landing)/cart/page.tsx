@@ -1,115 +1,76 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { ArrowLeft, ArrowRight } from "lucide-react";
-import { useCart } from "@/components/contexts";
-import { useUser } from "@/components/contexts/UserProvider";
-import { MaxWidthWrapper } from "@/components/layout";
-import { MinimalSection } from "@/components/sections";
-import { CartItemCard } from "@/components/cards";
-import { CartPricingInfo } from "@/components/cards";
-import { Button } from "@/components/ui/button";
-import { getAppPages, getAppConfigs } from "@/db/query";
-import { toast } from "sonner"
+import { ArrowLeft, Lock } from "lucide-react";
+import { toast } from "sonner";
+import { useCart, useUser } from "@/components/contexts";
+import { CartItemCard, CartPricingInfo } from "@/components/cards";
+import { usd } from "@/components/art/pricing";
+import { lineSavings, startCheckout } from "@/components/art/checkout";
 
+export default function CartPage() {
+  const { cartItems, calculateTotalPrice } = useCart();
+  const { currentUser } = useUser();
+  const [busy, setBusy] = useState(false);
 
-const AppConfigs = getAppConfigs();
-const AppPages = getAppPages();
+  const total = calculateTotalPrice();
+  const savings = cartItems.reduce((s, ci) => s + lineSavings(ci), 0);
+  const count = cartItems.reduce((n, ci) => n + ci.quantity, 0);
 
-const CartPage = (): ReactNode => {
-  const { title } = AppPages.cart;
-  const { cartItems, calculateTotalPrice, calculateTax } = useCart();
-
-  const { currentUser } = useUser()
-  const router = useRouter()
-
-  const totalPrice = calculateTotalPrice();
-  // const tax = calculateTax(totalPrice); - later
-  // const totalPriceWithTax = totalPrice + tax; - later
-
-  const [isCheckingOut, setIsCheckingOut] = useState(false)
-
-    const onCheckout = async () => {
-    if (!cartItems.length) return;
+  const onCheckout = async () => {
+    if (!cartItems.length || busy) return;
+    setBusy(true);
     try {
-      setIsCheckingOut(true);
-      const res = await fetch("/api/create-checkout-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: cartItems }), // send as-is
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const { url } = await res.json();
-      window.location.href = url; // redirect to Stripe Checkout
+      window.location.href = await startCheckout(cartItems, { id: currentUser?.id, email: currentUser?.email });
     } catch (e) {
       console.error(e);
-      toast.error("Could not start checkout");
-      setIsCheckingOut(false);
+      toast.error("Checkout didn't open. Try again in a moment.");
+      setBusy(false);
     }
-  }
+  };
 
   return (
-    <div>
-      <title>{`${title || "Cart"}: ${AppConfigs.app_name}`}</title>
-      <section>
-        <MaxWidthWrapper className="py-8 md:py-12">
-          <MinimalSection title={title || "Cart"} className="items-start gap-2">
-            <div>
-              <Link
-                href={`/art`}
-                className="mb-1 flex max-w-fit items-center gap-1 text-sm capitalize hover:opacity-85 md:text-lg text-theme-secondary-500"
-              >
-                <ArrowLeft className="size-4 md:size-5" />
-                Continue shopping
-              </Link>
+    <>
+      <title>Cart · Artfinity</title>
+      <div className="mx-auto max-w-[1040px] px-4 pb-16 pt-6 sm:px-6 md:pt-10">
+        <Link href="/art" className="mb-3 inline-flex items-center gap-1.5 text-[14px] font-semibold text-ink-2 no-underline hover:text-ink">
+          <ArrowLeft className="h-4 w-4" aria-hidden /> Keep looking
+        </Link>
+        <h1 className="display mb-6 text-[44px] md:text-[60px]">
+          Your cart{count > 0 && <span className="text-ink-2"> · {count}</span>}
+        </h1>
+
+        {cartItems.length ? (
+          <div className="grid items-start gap-8 md:grid-cols-[minmax(0,1fr)_340px]">
+            <div className="divide-y divide-line border-y border-line">
+              {cartItems.map((item) => (
+                <CartItemCard key={`${item.product.id}-${item.product.selectedSize}-${item.product.frameChosen}-${item.product.frameColor}`} item={item} />
+              ))}
             </div>
-
-            {cartItems.length > 0 ? (
-              <div
-                className={cn(
-                  "grid grid-cols-1 justify-between gap-4 md:grid-cols-[1fr_minmax(25vw,_250px)]",
-                  "mb-6 [&>*>*]:rounded-lg [&>*>*]:border-2",
-                )}
-              >
-                <div className="cart-items-area">
-                  <div className="divide-y-2">
-                    {cartItems.map((item, index) => (
-                      <CartItemCard key={index} item={item} />
-                    ))}
-                  </div>
-                </div>
-
-                <div className="cart-price-info relative -order-1 w-full items-start justify-center md:order-2 md:flex">
-                  <CartPricingInfo
-                    subtotal={totalPrice / 100}
-                    shipping={0}
-                    // estimatedTax={tax / 100}
-                    total={totalPrice / 100}
-                    className="rigt-0 sticky left-0 top-0"
-                  >
-                    <Button
-                      className="mt-4 capitalize md:mx-auto md:mt-6"
-                      onClick={onCheckout}
-                    >
-                      Proceed to Checkout{" "}
-                      <ArrowRight className="size-5 !text-background" />
-                    </Button>
-                  </CartPricingInfo>
-                </div>
-              </div>
-            ) : (
-              <div className="grid min-h-[14rem] place-content-center">
-                <p className="text-lg md:text-2xl">Your cart is empty</p>
-              </div>
-            )}
-          </MinimalSection>
-        </MaxWidthWrapper>
-      </section>
-    </div>
+            <CartPricingInfo subtotal={total / 100} savings={savings / 100} shipping={0} total={total / 100} className="md:sticky md:top-24">
+              <button type="button" onClick={onCheckout} disabled={busy} className="btn btn-blue btn-lg w-full">
+                {busy ? "Opening checkout…" : `Check out · ${usd(total)}`}
+              </button>
+              <p className="flex items-center justify-center gap-1.5 text-[13px] text-ink-2">
+                <Lock className="h-3.5 w-3.5" aria-hidden /> Apple Pay · Google Pay · Card
+              </p>
+              <ul className="mt-1 grid gap-1 border-t border-line pt-3 text-[13.5px] text-ink-2">
+                <li>Free US shipping</li>
+                <li>Printed to order, ships in a few days</li>
+                <li>Artists get 60% of the profit</li>
+              </ul>
+            </CartPricingInfo>
+          </div>
+        ) : (
+          <div className="grid justify-items-center gap-4 rounded-2xl bg-gallery px-6 py-16 text-center">
+            <div className="h-24 w-20 rounded-[3px] border-[8px] border-ink bg-white shadow-[0_12px_24px_-10px_rgba(21,22,27,.45)]" aria-hidden />
+            <p className="display text-[32px]">Nothing here yet</p>
+            <p className="text-ink-2">Scan a code or browse to find a print.</p>
+            <Link href="/art" className="btn btn-blue">Browse art</Link>
+          </div>
+        )}
+      </div>
+    </>
   );
-};
-
-export default CartPage;
+}

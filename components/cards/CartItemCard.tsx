@@ -1,93 +1,70 @@
-import { ReactNode, useEffect, useState } from "react";
-import Image from "next/image";
+"use client";
+
+import { ReactNode } from "react";
 import Link from "next/link";
+import { Minus, Plus } from "lucide-react";
 import { useCart } from "@/components/contexts";
-import ProductQuantityInput from "@/components/ProductQuantityInput";
+import SensitiveImage from "@/components/site/SensitiveImage";
 import { CartItemType } from "@/types";
-import { getAppPages } from "@/db/query";
 import { cn } from "@/lib/utils";
+import { usd } from "@/components/art/pricing";
+import { sizeText } from "@/components/art/checkout";
 
-const AppPages = getAppPages();
+const MAX_QTY = 10;
 
-const CartItemCard = ({
-  item,
-  className,
-}: {
-  item: CartItemType;
-  className?: string;
-}): ReactNode => {
+/** One cart line: art, size, frame, scan deal, quantity and price. Set `readOnly` for order summaries. */
+const CartItemCard = ({ item, className, readOnly = false }: { item: CartItemType; className?: string; readOnly?: boolean }): ReactNode => {
   const { updateToCart, removeFromCart } = useCart();
-  const [quantity, setQuantity] = useState<number>(item.quantity);
-
-  const unitPrice = item.product.unitPrice;
-  const minQuantity = 1;
-  const MAX_QTY_CAP = 100
-  const maxQuantity = MAX_QTY_CAP
-  const quantityChangeStep = 1;
-
-
-  // Handle user-driven quantity change only
-  const handleQuantityChange = (q: number) => {
-    setQuantity(q);
-    updateToCart(item.product, q);
-  };
+  const p = item.product as CartItemType["product"] & { listPrice?: number; discountPct?: number; venue?: string | null; sensitive?: string[] };
+  const q = item.quantity;
+  const setQ = (n: number) => updateToCart(item.product, Math.max(1, Math.min(MAX_QTY, n)));
 
   return (
-    <div
-      className={cn(
-        "grid grid-cols-[0.5fr_1fr] items-center gap-x-2 gap-y-6 p-2 text-start sm:grid-cols-[8rem_1fr] md:grid-cols-[0.25fr_1fr_0.25fr] md:justify-between md:p-4",
-        className,
-      )}
-    >
-      {/* Product Image */}
-      <div className="product-image">
-        <Image
-          width={100}
-          height={100}
-          src={item.product?.imageUrl || ""}
-          alt={item.product?.title || ""}
-          className="aspect-square w-full min-w-12 max-w-16 rounded-sm object-cover"
-        />
-      </div>
+    <div className={cn("grid grid-cols-[76px_minmax(0,1fr)_auto] items-start gap-3 py-4 sm:grid-cols-[96px_minmax(0,1fr)_auto] sm:gap-4", className)}>
+      <Link href={`/art/${p.slug}`} className="block overflow-hidden rounded-[3px] bg-white p-1 shadow-[0_6px_14px_-6px_rgba(21,22,27,.45)]">
+        <SensitiveImage labels={p.sensitive}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={p.imageUrl || ""} alt={p.title} className="aspect-[4/5] w-full object-cover" />
+        </SensitiveImage>
+      </Link>
 
-      {/* Product Info */}
-      <div className="md:px-5">
-        {item.product?.artist && (
-          <p className="product-seller line-clamp-3 text-xs uppercase">
-            {item.product.artist}
-          </p>
+      <div className="grid min-w-0 gap-0.5">
+        <Link href={`/art/${p.slug}`} className="truncate text-[16px] font-bold text-ink no-underline hover:underline">{p.title}</Link>
+        {p.artist && <span className="truncate text-[13px] text-ink-2">{p.artist}</span>}
+        <span className="text-[13.5px]">
+          {sizeText(p.selectedSize)}
+          {p.frameChosen ? ` · ${p.frameColor ?? ""} frame`.replace("natural", "natural wood") : ""}
+        </span>
+        {!!p.discountPct && (
+          <span className="mt-1 w-fit -rotate-1 rounded-full bg-sticker px-2 py-0.5 text-[12px] font-bold">
+            {p.discountPct}% off{p.venue ? ` · ${p.venue}` : ""}
+          </span>
         )}
-        <h4 className="product-title line-clamp-3 font-bold">
-          <Link href={`/${AppPages.products.slug}/${item.product?.slug}`}>
-            {item.product?.title || ""}
-          </Link>
-        </h4>
-        <div className={cn("additional-info", "[&>*]:text-xs [&>*]:md:text-sm")}>
-          <p className="text-xs font-thin">Size: {item.product.selectedSize}</p>
-          <p className="text-xs font-thin">
-            Frame: {item.product.frameChosen
-              ? `${item.product.frameColor ? ` ${item.product.frameColor}` : ""}`
-              : "No"}
-          </p>
-          <p className="text-sm font-semibold">
-            Price: ${((unitPrice / 100) * quantity).toFixed(2)}
-          </p>
-        </div>
+        {!readOnly && (
+          <div className="mt-2 flex items-center gap-3">
+            <div className="flex items-center rounded-full border-2 border-ink">
+              <button type="button" onClick={() => setQ(q - 1)} disabled={q <= 1} aria-label={`One fewer ${p.title}`} className="grid h-8 w-8 place-items-center rounded-full disabled:opacity-30">
+                <Minus className="h-4 w-4" />
+              </button>
+              <span className="num w-6 text-center text-[15px] font-bold" aria-live="polite" aria-label={`Quantity ${q}`}>{q}</span>
+              <button type="button" onClick={() => setQ(q + 1)} disabled={q >= MAX_QTY} aria-label={`One more ${p.title}`} className="grid h-8 w-8 place-items-center rounded-full disabled:opacity-30">
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+            <button type="button" onClick={() => removeFromCart(item.product)} className="text-[13.5px] font-semibold text-ink-2 underline-offset-2 hover:text-ink hover:underline">
+              Remove
+            </button>
+          </div>
+        )}
       </div>
-      
-      {/* Quantity + Remove */}
-      <ProductQuantityInput
-        quantity={quantity}
-        minQuantity={minQuantity}
-        maxQuantity={maxQuantity}
-        step={quantityChangeStep}
-        setQuantity={handleQuantityChange}
-        handleRemove={() => removeFromCart(item.product)}
-        showRemoveBtn={true}
-        className="col-span-2 flex justify-center space-x-2 md:col-span-1 md:justify-self-end"
-      />
-    </div>
-  )
-}
 
-export default CartItemCard
+      <div className="num text-right leading-tight">
+        <b className="block text-[16px]">{usd(p.unitPrice * q)}</b>
+        {p.listPrice && p.listPrice > p.unitPrice ? <s className="text-[13px] text-ink-2">{usd(p.listPrice * q)}</s> : null}
+        {readOnly && q > 1 && <span className="block text-[12.5px] text-ink-2">{q} × {usd(p.unitPrice)}</span>}
+      </div>
+    </div>
+  );
+};
+
+export default CartItemCard;

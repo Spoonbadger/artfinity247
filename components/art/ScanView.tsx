@@ -39,6 +39,7 @@ export default function ScanView({
   venue,
   pct,
   isOwner,
+  status = "APPROVED",
 }: {
   art: ScanArt;
   artist: ScanArtist;
@@ -46,6 +47,7 @@ export default function ScanView({
   venue: string | null;
   pct: number;
   isOwner: boolean;
+  status?: string;
 }) {
   const router = useRouter();
   const { addToCart, cartItems } = useCart();
@@ -134,7 +136,9 @@ export default function ScanView({
   const buyLabel = busy ? "Opening checkout…" : `Buy this print · ${usd(price.now)}`;
 
   return (
-    <div className="pb-[calc(112px+env(safe-area-inset-bottom))] md:pb-0">
+    <div>
+      {/* room for the sticky buy bar under the footer on phones */}
+      <style>{`@media (max-width: 767px) { body { padding-bottom: calc(96px + env(safe-area-inset-bottom)); } }`}</style>
       {venue && (
         <div className="bg-ink text-white">
           <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-x-4 gap-y-0.5 px-4 py-2 text-[14px] sm:px-6">
@@ -149,7 +153,10 @@ export default function ScanView({
       {isOwner && (
         <div className="border-b border-line bg-scan-soft">
           <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-3 px-4 py-2 text-[14px] sm:px-6">
-            <span className="font-semibold">This is your piece</span>
+            <span className="font-semibold">
+              This is your piece
+              {status !== "APPROVED" && <span className="font-normal text-ink-2"> · {status === "REJECTED" ? "Not approved, buyers can't see it" : "In review, buyers can't buy it yet"}</span>}
+            </span>
             <a className="font-bold text-scan" href={`/api/artworks/${art.slug}/qr?download=1`} target="_blank" rel="noopener">
               Download its QR code
             </a>
@@ -176,7 +183,7 @@ export default function ScanView({
                       const img = e.currentTarget;
                       setLandscape(img.naturalWidth > img.naturalHeight * 1.05);
                     }}
-                    className="block h-auto max-h-[52svh] w-auto max-w-full md:max-h-[72vh]"
+                    className="block h-auto max-h-[46svh] w-auto max-w-full md:max-h-[72vh]"
                   />
                 </SensitiveImage>
               </div>
@@ -295,6 +302,7 @@ export default function ScanView({
           </div>
 
           <WallPreview
+            className="md:order-last"
             imageUrl={art.imageUrl}
             alt={art.title}
             size={size}
@@ -317,7 +325,7 @@ export default function ScanView({
             </p>
           </div>
 
-          <ul className="grid grid-cols-2 gap-x-4 gap-y-2.5 border-t border-line pt-4 text-[14px] font-semibold">
+          <ul className="md:order-6 flex flex-wrap gap-x-5 gap-y-2.5 border-t border-line pt-4 text-[14px] font-semibold [&>li]:whitespace-nowrap">
             <li className="flex items-center gap-2"><i className="paint-dab" style={{ ["--dab" as any]: "var(--af-scan)" }} />Free US shipping</li>
             <li className="flex items-center gap-2"><i className="paint-dab" style={{ ["--dab" as any]: "var(--af-sticker)" }} />Made to order</li>
             <li className="flex items-center gap-2"><i className="paint-dab" style={{ ["--dab" as any]: "var(--af-earned)" }} />{firstName} gets 60% of profit</li>
@@ -325,7 +333,7 @@ export default function ScanView({
           </ul>
 
           {art.description?.trim() && (
-            <details className="group border-t border-line pt-4">
+            <details className="md:order-last group border-t border-line pt-4">
               <summary className="cursor-pointer list-none text-[15px] font-bold marker:hidden">
                 About this piece <span className="font-normal text-ink-2 group-open:hidden">· show</span>
               </summary>
@@ -347,7 +355,7 @@ export default function ScanView({
           </div>
         </div>
         {more.length ? (
-          <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-5 sm:overflow-visible sm:px-0 lg:grid-cols-4">
+          <ul className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-4 sm:[&>li:nth-child(n+4)]:hidden lg:[&>li:nth-child(4)]:block sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-5 sm:overflow-visible sm:px-0 lg:grid-cols-4">
             {more.map((m) => (
               <li key={m.slug} className="w-[44vw] max-w-[220px] shrink-0 snap-start sm:w-auto sm:max-w-none">
                 <Link href={`/art/${m.slug}`} className="group grid gap-2 text-ink no-underline">

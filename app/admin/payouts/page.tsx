@@ -1,103 +1,31 @@
-"use client"
+import type { Metadata } from "next";
+import { prisma } from "@/lib/prisma";
+import MonthPicker from "../_components/MonthPicker";
+import PayoutsTable from "../_components/PayoutsTable";
+import { currentMonth, monthLabel, monthRange } from "../_components/util";
 
-import { useState, useEffect } from "react"
+export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Payouts" };
 
-export default function AdminPayoutsPage() {
-  const months = Array.from({ length: 12 }).map((_, i) => {
-    const d = new Date()
-    d.setMonth(d.getMonth() - i)
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-  })
-
-  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))
-  const [rows, setRows] = useState<any[]>([])
-
-  useEffect(() => {
-    fetch(`/api/admin/payouts/summary?month=${month}`, {
-      credentials: "include",
-    })
-      .then(res => res.json())
-      .then(data => setRows(data.rows || []))
-  }, [month])
-
-  const markPaid = async (artistId: string, currentStatus: string) => {
-    const res = await fetch("/api/admin/payouts/mark-paid", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        artistId,
-        month,
-        unmark: currentStatus === "PAID", // 👈 toggle
-      }),
-    })
-    if (res.ok) {
-      // re-fetch summary after marking
-      const updated = await fetch(`/api/admin/payouts/summary?month=${month}`).then(r => r.json())
-      setRows(updated.rows || [])
-    }
-  }
+export default async function AdminPayoutsPage({ searchParams }: { searchParams: { month?: string } }) {
+  const monthRows = await prisma.$queryRaw<{ m: string }[]>`
+    SELECT DISTINCT to_char("createdAt" AT TIME ZONE 'UTC', 'YYYY-MM') AS m FROM "Order" WHERE "paymentStatus" = 'paid' ORDER BY m DESC`;
+  const months = Array.from(new Set([currentMonth(), ...monthRows.map((r) => r.m)])).sort().reverse();
+  const month = searchParams.month && monthRange(searchParams.month) ? searchParams.month : monthRows[0]?.m ?? currentMonth();
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Admin Payouts</h1>
-
-      <div className="flex items-center gap-2 mb-4">
-        <label htmlFor="month">Select month:</label>
-        <select
-          id="month"
-          value={month}
-          onChange={e => setMonth(e.target.value)}
-          className="border rounded px-2 py-1"
-        >
-          {months.map(m => (
-            <option key={m} value={m}>{m}</option>
-          ))}
-        </select>
+    <div className="grid gap-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow">{monthLabel(month)}</p>
+          <h1 className="display text-[44px] sm:text-[56px]">Payouts</h1>
+        </div>
+        <div className="flex flex-wrap items-end gap-2">
+          <MonthPicker months={months} value={month} allowAll={false} />
+          <a href={`/api/admin/payouts?month=${month}`} className="btn btn-ghost btn-sm mb-1">Export CSV</a>
+        </div>
       </div>
-
-      <table className="w-full text-sm border">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="p-2">Artist</th>
-            <th className="p-2">Email</th>
-            <th className="p-2">Venmo</th>
-            <th className="p-2">Items</th>
-            <th className="p-2">Gross</th>
-            <th className="p-2">Expenses</th>
-            <th className="p-2">Profit</th>
-            <th className="p-2">Artist Share</th>
-            <th className="p-2">Status</th>
-            <th className="p-2">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(r => (
-            <tr key={r.artistId} className="border-t">
-              <td className="p-2">{r.artistName}</td>
-              <td className="p-2">{r.artistEmail}</td>
-              <td className="p-2">{r.venmoHandle}</td>
-              <td className="p-2 text-center">{r.itemsCount}</td>
-              <td className="p-2">${(r.gross/100).toFixed(2)}</td>
-              <td className="p-2">${(r.expenses/100).toFixed(2)}</td>
-              <td className="p-2">${(r.profit/100).toFixed(2)}</td>
-              <td className="p-2"><strong>${(r.artistShare/100).toFixed(2)}</strong></td>
-              <td className="p-2">
-                {r.payout.status === "PAID"
-                  ? `Paid on ${new Date(r.payout.paidAt).toLocaleDateString()}`
-                  : "UNPAID"}
-              </td>
-              <td className="p-2">
-                <button
-                  onClick={() => markPaid(r.artistId, r.payout.status)}
-                  className="px-3 py-1 rounded text-white bg-blue-600 hover:bg-blue-700"
-                >
-                  {r.payout.status === "PAID" ? "Unmark" : "Mark Paid"}
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <PayoutsTable key={month} month={month} />
     </div>
-  )
+  );
 }

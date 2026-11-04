@@ -1,151 +1,75 @@
-"use client";
-
-import { ReactNode, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { MaxWidthWrapper } from "@/components/layout";
-import { MinimalSection } from "@/components/sections";
-import { UserCard } from "@/components/cards";
-import PageBreadcrumb from "@/components/PageBreadcrumb";
-import Pagination from "@/components/CustomPagination";
-import { getAppConfigs, getAppPages, getSellers } from "@/db/query";
-import { UserType } from "@/types";
+import { Search } from "lucide-react";
+import ArtistCard, { YourSpotCard } from "@/components/browse/ArtistCard";
+import PageHead, { EmptyCanvas } from "@/components/browse/PageHead";
+import { getArtists, getCities } from "@/components/browse/data";
+import { cn } from "@/lib/utils";
 
-const AppConfigs = getAppConfigs();
-const AppPages = getAppPages();
+export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Artists", description: "Independent artists selling prints on Artfinity." };
 
-const ArtistsPage = (): ReactNode => {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const queryPageKey = AppConfigs.pagination_query_key || "page";
-
-  const {
-    title,
-    banner,
-    items_limit,
-    slug: sellersPageSlug,
-  } = AppPages.sellers;
-
-  const [sellers, setSellers] = useState<UserType[]>([])
-  const [totalArtists, setTotalArtists] = useState(0)
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [itemsPerPage, setItemsPerPage] = useState<number>(items_limit || 10);
-  const [loading, setLoading] = useState(true)
-  const [sort, setSort] = useState<"name_az" | "name_za" | "random">("name_az")
-
-  useEffect(() => {
-    let ignore = false
-    const run = async () => {
-      setLoading(true)
-      try {
-        const res = await fetch(
-          `/api/artists?page=${currentPage}&limit=${itemsPerPage}&sort=${sort}`,
-          { cache: "no-store" }
-        )
-        if (!res.ok) { if (!ignore) { setSellers([]); setTotalArtists(0) } ; return }
-        const { artists, total } = await res.json()
-        if (!ignore) { setSellers(artists || []); setTotalArtists(total || 0) }
-      } finally {
-        if (!ignore) setLoading(false)
-      }
-    }
-    run()
-    return () => { ignore = true }
-  }, [currentPage, itemsPerPage, sort])
-
-
-  useEffect(() => {
-    setItemsPerPage(items_limit)
-
-    const queryPage = parseInt(searchParams.get(queryPageKey) || "1", 10)
-    setCurrentPage(queryPage > 0 ? queryPage : 1)
-  }, [searchParams, queryPageKey, items_limit])
-
-  
-  const handlePageChange = (page: number) => {
-    if (page > 0 && page <= Math.ceil(totalArtists / itemsPerPage)) {
-      router.push(`?${queryPageKey}=${page}`);
-    } else {
-      router.push(`?${queryPageKey}=1`);
-    }
-  }
+export default async function ArtistsPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+  const q = (searchParams.q || "").trim().slice(0, 60) || undefined;
+  const city = searchParams.city || undefined;
+  const [artists, cities] = await Promise.all([getArtists({ q, city }), getCities()]);
+  const link = (c?: string) => {
+    const s = new URLSearchParams();
+    if (q) s.set("q", q);
+    if (c) s.set("city", c);
+    return s.toString() ? `/artists?${s}` : "/artists";
+  };
 
   return (
-    <div>
-      <title>All Artists: Artfinity</title>
-      <section>
-        <MinimalSection className="page-banner" bg={banner}>
-          <h1 className="text-center text-white">{title}</h1>
-          <PageBreadcrumb type="page-banner" />
-        </MinimalSection>
-      </section>
-      <section>
-        <MaxWidthWrapper className="space-y-4 py-10 md:space-y-6 md:py-14">
-          <div className="page-top grid grid-cols-1 items-center justify-between gap-x-4 gap-y-2 space-y-2 md:grid-cols-2 md:gap-6">
-            <div>
-              <div className="filter-area relative isolate text-theme-secondary-500">
-                <select
-                  value={sort}
-                  onChange={(e) =>
-                    setSort(e.target.value as "name_az" | "name_za" | "random")
-                  }
-                  className="max-w-[180px] rounded border px-2 py-1 capitalize text-theme-secondary-500"
-                >
-                  <option value="name_az">Name A–Z</option>
-                  <option value="name_za">Name Z–A</option>
-                  <option value="random">Random</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <Pagination
-                totalItems={totalArtists}
-                itemsPerPage={itemsPerPage}
-                currentPage={currentPage}
-                onPageChange={handlePageChange}
-                className="hidden justify-end md:flex"
-              />
-            </div>
-          </div>
-          
-          {loading ? (
-            <p className="mb-6 w-full py-6 text-center text-lg md:mb-8 md:py-12">Loading…</p>
-          ) : sellers.length > 0 ? (
-            <div className="sellers-area grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-6 xl:grid-cols-4">
-              {sellers.map((user) => (
-                <Link key={user.id} href={`/${sellersPageSlug}/${user.slug}`}>
-                  <UserCard user={user} showBio={true} />
+    <div className="pb-20">
+      <PageHead
+        eyebrow="Hanging codes now"
+        title="Artists"
+        sub={<><span className="num">{artists.length}</span> {artists.length === 1 ? "artist" : "artists"}{city ? "" : <> in <span className="num">{cities.length}</span> {cities.length === 1 ? "city" : "cities"}</>}.</>}
+        stroke="var(--af-coral)"
+      >
+        <form action="/artists" method="get" role="search" className="w-full md:w-auto">
+          {city && <input type="hidden" name="city" value={city} />}
+          <label className="flex items-center gap-2 rounded-full border-2 border-ink bg-white px-4 py-2 focus-within:border-scan md:w-72">
+            <Search className="h-4 w-4 shrink-0 text-ink-2" aria-hidden="true" />
+            <span className="sr-only">Search artists</span>
+            <input name="q" type="search" defaultValue={q} placeholder="Find an artist" className="w-full min-w-0 border-0 bg-transparent p-0 text-[15px] outline-none placeholder:text-ink-2" />
+          </label>
+        </form>
+      </PageHead>
+
+      {cities.length > 1 && (
+        <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
+            {[{ slug: "", name: "Everywhere" }, ...cities].map((c) => {
+              const active = (city || "") === c.slug;
+              return (
+                <Link key={c.slug || "all"} href={link(c.slug || undefined)} aria-current={active ? "true" : undefined}
+                  className={cn("inline-flex shrink-0 rounded-full border-[1.5px] px-3.5 py-1.5 text-[14px] font-semibold no-underline transition", active ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>
+                  {c.name}
                 </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="mb-6 w-full py-6 text-center text-lg capitalize md:mb-8 md:py-12 md:text-xl">
-              {AppConfigs?.messages?.sellers?.not_found || "No Sellers Found"}
-            </p>
-          )}
-          <div className="pagination-area flex items-center justify-center py-6">
-            
-            <Pagination
-              totalItems={totalArtists}
-              itemsPerPage={itemsPerPage}
-              currentPage={currentPage}
-              onPageChange={handlePageChange}
-            />
+              );
+            })}
           </div>
-        </MaxWidthWrapper>
+        </div>
+      )}
+
+      <section className="mx-auto mt-6 max-w-[1240px] px-4 sm:px-6 md:mt-8" aria-label="Artists">
+        {artists.length ? (
+          <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-8">
+            {artists.map((a) => <ArtistCard key={a.slug} artist={a} />)}
+            {!q && <YourSpotCard />}
+          </div>
+        ) : (
+          <EmptyCanvas title="No one by that name yet">
+            <p className="text-ink-2">Maybe it’s you.</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Link href="/artists" className="btn btn-ghost">All artists</Link>
+              <Link href="/register" className="btn btn-blue">Start selling free</Link>
+            </div>
+          </EmptyCanvas>
+        )}
       </section>
     </div>
   );
-};
-
-export default ArtistsPage;
+}

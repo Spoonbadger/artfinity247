@@ -35,7 +35,7 @@ async function loadArt(rawSlug: string) {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const art = await loadArt(params.slug).catch(() => null);
-  if (!art || art.status === "REJECTED") return { title: "Not found" };
+  if (!art || art.status !== "APPROVED") return { title: "Artwork" };
   const name = art.artist.artist_name || art.artist.name;
   return {
     title: `${art.title} by ${name}`,
@@ -47,10 +47,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ArtPage({ params, searchParams }: Props) {
   const [art, user] = await Promise.all([loadArt(params.slug), getUserFromCookie()]);
   const isOwner = !!user && !!art && (user.id === art.artistId || user.role === "ADMIN");
-  if (!art || (art.status === "REJECTED" && !isOwner)) notFound();
+  // Buyers only see approved work; the artist and admins can preview anything.
+  if (!art || (art.status !== "APPROVED" && !isOwner)) notFound();
 
   const moreRows = await prisma.artwork.findMany({
-    where: { artistId: art.artistId, id: { not: art.id }, status: { not: "REJECTED" }, slug: { not: null } },
+    where: { artistId: art.artistId, id: { not: art.id }, status: "APPROVED", slug: { not: null } },
     orderBy: { createdAt: "desc" },
     take: 8,
     select: { slug: true, title: true, imageUrl: true, sensitive: true, markupSmall: true, markupMedium: true, markupLarge: true, markupXl: true },
@@ -85,6 +86,7 @@ export default async function ArtPage({ params, searchParams }: Props) {
       venue={parseVenue(searchParams.at)}
       pct={parseDiscount(searchParams.off)}
       isOwner={isOwner}
+      status={art.status}
     />
   );
 }

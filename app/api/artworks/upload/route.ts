@@ -7,6 +7,7 @@ import { resend } from "@/lib/resend"
 import NewArtworkUploadedEmail from "@/emails/NewArtworkUploadedEmail"
 import ArtworkLiveWithQrEmail from "@/emails/ArtworkLiveWithQrEmail";
 import { SignJWT } from "jose"
+import { parseSensitive } from "@/components/studio/sensitive"
 
 export const dynamic = "force-dynamic"
 
@@ -44,9 +45,20 @@ export async function POST(req: NextRequest) {
 
     const form = await req.formData();
 
-    const title = form.get("title") as string;
-    const description = form.get("description") as string;
-    const imageUrl = form.get("imageUrl") as string;
+    const title = String(form.get("title") ?? "").trim();
+    const description = String(form.get("description") ?? "");
+    const imageUrl = String(form.get("imageUrl") ?? "").trim();
+    // Content labels, comma-separated: "Nudity,Violence or gore". Labeled art is blurred for buyers.
+    const sensitive = parseSensitive(form.get("sensitive"));
+    // Optional: sizes the file can print sharply ("small,medium,..."), from POST /api/uploads.
+    // There is no column for it yet, so it is only validated here; sizes still use the markups below.
+    const printableRaw = form.get("printable");
+
+    if (!title) return new NextResponse("Title required", { status: 400 });
+    if (!imageUrl) return new NextResponse("Image required", { status: 400 });
+    if (printableRaw !== null && !String(printableRaw).split(",").filter(Boolean).every((s) => ["small", "medium", "large", "xl"].includes(s.trim()))) {
+      return new NextResponse("Invalid printable sizes", { status: 400 });
+    }
     const markupSmall = parseInt(form.get("markupSmall") as string) || 0;
     const markupMedium = parseInt(form.get("markupMedium") as string) || 0;
     const markupLarge = parseInt(form.get("markupLarge") as string) || 0;
@@ -70,6 +82,7 @@ export async function POST(req: NextRequest) {
         imageUrl: imageUrl,
         artistId: payload.id as string,
         status: "APPROVED",
+        sensitive,
       },
       include: {
         artist: {
