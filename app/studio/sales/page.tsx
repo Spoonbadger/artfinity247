@@ -117,6 +117,7 @@ export default async function SalesPage({ searchParams }: { searchParams: { mont
         </div>
       ) : (
         <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+          <div className="grid gap-4">
           <section className="af-card grid gap-3 p-4 sm:p-5" aria-labelledby="months-h">
             <h2 id="months-h" className="text-[20px] font-bold">By month</h2>
             <ul className="grid gap-4">
@@ -134,6 +135,34 @@ export default async function SalesPage({ searchParams }: { searchParams: { mont
               ))}
             </ul>
           </section>
+          {payouts.length > 0 && (
+            <section className="af-card grid gap-3 p-4 sm:p-5" aria-labelledby="payouts-h">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 id="payouts-h" className="text-[20px] font-bold">Payouts</h2>
+                <span className="text-[12.5px] text-ink-2">Paid after each month closes.</span>
+              </div>
+              <ul className="grid">
+                {payouts.map((p) => (
+                  <li key={p.key} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-line py-2.5 first:border-t-0">
+                    <span className="min-w-[140px] font-semibold">{p.name}</span>
+                    <span className="ml-auto flex items-center gap-3">
+                      <b className="num text-[16px] text-earned">{usd(p.owed)}</b>
+                      {p.paid ? (
+                        <span className="num rounded-full bg-earned-soft px-2.5 py-0.5 text-[12.5px] font-semibold text-earned">
+                          Paid {p.paidAt!.toLocaleDateString("en-US", { timeZone: STUDIO_TZ, month: "short", day: "numeric", year: "numeric" })}
+                        </span>
+                      ) : p.open ? (
+                        <span className="rounded-full bg-wall px-2.5 py-0.5 text-[12.5px] font-semibold text-ink-2">In progress</span>
+                      ) : (
+                        <span className="rounded-full bg-sticker/50 px-2.5 py-0.5 text-[12.5px] font-semibold">Unpaid</span>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          </div>
 
           <section className="af-card min-w-0 p-4 sm:p-5" aria-labelledby="orders-h">
             <div className="mb-2 flex items-baseline justify-between gap-2">
@@ -181,7 +210,7 @@ export default async function SalesPage({ searchParams }: { searchParams: { mont
                       <span className="text-[11.5px] text-ink-2">{Math.round(s.split * 100)}%</span>
                     </td>
                     <td className="col-start-2 text-[12.5px] text-ink-2 sm:hidden">
-                      {shortDate(s.date)} · {SIZE_LABEL[s.size]} · {usd(s.priceCents)}{x ? ` · −${usd(x.expenses)} costs` : ""}
+                      {shortDate(s.date)} · {SIZE_LABEL[s.size]} · {usd(s.priceCents)}{x && <> · <span className="whitespace-nowrap">−{usd(x.expenses)} costs</span></>}
                       {x && <> · <Link href={customerHref(x.email)} className="font-semibold text-scan">{buyer}</Link></>}
                     </td>
                   </tr>
@@ -191,34 +220,6 @@ export default async function SalesPage({ searchParams }: { searchParams: { mont
             </table>
           </section>
         </div>
-      )}
-
-      {payouts.length > 0 && (
-        <section className="af-card grid gap-3 p-4 sm:p-5" aria-labelledby="payouts-h">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 id="payouts-h" className="text-[20px] font-bold">Payouts</h2>
-            <span className="text-[12.5px] text-ink-2">Paid after each month closes.</span>
-          </div>
-          <ul className="grid">
-            {payouts.map((p) => (
-              <li key={p.key} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-line py-2.5 first:border-t-0">
-                <span className="min-w-[140px] font-semibold">{p.name}</span>
-                <span className="ml-auto flex items-center gap-3">
-                  <b className="num text-[16px] text-earned">{usd(p.owed)}</b>
-                  {p.paid ? (
-                    <span className="num rounded-full bg-earned-soft px-2.5 py-0.5 text-[12.5px] font-semibold text-earned">
-                      Paid {p.paidAt!.toLocaleDateString("en-US", { timeZone: STUDIO_TZ, month: "short", day: "numeric", year: "numeric" })}
-                    </span>
-                  ) : p.open ? (
-                    <span className="rounded-full bg-wall px-2.5 py-0.5 text-[12.5px] font-semibold text-ink-2">In progress</span>
-                  ) : (
-                    <span className="rounded-full bg-sticker/50 px-2.5 py-0.5 text-[12.5px] font-semibold">Unpaid</span>
-                  )}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
       )}
     </StudioPage>
   );

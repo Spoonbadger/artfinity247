@@ -84,7 +84,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
   async function downloadPng() {
     setBusy("png");
     try {
-      const code = qrSVG(qrText, { fg: d.fg, dots: d.dots, eyes: d.eyes, eyeColor: eyeColor(d), label: "QR code" }).replace("<svg ", '<svg width="1200" height="1200" ');
+      const code = qrSVG(qrText, { fg: d.fg, dots: d.dots, eyes: d.eyes, eyeColor: eyeColor(d), label: "QR code", logo: d.logo }).replace("<svg ", '<svg width="1200" height="1200" ');
       const img = new Image();
       const url = URL.createObjectURL(new Blob([code], { type: "image/svg+xml" }));
       await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = rej; img.src = url; });
@@ -101,7 +101,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
   }
 
   const F = FORMATS[d.format];
-  const sn = card && fonts ? scanNumbers(card, qrText, fonts) : null;
+  const sn = card && fonts ? scanNumbers(card, qrText, fonts, d.logo) : null;
 
   return (
     <div className={s.wrap}>
@@ -136,7 +136,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
             )}
             <Toggle checked={d.showTitle} onChange={(v) => set({ showTitle: v })}>Title and artist</Toggle>
             <Toggle checked={d.showPrice} onChange={(v) => set({ showPrice: v })}>&ldquo;Prints from&rdquo; price</Toggle>
-            <Toggle checked={d.showBrand} onChange={(v) => set({ showBrand: v })}>Artfinity mark</Toggle>
+            <Toggle checked={d.showBrand} onChange={(v) => set({ showBrand: v })}>Artfinity name</Toggle>
           </Group>
 
           <Group title="Discount" dab="#ff5a36">
@@ -166,6 +166,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
             <Chips label="Dot shape" items={Object.entries(DOTS) as [Design["dots"], string][]} value={d.dots} onPick={(k) => set({ dots: k })} />
             <div className={s.sub}>Corners</div>
             <Chips label="Corner shape" items={Object.entries(EYES) as [Design["eyes"], string][]} value={d.eyes} onPick={(k) => set({ eyes: k })} />
+            <Toggle checked={d.logo} onChange={(v) => set({ logo: v })}>Show Artfinity logo in the code</Toggle>
             <div className={s.sub}>Corner color</div>
             <Swatches label="Corner color" list={EYE} value={d.eye} onPick={(c) => set({ eye: c })} fg={d.fg} noCustom />
             <div className={s.sub}>Code color</div>

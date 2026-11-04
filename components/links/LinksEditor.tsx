@@ -196,7 +196,7 @@ function Row({
   }
 
   return (
-    <div className={cn("rounded-xl border-[1.5px] bg-white", link.active ? "border-line" : "border-dashed border-line bg-wall/50")}>
+    <div className={cn("rounded-xl border-[1.5px] bg-white", link.active ? "border-line" : "border-dashed border-line bg-[#f2f3ec80]")}>
       <div className="flex items-center gap-1.5 py-1.5 pl-1 pr-2 sm:gap-2">
         {handle}
         <span className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-full", link.active ? "bg-wall text-ink" : "bg-white text-ink-2")}>
@@ -340,7 +340,7 @@ function AddSocial({ onAdd, have }: { onAdd: (p: { url: string; display: "icon";
         ))}
       </div>
       {kind && (
-        <form onSubmit={submit} className="grid gap-2 rounded-xl border-[1.5px] border-ink bg-wall/60 p-3">
+        <form onSubmit={submit} className="grid gap-2 rounded-xl border-[1.5px] border-ink bg-[#f2f3ec99] p-3">
           <label className="af-field">
             <span className="text-[12.5px] font-semibold text-ink-2">
               {kind === "email" ? "Email address" : kind === "website" ? "Website" : `${KIND_LABEL[kind]} handle or link`}
@@ -405,7 +405,7 @@ function AddButton({ onAdd }: { onAdd: (p: { url: string; label: string; display
     );
 
   return (
-    <form onSubmit={submit} className="grid gap-2.5 rounded-xl border-[1.5px] border-ink bg-wall/60 p-3">
+    <form onSubmit={submit} className="grid gap-2.5 rounded-xl border-[1.5px] border-ink bg-[#f2f3ec99] p-3">
       <label className="af-field">
         <span className="text-[12.5px] font-semibold text-ink-2">Link</span>
         <span className="flex items-center gap-2">
@@ -703,7 +703,7 @@ export default function LinksEditor({
         <Eye className="h-5 w-5" aria-hidden="true" /> Preview
       </button>
       {preview && (
-        <div role="dialog" aria-modal="true" aria-label="Preview of your links page" className="fixed inset-0 z-50 grid grid-rows-[auto_minmax(0,1fr)] gap-3 bg-ink/95 p-3 pt-3 lg:hidden">
+        <div role="dialog" aria-modal="true" aria-label="Preview of your links page" className="fixed inset-0 z-50 grid grid-rows-[auto_minmax(0,1fr)] gap-3 bg-[rgba(21,22,27,.96)] p-3 pt-3 lg:hidden">
           <div className="flex items-center justify-between text-white">
             <span className="pl-2 text-[14px] font-semibold">Preview</span>
             <button type="button" onClick={() => setPreview(false)} autoFocus className="btn btn-sm gap-1.5 border-white bg-white text-ink">

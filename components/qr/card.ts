@@ -1,6 +1,7 @@
 // QR Studio card faces, drawn as one SVG each (text outlined), in points (72 per inch).
 // The same function feeds the live preview, the SVG download and the print PDF.
 import { qrSVG, qrMatrix, type DotStyle, type EyeStyle } from "@/lib/qr/render";
+import { MARK_BOX, markPaths } from "@/lib/brand/mark";
 import { basePrices } from "@/lib/artwork_price";
 import { money, type SizeKey } from "@/lib/earnings";
 import { type Fonts, text, fit, fitBlock, capHeight, width, arcText, arcWidth, blockH } from "./text";
@@ -46,6 +47,8 @@ export type Design = Look & {
   showTitle: boolean;
   showPrice: boolean;
   showBrand: boolean;
+  /** Artfinity mark in the middle of the code (switches the code to error correction H). */
+  logo: boolean;
   disc: number;
   coupon: string;
   ev: string;
@@ -61,7 +64,7 @@ export function presetLook(k: PresetKey): Look {
 
 export const DEFAULT_DESIGN: Design = {
   preset: "gallery", ...presetLook("gallery"),
-  ctaCustom: "Take me home", showTitle: true, showPrice: true, showBrand: true,
+  ctaCustom: "Take me home", showTitle: true, showPrice: true, showBrand: true, logo: true,
   disc: 10, coupon: "SCAN10", ev: "", evPrint: false, size: "medium", end: "never",
 };
 
@@ -86,6 +89,7 @@ export function sanitizeDesign(input: unknown): Design {
     showTitle: bool(i.showTitle, D.showTitle),
     showPrice: bool(i.showPrice, D.showPrice),
     showBrand: bool(i.showBrand, D.showBrand),
+    logo: bool(i.logo, D.logo),
     disc: DISCOUNTS.includes(Number(i.disc)) ? Number(i.disc) : 0,
     coupon: str(i.coupon, 16),
     tag: color(i.tag, D.tag),
@@ -131,22 +135,26 @@ const n2 = (v: number) => +v.toFixed(2);
 
 // ---------------- shared pieces ----------------
 function qrAt(d: Design, qrText: string, x: number, y: number, size: number, title: string) {
-  return qrSVG(qrText, { fg: d.fg, dots: d.dots, eyes: d.eyes, eyeColor: eyeColor(d), label: esc(`QR code for ${title}`) })
+  return qrSVG(qrText, { fg: d.fg, dots: d.dots, eyes: d.eyes, eyeColor: eyeColor(d), label: esc(`QR code for ${title}`), logo: d.logo })
     .replace("<svg ", `<svg x="${n2(x)}" y="${n2(y)}" width="${n2(size)}" height="${n2(size)}" `);
 }
 
-/** The Artfinity mark plus wordmark. y is the baseline.
- *  Drawn with a thin frame and a small square: the full-weight mark has the same
- *  1:1:3:1:1 rhythm as a QR corner and makes scanners lock onto the wrong spot. */
-function brand(f: Fonts, x: number, y: number, size: number, ink: string, anchor: "start" | "middle" = "start") {
-  const b = size * 0.95, gap = size * 0.32, tw = width(f.display, "artfinity", size);
+/** The Artfinity name, y is the baseline. With the logo in the code the mark is already there, so only the
+ *  wordmark is set; without it, the paint-swatch mark leads (not finder-shaped, so scanners ignore it). */
+function brand(f: Fonts, x: number, y: number, size: number, ink: string, anchor: "start" | "middle" = "start", mark = true) {
+  const b = mark ? size * 1.15 : 0, gap = mark ? size * 0.3 : 0, tw = width(f.display, "artfinity", size);
   const total = b + gap + tw;
   const x0 = anchor === "middle" ? x - total / 2 : x;
-  const k = b / 24, top = y - capHeight(f.display) * size - b * 0.06;
-  return `<g><g transform="translate(${n2(x0)} ${n2(top)}) scale(${n2(k)})"><rect x="1" y="1" width="22" height="22" rx="3.5" fill="none" stroke="${ink}" stroke-width="1.8"/><rect x="8.25" y="8.25" width="7.5" height="7.5" rx="1.6" fill="${ink}"/></g>` +
-    text(f.display, "artfinity", x0 + b + gap, y, size, ink) + "</g>";
+  let s = "<g>";
+  if (mark) {
+    // The mark's a sits on the baseline, as tall as the wordmark's x-height.
+    const [bx, by, bw, bh] = MARK_BOX, k = b / bw;
+    const top = y - capHeight(f.display) * size * 0.5 - (bh * k) / 2 - size * 0.04;
+    s += `<g transform="translate(${n2(x0 - bx * k)} ${n2(top - by * k)}) scale(${n2(k)})">${markPaths(ink)}</g>`;
+  }
+  return s + text(f.display, "artfinity", x0 + b + gap, y, size, ink) + "</g>";
 }
-const brandWidth = (f: Fonts, size: number) => size * 1.27 + width(f.display, "artfinity", size);
+const brandWidth = (f: Fonts, size: number, mark = true) => (mark ? size * 1.45 : 0) + width(f.display, "artfinity", size);
 
 /** Die-cut price tag (same shape as lib/qr/render tagSVG), text outlined. w is its width; height is w / 2. */
 function priceTag(f: Fonts, pct: number, fill: string, ink: string, string: string, x: number, y: number, w: number, rot = 0) {
@@ -198,7 +206,7 @@ export function renderCard(d: Design, art: ArtInfo, f: Fonts, qrText: string, ui
     let base = H - pad - 0.18 * fs, top = H - pad;
     if (d.showBrand || price) {
       const bs = 3.6 * u;
-      if (d.showBrand) s += brand(f, x0, base, bs, ink);
+      if (d.showBrand) s += brand(f, x0, base, bs, ink, "start", !d.logo);
       if (price) s += text(f.body, price, d.showBrand ? x0 + tw : x0, base, fs, ink, d.showBrand ? "end" : "start", 0.72);
       top = base - dcap * bs; base = top - gap - 0.18 * fs;
     }
@@ -231,7 +239,7 @@ export function renderCard(d: Design, art: ArtInfo, f: Fonts, qrText: string, ui
         const ts = Math.max(8, Math.min(11, (11 * maxW) / arcWidth(f.semi, line, 11)));
         s += arcText(f.semi, fit(f.semi, line, ts, maxW), 100, 100, 70, ts, ink, -1, 0, 0.8);
       }
-      if (d.showBrand) s += d.showTitle ? brand(f, 100, 152, 9.5, ink, "middle") : brand(f, 100, 160, 12, ink, "middle");
+      if (d.showBrand) s += d.showTitle ? brand(f, 100, 152, 9.5, ink, "middle", !d.logo) : brand(f, 100, 160, 12, ink, "middle", !d.logo);
     }
     return { inner: `<g transform="scale(${k})">${s}</g>`, w: S, h: S, qrPt: 90 * k, ctaPt: cs * k, label };
   }
@@ -260,7 +268,7 @@ export function renderCard(d: Design, art: ArtInfo, f: Fonts, qrText: string, ui
     if (ch > avail) { Q = Math.max(54 * u, Q - (ch - avail)); avail = limit - top0 - brandH - whoH - Q - gap; }
     const extra = Math.max(0, avail - ch) / (whoLines ? 4 : 3);
     let y = top0 + extra * 0.5;
-    if (d.showBrand) { y += dcap * bs; s += brand(f, W / 2, y, bs, ink, "middle"); y += gap + extra * 0.5; }
+    if (d.showBrand) { y += dcap * bs; s += brand(f, W / 2, y, bs, ink, "middle", !d.logo); y += gap + extra * 0.5; }
     y += dcap * blk.size;
     for (const line of blk.lines) { s += text(f.display, line, W / 2, y, blk.size, ink, "middle"); y += blk.size * 0.9; }
     y += -blk.size * 0.9 + gap + extra;
@@ -289,7 +297,7 @@ export function renderCard(d: Design, art: ArtInfo, f: Fonts, qrText: string, ui
   let s = `<rect width="${W}" height="${H}" fill="${d.bg}"/>`;
   // bottom block first, so the rest can share what is left
   const ws = 3.6 * u, lh = ws * 1.32, bsz = 4.4 * u;
-  const brandW = d.showBrand ? brandWidth(f, bsz) + 4 * u : 0;
+  const brandW = d.showBrand ? brandWidth(f, bsz, !d.logo) + 4 * u : 0;
   const lines: [string, "semi" | "body", number][] = [];
   if (d.showTitle) { lines.push([art.title, "semi", 1]); lines.push([art.artist, "body", 0.72]); }
   if (ev) lines.push([ev, "body", 0.72]);
@@ -299,7 +307,7 @@ export function renderCard(d: Design, art: ArtInfo, f: Fonts, qrText: string, ui
     const fy = lastBase - (lines.length - 1 - i) * lh;
     s += text(f[fk], fit(f[fk], t, ws, cw - brandW), pad, fy, ws, ink, "start", op);
   });
-  if (d.showBrand) s += brand(f, W - pad - brandWidth(f, bsz), H - pad - 0.2 * bsz, bsz, ink);
+  if (d.showBrand) s += brand(f, W - pad - brandWidth(f, bsz, !d.logo), H - pad - 0.2 * bsz, bsz, ink, "start", !d.logo);
   const bottomTop = lines.length ? lastBase - (lines.length - 1) * lh - bcap * ws : H - pad - (d.showBrand ? dcap * bsz : 0);
   const gap = 4.5 * u, tagW = 46 * u, tagH = d.disc ? tagW / 2 : 0;
   let Q = 56 * u;
@@ -353,8 +361,8 @@ export function sheetSVG(c: Card, fmt: FormatKey, uid = "s") {
 }
 
 // ---------------- scan maths ----------------
-export function scanNumbers(c: Card, qrText: string, f: Fonts) {
-  const n = qrMatrix(qrText).length;
+export function scanNumbers(c: Card, qrText: string, f: Fonts, logo = false) {
+  const n = qrMatrix(qrText, logo ? "H" : "M").length;
   const qrIn = c.qrPt / 72, modIn = qrIn / (n + 4), codeIn = modIn * n;
   const capIn = (c.ctaPt * capHeight(f.display)) / 72;
   return { n, modMm: modIn * 25.4, codeIn, scanCm: codeIn * 2.54 * 10, readM: capIn * 3.05 };

@@ -155,7 +155,7 @@ export function PinnedRow({ works }: { works: ArtistWork[] }) {
                   <Image src={w.imageUrl} alt={w.title} fill sizes="(min-width: 1024px) 420px, 90vw" priority className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
                 </SensitiveImage>
               </div>
-              <div className="flex min-w-0 items-baseline justify-between gap-3">
+              <div className="flex min-w-0 flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
                 <span className="truncate text-[15.5px] font-bold group-hover:text-[var(--accent,var(--af-scan))]">{w.title}</span>
                 <span className="num shrink-0 text-[13.5px] text-ink-2">from {money(w.fromCents)}</span>
               </div>

@@ -46,7 +46,7 @@ export function PaintPicker({ label, value, onChange }: { label: string; value: 
           <label key={p.hex} className="relative cursor-pointer" title={p.name}>
             <input type="radio" name={name} checked={value === p.hex} onChange={() => onChange(p.hex)} className="peer sr-only" aria-label={p.name} />
             <span
-              className="grid h-9 w-9 place-items-center border-[1.5px] border-ink/15 transition peer-checked:scale-110 peer-checked:border-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-scan"
+              className="grid h-9 w-9 place-items-center border-[1.5px] border-[rgba(21,22,27,.15)] transition peer-checked:scale-110 peer-checked:border-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-scan"
               style={{ background: p.hex, borderRadius: "52% 44% 58% 40%" }}
             >
               {value === p.hex && <Check className="h-4 w-4" style={{ color: contrast(p.hex, "#ffffff") > 2.2 ? "#fff" : "#15161b" }} aria-hidden="true" />}
@@ -74,7 +74,7 @@ function ButtonSample({ style, theme }: { style: LinksTheme["button"]; theme: Li
     );
   if (style === "outline") return <span className={cn(base, "rounded-full border-2")} style={{ borderColor: theme.buttonColor, color: theme.buttonColor }}>Link</span>;
   if (style === "rounded") return <span className={cn(base, "rounded-[6px] border-2 border-ink shadow-[3px_3px_0_#15161b]")} style={solid}>Link</span>;
-  return <span className={cn(base, "rounded-full border border-ink/15")} style={solid}>Link</span>;
+  return <span className={cn(base, "rounded-full border border-[rgba(21,22,27,.15)]")} style={solid}>Link</span>;
 }
 
 export default function ThemeControls({ theme, set, art }: { theme: LinksTheme; set: Set; art: LinksArt[] }) {
@@ -103,7 +103,7 @@ export default function ThemeControls({ theme, set, art }: { theme: LinksTheme; 
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={a.imageUrl} alt="" className={cn("h-full w-full object-cover", a.sensitive.length > 0 && "blur-[3px]")} />
               </span>
-              {a.sensitive.length > 0 && <span className="absolute inset-x-1 bottom-1 rounded bg-ink/80 px-1 text-center text-[10.5px] font-bold text-white">Sensitive</span>}
+              {a.sensitive.length > 0 && <span className="absolute inset-x-1 bottom-1 rounded bg-[rgba(21,22,27,.8)] px-1 text-center text-[10.5px] font-bold text-white">Sensitive</span>}
             </label>
           ))}
         </div>
@@ -173,7 +173,7 @@ export default function ThemeControls({ theme, set, art }: { theme: LinksTheme; 
         </div>
       </Group>
 
-      <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border-[1.5px] border-line bg-wall/60 px-4 py-3">
+      <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border-[1.5px] border-line bg-[#f2f3ec99] px-4 py-3">
         <span className="grid leading-tight">
           <b className="text-[14px]">Show my newest prints</b>
           <span className="text-[13px] text-ink-2">3 tiles under Shop my prints</span>

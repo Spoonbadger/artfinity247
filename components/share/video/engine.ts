@@ -163,33 +163,61 @@ function caption(ctx: Ctx, A: VideoAssets, s: string, k: number, dur: number, y 
 }
 
 // ---------------- the brush-stroke wipe ----------------
+// Six wide brush strokes, alternating direction, each with a rounded, bristly head.
 const ROWS = 6;
-function wipePath(p: number): Path2D {
-  const path = new Path2D();
-  const rowH = VH / ROWS, over = rowH * 0.32, lag = 0.08;
+type Row = { dir: 1 | -1; edge: number; y0: number; y1: number; i: number };
+function wipeRows(p: number): Row[] {
+  const rowH = VH / ROWS, over = rowH * 0.3, lag = 0.08, rows: Row[] = [];
   for (let i = 0; i < ROWS; i++) {
     const k = ease(clamp((p - i * lag) / (1 - (ROWS - 1) * lag)));
     if (k <= 0) continue;
-    const dir = i % 2 ? -1 : 1;
-    const edge = -260 + (VW + 520) * k;
-    const y0 = i * rowH - over, y1 = (i + 1) * rowH + over;
+    rows.push({ i, dir: i % 2 ? -1 : 1, edge: -200 + (VW + 400) * k, y0: i * rowH - over, y1: (i + 1) * rowH + over });
+  }
+  return rows;
+}
+function wipePath(p: number): Path2D {
+  const path = new Path2D();
+  for (const { i, dir, edge, y0, y1 } of wipeRows(p)) {
     const X = (x: number) => (dir === 1 ? x : VW - x);
-    const pts: [number, number][] = [];
-    for (let x = -80; x < edge - 60; x += 70) pts.push([X(x), y0 + hash(i, x) * 46]);
-    // bristly leading edge, top to bottom
-    for (let yy = y0; yy <= y1; yy += 22) pts.push([X(edge - 70 + hash(i * 7, yy) * 110 - (Math.abs((yy - (y0 + y1) / 2) / (y1 - y0)) * 120)), yy]);
-    for (let x = edge - 60; x > -80; x -= 70) pts.push([X(x), y1 - hash(i + 9, x) * 46]);
-    path.moveTo(pts[0][0], pts[0][1]);
-    for (const [x, y] of pts.slice(1)) path.lineTo(x, y);
+    const wave = (x: number, ph: number) => Math.sin(x / 130 + i * 1.7 + ph) * 16 + hash(i, Math.round(x / 40)) * 10;
+    const head = edge - 80;
+    path.moveTo(X(-60), y0 + wave(-60, 0));
+    for (let x = -20; x < head; x += 40) path.lineTo(X(x), y0 + wave(x, 0));
+    const mid = (y0 + y1) / 2, half = (y1 - y0) / 2;
+    for (let yy = y0; yy <= y1; yy += 9) {
+      const r = (yy - mid) / half;
+      path.lineTo(X(head + Math.sqrt(Math.max(0, 1 - r * r)) * 80 + (hash(i * 13, yy) - 0.5) * 26), yy);
+    }
+    for (let x = head; x > -60; x -= 40) path.lineTo(X(x), y1 - wave(x, 2));
     path.closePath();
   }
   return path;
+}
+/** Bristle streaks inside the painted band, so it reads as paint and not a flat shape. */
+function streaks(ctx: Ctx, p: number) {
+  ctx.save();
+  ctx.lineCap = "round";
+  for (const { i, dir, edge, y0, y1 } of wipeRows(p)) {
+    for (let s = 0; s < 7; s++) {
+      const y = y0 + (y1 - y0) * (0.12 + s * 0.125) + (hash(i, s) - 0.5) * 20;
+      const len = edge - 40 - hash(s, i) * 160;
+      if (len <= 0) continue;
+      ctx.strokeStyle = s % 2 ? "rgba(255,255,255,.22)" : "rgba(21,22,27,.10)";
+      ctx.lineWidth = 3 + hash(i + s, 3) * 6;
+      ctx.beginPath();
+      const x0 = dir === 1 ? -20 : VW + 20, x1 = dir === 1 ? len : VW - len;
+      ctx.moveTo(x0, y); ctx.quadraticCurveTo((x0 + x1) / 2, y + (hash(s, i + 5) - 0.5) * 24, x1, y + (hash(i, s + 9) - 0.5) * 12);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
 }
 function wipe(ctx: Ctx, p: number, a: () => void, b: () => void, color: string) {
   if (p <= 0) return a();
   if (p >= 1) return b();
   a();
-  ctx.save(); ctx.fillStyle = color; ctx.fill(wipePath(Math.min(1, p + 0.07))); ctx.restore();
+  const band = wipePath(Math.min(1, p + 0.08));
+  ctx.save(); ctx.fillStyle = color; ctx.fill(band); ctx.clip(band); streaks(ctx, Math.min(1, p + 0.08)); ctx.restore();
   ctx.save(); ctx.clip(wipePath(p)); b(); ctx.restore();
 }
 
