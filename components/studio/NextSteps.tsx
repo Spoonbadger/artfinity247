@@ -61,10 +61,10 @@ export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true
               <span className="sr-only">{s.done ? " (done)" : " (to do)"}</span>
             </span>
             {!s.done && s.href && (
-              <Link href={s.href} className="text-[13px] font-bold text-scan underline-offset-2 hover:underline">{s.act}</Link>
+              <Link href={s.href} className="-my-3 inline-flex min-h-[44px] items-center px-1 text-[14px] font-bold text-scan underline-offset-2 hover:underline">{s.act}</Link>
             )}
             {s.onClick && (
-              <button type="button" onClick={s.onClick} className="text-[13px] font-bold text-scan underline-offset-2 hover:underline">{s.act}</button>
+              <button type="button" onClick={s.onClick} className="-my-3 inline-flex min-h-[44px] items-center px-1 text-[14px] font-bold text-scan underline-offset-2 hover:underline">{s.act}</button>
             )}
           </li>
         ))}

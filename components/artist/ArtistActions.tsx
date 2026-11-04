@@ -53,11 +53,11 @@ export default function ArtistActions({ slug, firstName, className }: { slug: st
         type="button"
         onClick={toggleFollow}
         aria-pressed={following}
-        className={cn("btn btn-sm", following ? "btn-blue" : "btn-ghost")}
+        className={cn("btn btn-sm min-h-[44px] px-4 md:min-h-0", following ? "btn-blue" : "btn-ghost")}
       >
         {following ? "Following" : "Follow"}
       </button>
-      <button type="button" onClick={share} className="btn btn-sm">
+      <button type="button" onClick={share} className="btn btn-sm min-h-[44px] px-4 md:min-h-0">
         Share page
       </button>
     </div>

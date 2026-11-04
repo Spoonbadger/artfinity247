@@ -94,7 +94,7 @@ export default async function StudioHome() {
         <section className="af-card grid content-start gap-3 p-4 sm:p-5" aria-labelledby="recent-h">
           <div className="flex items-baseline justify-between gap-2">
             <h2 id="recent-h" className="text-[20px] font-bold">Just sold</h2>
-            <Link href="/studio/sales" className="text-[13px] font-bold text-scan">All sales</Link>
+            <Link href="/studio/sales" className="-my-3 inline-flex min-h-[44px] items-center text-[14px] font-bold text-scan">All sales</Link>
           </div>
           {allSales.length === 0 ? (
             <p className="text-[14px] text-ink-2">No sales yet. Hang a code where people linger.</p>
@@ -143,7 +143,7 @@ export default async function StudioHome() {
       <section className="af-card grid gap-3 p-4 sm:p-5" aria-labelledby="art-h">
         <div className="flex items-baseline justify-between gap-2">
           <h2 id="art-h" className="text-[20px] font-bold">My art</h2>
-          <Link href="/studio/art" className="text-[13px] font-bold text-scan">{live.length} {live.length === 1 ? "piece" : "pieces"}</Link>
+          <Link href="/studio/art" className="-my-3 inline-flex min-h-[44px] items-center text-[14px] font-bold text-scan">{live.length} {live.length === 1 ? "piece" : "pieces"}</Link>
         </div>
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
           {artworks.slice(0, 5).map((a) => (

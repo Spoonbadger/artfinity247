@@ -24,8 +24,13 @@ export default function SiteHeader() {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onDown = (e: PointerEvent) => !(e.target as Element)?.closest?.("header") && setOpen(false);
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onDown);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onDown);
+    };
   }, [open]);
   const count = cartItems?.reduce((n: number, i: any) => n + (i.quantity || 1), 0) || 0;
 
