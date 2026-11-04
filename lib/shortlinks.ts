@@ -86,11 +86,11 @@ export function isLive(c: { active: boolean; expiresAt: Date | null }, now = new
 // Link-preview crawlers (iMessage, Slack, WhatsApp...) and search bots open links without a person.
 // curl is not on the list on purpose: it's how we test, and it's rare in the wild.
 const BOT_RE =
-  /bot\b|bot\/|crawl|spider|slurp|preview|facebookexternalhit|facebot|meta-externalagent|embedly|whatsapp|telegram|slack|discord|skype|vkshare|pinterest|quora link|outbrain|bitlybot|tumblr|redditbot|applebot|google-inspectiontool|googleother|lighthouse|headlesschrome|phantomjs|python-requests|go-http-client|okhttp|axios|node-fetch|wget|monitor|uptime|validator/i;
+  /bot\b|bot\/|crawl|spider|slurp|preview|facebookexternalhit|facebot|meta-externalagent|embedly|whatsapp|slack-imgproxy|vkshare|quora link|outbrain|google-inspectiontool|googleother|lighthouse|headlesschrome|phantomjs|python-requests|go-http-client|okhttp|axios|node-fetch|wget|monitor|uptime|validator/i;
 
 export function isBot(ua: string | null | undefined) {
   if (!ua || ua.length < 8) return true;
-  return BOT_RE.test(ua);
+  return BOT_RE.test(ua.replace(/cubot/gi, "")); // CUBOT is a phone brand
 }
 
 export function deviceFrom(ua: string | null | undefined): "phone" | "tablet" | "desktop" {
