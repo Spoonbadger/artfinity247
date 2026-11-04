@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -33,6 +33,14 @@ function Section({ id, title, sub, dab, children }: { id: string; title: string;
 export default function ShareKit({ arts, initialSlug, base }: { arts: ShareArt[]; initialSlug: string; base: string }) {
   const [slug, setSlug] = useState(initialSlug);
   const art = arts.find((a) => a.slug === slug) ?? arts[0];
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  // On phones the thumbnails scroll sideways: bring the chosen one into view (without moving the page).
+  useEffect(() => {
+    const row = rowRef.current, el = row?.querySelector<HTMLElement>('[aria-pressed="true"]');
+    if (row && el && row.scrollWidth > row.clientWidth) row.scrollLeft = el.offsetLeft - (row.clientWidth - el.offsetWidth) / 2;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const u = new URL(window.location.href);
@@ -44,7 +52,7 @@ export default function ShareKit({ arts, initialSlug, base }: { arts: ShareArt[]
       {/* which piece */}
       <div className="grid min-w-0 gap-2">
         <h2 className="text-[17px] font-extrabold">Which piece?</h2>
-        <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0" role="group" aria-label="Artwork">
+        <div ref={rowRef} className="relative -mx-4 flex gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0" role="group" aria-label="Artwork">
           {arts.map((a) => (
             <button
               key={a.slug}

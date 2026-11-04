@@ -323,6 +323,20 @@ export default function BulkOrder({ arts, past, placedId, defaultName }: { arts:
         </aside>
       </div>
 
+      {/* Phones: the total and Pay stay in reach */}
+      {lines.length > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-3 border-t border-line bg-white/95 px-4 pt-3 backdrop-blur pb-[calc(12px+env(safe-area-inset-bottom))] lg:hidden">
+          <span className="min-w-0 flex-1 leading-tight">
+            <b className="num block font-display text-[24px] font-extrabold [font-variation-settings:'wdth'_80]">{usd(quote.total)}</b>
+            <span className="num text-[12.5px] text-ink-2">{quote.prints} prints{quote.discountPct ? ` · ${quote.discountPct}% off` : ""}</span>
+          </span>
+          <button type="button" onClick={placeOrder} disabled={busy} className="btn btn-blue shrink-0 px-6">
+            {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}Pay
+          </button>
+          <style>{`@media (max-width: 1023px) { body { padding-bottom: calc(84px + env(safe-area-inset-bottom)); } }`}</style>
+        </div>
+      )}
+
       {past.length > 0 && (
         <section aria-labelledby="past-h" className="grid gap-3 border-t border-line pt-6">
           <h2 id="past-h" className="text-[20px] font-bold">Your bulk orders</h2>

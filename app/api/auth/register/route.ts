@@ -3,7 +3,7 @@
 // Body: { handle, email, password, artist_name, city, state?, acceptedTerms: true }
 // acceptedTerms covers both the Artist Terms (/artist-terms-and-agreement) and the
 // Terms & Conditions (/terms-and-conditions). There is no column for it yet, so acceptance
-// is logged with a timestamp (TERMS_ACCEPTED). TODO: persist to Artist.termsAcceptedAt.
+// is saved on Artist.termsAcceptedAt and logged (TERMS_ACCEPTED).
 // Errors: { code: "missing_fields" | "terms_required" | "invalid_email" | "weak_password" | "invalid_handle" | "handle_taken" | "email_taken" | "server_error" }
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
@@ -59,6 +59,7 @@ export async function POST(req: Request) {
         country: body.country ? String(body.country).slice(0, 60) : null,
         slug: handle,
         role: "USER",
+        termsAcceptedAt: new Date(),
       },
     });
   } catch (e) {
