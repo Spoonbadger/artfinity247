@@ -5,3 +5,9 @@ onlyBuiltDependencies:
   - prisma
   - sharp
   - unrs-resolver
+  # Built-in local database (pnpm local): its post-install step links the Postgres binaries
+  - '@embedded-postgres/darwin-arm64'
+  - '@embedded-postgres/darwin-x64'
+  - '@embedded-postgres/linux-x64'
+  - '@embedded-postgres/linux-arm64'
+  - '@embedded-postgres/windows-x64'

@@ -52,3 +52,6 @@ artists.md
 
 TODO.md
 /public/uploads
+
+# built-in local database (pnpm local)
+/.localdb
