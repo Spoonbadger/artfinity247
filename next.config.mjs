@@ -8,6 +8,7 @@ const nextConfig = {
       // Artist pages live at theartfinity.com/@handle
       // Link-in-bio page: theartfinity.com/@handle/links
       { source: "/@:handle/links", destination: "/artists/:handle/links" },
+      { source: "/@:handle/collections/:collection", destination: "/artists/:handle/collections/:collection" },
       { source: "/@:handle", destination: "/artists/:handle" },
     ];
   },

@@ -22,6 +22,9 @@ model Order {
   items           OrderItem[]
   sentToPrinter Boolean @default(false)
   adminNotificationSentAt  DateTime?
+  // retail = a buyer's order; bulk = an artist ordering their own prints at cost to sell in person
+  kind            String  @default("retail")
+  bulkArtistId    String?
   artistNotificationsSentAt DateTime?
 }
 
@@ -43,6 +46,7 @@ model OrderItem {
   printCost    Int?
   shippingCost Int?
   websiteCost  Int?
+  editionNumber Int?     // e.g. 12 of 50 for limited editions
   artwork      Artwork? @relation(fields: [artworkId], references: [id])
   order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
@@ -97,6 +101,7 @@ model Artist {
   links            ArtistLink[]
   messages         Message[]
   emailTemplates   EmailTemplate[]
+  collections      Collection[]
 
   passwordResetTokens PasswordResetToken[]
 
@@ -119,6 +124,9 @@ model Artwork {
   OrderItem    OrderItem[]
   status        ArtworkStatus @default(PENDING)
   sensitive     String[]      @default([])
+  // Limited print runs: null = open edition. editionSize counts prints across all sizes, numbered 1..N.
+  editionSize   Int?
+  collectionItems CollectionItem[]
   flaggedReason String?
   flaggedBy     String?
 }
@@ -200,4 +208,34 @@ model EmailTemplate {
   artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
 
   @@unique([artistId, kind])
+}
+
+
+// An artist's own groupings of their work, sorted by hand (e.g. "Blue Ridge series", "Small works").
+model Collection {
+  id          String           @id @default(cuid())
+  artistId    String
+  title       String
+  slug        String
+  description String?          @default("")
+  coverArtworkId String?
+  position    Int              @default(0)
+  createdAt   DateTime         @default(now())
+  artist      Artist           @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  items       CollectionItem[]
+
+  @@unique([artistId, slug])
+  @@index([artistId, position])
+}
+
+model CollectionItem {
+  id           String     @id @default(cuid())
+  collectionId String
+  artworkId    String
+  position     Int        @default(0)
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  artwork      Artwork    @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, artworkId])
+  @@index([collectionId, position])
 }

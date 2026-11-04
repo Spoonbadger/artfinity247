@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { adminGuard } from "@/lib/admin"
 import { resend } from "@/lib/resend"
 import ShippingStatusEmail from "@/emails/ShippingStatusEmail"
+import { sendArtistOrderEmail } from "@/lib/artistEmails.server"
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
@@ -57,7 +58,12 @@ export async function POST(
   ) {
     // The status change is saved; a failed email shouldn't make the admin UI report failure.
     try {
-      await resend.emails.send({
+      // The artist's own wording when they wrote one; otherwise Artfinity's default below.
+      const sentByArtist = await sendArtistOrderEmail(order.id, now === "shipped" ? "shipped" : "delivered").catch((err) => {
+        console.error("Artist shipping email failed, sending default", err)
+        return false
+      })
+      if (!sentByArtist) await resend.emails.send({
         from: "Artfinity <notifications@theartfinity.com>",
         to: order.email || "",
         subject:

@@ -6,6 +6,7 @@
 import { prisma } from "@/lib/prisma"
 import { resend } from "@/lib/resend"
 import { sendReceiptEmail } from "@/lib/email"
+import { sendArtistReceipt } from "@/lib/artistEmails.server"
 import NewSaleNotificationEmail from "@/emails/NewSaleNotificationEmail"
 import ArtistSaleNotificationEmail from "@/emails/ArtistSaleNotificationEmail"
 
@@ -145,7 +146,9 @@ export async function sendOrderNotifications(orderId: string, opts: { gapMs?: nu
   // 3) Buyer receipt (its own block; idempotent inside the helper via receiptSentAt)
   try {
     if (sentSomething) await sleep(gap)
-    const r: any = await sendReceiptEmail(orderId)
+    // The artist's own receipt wording when they wrote one (single-artist orders); otherwise Artfinity's.
+    const mine = await sendArtistReceipt(orderId)
+    const r: any = mine === "none" ? await sendReceiptEmail(orderId) : mine === "already" ? { alreadySent: true } : {}
     result.receipt = r?.alreadySent ? "already-sent" : r?.skipped ? "skipped" : "sent"
   } catch (e) {
     console.error("Receipt email failed (non-blocking):", e)

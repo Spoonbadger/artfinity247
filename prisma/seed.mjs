@@ -30,6 +30,7 @@ function rng(seed) { let a = seed >>> 0; return () => { a = a + 0x6D2B79F5 | 0; 
 const slugify = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
 async function main() {
+  await prisma.collectionItem.deleteMany(); await prisma.collection.deleteMany();
   await prisma.message.deleteMany(); await prisma.emailTemplate.deleteMany(); await prisma.artistLink.deleteMany();
   await prisma.orderItem.deleteMany(); await prisma.order.deleteMany(); await prisma.payout.deleteMany();
   await prisma.passwordResetToken.deleteMany(); await prisma.artwork.deleteMany(); await prisma.artist.deleteMany();
@@ -65,6 +66,21 @@ async function main() {
       arts.push(art);
     }
   }
+
+  // Maya: two collections and one limited edition (Hawksbill, edition of 25)
+  const mayaArts = arts.filter((x) => x.artist.slug === "mayaokafor");
+  const mayaId = mayaArts[0].artistId;
+  const pick = (titles) => titles.map((t) => mayaArts.find((a) => a.title === t)).filter(Boolean);
+  const cols = [
+    { title: "Blue Ridge series", slug: "blue-ridge-series", description: "Six o'clock light on the ridgelines.", works: pick(["Blue Ridge, Late", "Craggy Pinnacle", "Hawksbill", "Cold Mountain Road"]) },
+    { title: "Rivers", slug: "rivers", description: "The French Broad, mostly.", works: pick(["French Broad, 6pm", "Second Frost"]) },
+  ];
+  for (const [ci, c] of cols.entries()) {
+    await prisma.collection.create({ data: { artistId: mayaId, title: c.title, slug: c.slug, description: c.description, position: ci, coverArtworkId: c.works[0]?.id,
+      items: { create: c.works.map((w, i) => ({ artworkId: w.id, position: i })) } } });
+  }
+  const hawk = mayaArts.find((a) => a.title === "Hawksbill");
+  if (hawk) await prisma.artwork.update({ where: { id: hawk.id }, data: { editionSize: 25 } });
 
   // 100 paid orders over the last 60 days, spread so every medal level shows:
   // Maya 55 (gold), Juno 27 (silver), Ines 12 (bronze), Caleb 6, Priya 0.
