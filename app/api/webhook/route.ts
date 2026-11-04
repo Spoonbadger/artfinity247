@@ -2,14 +2,13 @@ import { NextRequest } from 'next/server'
 import { Stripe } from 'stripe'
 import { prisma } from "@/lib/prisma"
 import { sendReceiptEmail } from "@/lib/email"
-import { Resend } from "resend"
+import { resend } from "@/lib/resend"
 import NewSaleNotificationEmail from "@/emails/NewSaleNotificationEmail"
 import ArtistSaleNotificationEmail from "@/emails/ArtistSaleNotificationEmail"
 import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
 
 export const dynamic = "force-dynamic"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 

@@ -3,12 +3,11 @@ import { hash } from 'bcryptjs'
 import { SignJWT } from 'jose'
 import { cookies } from 'next/headers'
 import slugify from 'slugify'
-import { Resend } from "resend";
+import { resend } from "@/lib/resend"
 import NewArtistNotificationEmail from "@/emails/NewArtistNotificationEmail"
 import WelcomeArtistEmail from "@/emails/WelcomeArtistEmail"
 
 export const dynamic = "force-dynamic"
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: Request) {
     const body = await req.json()

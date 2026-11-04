@@ -104,6 +104,7 @@ model Artwork {
   artist       Artist      @relation(fields: [artistId], references: [id])
   OrderItem    OrderItem[]
   status        ArtworkStatus @default(PENDING)
+  sensitive     String[]      @default([])
   flaggedReason String?
   flaggedBy     String?
 }

@@ -2,12 +2,11 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { jwtVerify } from "jose"
 import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
-import { Resend } from "resend"
+import { resend } from "@/lib/resend"
 import PayoutSentEmail from "@/emails/PayoutSentEmail"
 
 export const dynamic = "force-dynamic"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 export const runtime = "nodejs"
 

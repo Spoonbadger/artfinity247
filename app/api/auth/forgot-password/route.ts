@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
-import { Resend } from "resend";
+import { resend, emailEnabled } from "@/lib/resend";
 import { rateLimit } from "@/lib/rateLimit"
 import PasswordResetEmail from "@/emails/PasswordResetEmail"
 
@@ -74,11 +74,8 @@ export async function POST(req: Request) {
 
     const resetLink = `${appUrl}/reset-password?token=${rawToken}`;
 
-    const resendKey = process.env.RESEND_API_KEY;
-    const fromEmail = process.env.RESEND_FROM_EMAIL; // e.g. "Artfinity <no-reply@yourdomain.com>"
-    if (!resendKey || !fromEmail) throw new Error("Missing RESEND env vars");
-
-    const resend = new Resend(resendKey);
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "Artfinity <no-reply@theartfinity.com>";
+    if (!emailEnabled) console.log(`[email:dev] password reset link for ${artist.email}: ${resetLink}`);
 
     await resend.emails.send({
       from: fromEmail,

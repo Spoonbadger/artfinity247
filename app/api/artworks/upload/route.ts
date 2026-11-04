@@ -3,14 +3,13 @@ import { prisma } from "@/lib/prisma"
 import { jwtVerify } from 'jose'
 import slugify from 'slugify'
 import { rateLimit } from '@/lib/rateLimit'
-import { Resend } from "resend";
+import { resend } from "@/lib/resend"
 import NewArtworkUploadedEmail from "@/emails/NewArtworkUploadedEmail"
 import ArtworkLiveWithQrEmail from "@/emails/ArtworkLiveWithQrEmail";
 import { SignJWT } from "jose"
 
 export const dynamic = "force-dynamic"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: NextRequest) {
   const token = req.cookies.get('auth-token')?.value;

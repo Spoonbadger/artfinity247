@@ -1,70 +1,43 @@
 import { ReactNode } from "react";
-import { type Metadata } from "next";
-import { Crimson_Text, Karla, Roboto, Roboto_Mono, Libre_Bodoni } from "next/font/google"
+import { type Metadata, type Viewport } from "next";
+import { Bricolage_Grotesque, Instrument_Sans } from "next/font/google";
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
-import { getAppConfigs } from "@/db/query";
 import Provider from "@/components/contexts";
+import BrushDefs from "@/components/af/BrushDefs";
 import "./globals.css";
 
-
-const crimsonText = Crimson_Text({
+const display = Bricolage_Grotesque({
   subsets: ["latin"],
-  weight: ["400", "600", "700"],
-  variable: "--font-primary",
+  axes: ["wdth", "opsz"],
+  variable: "--font-display",
+  display: "swap",
 });
-const roboto = Roboto({
+const body = Instrument_Sans({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "700", "900"],
-  variable: "--font-secondary",
+  variable: "--font-body",
+  display: "swap",
 });
-const robotoMono = Roboto_Mono({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-tertiary",
-});
-const karla = Karla({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-quaternary",
-});
-
-const libreBodoni = Libre_Bodoni({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-quinary",
-})
-
-const AppConfigs = getAppConfigs();
 
 export const metadata: Metadata = {
-  title: {
-    absolute: "",
-    default: `${AppConfigs.app_name || "Demo App"}`,
-    template: `%s: ${AppConfigs.app_name || "Demo App"}`,
-  },
-  description: `${AppConfigs.app_description || "This is a demo app."}`,
+  title: { default: "Artfinity · Every wall is a shop", template: "%s · Artfinity" },
+  description:
+    "Artists upload their work free, print a QR code to hang beside it, and get paid when people scan it and buy a print.",
 };
 
-const RootLayout = ({
-  children,
-}: Readonly<{
-  children: ReactNode;
-}>) => {
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#ffffff",
+};
+
+const RootLayout = ({ children }: Readonly<{ children: ReactNode }>) => {
   return (
     <html lang="en">
-      <body
-        className={cn(
-          "font-quinary",
-          crimsonText.variable,
-          roboto.variable,
-          robotoMono.variable,
-          karla.variable,
-          libreBodoni.variable,
-        )}
-      >
+      <body className={cn("font-body", display.variable, body.variable)}>
+        <BrushDefs />
         <Provider>{children}</Provider>
-        <Toaster />
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   );
