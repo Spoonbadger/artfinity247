@@ -66,7 +66,7 @@ export const addDays = (d: Date, days: number) => new Date(d.getTime() + days * 
 export const formatPlanDate = (d: Date | string) =>
   new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-/** Design extras that are Pro-only on the pricing page. Enforcing them in /studio/design is a follow-up. */
+/** Planned Pro-only design extras. Not listed on /pricing until /studio/design enforces them. */
 export const PRO_DESIGN_EXTRAS = ["Salon wall layout", "Any accent color"] as const;
 
 export type Feature = { label: string; free: boolean | string; pro: boolean | string };
@@ -83,7 +83,6 @@ export function planFeatures(): Feature[] {
     { label: "Share of profit", free: pct(FREE_SPLIT), pro: PRO.monthlyPrintCap ? `${pct(PRO.split)} on ${PRO.monthlyPrintCap} prints/mo` : pct(PRO.split) },
     { label: "Auto videos", free: false, pro: true },
     { label: "Automations", free: false, pro: true },
-    { label: "Page design extras", free: false, pro: PRO_DESIGN_EXTRAS.join(", ") },
     { label: "Priority support", free: false, pro: true },
   ];
 }

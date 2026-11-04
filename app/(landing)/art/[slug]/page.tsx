@@ -29,6 +29,7 @@ const artSelect = {
   markupLarge: true,
   markupXl: true,
   editionSize: true,
+  roomScenes: true,
   artist: { select: { id: true, slug: true, name: true, artist_name: true, profileImage: true, city: true, state: true } },
 } as const;
 
@@ -84,6 +85,7 @@ export default async function ArtPage({ params, searchParams }: Props) {
         markupLarge: art.markupLarge ?? 0,
         markupXl: art.markupXl ?? 0,
         edition,
+        roomScenes: art.roomScenes ?? [],
       }}
       artist={{ id: a.id, slug: a.slug, name: a.artist_name || a.name, avatar: a.profileImage || null, place }}
       more={moreRows.map((m) => ({

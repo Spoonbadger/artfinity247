@@ -16,6 +16,8 @@ export type ScanArt = {
   markupXl: number;
   /** Limited print run status; null/undefined = open edition. */
   edition?: Edition | null;
+  /** Room scenes (0–999) the artist picked for the room previews; empty = auto. */
+  roomScenes?: number[];
 };
 
 export type ScanArtist = {

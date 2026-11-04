@@ -146,7 +146,7 @@ export default function RoomCarousel({ artwork, size, frame, mat = true, landsca
         </span>
         <span className="num rounded-full bg-ink/80 px-2.5 py-1 text-[12px] font-semibold text-white sm:text-[13px]">
           {dims}
-          {frame ? " framed" : ""}
+          {frame ? " · framed" : ""}
         </span>
       </figcaption>
 

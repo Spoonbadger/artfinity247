@@ -210,14 +210,26 @@ function drawWall(c: Ctx, r: Rng, roll: Roll, crop: { x: number; y: number; w: n
     const id = `${ID}brick`;
     const bw = 8.375;
     const bh = 2.625;
-    let p = `<pattern id="${id}" width="${f(bw * 4)}" height="${f(bh * 6)}" patternUnits="userSpaceOnUse"><rect width="${f(bw * 4)}" height="${f(bh * 6)}" fill="${b.mortar}"/>`;
-    for (let row = 0; row < 6; row++) {
+    const cols = 7;
+    const rows = 12;
+    let p = `<pattern id="${id}" width="${f(bw * cols)}" height="${f(bh * rows)}" patternUnits="userSpaceOnUse"><rect width="${f(bw * cols)}" height="${f(bh * rows)}" fill="${b.mortar}"/>`;
+    for (let row = 0; row < rows; row++) {
       const off = row % 2 ? bw / 2 : 0;
-      for (let k = -1; k < 4; k++) p += rect(k * bw + off + 0.19, row * bh + 0.19, bw - 0.38, bh - 0.38, r.pick(b.vary));
+      const first: string = r.pick(b.vary);
+      for (let k = -1; k < cols; k++) {
+        // the wrapped brick must match its twin on the other edge
+        const col = k === -1 || k === cols - 1 ? first : r.pick(b.vary);
+        p += rect(k * bw + off + 0.19, row * bh + 0.19, bw - 0.38, bh - 0.38, shade(col, r.range(-0.04, 0.04)));
+      }
     }
     p += `</pattern>`;
-    c.defs.push(p, `<filter id="${id}n" ${fr}><feTurbulence type="fractalNoise" baseFrequency=".5" numOctaves="2" seed="${r.int(1, 999)}"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1.6 -0.75"/></filter>`);
+    c.defs.push(
+      p,
+      `<filter id="${id}n" ${fr}><feTurbulence type="fractalNoise" baseFrequency=".5" numOctaves="2" seed="${r.int(1, 999)}"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1.6 -0.75"/></filter>`,
+      `<filter id="${id}m" ${fr}><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="3" seed="${r.int(1, 999)}"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 2 -0.9"/></filter>`,
+    );
     out.push(rect(X0, crop.y - 10, W, FLOOR - crop.y + 10, `url(#${id})`));
+    out.push(rect(X0, crop.y - 4, W, FLOOR - crop.y + 4, "#000", ` filter="url(#${id}m)" opacity=".16"`));
     out.push(rect(X0, crop.y - 4, W, FLOOR - crop.y + 4, "#000", ` filter="url(#${id}n)" opacity=".12"`));
   } else if (finish === "wallpaper") {
     const kind = r.pick(["stripe", "sprig", "grid", "scallop", "leaf"] as const);

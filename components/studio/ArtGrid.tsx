@@ -95,6 +95,8 @@ export default function ArtGrid({ items }: { items: GridArt[] }) {
           <div className="-mb-2 flex flex-wrap gap-x-3.5 text-[14px] font-semibold [&>*]:inline-flex [&>*]:min-h-[44px] [&>*]:items-center lg:mb-0 lg:gap-y-1 lg:text-[13px] lg:[&>*]:min-h-0">
             <Link href={`/studio/art/${a.slug}`} className="text-scan">Edit</Link>
             <Link href={`/studio/qr?art=${a.slug}`} className="text-scan">Print code</Link>
+            <Link href={`/studio/share?art=${a.slug}`} className="text-scan">Share</Link>
+            <Link href={`/studio/rooms?art=${a.slug}`} className="text-scan">Rooms</Link>
             <Link href={`/art/${a.slug}`} className="text-scan">View</Link>
             <button type="button" className="ml-auto text-ink-2 hover:text-coral" onClick={() => setConfirming(a.id)} aria-label={`Delete ${a.title}`}>Delete</button>
           </div>

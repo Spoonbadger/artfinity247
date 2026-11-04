@@ -23,11 +23,23 @@ Open http://localhost:3000.
 
 ## Pages to try
 
-- `/` homepage, claim your @name
-- `/register` four-step sign-up
-- `/art/blue-ridge-late-may?at=River%20Arts%20Market&off=10` the page a buyer sees after scanning a code (try it on your phone's screen size)
-- `/studio` the artist dashboard, `/studio/qr` QR codes, `/studio/art/new` upload
-- `/@mayaokafor` an artist page
+**Buyers**
+- `/` homepage (the hero plays the whole scan → buy → ship → paid story)
+- `/art/blue-ridge-late-may` the page a buyer lands on after scanning: room previews, sizes, frames, zoom, quantity. Try it at phone size.
+- `/@mayaokafor` an artist page (medals, verified seal, socials, Collections tab) · `/@mayaokafor/links` link-in-bio page
+- `/art`, `/artists`, `/scenes`, `/search`, `/pricing`, `/developers`
+
+**Artists** (log in as maya)
+- `/studio` dashboard · `/studio/art` my art · `/studio/art/new` upload
+- `/studio/qr` QR Studio (logo in the code, PDF sheets) · `/studio/share` share kit (auto videos, images, captions)
+- `/studio/links` link page editor · `/studio/customers` customers and thank-you notes · `/studio/emails` automated emails
+- `/studio/collections`, `/studio/bulk` (order prints at cost), `/studio/rooms` (pick room previews)
+- `/studio/design` page design · `/studio/verify` verification · `/studio/pro` Pro plan and referrals · `/studio/automations`
+- `/studio/sales`, `/studio/events`, `/studio/page`, `/studio/developers` (embed snippets)
+
+**Admin** (log in as admin): `/admin/orders`, `/admin/moderation`, `/admin/payouts`, `/admin/verification`
+
+**Discount codes:** a QR code's discount only works with its signature, so typing `?off=30` does nothing. Make a real discounted code in QR Studio and open its link.
 
 ## Without keys
 - Checkout runs in test mode and creates real orders in your local database.

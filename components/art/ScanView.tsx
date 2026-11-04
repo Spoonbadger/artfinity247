@@ -11,7 +11,7 @@ import SensitiveImage from "@/components/site/SensitiveImage";
 import { useSensitivePref } from "@/components/site/useSensitivePref";
 import { tagSVG } from "@/lib/qr/render";
 import { cn } from "@/lib/utils";
-import WallPreview from "@/components/art/WallPreview";
+import RoomCarousel from "@/components/rooms/RoomCarousel";
 import EditionBadge from "@/components/art/EditionBadge";
 import QtyStepper from "@/components/art/QtyStepper";
 import ArtZoom from "@/components/art/ArtZoom";
@@ -330,13 +330,12 @@ export default function ScanView({
             )}
           </div>
 
-          <WallPreview
+          {/* The print at true size in rooms the artist picked (or auto-picked); a different room each visit */}
+          <RoomCarousel
             className="md:order-last"
-            imageUrl={art.imageUrl}
-            alt={art.title}
+            artwork={{ slug: art.slug, imageUrl: art.imageUrl, title: art.title, roomScenes: art.roomScenes ?? [] }}
             size={size}
-            framed={framed}
-            frameColor={frameColor}
+            frame={framed ? frameColor : null}
             landscape={landscape}
             blur={art.sensitive.length > 0 && !sensitivePref}
           />

@@ -29,6 +29,22 @@ const SIZE_KEY = { small: "S", medium: "M", large: "L", xl: "XL" };
 function rng(seed) { let a = seed >>> 0; return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 const slugify = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
+
+// Made-up buyers with real-looking names and cities. Some buy again, so the Customers page shows repeat buyers.
+const BUYERS = [
+  ["Ava Thompson", "Asheville, NC 28801"], ["Marcus Lee", "Charlotte, NC 28202"], ["Sofia Ramirez", "Austin, TX 78704"],
+  ["Ethan Brooks", "Durham, NC 27701"], ["Lena Fischer", "Portland, OR 97214"], ["Noah Patel", "Atlanta, GA 30307"],
+  ["Grace Kim", "Brooklyn, NY 11211"], ["Oliver Grant", "Denver, CO 80205"], ["Maya Chen", "Seattle, WA 98122"],
+  ["Jonah Reed", "Nashville, TN 37206"], ["Isabel Cruz", "Santa Fe, NM 87501"], ["Theo Walsh", "Boston, MA 02118"],
+  ["Hannah Price", "Raleigh, NC 27601"], ["Luca Moretti", "Chicago, IL 60622"], ["Zoe Adams", "Asheville, NC 28806"],
+  ["Caleb Ortiz", "San Diego, CA 92104"], ["Nora Quinn", "Savannah, GA 31401"], ["Felix Wright", "Austin, TX 78702"],
+  ["Ruby Hayes", "Greenville, SC 29601"], ["Sam Okoro", "Philadelphia, PA 19123"], ["Iris Novak", "Minneapolis, MN 55408"],
+  ["Diego Alvarez", "Phoenix, AZ 85004"], ["June Park", "Richmond, VA 23220"], ["Owen Murphy", "Knoxville, TN 37902"],
+  ["Clara Dunn", "Portland, ME 04101"], ["Ari Cohen", "Los Angeles, CA 90026"], ["Mila Ivanova", "Boulder, CO 80302"],
+  ["Ben Carter", "Asheville, NC 28803"], ["Elena Rossi", "Charleston, SC 29401"], ["Kai Nakamura", "Oakland, CA 94612"],
+];
+const STREETS = ["Oak St", "Maple Ave", "River Rd", "Pine St", "Lark Ln", "Elm Ct", "Cedar Ave", "Hill St"];
+
 async function main() {
   await prisma.collectionItem.deleteMany(); await prisma.collection.deleteMany();
   await prisma.message.deleteMany(); await prisma.emailTemplate.deleteMany(); await prisma.artistLink.deleteMany();
@@ -95,9 +111,19 @@ async function main() {
     const created = new Date(Date.now() - Math.floor(r() * 60) * 86400000 - Math.floor(r() * 36e6));
     const fee = Math.ceil(lineTotal * 0.029) + 30;
     await prisma.order.create({ data: {
-      stripeSessionId: `seed_${n}`, email: `buyer${n}@example.com`, amountTotal: lineTotal, currency: "usd", paymentStatus: "paid",
-      createdAt: created, shippingName: `Buyer ${n + 1}`, shippingAddress: "1 Main St, Asheville, NC 28801, US",
-      shippingStatus: n % 3 === 0 ? "shipped" : "pending", receiptSentAt: created,
+      // ~1 in 3 orders comes from a returning buyer
+      ...(() => {
+        const bi = n % 3 === 0 ? Math.floor(r() * 8) : Math.floor(r() * BUYERS.length);
+        const [name, place] = BUYERS[bi];
+        const days = (Date.now() - created.getTime()) / 86400000;
+        const status = days > 14 ? "delivered" : days > 5 ? "shipped" : "pending";
+        return {
+          stripeSessionId: `seed_${n}`, email: `${name.toLowerCase().replace(/[^a-z]+/g, ".")}@example.com`,
+          amountTotal: lineTotal, currency: "usd", paymentStatus: "paid", createdAt: created,
+          shippingName: name, shippingAddress: `${10 + bi * 7} ${STREETS[bi % STREETS.length]}, ${place.replace(/ (\d{5})$/, " $1")}, US`,
+          shippingStatus: status, sentToPrinter: status !== "pending" || days > 2, receiptSentAt: created,
+        };
+      })(),
       items: { create: [{ artworkId: art.id, slug: art.slug, size: SIZE_KEY[size], unitPrice: unit, quantity: 1, lineTotal,
         title: art.title, artistName: art.artist.artist_name, imageUrl: art.imageUrl,
         printCost: COST[SIZE_KEY[size]], shippingCost: 0, laborCost: 0, websiteCost: fee + 100 }] },

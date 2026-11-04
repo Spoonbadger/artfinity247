@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useId, useMemo, useState } from "react";
 import { renderScene, sceneInfo, type RoomFrame, type RoomSize } from "@/lib/rooms";
 import { cn } from "@/lib/utils";
 
@@ -24,7 +24,8 @@ export function useImageAspect(url: string, given?: number | null) {
 export type RoomSceneProps = {
   scene: number;
   imageUrl: string;
-  aspect: number;
+  /** Image width / height; measured from the image when omitted. */
+  aspect?: number;
   size: RoomSize;
   frame?: RoomFrame | null;
   mat?: boolean;
@@ -34,15 +35,14 @@ export type RoomSceneProps = {
   className?: string;
 };
 
-let seq = 0;
-
 /** One room with the print on the wall, drawn as inline SVG at true size. */
 export const RoomScene = memo(function RoomScene({ scene, imageUrl, aspect, size, frame, mat = true, blur, title, className }: RoomSceneProps) {
   // a stable, page-unique prefix for this instance's SVG ids
-  const [idp] = useState(() => `rs${(seq++).toString(36)}`);
+  const idp = "rs" + useId().replace(/[^a-zA-Z0-9]/g, "");
+  const measured = useImageAspect(imageUrl, aspect);
   const html = useMemo(
-    () => renderScene(scene, { href: imageUrl, aspect, size, frame: frame ?? null, mat, blur }, { idp: `${idp}s${scene}`, title }),
-    [scene, imageUrl, aspect, size, frame, mat, blur, idp, title],
+    () => renderScene(scene, { href: imageUrl, aspect: measured, size, frame: frame ?? null, mat, blur }, { idp: `${idp}s${scene}`, title }),
+    [scene, imageUrl, measured, size, frame, mat, blur, idp, title],
   );
   return (
     <div
