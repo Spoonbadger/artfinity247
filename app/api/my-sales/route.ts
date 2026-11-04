@@ -75,6 +75,7 @@ export async function GET(req: NextRequest) {
       unitPrice: true, // cents
       lineTotal: true, // cents
       frameChosen: true,
+      artistSplit: true,
       printCost: true,
       shippingCost: true,
       laborCost: true,
@@ -101,6 +102,7 @@ export async function GET(req: NextRequest) {
       size: it.size,
       frameChosen: it.frameChosen,
       orderDate: it.order.createdAt,
+      artistSplit: it.artistSplit,
     });
     const qty = b.quantity;
     const total = b.lineTotal;

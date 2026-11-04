@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { checkoutUnavailable, testCheckoutAllowed } from "@/lib/testCheckout";
-import { calcItemProfitCents, type PrintSize as RevenueSize } from "@/lib/revenue";
+import { artistSplitsForOrder, calcItemProfitCents, type PrintSize as RevenueSize } from "@/lib/revenue";
 import { claimEditionNumbers, EditionSoldOutError, editionMessage, editionShortfalls } from "@/lib/editions";
 import { applyDiscount, isPrintSize, parseDiscount, parseVenue, priceFor, type PrintSize } from "@/components/art/pricing";
 
@@ -176,10 +176,12 @@ async function devCheckout(lines: Line[], email: string | undefined, buyer: { na
           shippingAddress: "Test order, no shipping",
         },
       });
+      // Lock in each artist's split (Free 60%, Pro higher) as of this order.
+      const splits = await artistSplitsForOrder(tx, lines.map((l) => ({ artistId: l.art.artistId, quantity: l.quantity })), created.createdAt);
       await tx.orderItem.createMany({
         data: lines.map((l, i) => {
           const lineTotal = l.unit * l.quantity;
-          const b = calcItemProfitCents({ lineTotal, size: REV_SIZE[l.size], frameChosen: l.frameChosen, quantity: l.quantity, orderDate: created.createdAt });
+          const b = calcItemProfitCents({ lineTotal, size: REV_SIZE[l.size], frameChosen: l.frameChosen, quantity: l.quantity, orderDate: created.createdAt, artistSplit: splits[i] });
           return {
             orderId: created.id,
             artworkId: l.art.id,
@@ -198,6 +200,7 @@ async function devCheckout(lines: Line[], email: string | undefined, buyer: { na
             laborCost: b.laborCost,
             websiteCost: b.websiteCost,
             editionNumber: numbers[i],
+            artistSplit: splits[i],
           };
         }),
       });

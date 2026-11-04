@@ -69,6 +69,7 @@ export async function GET(req: NextRequest) {
       size: true,
       quantity: true,
       frameChosen: true,
+      artistSplit: true,
       artistName: true,
       artwork: { select: { artistId: true } },
       order: { select: { createdAt: true } },
@@ -105,6 +106,7 @@ export async function GET(req: NextRequest) {
       frameChosen: it.frameChosen,
       quantity: it.quantity || 1,
       orderDate: it.order.createdAt,
+      artistSplit: it.artistSplit,
     })
     const expenses = b.printCost + b.shippingCost + b.laborCost + b.websiteCost
     const profit = b.profit

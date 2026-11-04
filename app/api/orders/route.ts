@@ -40,6 +40,7 @@ export async function GET(req: NextRequest) {
           quantity: true,
           unitPrice: true,
           lineTotal: true,
+          artistSplit: true,
           printCost: true,
           shippingCost: true,
           laborCost: true,

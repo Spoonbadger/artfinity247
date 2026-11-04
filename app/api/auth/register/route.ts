@@ -1,6 +1,7 @@
 // POST /api/auth/register
 // Creates an artist account from the short sign-up flow and signs them in.
-// Body: { handle, email, password, artist_name, city, state?, acceptedTerms: true }
+// Body: { handle, email, password, artist_name, city, state?, acceptedTerms: true, ref? }
+// ref: a referral code from /register?ref=CODE. Unknown codes are ignored; a match sets referredById.
 // acceptedTerms covers both the Artist Terms (/artist-terms-and-agreement) and the
 // Terms & Conditions (/terms-and-conditions). There is no column for it yet, so acceptance
 // is saved on Artist.termsAcceptedAt and logged (TERMS_ACCEPTED).
@@ -15,6 +16,7 @@ import { resend } from "@/lib/resend";
 import NewArtistNotificationEmail from "@/emails/NewArtistNotificationEmail";
 import WelcomeArtistEmail from "@/emails/WelcomeArtistEmail";
 import { checkHandle, normalizeHandle } from "../_lib/handle";
+import { referrerForCode } from "@/lib/referrals";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -44,6 +46,8 @@ export async function POST(req: Request) {
   const existing = await prisma.artist.findFirst({ where: { email: { equals: email, mode: "insensitive" } }, select: { id: true } });
   if (existing) return err("email_taken", 409);
 
+  const referredById = body.ref ? await referrerForCode(body.ref).catch(() => null) : null;
+
   let artist;
   try {
     artist = await prisma.artist.create({
@@ -60,6 +64,7 @@ export async function POST(req: Request) {
         slug: handle,
         role: "USER",
         termsAcceptedAt: new Date(),
+        referredById,
       },
     });
   } catch (e) {

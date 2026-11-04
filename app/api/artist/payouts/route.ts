@@ -52,6 +52,7 @@ export async function GET(req: NextRequest) {
         unitPrice: true,
         lineTotal: true,
         frameChosen: true,
+        artistSplit: true,
         printCost: true,
         shippingCost: true,
         laborCost: true,
@@ -62,7 +63,7 @@ export async function GET(req: NextRequest) {
 
     // Same math as the admin payout pages (lib/revenue.ts: 60/40 from 2026-10-21, 50/50 before).
     let gross = 0, expenses = 0, profit = 0, artistShare = 0
-    const items = rows.map(({ order, unitPrice, frameChosen, ...it }) => {
+    const items = rows.map(({ order, unitPrice, frameChosen, artistSplit, ...it }) => {
       const b = itemBreakdown({
         lineTotal: it.lineTotal,
         unitPrice,
@@ -70,6 +71,7 @@ export async function GET(req: NextRequest) {
         size: it.size,
         frameChosen,
         orderDate: order.createdAt,
+        artistSplit,
       })
       gross += b.lineTotal
       expenses += b.expenses

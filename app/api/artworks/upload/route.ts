@@ -9,6 +9,7 @@ import ArtworkLiveWithQrEmail from "@/emails/ArtworkLiveWithQrEmail";
 import { SignJWT } from "jose"
 import { parseSensitive } from "@/components/studio/sensitive"
 import { EDITION_MAX, EDITION_MIN } from "@/lib/editionFormat"
+import { rewardReferralOnUpload } from "@/lib/referrals"
 
 export const dynamic = "force-dynamic"
 
@@ -105,6 +106,15 @@ export async function POST(req: NextRequest) {
         },
       },
     });
+
+    // Referrals: a referred artist's first approved upload earns their referrer Pro months (once).
+    if (artwork.status === "APPROVED") {
+      try {
+        await rewardReferralOnUpload(artwork.artistId)
+      } catch (err) {
+        console.error("Referral reward failed", err)
+      }
+    }
 
     const base = process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com"
 

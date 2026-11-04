@@ -13,8 +13,9 @@ export function normalizeSize(raw: string | null | undefined): PrintSize {
 }
 
 /**
- * Authoritative per-item breakdown (cents). Applies the artist split for the
- * order date (50% before 2026-10-21, 60% after) via calcItemProfitCents.
+ * Authoritative per-item breakdown (cents). Uses the split stored on the item
+ * (OrderItem.artistSplit, locked in at order time: 60% Free, higher on Pro) when
+ * present, else the split for the order date (50% before 2026-10-21, 60% after).
  */
 export function itemBreakdown(item: {
   lineTotal: number | null;
@@ -23,6 +24,7 @@ export function itemBreakdown(item: {
   size: string | null;
   frameChosen?: boolean | null;
   orderDate: Date;
+  artistSplit?: number | null;
 }) {
   const qty = item.quantity || 1;
   const lineTotal = item.lineTotal ?? (item.unitPrice ?? 0) * qty;
@@ -32,6 +34,7 @@ export function itemBreakdown(item: {
     frameChosen: !!item.frameChosen,
     quantity: qty,
     orderDate: item.orderDate,
+    artistSplit: item.artistSplit,
   });
   return {
     lineTotal,
@@ -40,5 +43,6 @@ export function itemBreakdown(item: {
     profit: b.profit,
     artistShare: b.artistShare,
     companyShare: b.companyShare,
+    split: b.split,
   };
 }

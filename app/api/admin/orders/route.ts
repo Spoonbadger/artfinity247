@@ -53,6 +53,7 @@ export async function GET(req: NextRequest) {
             unitPrice: true,
             lineTotal: true,
             imageUrl: true,
+            artistSplit: true,
             artwork: { select: { artistId: true } },
           },
         },
@@ -74,6 +75,7 @@ export async function GET(req: NextRequest) {
           frameChosen: item.frameChosen,
           quantity: qty || 1,
           orderDate: order.createdAt,
+          artistSplit: item.artistSplit,
         })
 
         return {

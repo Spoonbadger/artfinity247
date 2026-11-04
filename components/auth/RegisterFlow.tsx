@@ -58,6 +58,8 @@ export default function RegisterFlow() {
   const params = useSearchParams();
   const { currentUser, refreshUser } = useUser();
   const next = safeNext(params.get("next"));
+  // Referral code from /register?ref=CODE, passed through to the account (see lib/referrals.ts).
+  const ref = (params.get("ref") || "").trim().slice(0, 24) || undefined;
   const home = next || "/studio";
   const [step, setStep] = useState<Step>(1);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -163,7 +165,7 @@ export default function RegisterFlow() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ handle, email: email.trim().toLowerCase(), password, artist_name: artistName.trim(), city: city.trim(), state: region.trim(), acceptedTerms: agreed }),
+        body: JSON.stringify({ handle, email: email.trim().toLowerCase(), password, artist_name: artistName.trim(), city: city.trim(), state: region.trim(), acceptedTerms: agreed, ref }),
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {

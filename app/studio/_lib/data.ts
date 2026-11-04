@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getUserFromCookie } from "@/lib/auth";
-import { calcItemProfitCents, getArtistSplit, type PrintSize } from "@/lib/revenue";
+import { calcItemProfitCents, type PrintSize } from "@/lib/revenue";
 
 export const SIZE_LABEL: Record<PrintSize, string> = { S: "Small", M: "Medium", L: "Large", XL: "XL" };
 
@@ -73,7 +73,7 @@ export async function getSales(artistId: string, since?: Date): Promise<Sale[]> 
     },
     select: {
       id: true, title: true, slug: true, size: true, frameChosen: true, quantity: true,
-      unitPrice: true, lineTotal: true, imageUrl: true,
+      unitPrice: true, lineTotal: true, imageUrl: true, artistSplit: true,
       artwork: { select: { title: true, slug: true, imageUrl: true } },
       order: { select: { createdAt: true } },
     },
@@ -85,7 +85,8 @@ export async function getSales(artistId: string, since?: Date): Promise<Sale[]> 
     const priceCents = it.lineTotal ?? (it.unitPrice ?? 0) * quantity;
     const size = toPrintSize(it.size);
     const date = it.order.createdAt;
-    const { artistShare } = calcItemProfitCents({ lineTotal: priceCents, size, frameChosen: it.frameChosen, quantity, orderDate: date });
+    // Prefer the split locked in at order time (Pro orders store a higher one).
+    const { artistShare, split } = calcItemProfitCents({ lineTotal: priceCents, size, frameChosen: it.frameChosen, quantity, orderDate: date, artistSplit: it.artistSplit });
     return {
       id: it.id,
       date,
@@ -97,7 +98,7 @@ export async function getSales(artistId: string, since?: Date): Promise<Sale[]> 
       quantity,
       priceCents,
       shareCents: artistShare,
-      split: getArtistSplit(date),
+      split,
     };
   });
 }

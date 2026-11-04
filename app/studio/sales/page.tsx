@@ -24,7 +24,7 @@ async function getExtras(artistId: string) {
   const items = await prisma.orderItem.findMany({
     where: { artwork: { artistId }, order: { paymentStatus: "paid", kind: { not: "bulk" } } },
     select: {
-      id: true, size: true, frameChosen: true, quantity: true, unitPrice: true, lineTotal: true,
+      id: true, size: true, frameChosen: true, quantity: true, unitPrice: true, lineTotal: true, artistSplit: true,
       order: { select: { createdAt: true, email: true, shippingName: true, shippingAddress: true } },
     },
   });

@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { Stripe } from 'stripe'
 import { prisma } from "@/lib/prisma"
-import { calcItemProfitCents } from "@/lib/revenue"
+import { artistSplitsForOrder, calcItemProfitCents } from "@/lib/revenue"
 import { normalizeSize } from "@/lib/sales"
 import { sendOrderNotifications } from "@/lib/orderNotifications"
 import { claimEditionNumbers } from "@/lib/editions"
@@ -114,7 +114,15 @@ export async function POST(req: NextRequest) {
           expand: ['data.price.product'],
         })
 
-        const itemsToCreate = lineItems.data.map((li) => {
+        // Lock in each artist's split (Free 60%, Pro higher) as of this order. Bulk orders pay no split.
+        const splits = isBulk
+          ? lineItems.data.map(() => null)
+          : await artistSplitsForOrder(prisma, lineItems.data.map((li) => ({
+              artistId: (li.price?.product as Stripe.Product | null)?.metadata?.artistId || null,
+              quantity: li.quantity ?? 1,
+            })), order.createdAt)
+
+        const itemsToCreate = lineItems.data.map((li, idx) => {
           const product = li.price?.product as Stripe.Product | null
           const unit = li.price?.unit_amount ?? 0
           const qty = li.quantity ?? 1
@@ -135,6 +143,7 @@ export async function POST(req: NextRequest) {
             frameChosen,
             quantity: qty,
             orderDate: order.createdAt,
+            artistSplit: splits[idx],
           })
 
           return {
@@ -155,6 +164,7 @@ export async function POST(req: NextRequest) {
             shippingCost: b.shippingCost,
             laborCost: b.laborCost,
             websiteCost: b.websiteCost,
+            artistSplit: splits[idx],
           }
         })
 
