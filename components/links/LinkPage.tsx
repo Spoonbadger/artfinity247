@@ -221,9 +221,10 @@ export default function LinkPage({ data, theme: themeOverride, mode = "page" }: 
         <h1
           className={cn("mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center leading-[0.95]", !darkText && "[text-shadow:0_2px_14px_rgba(0,0,0,.45)]")}
           style={{
+            color: ink,
             fontFamily: font.display,
             fontWeight: font.displayWeight,
-            fontVariationSettings: font.displaySettings,
+            fontVariationSettings: font.displaySettings ?? "normal",
             letterSpacing: font.tracking,
             fontSize: theme.font === "painted" ? 44 : 38,
           }}
