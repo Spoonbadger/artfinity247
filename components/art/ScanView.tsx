@@ -44,6 +44,7 @@ export default function ScanView({
   more,
   venue,
   pct,
+  sig = null,
   isOwner,
   status = "APPROVED",
   trust = null,
@@ -53,6 +54,8 @@ export default function ScanView({
   more: MoreArt[];
   venue: string | null;
   pct: number;
+  /** Signature that makes the discount valid at checkout. */
+  sig?: string | null;
   isOwner: boolean;
   status?: string;
   /** Medal + real verification for the artist line (lib/artistTrust). */
@@ -97,6 +100,7 @@ export default function ScanView({
     unitPrice: price.now,
     listPrice: price.list,
     discountPct: pct || undefined,
+    discountSig: pct && sig ? sig : undefined,
     venue,
     frameChosen: framed,
     frameColor: framed ? frameColor : null,

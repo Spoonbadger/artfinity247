@@ -11,6 +11,8 @@ import ArtistActions from "@/components/artist/ArtistActions";
 import ArtistSocials from "@/components/links/ArtistSocials";
 import { getArtistSocials } from "@/components/links/data";
 import ArtistTabs from "@/components/artist/ArtistTabs";
+import CollectionsTab from "@/components/collections/CollectionsTab";
+import { getPublicCollections } from "@/components/collections/data";
 import { WorkLayout } from "@/components/artist/WorkGrid";
 
 export const dynamic = "force-dynamic";
@@ -70,6 +72,7 @@ export default async function ArtistPage({ params, searchParams }: Props) {
   const artist = await getArtistPage(params.slug);
   if (!artist) notFound();
   const socials = await getArtistSocials(artist.id);
+  const collections = await getPublicCollections(artist.slug);
 
   const me = await getUserFromCookie();
   const isOwner = !!me?.slug && me.slug.toLowerCase() === artist.slug.toLowerCase();
@@ -177,6 +180,7 @@ export default async function ArtistPage({ params, searchParams }: Props) {
             <ArtistTabs
               tabs={[
                 { id: "work", label: "Work", count: artist.works.length, panel: <WorkLayout works={artist.works} layout={theme.layout} pinned={theme.pinned} isOwner={isOwner} /> },
+                ...(collections.length ? [{ id: "collections", label: "Collections", count: collections.length, panel: <CollectionsTab artistSlug={artist.slug} collections={collections} /> }] : []),
                 { id: "about", label: "About", panel: about },
               ]}
             />

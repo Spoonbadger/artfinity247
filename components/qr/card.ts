@@ -121,10 +121,12 @@ export function ctaText(d: Design) {
 }
 
 /** What the code holds, until short links exist: the artwork page plus scan context. */
-export function qrValue(d: Pick<Design, "ev" | "disc">, slug: string, base: string) {
+/** The URL a code holds. A discount only works with its server-made signature `sig` (lib/scanSign.ts). */
+export function qrValue(d: Pick<Design, "ev" | "disc">, slug: string, base: string, sig?: string | null) {
   const u = new URL(`/art/${encodeURIComponent(slug)}`, base);
   if (d.ev.trim()) u.searchParams.set("at", d.ev.trim());
   if (d.disc) u.searchParams.set("off", String(d.disc));
+  if (d.disc && sig) u.searchParams.set("s", sig);
   return u.toString();
 }
 

@@ -1,3 +1,4 @@
+import { signedQrValue } from "@/lib/scanSign";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
@@ -53,7 +54,7 @@ export default async function QrPage({ searchParams }: { searchParams: { art?: s
   try {
     const fonts = await loadFonts();
     const art = arts.find((a) => a.slug === slug)!;
-    const card = renderCard(design, art, fonts, qrValue(design, slug, base));
+    const card = renderCard(design, art, fonts, await signedQrValue(design, slug, base));
     initialCard = { svg: cardSVG(card), sheet: sheetSVG(card, design.format) };
   } catch (e) {
     console.error("QR first paint failed", e);

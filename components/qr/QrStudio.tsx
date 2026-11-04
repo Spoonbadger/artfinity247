@@ -49,7 +49,20 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
   useEffect(() => { loadFonts().then(setFonts).catch(() => toast.error("Could not load the card fonts. Refresh to try again.")); }, []);
 
   const art = arts.find((a) => a.slug === slug) || arts[0];
-  const qrText = qrValue(d, art.slug, base);
+  // Discounts only work with a server-made signature, so ask for one whenever the deal changes.
+  const sigKey = d.disc ? `${art.slug}|${d.disc}|${d.ev.trim()}` : "";
+  const [sigs, setSigs] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!sigKey || sigs[sigKey]) return;
+    const t = setTimeout(() => {
+      fetch("/api/qr/sign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug: art.slug, disc: d.disc, ev: d.ev }) })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j) => { if (j?.sig) setSigs((o) => ({ ...o, [sigKey]: j.sig })); })
+        .catch(() => {});
+    }, 250);
+    return () => clearTimeout(t);
+  }, [sigKey, sigs, art.slug, d.disc, d.ev]);
+  const qrText = qrValue(d, art.slug, base, sigKey ? sigs[sigKey] : null);
   const card: Card | null = useMemo(() => (fonts ? renderCard(d, art, fonts, qrText) : null), [d, art, fonts, qrText]);
   const svg = card ? cardSVG(card) : initialCard?.svg || "";
 

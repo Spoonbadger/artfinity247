@@ -1,3 +1,4 @@
+import { verifyScan } from "@/lib/scanSign";
 import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -48,6 +49,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ArtPage({ params, searchParams }: Props) {
+  // A discount from a printed code only counts when its signature matches (typed-in ?off= is ignored).
+  const offRaw = parseDiscount(searchParams.off);
+  const scanPct = offRaw && verifyScan(params.slug, offRaw, parseVenue(searchParams.at), searchParams.s) ? offRaw : 0;
   const [art, user] = await Promise.all([loadArt(params.slug), getUserFromCookie()]);
   const isOwner = !!user && !!art && (user.id === art.artistId || user.role === "ADMIN");
   // Buyers only see approved work; the artist and admins can preview anything.
@@ -90,7 +94,8 @@ export default async function ArtPage({ params, searchParams }: Props) {
         fromCents: priceFor(m, "small").list,
       }))}
       venue={parseVenue(searchParams.at)}
-      pct={parseDiscount(searchParams.off)}
+      pct={scanPct}
+      sig={scanPct ? String(searchParams.s) : null}
       isOwner={isOwner}
       status={art.status}
       trust={await trustP}

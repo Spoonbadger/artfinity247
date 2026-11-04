@@ -1,5 +1,6 @@
 // GET → a print sheet of gallery-label QR cards for one artwork.
 // Auth: the logged-in artist (or an admin), or the 7-day email token from the "artwork is live" email.
+import { signedQrValue } from "@/lib/scanSign";
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 import { generateQrPdf } from "@/lib/generateQrPdf";
@@ -39,7 +40,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   try {
     const art = toArtInfo(row);
     const design = { ...DEFAULT_DESIGN, disc: 0, coupon: "" };
-    const pdf = await generateQrPdf([{ design, art, qrText: qrValue(design, art.slug, baseUrl(req)) }], { fill: true });
+    const pdf = await generateQrPdf([{ design, art, qrText: await signedQrValue(design, art.slug, baseUrl(req)) }], { fill: true });
     const mode = url.searchParams.get("download") === "1" ? "attachment" : "inline";
     return new NextResponse(Buffer.from(pdf), { status: 200, headers: pdfHeaders(`${art.slug}-qr-cards.pdf`, mode) });
   } catch (err) {

@@ -1,5 +1,6 @@
 // GET → gallery-label QR cards for all of the logged-in artist's approved artworks (or ?slugs=a,b),
 // 10 per US Letter sheet with crop marks.
+import { signedQrValue } from "@/lib/scanSign";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromCookie } from "@/lib/auth";
@@ -26,10 +27,10 @@ export async function GET(req: NextRequest) {
   try {
     const base = baseUrl(req);
     const design = { ...DEFAULT_DESIGN, disc: 0, coupon: "" };
-    const pdf = await generateQrPdf(rows.map((r) => {
+    const pdf = await generateQrPdf(await Promise.all(rows.map(async (r) => {
       const art = toArtInfo(r);
-      return { design, art, qrText: qrValue(design, art.slug, base) };
-    }));
+      return { design, art, qrText: await signedQrValue(design, art.slug, base) };
+    })));
     const mode = url.searchParams.get("download") === "1" ? "attachment" : "inline";
     const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
     return new NextResponse(Buffer.from(pdf), { status: 200, headers: pdfHeaders(`artfinity-qr-cards-${stamp}.pdf`, mode) });

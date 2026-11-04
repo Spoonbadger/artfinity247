@@ -1,5 +1,6 @@
 // POST { slug, design } → a US Letter print sheet (PDF) of the designed card, with crop marks.
 // POST { all: true, design } → one card per approved artwork of the logged-in artist, same look, as many sheets as needed.
+import { signedQrValue } from "@/lib/scanSign";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromCookie } from "@/lib/auth";
@@ -26,10 +27,10 @@ export async function POST(req: NextRequest) {
     try {
       const design = sanitizeDesign(body.design);
       const base = baseUrl(req);
-      const pdf = await generateQrPdf(rows.map((r) => {
+      const pdf = await generateQrPdf(await Promise.all(rows.map(async (r) => {
         const art = toArtInfo(r);
-        return { design, art, qrText: qrValue(design, art.slug, base) };
-      }));
+        return { design, art, qrText: await signedQrValue(design, art.slug, base) };
+      })));
       return new NextResponse(Buffer.from(pdf), { status: 200, headers: pdfHeaders(`artfinity-all-codes-${design.format}.pdf`) });
     } catch (err) {
       console.error("QR print-all error", err);
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
   try {
     const design = sanitizeDesign(body?.design);
     const art = toArtInfo(row);
-    const pdf = await generateQrPdf([{ design, art, qrText: qrValue(design, art.slug, baseUrl(req)) }], { fill: true });
+    const pdf = await generateQrPdf([{ design, art, qrText: await signedQrValue(design, art.slug, baseUrl(req)) }], { fill: true });
     return new NextResponse(Buffer.from(pdf), { status: 200, headers: pdfHeaders(`${art.slug}-${design.format}-sheet.pdf`) });
   } catch (err) {
     console.error("QR print error", err);

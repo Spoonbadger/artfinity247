@@ -1,3 +1,4 @@
+import { verifyScan } from "@/lib/scanSign";
 import Stripe from "stripe";
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
@@ -57,8 +58,9 @@ async function buildLines(items: any[]): Promise<Line[]> {
       // Only approved work can be bought (PENDING and REJECTED are skipped).
       if (!art || art.status !== "APPROVED") return null;
 
-      // Scan discount from the printed code (?off=), clamped to 5–30%. See report: trust this only until codes live in the DB.
-      const discountPct = parseDiscount(p.discountPct);
+      // Scan discount from the printed code: 5–30%, and only with a valid signature (lib/scanSign.ts).
+      const offRaw = parseDiscount(p.discountPct);
+      const discountPct = offRaw && verifyScan(slug, offRaw, parseVenue(p.venue), p.discountSig) ? offRaw : 0;
       const { list } = priceFor(art, size, frameChosen, 0);
       const unit = applyDiscount(list, discountPct);
       const quantity = Math.max(1, Math.min(10, Math.round(Number(item?.quantity ?? p.quantity ?? 1)) || 1));

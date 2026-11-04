@@ -34,4 +34,5 @@ export type ScanCartProduct = CartItemProductType & {
   listPrice?: number; // cents, before the scan discount
   discountPct?: number; // 5–30, from the printed code
   venue?: string | null; // where it was scanned
+  discountSig?: string; // signature from the printed code (lib/scanSign.ts); unsigned discounts are ignored
 };
