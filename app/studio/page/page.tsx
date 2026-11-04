@@ -28,6 +28,7 @@ export default async function MyPageEditor() {
         <>
           <Link href="/studio/design" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">Design</Link>
           <Link href="/studio/verify" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">Verification</Link>
+          <Link href="/studio/pro" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">Pro</Link>
         </>
       }
     >

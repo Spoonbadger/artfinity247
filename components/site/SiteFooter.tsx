@@ -11,7 +11,7 @@ const ADDRESS = AppConfigs.business_address.replace(/,\s*United States$/, "").re
 const HOURS = "Weekdays " + AppConfigs.business_open_time.split("\n")[0].trim().replace(/\s*-\s*/, " to ");
 
 const COLS: [string, [string, string][]][] = [
-  ["For artists", [["Start selling free", "/register"], ["How it works", "/#how"], ["Sell with us", "/sell-with-us"], ["Artist terms", "/artist-terms-and-agreement"]]],
+  ["For artists", [["Start selling free", "/register"], ["How it works", "/#how"], ["Sell with us", "/sell-with-us"], ["Pricing", "/pricing"], ["For developers", "/developers"], ["Artist terms", "/artist-terms-and-agreement"]]],
   ["For collectors", [["Browse art", "/art"], ["Artists", "/artists"], ["Scenes by city", "/scenes"], ["Returns", "/return-policy"]]],
   ["Artfinity", [["About", "/about-us"], ["Contact", "/contact"], ["Privacy", "/privacy-policy"], ["Terms", "/terms-and-conditions"], ["Cookie Policy", "/cookie-policy"]]],
 ];

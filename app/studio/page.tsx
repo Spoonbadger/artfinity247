@@ -5,6 +5,8 @@ import NextSteps from "@/components/studio/NextSteps";
 import SalesChart, { type DayPoint } from "@/components/studio/SalesChart";
 import MedalProgress from "@/components/artist/MedalProgress";
 import { getArtistTrust } from "@/lib/artistTrust";
+import ProCard from "@/components/pro/ProCard";
+import { getArtistPlan } from "@/components/pro/plan.server";
 import { prisma } from "@/lib/prisma";
 import { requireArtist, firstName, getSales, getArtworks, dayKey, serverGreeting, timeAgo, SIZE_LABEL, STUDIO_TZ, usd } from "./_lib/data";
 
@@ -26,11 +28,12 @@ export default async function StudioHome() {
   const artist = await requireArtist("/studio");
   const now = new Date();
   const since = new Date(now.getTime() - 30 * DAY);
-  const [allSales, artworks, trust, ver] = await Promise.all([
+  const [allSales, artworks, trust, ver, plan] = await Promise.all([
     getSales(artist.id),
     getArtworks(artist.id),
     getArtistTrust(artist.id),
     prisma.artist.findUnique({ where: { id: artist.id }, select: { verification: true } }),
+    getArtistPlan(artist.id),
   ]);
   const sales = allSales.filter((s) => s.date >= since);
 
@@ -87,6 +90,8 @@ export default async function StudioHome() {
       </section>
 
       <MedalProgress trust={trust} verification={ver?.verification ?? "NONE"} />
+
+      <ProCard active={plan.active} proUntil={plan.proUntil} />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <section className="af-card grid content-start gap-3 p-4 sm:p-5" aria-labelledby="chart-h">

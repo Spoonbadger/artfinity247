@@ -5,6 +5,7 @@ import { StudioPage } from "@/components/studio/StudioPage";
 import ShareKit from "@/components/share/ShareKit";
 import { fromCents, type ShareArt } from "@/components/share/shareData";
 import { requireArtist, displayName } from "../_lib/data";
+import { getArtistPlan } from "@/components/pro/plan.server";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Share kit" };
@@ -46,10 +47,11 @@ export default async function SharePage({ searchParams }: { searchParams: { art?
 
   const slug = arts.some((a) => a.slug === want) ? want : arts[0].slug;
   const base = process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com";
+  const plan = await getArtistPlan(artist.id);
 
   return (
     <StudioPage title="Share kit" sub="Post it anywhere. Every piece leads to the print.">
-      <ShareKit arts={arts} initialSlug={slug} base={base} />
+      <ShareKit arts={arts} initialSlug={slug} base={base} pro={plan.active} />
     </StudioPage>
   );
 }

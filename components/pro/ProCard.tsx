@@ -21,7 +21,7 @@ export default function ProCard({ active, proUntil }: { active: boolean; proUnti
     <Link href="/studio/pro" className="group relative flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-2xl border-[1.5px] border-ink bg-ink p-4 text-white no-underline sm:px-5">
       <BrushStroke className="pointer-events-none absolute -right-6 -top-2 h-10 w-56 rotate-[-4deg] opacity-90" color="var(--af-sticker)" />
       <span className="relative grid gap-0.5">
-        <b className="display text-[26px] leading-none">Go Pro</b>
+        <b className="display text-[26px] leading-none !text-white">Go Pro</b>
         <span className="text-[13.5px] text-white/75">{pct(PRO.split)} of profit, auto videos, automations. {proPrice()}/mo.</span>
       </span>
       <span className="relative inline-flex items-center gap-2 text-[14px] font-bold">

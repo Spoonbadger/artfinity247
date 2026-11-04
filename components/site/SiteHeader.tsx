@@ -12,6 +12,7 @@ const LINKS = [
   { href: "/art", label: "Browse art" },
   { href: "/artists", label: "Artists" },
   { href: "/#how", label: "How it works" },
+  { href: "/pricing", label: "Pricing" },
 ];
 
 export default function SiteHeader() {

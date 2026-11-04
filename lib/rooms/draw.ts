@@ -149,18 +149,18 @@ export function sofa(
   const pillows = o.pillows || [];
   const slots = pillows.length;
   pillows.forEach((pc, i) => {
-    const s = 16 + c.r.range(-1.5, 2);
+    const s = 14 + c.r.range(-1, 1.5);
     const inner = w - 2 * aw - 6;
     let px: number;
     if (slots === 1) px = x0 + aw + 3 + (c.r.chance(0.5) ? 0 : inner - s);
     else if (slots === 2) px = i === 0 ? x0 + aw + 2 : x1 - aw - 2 - s;
     else px = i < slots / 2 ? x0 + aw + 2 + i * (s * 0.7) : x1 - aw - 2 - s - (slots - 1 - i) * (s * 0.7);
-    const py = sTop - s + 3.2;
+    const py = sTop - s + 2.4;
     const rot = (i < slots / 2 ? -1 : 1) * c.r.range(4, 9);
     const cxp = px + s / 2;
     const cyp = py + s / 2;
     c.front.push(
-      `<g transform="rotate(${f(rot)} ${f(cxp)} ${f(cyp)})">${rr(px, py, s, s, 4, pc)}${rr(px + 1.5, py + 1.2, s - 3, 3, 1.5, shade(pc, 0.12), op(0.8))}${line(px + 3, cyp + 1, px + s - 3, cyp + 1, shade(pc, -0.18), 0.35, op(0.5))}</g>`,
+      `<g transform="rotate(${f(rot)} ${f(cxp)} ${f(cyp)})">${rr(px, py, s, s, 3, pc)}${rr(px + 1.5, py + 1, s - 3, 2.2, 1.1, shade(pc, 0.1), op(0.6))}${line(px + 3, cyp + 1, px + s - 3, cyp + 1, shade(pc, -0.18), 0.35, op(0.5))}</g>`,
     );
   });
   // throw over one arm
@@ -1053,11 +1053,15 @@ export function windowOpening(c: Ctx, o: { x0: number; w: number; sill: number; 
   );
   const parts: string[] = [];
   parts.push(rect(x0 - 2.5, y0 - 2.5, w + 5, y1 - y0 + 5, trim));
+  const cid = uid(c, "win");
+  c.defs.push(`<clipPath id="${cid}"><rect x="${f(x0)}" y="${f(y0)}" width="${f(w)}" height="${f(y1 - y0)}"/></clipPath>`);
   parts.push(rect(x0, y0, w, y1 - y0, `url(#${gid})`));
+  parts.push(`<g clip-path="url(#${cid})">`);
   // a tree outside
   const tcol = c.evening ? "#1b2235" : "#b9c8b0";
   for (let i = 0; i < 7; i++) parts.push(ell(x0 + c.r.range(0, w), y1 - c.r.range(4, (y1 - y0) * 0.55), c.r.range(5, 10), c.r.range(4, 8), tcol, op(c.evening ? 0.8 : 0.6)));
   if (c.evening) for (let i = 0; i < 3; i++) parts.push(rect(x0 + c.r.range(2, w - 4), y0 + c.r.range(4, (y1 - y0) * 0.5), 1.4, 1.8, "#e8c27a", op(0.8)));
+  parts.push(`</g>`);
   // mullions
   const cols = panes === 4 ? 2 : panes === 3 ? 3 : 2;
   const rows = panes === 4 ? 2 : 1;

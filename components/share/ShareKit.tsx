@@ -6,6 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BrushStroke } from "@/components/af/Brush";
 import VideoMaker from "./VideoMaker";
+import VideoUpsell from "@/components/pro/VideoUpsell";
 import { Captions, EmbedKit, ImageAssets, ShareLinks } from "./Assets";
 import { dollars, type ShareArt } from "./shareData";
 
@@ -30,7 +31,7 @@ function Section({ id, title, sub, dab, children }: { id: string; title: string;
   );
 }
 
-export default function ShareKit({ arts, initialSlug, base }: { arts: ShareArt[]; initialSlug: string; base: string }) {
+export default function ShareKit({ arts, initialSlug, base, pro = true }: { arts: ShareArt[]; initialSlug: string; base: string; pro?: boolean }) {
   const [slug, setSlug] = useState(initialSlug);
   const art = arts.find((a) => a.slug === slug) ?? arts[0];
   const rowRef = useRef<HTMLDivElement>(null);
@@ -93,7 +94,8 @@ export default function ShareKit({ arts, initialSlug, base }: { arts: ShareArt[]
       </div>
 
       <Section id="video" title="Auto video" sub="Vertical, 10 seconds. Reels, TikTok, Shorts." dab="#ff5a36">
-        <VideoMaker art={art} base={base} />
+        {/* Auto videos are a Pro tool (lib/plans.ts). */}
+        {pro ? <VideoMaker art={art} base={base} /> : <VideoUpsell imageUrl={art.imageUrl} title={art.title} />}
       </Section>
 
       <Section id="images" title="Story and post images" sub="Each one has a QR code to this piece." dab="#ffd43b">
