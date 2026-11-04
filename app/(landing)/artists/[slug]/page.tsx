@@ -8,6 +8,8 @@ import TrustBlock, { NameBadges } from "@/components/artist/TrustBlock";
 import ArtistBanner from "@/components/artist/ArtistBanner";
 import ArtistAvatar from "@/components/artist/ArtistAvatar";
 import ArtistActions from "@/components/artist/ArtistActions";
+import ArtistSocials from "@/components/links/ArtistSocials";
+import { getArtistSocials } from "@/components/links/data";
 import ArtistTabs from "@/components/artist/ArtistTabs";
 import { WorkLayout } from "@/components/artist/WorkGrid";
 
@@ -67,6 +69,7 @@ function previewTheme(raw: string | string[] | undefined) {
 export default async function ArtistPage({ params, searchParams }: Props) {
   const artist = await getArtistPage(params.slug);
   if (!artist) notFound();
+  const socials = await getArtistSocials(artist.id);
 
   const me = await getUserFromCookie();
   const isOwner = !!me?.slug && me.slug.toLowerCase() === artist.slug.toLowerCase();
@@ -119,7 +122,11 @@ export default async function ArtistPage({ params, searchParams }: Props) {
               {[artist.city, tagline].filter(Boolean).join(" · ")}
             </p>
           </div>
-          <ArtistActions slug={artist.slug} firstName={artist.firstName} className="pb-2" />
+          <div className="flex flex-wrap items-center gap-3 pb-2 sm:ml-auto">
+            <ArtistSocials links={socials} />
+            <Link href={`/@${artist.slug}/links`} className="btn btn-ghost btn-sm min-h-[44px]">Links</Link>
+            <ArtistActions slug={artist.slug} firstName={artist.firstName} />
+          </div>
         </header>
 
         <div className="mt-8 grid gap-10 sm:mt-10 lg:grid-cols-[270px_minmax(0,1fr)] lg:gap-12">

@@ -23,6 +23,20 @@
     --af-earned-soft: #e1f2ea;
     --af-gallery: #e9e6df;
 
+    /* RGB channels so Tailwind opacity modifiers (bg-ink/25) work */
+    --af-ink-rgb: 21 22 27;
+    --af-ink-2-rgb: 90 93 107;
+    --af-paper-rgb: 255 255 255;
+    --af-wall-rgb: 242 243 236;
+    --af-line-rgb: 225 226 218;
+    --af-scan-rgb: 43 55 240;
+    --af-scan-soft-rgb: 230 232 255;
+    --af-sticker-rgb: 255 212 59;
+    --af-coral-rgb: 255 90 54;
+    --af-earned-rgb: 15 122 85;
+    --af-earned-soft-rgb: 225 242 234;
+    --af-gallery-rgb: 233 230 223;
+
     /* shadcn/ui variables mapped onto the palette (HSL triplets) */
     --background: 0 0% 100%;
     --foreground: 230 13% 9%;

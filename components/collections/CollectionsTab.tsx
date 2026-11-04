@@ -46,9 +46,9 @@ export default async function CollectionsTab({ artistSlug, collections }: { arti
 
 function Cover({ src, alt, sensitive }: { src: string; alt: string; sensitive: string[] }) {
   const pic = (
-    <div className="grid h-full w-full place-items-center">
+    <div className="relative h-full w-full">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt={alt} className="max-h-full max-w-full border-[6px] border-white bg-white object-contain shadow-[0_16px_30px_-10px_rgba(21,22,27,.55)]" />
+      <img src={src} alt={alt} className="absolute inset-0 m-auto max-h-full max-w-full border-[6px] border-white bg-white object-contain shadow-[0_16px_30px_-10px_rgba(21,22,27,.55)]" />
     </div>
   );
   return sensitive.length ? <SensitiveImage labels={sensitive}>{pic}</SensitiveImage> : pic;

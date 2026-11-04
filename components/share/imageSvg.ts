@@ -110,6 +110,15 @@ export function shareSVG(i: ShareImageInput): string {
   const ink = dark ? "#ffffff" : "#15161b";
   const soft = dark ? "rgba(255,255,255,.78)" : "#5a5d6b";
   const pic = fitInto(i.painting.w, i.painting.h, g.paint.x, g.paint.y, g.paint.w, g.paint.h);
+  const T = fitBlock(f.display, i.art.title, { max: g.title.max, min: g.title.min, maxW: g.col.w, maxH: g.title.maxH, lh: 0.95, maxLines: g.title.lines });
+  if (i.format === "story") {
+    // Painting and words sit together, centred between the logo and the QR card.
+    const textH = capHeight(f.display) * T.size + (T.lines.length - 1) * T.size * 0.95 + g.by * 2.45 + g.chip * 2.25 + (i.art.editionSize ? g.chip * 1.38 : 0);
+    const gap = 96, top = 190, bottom = 1500;
+    const y0 = top + Math.max(0, (bottom - top - (pic.h + gap + textH)) / 2);
+    pic.y = y0;
+    g.col.y = y0 + pic.h + gap;
+  }
   const cx = pic.x + pic.w / 2, cy = pic.y + pic.h / 2;
   const u = W / 1080; // painterly marks scale with the canvas
 
@@ -136,7 +145,7 @@ export function shareSVG(i: ShareImageInput): string {
   if (L === "wall") {
     s += swatch(pic.x + pic.w * 0.42, pic.y + pic.h - 30 * u, pic.w * 0.78, 110 * u, accent, ` opacity=".9"`);
   } else if (L === "studio") {
-    s += `<g transform="rotate(4 ${n2(cx)} ${n2(cy)})">` + swatch(pic.x - 60 * u, pic.y + 50 * u, pic.w + 150 * u, pic.h + 30 * u, accent, ` opacity=".92"`) + `</g>`;
+    s += `<g transform="rotate(4 ${n2(cx)} ${n2(cy)})">` + swatch(pic.x - 70 * u, pic.y + 50 * u, pic.w + (i.format === "story" ? 150 : 110) * u, pic.h + 30 * u, accent, ` opacity=".92"`) + `</g>`;
   } else {
     s += stroke(pic.x - 120 * u, pic.y + pic.h * 0.55, pic.w + 240 * u, 140 * u, "#ffffff", ` opacity=".12"`);
   }
@@ -160,7 +169,6 @@ export function shareSVG(i: ShareImageInput): string {
 
   // ---- words
   s += brand(f, g.logo.x, g.logo.y, g.logo.size, ink, dark ? "#ffd43b" : "#2b37f0");
-  const T = fitBlock(f.display, i.art.title, { max: g.title.max, min: g.title.min, maxW: g.col.w, maxH: g.title.maxH, lh: 0.95, maxLines: g.title.lines });
   let y = g.col.y + capHeight(f.display) * T.size;
   T.lines.forEach((line, k) => { s += text(f.display, line, g.col.x, y + k * T.size * 0.95, T.size, ink); });
   y += (T.lines.length - 1) * T.size * 0.95 + g.by * 1.55;

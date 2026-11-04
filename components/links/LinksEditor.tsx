@@ -650,7 +650,7 @@ export default function LinksEditor({
               <b className="text-ink">{num(totalClicks)}</b> {totalClicks === 1 ? "click" : "clicks"} so far
             </p>
           </div>
-          <div className="hidden w-[120px] rounded-xl border-[1.5px] border-line bg-white p-2 sm:block" title={`QR code for ${shareUrl}`}>
+          <div className="w-[104px] rounded-xl border-[1.5px] border-line bg-white p-2 sm:w-[120px]" title={`QR code for ${shareUrl}`}>
             <QRCode value={fullShareUrl} dots="rounded" eyes="rounded" />
           </div>
         </section>

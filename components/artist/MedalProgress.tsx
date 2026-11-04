@@ -84,7 +84,7 @@ function MedalHeading({ id, next, current }: { id: string; next: ReturnType<type
           "Gold seller"
         )}
       </h2>
-      <p className="mt-1 text-[13.5px] text-ink-2">{current ? `${current} now. Buyers see it next to your name.` : "Medals show next to your name."}</p>
+      <p className="mt-1 text-[13.5px] text-ink-2">{!next ? "Top medal. Buyers see it next to your name." : current ? `${current} now. Buyers see it next to your name.` : "Medals show next to your name."}</p>
     </>
   );
 }

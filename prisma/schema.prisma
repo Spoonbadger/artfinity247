@@ -47,6 +47,7 @@ model OrderItem {
   shippingCost Int?
   websiteCost  Int?
   editionNumber Int?     // e.g. 12 of 50 for limited editions
+  artistSplit   Float?   // the artist's share of profit locked in when the order was placed (0.6 free, higher on Pro)
   artwork      Artwork? @relation(fields: [artworkId], references: [id])
   order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
@@ -103,6 +104,15 @@ model Artist {
   emailTemplates   EmailTemplate[]
   collections      Collection[]
 
+  // Legal: when the artist accepted the Artist Terms and Terms & Conditions
+  termsAcceptedAt  DateTime?
+
+  // Plans and referrals (billing comes with the backend)
+  plan             Plan      @default(FREE)
+  proUntil         DateTime? // Pro is active while this is in the future (paid or earned by referrals)
+  referralCode     String?   @unique
+  referredById     String?
+
   passwordResetTokens PasswordResetToken[]
 
   @@index([citySlug])
@@ -126,6 +136,8 @@ model Artwork {
   sensitive     String[]      @default([])
   // Limited print runs: null = open edition. editionSize counts prints across all sizes, numbered 1..N.
   editionSize   Int?
+  // Room previews on the buy page: scene numbers (0-999) the artist picked; empty = auto-picked
+  roomScenes    Int[]         @default([])
   collectionItems CollectionItem[]
   flaggedReason String?
   flaggedBy     String?
@@ -238,4 +250,10 @@ model CollectionItem {
 
   @@unique([collectionId, artworkId])
   @@index([collectionId, position])
+}
+
+
+enum Plan {
+  FREE
+  PRO
 }
