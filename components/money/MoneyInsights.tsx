@@ -155,10 +155,50 @@ export default function MoneyInsights({ ledger, nowIso }: { ledger: LedgerLine[]
         </div>
       </div>
 
+      <Sources lines={lines} periodLabel={periodLabel} />
+    </section>
+  );
+}
+
+/** Your share by source (the printed code a sale came through). Placeholder until any sale carries one. */
+function Sources({ lines, periodLabel }: { lines: LedgerLine[]; periodLabel: string }) {
+  const tracked = lines.filter((l) => l.source);
+  if (!tracked.length) {
+    return (
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[4px] border-2 border-dashed border-line bg-wall/60 px-4 py-3 text-[13.5px]">
         <b>Where sales come from</b>
         <span className="text-ink-2">Source tracking arrives with short links.</span>
       </div>
+    );
+  }
+  const by = new Map<string, { share: number; prints: number }>();
+  for (const l of lines) {
+    const k = l.source || "Direct and links";
+    const v = by.get(k) || { share: 0, prints: 0 };
+    v.share += l.shareCents; v.prints += l.quantity;
+    by.set(k, v);
+  }
+  const rows = Array.from(by.entries()).sort((a, b) => b[1].share - a[1].share).slice(0, 6);
+  const max = Math.max(1, ...rows.map((r) => r[1].share));
+  return (
+    <section aria-labelledby="sources-h" className="af-card grid gap-3 p-4 sm:p-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h3 id="sources-h" className="text-[18px] font-bold">Where sales come from</h3>
+        <span className="text-[12.5px] text-ink-2">Your share · {periodLabel}</span>
+      </div>
+      <ul className="grid gap-2.5">
+        {rows.map(([name, v]) => (
+          <li key={name} className="grid gap-1">
+            <div className="flex items-baseline justify-between gap-3 text-[14px]">
+              <span className="min-w-0 truncate font-semibold">{name}</span>
+              <span className="num shrink-0"><b className="text-earned">{usd(v.share)}</b> <span className="text-[12.5px] text-ink-2">· {v.prints} {v.prints === 1 ? "print" : "prints"}</span></span>
+            </div>
+            <div className="h-2.5 overflow-hidden rounded-full bg-wall" aria-hidden="true">
+              <div className="h-full rounded-full bg-earned" style={{ width: `${Math.max(3, (v.share / max) * 100)}%` }} />
+            </div>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

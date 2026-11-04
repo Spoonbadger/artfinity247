@@ -37,4 +37,5 @@ export type ScanCartProduct = CartItemProductType & {
   discountPct?: number; // 5–30, from the printed code
   venue?: string | null; // where it was scanned
   discountSig?: string; // signature from the printed code (lib/scanSign.ts); unsigned discounts are ignored
+  code?: string; // short link code (/q/CODE); checkout looks it up for the discount and credits the sale to it
 };

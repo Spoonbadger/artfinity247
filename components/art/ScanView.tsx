@@ -45,6 +45,7 @@ export default function ScanView({
   venue,
   pct,
   sig = null,
+  code = null,
   isOwner,
   status = "APPROVED",
   trust = null,
@@ -56,6 +57,8 @@ export default function ScanView({
   pct: number;
   /** Signature that makes the discount valid at checkout. */
   sig?: string | null;
+  /** Short link code the visitor came from (/q/CODE); checkout re-checks it and credits the sale to it. */
+  code?: string | null;
   isOwner: boolean;
   status?: string;
   /** Medal + real verification for the artist line (lib/artistTrust). */
@@ -101,6 +104,7 @@ export default function ScanView({
     listPrice: price.list,
     discountPct: pct || undefined,
     discountSig: pct && sig ? sig : undefined,
+    code: code || undefined,
     venue,
     frameChosen: framed,
     frameColor: framed ? frameColor : null,

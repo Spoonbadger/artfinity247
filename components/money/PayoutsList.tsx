@@ -16,7 +16,6 @@ export function PayoutChip({ row }: { row: PayoutRow }) {
 
 function when(row: PayoutRow) {
   if (row.status === "paid") return row.paidAt ? dayUTC(row.paidAt, true) : "Paid";
-  if (row.status === "scheduled") return `Goes out ${dayUTC(row.dueDate)}`;
   return `Goes out ${dayUTC(row.dueDate)}`;
 }
 
@@ -32,21 +31,21 @@ export default function PayoutsList({ payouts, ledger }: { payouts: PayoutRow[];
         <p className="py-6 text-center text-[14px] text-ink-2">Your first payout shows up after your first sale.</p>
       ) : (
         <div className="grid">
-          <div className="hidden grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.3fr)_20px] gap-3 border-b border-line pb-2 text-[12px] font-semibold text-ink-2 md:grid">
+          <div className="hidden grid-cols-[minmax(0,1.3fr)_minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1.5fr)_20px] gap-3 border-b border-line pb-2 text-[12px] font-semibold text-ink-2 md:grid">
             <span>Month</span><span className="text-right">Amount</span><span>Status</span><span>Date</span><span>Method</span><span />
           </div>
           {payouts.map((p) => {
             const lines = ledger.filter((l) => l.payoutMonth === p.month);
             return (
               <details key={p.month} className="group border-b border-line last:border-b-0">
-                <summary className="grid cursor-pointer list-none grid-cols-[minmax(0,1fr)_auto_20px] items-center gap-x-3 gap-y-1 py-3 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.3fr)_20px] [&::-webkit-details-marker]:hidden">
-                  <span className="font-semibold">{p.label}</span>
+                <summary className="grid cursor-pointer list-none grid-cols-[minmax(0,1fr)_auto_20px] items-center gap-x-3 gap-y-1 py-3 md:grid-cols-[minmax(0,1.3fr)_minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1.5fr)_20px] [&::-webkit-details-marker]:hidden">
+                  <span className="whitespace-nowrap font-semibold">{p.label}</span>
                   <b className="num text-right text-[16px] text-earned md:order-none">{usd(p.amountCents)}</b>
                   <svg viewBox="0 0 12 12" className="h-3.5 w-3.5 text-ink-2 transition group-open:rotate-180 md:order-last" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   <span className="col-span-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[12.5px] text-ink-2 md:contents">
                     <span className="md:block"><PayoutChip row={p} /></span>
-                    <span className="num md:text-[14px] md:text-ink">{when(p)}</span>
-                    <span className="md:text-[14px] md:text-ink">{p.method}</span>
+                    <span className="num whitespace-nowrap md:text-[14px] md:text-ink">{when(p)}</span>
+                    <span className="whitespace-nowrap md:truncate md:text-[14px] md:text-ink" title={p.method}>{p.method}</span>
                   </span>
                 </summary>
                 <div className="mb-3 grid gap-1 rounded-[4px] bg-wall p-3 text-[13px]">

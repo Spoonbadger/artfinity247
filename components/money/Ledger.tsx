@@ -13,8 +13,8 @@ const FILTERS: { id: "" | LedgerStatus; label: string }[] = [
 ];
 const PAGE = 25;
 
-function StatusTag({ l }: { l: LedgerLine }) {
-  const note = l.status === "pending" ? `Clears ${dayUTC(l.clearsAt)}` : l.status === "available" ? `${monthName(l.payoutMonth).split(" ")[0]} payout` : `${monthName(l.payoutMonth).split(" ")[0]} payout`;
+function StatusTag({ l, compact = false }: { l: LedgerLine; compact?: boolean }) {
+  const note = l.status === "pending" ? `Clears ${dayUTC(l.clearsAt)}` : `${monthName(l.payoutMonth).split(" ")[0]} payout`;
   return (
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[12.5px]">
       <i
@@ -23,7 +23,7 @@ function StatusTag({ l }: { l: LedgerLine }) {
         aria-hidden="true"
       />
       <b className="font-semibold">{STATUS_LABEL[l.status]}</b>
-      <span className="text-ink-2">{note}</span>
+      {!compact && <span className="text-ink-2">{note}</span>}
     </span>
   );
 }
@@ -100,16 +100,22 @@ export default function Ledger({ ledger }: { ledger: LedgerLine[] }) {
               {rows.slice(0, shown).map((l) => {
                 const buyer = [l.buyerFirst, l.buyerCity].filter(Boolean).join(", ");
                 return (
-                  <tr key={l.id} className="grid grid-cols-[40px_minmax(0,1fr)_auto] gap-x-3 gap-y-0.5 border-b border-line py-2.5 last:border-b-0 lg:table-row lg:py-0">
-                    <td className="hidden whitespace-nowrap py-2.5 pr-3 text-ink-2 lg:table-cell">{dayUTC(l.date)}</td>
-                    <td className="row-span-3 lg:hidden">
+                  <tr key={l.id} className="block border-b border-line py-2.5 last:border-b-0 lg:table-row lg:py-0">
+                    {/* phone: one compact card */}
+                    <td className="grid grid-cols-[40px_minmax(0,1fr)_auto] gap-x-3 lg:hidden">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      {l.imageUrl ? <img src={l.imageUrl} alt="" className="h-10 w-10 rounded-[3px] object-cover" /> : <span className="block h-10 w-10 rounded-[3px] bg-gallery" />}
+                      {l.imageUrl ? <img src={l.imageUrl} alt="" className="row-span-3 h-10 w-10 rounded-[3px] object-cover" /> : <span className="row-span-3 block h-10 w-10 rounded-[3px] bg-gallery" />}
+                      <b className="min-w-0 truncate font-semibold">{l.title}</b>
+                      <b className="text-right text-earned">+{usd(l.shareCents)}</b>
+                      <span className="min-w-0 truncate text-[12px] text-ink-2">{SIZE_LABEL[l.size]}{l.quantity > 1 ? ` ×${l.quantity}` : ""} · {dayUTC(l.date)} · {buyer}</span>
+                      <span className="text-right"><StatusTag l={l} compact /></span>
+                      <span className="col-span-2 text-[11.5px] text-ink-2">{usd(l.grossCents)} − {usd(l.printingCents)} printing − {usd(l.feesCents)} fees · {Math.round(l.split * 100)}%</span>
                     </td>
-                    <td className="min-w-0 lg:max-w-[240px] lg:py-2.5 lg:pr-3">
+                    <td className="hidden whitespace-nowrap py-2.5 pr-3 text-ink-2 lg:table-cell">{dayUTC(l.date)}</td>
+                    <td className="hidden max-w-[240px] py-2.5 pr-3 lg:table-cell">
                       <span className="flex min-w-0 items-center gap-2.5">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        {l.imageUrl && <img src={l.imageUrl} alt="" className="hidden h-8 w-8 shrink-0 rounded-[3px] object-cover lg:block" />}
+                        {l.imageUrl && <img src={l.imageUrl} alt="" className="h-8 w-8 shrink-0 rounded-[3px] object-cover" />}
                         <span className="min-w-0">
                           <b className="block truncate font-semibold">{l.title}</b>
                           <span className="block text-[12px] text-ink-2">{SIZE_LABEL[l.size]}{l.framed ? ", framed" : ""}{l.quantity > 1 ? ` ×${l.quantity}` : ""}</span>
@@ -121,14 +127,11 @@ export default function Ledger({ ledger }: { ledger: LedgerLine[] }) {
                     <td className="hidden py-2.5 pr-3 text-right text-ink-2 lg:table-cell">−{usd(l.printingCents)}</td>
                     <td className="hidden py-2.5 pr-3 text-right text-ink-2 lg:table-cell">−{usd(l.feesCents)}</td>
                     <td className="hidden py-2.5 pr-3 text-right lg:table-cell">{usd(l.profitCents)}</td>
-                    <td className="text-right lg:py-2.5 lg:pr-3">
+                    <td className="hidden py-2.5 pr-3 text-right lg:table-cell">
                       <b className="block text-earned">+{usd(l.shareCents)}</b>
                       <span className="text-[11.5px] text-ink-2">{Math.round(l.split * 100)}%</span>
                     </td>
-                    <td className="col-start-2 col-end-4 text-[12px] text-ink-2 lg:hidden">
-                      {dayUTC(l.date)} · {buyer} · {usd(l.grossCents)} − {usd(l.printingCents)} printing − {usd(l.feesCents)} fees
-                    </td>
-                    <td className="col-start-2 col-end-4 lg:whitespace-nowrap lg:py-2.5"><StatusTag l={l} /></td>
+                    <td className="hidden whitespace-nowrap py-2.5 lg:table-cell"><StatusTag l={l} /></td>
                   </tr>
                 );
               })}

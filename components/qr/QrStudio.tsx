@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Download, FileText, ImageIcon, Layers, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { Check, Download, FileText, ImageIcon, Layers, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { qrSVG } from "@/lib/qr/render";
 import { breakdown, money, SIZE_NAME, SIZE_INCHES, type SizeKey } from "@/lib/earnings";
 import { BrushStroke } from "@/components/af/Brush";
+import { PLACEHOLDER_CODE, shortLabel, shortUrl } from "@/lib/shortcode";
 import {
   BG, COLOR_NAMES, CTAS, DISCOUNTS, DOTS, EYE, EYES, FG, FORMATS, PRESETS, TAG,
-  cardSVG, contrast, ctaText, eyeColor, fmtDist, lum, presetLook, qrValue, renderCard, scanNumbers, sheetSVG,
+  cardSVG, contrast, eyeColor, fmtDist, lum, presetLook, qrValue, renderCard, scanNumbers, sheetSVG,
   type ArtInfo, type Card, type Design, type FormatKey, type PresetKey,
 } from "./card";
 import { loadFonts, type Fonts } from "./text";
@@ -16,20 +18,32 @@ import ArtPicker from "./ArtPicker";
 import s from "./qr-studio.module.css";
 
 type View = "card" | "wall" | "sheet";
+/** A short link code already saved for one artwork (opened from My codes). */
+export type SavedCode = { code: string; slug: string; label: string; expiresAt: string | null };
+const JSON_HEADERS = { "Content-Type": "application/json" };
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
-export default function QrStudio({ arts, initialSlug, initialDesign, initialCard, base }: {
+export default function QrStudio({ arts, initialSlug, initialDesign, initialCard, base, initialSaved = null }: {
   arts: ArtInfo[];
   initialSlug: string;
   initialDesign: Design;
   initialCard: { svg: string; sheet: string } | null;
   base: string;
+  initialSaved?: SavedCode | null;
 }) {
   const [slug, setSlug] = useState(initialSlug);
   const [d, setD] = useState<Design>(initialDesign);
   const [view, setView] = useState<View>("card");
   const [fonts, setFonts] = useState<Fonts | null>(null);
-  const [busy, setBusy] = useState<"" | "pdf" | "all" | "png">("");
+  const [busy, setBusy] = useState<"" | "pdf" | "all" | "png" | "svg" | "save">("");
+  // Short link codes saved this visit, by artwork. A code is made on the first download or "Save code";
+  // later downloads of the same piece update that code's record instead of making another.
+  const [codes, setCodes] = useState<Record<string, string>>(initialSaved ? { [initialSaved.slug]: initialSaved.code } : {});
+  const [label, setLabel] = useState(initialSaved?.label || "");
+  const [endDate, setEndDate] = useState(initialSaved?.expiresAt ? initialSaved.expiresAt.slice(0, 10) : "");
+  // What each saved code was last saved with, to tell "Saved" from "Save changes".
+  const [snaps, setSnaps] = useState<Record<string, string>>(() =>
+    initialSaved ? { [initialSaved.slug]: JSON.stringify([initialSaved.label || "", initialDesign, initialSaved.expiresAt ? initialSaved.expiresAt.slice(0, 10) : ""]) } : {});
   const customRef = useRef<HTMLInputElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -49,20 +63,9 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
   useEffect(() => { loadFonts().then(setFonts).catch(() => toast.error("Could not load the card fonts. Refresh to try again.")); }, []);
 
   const art = arts.find((a) => a.slug === slug) || arts[0];
-  // Discounts only work with a server-made signature, so ask for one whenever the deal changes.
-  const sigKey = d.disc ? `${art.slug}|${d.disc}|${d.ev.trim()}` : "";
-  const [sigs, setSigs] = useState<Record<string, string>>({});
-  useEffect(() => {
-    if (!sigKey || sigs[sigKey]) return;
-    const t = setTimeout(() => {
-      fetch("/api/qr/sign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug: art.slug, disc: d.disc, ev: d.ev }) })
-        .then((r) => (r.ok ? r.json() : null))
-        .then((j) => { if (j?.sig) setSigs((o) => ({ ...o, [sigKey]: j.sig })); })
-        .catch(() => {});
-    }, 250);
-    return () => clearTimeout(t);
-  }, [sigKey, sigs, art.slug, d.disc, d.ev]);
-  const qrText = qrValue(d, art.slug, base, sigKey ? sigs[sigKey] : null);
+  // The code holds only a short link. Before it's saved, the preview uses a same-length placeholder.
+  const code = codes[art.slug] || null;
+  const qrText = qrValue(d, art.slug, base, null, code || PLACEHOLDER_CODE);
   const card: Card | null = useMemo(() => (fonts ? renderCard(d, art, fonts, qrText) : null), [d, art, fonts, qrText]);
   const svg = card ? cardSVG(card) : initialCard?.svg || "";
 
@@ -71,6 +74,48 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
     setSlug(a.slug);
     try { const u = new URL(window.location.href); u.searchParams.set("art", a.slug); window.history.replaceState(null, "", u); } catch { /* ignore */ }
   };
+
+  // ---------------- short link code ----------------
+  const defaultLabel = d.ev.trim() || `${art.title} · ${FORMATS[d.format].name}`;
+  function expiresAt() {
+    if (d.end === "30") return new Date(Date.now() + 30 * 86400000).toISOString();
+    if (d.end === "event" && endDate) return new Date(`${endDate}T23:59:59`).toISOString();
+    return null;
+  }
+  const snapshot = JSON.stringify([label, d, endDate]);
+  const dirty = !!code && snaps[art.slug] !== undefined && snaps[art.slug] !== snapshot;
+  const codeMeta = () => ({ label: label.trim() || defaultLabel, venue: d.ev.trim() || null, discountPct: d.disc || null, expiresAt: expiresAt(), design: d });
+  /** Save (or update) this piece's code with the current look, venue, deal and end date. */
+  async function ensureCode(): Promise<string | null> {
+    const existing = codes[art.slug];
+    const snap = snapshot;
+    try {
+      const r = await fetch(existing ? `/api/qr/codes/${existing}` : "/api/qr/codes", {
+        method: existing ? "PATCH" : "POST",
+        headers: JSON_HEADERS,
+        body: JSON.stringify(existing ? codeMeta() : { artworkSlug: art.slug, ...codeMeta() }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j?.error || "save failed");
+      const c: string = existing || j.code;
+      setCodes((o) => ({ ...o, [art.slug]: c }));
+      setSnaps((o) => ({ ...o, [art.slug]: snap }));
+      return c;
+    } catch (e) {
+      toast.error(e instanceof Error && e.message !== "save failed" ? e.message : "Couldn't save the code. Try again.");
+      return null;
+    }
+  }
+  async function saveCode() {
+    setBusy("save");
+    const c = await ensureCode();
+    setBusy("");
+    if (c) toast.success(`Saved as ${c}`, { description: "Change it any time in My codes." });
+  }
+  function newCode() {
+    setCodes((o) => { const n = { ...o }; delete n[art.slug]; return n; });
+    setLabel("");
+  }
 
   // ---------------- downloads ----------------
   const fileBase = `${art.slug}-${d.format}`;
@@ -83,31 +128,49 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
   async function downloadPdf(all = false) {
     setBusy(all ? "all" : "pdf");
     try {
-      const r = await fetch("/api/qr/print", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(all ? { all: true, design: d } : { slug: art.slug, design: d }) });
+      let body: Record<string, unknown>;
+      if (all) {
+        const m = codeMeta();
+        body = { all: true, design: d, venue: m.venue, discountPct: m.discountPct, expiresAt: m.expiresAt };
+      } else {
+        const c = await ensureCode();
+        if (!c) return;
+        body = { slug: art.slug, design: d, code: c };
+      }
+      const r = await fetch("/api/qr/print", { method: "POST", headers: JSON_HEADERS, body: JSON.stringify(body) });
       if (!r.ok) throw new Error(await r.text());
       save(await r.blob(), all ? `artfinity-all-codes-${d.format}.pdf` : `${fileBase}-sheet.pdf`);
+      if (all) toast.success(`Made ${r.headers.get("X-Af-Codes") || arts.length} codes`, { description: "One per piece. See them in My codes.", action: { label: "My codes", onClick: () => { window.location.href = "/studio/codes"; } } });
     } catch {
       toast.error("The PDF didn't download. Try again.");
     } finally { setBusy(""); }
   }
-  function downloadSvg() {
-    if (!card) return;
-    save(new Blob([`<?xml version="1.0" encoding="UTF-8"?>\n${cardSVG(card)}`], { type: "image/svg+xml" }), `${fileBase}.svg`);
+  async function downloadSvg() {
+    if (!fonts) return;
+    setBusy("svg");
+    try {
+      const c = await ensureCode();
+      if (!c) return;
+      const out = renderCard(d, art, fonts, shortUrl(c, base));
+      save(new Blob([`<?xml version="1.0" encoding="UTF-8"?>\n${cardSVG(out)}`], { type: "image/svg+xml" }), `${fileBase}.svg`);
+    } finally { setBusy(""); }
   }
   async function downloadPng() {
     setBusy("png");
     try {
-      const code = qrSVG(qrText, { fg: d.fg, dots: d.dots, eyes: d.eyes, eyeColor: eyeColor(d), label: "QR code", logo: d.logo }).replace("<svg ", '<svg width="1200" height="1200" ');
+      const c = await ensureCode();
+      if (!c) return;
+      const code = qrSVG(shortUrl(c, base), { fg: d.fg, dots: d.dots, eyes: d.eyes, eyeColor: eyeColor(d), label: "QR code", logo: d.logo }).replace("<svg ", '<svg width="1200" height="1200" ');
       const img = new Image();
       const url = URL.createObjectURL(new Blob([code], { type: "image/svg+xml" }));
       await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = rej; img.src = url; });
-      const c = document.createElement("canvas");
-      c.width = c.height = 1200;
-      const g = c.getContext("2d")!;
+      const cv = document.createElement("canvas");
+      cv.width = cv.height = 1200;
+      const g = cv.getContext("2d")!;
       g.fillStyle = d.bg; g.fillRect(0, 0, 1200, 1200); g.drawImage(img, 0, 0, 1200, 1200);
       URL.revokeObjectURL(url);
-      const blob = await new Promise<Blob | null>((res) => c.toBlob(res, "image/png"));
-      if (blob) save(blob, `${art.slug}-code.png`);
+      const blob = await new Promise<Blob | null>((res) => cv.toBlob(res, "image/png"));
+      if (blob) save(blob, `${art.slug}-${c}.png`);
     } catch {
       toast.error("The PNG didn't download. Try again.");
     } finally { setBusy(""); }
@@ -154,18 +217,12 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
 
           <Group title="Discount" dab="#ff5a36">
             <label className={s.field}>For people who scan
-              <select value={d.disc} onChange={(e) => {
-                const v = +e.target.value;
-                set({ disc: v, coupon: /^SCAN\d*$/.test(d.coupon) || !d.coupon ? (v ? `SCAN${v}` : "") : d.coupon });
-              }}>
+              <select value={d.disc} onChange={(e) => set({ disc: +e.target.value })}>
                 {DISCOUNTS.map((v) => <option key={v} value={v}>{v ? `${v}% off` : "No discount"}</option>)}
               </select>
             </label>
             {d.disc > 0 && (
               <>
-                <label className={s.field}>Name in your stats
-                  <input type="text" maxLength={16} value={d.coupon} onChange={(e) => set({ coupon: e.target.value.toUpperCase().replace(/\s+/g, "") })} />
-                </label>
                 <div className={s.sub}>Tag color</div>
                 <Swatches label="Tag color" list={TAG} value={d.tag} onPick={(c) => set({ tag: c })} fg={d.fg} />
               </>
@@ -189,6 +246,10 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
           </Group>
 
           <Group title="Behind the code" dab="#0f7a55">
+            <label className={s.field}>Name it
+              <input type="text" maxLength={60} value={label} placeholder={defaultLabel} onChange={(e) => setLabel(e.target.value)} />
+              <small>Only you see this, in My codes.</small>
+            </label>
             <label className={s.field}>Event or venue
               <input type="text" maxLength={32} value={d.ev} placeholder="River Arts Market" onChange={(e) => set({ ev: e.target.value })} />
               <small>Shows in your stats and on the buyer&rsquo;s page.</small>
@@ -206,6 +267,12 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
                 <option value="30">30 days after printing</option>
               </select>
             </label>
+            {d.end === "event" && (
+              <label className={s.field}>Last day of the event
+                <input type="date" value={endDate} min={new Date().toISOString().slice(0, 10)} onChange={(e) => setEndDate(e.target.value)} />
+                <small>{endDate ? "Scans after this open your page instead." : "Pick a day, or the code keeps working."}</small>
+              </label>
+            )}
           </Group>
         </form>
 
@@ -221,11 +288,15 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
                 {busy === "pdf" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <FileText className="h-4 w-4" aria-hidden="true" />}
                 Download PDF
               </button>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={downloadSvg} disabled={!card || !!busy}>
-                <Download className="h-4 w-4" aria-hidden="true" /> SVG
+              <button type="button" className="btn btn-ghost btn-sm" onClick={downloadSvg} disabled={!fonts || !!busy}>
+                {busy === "svg" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Download className="h-4 w-4" aria-hidden="true" />} SVG
               </button>
               <button type="button" className="btn btn-ghost btn-sm" onClick={downloadPng} disabled={!!busy} title="The code alone, 1200 px">
                 {busy === "png" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <ImageIcon className="h-4 w-4" aria-hidden="true" />} Code PNG
+              </button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={saveCode} disabled={!!busy} title="Save the code without downloading">
+                {busy === "save" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : code && !dirty ? <Check className="h-4 w-4" aria-hidden="true" /> : null}
+                {code ? (dirty ? `Save changes · ${code}` : `Saved · ${code}`) : "Save code"}
               </button>
             </div>
           </div>
@@ -267,18 +338,26 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
             <Earnings d={d} art={art} />
             <section className={cx(s.panel, s.wide)} aria-labelledby="qs-inside-h">
               <h2 id="qs-inside-h"><span className="paint-dab" style={{ ["--dab" as string]: "#2b37f0" }} aria-hidden="true" />What&rsquo;s inside the code</h2>
-              <a className={s.link} href={qrText} target="_blank" rel="noreferrer">{qrText}</a>
+              <a className={s.link} href={code ? shortUrl(code, base) : undefined} target="_blank" rel="noreferrer" aria-disabled={!code || undefined}>
+                {code ? shortLabel(code, base) : shortLabel("····", base)}
+              </a>
               <dl className={s.record}>
+                <dt>Code</dt><dd>{code ? <b>{code}</b> : "Made when you download or save"}</dd>
                 <dt>Opens</dt><dd>{art.title}</dd>
                 <dt>Venue</dt><dd>{d.ev.trim() ? <>{d.ev.trim()}{d.evPrint ? "" : " (not printed)"}</> : "None"}</dd>
-                <dt>Discount</dt><dd>{d.disc ? <>{d.disc}% off at checkout{d.coupon ? ` · ${d.coupon}` : ""}</> : "None"}</dd>
-                <dt>Words</dt><dd>{ctaText(d)}</dd>
+                <dt>Discount</dt><dd>{d.disc ? <>{d.disc}% off at checkout</> : "None"}</dd>
+                <dt>Ends</dt><dd>{d.end === "never" ? "Never" : d.end === "30" ? "30 days after printing" : endDate ? new Date(`${endDate}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "When the event ends"}</dd>
                 <dt>Look</dt><dd>{F.name} · {DOTS[d.dots]} dots · {EYES[d.eyes]} corners</dd>
               </dl>
               <p className={s.soon}>
-                <span className="sticker-badge">Short links coming soon</span>
-                <span>Then you can change the deal, size ({SIZE_NAME[d.size]} first) and end date ({d.end === "never" ? "never" : d.end === "event" ? "event ends" : "30 days"}) after printing.</span>
+                <span className="sticker-badge">Editable any time</span>
+                <span>The code holds only a short link. Change the artwork, deal, venue or end date after printing{code ? <> in <Link href={`/studio/codes/${code}`} className="font-bold text-scan">My codes</Link></> : " in My codes"}.</span>
               </p>
+              {code && (
+                <button type="button" className="btn btn-ghost btn-sm justify-self-start" onClick={newCode}>
+                  <Plus className="h-4 w-4" aria-hidden="true" /> New code for this piece
+                </button>
+              )}
             </section>
           </div>
         </div>

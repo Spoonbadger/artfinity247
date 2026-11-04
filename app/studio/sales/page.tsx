@@ -13,9 +13,6 @@ export const metadata = { title: "Sales" };
 const monthKey = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: STUDIO_TZ, year: "numeric", month: "2-digit" });
 const monthName = (d: Date) => d.toLocaleDateString("en-US", { timeZone: STUDIO_TZ, month: "long", year: "numeric" });
 const shortDate = (d: Date) => d.toLocaleDateString("en-US", { timeZone: STUDIO_TZ, month: "short", day: "numeric", year: "numeric" });
-/** Payouts are booked by UTC calendar month ("2026-10"), same as the admin payout pages. */
-const utcMonth = (d: Date) => d.toISOString().slice(0, 7);
-const utcMonthName = (k: string) => new Date(`${k}-15T12:00:00Z`).toLocaleDateString("en-US", { timeZone: "UTC", month: "long", year: "numeric" });
 
 type Extra = { expenses: number; email: string; first: string; city: string };
 
@@ -29,7 +26,6 @@ async function getExtras(artistId: string) {
     },
   });
   const extras = new Map<string, Extra>();
-  const owed = new Map<string, number>();
   for (const it of items) {
     const b = itemBreakdown({ ...it, orderDate: it.order.createdAt });
     const name = (it.order.shippingName || "").trim();
@@ -39,27 +35,13 @@ async function getExtras(artistId: string) {
       first: name ? name.split(/\s+/)[0] : "Buyer",
       city: cityOf(it.order.shippingAddress).split(",")[0] || "",
     });
-    const k = utcMonth(it.order.createdAt);
-    owed.set(k, (owed.get(k) || 0) + b.artistShare);
   }
-  return { extras, owed };
+  return { extras };
 }
 
 export default async function SalesPage({ searchParams }: { searchParams: { month?: string } }) {
   const artist = await requireArtist("/studio/sales");
-  const [allSales, { extras, owed }, payoutRows] = await Promise.all([
-    getSales(artist.id),
-    getExtras(artist.id),
-    prisma.payout.findMany({ where: { artistId: artist.id }, select: { month: true, amountCents: true, paidAt: true } }),
-  ]);
-  const currentUtc = utcMonth(new Date());
-  const payouts = Array.from(new Set([...owed.keys(), ...payoutRows.map((p) => p.month)]))
-    .sort((a, b) => b.localeCompare(a))
-    .map((k) => {
-      const row = payoutRows.find((p) => p.month === k);
-      const paid = !!row?.paidAt;
-      return { key: k, name: utcMonthName(k), owed: paid ? row!.amountCents : owed.get(k) || 0, paid, paidAt: row?.paidAt || null, open: k >= currentUtc };
-    });
+  const [allSales, { extras }] = await Promise.all([getSales(artist.id), getExtras(artist.id)]);
   const month = /^\d{4}-\d{2}$/.test(searchParams.month || "") ? searchParams.month! : null;
   const sales = month ? allSales.filter((s) => monthKey(s.date) === month) : allSales;
 
@@ -83,9 +65,12 @@ export default async function SalesPage({ searchParams }: { searchParams: { mont
       title="Sales"
       sub="You get 60% of profit on orders from Oct 21, 2026. 50% before that."
       actions={
+        <>
+        <Link href="/studio/money" className="btn btn-ghost">Money</Link>
         <a href={`/api/my-sales/export${month ? `?year=${month.slice(0, 4)}` : ""}`} className="btn btn-ghost" download>
           <Download className="h-4 w-4" aria-hidden="true" />Export CSV{month ? ` (${month.slice(0, 4)})` : ""}
         </a>
+        </>
       }
     >
       <section aria-label="Totals" className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
@@ -135,33 +120,10 @@ export default async function SalesPage({ searchParams }: { searchParams: { mont
               ))}
             </ul>
           </section>
-          {payouts.length > 0 && (
-            <section className="af-card grid gap-3 p-4 sm:p-5" aria-labelledby="payouts-h">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h2 id="payouts-h" className="text-[20px] font-bold">Payouts</h2>
-                <span className="text-[12.5px] text-ink-2">Paid after each month closes.</span>
-              </div>
-              <ul className="grid">
-                {payouts.map((p) => (
-                  <li key={p.key} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-line py-2.5 first:border-t-0">
-                    <span className="min-w-[140px] font-semibold">{p.name}</span>
-                    <span className="ml-auto flex items-center gap-3">
-                      <b className="num text-[16px] text-earned">{usd(p.owed)}</b>
-                      {p.paid ? (
-                        <span className="num rounded-full bg-earned-soft px-2.5 py-0.5 text-[12.5px] font-semibold text-earned">
-                          Paid {p.paidAt!.toLocaleDateString("en-US", { timeZone: STUDIO_TZ, month: "short", day: "numeric", year: "numeric" })}
-                        </span>
-                      ) : p.open ? (
-                        <span className="rounded-full bg-wall px-2.5 py-0.5 text-[12.5px] font-semibold text-ink-2">In progress</span>
-                      ) : (
-                        <span className="rounded-full bg-sticker/50 px-2.5 py-0.5 text-[12.5px] font-semibold">Unpaid</span>
-                      )}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+          <Link href="/studio/money" className="af-card flex items-center justify-between gap-3 p-4 text-[15px] font-bold text-ink no-underline hover:border-ink sm:p-5">
+            <span className="flex items-center gap-2.5"><i className="paint-dab" style={{ ["--dab" as string]: "#0f7a55" }} />Payouts and balance</span>
+            <span className="text-scan">Money →</span>
+          </Link>
           </div>
 
           <section className="af-card min-w-0 p-4 sm:p-5" aria-labelledby="orders-h">

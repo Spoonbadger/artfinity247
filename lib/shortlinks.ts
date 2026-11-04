@@ -62,6 +62,20 @@ export async function createQrCode(input: CodeInput) {
   throw new Error("Could not create a short code");
 }
 
+/**
+ * A plain code for an artwork (no venue, discount or end date), reused if one exists. For quick prints that
+ * don't go through QR Studio (the "artwork is live" email, gallery labels from My art), so opening those
+ * PDFs again doesn't pile up codes.
+ */
+export async function ensureArtworkCode(artistId: string, artworkId: string, label: string, design?: unknown) {
+  const found = await prisma.qrCode.findFirst({
+    where: { artistId, artworkId, active: true, venue: null, discountPct: null, expiresAt: null },
+    orderBy: { createdAt: "asc" },
+    select: { code: true },
+  });
+  return found?.code ?? (await createQrCode({ artistId, artworkId, label: label.slice(0, 60), design })).code;
+}
+
 const resolveSelect = {
   id: true, code: true, artistId: true, artworkId: true, venue: true, discountPct: true, active: true, expiresAt: true, label: true,
   artist: { select: { slug: true } },
@@ -80,6 +94,25 @@ export type ResolvedCode = NonNullable<Awaited<ReturnType<typeof resolveCode>>>;
 /** Active and not past its end date. */
 export function isLive(c: { active: boolean; expiresAt: Date | null }, now = new Date()) {
   return c.active && (!c.expiresAt || c.expiresAt.getTime() > now.getTime());
+}
+
+/** A code counts for an artwork when it's live and points at that artwork, or at the artwork's artist (artist-page codes). */
+export function codeAppliesTo(qr: { active: boolean; expiresAt: Date | null; artworkId: string | null; artistId: string }, art: { id: string; artistId: string }) {
+  if (!isLive(qr)) return false;
+  return qr.artworkId ? qr.artworkId === art.id : qr.artistId === art.artistId;
+}
+
+/** Last scanned code, so an artist-page code still counts when the visitor clicks through to a piece. */
+export const CODE_COOKIE = "af_qc";
+
+/** The trusted code for this artwork page: ?c= first, then the last-scanned cookie. */
+export async function codeForArt(param: unknown, cookieCode: string | null | undefined, art: { id: string; artistId: string }) {
+  for (const raw of [Array.isArray(param) ? param[0] : param, cookieCode]) {
+    if (!normalizeCode(raw)) continue;
+    const qr = await resolveCode(raw).catch(() => null);
+    if (qr && codeAppliesTo(qr, art)) return qr;
+  }
+  return null;
 }
 
 // ---------------- scans ----------------

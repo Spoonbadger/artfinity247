@@ -8,6 +8,8 @@ import { getArtistTrust } from "@/lib/artistTrust";
 import ProCard from "@/components/pro/ProCard";
 import { getArtistPlan } from "@/components/pro/plan.server";
 import { prisma } from "@/lib/prisma";
+import { getBalance } from "@/lib/balance";
+import BalanceChip from "@/components/money/BalanceChip";
 import { requireArtist, firstName, getSales, getArtworks, dayKey, serverGreeting, timeAgo, SIZE_LABEL, STUDIO_TZ, usd } from "./_lib/data";
 
 export const dynamic = "force-dynamic";
@@ -28,12 +30,13 @@ export default async function StudioHome() {
   const artist = await requireArtist("/studio");
   const now = new Date();
   const since = new Date(now.getTime() - 30 * DAY);
-  const [allSales, artworks, trust, ver, plan] = await Promise.all([
+  const [allSales, artworks, trust, ver, plan, balance] = await Promise.all([
     getSales(artist.id),
     getArtworks(artist.id),
     getArtistTrust(artist.id),
     prisma.artist.findUnique({ where: { id: artist.id }, select: { verification: true } }),
     getArtistPlan(artist.id),
+    getBalance(artist.id, now),
   ]);
   const sales = allSales.filter((s) => s.date >= since);
 
@@ -88,6 +91,8 @@ export default async function StudioHome() {
           <span className="sticker-badge absolute right-2 top-2 text-[11px]">Preview</span>
         </div>
       </section>
+
+      <BalanceChip b={balance} />
 
       <MedalProgress trust={trust} verification={ver?.verification ?? "NONE"} />
 

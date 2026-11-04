@@ -1,4 +1,5 @@
 import { verifyScan } from "@/lib/scanSign";
+import { codeAppliesTo, resolveCode } from "@/lib/shortlinks";
 import Stripe from "stripe";
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
@@ -34,6 +35,7 @@ type Line = {
   unit: number; // cents, what the buyer pays per print
   discountPct: number;
   venue: string | null;
+  qrCodeId: string | null; // the short link code this sale came through (OrderItem.qrCodeId)
 };
 
 /** Price every line from the DB. Client prices and titles are ignored. */
@@ -58,16 +60,21 @@ async function buildLines(items: any[]): Promise<Line[]> {
       // Only approved work can be bought (PENDING and REJECTED are skipped).
       if (!art || art.status !== "APPROVED") return null;
 
-      // Scan discount from the printed code: 5–30%, and only with a valid signature (lib/scanSign.ts).
+      // Scan discount. Short link codes (/q/CODE) are looked up: the discount and venue come from the code's record,
+      // and only when it's live and belongs to this artwork (or its artist). Older printed codes carry a signed
+      // ?off= instead: 5–30%, and only with a valid signature (lib/scanSign.ts).
+      const qr = p.code ? await resolveCode(p.code) : null;
+      const byCode = qr && codeAppliesTo(qr, art) ? qr : null;
       const offRaw = parseDiscount(p.discountPct);
-      const discountPct = offRaw && verifyScan(slug, offRaw, parseVenue(p.venue), p.discountSig) ? offRaw : 0;
+      const discountPct = byCode ? parseDiscount(byCode.discountPct) || 0 : offRaw && verifyScan(slug, offRaw, parseVenue(p.venue), p.discountSig) ? offRaw : 0;
+      const venue = byCode ? byCode.venue : parseVenue(p.venue);
       const { list } = priceFor(art, size, frameChosen, 0);
       const unit = applyDiscount(list, discountPct);
       const quantity = Math.max(1, Math.min(10, Math.round(Number(item?.quantity ?? p.quantity ?? 1)) || 1));
 
       return {
         art: { id: art.id, slug: art.slug!, title: art.title, imageUrl: art.imageUrl, artistId: art.artistId, artistName: art.artist?.artist_name || art.artist?.name || "", editionSize: art.editionSize ?? null },
-        size, frameChosen, frameColor, quantity, list, unit, discountPct, venue: parseVenue(p.venue),
+        size, frameChosen, frameColor, quantity, list, unit, discountPct, venue, qrCodeId: byCode?.id ?? null,
       };
     }),
   );
@@ -129,6 +136,7 @@ export async function POST(req: Request) {
             discountPct: String(l.discountPct || 0),
             listPrice: String(l.list),
             venue: l.venue ?? "",
+            qrCodeId: l.qrCodeId ?? "",
           },
         },
       },
@@ -201,6 +209,7 @@ async function devCheckout(lines: Line[], email: string | undefined, buyer: { na
             websiteCost: b.websiteCost,
             editionNumber: numbers[i],
             artistSplit: splits[i],
+            qrCodeId: l.qrCodeId,
           };
         }),
       });

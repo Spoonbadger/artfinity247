@@ -20,6 +20,7 @@ export const STUDIO_NAV = [
   { href: "/studio/customers", label: "Customers", dab: "#c98a5a" },
   { href: "/studio/events", label: "Events", dab: "#7b2d8e" },
   { href: "/studio/sales", label: "Sales", dab: "#0f7a55" },
+  { href: "/studio/money", label: "Money", dab: "#0f7a55" },
   { href: "/studio/page", label: "My page", dab: "#15161b" },
   { href: "/studio/infinity", label: "Infinity plan", dab: "#e3b23c" },
 ];

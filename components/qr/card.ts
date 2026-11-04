@@ -4,6 +4,7 @@ import { qrSVG, qrMatrix, type DotStyle, type EyeStyle } from "@/lib/qr/render";
 import { MARK_BOX, markPaths } from "@/lib/brand/mark";
 import { basePrices } from "@/lib/artwork_price";
 import { money, type SizeKey } from "@/lib/earnings";
+import { shortUrl } from "@/lib/shortcode";
 import { type Fonts, text, fit, fitBlock, capHeight, width, arcText, arcWidth, blockH } from "./text";
 
 // ---------------- options ----------------
@@ -120,9 +121,13 @@ export function ctaText(d: Design) {
   return CTAS.find((c) => c[0] === d.cta)?.[1] || "Scan to buy";
 }
 
-/** What the code holds, until short links exist: the artwork page plus scan context. */
-/** The URL a code holds. A discount only works with its server-made signature `sig` (lib/scanSign.ts). */
-export function qrValue(d: Pick<Design, "ev" | "disc">, slug: string, base: string, sig?: string | null) {
+/**
+ * The URL a code holds. With a saved short link `code`: `${base}/Q/${CODE}` in capitals (QR alphanumeric mode, the
+ * smallest code), and everything behind it stays editable. Without one: the older signed artwork link, kept so codes
+ * printed before short links still work (a discount only counts with its server-made signature `sig`, lib/scanSign.ts).
+ */
+export function qrValue(d: Pick<Design, "ev" | "disc">, slug: string, base: string, sig?: string | null, code?: string | null) {
+  if (code) return shortUrl(code, base);
   const u = new URL(`/art/${encodeURIComponent(slug)}`, base);
   if (d.ev.trim()) u.searchParams.set("at", d.ev.trim());
   if (d.disc) u.searchParams.set("off", String(d.disc));

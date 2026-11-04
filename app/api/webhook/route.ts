@@ -165,6 +165,8 @@ export async function POST(req: NextRequest) {
             laborCost: b.laborCost,
             websiteCost: b.websiteCost,
             artistSplit: splits[idx],
+            // Short link code the sale came through (checked at checkout, carried in metadata)
+            qrCodeId: product?.metadata?.qrCodeId || null,
           }
         })
 

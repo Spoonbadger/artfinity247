@@ -4,7 +4,7 @@
 //   ended or inactive  → 302 /@handle?expired=1
 //   live               → record the scan (in the background), 302 /art/<slug>?c=<CODE> or /@handle?c=<CODE>
 import { NextRequest, NextResponse } from "next/server";
-import { isLive, newVisitorId, recordScanLater, resolveCode, scanContext, validVisitorId, VISITOR_COOKIE } from "@/lib/shortlinks";
+import { CODE_COOKIE, isLive, newVisitorId, recordScanLater, resolveCode, scanContext, validVisitorId, VISITOR_COOKIE } from "@/lib/shortlinks";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -25,6 +25,9 @@ export async function GET(req: NextRequest, { params }: { params: { code: string
 
   const art = qr.artwork && qr.artwork.status === "APPROVED" && qr.artwork.slug ? qr.artwork : null;
   const res = go(req, art ? `/art/${encodeURIComponent(art.slug!)}?c=${qr.code}` : `/@${handle}?c=${qr.code}`);
+
+  // Remember the code for a week so a sale a few clicks later is still credited to it.
+  res.cookies.set(CODE_COOKIE, qr.code, { httpOnly: true, sameSite: "lax", secure: req.nextUrl.protocol === "https:", path: "/", maxAge: 60 * 60 * 24 * 7 });
 
   const ctx = scanContext(req.headers);
   if (!ctx.bot) {

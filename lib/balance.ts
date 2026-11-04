@@ -53,6 +53,8 @@ export type LedgerLine = {
   buyerCity: string;
   /** Opaque key for repeat-buyer counts (hash of the order email); never the email itself. */
   buyerKey: string;
+  /** Where the sale came from: the printed code's label or venue (OrderItem.qrCodeId), else null. */
+  source: string | null;
   grossCents: number;
   printingCents: number;
   feesCents: number;
@@ -158,7 +160,7 @@ export async function getBalance(artistId: string, now: Date = new Date()): Prom
       where: { artwork: { artistId }, order: { paymentStatus: "paid", kind: { not: "bulk" } } },
       select: {
         id: true, title: true, slug: true, size: true, frameChosen: true, quantity: true, unitPrice: true,
-        lineTotal: true, imageUrl: true, artistSplit: true,
+        lineTotal: true, imageUrl: true, artistSplit: true, qrCodeId: true,
         artwork: { select: { title: true, slug: true, imageUrl: true } },
         order: { select: { id: true, createdAt: true, email: true, shippingName: true, shippingAddress: true } },
       },
@@ -166,6 +168,13 @@ export async function getBalance(artistId: string, now: Date = new Date()): Prom
     }),
     prisma.payout.findMany({ where: { artistId }, select: { month: true, amountCents: true, paidAt: true } }),
   ]);
+
+  // Scan attribution: name each code by the artist's label, else its venue, else its short code.
+  const codeIds = Array.from(new Set(items.map((i) => i.qrCodeId).filter((x): x is string => !!x)));
+  const codes = codeIds.length
+    ? await prisma.qrCode.findMany({ where: { id: { in: codeIds } }, select: { id: true, code: true, label: true, venue: true } })
+    : [];
+  const codeName = new Map(codes.map((c) => [c.id, c.label?.trim() || c.venue?.trim() || `Code ${c.code}`]));
 
   const currentMonth = utcMonth(now);
   const paid = new Map(payoutRows.filter((p) => p.paidAt).map((p) => [p.month, p]));
@@ -193,6 +202,7 @@ export async function getBalance(artistId: string, now: Date = new Date()): Prom
       quantity,
       buyerFirst: name ? name.split(/\s+/)[0] : "Buyer",
       buyerCity: cityOnly(it.order.shippingAddress),
+      source: it.qrCodeId ? codeName.get(it.qrCodeId) || "QR code" : null,
       buyerKey: createHash("sha256").update(it.order.email.trim().toLowerCase()).digest("hex").slice(0, 12),
       grossCents,
       printingCents: b.itemCost + b.shippingCost,

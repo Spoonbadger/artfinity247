@@ -1,4 +1,6 @@
 import { verifyScan } from "@/lib/scanSign";
+import { cookies } from "next/headers";
+import { codeForArt, CODE_COOKIE } from "@/lib/shortlinks";
 import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -58,6 +60,12 @@ export default async function ArtPage({ params, searchParams }: Props) {
   // Buyers only see approved work; the artist and admins can preview anything.
   if (!art || (art.status !== "APPROVED" && !isOwner)) notFound();
 
+  // Short link (?c=K7P2 from /q/K7P2): venue and discount come from the code's DB record, so they're trusted.
+  // An artist-page code scanned earlier (cookie) still counts on that artist's other pieces.
+  const qr = await codeForArt(searchParams.c, cookies().get(CODE_COOKIE)?.value, art);
+  const venue = qr ? qr.venue : parseVenue(searchParams.at);
+  const pct = qr ? qr.discountPct ?? 0 : scanPct;
+
   const trustP = getArtistTrust(art.artistId);
   const moreRows = await prisma.artwork.findMany({
     where: { artistId: art.artistId, id: { not: art.id }, status: "APPROVED", slug: { not: null } },
@@ -95,9 +103,10 @@ export default async function ArtPage({ params, searchParams }: Props) {
         sensitive: m.sensitive ?? [],
         fromCents: priceFor(m, "small").list,
       }))}
-      venue={parseVenue(searchParams.at)}
-      pct={scanPct}
-      sig={scanPct ? String(searchParams.s) : null}
+      venue={venue}
+      pct={pct}
+      sig={!qr && scanPct ? String(searchParams.s) : null}
+      code={qr?.code ?? null}
       isOwner={isOwner}
       status={art.status}
       trust={await trustP}

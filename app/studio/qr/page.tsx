@@ -1,19 +1,24 @@
-import { signedQrValue } from "@/lib/scanSign";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { StudioPage } from "@/components/studio/StudioPage";
 import QrStudio from "@/components/qr/QrStudio";
-import { DEFAULT_DESIGN, PRESETS, cardSVG, presetLook, qrValue, renderCard, sheetSVG, type ArtInfo, type Design, type PresetKey } from "@/components/qr/card";
+import { DEFAULT_DESIGN, DISCOUNTS, PRESETS, cardSVG, presetLook, qrValue, renderCard, sanitizeDesign, sheetSVG, type ArtInfo, type Design, type PresetKey } from "@/components/qr/card";
+import { PLACEHOLDER_CODE, normalizeCode } from "@/lib/shortcode";
 import { loadFonts } from "@/components/qr/text";
 import { requireArtist, displayName } from "../_lib/data";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "QR codes" };
 
-export default async function QrPage({ searchParams }: { searchParams: { art?: string; preset?: string } }) {
-  const want = typeof searchParams.art === "string" ? searchParams.art : "";
-  const artist = await requireArtist(`/studio/qr${want ? `?art=${encodeURIComponent(want)}` : ""}`);
+export default async function QrPage({ searchParams }: { searchParams: { art?: string; preset?: string; code?: string } }) {
+  const artist = await requireArtist("/studio/qr");
+  // ?code=K7P2 (from My codes) reopens a saved code: its artwork, look, venue and deal.
+  const wantCode = normalizeCode(searchParams.code);
+  const saved = wantCode
+    ? await prisma.qrCode.findFirst({ where: { code: wantCode, artistId: artist.id }, select: { code: true, label: true, venue: true, discountPct: true, expiresAt: true, design: true, artwork: { select: { slug: true } } } })
+    : null;
+  const want = saved?.artwork?.slug || (typeof searchParams.art === "string" ? searchParams.art : "");
 
   const rows = await prisma.artwork.findMany({
     where: { artistId: artist.id, status: "APPROVED", slug: { not: null } },
@@ -47,22 +52,31 @@ export default async function QrPage({ searchParams }: { searchParams: { art?: s
   const base = process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com";
   // ?preset=market (from /studio/bulk "matching QR hang tags") opens on that look.
   const presetKey = typeof searchParams.preset === "string" && searchParams.preset in PRESETS ? (searchParams.preset as PresetKey) : null;
-  const design: Design = presetKey ? { ...DEFAULT_DESIGN, ...presetLook(presetKey), preset: presetKey } : DEFAULT_DESIGN;
+  let design: Design = presetKey ? { ...DEFAULT_DESIGN, ...presetLook(presetKey), preset: presetKey } : DEFAULT_DESIGN;
+  const savedCode = saved && saved.artwork?.slug === slug
+    ? { code: saved.code, slug, label: saved.label || "", expiresAt: saved.expiresAt ? saved.expiresAt.toISOString() : null }
+    : null;
+  if (savedCode && saved) {
+    const d = saved.design ? sanitizeDesign(saved.design) : design;
+    // The record is the truth for venue and deal; the card's tag can only show the Studio's discount steps.
+    const disc = saved.discountPct && DISCOUNTS.includes(saved.discountPct) ? saved.discountPct : saved.discountPct ? d.disc : 0;
+    design = { ...d, ev: saved.venue || "", disc };
+  }
 
   // First paint: the server draws the default card so there's no empty stage while fonts load.
   let initialCard: { svg: string; sheet: string } | null = null;
   try {
     const fonts = await loadFonts();
     const art = arts.find((a) => a.slug === slug)!;
-    const card = renderCard(design, art, fonts, await signedQrValue(design, slug, base));
+    const card = renderCard(design, art, fonts, qrValue(design, slug, base, null, savedCode?.code ?? PLACEHOLDER_CODE));
     initialCard = { svg: cardSVG(card), sheet: sheetSVG(card, design.format) };
   } catch (e) {
     console.error("QR first paint failed", e);
   }
 
   return (
-    <StudioPage title="QR codes" sub="Pick a piece. Pick a look. Print. Every code here really scans.">
-      <QrStudio arts={arts} initialSlug={slug} initialDesign={design} initialCard={initialCard} base={base} />
+    <StudioPage title="QR codes" sub="Pick a piece. Pick a look. Print. Every code here really scans." actions={<Link href="/studio/codes" className="btn btn-ghost btn-sm">My codes</Link>}>
+      <QrStudio arts={arts} initialSlug={slug} initialDesign={design} initialCard={initialCard} base={base} initialSaved={savedCode} />
     </StudioPage>
   );
 }

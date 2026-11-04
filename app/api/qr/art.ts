@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import type { ArtInfo } from "@/components/qr/card";
 
 export const artSelect = {
-  slug: true, title: true, imageUrl: true, artistId: true, status: true, sensitive: true,
+  id: true, slug: true, title: true, imageUrl: true, artistId: true, status: true, sensitive: true,
   markupSmall: true, markupMedium: true, markupLarge: true, markupXl: true,
   artist: { select: { name: true, artist_name: true } },
 } as const;
