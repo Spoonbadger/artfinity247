@@ -124,11 +124,12 @@ export default async function ArtistPage({ params }: Props) {
           <aside className="grid content-start gap-7">
             <div className="grid grid-cols-[auto_auto_minmax(0,1fr)] gap-x-7 gap-y-4">
               <Stat value={artist.works.length} label={artist.works.length === 1 ? "work" : "works"} dab="#f7c8a8" />
-              <Stat value={artist.sales} label={artist.sales === 1 ? "sale" : "sales"} dab="var(--af-sticker)" />
+              {artist.sales > 0 ? <Stat value={artist.sales} label={artist.sales === 1 ? "sale" : "sales"} dab="var(--af-sticker)" /> : null}
               {cityShort ? <Stat value={cityShort} label="city" dab="#b8c4ff" /> : null}
             </div>
 
-            {artist.bio && <p className="text-[15px] leading-relaxed text-ink-2">{artist.bio}</p>}
+            {/* The header already shows the first sentence; repeat the bio here only when there is more to it. */}
+            {artist.bio && artist.bio.replace(/[.!?]\s*$/, "").trim() !== tagline && <p className="text-[15px] leading-relaxed text-ink-2">{artist.bio}</p>}
 
             {venues.length > 0 && (
               <section aria-labelledby="in-person" className="grid gap-2.5">

@@ -14,7 +14,7 @@ const HANG = ["left-[8%] top-[18%] w-[27%] -rotate-[2deg]", "left-[38%] top-[10%
 
 export default async function ScenesPage() {
   const cities = await getCities();
-  const withArt = await Promise.all(cities.map(async (c) => ({ ...c, art: (await getArt({ city: c.slug, perPage: 3 })).art })));
+  const withArt = await Promise.all(cities.map(async (c) => ({ ...c, art: (await getArt({ city: c.slug, perPage: 12 })).art.sort((a, b) => a.sensitive.length - b.sensitive.length).slice(0, 3) })));
 
   return (
     <div className="pb-20">

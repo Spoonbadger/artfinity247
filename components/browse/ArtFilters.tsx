@@ -6,7 +6,7 @@ import { Search } from "lucide-react";
 type City = { slug: string; label: string; pieces: number };
 
 /** Plain GET form so it works without JS; selects submit on change. */
-export default function ArtFilters({ action = "/art", q, city, sort, cities, showCity = true }: { action?: string; q?: string; city?: string; sort?: string; cities: City[]; showCity?: boolean }) {
+export default function ArtFilters({ action = "/art", q, city, sort, cities, showCity = true, placeholder = "Search art, artists, cities" }: { action?: string; q?: string; city?: string; sort?: string; cities: City[]; showCity?: boolean; placeholder?: string }) {
   const form = useRef<HTMLFormElement>(null);
   const submit = () => form.current?.requestSubmit();
   const select = "w-full min-w-0 cursor-pointer appearance-none rounded-full border-2 border-ink bg-white bg-[length:12px] bg-[right_14px_center] bg-no-repeat py-2 pl-4 pr-9 text-[15px] font-semibold text-ink outline-none focus-visible:border-scan";
@@ -16,7 +16,7 @@ export default function ArtFilters({ action = "/art", q, city, sort, cities, sho
       <label className="col-span-2 flex min-w-0 items-center gap-2 rounded-full border-2 border-ink bg-white px-4 py-2 focus-within:border-scan md:w-72">
         <Search className="h-4 w-4 shrink-0 text-ink-2" aria-hidden="true" />
         <span className="sr-only">Search art</span>
-        <input name="q" type="search" defaultValue={q} placeholder="Search art, artists, cities" className="w-full min-w-0 border-0 bg-transparent p-0 text-[15px] text-ink outline-none placeholder:text-ink-2" />
+        <input name="q" type="search" defaultValue={q} placeholder={placeholder} className="w-full min-w-0 border-0 bg-transparent p-0 text-[15px] text-ink outline-none placeholder:text-ink-2" />
       </label>
       {showCity && (
         <label className="min-w-0">

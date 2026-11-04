@@ -22,7 +22,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
       <PageHead
         eyebrow="Search"
         title={q ? <>“{q.length > 22 ? q.slice(0, 22) + "…" : q}”</> : "Find art"}
-        sub={q ? <><span className="num">{total}</span> {total === 1 ? "piece" : "pieces"}, <span className="num">{artists.length}</span> {artists.length === 1 ? "artist" : "artists"}.</> : "Search titles, artists and cities."}
+        sub={q ? <><span className="num">{total}</span> {total === 1 ? "piece" : "pieces"}{artists.length > 0 && <>, <span className="num">{artists.length}</span> {artists.length === 1 ? "artist" : "artists"}</>}.</> : "Search titles, artists and cities."}
       />
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
         <form action="/search" method="get" role="search" className="max-w-xl">
