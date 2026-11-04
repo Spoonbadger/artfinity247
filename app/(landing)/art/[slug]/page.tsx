@@ -1,385 +1,90 @@
-"use client";
+import type { Metadata, Viewport } from "next";
+import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { getUserFromCookie } from "@/lib/auth";
+import ScanView from "@/components/art/ScanView";
+import { parseDiscount, parseVenue, priceFor } from "@/components/art/pricing";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import InnerImageZoom from "react-inner-image-zoom";
-import "react-inner-image-zoom/lib/InnerImageZoom/styles.css"
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
-import { useCart, useUser } from "@/components/contexts";
-import { CheckCircle, StarIcon } from "lucide-react";
-import { MaxWidthWrapper } from "@/components/layout";
-import { Label, Radio, RadioGroup } from "@headlessui/react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import ProductQuantityInput from "@/components/ProductQuantityInput";
-import {
-  getAppConfigs,
-  getAppPages,
-  getCollectionData,
-  getReviews,
-  getSeller,
-} from "@/db/query";
-import {
-  ProductType,
-  ReviewType,
-  UserType,
-} from "@/types/db";
-import { formatCurrency } from "@/lib/formatters";
-import { getProduct } from '@/lib/api'
-import { getFinalPrice } from '@/lib/artwork_price'
-import Link from 'next/link'
+export const dynamic = "force-dynamic";
 
-type PrintSize = "small" | "medium" | "large" | "xl"
+// viewport-fit=cover so the sticky buy bar can sit above the iPhone home indicator
+export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#ffffff" };
 
-const SIZE_DIMENSIONS: Record<PrintSize, string> = {
-  small: "5×7 in",
-  medium: "8×12 in",
-  large: "11×17 in",
-  xl: "18x24 in",
-  // xxl: "24x32 in",
+type Props = { params: { slug: string }; searchParams: Record<string, string | string[] | undefined> };
+
+const artSelect = {
+  id: true,
+  slug: true,
+  title: true,
+  description: true,
+  imageUrl: true,
+  status: true,
+  sensitive: true,
+  artistId: true,
+  markupSmall: true,
+  markupMedium: true,
+  markupLarge: true,
+  markupXl: true,
+  artist: { select: { id: true, slug: true, name: true, artist_name: true, profileImage: true, city: true, state: true } },
+} as const;
+
+async function loadArt(rawSlug: string) {
+  const slug = decodeURIComponent(rawSlug);
+  return prisma.artwork.findUnique({ where: { slug }, select: artSelect });
 }
 
-const SIZES: PrintSize[] = ["small", "medium", "large", "xl"]
-// const SIZES: PrintSize[] = ["small", "medium", "large", "XL", "XXL"]
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const art = await loadArt(params.slug).catch(() => null);
+  if (!art || art.status === "REJECTED") return { title: "Not found" };
+  const name = art.artist.artist_name || art.artist.name;
+  return {
+    title: `${art.title} by ${name}`,
+    description: `Buy a print of ${art.title} by ${name}. Free US shipping, made to order.`,
+    openGraph: { title: `${art.title} by ${name}`, images: art.imageUrl ? [{ url: art.imageUrl }] : undefined },
+  };
+}
 
+export default async function ArtPage({ params, searchParams }: Props) {
+  const [art, user] = await Promise.all([loadArt(params.slug), getUserFromCookie()]);
+  const isOwner = !!user && !!art && (user.id === art.artistId || user.role === "ADMIN");
+  if (!art || (art.status === "REJECTED" && !isOwner)) notFound();
 
-type ParamsPropsType = {
-  slug: string;
-};
+  const moreRows = await prisma.artwork.findMany({
+    where: { artistId: art.artistId, id: { not: art.id }, status: { not: "REJECTED" }, slug: { not: null } },
+    orderBy: { createdAt: "desc" },
+    take: 8,
+    select: { slug: true, title: true, imageUrl: true, sensitive: true, markupSmall: true, markupMedium: true, markupLarge: true, markupXl: true },
+  });
 
-const AppConfigs = getAppConfigs()
-const AppPages = getAppPages()
-
-const ProductPage = ({ params }: { params: ParamsPropsType }) => {
-  const { slug: encodedSlug } = params
-  const slug = decodeURIComponent(params.slug)
-
-  const router = useRouter()
-  const { addToCart } = useCart()
-
-  const { title, carousels, sections } = AppPages.product;
-  const { slug: productsPageSlug } = AppPages.products;
-
-  const currency = AppConfigs?.currency.code || "USD";
-  const priceFloatPoints = AppConfigs?.product_price_float_points ?? 2
-
-  const [product, setProduct] = useState<ProductType | null>(null);
-  // const [reviews, setReviews] = useState<ReviewType[]>([]);
-  const [selectedSize, setSelectedSize] = useState<PrintSize>('medium')
-  const [quantity, setQuantity] = useState<number>(1);
-  const [purchaseNote, setPurchaseNote] = useState<string>("");
-
-  const [price, setPrice] = useState<number>(0);
-
-  const minQuantity = 1;
-  const maxQuantity = product?.available;
-
-  const [frameChosen, setFrameChosen] = useState(false)
-  const [frameColor, setFrameColor] = useState<"white" | "black" | "natural">("black")
-
-  useEffect(() => {
-    if (slug) {
-      const fetchProduct = async () => {
-        const fetchedProduct = await getProduct({ slug })
-
-        if (!fetchedProduct) {
-          router.push("/")
-          return
-        }
-        setProduct(fetchedProduct)
-      }
-      fetchProduct()
-    }
-
-    const purchaseNote = AppPages.product.purchase_note;
-    setPurchaseNote((prev) => purchaseNote || "");
-  }, [slug, router])
-
-  // Update price on size change
-  useEffect(() => {
-    if (!product) return
-
-    const markup =
-      selectedSize === "small"
-        ? Number(product.markupSmall ?? 0)
-        : selectedSize === "medium"
-        ? Number(product.markupMedium ?? 0)
-        : selectedSize === "large"
-        ? Number(product.markupLarge ?? 0)
-        : Number(product.markupXl ?? 0)
-
-    const finalPrice = getFinalPrice(selectedSize, markup, frameChosen)
-
-    setPrice(Number.isFinite(finalPrice) ? finalPrice : 0)
-  }, [selectedSize, product, frameChosen])
-
-  const artist = product ? (product as any).artist : null;
-  const artistName = artist?.artist_name || artist?.name || "";
-
-  // Add to cart
-  const handleAddToCart = () => {
-    if (!product) return
-
-    addToCart(
-      {
-        id: product.id,
-        slug: product.slug,
-        title: product.title,
-        artist: artistName || "",
-        imageUrl: product.imageUrl,
-        selectedSize, 
-        unitPrice: price, // In cents
-        frameChosen,
-        frameColor: frameChosen ? frameColor: null,
-      },
-      quantity
-    )
-    toast.success("Product added to cart")
-    router.push(`/${AppPages.cart.slug || "cart"}`)
-  }
-
-  const handleBuyNow = async () => {
-    if (!product) return
-
-    const items = [
-      {
-        id: product.id,
-        slug: product.slug,
-        title: product.title,
-        artist: artistName || "",
-        imageUrl: product.imageUrl,
-        selectedSize,
-        unitPrice: price,
-        quantity,
-        frameChosen,
-        frameColor: frameChosen ? frameColor: null,
-      },
-    ]
-
-    try {
-      const res = await fetch("/api/create-checkout-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: items.map(i => ({
-            product: i,
-            quantity: i.quantity
-          }))
-        })
-      })
-
-      if (!res.ok) throw new Error(await res.text())
-      const { url } = await res.json()
-
-      window.location.href = url
-    } catch (err) {
-      console.error("Buy Now failed", err)
-      toast.error("Could not Buy Now, try add to cart")
-    }
-  }
-
-  // Is Owner
-  const { currentUser } = useUser();
-
-  const [isOwner, setIsOwner] = useState(false);
-
-  useEffect(() => {
-    if (!currentUser || !product) {
-      setIsOwner(false);
-      return;
-    }
-
-    const byId = currentUser.id === (product as any).artistId;
-    setIsOwner(byId);
-  }, [currentUser, product]);
+  const a = art.artist;
+  const place = [a.city, a.state].filter(Boolean).join(", ") || null;
 
   return (
-    <>
-      <title>{`${title || "Artwork"} - ${product?.title || "Info"}: ${
-        AppConfigs.app_name
-      }`}</title>
-      <section>
-        <MaxWidthWrapper className="mx-auto py-8">
-          {product && (
-              <div className="relative flex flex-col gap-8 md:flex-row">
-                {/* Product Media */}
-                <div className="area-media max-h-fit w-full md:w-1/2">
-                  <div className="sticky left-0 top-0 select-none md:py-4">
-                    <InnerImageZoom
-                      src={product.imageUrl}
-                      width={500}
-                      height={500}
-                      className="area-image mx-auto max-h-96 rounded-sm object-contain md:max-h-[80vh]"
-                    />
-                  </div>
-                </div>
-                {(isOwner || currentUser?.role === "ADMIN") && (
-                  <div className="absolute top-2 right-2 flex gap-2">
-
-                    {/* QR actions */}
-                    <button
-                      className="text-xs px-2 py-1 bg-slate-700 text-white rounded"
-                      onClick={() => window.open(`/api/artworks/${product.slug}/qr`, '_blank', 'noopener')}
-                    >
-                      View QR
-                    </button>
-
-                    <button
-                      className="text-xs px-2 py-1 bg-slate-900 text-white rounded"
-                      onClick={() => window.open(`/api/artworks/${product.slug}/qr?download=1`, '_blank', 'noopener')}
-                    >
-                      Download QR
-                    </button>
-                  </div>
-                )}
-                {/* Product Info */}
-                <div className="w-full md:w-1/2">
-                  <div className="space-y-4 md:py-4">
-                    <div className="product-info-header space-y-1">
-                      <h5 className="seller-name font-tertiary text-sm font-normal capitalize text-muted-foreground md:text-base">
-                        <Link
-                          href={`/artists/${artist?.slug}`}
-                          className="hover:underline hover:text-theme-secondary-600 transition"
-                        >
-                          {artistName}
-                        </Link>
-                      </h5>
-
-                      <h1 className="area-title product-title font-semibold capitalize text-theme-secondary-500">
-                        {product.title}
-                      </h1>
-
-                      <div className="product-price pt-2 font-primary text-foreground">
-                        <span className="price text-xl md:text-3xl text-theme-secondary-600">
-                          {formatCurrency((price * quantity) / 100, currency, priceFloatPoints)}
-                        </span>
-                      </div>
-                      <div className="product-price pt-0 font-primary text-foreground">
-                        <div className="mt-0">
-                          {/* <Badge className="bg-red-300 text-white font-semibold px-3 py-1">
-                            FREE SHIPPING
-                          </Badge> */}
-                          <p className="text-xs text-muted-foreground mt-0">
-                            Free shipping and no hidden fees at checkout.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                        {/* Radio buttons for size options */}
-                    <div className="product-size-options space-y-3">
-                      <RadioGroup className="mb-2 text-base font-bold uppercase text-theme-secondary-600">Choose Size</RadioGroup>
-                      <RadioGroup value={selectedSize} onChange={setSelectedSize}>
-                        <div className="flex flex-wrap gap-2">
-                          {SIZES.map((size) => (
-                            <Radio
-                              key={size}
-                              value={size}
-                              className="group relative isolate flex items-start gap-2 rounded-lg border border-theme-secondary-500 bg-background p-2 text-theme-secondary-600 shadow-md transition focus:outline-none data-[checked]:bg-theme-secondary-500 data-[checked]:text-background data-[focus]:outline-1 data-[focus]:outline-theme-primary w-28"
-                            >
-                              <div className="flex flex-col leading-tight">
-                                <span className="font-semibold capitalize">{size}</span>
-                                <span className="text-xs opacity-80">{SIZE_DIMENSIONS[size]}</span>
-                              </div>
-
-                              <CheckCircle className="absolute right-1 top-1 h-4 w-4 !text-background opacity-0 transition group-data-[checked]:opacity-100" />
-                            </Radio>
-                          ))}
-                        </div>
-                      </RadioGroup>
-                    </div>
-                    <div className="space-y-3">
-                      <label className="flex items-center gap-2 text-lg font-medium text-theme-secondary-600">
-                        <input
-                          type="checkbox"
-                          checked={frameChosen}
-                          onChange={(e) => setFrameChosen(e.target.checked)}
-                        />
-                        ← Add frame
-                      </label>
-
-                      {frameChosen && (
-                        <div className="space-y-3">
-                          <p className="text-sm font-medium text-theme-secondary-600">
-                            Frame color
-                          </p>
-
-                          <div className="flex items-start gap-4">
-                            {/* Color buttons */}
-                            <div className="flex flex-wrap gap-2">
-                              {(["black", "white", "natural"] as const).map((color) => (
-                                <button
-                                  key={color}
-                                  type="button"
-                                  onClick={() => setFrameColor(color)}
-                                  className={cn(
-                                    "rounded border px-3 py-2 text-sm capitalize",
-                                    frameColor === color
-                                      ? "border-theme-secondary-600 bg-theme-secondary-500 text-white"
-                                      : "border-theme-secondary-300 bg-white text-theme-secondary-600"
-                                  )}
-                                >
-                                  {color}
-                                </button>
-                              ))}
-                            </div>
-
-                            {/* Frame preview image */}
-                            <img
-                              src="/assets/images/frame-options.webp"
-                              alt="Frame color options"
-                              className="w-20 h-auto rounded-md border object-contain"
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div className="product-quantity text-theme-secondary-600">
-                        <ProductQuantityInput
-                          title="Quantity"
-                          quantity={quantity}
-                          setQuantity={setQuantity}
-                          minQuantity={minQuantity}
-                          maxQuantity={maxQuantity}
-                        />
-                    </div>
-
-                    <div className="purchase-note">
-                      <p
-                        className="text-xs italic leading-loose"
-                        dangerouslySetInnerHTML={{
-                          __html: purchaseNote,
-                        }}
-                      ></p>
-                    </div>
-                    <div className={cn("grid grid-cols-1 items-center gap-2")}>
-                        <>
-                          <Button
-                            variant="outline"
-                            className="w-full max-w-md border-theme-secondary-600 font-semibold text-theme-secondary-500"
-                            onClick={handleAddToCart}
-                          >
-                            Add to Cart
-                          </Button>
-                          <Button
-                            className="w-full max-w-md font-semibold"
-                            onClick={handleBuyNow}
-                          >
-                            Buy Now
-                          </Button>
-                        </>
-                    </div>
-                    <p className="area-text mb-2 text-lg text-gray-600">
-                      {product.description}
-                    </p>
-                  </div>
-                </div>
-              </div>
-          )}
-        </MaxWidthWrapper>
-      </section>
-    </>
-  )
+    <ScanView
+      art={{
+        id: art.id,
+        slug: art.slug!,
+        title: art.title,
+        description: art.description,
+        imageUrl: art.imageUrl,
+        sensitive: art.sensitive ?? [],
+        approved: art.status === "APPROVED",
+        markupSmall: art.markupSmall ?? 0,
+        markupMedium: art.markupMedium ?? 0,
+        markupLarge: art.markupLarge ?? 0,
+        markupXl: art.markupXl ?? 0,
+      }}
+      artist={{ id: a.id, slug: a.slug, name: a.artist_name || a.name, avatar: a.profileImage || null, place }}
+      more={moreRows.map((m) => ({
+        slug: m.slug!,
+        title: m.title,
+        imageUrl: m.imageUrl,
+        sensitive: m.sensitive ?? [],
+        fromCents: priceFor(m, "small").list,
+      }))}
+      venue={parseVenue(searchParams.at)}
+      pct={parseDiscount(searchParams.off)}
+      isOwner={isOwner}
+    />
+  );
 }
-
-export default ProductPage

@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic"
 
+// Public listings only ever show approved work (pending/rejected stay private).
+const PUBLIC = { status: "APPROVED" as const }
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -19,6 +22,7 @@ export async function GET(req: NextRequest) {
         SELECT a.*, ar."name" as "artistName", ar."slug" as "artistSlug"
         FROM "Artwork" a
         LEFT JOIN "Artist" ar ON a."artistId" = ar."id"
+        WHERE a."status" = 'APPROVED'
         ORDER BY RANDOM()
         LIMIT ${limit} OFFSET ${skip}
       `)
@@ -30,7 +34,7 @@ export async function GET(req: NextRequest) {
         },
       }))
 
-      total = await prisma.artwork.count()
+      total = await prisma.artwork.count({ where: PUBLIC })
     } else {
       let orderBy: any = { createdAt: "desc" } // default newest
       if (sort === "oldest") orderBy = { createdAt: "asc" };
@@ -42,12 +46,12 @@ export async function GET(req: NextRequest) {
       [artworks, total] = await Promise.all([
         prisma.artwork.findMany({
           skip,
-          // where: { status: "APPROVED" },
+          where: PUBLIC,
           take: limit,
           orderBy,
           include: { artist: { select: { name: true, slug: true } } },
         }),
-        prisma.artwork.count(),
+        prisma.artwork.count({ where: PUBLIC }),
       ]);
     }
 

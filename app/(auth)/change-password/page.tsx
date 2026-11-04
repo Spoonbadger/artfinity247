@@ -1,32 +1,15 @@
-"use client";
+import { Suspense } from "react";
+import type { Metadata } from "next";
+import ChangePasswordForm from "@/components/auth/ChangePasswordForm";
 
-import { ReactNode, useEffect, useState } from "react";
-import { MaxWidthWrapper } from "@/components/layout";
-import { ChangePasswordForm } from "@/components/forms";
-import { getAppConfigs, getAppPages } from "@/db/query";
+export const metadata: Metadata = { title: "Change password" };
 
-const AppConfigs = getAppConfigs();
-const AppPages = getAppPages();
-
-const ChangePasswordPage = (): ReactNode => {
-  const [title, setTitle] = useState<string>("");
-
-  useEffect(() => {
-    const { title } = AppPages.change_password;
-
-    setTitle((prev) => title);
-  }, []);
-
+export default function Page() {
   return (
-    <div>
-      <title>{`${title || "Change Password"}: ${AppConfigs.app_name}`}</title>
-      <MaxWidthWrapper className="p-5 md:py-20">
-        <div className="mx-auto max-w-[600px] rounded-sm border-theme-primary-100 md:border md:p-8">
-          <ChangePasswordForm title={title || "Change Password"} />
-        </div>
-      </MaxWidthWrapper>
+    <div className="pt-4 sm:pt-10">
+      <Suspense>
+        <ChangePasswordForm />
+      </Suspense>
     </div>
   );
-};
-
-export default ChangePasswordPage;
+}

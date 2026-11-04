@@ -1,34 +1,32 @@
 import { NextRequest } from 'next/server'
 import { Stripe } from 'stripe'
 import { prisma } from "@/lib/prisma"
-import { sendReceiptEmail } from "@/lib/email"
-import { resend } from "@/lib/resend"
-import NewSaleNotificationEmail from "@/emails/NewSaleNotificationEmail"
-import ArtistSaleNotificationEmail from "@/emails/ArtistSaleNotificationEmail"
-import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
+import { calcItemProfitCents } from "@/lib/revenue"
+import { normalizeSize } from "@/lib/sales"
+import { sendOrderNotifications } from "@/lib/orderNotifications"
 
 export const dynamic = "force-dynamic"
-
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-08-27.basil',
-})
 export const runtime = 'nodejs'
 
-function normalizeSize(raw: string | null): PrintSize {
-  const v = (raw || "").toUpperCase()
-  if (v.startsWith("S")) return "S"
-  if (v.startsWith("XL")) return "XL"
-  if (v.startsWith("L")) return "L"
-  return "M"
+// Created lazily so the route can load (and reject bad requests) without Stripe keys, e.g. locally.
+let stripeClient: Stripe | null = null
+function getStripe() {
+  if (!stripeClient) {
+    stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: '2025-08-27.basil',
+    })
+  }
+  return stripeClient
 }
 
 
 export async function POST(req: NextRequest) {
   const rawBody = await req.text()
-  const sig = req.headers.get('stripe-signature')!
+  const sig = req.headers.get('stripe-signature')
+  if (!sig || !process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
+    return new Response('Webhook error: missing signature or Stripe configuration', { status: 400 })
+  }
+  const stripe = getStripe()
 
   let event: Stripe.Event
   try {
@@ -96,170 +94,74 @@ export async function POST(req: NextRequest) {
       })
 
       const existingItems = await prisma.orderItem.count({
-          where: { orderId: order.id },
-        })
-
-        if (existingItems > 0 && order.receiptSentAt) {
-          console.log("Order already processed:", order.id)
-          return new Response(null, { status: 200 })
-        }
-      // 2) Get line items with product expanded (so product.metadata is available)
-      const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
-        expand: ['data.price.product'],
-      })
-
-      // 3) Map each line item → OrderItem
-      const itemsToCreate = lineItems.data.map((li) => {
-      const product = li.price?.product as Stripe.Product | null
-      const unit = li.price?.unit_amount ?? 0
-      const qty = li.quantity ?? 1
-      const rawSize = product?.metadata?.size || 'medium'
-
-      const sizeNorm = normalizeSize(rawSize)
-      const lineTotal = unit * qty
-
-      const frameChosen = product?.metadata?.frameChosen === "true"
-      const rawFrameColor = product?.metadata?.frameColor || ""
-      const frameColor =
-        frameChosen && ["black", "white", "natural"].includes(rawFrameColor)
-          ? rawFrameColor
-          : null
-      const b = calcItemProfitCents({
-        lineTotal,
-        size: sizeNorm,
-        frameChosen,
-        quantity: qty,
-        orderDate: order.createdAt,
-      })
-
-      return {
-        orderId: order.id,
-        artworkId: product?.metadata?.artworkId ?? null,
-        slug: product?.metadata?.slug || '',
-        size: sizeNorm,
-        frameChosen,
-        frameColor,
-        unitPrice: unit,
-        quantity: qty,
-        lineTotal,
-        title: product?.metadata?.title || li.description || null,
-        artistName: product?.metadata?.artistName || null,
-        imageUrl: product?.metadata?.imageUrl || null,
-
-        printCost: b.printCost,
-        shippingCost: b.shippingCost,
-        laborCost: b.laborCost,
-        websiteCost: b.websiteCost,
-      }
-    })
-
-    if (existingItems === 0 && itemsToCreate.length > 0) {
-      await prisma.orderItem.createMany({ data: itemsToCreate })
-    }
-
-    if (!order.adminNotificationSentAt) {
-      try {
-        const rawItems = await prisma.orderItem.findMany({
-          where: { orderId: order.id },
-          select: {
-            title: true,
-            size: true,
-            quantity: true,
-            unitPrice: true,
-          },
-        })
-
-        const items = rawItems.map((i: any) => ({
-          title: i.title ?? "",
-          size: i.size ?? "",
-          quantity: i.quantity ?? 1,
-          unitPrice: i.unitPrice ?? 0,
-        }))
-
-        await resend.emails.send({
-          from: "Artfinity <notifications@theartfinity.com>",
-          to: "craig@theartfinity.com",
-          subject: `New Sale – $${((order.amountTotal ?? 0)/100).toFixed(2)}`,
-          react: NewSaleNotificationEmail({
-            orderId: order.id,
-            buyerEmail: order.email,
-            totalCents: order.amountTotal ?? 0,
-            items,
-          }),
-        })
-      } catch (err) {
-        console.error("Admin sale email failed", err)
-        }
-      } // Close admin notification condition
-      await sleep(1001)
-    
-
-      if (!order.artistNotificationsSentAt) {
-      // Get items with artist IDs
-      const soldItems = await prisma.orderItem.findMany({
         where: { orderId: order.id },
-        include: {
-          artwork: {
-            include: {
-              artist: true,
-            },
-          },
-        },
       })
 
-      // Group by artist (important if multi-artist order later)
-      const byArtist = new Map()
-
-      for (const item of soldItems) {
-        const artist = item.artwork?.artist
-        if (!artist) continue
-
-        if (!byArtist.has(artist.id)) {
-          byArtist.set(artist.id, {
-            artist,
-            items: [],
-          })
-        }
-
-        byArtist.get(artist.id).items.push({
-          title: item.title ?? "",
-          size: item.size ?? "",
-          quantity: item.quantity ?? 1,
-          lineTotal: item.lineTotal ?? 0,
+      // 2) Create items once (a retry finds them already there)
+      if (existingItems === 0) {
+        // Line items with product expanded (so product.metadata is available)
+        const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
+          expand: ['data.price.product'],
         })
-      }
 
-      // Send one email per artist
-      for (const { artist, items } of byArtist.values()) {
-        try {
-          const { error } = await resend.emails.send({
-            from: "Artfinity <notifications@theartfinity.com>",
-            to: artist.email,
-            subject: "Your artwork sold on Artfinity!",
-            react: ArtistSaleNotificationEmail({
-              artistName: artist.artist_name ?? "Artist",
-              items,
-              totalCents: items.reduce(
-                (sum: number, i: any) => sum + i.lineTotal,
-                0
-              ),
-            }),
+        const itemsToCreate = lineItems.data.map((li) => {
+          const product = li.price?.product as Stripe.Product | null
+          const unit = li.price?.unit_amount ?? 0
+          const qty = li.quantity ?? 1
+          const rawSize = product?.metadata?.size || 'medium'
+
+          const sizeNorm = normalizeSize(rawSize)
+          const lineTotal = unit * qty
+
+          const frameChosen = product?.metadata?.frameChosen === "true"
+          const rawFrameColor = product?.metadata?.frameColor || ""
+          const frameColor =
+            frameChosen && ["black", "white", "natural"].includes(rawFrameColor)
+              ? rawFrameColor
+              : null
+          const b = calcItemProfitCents({
+            lineTotal,
+            size: sizeNorm,
+            frameChosen,
+            quantity: qty,
+            orderDate: order.createdAt,
           })
 
-          if (error) throw error
-        } catch (err) {
-          console.error("Artist sale email failed", err)
+          return {
+            orderId: order.id,
+            artworkId: product?.metadata?.artworkId ?? null,
+            slug: product?.metadata?.slug || '',
+            size: sizeNorm,
+            frameChosen,
+            frameColor,
+            unitPrice: unit,
+            quantity: qty,
+            lineTotal,
+            title: product?.metadata?.title || li.description || null,
+            artistName: product?.metadata?.artistName || null,
+            imageUrl: product?.metadata?.imageUrl || null,
+
+            printCost: b.printCost,
+            shippingCost: b.shippingCost,
+            laborCost: b.laborCost,
+            websiteCost: b.websiteCost,
+          }
+        })
+
+        if (itemsToCreate.length > 0) {
+          await prisma.orderItem.createMany({ data: itemsToCreate })
         }
       }
-      await sleep(1001)
 
-      // Send receipt (idempotent inside helper via receiptSentAt)
-      try {
-        await sendReceiptEmail(order.id)
-      } catch (e) {
-        console.error("Email send failed (non-blocking):", e)
+      // 3) Emails: admin, each artist, buyer receipt. Each kind is sent at most
+      //    once per order (tracked by adminNotificationSentAt /
+      //    artistNotificationsSentAt / receiptSentAt), so Stripe retries are safe.
+      if (order.adminNotificationSentAt && order.artistNotificationsSentAt && order.receiptSentAt) {
+        console.log("Order already processed:", order.id)
+      } else {
+        const sent = await sendOrderNotifications(order.id)
+        console.log("Order notifications", order.id, sent)
       }
-    }
     } catch (err) {
       console.error('❌ Error persisting order:', err)
       return new Response('Order processing failed', { status: 500 })

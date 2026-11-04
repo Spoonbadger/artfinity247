@@ -1,200 +1,78 @@
-"use client";
-
-import { ReactNode, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { MaxWidthWrapper } from "@/components/layout";
-import { MinimalSection } from "@/components/sections";
-import { ProductCard } from "@/components/cards";
-import PageBreadcrumb from "@/components/PageBreadcrumb";
-import Pagination from "@/components/CustomPagination";
-import { getAppConfigs, getAppPages } from "@/db/query";
-import { ProductType } from "@/types";
+import ArtFilters from "@/components/browse/ArtFilters";
+import { ArtGrid } from "@/components/browse/ArtCard";
+import PageHead, { EmptyCanvas, Pager } from "@/components/browse/PageHead";
+import { getArt, getCities, type ArtSort } from "@/components/browse/data";
 
-const AppConfigs = getAppConfigs();
-const AppPages = getAppPages();
+export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Browse art", description: "Prints of original art from independent artists, made to order." };
 
-const ArtsPage = (): ReactNode => {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+const SORTS: ArtSort[] = ["newest", "price-asc", "price-desc"];
 
-  const queryPageKey = AppConfigs.pagination_query_key || "page";
+export default async function ArtPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
+  const q = (searchParams.q || "").trim().slice(0, 80) || undefined;
+  const city = searchParams.city || undefined;
+  const sort = SORTS.includes(searchParams.sort as ArtSort) ? (searchParams.sort as ArtSort) : "newest";
+  const page = Math.max(1, parseInt(searchParams.page || "1", 10) || 1);
 
-  const {
-    title,
-    banner,
-    items_limit,
-    slug: productsPageSlug,
-  } = AppPages.products;
+  const [{ art, total, pages }, cities] = await Promise.all([getArt({ q, city, sort, page }), getCities()]);
+  const cityName = cities.find((c) => c.slug === city)?.label;
 
-  const [totalProducts, setTotalProducts] = useState<number>(0);
-  const [paginatedProducts, setPaginatedProducts] = useState<ProductType[]>([]);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [itemsPerPage, setItemsPerPage] = useState<number>(items_limit || 10);
-  const [loading, setLoading] = useState(true)
-  const [sort, setSort] = useState("newest")
-
-
-  useEffect(() => {
-    const run = async () => {
-      setLoading(true);
-      try {
-        const page = parseInt(searchParams.get(queryPageKey) || "1", 10);
-        const limit = items_limit || 12;
-
-        const res = await fetch(`/api/artworks?page=${page}&limit=${limit}&sort=${sort}`, {
-          cache: "no-store",
-        });
-
-        if (res.ok) {
-          const { artworks, total } = await res.json();
-          setPaginatedProducts(artworks);
-          setTotalProducts(total ?? artworks.length);
-          setCurrentPage(page);
-          setItemsPerPage(limit);
-        } else {
-          setPaginatedProducts([]);
-          setTotalProducts(0);
-        }
-      } catch {
-        setPaginatedProducts([]);
-        setTotalProducts(0);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    run();
-  }, [searchParams, items_limit, queryPageKey, sort])
-
-
-  useEffect(() => {
-    setItemsPerPage(items_limit);
-
-    const queryPage = parseInt(searchParams.get(queryPageKey) || "1", 10);
-    setCurrentPage(queryPage > 0 ? queryPage : 1);
-  }, [searchParams, queryPageKey, items_limit])
-
-  useEffect(() => {
-  const run = async () => {
-    const page = parseInt(searchParams.get(queryPageKey) || "1", 10);
-    const limit = items_limit || 12;
-
-    try {
-      const res = await fetch(`/api/artworks?page=${page}&limit=${limit}`, {
-        cache: "no-store",
-      });
-
-      if (!res.ok) {
-        // If your API currently requires auth or returns a different shape,
-        // you’ll see it here. We’ll adjust after this step if needed.
-        setPaginatedProducts([]);
-        setTotalProducts(0);
-        setCurrentPage(page);
-        setItemsPerPage(limit);
-        return;
-      }
-
-      const { artworks, total } = await res.json()
-      setPaginatedProducts(artworks);
-      setTotalProducts(total ?? artworks.length);
-      setCurrentPage(page);
-      setItemsPerPage(limit);
-    } catch {
-      setPaginatedProducts([]);
-      setTotalProducts(0);
-      setCurrentPage(1);
-    }
+  const build = (o: { city?: string; page?: number }) => {
+    const s = new URLSearchParams();
+    if (q) s.set("q", q);
+    if (o.city) s.set("city", o.city);
+    if (sort !== "newest") s.set("sort", sort);
+    if (o.page && o.page > 1) s.set("page", String(o.page));
+    const str = s.toString();
+    return str ? `/art?${str}` : "/art";
   };
-
-  run();
-  // dependencies: rerun when the query string page changes or items_limit changes
-}, [searchParams, items_limit, queryPageKey])
-
-
-  const handlePageChange = (page: number) => {
-    if (page > 0 && page <= Math.ceil(totalProducts / itemsPerPage)) {
-      router.push(`?${queryPageKey}=${page}`);
-    } else {
-      router.push(`?${queryPageKey}=1`);
-    }
-  };
+  const href = (p: number) => build({ city, page: p });
 
   return (
-    <div>
-      <title>{`${title || "All Art"}: ${AppConfigs.app_name}`}</title>
-      <section>
-        <MinimalSection className="page-banner" bg={banner}>
-          <h1 className="text-center text-white">{title}</h1>
-          <PageBreadcrumb type="page-banner" />
-        </MinimalSection>
-      </section>
-      <section>
-        <MaxWidthWrapper className="space-y-4 py-10 md:space-y-6 md:py-14">
-          <div className="page-top grid grid-cols-1 items-center justify-between gap-x-4 gap-y-2 space-y-2 md:grid-cols-2 md:gap-6">
-            <div>
+    <div className="pb-20">
+      <PageHead
+        eyebrow={cityName ? `Art from ${cityName}` : "Prints, made to order"}
+        title="Browse art"
+        sub={<><span className="num">{total}</span> {total === 1 ? "piece" : "pieces"}{q ? <> matching “{q}”</> : null}. Every print ships from us.</>}
+      >
+        <ArtFilters q={q} city={city} sort={sort} cities={cities} />
+      </PageHead>
 
-              <div className="flex mb-4 text-theme-secondary-600">
-                <select
-                  value={sort}
-                  onChange={(e) => setSort(e.target.value)}
-                  className="border rounded px-2 py-1"
-                >
-                  <option value="newest">Latest</option>
-                  <option value="oldest">The Ogs</option>
-                  <option value="random">Random</option>
-                  {/* <option value="popular">Most Popular</option> */}
-                </select>
-              </div>
-            </div>
-            <div>
-              <Pagination
-                totalItems={totalProducts}
-                itemsPerPage={itemsPerPage}
-                currentPage={currentPage}
-                onPageChange={handlePageChange}
-                className="hidden justify-end md:flex"
-              />
-            </div>
+      {cities.length > 1 && (
+        <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
+            <CityChip href={build({})} active={!city} label="Everywhere" />
+            {cities.map((c) => <CityChip key={c.slug} href={build({ city: c.slug })} active={city === c.slug} label={c.name} count={c.pieces} />)}
           </div>
-          {loading ? (
-            <p className="mb-6 w-full py-6 text-center text-lg md:mb-8 md:py-12 text-theme-secondary-500">
-              Loading…
-            </p>
-          ) : paginatedProducts.length > 0 ? (
-            <div className="products-area grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-6 xl:grid-cols-4">
-              {paginatedProducts.map((product) => (
-                <Link key={product.id} href={`/art/${product.slug}`}>
-                  <ProductCard product={product} showSeller={true} />
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="mb-6 w-full py-6 text-center text-lg capitalize md:mb-8 md:py-12 md:text-xl">
-              {AppConfigs?.messages?.products?.not_found || "No Products Found"}
-            </p>
-          )}
-          <div className="pagination-area flex items-center justify-center py-6">
-            <Pagination
-              totalItems={totalProducts}
-              itemsPerPage={itemsPerPage}
-              currentPage={currentPage}
-              onPageChange={handlePageChange}
-            />
-          </div>
-        </MaxWidthWrapper>
+        </div>
+      )}
+
+      <section className="mx-auto mt-6 max-w-[1240px] px-4 sm:px-6 md:mt-8" aria-label="Artworks">
+        {art.length ? (
+          <ArtGrid art={art} />
+        ) : (
+          <EmptyCanvas title="Nothing on this wall yet">
+            <p className="text-ink-2">Try another city or a shorter search.</p>
+            <Link href="/art" className="btn btn-ghost">See all art</Link>
+          </EmptyCanvas>
+        )}
+        <Pager page={page} pages={pages} href={href} />
       </section>
     </div>
   );
-};
+}
 
-export default ArtsPage;
+function CityChip({ href, active, label, count }: { href: string; active: boolean; label: string; count?: number }) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "true" : undefined}
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border-[1.5px] px-3.5 py-1.5 text-[14px] font-semibold no-underline transition ${active ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}
+    >
+      {label}
+      {count != null && <span className={`num text-[12px] ${active ? "text-white/70" : "text-ink-2"}`}>{count}</span>}
+    </Link>
+  );
+}

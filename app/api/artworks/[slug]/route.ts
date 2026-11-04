@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from "@/lib/prisma";
-import {  } from '@/lib/auth'
+import { getUserFromCookie } from '@/lib/auth'
 import { jwtVerify } from 'jose'
 import cloudinary from '@/lib/cloudinary'
 
@@ -26,6 +26,8 @@ export async function GET(
           markupLarge: true,
           markupXl: true,
           artistId: true,
+          status: true,
+          sensitive: true,
           artist: {
             select: {
               id: true,
@@ -40,6 +42,14 @@ export async function GET(
 
     if (!artwork) {
       return new NextResponse('Artwork not found', { status: 404 })
+    }
+
+    // Pending/rejected work is only visible to its artist and admins.
+    if (artwork.status !== 'APPROVED') {
+      const user = await getUserFromCookie()
+      const canSee = !!user && (user.id === artwork.artistId || user.role === 'ADMIN')
+      if (!canSee) return new NextResponse('Artwork not found', { status: 404 })
+      return NextResponse.json(artwork, { headers: { 'Cache-Control': 'private, no-store' } })
     }
 
     return NextResponse.json(artwork)

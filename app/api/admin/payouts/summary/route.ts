@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { jwtVerify } from "jose";
+import { getAdmin } from "@/lib/admin"
 import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
 
 export const dynamic = "force-dynamic"
@@ -13,12 +13,6 @@ function monthRange(ym: string) {
   return { start, end };
 }
 
-async function requireAdmin(req: NextRequest) {
-  const token = req.cookies.get("auth-token")?.value;
-  if (!token) return null;
-  const { payload } = await jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET!));
-  return payload.role === "ADMIN" ? payload : null;
-}
 
 function normalizeSize(raw: string | null): PrintSize {
   const v = (raw || "").toUpperCase();
@@ -29,7 +23,7 @@ function normalizeSize(raw: string | null): PrintSize {
 }
 
 export async function GET(req: NextRequest) {
-  const admin = await requireAdmin(req)
+  const admin = await getAdmin()
   if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
   try {

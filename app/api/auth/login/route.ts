@@ -67,12 +67,10 @@ export async function POST(req: Request) {
     };
 
     if (remember) {
+      // Same lifetime as the 30-day JWT above; secure everywhere but localhost dev.
       response.cookies.set("auth-token", token, {
-        httpOnly: true,
-        secure: false, // localhost
-        sameSite: "lax",
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7, // 7 days
+        ...cookieBase,
+        maxAge: 60 * 60 * 24 * 30, // 30 days
       })
     } else {
       // session cookie (expires with browser session)

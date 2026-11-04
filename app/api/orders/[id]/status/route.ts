@@ -57,25 +57,25 @@ export async function POST(
   ) {
     // The status change is saved; a failed email shouldn't make the admin UI report failure.
     try {
-    await resend.emails.send({
-      from: "Artfinity <notifications@theartfinity.com>",
-      to: order.email || "",
-      subject:
-        now === "shipped"
-          ? "Your Artfinity order has shipped!"
-          : "Your Artfinity order was delivered!",
-      react: ShippingStatusEmail({
-        name: existing.shippingName || "Customer",
-        status: now,
-        orderId: order.id,
-        items: existing.items.map(i => ({
-          title: i.title ?? "Untitled",
-          size: i.size ?? "",
-          quantity: i.quantity ?? 1,
-          imageUrl: i.imageUrl ?? null,
-        })),
-      }),
-    })
+      await resend.emails.send({
+        from: "Artfinity <notifications@theartfinity.com>",
+        to: order.email || "",
+        subject:
+          now === "shipped"
+            ? "Your Artfinity order has shipped!"
+            : "Your Artfinity order was delivered!",
+        react: ShippingStatusEmail({
+          name: existing.shippingName || "Customer",
+          status: now,
+          orderId: order.id,
+          items: existing.items.map(i => ({
+            title: i.title ?? "Untitled",
+            size: i.size ?? "",
+            quantity: i.quantity ?? 1,
+            imageUrl: i.imageUrl ?? null,
+          })),
+        }),
+      })
     } catch (err) {
       console.error("Shipping status email failed", err)
     }
