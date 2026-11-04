@@ -8,9 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
-    "db:seed": "node prisma/seed.mjs",
+    "db:seed": "node --env-file=.env prisma/seed.mjs",
     "db:images": "node scripts/gen-seed-images.mjs",
-    "setup:local": "node -e \"require('fs').existsSync('.env')||require('fs').copyFileSync('.env.example','.env')\" && prisma migrate deploy && node prisma/seed.mjs"
+    "setup:local": "node -e \"require('fs').existsSync('.env')||require('fs').copyFileSync('.env.example','.env')\" && prisma migrate deploy && node --env-file=.env prisma/seed.mjs"
   },
   "dependencies": {
     "@headlessui/react": "^2.0.3",
@@ -85,6 +85,6 @@
     "typescript": "^5"
   },
   "prisma": {
-    "seed": "node prisma/seed.mjs"
+    "seed": "node --env-file=.env prisma/seed.mjs"
   }
 }
