@@ -14,6 +14,10 @@ import { CartContextType, CartItemType, CartItemProductType } from "@/types";
 import { updateCartItem } from "@/db/query";
 import { AppConfigs } from "@/db";
 
+// updateCartItem mutates the items it is given; hand it copies so state updaters stay pure
+// (React runs updaters twice in dev, which used to double quantities).
+const clone = (items: CartItemType[]) => items.map((ci) => ({ ...ci }));
+
 const CartContext = createContext<CartContextType | undefined>(undefined);
 export const useCart = () => {
   const ctx = useContext(CartContext);
@@ -106,7 +110,7 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
         product,
         quantity,
         operation: "add",
-        prev_items: prev,
+        prev_items: clone(prev),
       })
     );
   };
@@ -118,7 +122,7 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
         product,
         quantity,
         operation: "update",
-        prev_items: prev,
+        prev_items: clone(prev),
       })
     );
   };
@@ -129,7 +133,7 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
         user_id: currentUser?.id || "guest",
         product,
         operation: "remove",
-        prev_items: prev,
+        prev_items: clone(prev),
       })
     );
   };

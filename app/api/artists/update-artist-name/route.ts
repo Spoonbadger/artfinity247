@@ -22,14 +22,15 @@ export async function POST(req: NextRequest) {
     if (!artistId) return new NextResponse("Invalid token", { status: 401 });
 
     const { name } = await req.json();
-    if (typeof name !== "string" || name.trim().length < 2) {
+    if (typeof name !== "string" || name.trim().length < 2 || name.trim().length > 80) {
       return new NextResponse("Invalid name", { status: 400 });
     }
 
     const artist = await prisma.artist.update({
       where: { id: String(artistId) },
-      data: { name: name.trim() },
-      select: { slug: true, name: true },
+      // artist_name is what public pages show; name is the legacy copy. The slug (@handle) stays put.
+      data: { name: name.trim(), artist_name: name.trim() },
+      select: { slug: true, name: true, artist_name: true },
     });
 
     return NextResponse.json({ artist }, { status: 200 });

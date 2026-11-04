@@ -23,13 +23,13 @@ export async function POST(req: NextRequest) {
     if (!artistId) return new NextResponse("Invalid token", { status: 401 });
 
     const { bio } = await req.json();
-    if (typeof bio !== "string") {
+    if (typeof bio !== "string" || bio.length > 1000) {
       return new NextResponse("Invalid bio", { status: 400 });
     }
 
     const artist = await prisma.artist.update({
       where: { id: String(artistId) },
-      data: { bio },
+      data: { bio: bio.trim() },
       select: { slug: true, bio: true },
     });
 

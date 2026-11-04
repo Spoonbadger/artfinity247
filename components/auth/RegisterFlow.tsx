@@ -250,7 +250,10 @@ export default function RegisterFlow() {
       ? "Sharp at every size, up to 18 × 24 in."
       : printable.length === 0
         ? "Too small to print well. Try the original photo."
-        : `${SIZES.filter((s) => !printable.includes(s.key)).map((s) => s.short).join(", ")} needs a bigger file.`;
+        : (() => {
+          const missing = SIZES.filter((s) => !printable.includes(s.key)).map((s) => s.short);
+          return `${missing.join(", ")} ${missing.length > 1 ? "need" : "needs"} a bigger file.`;
+        })();
 
   const shownName = artistName.trim() || "Your name";
   const shownCity = [city.trim(), region.trim()].filter(Boolean).join(", ");
@@ -526,7 +529,7 @@ function PagePreview({ name, city, handle, image, imageAlt }: { name: string; ci
         <div className="relative h-[92px] overflow-hidden bg-gallery">
           {image ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={image} alt="" className="h-full w-full scale-110 object-cover blur-[2px]" />
+            <img src={image} alt="" className="h-full w-full object-cover" />
           ) : (
             <>
               <BrushStroke className="absolute -left-4 top-3 h-10 w-[70%]" color="#d6c6ad" />
@@ -535,7 +538,7 @@ function PagePreview({ name, city, handle, image, imageAlt }: { name: string; ci
           )}
         </div>
         <div className="grid gap-0.5 px-[18px] pb-5">
-          <div className="-mt-9 grid h-[70px] w-[70px] place-items-center rounded-full border-[3px] border-paper bg-sticker font-display text-[30px] font-extrabold text-ink">
+          <div className="relative -mt-9 grid h-[70px] w-[70px] place-items-center rounded-full border-[3px] border-paper bg-sticker font-display text-[30px] font-extrabold text-ink">
             {initial}
           </div>
           <b className="display mt-1.5 text-[28px] [overflow-wrap:anywhere]">{name}</b>
@@ -548,7 +551,7 @@ function PagePreview({ name, city, handle, image, imageAlt }: { name: string; ci
                 <img key={i} src={image} alt={imageAlt || "Your artwork"} className="aspect-[4/5] w-full rounded object-cover" />
               ) : (
                 <i key={i} className="relative block aspect-[4/5] overflow-hidden rounded bg-wall">
-                  <span className="absolute inset-x-2 top-1/2 h-6 -translate-y-1/2 opacity-60" style={{ background: PLACEHOLDER[i], borderRadius: "52% 44% 58% 40%" }} />
+                  <span className="absolute left-1/2 top-1/2 h-9 w-12 -translate-x-1/2 -translate-y-1/2 opacity-70" style={{ background: PLACEHOLDER[i], borderRadius: "52% 44% 58% 40%", rotate: `${[-14, 10, -4][i]}deg` }} />
                 </i>
               ),
             )}

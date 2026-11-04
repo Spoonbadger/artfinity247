@@ -58,6 +58,7 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
   const [orders, setOrders] = useState(initial);
   const [filter, setFilter] = useState<Filter>("all");
   const [busy, setBusy] = useState<string | null>(null);
+  const [open, setOpen] = useState<string | null>(null);
 
   const counts = useMemo(() => Object.fromEntries(FILTERS.map((f) => [f.id, orders.filter(f.test).length])), [orders]);
   const shown = orders.filter(FILTERS.find((f) => f.id === filter)!.test);
@@ -117,7 +118,7 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-line bg-white">
-        <div className="hidden grid-cols-[148px_minmax(0,1.3fr)_minmax(0,1fr)_100px_150px_150px] gap-4 border-b border-line bg-wall/60 px-4 py-2.5 text-[12px] font-bold uppercase tracking-[0.06em] text-ink-2 lg:grid">
+        <div className="hidden grid-cols-[120px_minmax(0,1.3fr)_minmax(0,1fr)_100px_150px_150px] gap-4 border-b border-line bg-wall/60 px-4 py-2.5 text-[12px] font-bold uppercase tracking-[0.06em] text-ink-2 lg:grid">
           <span>Prints</span><span>Buyer</span><span>Items</span><span className="text-right">Total</span><span>Printer</span><span>Shipping</span>
         </div>
 
@@ -135,9 +136,9 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
             const artistShare = o.items.reduce((n, i) => n + i.artistShare, 0);
             return (
               <li key={o.id} className="px-4 py-4">
-                <div className="grid gap-3 sm:grid-cols-[148px_minmax(0,1fr)] lg:grid-cols-[148px_minmax(0,1.3fr)_minmax(0,1fr)_100px_150px_150px] lg:items-center lg:gap-4">
+                <div className="grid grid-cols-[48px_minmax(0,1fr)] gap-x-3 gap-y-2 lg:grid-cols-[120px_minmax(0,1.3fr)_minmax(0,1fr)_100px_150px_150px] lg:items-center lg:gap-4">
                   {/* thumbnails */}
-                  <div className="flex gap-1.5">
+                  <div className="row-span-4 flex flex-col gap-1.5 lg:row-span-1 lg:flex-row">
                     {o.items.slice(0, 3).map((i) => (
                       <div key={i.id} className="relative h-[60px] w-[48px] shrink-0 overflow-hidden rounded-[3px] bg-gallery shadow-[0_4px_10px_-6px_rgba(21,22,27,.5)]">
                         {i.imageUrl && (
@@ -159,10 +160,19 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
                     <div className="truncate text-[13px] text-ink-2">
                       {date.toLocaleDateString("en-US", { month: "short", day: "numeric" })} · {date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })} · {o.email}
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setOpen(open === o.id ? null : o.id)}
+                      aria-expanded={open === o.id}
+                      aria-controls={`details-${o.id}`}
+                      className="mt-0.5 text-[13px] font-semibold text-scan hover:underline"
+                    >
+                      {open === o.id ? "Hide details" : "Details"}
+                    </button>
                   </div>
 
                   {/* items */}
-                  <div className="min-w-0 text-[14px] sm:col-start-2 lg:col-start-auto">
+                  <div className="min-w-0 text-[14px]">
                     {o.items.map((i) => (
                       <div key={i.id} className="truncate">
                         <span className="font-semibold">{i.title}</span>
@@ -172,13 +182,14 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
                   </div>
 
                   {/* total */}
-                  <div className="flex items-baseline gap-2 sm:col-start-2 lg:col-start-auto lg:block lg:text-right">
+                  <div className="flex items-baseline gap-2 lg:block lg:text-right">
                     <b className="num text-[16px] text-earned">{usd(o.amountTotal)}</b>
                     <div className="num text-[12.5px] text-ink-2">{usd(artistShare)} artist</div>
                   </div>
 
-                  {/* printer */}
-                  <div className="sm:col-start-2 lg:col-start-auto">
+                  {/* printer + shipping (one row on phones, two columns on desktop) */}
+                  <div className="flex flex-wrap gap-2 lg:contents">
+                  <div>
                     <label className={cn("inline-flex cursor-pointer items-center gap-2 rounded-full border-[1.5px] px-3 py-1.5 text-[13.5px] font-semibold transition", o.sentToPrinter ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>
                       <input type="checkbox" className="sr-only" checked={o.sentToPrinter} disabled={busy === o.id} onChange={() => toggleSent(o)} />
                       <span aria-hidden="true" className={cn("grid h-4 w-4 place-items-center rounded-[4px] border-[1.5px]", o.sentToPrinter ? "border-white bg-white text-ink" : "border-ink-2")}>
@@ -188,8 +199,7 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
                     </label>
                   </div>
 
-                  {/* shipping */}
-                  <div className="sm:col-start-2 lg:col-start-auto">
+                  <div>
                     <label className="relative inline-flex items-center">
                       <span className="sr-only">Shipping status for {o.shippingName || o.email}</span>
                       <span className="paint-dab pointer-events-none absolute left-3" style={{ ["--dab" as string]: SHIP_DAB[o.shippingStatus] ?? "var(--af-line)" }} />
@@ -206,13 +216,11 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
                       <svg viewBox="0 0 12 12" className="pointer-events-none absolute right-3 h-3 w-3 text-ink-2" aria-hidden="true"><path d="M2.5 4.5l3.5 3.5 3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
                     </label>
                   </div>
+                  </div>
                 </div>
 
-                <details className="group mt-2 sm:ml-[164px]">
-                  <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-[13px] font-semibold text-scan [&::-webkit-details-marker]:hidden">
-                    <span className="group-open:hidden">Details</span><span className="hidden group-open:inline">Hide details</span>
-                  </summary>
-                  <div className="mt-3 grid gap-4 rounded-xl bg-wall/60 p-4 text-[13.5px] md:grid-cols-[220px_minmax(0,1fr)]">
+                {open === o.id && (
+                  <div id={`details-${o.id}`} className="mt-3 grid gap-4 rounded-xl bg-wall/60 p-4 lg:ml-[136px] text-[13.5px] md:grid-cols-[220px_minmax(0,1fr)]">
                     <div className="grid content-start gap-1">
                       <span className="eyebrow">Ship to</span>
                       <span className="font-semibold">{o.shippingName || "No name"}</span>
@@ -246,7 +254,7 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
                       </table>
                     </div>
                   </div>
-                </details>
+                )}
               </li>
             );
           })}
