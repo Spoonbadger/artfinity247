@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { calcItemProfitCents } from "@/lib/revenue";
+import { adminOrRedirect } from "../_components/gate";
+import { itemBreakdown, normalizeSize } from "@/lib/sales";
 import { PaintChip } from "@/components/af/Brush";
 import MonthPicker from "../_components/MonthPicker";
 import OrdersBoard, { type AdminOrder } from "../_components/OrdersBoard";
-import { currentMonth, monthLabel, monthRange, normalizeSize, usd } from "../_components/util";
+import { currentMonth, monthLabel, monthRange, usd } from "../_components/util";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Orders" };
 
 export default async function AdminOrdersPage({ searchParams }: { searchParams: { month?: string } }) {
+  await adminOrRedirect("/admin/orders");
   const monthRows = await prisma.$queryRaw<{ m: string }[]>`
     SELECT DISTINCT to_char("createdAt" AT TIME ZONE 'UTC', 'YYYY-MM') AS m FROM "Order" ORDER BY m DESC`;
   const months = Array.from(new Set([currentMonth(), ...monthRows.map((r) => r.m)])).sort().reverse();
@@ -30,10 +32,9 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
 
   const shaped: AdminOrder[] = orders.map((o) => {
     const items = o.items.map((it) => {
-      const qty = it.quantity ?? 1;
-      const lineTotal = it.lineTotal ?? qty * (it.unitPrice ?? 0);
+      // Authoritative money math (60/40 or 50/50 by order date) lives in lib/sales.ts.
+      const b = itemBreakdown({ lineTotal: it.lineTotal, unitPrice: it.unitPrice, quantity: it.quantity, size: it.size, frameChosen: it.frameChosen, orderDate: o.createdAt });
       const size = normalizeSize(it.size);
-      const b = calcItemProfitCents({ lineTotal, size, frameChosen: it.frameChosen, quantity: qty || 1, orderDate: o.createdAt });
       return {
         id: it.id,
         slug: it.slug,
@@ -45,10 +46,9 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
         size,
         frameChosen: it.frameChosen,
         frameColor: it.frameColor,
-        quantity: qty,
-        lineTotal,
-        itemCost: b.itemCost,
-        websiteCost: b.websiteCost,
+        quantity: b.quantity,
+        lineTotal: b.lineTotal,
+        expenses: b.expenses,
         profit: b.profit,
         artistShare: b.artistShare,
         companyShare: b.companyShare,

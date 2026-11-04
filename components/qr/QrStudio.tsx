@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Download, FileText, ImageIcon, Loader2 } from "lucide-react";
+import { Download, FileText, ImageIcon, Layers, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { qrSVG } from "@/lib/qr/render";
 import { breakdown, money, SIZE_NAME, SIZE_INCHES, type SizeKey } from "@/lib/earnings";
@@ -29,8 +29,22 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
   const [d, setD] = useState<Design>(initialDesign);
   const [view, setView] = useState<View>("card");
   const [fonts, setFonts] = useState<Fonts | null>(null);
-  const [busy, setBusy] = useState<"" | "pdf" | "svg" | "png">("");
+  const [busy, setBusy] = useState<"" | "pdf" | "all" | "png">("");
   const customRef = useRef<HTMLInputElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [stageHidden, setStageHidden] = useState(false);
+  const [formShown, setFormShown] = useState(false);
+
+  // On narrow screens the controls sit under the preview: float a small copy while it's off screen.
+  useEffect(() => {
+    const el = stageRef.current, form = formRef.current;
+    if (!el || !form || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([e]) => setStageHidden(!e.isIntersecting), { rootMargin: "-120px 0px 0px 0px" });
+    const fo = new IntersectionObserver(([e]) => setFormShown(e.isIntersecting), { rootMargin: "0px 0px -160px 0px" });
+    io.observe(el); fo.observe(form);
+    return () => { io.disconnect(); fo.disconnect(); };
+  }, []);
 
   useEffect(() => { loadFonts().then(setFonts).catch(() => toast.error("Could not load the card fonts. Refresh to try again.")); }, []);
 
@@ -53,12 +67,12 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
     a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   }
-  async function downloadPdf() {
-    setBusy("pdf");
+  async function downloadPdf(all = false) {
+    setBusy(all ? "all" : "pdf");
     try {
-      const r = await fetch("/api/qr/print", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug: art.slug, design: d }) });
+      const r = await fetch("/api/qr/print", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(all ? { all: true, design: d } : { slug: art.slug, design: d }) });
       if (!r.ok) throw new Error(await r.text());
-      save(await r.blob(), `${fileBase}-sheet.pdf`);
+      save(await r.blob(), all ? `artfinity-all-codes-${d.format}.pdf` : `${fileBase}-sheet.pdf`);
     } catch {
       toast.error("The PDF didn't download. Try again.");
     } finally { setBusy(""); }
@@ -70,7 +84,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
   async function downloadPng() {
     setBusy("png");
     try {
-      const code = qrSVG(qrText, { fg: d.fg, dots: d.dots, eyes: d.eyes, eyeColor: eyeColor(d) }).replace("<svg ", '<svg width="1200" height="1200" ');
+      const code = qrSVG(qrText, { fg: d.fg, dots: d.dots, eyes: d.eyes, eyeColor: eyeColor(d), label: "QR code" }).replace("<svg ", '<svg width="1200" height="1200" ');
       const img = new Image();
       const url = URL.createObjectURL(new Blob([code], { type: "image/svg+xml" }));
       await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = rej; img.src = url; });
@@ -94,7 +108,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
       <ArtPicker arts={arts} slug={art.slug} onPick={pick} />
 
       <div className={s.studio}>
-        <form className={s.ctl} onSubmit={(e) => e.preventDefault()} autoComplete="off" aria-label="Card options">
+        <form ref={formRef} className={s.ctl} onSubmit={(e) => e.preventDefault()} autoComplete="off" aria-label="Card options">
           <Group title="Start from" dab="#ffd43b">
             <div className={s.presets} role="group" aria-label="Preset">
               {(Object.keys(PRESETS) as PresetKey[]).map((k) => {
@@ -189,7 +203,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
               ))}
             </div>
             <div className={s.downloads}>
-              <button type="button" className="btn btn-blue btn-sm" onClick={downloadPdf} disabled={!!busy}>
+              <button type="button" className="btn btn-blue btn-sm" onClick={() => downloadPdf()} disabled={!!busy}>
                 {busy === "pdf" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <FileText className="h-4 w-4" aria-hidden="true" />}
                 Download PDF
               </button>
@@ -202,7 +216,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
             </div>
           </div>
 
-          <div className={s.stage} aria-live="polite" data-view={view}>
+          <div className={s.stage} aria-live="polite" data-view={view} ref={stageRef}>
             {!svg ? <div className={s.loading}><Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" /> Mixing paint</div>
               : view === "card" ? <div className={cx(s.face, s[`f_${d.format}`])} dangerouslySetInnerHTML={{ __html: svg }} />
               : view === "wall" ? <Wall art={art} svg={svg} format={d.format} />
@@ -213,7 +227,24 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
             {view === "wall" && <>To scale on an 8 ft wall, beside a 24 × 30 in original{sn && <>. Words read from {fmtDist(sn.readM * 100)}, code scans from {fmtDist(sn.scanCm)}</>}.</>}
             {view === "sheet" && <>{F.sheet.note} US Letter, 100% scale{d.format === "poster" ? "" : ", crop marks included"}.</>}
           </p>
+          {arts.length > 1 && (
+            <div className={s.printAll}>
+              <span>Every piece, this look:</span>
+              <button type="button" className="btn btn-sticker btn-sm" onClick={() => downloadPdf(true)} disabled={!!busy}>
+                {busy === "all" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Layers className="h-4 w-4" aria-hidden="true" />}
+                Print all my codes ({arts.length})
+              </button>
+            </div>
+          )}
+        </div>
 
+        {stageHidden && formShown && svg && (
+          <button type="button" className={cx(s.floater, s[`fl_${d.format}`])} onClick={() => stageRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })} aria-label="Back to the preview">
+            <span dangerouslySetInnerHTML={{ __html: svg.replace(/ role="img" aria-label="[^"]*"/, ' aria-hidden="true"') }} />
+          </button>
+        )}
+
+        <div className={cx(s.out, s.panelsWrap)}>
           <div className={s.panels}>
             <section className={s.panel} aria-labelledby="qs-scan-h">
               <h2 id="qs-scan-h"><span className="paint-dab" style={{ ["--dab" as string]: "#0f7a55" }} aria-hidden="true" />Will it scan?</h2>
@@ -309,7 +340,7 @@ function Wall({ art, svg, format }: { art: ArtInfo; svg: string; format: FormatK
           <span>Up close</span>
         </div>
       )}
-      <div className={s.ruler}><i style={{ width: `${(12 / WALL) * 100 * 6.5}%` }} />1 ft</div>
+      <div className={s.ruler}><i style={{ width: `${(12 / WALL) * 100}%` }} />1 ft</div>
       <div className={s.floor} />
     </div>
   );

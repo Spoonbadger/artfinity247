@@ -10,7 +10,7 @@ export const SHARED_KEY = "af-studio-shared";
 
 type Step = { label: string; done: boolean; href?: string; act?: string; onClick?: () => void };
 
-export default function NextSteps({ hasProfile, hasArt, hasSold, slug }: { hasProfile: boolean; hasArt: boolean; hasSold: boolean; slug: string }) {
+export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true, slug }: { hasProfile: boolean; hasArt: boolean; hasSold: boolean; hasVenmo?: boolean; slug: string }) {
   const [shared, setShared] = useState(false);
   const [hasEvent, setHasEvent] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -36,6 +36,8 @@ export default function NextSteps({ hasProfile, hasArt, hasSold, slug }: { hasPr
     { label: "Add your next event", done: hasEvent, href: "/studio/events", act: "Add" },
     { label: "Share your page", done: shared, act: copied ? "Copied" : "Copy link", onClick: copyLink },
   ];
+  // Only shown while missing, so it reads as a warning rather than a chore.
+  if (!hasVenmo) steps.unshift({ label: "Add your Venmo to get paid", done: false, href: "/studio/page", act: "Add" });
   const done = steps.filter((s) => s.done).length;
 
   return (

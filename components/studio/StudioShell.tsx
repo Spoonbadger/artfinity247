@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { ArrowUpRight, LogOut } from "lucide-react";
 import Logo from "@/components/af/Logo";
 import { BrushStroke } from "@/components/af/Brush";
@@ -63,6 +63,14 @@ export default function StudioShell({ artist, children }: { artist: ShellArtist;
   const router = useRouter();
   const { refreshUser } = useUser();
   const [leaving, setLeaving] = useState(false);
+  const mobileNav = useRef<HTMLElement>(null);
+
+  // Keep the active item in view in the horizontal mobile menu.
+  useEffect(() => {
+    const nav = mobileNav.current;
+    const on = nav?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (nav && on) nav.scrollLeft = on.offsetLeft - (nav.clientWidth - on.offsetWidth) / 2;
+  }, [path]);
 
   async function logout() {
     setLeaving(true);
@@ -115,7 +123,7 @@ export default function StudioShell({ artist, children }: { artist: ShellArtist;
             </button>
           </div>
         </div>
-        <nav aria-label="Studio" className="flex gap-1 overflow-x-auto px-2 pb-2 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <nav ref={mobileNav} aria-label="Studio" className="relative flex gap-1 overflow-x-auto px-2 pb-2 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {STUDIO_NAV.map((n) => (
             <NavItem key={n.href} {...n} compact active={isActive(path, n.href)} />
           ))}

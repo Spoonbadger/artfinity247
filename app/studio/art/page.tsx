@@ -23,7 +23,16 @@ export default async function MyArtPage() {
     <StudioPage
       title="My art"
       sub={`${live} on your page`}
-      actions={<Link href="/studio/art/new" className="btn btn-blue">Upload art</Link>}
+      actions={
+        <>
+          {live > 0 && (
+            <a href="/api/artworks/qr/bulk" target="_blank" rel="noopener" className="btn btn-ghost" title="Gallery-label QR cards for every live piece, ready to print">
+              Print all codes (PDF)
+            </a>
+          )}
+          <Link href="/studio/art/new" className="btn btn-blue">Upload art</Link>
+        </>
+      }
     >
       <ArtGrid items={items} />
     </StudioPage>

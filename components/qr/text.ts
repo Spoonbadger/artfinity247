@@ -20,7 +20,6 @@ export function loadFonts(): Promise<Fonts> {
   if (!loading) {
     loading = (async () => {
       const [ot, data] = await Promise.all([import("opentype.js"), import("./fonts/data")]);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const parse: (b: ArrayBuffer) => Font = (ot as any).parse ?? (ot as any).default.parse;
       return { display: parse(toArrayBuffer(data.DISPLAY)), body: parse(toArrayBuffer(data.BODY)), semi: parse(toArrayBuffer(data.SEMI)) };
     })();

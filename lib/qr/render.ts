@@ -57,8 +57,8 @@ export function qrSVG(text: string, opts: QrOptions = {}): string {
       default: d += `M${x} ${y}h1v1h-1Z`;
     }
   }
-  const label = o.label || `QR code for ${text.toLowerCase()}`;
-  let s = `<svg viewBox="0 0 ${V} ${V}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${label.replace(/"/g, "&quot;")}"><path fill="${o.fg}" d="${d}"/>`;
+  const label = (o.label || `QR code for ${text.toLowerCase()}`).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  let s = `<svg viewBox="0 0 ${V} ${V}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${label}"><path fill="${o.fg}" d="${d}"/>`;
   const pupil = o.eyeColor || o.fg;
   const R = { square: 0, rounded: 2, frame: 1.7, circle: 3.5 }[o.eyes] ?? 0;
   const Ri = { square: 0, rounded: 0.9, frame: 0.6, circle: 1.5 }[o.eyes] ?? 0;
@@ -85,7 +85,7 @@ export function tagSVG(pct: number, fill = "#ffd43b", ink = "#15161b", sub = "wh
     `<text x="128" y="84" text-anchor="middle" fill="${ink}" font-size="14" style="font-family:var(--font-body);font-weight:600">${sub}</text></svg>`;
 }
 
-/** URL a printed code should hold. Upper-case keeps the code small; the /q/ route is case-insensitive. */
+/** URL a printed code holds today: the artwork page. (Planned: short /q/<code> links with editable server records.) */
 export function scanUrl(slug: string, base = process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com") {
   return `${base.replace(/\/$/, "")}/art/${slug}`;
 }

@@ -1,17 +1,15 @@
 import type { Metadata } from "next";
 import { ReactNode } from "react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth";
 import Logo from "@/components/af/Logo";
 import AdminNav from "./_components/AdminNav";
+import { adminOrRedirect } from "./_components/gate";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: { default: "Admin", template: "%s · Admin · Artfinity" }, robots: { index: false } };
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
-  const admin = await requireAdmin().catch(() => null);
-  if (!admin) redirect("/login?next=/admin");
+  const admin = await adminOrRedirect();
 
   return (
     <div className="min-h-[100svh] bg-wall">

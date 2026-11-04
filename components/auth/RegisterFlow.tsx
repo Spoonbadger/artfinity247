@@ -415,8 +415,9 @@ export default function RegisterFlow() {
                           {SENSITIVE.map((l) => {
                             const on = labels.includes(l);
                             return (
-                              <label key={l} className={cn("cursor-pointer rounded-full border-[1.5px] px-3 py-1 text-[13.5px] font-semibold transition has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-scan", on ? "border-ink bg-ink text-white" : "border-line bg-paper text-ink hover:border-ink")}>
+                              <label key={l} className={cn("cursor-pointer rounded-full border-[1.5px] px-3 py-1 text-[13.5px] font-semibold has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-scan", on ? "border-ink bg-ink text-white" : "border-line bg-paper text-ink hover:border-ink")}>
                                 <input type="checkbox" className="sr-only" checked={on} onChange={() => { setLabels((xs) => (on ? xs.filter((x) => x !== l) : [...xs, l])); setErrors((x) => ({ ...x, sensitive: null })); }} />
+                                {on && <span aria-hidden="true">✓ </span>}
                                 {l}
                               </label>
                             );

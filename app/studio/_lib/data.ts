@@ -26,7 +26,8 @@ export function currentPath(fallback = "/studio") {
 /** Signed-in artist, or a redirect to the login page. */
 export async function requireArtist(nextPath?: string) {
   const user = await getUserFromCookie();
-  const next = nextPath || currentPath();
+  // The middleware header has the exact path and query; nextPath is the fallback.
+  const next = currentPath(nextPath || "/studio");
   if (!user?.id) redirect(`/login?next=${encodeURIComponent(next)}`);
   const artist = await prisma.artist.findUnique({
     where: { id: user.id },
@@ -138,3 +139,6 @@ export function serverGreeting(now = new Date()) {
   if (h < 5 || h >= 17) return "Good evening";
   return h < 12 ? "Good morning" : "Good afternoon";
 }
+
+/** Dollars with cents and thousands separators: 190973 -> "$1,909.73". */
+export const usd = (cents: number) => "$" + (cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

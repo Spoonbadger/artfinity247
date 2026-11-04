@@ -95,6 +95,7 @@ export default function ProfileEditor({ initial, slug, art }: { initial: Profile
 
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] lg:gap-10">
+      <div className="grid">
       <form onSubmit={save} className="grid gap-5" noValidate>
         <div className="flex flex-wrap items-center gap-4">
           <div className="relative">
@@ -102,8 +103,8 @@ export default function ProfileEditor({ initial, slug, art }: { initial: Profile
             {photoBusy && <span className="absolute inset-0 grid place-items-center rounded-full bg-white/80"><Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" /></span>}
           </div>
           <div className="grid gap-1.5">
-            <input ref={fileRef} type="file" accept="image/*" className="sr-only" id="photo" onChange={(e) => { const f = e.target.files?.[0]; if (f) changePhoto(f); e.target.value = ""; }} />
-            <label htmlFor="photo" className="btn btn-ghost btn-sm cursor-pointer">
+            <label className="btn btn-ghost btn-sm cursor-pointer justify-self-start focus-within:outline focus-within:outline-[3px] focus-within:outline-offset-2 focus-within:outline-scan">
+              <input ref={fileRef} type="file" accept="image/*" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) changePhoto(f); e.target.value = ""; }} />
               <Camera className="h-4 w-4" aria-hidden="true" />{p.profileImage ? "Change photo" : "Add a photo"}
             </label>
             <span className="text-[12.5px] text-ink-2">A face or your studio. Square works best.</span>
@@ -124,10 +125,17 @@ export default function ProfileEditor({ initial, slug, art }: { initial: Profile
           <span className="label flex justify-between"><span>Bio</span><span className="num">{p.bio.length}/300</span></span>
           <textarea value={p.bio} onChange={(e) => setP({ ...p, bio: e.target.value.slice(0, 300) })} rows={4} placeholder="What you paint and where. Two lines is plenty." className="resize-y" />
         </label>
-        <label className="af-field">
-          <span className="label">Venmo handle · payouts setup comes later</span>
-          <input value={p.venmoHandle} onChange={(e) => setP({ ...p, venmoHandle: e.target.value.replace(/\s/g, "") })} maxLength={30} placeholder="@yourname" />
-        </label>
+        <div className="grid gap-2">
+          <label className="af-field">
+            <span className="label">Venmo handle · payouts setup comes later</span>
+            <input value={p.venmoHandle} onChange={(e) => setP({ ...p, venmoHandle: e.target.value.replace(/\s/g, "") })} maxLength={30} placeholder="@yourname" />
+          </label>
+          {!saved.venmoHandle && (
+            <p role="status" className="flex items-center gap-2 rounded-xl bg-sticker/40 px-3 py-2 text-[13.5px] font-semibold">
+              <span className="sticker-badge text-[11px]">Heads up</span>Add your Venmo to get paid.
+            </p>
+          )}
+        </div>
 
         {error && <p role="alert" className="rounded-xl border-2 border-coral bg-[#fff1ed] px-3.5 py-2.5 text-[14px] font-semibold">{error}</p>}
         <div className="flex flex-wrap items-center gap-3">
@@ -137,6 +145,8 @@ export default function ProfileEditor({ initial, slug, art }: { initial: Profile
           {!dirty && !saving && <span className="flex items-center gap-1.5 text-[13px] text-ink-2"><Check className="h-4 w-4" aria-hidden="true" />All saved</span>}
         </div>
       </form>
+      <DeleteAccount />
+      </div>
 
       {/* Live preview of the public page */}
       <aside className="grid gap-3 lg:sticky lg:top-6" aria-label="Preview of your page">
@@ -172,6 +182,56 @@ export default function ProfileEditor({ initial, slug, art }: { initial: Profile
           Open my page <ArrowUpRight className="inline h-4 w-4" aria-hidden="true" />
         </Link>
       </aside>
+    </div>
+  );
+}
+
+function DeleteAccount() {
+  const router = useRouter();
+  const { refreshUser } = useUser();
+  const [open, setOpen] = useState(false);
+  const [typed, setTyped] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function del() {
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await fetch("/api/artists/delete-profile", { method: "DELETE", credentials: "include" });
+      if (!res.ok) throw new Error();
+      await refreshUser();
+      router.push("/");
+      router.refresh();
+    } catch {
+      setErr("Could not delete your account. Try again.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-6 grid gap-3 border-t border-dashed border-line pt-5">
+      {!open ? (
+        <button type="button" onClick={() => setOpen(true)} className="justify-self-start text-[13.5px] font-semibold text-ink-2 underline-offset-2 hover:text-coral hover:underline">
+          Delete my account
+        </button>
+      ) : (
+        <div role="alertdialog" aria-labelledby="del-h" className="grid gap-3 rounded-2xl border-2 border-coral bg-[#fff6f3] p-4">
+          <b id="del-h" className="font-display text-[22px] [font-variation-settings:'wdth'_80]">Delete your account?</b>
+          <p className="text-[14px]">Your page, your art and your codes go away for good. Past sales stay on record.</p>
+          <label className="af-field border-coral">
+            <span className="label">Type DELETE to confirm</span>
+            <input value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" autoFocus />
+          </label>
+          {err && <p role="alert" className="text-[13.5px] font-semibold text-coral">{err}</p>}
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={del} disabled={typed.trim().toUpperCase() !== "DELETE" || busy} className="btn border-coral bg-coral">
+              {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}Delete for good
+            </button>
+            <button type="button" onClick={() => { setOpen(false); setTyped(""); }} className="btn btn-ghost">Keep my account</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

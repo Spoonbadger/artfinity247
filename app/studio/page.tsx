@@ -3,8 +3,7 @@ import { Brushed, PaintChip } from "@/components/af/Brush";
 import Greeting from "@/components/studio/Greeting";
 import NextSteps from "@/components/studio/NextSteps";
 import SalesChart, { type DayPoint } from "@/components/studio/SalesChart";
-import { money } from "@/lib/earnings";
-import { requireArtist, firstName, getSales, getArtworks, dayKey, serverGreeting, timeAgo, SIZE_LABEL, STUDIO_TZ } from "./_lib/data";
+import { requireArtist, firstName, getSales, getArtworks, dayKey, serverGreeting, timeAgo, SIZE_LABEL, STUDIO_TZ, usd } from "./_lib/data";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Studio" };
@@ -71,7 +70,7 @@ export default async function StudioHome() {
 
       <section aria-label="Last 30 days" className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
         <PaintChip color="#e8743b" value={prints.toLocaleString("en-US")} label="prints sold" note={`Cadmium · ${sales.length} ${sales.length === 1 ? "order" : "orders"}`} />
-        <PaintChip color="#0f7a55" value={money(earned)} label="you earned" note="Viridian · your share of profit" earned />
+        <PaintChip color="#0f7a55" value={usd(earned)} label="you earned" note="Viridian · your share of profit" earned />
         <PaintChip color="#ffd43b" value={best ? best.title : "None yet"} label="best seller" note={best ? `Naples Yellow · ${best.prints} sold` : "Naples Yellow · hang a code"} />
         <div className="relative">
           <PaintChip color="#2b37f0" value="1,284" label="scans" note="Preview, tracking coming soon" />
@@ -88,7 +87,7 @@ export default async function StudioHome() {
           <SalesChart days={days} />
         </section>
 
-        <NextSteps hasProfile={!!artist.profileImage && !!artist.bio?.trim()} hasArt={artworks.length > 0} hasSold={allSales.length > 0} slug={artist.slug} />
+        <NextSteps hasProfile={!!artist.profileImage && !!artist.bio?.trim()} hasArt={artworks.length > 0} hasSold={allSales.length > 0} hasVenmo={!!artist.venmoHandle} slug={artist.slug} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
@@ -108,7 +107,7 @@ export default async function StudioHome() {
                     <b className="block">{SIZE_LABEL[s.size]} print sold{s.quantity > 1 ? ` ×${s.quantity}` : ""}</b>
                     <span className="block truncate text-[12.5px] text-ink-2">{s.title} · {timeAgo(s.date, now)}</span>
                   </div>
-                  <em className="num not-italic font-bold text-earned">+{money(s.shareCents)}</em>
+                  <em className="num not-italic font-bold text-earned">+{usd(s.shareCents)}</em>
                 </li>
               ))}
             </ul>
@@ -133,7 +132,7 @@ export default async function StudioHome() {
                     <b className="block truncate">{p.title}</b>
                     <span className="num block text-[12.5px] text-ink-2">{p.prints} sold</span>
                   </div>
-                  <span className="num font-bold text-earned">{money(p.earned)}</span>
+                  <span className="num font-bold text-earned">{usd(p.earned)}</span>
                 </li>
               ))}
             </ol>

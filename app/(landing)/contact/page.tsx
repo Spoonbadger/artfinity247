@@ -1,137 +1,44 @@
-"use client";
-
-import { ReactNode, useEffect, useState } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
-import { Mail, MapPin, Phone } from "lucide-react";
-import { LatLngExpression } from "leaflet";
-import { GoogleMapContainer, OpenStreetMapContainer } from "@/components/maps";
-import { MaxWidthWrapper } from "@/components/layout";
-import { ContactForm } from "@/components/forms";
-import PageBreadcrumb from "@/components/PageBreadcrumb";
-import { MinimalSection } from "@/components/sections";
-import { GenericSectonType } from "@/types";
-import { getAppConfigs, getAppPages } from "@/db/query";
+import { Mail, MapPin } from "lucide-react";
+import { Swatch } from "@/components/af/Brush";
+import { DabRow } from "@/components/browse/PageHead";
+import ContactForm from "@/components/browse/ContactForm";
+import { getAppConfigs } from "@/db/query";
 
-const AppConfigs = getAppConfigs();
-const AppPages = getAppPages();
+export const metadata: Metadata = { title: "Contact", description: "Get in touch with Artfinity." };
 
-const ContactPage = (): ReactNode => {
-  const mapType: "openstreet" | "google" = "openstreet";
+const cfg = getAppConfigs();
 
-  const [title, setTitle] = useState<string>("");
-  const [banner, setBanner] = useState<string>("");
-  const [formSection, setFormSection] = useState<GenericSectonType | null>(
-    null,
-  );
-  const [mapSection, setMapSection] = useState<GenericSectonType | null>(null)
-
-  useEffect(() => {
-    const { title, banner, sections } = AppPages.contact;
-
-    setTitle((prev) => title);
-    setBanner((prev) => banner);
-    setFormSection((prev) => sections.form);
-    setMapSection((prev) => sections.map);
-  }, []);
-
+export default function ContactPage() {
+  const cards: { color: string; title: string; sub: string; email: string; links?: [string, string][] }[] = [
+    { color: "var(--af-scan)", title: "Orders and returns", sub: "Damaged, misprinted or wrong? We’ll make it right.", email: cfg.support_email || "support@theartfinity.com", links: [["Return policy", "/return-policy"]] },
+    { color: "var(--af-sticker)", title: "Artists and everything else", sub: "Selling, partnerships, press, a café that wants art.", email: cfg.business_email || "contact@theartfinity.com", links: [["Sell with us", "/sell-with-us"]] },
+  ];
   return (
-    <div>
-      <title>{`${title || "Contact Us"}: ${AppConfigs.app_name}`}</title>
-      <section>
-        <MinimalSection bg={banner} className="page-banner">
-          <h1 className="mt-5 text-center text-white">{title}</h1>
-          <PageBreadcrumb type="page-banner" />
-        </MinimalSection>
+    <div className="pb-24">
+      <section className="mx-auto max-w-[1240px] px-4 pb-10 pt-10 sm:px-6 md:pt-16">
+        <div className="mb-4 flex items-center gap-2.5"><DabRow /><span className="eyebrow">Contact</span></div>
+        <h1 className="display text-[56px] sm:text-[88px]">Say hello.</h1>
+        <p className="mt-4 text-[19px] text-ink-2">A real person reads every email.</p>
       </section>
-      <section id="map" className="min-h-96 overflow-hidden py-12 md:py-16">
-        <MaxWidthWrapper className="text-center md:text-start">
-          <div className="grid grid-cols-1 place-content-center gap-6 md:grid-cols-2 md:gap-8">
-            <div className="area-left grid grid-cols-1 place-content-center">
-              {mapType === "openstreet" ? (
-                <OpenStreetMapContainer
-                  position={
-                    AppConfigs?.business_address_cords as LatLngExpression
-                  }
-                />
-              ) : (
-                <GoogleMapContainer
-                  position={AppConfigs?.business_address_cords}
-                />
-              )}
-            </div>
-            <div className="area-right grid grid-cols-1 place-content-center">
-              <h2 className="area-title mb-4 capitalize xl:text-5xl">
-                {mapSection?.title || ""}
-              </h2>
-              <p
-                className="area-text"
-                dangerouslySetInnerHTML={{ __html: mapSection?.content || "" }}
-                suppressHydrationWarning={true}
-              ></p>
-              <div className="business-info mt-4 space-y-4">
-                {/* <h5 className="text-theme-secondary-500">Address:</h5> */}
-                <div className="text-start md:ms-8">
-                  <p className="contact">
-                    <span className="business-email">
-                      <Link
-                        href={`tel:${AppConfigs?.business_phone || ""}`}
-                        className="mb-4 flex gap-2"
-                      >
-                        {/* Maybe when I have a business phone */}
-                        {/* <Phone /> */}
-                        {/* {AppConfigs?.business_phone || ""} */}
-                      </Link>
-                    </span>
-                    <span className="business-email">
-                      <Link
-                        href={`mailto:${AppConfigs?.business_email || ""}`}
-                        className="mb-4 flex gap-2"
-                      >
-                        <Mail />
-                        {AppConfigs?.business_email || ""}
-                      </Link>
-                    </span>
-                  </p>
-                  <p className="address text-sm leading-loose">
-                    <Link href="/contact#map" className="flex gap-2">
-                      <MapPin />
-                      {AppConfigs?.business_name || ""},{" "}
-                      {AppConfigs?.business_address || ""}
-                    </Link>
-                  </p>
-                </div>
+      <section className="mx-auto grid max-w-[1240px] items-start gap-8 px-4 sm:px-6 lg:grid-cols-[1fr_1.3fr] lg:gap-12">
+        <div className="grid gap-5">
+          {cards.map((c) => (
+            <div key={c.title} className="grid grid-cols-[56px_1fr] gap-4 border-t-[3px] border-ink pt-4">
+              <Swatch color={c.color} className="h-10" />
+              <div className="grid min-w-0 gap-1.5">
+                <h2 className="display text-[28px]">{c.title}</h2>
+                <p className="text-[15.5px] text-ink-2">{c.sub}</p>
+                <a href={`mailto:${c.email}`} className="inline-flex w-fit max-w-full items-center gap-1.5 font-semibold text-scan underline-offset-2 hover:underline [overflow-wrap:anywhere]"><Mail className="h-4 w-4 shrink-0" aria-hidden="true" />{c.email}</a>
+                {c.links?.map(([l, h]) => <Link key={h} href={h} className="w-fit text-[14.5px] font-semibold text-ink underline-offset-2 hover:underline">{l}</Link>)}
               </div>
             </div>
-          </div>
-        </MaxWidthWrapper>
-      </section>
-      <section id="form" className="py-12 md:py-16">
-        <MaxWidthWrapper className="text-center md:text-start">
-          <div className="grid grid-cols-1 place-content-center gap-6 md:grid-cols-2 md:gap-8">
-            <div className="area-left grid grid-cols-1 place-content-center">
-              <h2 className="area-title mb-4 capitalize xl:text-5xl">
-                {formSection?.title || ""}
-              </h2>
-              <p
-                className="area-text"
-                dangerouslySetInnerHTML={{ __html: formSection?.content || "" }}
-                suppressHydrationWarning={true}
-              ></p>
-            </div>
-            <div className="area-right grid grid-cols-1 place-content-center">
-              <div className="mx-auto w-full md:max-w-screen-sm">
-                {/* TODO: Complete form later */}
-                {/* <ContactForm
-                  title={formSection?.subTitle || ""}
-                  className="[&_.area-title]:text-lg [&_.area-title]:md:text-2xl"
-                /> */}
-              </div>
-            </div>
-          </div>
-        </MaxWidthWrapper>
+          ))}
+          <p className="flex items-center gap-2 border-t border-line pt-4 text-[15px] text-ink-2"><MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />{cfg.business_name}, {cfg.business_address}</p>
+        </div>
+        <ContactForm />
       </section>
     </div>
   );
-};
-
-export default ContactPage;
+}

@@ -19,8 +19,7 @@ export type AdminOrderItem = {
   frameColor: string | null;
   quantity: number;
   lineTotal: number;
-  itemCost: number;
-  websiteCost: number;
+  expenses: number;
   profit: number;
   artistShare: number;
   companyShare: number;
@@ -50,8 +49,11 @@ const FILTERS: { id: Filter; label: string; test: (o: AdminOrder) => boolean }[]
 
 const SHIP_DAB: Record<string, string> = { pending: "var(--af-sticker)", shipped: "var(--af-scan)", delivered: "var(--af-earned)" };
 
+/** Full-resolution original for the printer. Cloudinary: drop the f_auto,q_auto delivery transform, force a download. */
 function downloadUrl(url: string) {
-  return url.includes("/upload/") ? url.replace("/upload/f_auto,q_auto/", "/upload/fl_attachment/") : url;
+  if (!url.includes("res.cloudinary.com") || !url.includes("/upload/")) return url;
+  if (url.includes("/upload/f_auto,q_auto/")) return url.replace("/upload/f_auto,q_auto/", "/upload/fl_attachment/");
+  return url.replace("/upload/", "/upload/fl_attachment/");
 }
 
 export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] }) {
@@ -188,9 +190,9 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
                   </div>
 
                   {/* printer + shipping (one row on phones, two columns on desktop) */}
-                  <div className="flex flex-wrap gap-2 lg:contents">
+                  <div className="flex flex-wrap gap-1.5 lg:contents">
                   <div>
-                    <label className={cn("inline-flex cursor-pointer items-center gap-2 rounded-full border-[1.5px] px-3 py-1.5 text-[13.5px] font-semibold transition", o.sentToPrinter ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>
+                    <label className={cn("inline-flex cursor-pointer items-center gap-1.5 rounded-full border-[1.5px] px-2.5 py-1.5 text-[13px] sm:gap-2 sm:px-3 sm:text-[13.5px] font-semibold transition", o.sentToPrinter ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>
                       <input type="checkbox" className="sr-only" checked={o.sentToPrinter} disabled={busy === o.id} onChange={() => toggleSent(o)} />
                       <span aria-hidden="true" className={cn("grid h-4 w-4 place-items-center rounded-[4px] border-[1.5px]", o.sentToPrinter ? "border-white bg-white text-ink" : "border-ink-2")}>
                         {o.sentToPrinter && <svg viewBox="0 0 16 16" className="h-3 w-3"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>}
@@ -207,7 +209,7 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
                         value={o.shippingStatus || "pending"}
                         disabled={busy === o.id}
                         onChange={(e) => setShipping(o, e.target.value)}
-                        className="cursor-pointer appearance-none rounded-full border-[1.5px] border-line bg-white py-1.5 pl-9 pr-8 text-[13.5px] font-semibold text-ink hover:border-ink focus:border-scan"
+                        className="cursor-pointer appearance-none rounded-full border-[1.5px] border-line bg-white py-1.5 pl-8 pr-7 text-[13px] sm:pl-9 sm:pr-8 sm:text-[13.5px] font-semibold text-ink hover:border-ink focus:border-scan"
                       >
                         <option value="pending">Pending</option>
                         <option value="shipped">Shipped</option>
@@ -231,7 +233,7 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
                     <div className="overflow-x-auto">
                       <table className="num w-full min-w-[460px] text-left">
                         <thead className="text-[11.5px] uppercase tracking-[0.06em] text-ink-2">
-                          <tr><th className="pb-1.5 font-bold">Print</th><th className="pb-1.5 text-right font-bold">Paid</th><th className="pb-1.5 text-right font-bold">Costs</th><th className="pb-1.5 text-right font-bold">Profit</th><th className="pb-1.5 text-right font-bold">Artist</th><th className="pb-1.5 text-right font-bold">Us</th><th /></tr>
+                          <tr><th className="pb-1.5 font-bold">Print</th><th className="pb-1.5 text-right font-bold">Paid</th><th className="pb-1.5 text-right font-bold">Costs</th><th className="pb-1.5 text-right font-bold">Profit</th><th className="pb-1.5 text-right font-bold">Artist</th><th className="pb-1.5 text-right font-bold">Artfinity</th><th /></tr>
                         </thead>
                         <tbody>
                           {o.items.map((i) => (
@@ -241,12 +243,12 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
                                 <div className="text-[12px] text-ink-2">{i.artistName}{i.quantity > 1 ? ` · ×${i.quantity}` : ""}</div>
                               </td>
                               <td className="py-1.5 text-right">{usd(i.lineTotal)}</td>
-                              <td className="py-1.5 text-right text-ink-2">{usd(i.itemCost + i.websiteCost)}</td>
+                              <td className="py-1.5 text-right text-ink-2">{usd(i.expenses)}</td>
                               <td className="py-1.5 text-right">{usd(i.profit)}</td>
                               <td className="py-1.5 text-right font-semibold text-earned">{usd(i.artistShare)}</td>
                               <td className="py-1.5 text-right">{usd(i.companyShare)}</td>
                               <td className="py-1.5 pl-3 text-right">
-                                {i.imageUrl && <a href={downloadUrl(i.imageUrl)} target="_blank" rel="noreferrer" download className="font-semibold text-scan">File</a>}
+                                {i.imageUrl && <a href={downloadUrl(i.imageUrl)} target="_blank" rel="noreferrer" download className="whitespace-nowrap font-semibold text-scan">Full-res file</a>}
                               </td>
                             </tr>
                           ))}

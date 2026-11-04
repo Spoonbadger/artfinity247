@@ -42,6 +42,8 @@ export default function CheckoutClient({ testMode }: { testMode: boolean }) {
   }
 
   return (
+    <>
+    <title>Checkout · Artfinity</title>
     <form onSubmit={onPay} className="mx-auto grid max-w-[1040px] items-start gap-6 px-4 py-6 sm:px-6 md:grid-cols-[minmax(0,1fr)_360px] md:gap-10 md:py-10">
       <div className="grid gap-5">
         <div className="flex items-end justify-between gap-3">
@@ -75,5 +77,6 @@ export default function CheckoutClient({ testMode }: { testMode: boolean }) {
         )}
       </CartPricingInfo>
     </form>
+    </>
   );
 }

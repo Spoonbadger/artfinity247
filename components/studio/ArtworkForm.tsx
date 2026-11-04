@@ -6,6 +6,7 @@ import { DragEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Check, ImagePlus, Loader2 } from "lucide-react";
 import { breakdown, money, SIZE_INCHES, SIZE_NAME, type SizeKey } from "@/lib/earnings";
+import { basePrices } from "@/lib/artwork_price";
 import { BrushStroke } from "@/components/af/Brush";
 import { cn } from "@/lib/utils";
 import { SENSITIVE_LABELS } from "./sensitive";
@@ -27,10 +28,11 @@ export type ArtworkInput = {
   markupXl: number | null;
 };
 
-const toDollars = (c: number | null | undefined) => (c ? String(Math.round(c) / 100) : "0");
+// The artist types the full print price. Markup = price - base, and the price can't go below the base.
+const priceFor = (size: SizeKey, markup: number | null | undefined) => ((basePrices[size] + Math.max(0, markup || 0)) / 100).toFixed(2);
 const toCents = (s: string) => {
   const n = parseFloat(s.replace(/[^0-9.]/g, ""));
-  return Number.isFinite(n) ? Math.min(50000, Math.max(0, Math.round(n * 100))) : 0;
+  return Number.isFinite(n) ? Math.min(200000, Math.max(0, Math.round(n * 100))) : 0;
 };
 
 export default function ArtworkForm({ artwork }: { artwork?: ArtworkInput }) {
@@ -45,9 +47,9 @@ export default function ArtworkForm({ artwork }: { artwork?: ArtworkInput }) {
   const [dragging, setDragging] = useState(false);
   const [title, setTitle] = useState(artwork?.title || "");
   const [description, setDescription] = useState(artwork?.description || "");
-  const [markups, setMarkups] = useState<Record<SizeKey, string>>({
-    small: toDollars(artwork?.markupSmall), medium: toDollars(artwork?.markupMedium),
-    large: toDollars(artwork?.markupLarge), xl: toDollars(artwork?.markupXl),
+  const [prices, setPrices] = useState<Record<SizeKey, string>>({
+    small: priceFor("small", artwork?.markupSmall), medium: priceFor("medium", artwork?.markupMedium),
+    large: priceFor("large", artwork?.markupLarge), xl: priceFor("xl", artwork?.markupXl),
   });
   const [sensitive, setSensitive] = useState<string[]>(artwork?.sensitive || []);
   const [saving, setSaving] = useState(false);
@@ -61,7 +63,7 @@ export default function ArtworkForm({ artwork }: { artwork?: ArtworkInput }) {
       .then((r) => (r.ok ? r.json() : null))
       .then((p) => {
         if (!p) return;
-        setMarkups({ small: toDollars(p.markupSmall), medium: toDollars(p.markupMedium), large: toDollars(p.markupLarge), xl: toDollars(p.markupXl) });
+        setPrices({ small: priceFor("small", p.markupSmall), medium: priceFor("medium", p.markupMedium), large: priceFor("large", p.markupLarge), xl: priceFor("xl", p.markupXl) });
       })
       .catch(() => {});
   }, [editing]);
@@ -99,13 +101,15 @@ export default function ArtworkForm({ artwork }: { artwork?: ArtworkInput }) {
     setError(null);
     if (!imageUrl) { setError("Add an image first."); return; }
     if (!title.trim()) { setError("Give it a title."); return; }
+    const low = SIZES.find((s) => toCents(prices[s]) < basePrices[s]);
+    if (low) { setError(`${SIZE_NAME[low]} prints start at ${money(basePrices[low])}.`); return; }
     setSaving(true);
     try {
       const fd = new FormData();
       fd.append("title", title.trim());
       fd.append("description", description.trim());
       fd.append("imageUrl", imageUrl);
-      for (const s of SIZES) fd.append(FIELD[s], String(toCents(markups[s])));
+      for (const s of SIZES) fd.append(FIELD[s], String(Math.max(0, toCents(prices[s]) - basePrices[s])));
       fd.append("sensitive", sensitive.join(","));
       if (printable) fd.append("printable", printable.join(","));
       const res = await fetch(editing ? `/api/artworks/update/${artwork!.slug}` : "/api/artworks/upload", { method: "POST", body: fd, credentials: "include" });
@@ -219,28 +223,32 @@ export default function ArtworkForm({ artwork }: { artwork?: ArtworkInput }) {
         <fieldset className="grid gap-3">
           <legend className="mb-1 flex w-full items-baseline justify-between gap-2">
             <span className="font-display text-[22px] font-bold [font-variation-settings:'wdth'_80]">Prices</span>
-            <span className="text-[12.5px] text-ink-2">Add your markup. We print and ship.</span>
+            <span className="text-[12.5px] text-ink-2">Set your price. We print and ship.</span>
           </legend>
           <ul className="grid gap-2">
             {SIZES.map((s) => {
-              const cents = toCents(markups[s]);
-              const b = breakdown(s, cents);
+              const cents = toCents(prices[s]);
+              const tooLow = cents < basePrices[s];
+              const b = breakdown(s, Math.max(0, cents - basePrices[s]));
               return (
-                <li key={s} className={cn("grid grid-cols-[minmax(0,1fr)_108px] items-center gap-x-3 gap-y-1 rounded-xl border border-line bg-white p-3 sm:grid-cols-[minmax(0,1fr)_130px_minmax(0,1fr)]", !ready(s) && "opacity-60")}>
+                <li key={s} className={cn("grid grid-cols-[minmax(0,1fr)_118px] items-center gap-x-3 gap-y-1 rounded-xl border bg-white p-3 sm:grid-cols-[minmax(0,1fr)_130px_minmax(0,1fr)]", tooLow ? "border-coral" : "border-line", !ready(s) && "opacity-60")}>
                   <div className="min-w-0">
                     <b className="block text-[15px]">{SIZE_NAME[s]} <span className="font-normal text-ink-2">{SIZE_INCHES[s]}</span></b>
-                    <span className="num text-[13px] text-ink-2">Sells for {money(b.list)}</span>
+                    <span className="num text-[13px] text-ink-2">Min {money(basePrices[s])}</span>
                   </div>
                   <label className="flex items-center gap-1 rounded-lg border-2 border-ink px-2 py-1 focus-within:border-scan">
-                    <span className="text-[13px] text-ink-2">+$</span>
+                    <span className="text-[14px] text-ink-2">$</span>
                     <input
-                      inputMode="decimal" value={markups[s]} aria-label={`${SIZE_NAME[s]} markup in dollars`}
-                      onChange={(e) => setMarkups((m) => ({ ...m, [s]: e.target.value.replace(/[^0-9.]/g, "").slice(0, 7) }))}
+                      inputMode="decimal" value={prices[s]} aria-label={`${SIZE_NAME[s]} print price in dollars`} aria-invalid={tooLow || undefined}
+                      onChange={(e) => setPrices((m) => ({ ...m, [s]: e.target.value.replace(/[^0-9.]/g, "").slice(0, 7) }))}
+                      onBlur={() => setPrices((m) => ({ ...m, [s]: (toCents(m[s]) / 100).toFixed(2) }))}
                       className="num w-full min-w-0 bg-transparent text-[16px] font-semibold outline-none"
                     />
                   </label>
                   <p className="col-span-2 text-[13.5px] sm:col-span-1 sm:text-right" aria-live="polite">
-                    you earn <b className="num text-[16px] text-earned">{money(b.artist)}</b> per print
+                    {tooLow
+                      ? <span className="font-semibold text-coral">At least {money(basePrices[s])}</span>
+                      : <>you earn <b className="num text-[16px] text-earned">{money(b.artist)}</b> per print</>}
                   </p>
                 </li>
               );

@@ -94,6 +94,7 @@ export default function ThankYouClient({ sessionId }: { sessionId: string }) {
 
   return (
     <div className="mx-auto grid max-w-[880px] gap-8 px-4 py-8 sm:px-6 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)] md:items-center md:gap-12 md:py-14">
+      <title>Thank you · Artfinity</title>
       {firstImg && (
         <div className="rounded-[22px] bg-gallery bg-[radial-gradient(ellipse_at_50%_0%,#f7f5f0_0%,#e9e6df_70%)] px-[14%] py-[10%]">
           <div className="mx-auto w-fit rotate-[-1.5deg] bg-white p-2 shadow-[0_18px_40px_-12px_rgba(21,22,27,.45)]">

@@ -11,6 +11,7 @@ const MESSAGES: Record<string, string> = {
   weak_password: "Use at least 8 characters for the new one.",
   missing_fields: "Fill in both passwords.",
   not_logged_in: "Log in first, then change your password.",
+  rate_limited: "Too many tries. Wait a minute and try again.",
 };
 
 export default function ChangePasswordForm() {

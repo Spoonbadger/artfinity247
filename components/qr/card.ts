@@ -55,7 +55,6 @@ export type Design = Look & {
 };
 
 export function presetLook(k: PresetKey): Look {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { name, sub, ...look } = PRESETS[k];
   return look;
 }
@@ -132,17 +131,19 @@ const n2 = (v: number) => +v.toFixed(2);
 
 // ---------------- shared pieces ----------------
 function qrAt(d: Design, qrText: string, x: number, y: number, size: number, title: string) {
-  return qrSVG(qrText, { fg: d.fg, dots: d.dots, eyes: d.eyes, eyeColor: eyeColor(d), label: `QR code for ${title}` })
+  return qrSVG(qrText, { fg: d.fg, dots: d.dots, eyes: d.eyes, eyeColor: eyeColor(d), label: esc(`QR code for ${title}`) })
     .replace("<svg ", `<svg x="${n2(x)}" y="${n2(y)}" width="${n2(size)}" height="${n2(size)}" `);
 }
 
-/** The Artfinity mark plus wordmark. y is the baseline. */
+/** The Artfinity mark plus wordmark. y is the baseline.
+ *  Drawn with a thin frame and a small square: the full-weight mark has the same
+ *  1:1:3:1:1 rhythm as a QR corner and makes scanners lock onto the wrong spot. */
 function brand(f: Fonts, x: number, y: number, size: number, ink: string, anchor: "start" | "middle" = "start") {
   const b = size * 0.95, gap = size * 0.32, tw = width(f.display, "artfinity", size);
   const total = b + gap + tw;
   const x0 = anchor === "middle" ? x - total / 2 : x;
   const k = b / 24, top = y - capHeight(f.display) * size - b * 0.06;
-  return `<g><g transform="translate(${n2(x0)} ${n2(top)}) scale(${n2(k)})"><rect x="1.5" y="1.5" width="21" height="21" rx="3" fill="none" stroke="${ink}" stroke-width="3"/><rect x="7" y="7" width="10" height="10" rx="1.5" fill="${ink}"/></g>` +
+  return `<g><g transform="translate(${n2(x0)} ${n2(top)}) scale(${n2(k)})"><rect x="1" y="1" width="22" height="22" rx="3.5" fill="none" stroke="${ink}" stroke-width="1.8"/><rect x="8.25" y="8.25" width="7.5" height="7.5" rx="1.6" fill="${ink}"/></g>` +
     text(f.display, "artfinity", x0 + b + gap, y, size, ink) + "</g>";
 }
 const brandWidth = (f: Fonts, size: number) => size * 1.27 + width(f.display, "artfinity", size);

@@ -13,8 +13,8 @@ const PALS = [
   ["#5f0f40", "#9a031e", "#fb8b24", "#e36414", "#0f4c5c"], ["#22333b", "#eae0d5", "#c6ac8f", "#5e503f", "#a9927d"],
   ["#003049", "#d62828", "#f77f00", "#fcbf49", "#eae2b7"]
 ];
-function landscape(seed, w, h) {
-  const r = rng(seed), P = PALS[seed % PALS.length], pick = () => P[Math.floor(r() * P.length)];
+function landscape(seed, w, h, pal = seed % PALS.length) {
+  const r = rng(seed), P = PALS[pal % PALS.length], pick = () => P[Math.floor(r() * P.length)];
   let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}"><defs><filter id="t"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="${seed}"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .08 0"/><feComposite in2="SourceGraphic" operator="in"/></filter></defs><rect width="${w}" height="${h}" fill="${P[2]}"/>`;
   s += `<circle cx="${w * (0.2 + r() * 0.6)}" cy="${h * (0.15 + r() * 0.2)}" r="${w * (0.1 + r() * 0.1)}" fill="${P[4]}"/>`;
   const layers = 3 + Math.floor(r() * 2);
@@ -36,7 +36,7 @@ function figure(seed, w, h) { // abstract figure study, used for the "sensitive"
   <circle cx="${w * (.2 + r() * .1)}" cy="${h * .12}" r="${w * .06}" fill="#f3b45b"/></svg>`;
 }
 const jobs = [];
-for (let i = 1; i <= 30; i++) jobs.push([`art-${String(i).padStart(2, "0")}.jpg`, i === 4 ? figure(41, 1200, 1500) : landscape(i * 7 + 3, 1200, 1500)]);
-for (let i = 1; i <= 6; i++) jobs.push([`avatar-${i}.jpg`, landscape(i * 31, 400, 400)]);
+for (let i = 1; i <= 30; i++) jobs.push([`art-${String(i).padStart(2, "0")}.jpg`, i === 4 ? figure(41, 1200, 1500) : landscape(i * 7 + 3, 1200, 1500, i)]);
+for (let i = 1; i <= 6; i++) jobs.push([`avatar-${i}.jpg`, landscape(i * 31, 400, 400, i + 2)]);
 for (const [name, svg] of jobs) await sharp(Buffer.from(svg)).jpeg({ quality: 82 }).toFile(path.join(OUT, name));
 console.log("wrote", jobs.length, "images to", OUT);

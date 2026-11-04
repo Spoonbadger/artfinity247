@@ -3,14 +3,25 @@
 import { NextResponse } from "next/server";
 import { compare, hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { getUserFromCookie } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
+import { rateLimit } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ code: "not_logged_in" }, { status: 401 });
+  let user;
+  try {
+    user = await requireUser();
+  } catch {
+    return NextResponse.json({ code: "not_logged_in" }, { status: 401 });
+  }
+
+  // Keyed per artist (and per IP) so guessing the current password is slow.
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  if (!rateLimit(`change-password:${user.id}`) || !rateLimit(`change-password-ip:${ip}`)) {
+    return NextResponse.json({ code: "rate_limited" }, { status: 429 });
+  }
 
   let body: any;
   try { body = await req.json(); } catch { body = {}; }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { adminOrRedirect } from "../_components/gate";
 import { cn } from "@/lib/utils";
 import ModerationList, { type ModArtwork } from "../_components/ModerationList";
 
@@ -16,6 +17,7 @@ const TABS = [
 type TabId = (typeof TABS)[number]["id"];
 
 export default async function ModerationPage({ searchParams }: { searchParams: { tab?: string } }) {
+  await adminOrRedirect("/admin/moderation");
   const tab: TabId = (TABS.find((t) => t.id === searchParams.tab)?.id ?? "queue") as TabId;
 
   const [queue, sensitive, rejected, live] = await Promise.all([

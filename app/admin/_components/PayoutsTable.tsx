@@ -126,7 +126,7 @@ export default function PayoutsTable({ month }: { month: string }) {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <b className="block truncate">{r.artistName}</b>
-                      <span className="text-[13px] text-ink-2">{r.venmoHandle ? `Venmo @${r.venmoHandle.replace(/^@/, "")}` : "No Venmo"} · {r.itemsCount} prints</span>
+                      <span className="text-[13px] text-ink-2">{r.venmoHandle ? `Venmo @${r.venmoHandle.replace(/^@/, "")}` : "No Venmo"} · {r.itemsCount} {r.itemsCount === 1 ? "print" : "prints"}</span>
                     </div>
                     <b className="num shrink-0 text-[18px] text-earned">{usd(r.artistShare)}</b>
                   </div>
