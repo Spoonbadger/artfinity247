@@ -130,5 +130,9 @@ async function main() {
     } });
   }
   console.log(`Seeded ${ARTISTS.length} artists, ${arts.length} artworks, ${plan.length} orders. Log in as maya@artfinity.local / ${PASSWORD} (admin: admin@artfinity.local)`);
+
+  // Short link codes and scans, with some orders credited to codes (prisma/seed-scans.mjs)
+  const { seedScans } = await import("./seed-scans.mjs");
+  await seedScans(prisma);
 }
 main().finally(() => prisma.$disconnect());

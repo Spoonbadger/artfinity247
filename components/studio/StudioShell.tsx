@@ -14,6 +14,7 @@ export const STUDIO_NAV = [
   { href: "/studio", label: "Studio", dab: "#2b37f0" },
   { href: "/studio/art", label: "My art", dab: "#e8743b" },
   { href: "/studio/qr", label: "QR codes", dab: "#ffd43b" },
+  { href: "/studio/codes", label: "My codes", dab: "#2b37f0" },
   { href: "/studio/share", label: "Share kit", dab: "#ff5a36" },
   { href: "/studio/developers", label: "Embed", dab: "#9aa0ff" },
   { href: "/studio/links", label: "Links", dab: "#5bc0be" },
