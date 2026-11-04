@@ -1,0 +1,15 @@
+# Local database for development: `docker compose up -d`
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: artfinity
+      POSTGRES_PASSWORD: artfinity
+      POSTGRES_DB: artfinity
+    ports:
+      - "5432:5432"
+    volumes:
+      - artfinity-db:/var/lib/postgresql/data
+volumes:
+  artfinity-db:

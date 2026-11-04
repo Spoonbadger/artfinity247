@@ -31,7 +31,7 @@ export default function ArtCard({ art, className, priority = false, showPrice = 
       </Link>
       <div className="grid min-w-0 gap-0.5 px-0.5">
         <Link href={`/art/${art.slug}`} className="truncate text-[15px] font-semibold leading-snug text-ink no-underline hover:text-scan">{art.title}</Link>
-        <div className="flex min-w-0 items-baseline justify-between gap-2 text-[13.5px]">
+        <div className="grid min-w-0 gap-x-2 text-[13.5px] sm:flex sm:items-baseline sm:justify-between">
           <Link href={`/@${art.artist.slug}`} className="truncate text-ink-2 no-underline hover:text-ink hover:underline">{art.artist.name}</Link>
           {showPrice && <span className="num shrink-0 text-ink-2">from <b className="font-semibold text-ink">{money(art.priceFrom)}</b></span>}
         </div>
