@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PRO, pct, proPrice } from "@/lib/plans";
 
-/** Share kit video section for Free artists: a still preview and a friendly way to Pro. */
+/** Share kit video section for Free artists: a still preview and a friendly way to Infinity. */
 export default function VideoUpsell({ imageUrl, title }: { imageUrl: string; title: string }) {
   return (
     <div className="grid items-center gap-5 sm:grid-cols-[minmax(0,200px)_minmax(0,1fr)]">
@@ -13,14 +13,14 @@ export default function VideoUpsell({ imageUrl, title }: { imageUrl: string; tit
             <svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 5v14l11-7z" fill="#15161b" /></svg>
           </span>
         </span>
-        <span className="absolute left-2 top-2 rounded-full bg-ink px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-[0.06em] text-white">Pro</span>
+        <span className="absolute left-2 top-2 rounded-full bg-ink px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-[0.06em] text-white">Infinity</span>
       </div>
       <div className="grid justify-items-start gap-3">
-        <h3 className="display text-[28px] leading-none">Videos are a Pro tool</h3>
+        <h3 className="display text-[28px] leading-none">Videos are an Infinity tool</h3>
         <p className="text-[15px] text-ink-2">A 10-second reel of “{title}”, made for you. Plus {pct(PRO.split)} of profit and automations.</p>
         <div className="flex flex-wrap gap-2">
-          <Link href="/studio/pro" className="btn btn-blue">Try Pro</Link>
-          <Link href="/studio/pro#referrals" className="btn btn-ghost">Share, get 2 months free</Link>
+          <Link href="/studio/infinity" className="btn btn-blue">Try Infinity</Link>
+          <Link href="/studio/infinity#referrals" className="btn btn-ghost">Share, get 2 months free</Link>
         </div>
         <span className="text-[12.5px] text-ink-2">{proPrice()}/mo. Images, captions and links below stay free.</span>
       </div>

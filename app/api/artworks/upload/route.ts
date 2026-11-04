@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Referrals: a referred artist's first approved upload earns their referrer Pro months (once).
+    // Referrals: a referred artist's first approved upload earns their referrer Infinity months (once).
     if (artwork.status === "APPROVED") {
       try {
         await rewardReferralOnUpload(artwork.artistId)

@@ -26,7 +26,7 @@ export default async function AutomationsPage() {
     <StudioPage
       title={<span className="inline-flex flex-wrap items-center gap-3">Automations <ProChip className="text-[13px]" /></span>}
       sub="Post once. Artfinity does the rest."
-      actions={<Link href="/studio/pro" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">Plan</Link>}
+      actions={<Link href="/studio/infinity" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">Plan</Link>}
     >
       <AutomationsPanel
         pro={plan.active}

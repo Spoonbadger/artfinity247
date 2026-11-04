@@ -47,6 +47,7 @@ model OrderItem {
   shippingCost Int?
   websiteCost  Int?
   editionNumber Int?     // e.g. 12 of 50 for limited editions
+  qrCodeId      String?  // the printed code that led to this sale (scan attribution)
   artistSplit   Float?   // the artist's share of profit locked in when the order was placed (0.6 free, higher on Pro)
   artwork      Artwork? @relation(fields: [artworkId], references: [id])
   order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -103,6 +104,7 @@ model Artist {
   messages         Message[]
   emailTemplates   EmailTemplate[]
   collections      Collection[]
+  qrCodes          QrCode[]
 
   // Legal: when the artist accepted the Artist Terms and Terms & Conditions
   termsAcceptedAt  DateTime?
@@ -139,6 +141,7 @@ model Artwork {
   // Room previews on the buy page: scene numbers (0-999) the artist picked; empty = auto-picked
   roomScenes    Int[]         @default([])
   collectionItems CollectionItem[]
+  qrCodes         QrCode[]
   flaggedReason String?
   flaggedBy     String?
 }
@@ -256,4 +259,40 @@ model CollectionItem {
 enum Plan {
   FREE
   PRO
+}
+
+
+// A printed code. It holds only a short link (/q/<code>); everything below is editable after printing.
+model QrCode {
+  id          String      @id @default(cuid())
+  code        String      @unique // short, upper-case, no look-alike characters, e.g. K7P2
+  artistId    String
+  artworkId   String?     // null = the code opens the artist's page
+  label       String?     // the artist's own name for it, e.g. "Lumen Cafe wall"
+  venue       String?     // shown as "You scanned this at ..."
+  discountPct Int?        // 5-30, applied at checkout
+  design      Json?       // the QR Studio design it was printed with
+  active      Boolean     @default(true)
+  expiresAt   DateTime?
+  createdAt   DateTime    @default(now())
+  artist      Artist      @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  artwork     Artwork?    @relation(fields: [artworkId], references: [id], onDelete: SetNull)
+  scans       ScanEvent[]
+
+  @@index([artistId])
+}
+
+// One scan of a printed code. No personal data: coarse device and place only.
+model ScanEvent {
+  id        String   @id @default(cuid())
+  qrCodeId  String
+  createdAt DateTime @default(now())
+  device    String?  // phone | tablet | desktop
+  city      String?
+  region    String?
+  country   String?
+  visitorId String?  // random first-party id, for unique scans and joining scans to orders
+  qrCode    QrCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+
+  @@index([qrCodeId, createdAt])
 }

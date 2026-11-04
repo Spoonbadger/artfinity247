@@ -85,7 +85,7 @@ export async function getSales(artistId: string, since?: Date): Promise<Sale[]> 
     const priceCents = it.lineTotal ?? (it.unitPrice ?? 0) * quantity;
     const size = toPrintSize(it.size);
     const date = it.order.createdAt;
-    // Prefer the split locked in at order time (Pro orders store a higher one).
+    // Prefer the split locked in at order time (Infinity orders store a higher one).
     const { artistShare, split } = calcItemProfitCents({ lineTotal: priceCents, size, frameChosen: it.frameChosen, quantity, orderDate: date, artistSplit: it.artistSplit });
     return {
       id: it.id,

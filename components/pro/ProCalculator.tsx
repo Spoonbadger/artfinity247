@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 const MIN_PRICE = Math.ceil(basePrices.medium / 100); // $45
 const MAX_PRICE = 200;
 
-/** Monthly earnings on Free vs Pro for `prints` Medium prints at `priceCents` each. */
+/** Monthly earnings on Free vs Infinity for `prints` Medium prints at `priceCents` each. */
 export function monthly(prints: number, priceCents: number) {
   const b = breakdown("medium", Math.max(0, priceCents - basePrices.medium));
   const freeEach = Math.round(b.profit * FREE_SPLIT);
@@ -17,7 +17,7 @@ export function monthly(prints: number, priceCents: number) {
   const proPrints = PRO.monthlyPrintCap == null ? prints : Math.min(prints, PRO.monthlyPrintCap);
   const free = freeEach * prints;
   const pro = proEach * proPrints + freeEach * (prints - proPrints) - PRO.priceCents;
-  // Fewest prints a month where Pro earns at least as much as Free.
+  // Fewest prints a month where Infinity earns at least as much as Free.
   const extra = proEach - freeEach;
   const breakEven = extra > 0 ? Math.ceil(PRO.priceCents / extra) : null;
   const reachable = breakEven != null && (PRO.monthlyPrintCap == null || breakEven <= PRO.monthlyPrintCap);
@@ -60,14 +60,14 @@ export default function ProCalculator({ initialPrints = 8, initialPrice = 60 }: 
         <Slider label="Prints sold a month" value={prints} min={0} max={100} onChange={setPrints} format={(n) => String(n)} />
         <Slider label="Average price" value={price} min={MIN_PRICE} max={MAX_PRICE} onChange={setPrice} format={(n) => `$${n}`} />
         <p className="text-[13px] text-ink-2">
-          Medium prints, unframed. You earn {money(m.freeEach)} a print on Free, {money(m.proEach)} on Pro.
+          Medium prints, unframed. You earn {money(m.freeEach)} a print on Free, {money(m.proEach)} on Infinity.
         </p>
       </div>
 
       <div className="grid content-start gap-4" aria-live="polite">
         {[
           { key: "free", name: `Free · ${pct(FREE_SPLIT)}`, value: m.free, color: "var(--af-ink-2)" },
-          { key: "pro", name: `Pro · ${pct(PRO.split)}, after $${PRO.priceCents / 100}`, value: m.pro, color: "var(--af-earned)" },
+          { key: "pro", name: `Infinity · ${pct(PRO.split)}, after $${PRO.priceCents / 100}`, value: m.pro, color: "var(--af-earned)" },
         ].map((r) => (
           <div key={r.key} className="grid gap-1.5">
             <div className="flex items-baseline justify-between gap-3">
@@ -84,10 +84,10 @@ export default function ProCalculator({ initialPrints = 8, initialPrice = 60 }: 
 
         <div className={cn("rounded-2xl border-[1.5px] p-4", proWins ? "border-earned bg-earned-soft" : "border-line bg-wall")}>
           <b className="block text-[17px]">
-            {proWins ? `Pro earns you ${moneyRound(diff)} more a month.` : diff === 0 ? "Even either way." : `Free is better for you now, by ${moneyRound(diff)}.`}
+            {proWins ? `Infinity earns you ${moneyRound(diff)} more a month.` : diff === 0 ? "Even either way." : `Free is better for you now, by ${moneyRound(diff)}.`}
           </b>
           <span className="text-[14px] text-ink-2">
-            {m.breakEven != null ? `Pro pays for itself at ${m.breakEven} prints a month at this price.` : "At this price Pro doesn't pay for itself on prints alone."}
+            {m.breakEven != null ? `Infinity pays for itself at ${m.breakEven} prints a month at this price.` : "At this price Infinity doesn't pay for itself on prints alone."}
           </span>
         </div>
       </div>

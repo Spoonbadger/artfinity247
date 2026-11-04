@@ -1,5 +1,5 @@
-// POST /api/studio/pro/trial: start a 14-day Pro trial. DEV ONLY (same rule as test checkout,
-// lib/testCheckout.ts) until Stripe Billing exists. DELETE ends Pro now (dev only, for testing).
+// POST /api/studio/pro/trial: start a 14-day Infinity trial. DEV ONLY (same rule as test checkout,
+// lib/testCheckout.ts) until Stripe Billing exists. DELETE ends Infinity now (dev only, for testing).
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromCookie } from "@/lib/auth";
@@ -16,7 +16,7 @@ export async function POST() {
   if (!user?.id) return NextResponse.json({ error: "Log in first." }, { status: 401 });
   const a = await prisma.artist.findUnique({ where: { id: user.id }, select: { proUntil: true } });
   if (!a) return NextResponse.json({ error: "Artist not found." }, { status: 404 });
-  if (isProActive(a)) return NextResponse.json({ error: "You're already on Pro.", proUntil: a.proUntil }, { status: 409 });
+  if (isProActive(a)) return NextResponse.json({ error: "You're already on Infinity.", proUntil: a.proUntil }, { status: 409 });
   const proUntil = addDays(new Date(), PRO.trialDays);
   await prisma.artist.update({ where: { id: user.id }, data: { plan: "PRO", proUntil } });
   console.info("PRO_TRIAL_STARTED (dev)", JSON.stringify({ artistId: user.id, proUntil: proUntil.toISOString() }));

@@ -14,7 +14,7 @@ export function normalizeSize(raw: string | null | undefined): PrintSize {
 
 /**
  * Authoritative per-item breakdown (cents). Uses the split stored on the item
- * (OrderItem.artistSplit, locked in at order time: 60% Free, higher on Pro) when
+ * (OrderItem.artistSplit, locked in at order time: 60% Free, higher on Infinity) when
  * present, else the split for the order date (50% before 2026-10-21, 60% after).
  */
 export function itemBreakdown(item: {

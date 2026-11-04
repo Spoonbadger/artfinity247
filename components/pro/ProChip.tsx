@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
-/** Small "Pro" chip: ink with a yellow brush-dab. For Pro artists only. */
-export default function ProChip({ className, title = "Artfinity Pro" }: { className?: string; title?: string }) {
+/** Small "Infinity" chip: ink with a yellow brush-dab. For Infinity artists only. */
+export default function ProChip({ className, title = "the Infinity plan" }: { className?: string; title?: string }) {
   return (
     <span
       title={title}
@@ -11,7 +11,7 @@ export default function ProChip({ className, title = "Artfinity Pro" }: { classN
       )}
     >
       <i aria-hidden="true" className="paint-dab !h-2 !w-2" style={{ ["--dab" as string]: "var(--af-sticker)" }} />
-      Pro
+      Infinity
     </span>
   );
 }

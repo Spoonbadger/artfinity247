@@ -79,12 +79,12 @@ export default function AutomationsPanel({ pro, storageKey, recent }: { pro: boo
       {!pro && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-[1.5px] border-ink bg-sticker/40 p-4">
           <span className="grid gap-0.5">
-            <b className="text-[16px]">Automations are a Pro tool</b>
-            <span className="text-[14px] text-ink-2">Turn on Pro to switch these on.</span>
+            <b className="text-[16px]">Automations are an Infinity tool</b>
+            <span className="text-[14px] text-ink-2">Turn on Infinity to switch these on.</span>
           </span>
           <div className="flex flex-wrap gap-2">
-            <Link href="/studio/pro" className="btn btn-blue btn-sm min-h-[44px] md:min-h-0">See Pro</Link>
-            <Link href="/studio/pro#referrals" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">Get 2 months free</Link>
+            <Link href="/studio/infinity" className="btn btn-blue btn-sm min-h-[44px] md:min-h-0">See Infinity</Link>
+            <Link href="/studio/infinity#referrals" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">Get 2 months free</Link>
           </div>
         </div>
       )}
@@ -140,7 +140,7 @@ export default function AutomationsPanel({ pro, storageKey, recent }: { pro: boo
                   <b className="truncate text-[14.5px]">{r.title}</b>
                   <span className="text-[13px] text-ink-2">
                     {new Date(r.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })} ·{" "}
-                    {pro && actions.length ? `Would: ${actions.join(" · ")}` : pro ? "Nothing switched on" : "Pro only"}
+                    {pro && actions.length ? `Would: ${actions.join(" · ")}` : pro ? "Nothing switched on" : "Infinity only"}
                   </span>
                 </span>
               </li>

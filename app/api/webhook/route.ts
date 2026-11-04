@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
           expand: ['data.price.product'],
         })
 
-        // Lock in each artist's split (Free 60%, Pro higher) as of this order. Bulk orders pay no split.
+        // Lock in each artist's split (Free 60%, Infinity higher) as of this order. Bulk orders pay no split.
         const splits = isBulk
           ? lineItems.data.map(() => null)
           : await artistSplitsForOrder(prisma, lineItems.data.map((li) => ({

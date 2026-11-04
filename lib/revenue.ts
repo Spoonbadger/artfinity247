@@ -13,14 +13,14 @@ export function getArtistSplit(orderDate: Date): number {
 }
 
 /**
- * Plan-aware split at order time. Pro (proUntil after the order date) gets PRO.split from lib/plans.ts,
- * unless PRO.monthlyPrintCap is set and the artist already sold that many Pro-split prints this month.
+ * Plan-aware split at order time. Infinity (proUntil after the order date) gets PRO.split from lib/plans.ts,
+ * unless PRO.monthlyPrintCap is set and the artist already sold that many Infinity-split prints this month.
  */
 export function getArtistSplitFor(args: {
   orderDate: Date
   plan?: PlanId | string | null
   proUntil?: Date | string | null
-  /** Prints already paid at the Pro split this calendar month (only matters when a cap is set). */
+  /** Prints already paid at the Infinity split this calendar month (only matters when a cap is set). */
   proPrintsThisMonth?: number
 }): number {
   const base = getArtistSplit(args.orderDate)
@@ -42,7 +42,7 @@ export async function artistSplitsForOrder(db: SplitDb, lines: { artistId: strin
     : []
   const byId = new Map(artists.map((a) => [a.id, a]))
 
-  // With a monthly cap, count this month's prints already paid at the Pro split.
+  // With a monthly cap, count this month's prints already paid at the Infinity split.
   const used = new Map<string, number>()
   if (PRO.monthlyPrintCap != null) {
     const monthStart = new Date(orderDate.getFullYear(), orderDate.getMonth(), 1)

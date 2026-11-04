@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
     },
     select: {
       lineTotal: true,
+      unitPrice: true,
       size: true,
       frameChosen: true,
       quantity: true,
@@ -68,7 +69,8 @@ export async function POST(req: NextRequest) {
   const amountCents = items.reduce((sum: any, item: any) => {
     const sizeNorm = normalizeSize(item.size)
     const b = calcItemProfitCents({
-      lineTotal: item.lineTotal ?? 0,
+      // Same fallback as /api/admin/payouts/summary, so the recorded amount matches what the admin saw.
+      lineTotal: item.lineTotal ?? (item.unitPrice ?? 0) * (item.quantity ?? 0),
       size: sizeNorm,
       frameChosen: item.frameChosen,
       quantity: item.quantity || 1,

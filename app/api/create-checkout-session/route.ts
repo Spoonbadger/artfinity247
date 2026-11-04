@@ -176,7 +176,7 @@ async function devCheckout(lines: Line[], email: string | undefined, buyer: { na
           shippingAddress: "Test order, no shipping",
         },
       });
-      // Lock in each artist's split (Free 60%, Pro higher) as of this order.
+      // Lock in each artist's split (Free 60%, Infinity higher) as of this order.
       const splits = await artistSplitsForOrder(tx, lines.map((l) => ({ artistId: l.art.artistId, quantity: l.quantity })), created.createdAt);
       await tx.orderItem.createMany({
         data: lines.map((l, i) => {

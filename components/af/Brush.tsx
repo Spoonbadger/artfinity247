@@ -40,3 +40,14 @@ export function PaintChip({ color, value, label, note, earned = false }: { color
     </div>
   );
 }
+
+/** An irregular paint splotch, used behind the current item in a menu. */
+export function Splotch({ className, color = "var(--af-sticker)" }: { className?: string; color?: string }) {
+  return (
+    <svg className={cn("block", className)} style={{ color }} viewBox="0 0 220 60" preserveAspectRatio="none" aria-hidden="true">
+      <path fill="currentColor" d="M14 9c22-7 58-3 88-6 31-3 67-4 96 3 14 4 21 13 17 24-3 9 2 17-6 23-12 8-42 4-70 5-30 1-61 4-92 1C24 57 6 52 4 40 2 31 9 26 6 19 4 13 7 11 14 9Z" />
+      <path fill="currentColor" opacity=".55" d="M196 6c8-2 15 1 16 5 1 5-6 6-11 5-6-1-11-8-5-10ZM9 47c-5 1-8 5-5 8 3 2 8 0 9-3 1-3-1-6-4-5Z" />
+      <path d="M24 22c40-6 100-2 166-4M28 40c50 3 110-1 160 2" stroke="#fff" strokeWidth="2.5" fill="none" opacity=".25" strokeLinecap="round" />
+    </svg>
+  );
+}

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-/** Dev-only Pro trial (no billing yet). In production this renders "Billing coming soon". */
+/** Dev-only Infinity trial (no billing yet). In production this renders "Billing coming soon". */
 export default function TrialButton({ devTrial, active, onDark = false }: { devTrial: boolean; active: boolean; onDark?: boolean }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -32,7 +32,7 @@ export default function TrialButton({ devTrial, active, onDark = false }: { devT
     <div className="grid justify-items-start gap-2">
       {active ? (
         <button type="button" className={`btn btn-ghost btn-sm ${onDark ? "!border-white !text-white hover:!bg-white hover:!text-ink" : ""}`} disabled={busy} onClick={() => run("DELETE")}>
-          End Pro now
+          End Infinity now
         </button>
       ) : (
         <button type="button" className="btn btn-blue btn-lg" disabled={busy} onClick={() => run("POST")}>

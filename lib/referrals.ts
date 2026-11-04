@@ -1,8 +1,8 @@
 // lib/referrals.ts (server only)
-// "Share Artfinity, get 2 months of Pro."
+// "Share Artfinity, get 2 months of Infinity."
 //
 // Rule: an artist who signs up with ?ref=CODE and makes their first approved upload earns the
-// referrer REFERRALS.rewardMonths of Pro, extended from max(now, proUntil) and capped at
+// referrer REFERRALS.rewardMonths of Infinity, extended from max(now, proUntil) and capped at
 // REFERRALS.maxBankedMonths ahead of today.
 //
 // Planned anti-abuse (not enforced yet): also require a real sale or verification within
@@ -103,7 +103,7 @@ export async function rewardReferralOnUpload(artistId: string): Promise<RewardRe
         email: ledgerEmail(artistId),
         direction: REFERRAL_DIRECTION,
         subject: "Referral reward",
-        body: `+${REFERRALS.rewardMonths} months of Pro${capped ? " (capped at 12 months banked)" : ""}. Pro until ${proUntil.toISOString()}.`,
+        body: `+${REFERRALS.rewardMonths} months of Infinity${capped ? " (capped at 12 months banked)" : ""}. Infinity until ${proUntil.toISOString()}.`,
         sentAt: now,
       },
     });

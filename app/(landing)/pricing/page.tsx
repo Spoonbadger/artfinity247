@@ -6,13 +6,12 @@ import { Brushed, BrushStroke } from "@/components/af/Brush";
 import { DabRow } from "@/components/browse/PageHead";
 import { PUBLIC_ART } from "@/components/browse/data";
 import ProCalculator from "@/components/pro/ProCalculator";
-import ProChip from "@/components/pro/ProChip";
 import { FREE_SPLIT, PRO, REFERRALS, pct, planFeatures, proPrice, type Feature } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Pricing",
-  description: `Free to sell, ${pct(FREE_SPLIT)} of profit. Pro is ${proPrice()} a month: ${pct(PRO.split)} of profit, auto videos and automations.`,
+  description: `Free to sell, ${pct(FREE_SPLIT)} of profit. Infinity is ${proPrice()} a month: ${pct(PRO.split)} of profit, auto videos and automations.`,
 };
 
 function Cell({ v, dark = false }: { v: Feature["free"]; dark?: boolean }) {
@@ -21,7 +20,7 @@ function Cell({ v, dark = false }: { v: Feature["free"]; dark?: boolean }) {
 }
 
 function FeatureList({ which, dark = false }: { which: "free" | "pro"; dark?: boolean }) {
-  // Pro lists what it adds; Free lists everything, with Pro-only rows dimmed.
+  // Infinity lists what it adds; Free lists everything, with Infinity-only rows dimmed.
   const rows = which === "pro" ? planFeatures().filter((f) => f.free !== true) : planFeatures();
   return (
     <ul className="grid gap-2.5">
@@ -48,10 +47,10 @@ function FeatureList({ which, dark = false }: { which: "free" | "pro"; dark?: bo
 }
 
 const FAQ: [string, string][] = [
-  ["Can I cancel?", "Anytime. Pro runs to the end of the month you paid for, then you’re on Free."],
+  ["Can I cancel?", "Anytime. Infinity runs to the end of the month you paid for, then you’re on Free."],
   ["What happens to my split if I go back to Free?", `New orders pay ${pct(FREE_SPLIT)}. Your art, page, codes and links all stay.`],
   ["Do old orders change?", "No. Every order keeps the split from the moment it was placed."],
-  ["How do I get Pro free?", `Share your link. Each artist who joins and uploads a piece gives you ${REFERRALS.rewardMonths} months, up to ${REFERRALS.maxBankedMonths} banked.`],
+  ["How do I get Infinity free?", `Share your link. Each artist who joins and uploads a piece gives you ${REFERRALS.rewardMonths} months, up to ${REFERRALS.maxBankedMonths} banked.`],
 ];
 
 export default async function PricingPage() {
@@ -67,9 +66,9 @@ export default async function PricingPage() {
       <section className="mx-auto grid max-w-[1240px] items-end gap-8 px-4 pb-10 pt-10 sm:px-6 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:pt-16">
         <div>
           <div className="mb-4 flex items-center gap-2.5"><DabRow /><span className="eyebrow">Pricing</span></div>
-          <h1 className="display max-w-[12ch] text-[52px] sm:text-[84px]">Free to sell. <Brushed>Pro</Brushed> to grow.</h1>
+          <h1 className="display max-w-[12ch] text-[52px] sm:text-[84px]">Free to sell. <Brushed>Infinity</Brushed> to grow.</h1>
           <p className="mt-5 max-w-[34ch] text-[18px] text-ink-2 sm:text-[20px]">
-            Free keeps {pct(FREE_SPLIT)} of profit. Pro keeps {pct(PRO.split)}, for {proPrice()} a month.
+            Free keeps {pct(FREE_SPLIT)} of profit. Infinity keeps {pct(PRO.split)}, for {proPrice()} a month.
           </p>
         </div>
         {art.length > 0 && (
@@ -102,13 +101,13 @@ export default async function PricingPage() {
         <div className="relative grid content-start gap-5 overflow-hidden rounded-2xl border-[1.5px] border-ink bg-ink p-5 text-white sm:p-7">
           <BrushStroke className="pointer-events-none absolute -right-10 top-6 h-12 w-72 rotate-[-4deg]" color="var(--af-sticker)" />
           <div className="relative grid gap-1">
-            <h2 className="display flex items-center gap-3 text-[36px] leading-none !text-white">Pro <ProChip className="!bg-sticker !text-ink" /></h2>
+            <h2 className="display flex items-center gap-3 text-[36px] leading-none !text-white">Infinity plan</h2>
             <p className="display num text-[56px] leading-none !text-white">{proPrice()}<span className="text-[20px] text-white/70">/mo</span></p>
             <p className="text-[15px] text-white/75">{pct(PRO.split)} of profit, and the tools that sell more.</p>
           </div>
           <div className="relative grid gap-2">
-            <Link href="/studio/pro" className="btn btn-sticker btn-lg w-full">Go Pro</Link>
-            <Link href="/studio/pro#referrals" className="text-center text-[14px] font-bold text-white underline-offset-2 hover:underline">Or share Artfinity, get 2 months free</Link>
+            <Link href="/studio/infinity" className="btn btn-sticker btn-lg w-full">Go Infinity</Link>
+            <Link href="/studio/infinity#referrals" className="text-center text-[14px] font-bold text-white underline-offset-2 hover:underline">Or share Artfinity, get 2 months free</Link>
           </div>
           <div className="relative"><FeatureList which="pro" dark /></div>
         </div>
@@ -118,7 +117,7 @@ export default async function PricingPage() {
       <section id="calculator" aria-labelledby="calc-h" className="scroll-mt-20 border-y border-line bg-wall">
         <div className="mx-auto grid max-w-[1240px] gap-8 px-4 py-14 sm:px-6 md:py-20">
           <header className="grid gap-2">
-            <h2 id="calc-h" className="display text-[40px] sm:text-[56px]">Is Pro worth it for you?</h2>
+            <h2 id="calc-h" className="display text-[40px] sm:text-[56px]">Is Infinity worth it for you?</h2>
             <p className="text-[16px] text-ink-2">Slide to your numbers.</p>
           </header>
           <div className="rounded-2xl border border-line bg-white p-4 sm:p-7">
@@ -143,7 +142,7 @@ export default async function PricingPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href="/register" className="btn btn-blue btn-lg">Start selling free</Link>
-          <Link href="/studio/pro" className="btn btn-ghost btn-lg">Try Pro</Link>
+          <Link href="/studio/infinity" className="btn btn-ghost btn-lg">Try Infinity</Link>
         </div>
       </section>
     </>

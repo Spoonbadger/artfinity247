@@ -21,7 +21,7 @@ export const STUDIO_NAV = [
   { href: "/studio/events", label: "Events", dab: "#7b2d8e" },
   { href: "/studio/sales", label: "Sales", dab: "#0f7a55" },
   { href: "/studio/page", label: "My page", dab: "#15161b" },
-  { href: "/studio/pro", label: "Pro", dab: "#e3b23c" },
+  { href: "/studio/infinity", label: "Infinity plan", dab: "#e3b23c" },
 ];
 
 /** A faint canvas weave for the Studio walls. */
@@ -124,7 +124,7 @@ export default function StudioShell({ artist, children }: { artist: ShellArtist;
         <div className="flex items-center justify-between gap-3 px-4 py-1.5">
           <span className="flex items-center gap-2">
             <Logo href="/studio" className="text-[20px]" />
-            {artist.pro && <Link href="/studio/pro" aria-label="Artfinity Pro"><ProChip /></Link>}
+            {artist.pro && <Link href="/studio/infinity" aria-label="the Infinity plan"><ProChip /></Link>}
           </span>
           <div className="flex items-center gap-1">
             <Link href={`/@${artist.slug}`} className="btn btn-ghost btn-sm min-h-[44px] px-4" aria-label="View my page">

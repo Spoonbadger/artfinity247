@@ -94,7 +94,7 @@ export default function ShareKit({ arts, initialSlug, base, pro = true }: { arts
       </div>
 
       <Section id="video" title="Auto video" sub="Vertical, 10 seconds. Reels, TikTok, Shorts." dab="#ff5a36">
-        {/* Auto videos are a Pro tool (lib/plans.ts). */}
+        {/* Auto videos are an Infinity tool (lib/plans.ts). */}
         {pro ? <VideoMaker art={art} base={base} /> : <VideoUpsell imageUrl={art.imageUrl} title={art.title} />}
       </Section>
 

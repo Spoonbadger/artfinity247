@@ -127,7 +127,7 @@ export default async function ArtistPage({ params, searchParams }: Props) {
           </div>
           <div className="flex flex-wrap items-center gap-3 pb-2 sm:ml-auto">
             <ArtistSocials links={socials} />
-            <Link href={`/@${artist.slug}/links`} className="btn btn-ghost btn-sm min-h-[44px]">Links</Link>
+            <Link href={`/@${artist.slug}/links`} className="btn btn-ghost btn-sm h-11 px-5">Links</Link>
             <ArtistActions slug={artist.slug} firstName={artist.firstName} />
           </div>
         </header>
