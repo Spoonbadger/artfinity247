@@ -2,16 +2,18 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getUserFromCookie } from "@/lib/auth";
-import { getArtistPage, venuesFor } from "@/components/artist/data";
+import { bannerColor, getArtistPage, resolveBanner, venuesFor } from "@/components/artist/data";
+import { paint, parseTheme } from "@/components/artist/theme";
+import TrustBlock, { NameBadges } from "@/components/artist/TrustBlock";
 import ArtistBanner from "@/components/artist/ArtistBanner";
 import ArtistAvatar from "@/components/artist/ArtistAvatar";
 import ArtistActions from "@/components/artist/ArtistActions";
 import ArtistTabs from "@/components/artist/ArtistTabs";
-import WorkGrid from "@/components/artist/WorkGrid";
+import { WorkLayout } from "@/components/artist/WorkGrid";
 
 export const dynamic = "force-dynamic";
 
-type Props = { params: { slug: string } };
+type Props = { params: { slug: string }; searchParams?: Record<string, string | string[] | undefined> };
 
 const SITE = process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com";
 
@@ -56,12 +58,23 @@ function Stat({ value, label, dab }: { value: string | number; label: string; da
   );
 }
 
-export default async function ArtistPage({ params }: Props) {
+/** Studio's live preview passes an unsaved theme as ?theme=<json>. Only the artist themself sees it applied. */
+function previewTheme(raw: string | string[] | undefined) {
+  if (typeof raw !== "string" || raw.length > 2000) return null;
+  try { return JSON.parse(raw) as unknown; } catch { return null; }
+}
+
+export default async function ArtistPage({ params, searchParams }: Props) {
   const artist = await getArtistPage(params.slug);
   if (!artist) notFound();
 
   const me = await getUserFromCookie();
   const isOwner = !!me?.slug && me.slug.toLowerCase() === artist.slug.toLowerCase();
+  const preview = isOwner ? previewTheme(searchParams?.theme) : null;
+  const theme = preview ? parseTheme(preview, artist.works.map((w) => w.id)) : artist.theme;
+  const banner = preview ? resolveBanner(artist.works, theme) : artist.banner;
+  const accent = paint(theme.accent);
+  const trust = { ...artist.trust, medal: theme.showStats ? artist.trust.earned : null };
   const venues = venuesFor(artist.slug);
   const tagline = artist.bio ? firstSentence(artist.bio) : "";
   const cityShort = artist.city.split(",")[0];
@@ -90,8 +103,8 @@ export default async function ArtistPage({ params }: Props) {
   );
 
   return (
-    <div className="bg-white pb-16 sm:pb-24">
-      <ArtistBanner src={artist.banner?.imageUrl ?? null} alt={artist.banner ? `${artist.banner.title}, by ${artist.name}` : ""} />
+    <div className="bg-white pb-16 sm:pb-24" style={{ ["--accent" as string]: accent.color, ["--accent-ink" as string]: accent.ink, ["--accent-soft" as string]: accent.soft }}>
+      <ArtistBanner src={banner?.imageUrl ?? null} alt={banner ? `${banner.title}, by ${artist.name}` : ""} color={bannerColor(theme)} />
 
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
         {/* Head: avatar overlapping the banner, name, actions */}
@@ -100,17 +113,7 @@ export default async function ArtistPage({ params }: Props) {
           <div className="grid min-w-0 flex-1 basis-[260px] gap-1.5 pb-1">
             <h1 className="display flex flex-wrap items-center gap-x-3 gap-y-1 text-[44px] sm:text-[64px]">
               <span className="min-w-0 [overflow-wrap:anywhere]">{artist.name}</span>
-              {artist.verified && (
-                <span
-                  className="inline-flex items-center gap-1 rounded-full bg-scan-soft px-2.5 py-1 font-body text-[12.5px] font-bold tracking-normal text-scan [font-variation-settings:normal]"
-                  title="Has sold prints through Artfinity"
-                >
-                  <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden="true">
-                    <path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  Verified
-                </span>
-              )}
+              <NameBadges trust={trust} size={30} />
             </h1>
             <p className="truncate text-[15px] text-ink-2 sm:text-base">
               {[artist.city, tagline].filter(Boolean).join(" · ")}
@@ -124,9 +127,11 @@ export default async function ArtistPage({ params }: Props) {
           <aside className="grid content-start gap-7">
             <div className="grid grid-cols-[auto_auto_minmax(0,1fr)] gap-x-7 gap-y-4">
               <Stat value={artist.works.length} label={artist.works.length === 1 ? "work" : "works"} dab="#f7c8a8" />
-              {artist.sales > 0 ? <Stat value={artist.sales} label={artist.sales === 1 ? "sale" : "sales"} dab="var(--af-sticker)" /> : null}
+              {theme.showStats && artist.sales > 0 ? <Stat value={artist.sales} label={artist.sales === 1 ? "print sold" : "prints sold"} dab="var(--accent)" /> : null}
               {cityShort ? <Stat value={cityShort} label="city" dab="#b8c4ff" /> : null}
             </div>
+
+            <TrustBlock trust={trust} />
 
             {/* The header already shows the first sentence; repeat the bio here only when there is more to it. */}
             {artist.bio && artist.bio.replace(/[.!?]\s*$/, "").trim() !== tagline && <p className="text-[15px] leading-relaxed text-ink-2">{artist.bio}</p>}
@@ -153,7 +158,8 @@ export default async function ArtistPage({ params }: Props) {
                 <p className="pt-1 text-[14px] text-ink-2">Only you see this.</p>
                 <div className="flex flex-wrap gap-2">
                   <Link href="/studio/page" className="btn btn-blue btn-sm">Edit page</Link>
-                  <Link href="/studio/qr" className="btn btn-ghost btn-sm">Print codes</Link>
+                  <Link href="/studio/design" className="btn btn-ghost btn-sm">Design</Link>
+                  {!artist.trust.verified && <Link href="/studio/verify" className="btn btn-ghost btn-sm">Get verified</Link>}
                 </div>
               </section>
             )}
@@ -163,7 +169,7 @@ export default async function ArtistPage({ params }: Props) {
           <div className="min-w-0">
             <ArtistTabs
               tabs={[
-                { id: "work", label: "Work", count: artist.works.length, panel: <WorkGrid works={artist.works} isOwner={isOwner} /> },
+                { id: "work", label: "Work", count: artist.works.length, panel: <WorkLayout works={artist.works} layout={theme.layout} pinned={theme.pinned} isOwner={isOwner} /> },
                 { id: "about", label: "About", panel: about },
               ]}
             />

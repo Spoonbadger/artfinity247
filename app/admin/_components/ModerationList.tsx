@@ -135,6 +135,7 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
                     {a.status === "APPROVED" ? "Take down" : "Reject"}
                   </button>
                 )}
+                <Link href={`/admin/artworks/${a.id}/edit`} className="btn btn-ghost btn-sm" aria-label={`Edit ${a.title}`}>Edit</Link>
                 <button type="button" disabled={busy === a.id} onClick={() => remove(a)} className="ml-auto text-[13px] font-semibold text-ink-2 underline-offset-2 hover:text-coral hover:underline">
                   Delete
                 </button>

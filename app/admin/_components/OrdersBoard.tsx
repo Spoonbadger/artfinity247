@@ -36,6 +36,8 @@ export type AdminOrder = {
   shippingAddress: string | null;
   shippingStatus: string;
   sentToPrinter: boolean;
+  /** "bulk" = an artist's own at-cost order (no artist share). */
+  kind?: string;
   items: AdminOrderItem[];
 };
 
@@ -158,6 +160,7 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
                     <div className="flex flex-wrap items-baseline gap-x-2">
                       <b className="truncate text-[15px]">{o.shippingName || o.email}</b>
                       {o.paymentStatus !== "paid" && <span className="rounded-full bg-coral/15 px-2 text-[11.5px] font-bold text-coral">{o.paymentStatus}</span>}
+                      {o.kind === "bulk" && <span className="rounded-full bg-sticker px-2 text-[11.5px] font-bold text-ink" title="Artist's own prints at cost. Not a sale, no payout.">Bulk</span>}
                     </div>
                     <div className="truncate text-[13px] text-ink-2">
                       {date.toLocaleDateString("en-US", { month: "short", day: "numeric" })} · {date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })} · {o.email}

@@ -12,7 +12,7 @@ export default async function MyArtPage() {
   const art = await prisma.artwork.findMany({
     where: { artistId: artist.id },
     orderBy: { createdAt: "desc" },
-    select: { id: true, slug: true, title: true, imageUrl: true, status: true, sensitive: true, flaggedReason: true, OrderItem: { where: { order: { paymentStatus: "paid" } }, select: { quantity: true } } },
+    select: { id: true, slug: true, title: true, imageUrl: true, status: true, sensitive: true, flaggedReason: true, OrderItem: { where: { order: { paymentStatus: "paid", kind: { not: "bulk" } } }, select: { quantity: true } } },
   });
   const items = art
     .filter((a) => a.slug)
@@ -30,6 +30,8 @@ export default async function MyArtPage() {
               Print all codes (PDF)
             </a>
           )}
+          <Link href="/studio/collections" className="btn btn-ghost">Collections</Link>
+          <Link href="/studio/bulk" className="btn btn-ghost">Order prints in bulk</Link>
           <Link href="/studio/art/new" className="btn btn-blue">Upload art</Link>
         </>
       }

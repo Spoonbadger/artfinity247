@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { calcItemProfitCents } from "@/lib/revenue"
 import { normalizeSize } from "@/lib/sales"
 import { sendOrderNotifications } from "@/lib/orderNotifications"
+import { claimEditionNumbers } from "@/lib/editions"
 
 export const dynamic = "force-dynamic"
 export const runtime = 'nodejs'
@@ -64,6 +65,13 @@ export async function POST(req: NextRequest) {
       ""
     ).trim().toLowerCase()
 
+    // Bulk orders (an artist buying their own prints at cost, from /studio/bulk) carry their kind
+    // and the artist's shipping address in metadata.
+    const isBulk = session.metadata?.kind === "bulk" && !!session.metadata?.bulkArtistId
+    const bulk = isBulk
+      ? { kind: "bulk", bulkArtistId: session.metadata!.bulkArtistId, shippingName: session.metadata?.shipName || null, shippingAddress: session.metadata?.shipAddress || null }
+      : null
+
     try {
       const shipping = session.shipping_details
       // 1) Idempotent order create (upsert by unique stripeSessionId)
@@ -79,6 +87,7 @@ export async function POST(req: NextRequest) {
           shippingAddress: shipping?.address
             ? `${shipping.address.line1 ?? ''}, ${shipping.address.city ?? ''}, ${shipping.address.state ?? ''} ${shipping.address.postal_code ?? ''}, ${shipping.address.country ?? ''}`
             : null,
+          ...(bulk ?? {}),
         },
         create: {
           stripeSessionId: session.id,
@@ -90,6 +99,7 @@ export async function POST(req: NextRequest) {
           shippingAddress: shipping?.address
             ? `${shipping.address.line1 ?? ''}, ${shipping.address.city ?? ''}, ${shipping.address.state ?? ''} ${shipping.address.postal_code ?? ''}, ${shipping.address.country ?? ''}`
             : null,
+          ...(bulk ?? {}),
         },
       })
 
@@ -149,7 +159,14 @@ export async function POST(req: NextRequest) {
         })
 
         if (itemsToCreate.length > 0) {
-          await prisma.orderItem.createMany({ data: itemsToCreate })
+          // Limited editions: number the prints inside one transaction that locks each artwork.
+          // Stripe already took the money, so a line that no longer fits (two checkouts racing for
+          // the last prints) is still recorded, without a number, and logged for a refund.
+          await prisma.$transaction(async (tx) => {
+            const { numbers, shortfalls } = await claimEditionNumbers(tx, itemsToCreate.map((it) => ({ artworkId: it.artworkId, quantity: it.quantity })))
+            if (shortfalls.length) console.error("EDITION OVERSOLD: refund needed", { orderId: order.id, shortfalls })
+            await tx.orderItem.createMany({ data: itemsToCreate.map((it, i) => ({ ...it, editionNumber: numbers[i] })) })
+          })
         }
       }
 

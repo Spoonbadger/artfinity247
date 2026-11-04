@@ -7,6 +7,7 @@ type Item = {
   size: string | null;
   quantity: number | null;
   unitPrice: number | null; // cents
+  edition?: string; // "Print 8 of 25" for limited editions
 };
 
 export default function ReceiptEmail({
@@ -57,6 +58,7 @@ export default function ReceiptEmail({
               <div style={{ fontSize: 12, opacity: 0.8 }}>
                 Size: {it.size} • Qty: {it.quantity ?? 1}
               </div>
+              {it.edition ? <div style={{ fontSize: 12, fontWeight: 600 }}>{it.edition}</div> : null}
             </div>
             <div style={{ whiteSpace: "nowrap" }}>{fmt(((it.unitPrice ?? 0)/100) * (it.quantity ?? 1))}</div>
           </div>

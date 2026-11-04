@@ -3,6 +3,9 @@ import { Brushed, PaintChip } from "@/components/af/Brush";
 import Greeting from "@/components/studio/Greeting";
 import NextSteps from "@/components/studio/NextSteps";
 import SalesChart, { type DayPoint } from "@/components/studio/SalesChart";
+import MedalProgress from "@/components/artist/MedalProgress";
+import { getArtistTrust } from "@/lib/artistTrust";
+import { prisma } from "@/lib/prisma";
 import { requireArtist, firstName, getSales, getArtworks, dayKey, serverGreeting, timeAgo, SIZE_LABEL, STUDIO_TZ, usd } from "./_lib/data";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +26,12 @@ export default async function StudioHome() {
   const artist = await requireArtist("/studio");
   const now = new Date();
   const since = new Date(now.getTime() - 30 * DAY);
-  const [allSales, artworks] = await Promise.all([getSales(artist.id), getArtworks(artist.id)]);
+  const [allSales, artworks, trust, ver] = await Promise.all([
+    getSales(artist.id),
+    getArtworks(artist.id),
+    getArtistTrust(artist.id),
+    prisma.artist.findUnique({ where: { id: artist.id }, select: { verification: true } }),
+  ]);
   const sales = allSales.filter((s) => s.date >= since);
 
   const prints = sales.reduce((n, s) => n + s.quantity, 0);
@@ -73,10 +81,12 @@ export default async function StudioHome() {
         <PaintChip color="#0f7a55" value={usd(earned)} label="you earned" note="Viridian · your share of profit" earned />
         <PaintChip color="#ffd43b" value={best ? best.title : "None yet"} label="best seller" note={best ? `Naples Yellow · ${best.prints} sold` : "Naples Yellow · hang a code"} />
         <div className="relative">
-          <PaintChip color="#2b37f0" value="1,284" label="scans" note="Preview, tracking coming soon" />
+          <PaintChip color="#2b37f0" value="1,284" label="scans (sample data)" note="Preview: scan tracking arrives with short links" />
           <span className="sticker-badge absolute right-2 top-2 text-[11px]">Preview</span>
         </div>
       </section>
+
+      <MedalProgress trust={trust} verification={ver?.verification ?? "NONE"} />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <section className="af-card grid content-start gap-3 p-4 sm:p-5" aria-labelledby="chart-h">

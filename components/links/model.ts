@@ -233,3 +233,6 @@ export type LinksPageData = {
   background: LinksArt | null;
   theme: LinksTheme;
 };
+
+/** Prisma select for a link row in the Studio. */
+export const LINK_SELECT = { id: true, kind: true, label: true, url: true, position: true, active: true, clicks: true } as const;

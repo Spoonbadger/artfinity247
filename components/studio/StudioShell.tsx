@@ -14,6 +14,7 @@ export const STUDIO_NAV = [
   { href: "/studio/art", label: "My art", dab: "#e8743b" },
   { href: "/studio/qr", label: "QR codes", dab: "#ffd43b" },
   { href: "/studio/share", label: "Share kit", dab: "#ff5a36" },
+  { href: "/studio/developers", label: "Embed", dab: "#9aa0ff" },
   { href: "/studio/links", label: "Links", dab: "#5bc0be" },
   { href: "/studio/customers", label: "Customers", dab: "#c98a5a" },
   { href: "/studio/events", label: "Events", dab: "#7b2d8e" },
@@ -99,6 +100,9 @@ export default function StudioShell({ artist, children }: { artist: ShellArtist;
         <div className="mt-auto grid gap-3">
           <Link href={`/@${artist.slug}`} className="btn btn-ghost btn-sm justify-between">
             View my page <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+          <Link href="/studio/purchases" className={`px-2 text-[13px] font-semibold hover:text-ink ${isActive(path, "/studio/purchases") ? "text-ink" : "text-ink-2"}`}>
+            My purchases
           </Link>
           <div className="flex items-center gap-2.5 border-t border-line pt-4 text-[13px]">
             <Avatar src={artist.profileImage} name={artist.name} />

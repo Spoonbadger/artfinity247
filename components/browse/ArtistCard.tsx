@@ -3,6 +3,8 @@ import { Plus } from "lucide-react";
 import SensitiveImage from "@/components/site/SensitiveImage";
 import { cn } from "@/lib/utils";
 import type { DirArtist } from "./data";
+import { InlineBadges } from "@/components/artist/TrustBlock";
+import type { Trust } from "@/lib/artistTrust";
 
 export function Avatar({ src, name, className }: { src?: string | null; name: string; className?: string }) {
   return src ? (
@@ -21,7 +23,7 @@ const HANG: Record<number, string[]> = {
 };
 
 /** Directory card: a little wall of their newest work, then who they are. Links to /@slug. */
-export default function ArtistCard({ artist }: { artist: DirArtist }) {
+export default function ArtistCard({ artist, trust }: { artist: DirArtist; trust?: Trust | null }) {
   return (
     <Link href={`/@${artist.slug}`} className="group grid min-w-0 content-start gap-3.5 text-ink no-underline">
       <div className="relative aspect-[16/10] overflow-hidden rounded-md bg-wall">
@@ -43,7 +45,10 @@ export default function ArtistCard({ artist }: { artist: DirArtist }) {
       <div className="flex min-w-0 items-center gap-3">
         <Avatar src={artist.avatar} name={artist.name} />
         <div className="min-w-0 flex-1">
-          <b className="block truncate text-[17px] leading-tight group-hover:text-scan">{artist.name}</b>
+          <span className="flex min-w-0 items-center gap-1.5">
+            <b className="truncate text-[17px] leading-tight group-hover:text-scan">{artist.name}</b>
+            <InlineBadges trust={trust} size={17} />
+          </span>
           <span className="block truncate text-[14px] text-ink-2">{artist.city}{artist.city ? " · " : ""}<span className="num">{artist.count}</span> {artist.count === 1 ? "piece" : "pieces"}</span>
         </div>
       </div>

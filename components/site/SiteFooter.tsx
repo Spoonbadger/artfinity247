@@ -3,11 +3,17 @@
 import Link from "next/link";
 import Logo from "@/components/af/Logo";
 import { useSensitivePref } from "@/components/site/useSensitivePref";
+import AppConfigs from "@/db/json/AppConfigs.json";
+
+// Contact facts come from the same config the original footer used.
+const EMAIL = AppConfigs.business_email;
+const ADDRESS = AppConfigs.business_address.replace(/,\s*United States$/, "").replace(/, (\d{5})/, " $1");
+const HOURS = "Weekdays " + AppConfigs.business_open_time.split("\n")[0].trim().replace(/\s*-\s*/, " to ");
 
 const COLS: [string, [string, string][]][] = [
   ["For artists", [["Start selling free", "/register"], ["How it works", "/#how"], ["Sell with us", "/sell-with-us"], ["Artist terms", "/artist-terms-and-agreement"]]],
   ["For collectors", [["Browse art", "/art"], ["Artists", "/artists"], ["Scenes by city", "/scenes"], ["Returns", "/return-policy"]]],
-  ["Artfinity", [["About", "/about-us"], ["Contact", "/contact"], ["Privacy", "/privacy-policy"], ["Terms", "/terms-and-conditions"]]],
+  ["Artfinity", [["About", "/about-us"], ["Contact", "/contact"], ["Privacy", "/privacy-policy"], ["Terms", "/terms-and-conditions"], ["Cookie Policy", "/cookie-policy"]]],
 ];
 
 export default function SiteFooter() {
@@ -30,7 +36,15 @@ export default function SiteFooter() {
           </div>
         ))}
       </div>
-      <div className="mx-auto max-w-[1240px] px-4 pb-8 text-[13px] text-ink-2 sm:px-6">© {new Date().getFullYear()} Artfinity</div>
+      <div className="mx-auto flex max-w-[1240px] flex-wrap gap-x-2 gap-y-1 px-4 pb-8 text-[13px] text-ink-2 sm:px-6">
+        <span>© {new Date().getFullYear()} Artfinity</span>
+        <span aria-hidden="true">·</span>
+        <a href={`mailto:${EMAIL}`} className="font-semibold text-ink-2 underline-offset-2 hover:text-ink hover:underline">{EMAIL}</a>
+        <span aria-hidden="true">·</span>
+        <span>{ADDRESS}</span>
+        <span aria-hidden="true">·</span>
+        <span>{HOURS}, closed weekends and holidays</span>
+      </div>
     </footer>
   );
 }

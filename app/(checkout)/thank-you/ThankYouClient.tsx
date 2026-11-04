@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCart } from "@/components/contexts";
 import { BrushStroke } from "@/components/af/Brush";
 import { usd } from "@/components/art/pricing";
+import { editionLabel } from "@/lib/editionFormat";
 
 type OrderItem = {
   id: string;
@@ -17,7 +18,8 @@ type OrderItem = {
   imageUrl?: string | null;
   frameChosen?: boolean;
   frameColor?: string | null;
-  artwork?: { imageUrl?: string | null; title?: string | null; slug?: string | null; artist?: { name?: string | null; slug?: string | null } | null } | null;
+  editionNumber?: number | null;
+  artwork?: { imageUrl?: string | null; title?: string | null; slug?: string | null; editionSize?: number | null; artist?: { name?: string | null; slug?: string | null } | null } | null;
 };
 type Order = {
   id: string;
@@ -128,6 +130,9 @@ export default function ThankYouClient({ sessionId }: { sessionId: string }) {
                   {it.frameChosen ? ` · ${it.frameColor ?? ""} frame` : ""}
                   {it.quantity > 1 ? ` · ×${it.quantity}` : ""}
                 </span>
+                {it.editionNumber && it.artwork?.editionSize ? (
+                  <span className="mt-1 block w-fit rounded-full bg-sticker px-2 py-0.5 text-[12px] font-bold">{editionLabel(it.editionNumber, it.quantity, it.artwork.editionSize)}</span>
+                ) : null}
               </div>
               <span className="num font-semibold">{usd(it.lineTotal)}</span>
             </li>

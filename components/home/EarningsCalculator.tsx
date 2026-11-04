@@ -4,6 +4,8 @@ import { useId, useState } from "react";
 import { breakdown, money, moneyRound, SIZE_INCHES, SIZE_NAME, type SizeKey } from "@/lib/earnings";
 import { Swatch } from "@/components/af/Brush";
 import { cn } from "@/lib/utils";
+import PaintBar from "@/components/motion/PaintBar";
+import { useTween } from "@/components/motion/useTween";
 
 const SIZES: SizeKey[] = ["small", "medium", "large", "xl"];
 const SWATCH: Record<SizeKey, string> = { small: "#f3c969", medium: "#e98a5b", large: "#5b74c9", xl: "#2f3a68" };
@@ -16,6 +18,8 @@ export default function EarningsCalculator({ compact = false }: { compact?: bool
   const [sales, setSales] = useState(8);
   const b = breakdown(size, markup * 100, 0);
   const month = b.artist * sales;
+  const shownMonth = useTween(month);
+  const shownPrint = useTween(b.artist);
 
   return (
     <div className={cn("grid items-center gap-8 md:grid-cols-[1fr_1.05fr] md:gap-12", compact && "md:gap-8")}>
@@ -48,10 +52,20 @@ export default function EarningsCalculator({ compact = false }: { compact?: bool
         </label>
       </div>
 
-      <div className="af-card relative grid gap-1 p-6 shadow-[8px_8px_0_var(--af-ink)] sm:p-7" aria-live="polite">
-        <span className="text-[15px] text-ink-2">You’d earn about</span>
-        <b className="display num text-[64px] text-earned sm:text-[84px]">{moneyRound(month)}</b>
-        <span className="text-[15px] text-ink-2">a month · <b className="num text-earned">{money(b.artist)}</b> a print</span>
+      <div className="af-card relative grid gap-1 p-6 shadow-[8px_8px_0_var(--af-ink)] sm:p-7">
+        <span className="sr-only" aria-live="polite">{`About ${moneyRound(month)} a month, ${money(b.artist)} a print.`}</span>
+        <span className="text-[15px] text-ink-2" aria-hidden="true">You’d earn about</span>
+        <b className="display num text-[64px] text-earned sm:text-[84px]" aria-hidden="true">{moneyRound(shownMonth)}</b>
+        <span className="text-[15px] text-ink-2" aria-hidden="true">a month · <b className="num text-earned">{money(Math.round(shownPrint))}</b> a print</span>
+        <PaintBar
+          className="mt-4 h-9"
+          segs={[
+            { label: "Printing and shipping", value: b.cost, color: "#cfc9bc" },
+            { label: "Card fee and hosting", value: b.fee + b.hosting, color: "#a9a397" },
+            { label: "Artfinity 40%", value: b.company, color: "var(--af-ink)" },
+            { label: "You 60%", value: b.artist, color: "var(--af-earned)" },
+          ]}
+        />
         <table className="num mt-4 w-full border-collapse text-[14px]">
           <tbody>
             <tr className="border-t border-line"><td className="py-1.5">{SIZE_NAME[size]} print price</td><td className="py-1.5 text-right">{money(b.price)}</td></tr>

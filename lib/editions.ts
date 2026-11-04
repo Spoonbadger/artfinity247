@@ -8,18 +8,8 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
-export const EDITION_MIN = 5;
-export const EDITION_MAX = 500;
-/** "Last few" shows at this many left or fewer. */
-export const LAST_FEW = 3;
-
-export type Edition = { size: number; sold: number; left: number; soldOut: boolean; lastFew: boolean };
-
-export function editionOf(editionSize: number | null | undefined, sold: number): Edition | null {
-  if (!editionSize) return null;
-  const left = Math.max(0, editionSize - sold);
-  return { size: editionSize, sold, left, soldOut: left === 0, lastFew: left > 0 && left <= LAST_FEW };
-}
+export { EDITION_MIN, EDITION_MAX, LAST_FEW, editionOf, editionLabel, type Edition } from "@/lib/editionFormat";
+import { editionOf, type Edition } from "@/lib/editionFormat";
 
 type Db = Prisma.TransactionClient | typeof prisma;
 
@@ -94,9 +84,18 @@ export function editionMessage(s: Shortfall[]) {
   return f.left === 0 ? `${name} is sold out.` : `Only ${f.left} ${f.left === 1 ? "print" : "prints"} of ${name} left.`;
 }
 
-/** "Print 8 of 25", or "Prints 8–10 of 25" for a line of 3. */
-export function editionLabel(first: number | null | undefined, quantity: number | null | undefined, size: number | null | undefined) {
-  if (!first || !size) return "";
-  const q = Math.max(1, quantity || 1);
-  return q > 1 ? `Prints ${first}–${first + q - 1} of ${size}` : `Print ${first} of ${size}`;
+/** Quick pre-check outside a transaction: lines wanting more prints than are left (lines for one artwork added up). */
+export async function editionShortfalls(lines: { artworkId: string; title: string; editionSize: number | null; quantity: number }[]): Promise<Shortfall[]> {
+  const limited = lines.filter((l) => l.editionSize);
+  if (!limited.length) return [];
+  const sold = await soldByArtwork(limited.map((l) => l.artworkId));
+  const want = new Map<string, number>();
+  for (const l of limited) want.set(l.artworkId, (want.get(l.artworkId) ?? 0) + l.quantity);
+  const out: Shortfall[] = [];
+  for (const [id, wanted] of Array.from(want)) {
+    const l = limited.find((x) => x.artworkId === id)!;
+    const left = Math.max(0, l.editionSize! - (sold.get(id) ?? 0));
+    if (wanted > left) out.push({ artworkId: id, title: l.title, left, wanted });
+  }
+  return out;
 }

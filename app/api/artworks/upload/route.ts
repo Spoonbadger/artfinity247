@@ -8,6 +8,7 @@ import NewArtworkUploadedEmail from "@/emails/NewArtworkUploadedEmail"
 import ArtworkLiveWithQrEmail from "@/emails/ArtworkLiveWithQrEmail";
 import { SignJWT } from "jose"
 import { parseSensitive } from "@/components/studio/sensitive"
+import { EDITION_MAX, EDITION_MIN } from "@/lib/editionFormat"
 
 export const dynamic = "force-dynamic"
 
@@ -63,6 +64,12 @@ export async function POST(req: NextRequest) {
     const markupMedium = parseInt(form.get("markupMedium") as string) || 0;
     const markupLarge = parseInt(form.get("markupLarge") as string) || 0;
     const markupXl = parseInt(form.get("markupXl") as string) || 0
+    // Limited print run: empty = open edition, otherwise EDITION_MIN..EDITION_MAX prints.
+    const editionRaw = String(form.get("editionSize") ?? "").trim()
+    const editionSize = editionRaw ? parseInt(editionRaw, 10) : null
+    if (editionSize !== null && (!Number.isFinite(editionSize) || editionSize < EDITION_MIN || editionSize > EDITION_MAX)) {
+      return new NextResponse(`An edition is ${EDITION_MIN} to ${EDITION_MAX} prints.`, { status: 400 })
+    }
 
 
     const slug =
@@ -83,6 +90,7 @@ export async function POST(req: NextRequest) {
         artistId: payload.id as string,
         status: "APPROVED",
         sensitive,
+        editionSize,
       },
       include: {
         artist: {

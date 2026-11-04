@@ -6,6 +6,7 @@ import cloudinary from '@/lib/cloudinary'
 import Busboy from 'busboy'
 import { toNodeReadable } from '@/lib/toNodeReadables'
 import { parseSensitive } from '@/components/studio/sensitive'
+import { EDITION_MAX, EDITION_MIN, soldCount } from '@/lib/editions'
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
@@ -68,6 +69,25 @@ export async function POST(
     if (!artwork || artwork.artistId !== payload.id)
       return new NextResponse('Forbidden', { status: 403 })
 
+    // Limited print run. Leave the field out to keep it; "" = open edition; a number can't go
+    // below EDITION_MIN or below prints already sold.
+    const editionRaw = form.get("editionSize")
+    let editionSize: number | null | undefined = undefined
+    if (editionRaw !== null) {
+      const t = String(editionRaw).trim()
+      editionSize = t ? parseInt(t, 10) : null
+      if (editionSize !== null) {
+        const sold = await soldCount(artwork.id)
+        const min = Math.max(EDITION_MIN, sold)
+        if (!Number.isFinite(editionSize) || editionSize < min || editionSize > EDITION_MAX) {
+          return new NextResponse(
+            sold > EDITION_MIN ? `${sold} already sold. Pick ${min} to ${EDITION_MAX}.` : `An edition is ${EDITION_MIN} to ${EDITION_MAX} prints.`,
+            { status: 400 },
+          )
+        }
+      }
+    }
+
     const updated = await prisma.artwork.update({
       where: { slug: params.slug },
       data: {
@@ -99,6 +119,7 @@ export async function POST(
             : artwork.markupXl,
         imageUrl: imageUrl || artwork.imageUrl,
         ...(sensitiveRaw !== null ? { sensitive: parseSensitive(sensitiveRaw) } : {}),
+        ...(editionSize !== undefined ? { editionSize } : {}),
         },
     })
 

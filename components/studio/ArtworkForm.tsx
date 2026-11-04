@@ -10,6 +10,7 @@ import { basePrices } from "@/lib/artwork_price";
 import { BrushStroke } from "@/components/af/Brush";
 import { cn } from "@/lib/utils";
 import { SENSITIVE_LABELS } from "./sensitive";
+import { EDITION_MAX, EDITION_MIN } from "@/lib/editionFormat";
 
 const SIZES: SizeKey[] = ["small", "medium", "large", "xl"];
 const FIELD: Record<SizeKey, "markupSmall" | "markupMedium" | "markupLarge" | "markupXl"> = {
@@ -26,6 +27,9 @@ export type ArtworkInput = {
   markupMedium: number | null;
   markupLarge: number | null;
   markupXl: number | null;
+  editionSize?: number | null;
+  /** Prints already sold (an edition can't go below this). */
+  sold?: number;
 };
 
 // The artist types the full print price. Markup = price - base, and the price can't go below the base.
@@ -52,6 +56,10 @@ export default function ArtworkForm({ artwork }: { artwork?: ArtworkInput }) {
     large: priceFor("large", artwork?.markupLarge), xl: priceFor("xl", artwork?.markupXl),
   });
   const [sensitive, setSensitive] = useState<string[]>(artwork?.sensitive || []);
+  const [limited, setLimited] = useState(!!artwork?.editionSize);
+  const [edition, setEdition] = useState(String(artwork?.editionSize || 25));
+  const sold = artwork?.sold ?? 0;
+  const editionMin = Math.max(EDITION_MIN, sold);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ slug: string; title: string; imageUrl: string } | null>(null);
@@ -103,6 +111,11 @@ export default function ArtworkForm({ artwork }: { artwork?: ArtworkInput }) {
     if (!title.trim()) { setError("Give it a title."); return; }
     const low = SIZES.find((s) => toCents(prices[s]) < basePrices[s]);
     if (low) { setError(`${SIZE_NAME[low]} prints start at ${money(basePrices[low])}.`); return; }
+    const n = parseInt(edition, 10);
+    if (limited && (!Number.isFinite(n) || n < editionMin || n > EDITION_MAX)) {
+      setError(sold > EDITION_MIN ? `${sold} already sold. Pick ${editionMin} to ${EDITION_MAX}.` : `An edition is ${EDITION_MIN} to ${EDITION_MAX} prints.`);
+      return;
+    }
     setSaving(true);
     try {
       const fd = new FormData();
@@ -111,6 +124,7 @@ export default function ArtworkForm({ artwork }: { artwork?: ArtworkInput }) {
       fd.append("imageUrl", imageUrl);
       for (const s of SIZES) fd.append(FIELD[s], String(Math.max(0, toCents(prices[s]) - basePrices[s])));
       fd.append("sensitive", sensitive.join(","));
+      fd.append("editionSize", limited ? String(n) : "");
       if (printable) fd.append("printable", printable.join(","));
       const res = await fetch(editing ? `/api/artworks/update/${artwork!.slug}` : "/api/artworks/upload", { method: "POST", body: fd, credentials: "include" });
       if (!res.ok) throw new Error((await res.text()) || "Could not save. Try again.");
@@ -142,7 +156,7 @@ export default function ArtworkForm({ artwork }: { artwork?: ArtworkInput }) {
         <div className="flex flex-wrap justify-center gap-2">
           <Link href={`/studio/qr?art=${done.slug}`} className="btn btn-blue">Print its code</Link>
           <Link href={`/art/${done.slug}`} className="btn btn-ghost">View</Link>
-          <button type="button" className="btn btn-ghost" onClick={() => { setDone(null); setImageUrl(""); setPrintable(null); setDims(null); setTitle(""); setDescription(""); setSensitive([]); }}>
+          <button type="button" className="btn btn-ghost" onClick={() => { setDone(null); setImageUrl(""); setPrintable(null); setDims(null); setTitle(""); setDescription(""); setSensitive([]); setLimited(false); }}>
             Upload another
           </button>
         </div>
@@ -254,6 +268,35 @@ export default function ArtworkForm({ artwork }: { artwork?: ArtworkInput }) {
               );
             })}
           </ul>
+        </fieldset>
+
+        <fieldset className="grid gap-2">
+          <legend className="mb-1">
+            <span className="font-display text-[22px] font-bold [font-variation-settings:'wdth'_80]">Print run</span>
+            {sold > 0 && <span className="num ml-2 text-[12.5px] text-ink-2">{sold} sold so far</span>}
+          </legend>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label className={cn("flex cursor-pointer items-center gap-3 rounded-xl border-2 bg-white p-3 transition has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-scan", !limited ? "border-ink" : "border-line hover:border-ink-2")}>
+              <input type="radio" name="edition" className="sr-only" checked={!limited} onChange={() => setLimited(false)} />
+              <span aria-hidden="true" className={cn("grid h-5 w-5 shrink-0 place-items-center rounded-full border-2", !limited ? "border-ink" : "border-ink/40")}>{!limited && <span className="h-2.5 w-2.5 rounded-full bg-ink" />}</span>
+              <span className="leading-tight"><b className="block text-[15px]">Open edition</b><span className="text-[13px] text-ink-2">Print forever</span></span>
+            </label>
+            <div className={cn("flex items-center gap-3 rounded-xl border-2 bg-white p-3 transition has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-scan", limited ? "border-ink bg-[#fffbe8]" : "border-line hover:border-ink-2")}>
+              <label className="flex cursor-pointer items-center gap-3">
+                <input type="radio" name="edition" className="sr-only" checked={limited} onChange={() => setLimited(true)} />
+                <span aria-hidden="true" className={cn("grid h-5 w-5 shrink-0 place-items-center rounded-full border-2", limited ? "border-ink" : "border-ink/40")}>{limited && <span className="h-2.5 w-2.5 rounded-full bg-ink" />}</span>
+                <b className="text-[15px] leading-tight">Limited edition of</b>
+              </label>
+              <input
+                type="number" inputMode="numeric" min={editionMin} max={EDITION_MAX} step={1}
+                value={edition} aria-label="Number of prints in the edition"
+                onFocus={() => setLimited(true)}
+                onChange={(e) => { setLimited(true); setEdition(e.target.value.replace(/[^0-9]/g, "").slice(0, 3)); }}
+                className="num w-[76px] rounded-lg border-2 border-ink px-2 py-1 text-[16px] font-semibold outline-none focus:border-scan"
+              />
+            </div>
+          </div>
+          {limited && <p className="text-[12.5px] text-ink-2">Numbered 1 to {parseInt(edition, 10) || "N"}, all sizes. Then sold out.</p>}
         </fieldset>
 
         <fieldset className="grid gap-2">

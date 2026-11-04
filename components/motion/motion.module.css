@@ -1,0 +1,64 @@
+/* Reusable motion. Every animation is keyed off [data-play] (set by <Stage/>),
+   so the finished frame is what shows at rest, offscreen, before hydration and
+   with reduced motion. Transform and opacity only. */
+
+/* ---------- Marquee: a drifting salon wall ---------- */
+.marquee { overflow: hidden; }
+.track { display: flex; width: max-content; }
+.set { display: flex; flex-shrink: 0; }
+[data-play] .track { animation: drift var(--dur, 60s) linear infinite; }
+[data-play] .reverse .track,
+[data-play] .track.reverse { animation-direction: reverse; }
+.marquee:hover .track,
+.marquee:focus-within .track { animation-play-state: paused; }
+@keyframes drift { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
+
+/* ---------- Brush wipe: a stroke paints itself in, left to right ---------- */
+.wipe > svg { transform-origin: left center; }
+[data-armed]:not([data-play]) .wipe > svg,
+[data-armed]:not([data-play]).wipe > svg { scale: 0 1; }
+[data-armed][data-play] .wipe > svg,
+[data-armed][data-play].wipe > svg { animation: wipe 0.75s cubic-bezier(0.6, 0, 0.2, 1) var(--wipe-delay, 0.15s) both; }
+@keyframes wipe { from { scale: 0 1; } to { scale: 1 1; } }
+
+/* ---------- Splat: paint dabs land with a little squash ---------- */
+.splat[data-armed]:not([data-play]) :global(.paint-dab) { scale: 0; }
+.splat[data-armed][data-play] :global(.paint-dab) { animation: splat 0.55s cubic-bezier(0.3, 1.6, 0.5, 1) both; }
+.splat[data-armed][data-play] :global(.paint-dab):nth-child(2) { animation-delay: 0.08s; }
+.splat[data-armed][data-play] :global(.paint-dab):nth-child(3) { animation-delay: 0.16s; }
+.splat[data-armed][data-play] :global(.paint-dab):nth-child(4) { animation-delay: 0.24s; }
+@keyframes splat { 0% { scale: 0; } 60% { scale: 1.25 0.85; } 100% { scale: 1; } }
+
+/* ---------- QR draw: modules erase and redraw in a diagonal sweep ---------- */
+.qrBand { opacity: 1; }
+[data-play] .qrBand { animation: qrBand var(--qr-loop, 7s) linear var(--qr-delay, 0s) infinite both; }
+[data-play] .qrEye { transform-box: fill-box; transform-origin: center; animation: qrEye var(--qr-loop, 7s) linear infinite both; }
+@keyframes qrBand {
+  0%, 40% { opacity: 1; }
+  44%, 60% { opacity: 0.06; }
+  64%, 100% { opacity: 1; }
+}
+@keyframes qrEye {
+  0%, 40% { scale: 1; opacity: 1; }
+  46%, 56% { scale: 0.4; opacity: 0.1; }
+  60% { scale: 1.15; opacity: 1; }
+  63%, 100% { scale: 1; opacity: 1; }
+}
+
+/* ---------- Odometer ---------- */
+.odo { display: inline-flex; white-space: nowrap; }
+.col { display: inline-block; height: 1em; line-height: 1; overflow: hidden; vertical-align: bottom; }
+.strip { display: flex; flex-direction: column; transform: translateY(calc(var(--t) * -10%)); }
+.strip > span { height: 1em; line-height: 1; }
+
+/* ---------- Hang-in: an image settles on its nail (visible from the first frame) ---------- */
+.hangIn { transform-origin: 50% 0; animation: hangIn 1.1s cubic-bezier(0.3, 1.5, 0.45, 1) 0.1s both; }
+@keyframes hangIn {
+  from { rotate: -2.2deg; translate: 0 -8px; }
+  55% { rotate: 1deg; }
+  to { rotate: 0deg; translate: 0 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track, .qrBand, .qrEye, .hangIn, .wipe > svg, .splat :global(.paint-dab) { animation: none !important; scale: none !important; }
+}

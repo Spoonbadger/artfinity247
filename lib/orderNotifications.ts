@@ -78,8 +78,14 @@ export async function sendOrderNotifications(orderId: string, opts: { gapMs?: nu
     }
   }
 
+  // Bulk orders are an artist buying their own prints at cost: no "your artwork sold" email,
+  // and the receipt is Artfinity's, not the artist's own customer template.
+  const isBulk = (await prisma.order.findUnique({ where: { id: orderId }, select: { kind: true } }))?.kind === "bulk"
+
   // 2) One "your artwork sold" email per artist
-  if (await claim(orderId, "artistNotificationsSentAt")) {
+  if (isBulk) {
+    if (await claim(orderId, "artistNotificationsSentAt")) result.artists = "skipped"
+  } else if (await claim(orderId, "artistNotificationsSentAt")) {
     const soldItems = await prisma.orderItem.findMany({
       where: { orderId },
       select: {
@@ -147,7 +153,7 @@ export async function sendOrderNotifications(orderId: string, opts: { gapMs?: nu
   try {
     if (sentSomething) await sleep(gap)
     // The artist's own receipt wording when they wrote one (single-artist orders); otherwise Artfinity's.
-    const mine = await sendArtistReceipt(orderId)
+    const mine = isBulk ? "none" : await sendArtistReceipt(orderId)
     const r: any = mine === "none" ? await sendReceiptEmail(orderId) : mine === "already" ? { alreadySent: true } : {}
     result.receipt = r?.alreadySent ? "already-sent" : r?.skipped ? "skipped" : "sent"
   } catch (e) {

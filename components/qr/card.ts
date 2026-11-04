@@ -65,7 +65,7 @@ export const DEFAULT_DESIGN: Design = {
   disc: 10, coupon: "SCAN10", ev: "", evPrint: false, size: "medium", end: "never",
 };
 
-export type ArtInfo = { slug: string; title: string; artist: string; imageUrl: string; markups: Record<SizeKey, number>; sensitive?: string[] };
+export type ArtInfo = { slug: string; title: string; artist: string; imageUrl: string; markups: Record<SizeKey, number>; sensitive?: string[]; edition?: number | null };
 
 // ---------------- helpers ----------------
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -180,7 +180,10 @@ export type Card = { inner: string; w: number; h: number; qrPt: number; ctaPt: n
 export function renderCard(d: Design, art: ArtInfo, f: Fonts, qrText: string, uid = "c"): Card {
   const cta = ctaText(d);
   const ink = d.fg, tagInk = inkOn(d.tag);
-  const price = d.showPrice ? `Prints from ${money(pricesFrom(art))}` : "";
+  // Limited editions add a short line to the price text ("Prints from $40 · Edition of 25").
+  const price = d.showPrice
+    ? `Prints from ${money(pricesFrom(art))}${art.edition ? ` · Edition of ${art.edition}` : ""}`
+    : art.edition ? `Limited edition of ${art.edition}` : "";
   const ev = d.evPrint ? d.ev.trim() : "";
   const label = `${FORMATS[d.format].name}: ${cta}.${d.disc ? ` ${d.disc}% off when you scan.` : ""} ${art.title} by ${art.artist}.`;
   const dcap = capHeight(f.display), bcap = capHeight(f.body);

@@ -1,3 +1,4 @@
+import { editionLabel } from "@/lib/editions";
 import { Resend } from "resend";
 import ReceiptEmail from "@/emails/ReceiptEmail"
 import { prisma } from "@/lib/prisma";
@@ -28,6 +29,8 @@ export async function sendReceiptEmail(orderId: string) {
           size: true,
           quantity: true,
           unitPrice: true,
+          editionNumber: true,
+          artwork: { select: { editionSize: true } },
         },
       },
     },
@@ -51,7 +54,7 @@ export async function sendReceiptEmail(orderId: string) {
       currency: order.currency,
       shippingName: order.shippingName,
       shippingAddressLine: order.shippingAddress ?? undefined,
-      items: order.items
+      items: order.items.map(({ editionNumber, artwork, ...it }) => ({ ...it, edition: editionLabel(editionNumber, it.quantity, artwork?.editionSize) })),
     }),
   });
 

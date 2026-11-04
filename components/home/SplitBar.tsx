@@ -1,34 +1,68 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { breakdown, money, SIZE_NAME, type SizeKey } from "@/lib/earnings";
+import PaintBar from "@/components/motion/PaintBar";
+import { usePlay } from "@/components/motion/Stage";
+import { useTween } from "@/components/motion/useTween";
+import { cn } from "@/lib/utils";
 
-const EDGE = ["6px 14px 8px 12px / 18px 10px 16px 8px", "12px 6px 14px 8px / 10px 18px 8px 16px"];
+const SIZES: SizeKey[] = ["small", "medium", "large", "xl"];
 
-/** One print's price, painted as a bar: costs, then the profit split 60/40. */
-export default function SplitBar({ size = "medium", markupCents = 0 }: { size?: SizeKey; markupCents?: number }) {
+function Money({ cents, className }: { cents: number; className?: string }) {
+  const v = useTween(cents);
+  return <span className={className}>{money(Math.round(v))}</span>;
+}
+
+/**
+ * Where one print's money goes, painted as a bar. While on screen it steps through the
+ * sizes on its own (the bar and numbers glide); tapping a size takes over.
+ * With reduced motion it stays on Medium.
+ */
+export default function SplitBar({ markupCents = 0 }: { markupCents?: number }) {
+  const { ref, play } = usePlay<HTMLElement>({ threshold: 0.4 });
+  const [size, setSize] = useState<SizeKey>("medium");
+  const [auto, setAuto] = useState(true);
+
+  useEffect(() => {
+    if (!play || !auto) return;
+    const t = setInterval(() => setSize((s) => SIZES[(SIZES.indexOf(s) + 1) % SIZES.length]), 2600);
+    return () => clearInterval(t);
+  }, [play, auto]);
+
   const b = breakdown(size, markupCents, 0);
   const seg = [
-    { label: "Printing and shipping", v: b.cost, color: "#cfc9bc", text: "text-ink" },
-    { label: "Card fee and hosting", v: b.fee + b.hosting, color: "#a9a397", text: "text-ink" },
-    { label: "Artfinity 40%", v: b.company, color: "var(--af-ink)", text: "text-white" },
-    { label: "You 60%", v: b.artist, color: "var(--af-earned)", text: "text-white" },
+    { label: "Printing and shipping", value: b.cost, color: "#cfc9bc" },
+    { label: "Card fee and hosting", value: b.fee + b.hosting, color: "#a9a397" },
+    { label: "Artfinity 40%", value: b.company, color: "var(--af-ink)" },
+    { label: "You 60%", value: b.artist, color: "var(--af-earned)" },
   ];
+
   return (
-    <figure className="af-card grid gap-5 p-5 shadow-[8px_8px_0_var(--af-ink)] sm:p-7">
-      <div className="flex items-baseline justify-between gap-3">
-        <figcaption className="text-[15px] text-ink-2">One {SIZE_NAME[size]} print</figcaption>
-        <b className="display num text-[40px]">{money(b.price)}</b>
+    <figure ref={ref} className="af-card grid gap-5 p-5 shadow-[8px_8px_0_var(--af-ink)] sm:p-7">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex gap-1.5" role="group" aria-label="Print size">
+          {SIZES.map((s) => (
+            <button
+              key={s}
+              type="button"
+              aria-pressed={size === s}
+              onClick={() => { setAuto(false); setSize(s); }}
+              className={cn("rounded-full border-[1.5px] px-3 py-1 text-[13px] font-semibold transition-colors", size === s ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}
+            >
+              {SIZE_NAME[s]}
+            </button>
+          ))}
+        </div>
+        <b className="display num text-[40px]" aria-hidden="true"><Money cents={b.price} /></b>
       </div>
-      <div className="flex h-14 w-full gap-[3px]" role="img" aria-label={seg.map((s) => `${s.label} ${money(s.v)}`).join(", ")}>
-        {seg.map((s, i) => (
-          <div key={s.label} className="relative h-full min-w-[10px]" style={{ flex: s.v, background: s.color, borderRadius: EDGE[i % 2], transform: `rotate(${i % 2 ? 0.6 : -0.6}deg)` }}>
-            <span className="absolute inset-x-2 top-1/2 h-[2px] -translate-y-3 rounded bg-white/20" aria-hidden="true" />
-          </div>
-        ))}
-      </div>
-      <dl className="num grid grid-cols-2 gap-x-4 gap-y-3 text-[14px]">
+      <figcaption className="sr-only" aria-live={auto ? "off" : "polite"}>{`One ${SIZE_NAME[size]} print, ${money(b.price)}: ${seg.map((s) => `${s.label} ${money(s.value)}`).join(", ")}.`}</figcaption>
+      <PaintBar segs={seg} />
+      <dl className="num grid grid-cols-2 gap-x-4 gap-y-3 text-[14px]" aria-hidden="true">
         {seg.map((s) => (
           <div key={s.label} className="grid gap-0.5">
             <dt className="flex items-center gap-2 text-ink-2"><span className="paint-dab h-3 w-3" style={{ ["--dab" as string]: s.color }} />{s.label}</dt>
-            <dd className={s.label.startsWith("You") ? "font-display text-[26px] font-extrabold text-earned [font-variation-settings:'wdth'_80]" : "font-semibold"}>{money(s.v)}</dd>
+            <dd className={s.label.startsWith("You") ? "font-display text-[26px] font-extrabold text-earned [font-variation-settings:'wdth'_80]" : "font-semibold"}><Money cents={s.value} /></dd>
           </div>
         ))}
       </dl>

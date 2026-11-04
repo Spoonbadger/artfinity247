@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useRef, useState } from "react";
+import { FormEvent, ReactNode, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ArrowUpRight, Camera, Check, Copy, Loader2 } from "lucide-react";
 import { useUser } from "@/components/contexts";
@@ -25,7 +25,7 @@ async function post(url: string, body: unknown) {
   return res.json();
 }
 
-export default function ProfileEditor({ initial, slug, art }: { initial: Profile; slug: string; art: Art[] }) {
+export default function ProfileEditor({ initial, slug, art, account }: { initial: Profile; slug: string; art: Art[]; account?: ReactNode }) {
   const router = useRouter();
   const { refreshUser } = useUser();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -145,6 +145,7 @@ export default function ProfileEditor({ initial, slug, art }: { initial: Profile
           {!dirty && !saving && <span className="flex items-center gap-1.5 text-[13px] text-ink-2"><Check className="h-4 w-4" aria-hidden="true" />All saved</span>}
         </div>
       </form>
+      {account}
       <DeleteAccount />
       </div>
 
@@ -214,6 +215,7 @@ function DeleteAccount() {
       <h2 id="acct-h" className="text-[18px] font-bold">Account</h2>
       {!open ? (
         <div className="flex flex-wrap items-center gap-x-5 text-[14px] font-semibold [&>*]:min-h-[44px]">
+          <Link href="/studio/purchases" className="text-scan underline-offset-2 hover:underline">My purchases</Link>
           <Link href="/change-password" className="text-scan underline-offset-2 hover:underline">Change password</Link>
           <button type="button" onClick={() => setOpen(true)} className="text-ink-2 underline-offset-2 hover:text-coral hover:underline">
             Delete my account

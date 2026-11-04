@@ -7,7 +7,7 @@ import { basePrices } from "@/lib/artwork_price";
 export const PUBLIC_ART: Prisma.ArtworkWhereInput = { status: "APPROVED", slug: { not: null } };
 
 const artSelect = {
-  id: true, slug: true, title: true, imageUrl: true, sensitive: true, markupSmall: true, markupMedium: true, createdAt: true,
+  id: true, slug: true, title: true, imageUrl: true, sensitive: true, markupSmall: true, markupMedium: true, createdAt: true, editionSize: true,
   artist: { select: { name: true, artist_name: true, slug: true, city: true, state: true, citySlug: true } },
 } satisfies Prisma.ArtworkSelect;
 
@@ -15,6 +15,7 @@ type ArtRow = Prisma.ArtworkGetPayload<{ select: typeof artSelect }>;
 
 export type CardArt = {
   id: string; slug: string; title: string; imageUrl: string; sensitive: string[]; priceFrom: number;
+  editionSize?: number | null; // limited print run (null = open edition)
   artist: { name: string; slug: string; city: string };
 };
 
@@ -25,6 +26,7 @@ export function toCard(a: ArtRow): CardArt {
   return {
     id: a.id, slug: a.slug!, title: a.title, imageUrl: a.imageUrl, sensitive: a.sensitive ?? [],
     priceFrom: basePrices.small + (a.markupSmall ?? 0),
+    editionSize: a.editionSize ?? null,
     artist: { name: displayName(a.artist), slug: a.artist.slug, city: cityLabel(a.artist) },
   };
 }

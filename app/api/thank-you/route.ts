@@ -28,12 +28,13 @@ export async function GET(req: NextRequest) {
         items: {
           select: {
             id: true, slug: true, size: true, quantity: true, unitPrice: true, lineTotal: true,
-            title: true, imageUrl: true, frameChosen: true, frameColor: true,
+            title: true, imageUrl: true, frameChosen: true, frameColor: true, editionNumber: true,
             artwork: { 
               select: { 
                 imageUrl: true, 
                 title: true, 
                 slug: true, 
+                editionSize: true,
                 artist: { 
                   select: { 
                     name: true, 

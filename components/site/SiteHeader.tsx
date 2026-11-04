@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
-import { Menu, ShoppingBag, X } from "lucide-react";
+import { FormEvent, useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { Menu, Search, ShoppingBag, X } from "lucide-react";
 import Logo from "@/components/af/Logo";
 import { useCart, useUser } from "@/components/contexts";
 import { cn } from "@/lib/utils";
@@ -18,7 +18,15 @@ export default function SiteHeader() {
   const { currentUser } = useUser();
   const { cartItems } = useCart();
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const search = (e: FormEvent) => {
+    e.preventDefault();
+    const term = q.trim();
+    setOpen(false);
+    router.push(term ? `/search?q=${encodeURIComponent(term)}` : "/search");
+  };
   // close the phone menu on navigation and on Escape
   useEffect(() => setOpen(false), [pathname]);
   useEffect(() => {
@@ -44,7 +52,17 @@ export default function SiteHeader() {
           ))}
           {currentUser ? null : <Link href="/login" className="text-ink no-underline hover:text-scan">Log in</Link>}
         </nav>
+        <form onSubmit={search} role="search" className="hidden lg:block">
+          <label className="flex h-10 w-44 items-center gap-2 rounded-full border-[1.5px] border-line bg-white pl-3 pr-1 transition-[width,border-color] focus-within:w-60 focus-within:border-ink">
+            <Search className="h-4 w-4 shrink-0 text-ink-2" aria-hidden="true" />
+            <span className="sr-only">Search art, artists and cities</span>
+            <input type="search" name="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" maxLength={80} className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-2" />
+          </label>
+        </form>
         <div className="ml-auto flex items-center gap-2 md:ml-0">
+          <Link href="/search" className="hidden h-11 w-11 place-items-center rounded-full text-ink hover:bg-wall md:grid lg:hidden" aria-label="Search">
+            <Search className="h-5 w-5" aria-hidden="true" />
+          </Link>
           <Link href="/cart" className="relative grid h-11 w-11 place-items-center rounded-full text-ink hover:bg-wall" aria-label={`Cart, ${count} items`}>
             <ShoppingBag className="h-5 w-5" />
             {count > 0 && <span className="num absolute right-0.5 top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-scan px-1 text-[11px] font-bold text-white">{count}</span>}
@@ -60,7 +78,15 @@ export default function SiteHeader() {
         </div>
       </div>
       {open && (
-        <nav className="grid gap-1 border-t border-line px-4 pb-4 pt-2 md:hidden" aria-label="Mobile">
+        <nav className="grid gap-1 border-t border-line px-4 pb-4 pt-3 md:hidden" aria-label="Mobile">
+          <form onSubmit={search} role="search" className="mb-1">
+            <label className="flex h-12 items-center gap-2 rounded-full border-2 border-ink bg-white pl-4 pr-1.5 focus-within:border-scan">
+              <Search className="h-5 w-5 shrink-0 text-ink-2" aria-hidden="true" />
+              <span className="sr-only">Search art, artists and cities</span>
+              <input type="search" name="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search art, artists, cities" maxLength={80} enterKeyHint="search" className="min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-ink-2" />
+              <button type="submit" className="btn btn-blue btn-sm min-h-[38px]">Go</button>
+            </label>
+          </form>
           {LINKS.map((l) => <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="rounded-lg px-2 py-2.5 text-lg font-semibold text-ink no-underline hover:bg-wall">{l.label}</Link>)}
           {!currentUser && <Link href="/login" onClick={() => setOpen(false)} className="rounded-lg px-2 py-2.5 text-lg font-semibold text-ink no-underline hover:bg-wall">Log in</Link>}
           {!currentUser && <Link href="/register" onClick={() => setOpen(false)} className="btn btn-blue mt-2">Start selling free</Link>}

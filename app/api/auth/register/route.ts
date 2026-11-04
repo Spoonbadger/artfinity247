@@ -1,7 +1,10 @@
 // POST /api/auth/register
 // Creates an artist account from the short sign-up flow and signs them in.
-// Body: { handle, email, password, artist_name, city, state? }
-// Errors: { code: "missing_fields" | "invalid_email" | "weak_password" | "invalid_handle" | "handle_taken" | "email_taken" | "server_error" }
+// Body: { handle, email, password, artist_name, city, state?, acceptedTerms: true }
+// acceptedTerms covers both the Artist Terms (/artist-terms-and-agreement) and the
+// Terms & Conditions (/terms-and-conditions). There is no column for it yet, so acceptance
+// is logged with a timestamp (TERMS_ACCEPTED). TODO: persist to Artist.termsAcceptedAt.
+// Errors: { code: "missing_fields" | "terms_required" | "invalid_email" | "weak_password" | "invalid_handle" | "handle_taken" | "email_taken" | "server_error" }
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { hash } from "bcryptjs";
@@ -31,6 +34,7 @@ export async function POST(req: Request) {
   const state = String(body.state ?? "").trim().slice(0, 40) || null;
 
   if (!handle || !email || !password || !artist_name || !city) return err("missing_fields", 400);
+  if (body.acceptedTerms !== true) return err("terms_required", 400);
   if (!EMAIL_RE.test(email)) return err("invalid_email", 400);
   if (password.length < 8) return err("weak_password", 400);
 
@@ -65,6 +69,16 @@ export async function POST(req: Request) {
     console.error("REGISTER_FAIL", e);
     return err("server_error", 500);
   }
+
+  const termsAcceptedAt = new Date().toISOString();
+  console.info("TERMS_ACCEPTED", JSON.stringify({
+    artistId: artist.id,
+    email,
+    documents: ["/artist-terms-and-agreement", "/terms-and-conditions"],
+    acceptedAt: termsAcceptedAt,
+    ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null,
+    userAgent: req.headers.get("user-agent") || null,
+  }));
 
   const token = await new SignJWT({ id: artist.id, slug: artist.slug, email: artist.email, role: artist.role })
     .setProtectedHeader({ alg: "HS256" })

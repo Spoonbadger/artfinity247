@@ -24,6 +24,9 @@ export function medalLabel(tier: MedalTier) {
   return { name: m.label, long: `${m.label} · ${m.min}+ prints sold` };
 }
 
+// Fixed wobble so each bump is a little different, like a hand-cut paper rosette.
+const WOBBLE = [1, 0.78, 1.18, 0.9, 1.08, 0.82, 1.2, 0.95, 1.05, 0.85, 1.14, 0.92, 1.1, 0.8, 1.16, 0.97];
+
 /** Scalloped ring: n bumps around (cx, cy). */
 function scallop(cx: number, cy: number, r: number, amp: number, n: number) {
   const pt = (a: number, rad: number) => `${(cx + Math.cos(a) * rad).toFixed(2)} ${(cy + Math.sin(a) * rad).toFixed(2)}`;
@@ -31,7 +34,8 @@ function scallop(cx: number, cy: number, r: number, amp: number, n: number) {
   for (let i = 0; i < n; i++) {
     const a0 = -Math.PI / 2 + (i / n) * Math.PI * 2;
     const a1 = -Math.PI / 2 + ((i + 1) / n) * Math.PI * 2;
-    d += `Q${pt((a0 + a1) / 2, r + amp * 2)} ${pt(a1, r)}`;
+    const rr = i === n - 1 ? r : r + (WOBBLE[(i + 3) % WOBBLE.length] - 1) * 0.9;
+    d += `Q${pt((a0 + a1) / 2 + (WOBBLE[i % WOBBLE.length] - 1) * 0.08, r + amp * 2 * WOBBLE[i % WOBBLE.length])} ${pt(a1, rr)}`;
   }
   return d + "Z";
 }

@@ -2,7 +2,7 @@
 
 import { CSSProperties, MouseEvent, ReactNode, useState } from "react";
 import { toast } from "sonner";
-import { ArrowRight, Share } from "lucide-react";
+import { ArrowRight, EyeOff, Share } from "lucide-react";
 import { LogoMark } from "@/components/af/Logo";
 import { BrushStroke } from "@/components/af/Brush";
 import Medal from "@/components/af/Medal";
@@ -64,13 +64,16 @@ function Background({ data, theme, mode }: { data: LinksPageData; theme: LinksTh
         {!wash && <div className="absolute inset-x-0 top-0 h-[45%] bg-gradient-to-b from-black/35 to-transparent" />}
       </div>
       {hidden && (
-        <div className={cn(pos, "bottom-3 left-3 z-20")}>
+        <div className={cn(pos, "left-4 top-4 z-20")}>
           <button
             type="button"
             onClick={() => setRevealed(true)}
-            className="inline-flex min-h-[40px] items-center gap-2 rounded-full bg-white/90 px-4 text-[13px] font-bold text-ink shadow"
+            title={`Background marked: ${art.sensitive.join(", ")}`}
+            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full bg-white/85 px-3.5 text-[12.5px] font-bold text-ink shadow-sm backdrop-blur"
           >
-            Background hidden ({art.sensitive.join(", ")}) · Show
+            <EyeOff className="h-4 w-4" aria-hidden="true" />
+            Show background
+            <span className="sr-only"> (marked {art.sensitive.join(", ")})</span>
           </button>
         </div>
       )}

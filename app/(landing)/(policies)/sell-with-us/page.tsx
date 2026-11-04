@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
-import { BrushStroke, Brushed } from "@/components/af/Brush";
+import { Brushed } from "@/components/af/Brush";
 import ClaimHandle from "@/components/home/ClaimHandle";
 import SplitBar from "@/components/home/SplitBar";
 import EarningsCalculator from "@/components/home/EarningsCalculator";
 import { DabRow } from "@/components/browse/PageHead";
+import Splat from "@/components/motion/Splat";
+import BrushWipe from "@/components/motion/BrushWipe";
 
 export const metadata: Metadata = { title: "Sell with us", description: "Free for artists. We print, ship and pay you 60% of the profit." };
 
@@ -43,13 +45,11 @@ export default function SellWithUsPage() {
 
       <section className="border-y border-line bg-wall">
         <div className="mx-auto max-w-[1240px] px-4 py-16 sm:px-6 md:py-20">
-          <div className="grid items-end gap-6 md:grid-cols-[1fr_auto]">
-            <h2 className="display text-[44px] sm:text-[60px]">You paint. We do the rest.</h2>
-          </div>
+          <h2 className="display text-[44px] sm:text-[60px]">You paint. We do the rest.</h2>
           <ul className="mt-10 grid grid-cols-2 gap-x-5 gap-y-8 lg:grid-cols-4">
             {WE_DO.map(([c, t, s]) => (
               <li key={t} className="grid content-start gap-1.5 border-t-[3px] border-ink pt-4">
-                <span className="paint-dab mb-1 h-5 w-5" style={{ ["--dab" as string]: c }} aria-hidden="true" />
+                <Splat><span className="paint-dab mb-1 h-5 w-5" style={{ ["--dab" as string]: c }} aria-hidden="true" /></Splat>
                 <b className="font-display text-[24px] leading-none [font-variation-settings:'wdth'_80]">{t}</b>
                 <span className="text-[14.5px] text-ink-2">{s}</span>
               </li>
@@ -59,7 +59,7 @@ export default function SellWithUsPage() {
       </section>
 
       <section className="mx-auto max-w-[1240px] px-4 py-16 sm:px-6 md:py-24">
-        <h2 className="display mb-10 max-w-[14ch] text-[44px] sm:text-[60px]">Try your numbers</h2>
+        <h2 className="display relative mb-10 inline-block text-[44px] sm:text-[60px]"><span className="relative z-10">Try your numbers</span><BrushWipe className="absolute -bottom-1 -left-2 z-0 h-[0.34em] w-[calc(100%+16px)]" color="var(--af-earned)" style={{ opacity: 0.35 }} /></h2>
         <EarningsCalculator />
       </section>
 
@@ -79,7 +79,7 @@ export default function SellWithUsPage() {
       </section>
 
       <section className="relative overflow-hidden bg-ink text-white">
-        <BrushStroke className="pointer-events-none absolute -right-20 top-8 h-12 w-[380px] -rotate-[5deg] opacity-30" color="var(--af-sticker)" />
+        <BrushWipe className="pointer-events-none absolute -right-20 top-8 h-12 w-[380px] -rotate-[5deg] opacity-30" color="var(--af-sticker)" />
         <div className="relative mx-auto grid max-w-[1240px] items-center gap-8 px-4 py-16 sm:px-6 md:py-20 lg:grid-cols-[1.1fr_1fr]">
           <h2 className="display text-[48px] text-white sm:text-[68px]">Claim your page.</h2>
           <ClaimHandle dark className="lg:justify-self-end" />

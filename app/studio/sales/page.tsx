@@ -2,7 +2,10 @@ import Link from "next/link";
 import { Download } from "lucide-react";
 import { PaintChip } from "@/components/af/Brush";
 import { StudioPage } from "@/components/studio/StudioPage";
+import { prisma } from "@/lib/prisma";
+import { itemBreakdown } from "@/lib/sales";
 import { requireArtist, getSales, SIZE_LABEL, STUDIO_TZ, usd } from "../_lib/data";
+import { cityOf, customerHref } from "../customers/_lib";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Sales" };
@@ -10,10 +13,53 @@ export const metadata = { title: "Sales" };
 const monthKey = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: STUDIO_TZ, year: "numeric", month: "2-digit" });
 const monthName = (d: Date) => d.toLocaleDateString("en-US", { timeZone: STUDIO_TZ, month: "long", year: "numeric" });
 const shortDate = (d: Date) => d.toLocaleDateString("en-US", { timeZone: STUDIO_TZ, month: "short", day: "numeric", year: "numeric" });
+/** Payouts are booked by UTC calendar month ("2026-10"), same as the admin payout pages. */
+const utcMonth = (d: Date) => d.toISOString().slice(0, 7);
+const utcMonthName = (k: string) => new Date(`${k}-15T12:00:00Z`).toLocaleDateString("en-US", { timeZone: "UTC", month: "long", year: "numeric" });
+
+type Extra = { expenses: number; email: string; first: string; city: string };
+
+/** Per item: expenses (printing, labor, card and hosting fees) and a privacy-light buyer label. */
+async function getExtras(artistId: string) {
+  const items = await prisma.orderItem.findMany({
+    where: { artwork: { artistId }, order: { paymentStatus: "paid", kind: { not: "bulk" } } },
+    select: {
+      id: true, size: true, frameChosen: true, quantity: true, unitPrice: true, lineTotal: true,
+      order: { select: { createdAt: true, email: true, shippingName: true, shippingAddress: true } },
+    },
+  });
+  const extras = new Map<string, Extra>();
+  const owed = new Map<string, number>();
+  for (const it of items) {
+    const b = itemBreakdown({ ...it, orderDate: it.order.createdAt });
+    const name = (it.order.shippingName || "").trim();
+    extras.set(it.id, {
+      expenses: b.expenses,
+      email: it.order.email,
+      first: name ? name.split(/\s+/)[0] : "Buyer",
+      city: cityOf(it.order.shippingAddress).split(",")[0] || "",
+    });
+    const k = utcMonth(it.order.createdAt);
+    owed.set(k, (owed.get(k) || 0) + b.artistShare);
+  }
+  return { extras, owed };
+}
 
 export default async function SalesPage({ searchParams }: { searchParams: { month?: string } }) {
   const artist = await requireArtist("/studio/sales");
-  const allSales = await getSales(artist.id);
+  const [allSales, { extras, owed }, payoutRows] = await Promise.all([
+    getSales(artist.id),
+    getExtras(artist.id),
+    prisma.payout.findMany({ where: { artistId: artist.id }, select: { month: true, amountCents: true, paidAt: true } }),
+  ]);
+  const currentUtc = utcMonth(new Date());
+  const payouts = Array.from(new Set([...owed.keys(), ...payoutRows.map((p) => p.month)]))
+    .sort((a, b) => b.localeCompare(a))
+    .map((k) => {
+      const row = payoutRows.find((p) => p.month === k);
+      const paid = !!row?.paidAt;
+      return { key: k, name: utcMonthName(k), owed: paid ? row!.amountCents : owed.get(k) || 0, paid, paidAt: row?.paidAt || null, open: k >= currentUtc };
+    });
   const month = /^\d{4}-\d{2}$/.test(searchParams.month || "") ? searchParams.month! : null;
   const sales = month ? allSales.filter((s) => monthKey(s.date) === month) : allSales;
 
@@ -100,12 +146,17 @@ export default async function SalesPage({ searchParams }: { searchParams: { mont
                   <th className="pb-2 font-semibold">Date</th>
                   <th className="pb-2 font-semibold">Piece</th>
                   <th className="pb-2 font-semibold">Size</th>
+                  <th className="pb-2 font-semibold">Customer</th>
                   <th className="pb-2 text-right font-semibold">Price</th>
+                  <th className="pb-2 text-right font-semibold">Expenses</th>
                   <th className="pb-2 text-right font-semibold">Your share</th>
                 </tr>
               </thead>
               <tbody>
-                {sales.map((s) => (
+                {sales.map((s) => {
+                  const x = extras.get(s.id);
+                  const buyer = x ? [x.first, x.city].filter(Boolean).join(", ") : "";
+                  return (
                   <tr key={s.id} className="grid grid-cols-[44px_minmax(0,1fr)_auto] gap-x-3 border-t border-line py-2.5 sm:table-row sm:py-0">
                     <td className="hidden whitespace-nowrap py-2.5 pr-3 text-ink-2 sm:table-cell">{shortDate(s.date)}</td>
                     <td className="row-span-2 sm:hidden">
@@ -120,20 +171,54 @@ export default async function SalesPage({ searchParams }: { searchParams: { mont
                       </span>
                     </td>
                     <td className="hidden py-2.5 pr-3 sm:table-cell">{SIZE_LABEL[s.size]}{s.framed ? ", framed" : ""}{s.quantity > 1 ? ` ×${s.quantity}` : ""}</td>
+                    <td className="hidden max-w-[160px] py-2.5 pr-3 sm:table-cell">
+                      {x ? <Link href={customerHref(x.email)} className="block truncate font-semibold text-scan underline-offset-2 hover:underline">{buyer}</Link> : <span className="text-ink-2">-</span>}
+                    </td>
                     <td className="hidden py-2.5 pr-3 text-right sm:table-cell">{usd(s.priceCents)}</td>
+                    <td className="hidden py-2.5 pr-3 text-right text-ink-2 sm:table-cell">{x ? `−${usd(x.expenses)}` : "-"}</td>
                     <td className="row-span-2 text-right sm:py-2.5">
                       <b className="block text-earned">+{usd(s.shareCents)}</b>
                       <span className="text-[11.5px] text-ink-2">{Math.round(s.split * 100)}%</span>
                     </td>
                     <td className="col-start-2 text-[12.5px] text-ink-2 sm:hidden">
-                      {shortDate(s.date)} · {SIZE_LABEL[s.size]} · {usd(s.priceCents)}
+                      {shortDate(s.date)} · {SIZE_LABEL[s.size]} · {usd(s.priceCents)}{x ? ` · −${usd(x.expenses)} costs` : ""}
+                      {x && <> · <Link href={customerHref(x.email)} className="font-semibold text-scan">{buyer}</Link></>}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </section>
         </div>
+      )}
+
+      {payouts.length > 0 && (
+        <section className="af-card grid gap-3 p-4 sm:p-5" aria-labelledby="payouts-h">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 id="payouts-h" className="text-[20px] font-bold">Payouts</h2>
+            <span className="text-[12.5px] text-ink-2">Paid after each month closes.</span>
+          </div>
+          <ul className="grid">
+            {payouts.map((p) => (
+              <li key={p.key} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-line py-2.5 first:border-t-0">
+                <span className="min-w-[140px] font-semibold">{p.name}</span>
+                <span className="ml-auto flex items-center gap-3">
+                  <b className="num text-[16px] text-earned">{usd(p.owed)}</b>
+                  {p.paid ? (
+                    <span className="num rounded-full bg-earned-soft px-2.5 py-0.5 text-[12.5px] font-semibold text-earned">
+                      Paid {p.paidAt!.toLocaleDateString("en-US", { timeZone: STUDIO_TZ, month: "short", day: "numeric", year: "numeric" })}
+                    </span>
+                  ) : p.open ? (
+                    <span className="rounded-full bg-wall px-2.5 py-0.5 text-[12.5px] font-semibold text-ink-2">In progress</span>
+                  ) : (
+                    <span className="rounded-full bg-sticker/50 px-2.5 py-0.5 text-[12.5px] font-semibold">Unpaid</span>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </StudioPage>
   );

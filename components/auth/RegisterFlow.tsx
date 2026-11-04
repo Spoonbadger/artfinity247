@@ -72,6 +72,7 @@ export default function RegisterFlow() {
   const [artistName, setArtistName] = useState("");
   const [city, setCity] = useState("");
   const [region, setRegion] = useState("");
+  const [agreed, setAgreed] = useState(false);
   const [created, setCreated] = useState(false);
   // step 3
   const [upload, setUpload] = useState<Upload | null>(null);
@@ -153,6 +154,7 @@ export default function RegisterFlow() {
     const errs: Record<string, string | null> = {};
     if (!artistName.trim()) errs.artistName = "Add the name buyers will see.";
     if (!city.trim()) errs.city = "Add your city.";
+    if (!agreed) errs.terms = "Please accept the Artist Terms and the Terms & Conditions.";
     setErrors(errs);
     if (Object.values(errs).some(Boolean)) return;
     setBusy(true);
@@ -161,7 +163,7 @@ export default function RegisterFlow() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ handle, email: email.trim().toLowerCase(), password, artist_name: artistName.trim(), city: city.trim(), state: region.trim() }),
+        body: JSON.stringify({ handle, email: email.trim().toLowerCase(), password, artist_name: artistName.trim(), city: city.trim(), state: region.trim(), acceptedTerms: agreed }),
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -175,6 +177,8 @@ export default function RegisterFlow() {
         } else if (d.code === "weak_password") {
           go(1);
           setErrors({ password: "Use at least 8 characters." });
+        } else if (d.code === "terms_required") {
+          setErrors({ terms: "Please accept the Artist Terms and the Terms & Conditions." });
         } else {
           setFormError("Couldn't create your page. Try again in a moment.");
         }
@@ -329,6 +333,28 @@ export default function RegisterFlow() {
               <Field label="State (optional)" name="state" autoComplete="address-level1" maxLength={40} value={region} onChange={(e) => setRegion(e.target.value)} placeholder="NC" />
             </div>
             <p className="-mt-1 text-[14px] text-ink-2">Your city puts you on the local map.</p>
+            <div className="grid gap-1.5">
+              <label htmlFor="accept-terms" className="flex cursor-pointer items-start gap-3 text-[15px] leading-snug">
+                <input
+                  id="accept-terms"
+                  name="acceptedTerms"
+                  type="checkbox"
+                  required
+                  checked={agreed}
+                  onChange={(e) => { setAgreed(e.target.checked); setErrors((x) => ({ ...x, terms: null })); }}
+                  aria-invalid={!!errors.terms}
+                  aria-describedby={errors.terms ? "accept-terms-error" : undefined}
+                  className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--af-scan)]"
+                />
+                <span>
+                  I agree to the{" "}
+                  <Link href="/artist-terms-and-agreement" target="_blank" className="font-semibold text-scan underline underline-offset-4">Artist Terms</Link>{" "}
+                  and the{" "}
+                  <Link href="/terms-and-conditions" target="_blank" className="font-semibold text-scan underline underline-offset-4">Terms &amp; Conditions</Link>.
+                </span>
+              </label>
+              {errors.terms && <p id="accept-terms-error" role="alert" className="pl-8 text-[14px] font-semibold text-coral">{errors.terms}</p>}
+            </div>
             <div className="flex gap-3">
               <button type="button" className="btn btn-ghost btn-lg" onClick={() => go(1)} disabled={busy}>Back</button>
               <button type="submit" className="btn btn-blue btn-lg flex-1" disabled={busy}>

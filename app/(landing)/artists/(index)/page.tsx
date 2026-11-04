@@ -5,6 +5,7 @@ import ArtistCard, { YourSpotCard } from "@/components/browse/ArtistCard";
 import PageHead, { EmptyCanvas } from "@/components/browse/PageHead";
 import { getArtists, getCities } from "@/components/browse/data";
 import { cn } from "@/lib/utils";
+import { getTrustBySlug } from "@/lib/artistTrust";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Artists", description: "Independent artists selling prints on Artfinity." };
@@ -13,6 +14,7 @@ export default async function ArtistsPage({ searchParams }: { searchParams: Reco
   const q = (searchParams.q || "").trim().slice(0, 60) || undefined;
   const city = searchParams.city || undefined;
   const [artists, cities] = await Promise.all([getArtists({ q, city }), getCities()]);
+  const trust = await getTrustBySlug(artists.map((a) => a.slug));
   const link = (c?: string) => {
     const s = new URLSearchParams();
     if (q) s.set("q", q);
@@ -57,7 +59,7 @@ export default async function ArtistsPage({ searchParams }: { searchParams: Reco
       <section className="mx-auto mt-6 max-w-[1240px] px-4 sm:px-6 md:mt-8" aria-label="Artists">
         {artists.length ? (
           <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-8">
-            {artists.map((a) => <ArtistCard key={a.slug} artist={a} />)}
+            {artists.map((a) => <ArtistCard key={a.slug} artist={a} trust={trust.get(a.slug)} />)}
             {!q && <YourSpotCard />}
           </div>
         ) : (

@@ -19,7 +19,7 @@ export function InlineBadges({ trust, size = 16, className }: { trust?: Trust | 
   return (
     <span className={`inline-flex shrink-0 items-center gap-1 ${className ?? ""}`}>
       {trust.verified && <VerifiedBadge size={size} verifiedAt={trust.verifiedAt} />}
-      {trust.medal && <Medal tier={trust.medal} size={size + 2} />}
+      {trust.medal && <Medal tier={trust.medal} size={size + 4} />}
     </span>
   );
 }

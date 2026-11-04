@@ -1,7 +1,9 @@
 import Stripe from "stripe";
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
+import { checkoutUnavailable, testCheckoutAllowed } from "@/lib/testCheckout";
 import { calcItemProfitCents, type PrintSize as RevenueSize } from "@/lib/revenue";
+import { claimEditionNumbers, EditionSoldOutError, editionMessage, editionShortfalls } from "@/lib/editions";
 import { applyDiscount, isPrintSize, parseDiscount, parseVenue, priceFor, type PrintSize } from "@/components/art/pricing";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +24,7 @@ function abs(base: string, url?: string | null) {
 }
 
 type Line = {
-  art: { id: string; slug: string; title: string; imageUrl: string; artistId: string; artistName: string };
+  art: { id: string; slug: string; title: string; imageUrl: string; artistId: string; artistName: string; editionSize: number | null };
   size: PrintSize;
   frameChosen: boolean;
   frameColor: string | null;
@@ -48,7 +50,7 @@ async function buildLines(items: any[]): Promise<Line[]> {
         where: { slug },
         select: {
           id: true, slug: true, title: true, imageUrl: true, artistId: true, status: true,
-          markupSmall: true, markupMedium: true, markupLarge: true, markupXl: true,
+          markupSmall: true, markupMedium: true, markupLarge: true, markupXl: true, editionSize: true,
           artist: { select: { name: true, artist_name: true } },
         },
       });
@@ -62,7 +64,7 @@ async function buildLines(items: any[]): Promise<Line[]> {
       const quantity = Math.max(1, Math.min(10, Math.round(Number(item?.quantity ?? p.quantity ?? 1)) || 1));
 
       return {
-        art: { id: art.id, slug: art.slug!, title: art.title, imageUrl: art.imageUrl, artistId: art.artistId, artistName: art.artist?.artist_name || art.artist?.name || "" },
+        art: { id: art.id, slug: art.slug!, title: art.title, imageUrl: art.imageUrl, artistId: art.artistId, artistName: art.artist?.artist_name || art.artist?.name || "", editionSize: art.editionSize ?? null },
         size, frameChosen, frameColor, quantity, list, unit, discountPct, venue: parseVenue(p.venue),
       };
     }),
@@ -89,7 +91,14 @@ export async function POST(req: Request) {
   }
   if (!lines.length) return json({ error: "That piece isn't available right now." }, 400);
 
-  if (!process.env.STRIPE_SECRET_KEY) return devCheckout(lines, buyerEmail, buyer);
+  // Limited editions: refuse more prints than are left (numbers are assigned when the order is recorded).
+  const short = await editionShortfalls(lines.map((l) => ({ artworkId: l.art.id, title: l.art.title, editionSize: l.art.editionSize, quantity: l.quantity })));
+  if (short.length) return json({ error: editionMessage(short), soldOut: short }, 409);
+
+  if (!process.env.STRIPE_SECRET_KEY) {
+    if (!testCheckoutAllowed()) return checkoutUnavailable("checkout");
+    return devCheckout(lines, buyerEmail, buyer);
+  }
 
   // ---- Real Stripe Checkout (Apple Pay / Google Pay / card are offered by Stripe) ----
   try {
@@ -97,7 +106,8 @@ export async function POST(req: Request) {
     const base = baseUrlFrom(req);
     const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = lines.map((l) => ({
       quantity: l.quantity,
-      adjustable_quantity: { enabled: true, minimum: 1, maximum: 10 },
+      // Limited editions: no changing the quantity on Stripe's page (we checked what's left above).
+      adjustable_quantity: l.art.editionSize ? { enabled: false } : { enabled: true, minimum: 1, maximum: 10 },
       price_data: {
         currency: "usd",
         unit_amount: l.unit,
@@ -150,6 +160,9 @@ async function devCheckout(lines: Line[], email: string | undefined, buyer: { na
   const sessionId = `dev_${randomBytes(12).toString("hex")}`;
   try {
     const order = await prisma.$transaction(async (tx) => {
+      // Lock limited artworks and hand out edition numbers before this order's items exist.
+      const { numbers, shortfalls } = await claimEditionNumbers(tx, lines.map((l) => ({ artworkId: l.art.id, quantity: l.quantity })));
+      if (shortfalls.length) throw new EditionSoldOutError(shortfalls);
       const created = await tx.order.create({
         data: {
           stripeSessionId: sessionId,
@@ -162,7 +175,7 @@ async function devCheckout(lines: Line[], email: string | undefined, buyer: { na
         },
       });
       await tx.orderItem.createMany({
-        data: lines.map((l) => {
+        data: lines.map((l, i) => {
           const lineTotal = l.unit * l.quantity;
           const b = calcItemProfitCents({ lineTotal, size: REV_SIZE[l.size], frameChosen: l.frameChosen, quantity: l.quantity, orderDate: created.createdAt });
           return {
@@ -182,6 +195,7 @@ async function devCheckout(lines: Line[], email: string | undefined, buyer: { na
             shippingCost: b.shippingCost,
             laborCost: b.laborCost,
             websiteCost: b.websiteCost,
+            editionNumber: numbers[i],
           };
         }),
       });
@@ -193,6 +207,7 @@ async function devCheckout(lines: Line[], email: string | undefined, buyer: { na
     );
     return json({ url: `/thank-you?session_id=${sessionId}`, dev: true });
   } catch (err) {
+    if (err instanceof EditionSoldOutError) return json({ error: err.message, soldOut: err.shortfalls }, 409);
     console.error("[checkout:dev] failed", err);
     return json({ error: "Test checkout failed" }, 500);
   }

@@ -33,7 +33,9 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
   const shaped: AdminOrder[] = orders.map((o) => {
     const items = o.items.map((it) => {
       // Authoritative money math (60/40 or 50/50 by order date) lives in lib/sales.ts.
-      const b = itemBreakdown({ lineTotal: it.lineTotal, unitPrice: it.unitPrice, quantity: it.quantity, size: it.size, frameChosen: it.frameChosen, orderDate: o.createdAt });
+      const b0 = itemBreakdown({ lineTotal: it.lineTotal, unitPrice: it.unitPrice, quantity: it.quantity, size: it.size, frameChosen: it.frameChosen, orderDate: o.createdAt });
+      // Bulk = an artist buying their own prints at cost: no artist share.
+      const b = o.kind === "bulk" ? { ...b0, companyShare: b0.companyShare + b0.artistShare, artistShare: 0 } : b0;
       const size = normalizeSize(it.size);
       return {
         id: it.id,
@@ -65,6 +67,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
       shippingAddress: o.shippingAddress,
       shippingStatus: o.shippingStatus,
       sentToPrinter: o.sentToPrinter,
+      kind: o.kind,
       items,
     };
   });

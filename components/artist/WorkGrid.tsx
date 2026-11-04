@@ -92,26 +92,31 @@ export function WorkSingle({ works, isOwner }: { works: ArtistWork[]; isOwner?: 
   );
 }
 
-// Salon hang: a repeating rhythm of big, tall, small and wide frames, packed densely like a gallery wall.
-const SALON = [
-  "col-span-2 row-span-2",
-  "row-span-2",
-  "",
-  "col-span-2",
-  "",
-  "row-span-2",
-  "col-span-2 row-span-2",
-  "",
-];
+// Salon hang: blocks of four that tile a 4-column wall (and a 2-column one on phones) with no gaps:
+// A = big, tall, small, small; B = tall, big, small, small. Leftover pieces get spans that still close the wall.
+const BIG = "col-span-2 row-span-2";
+const TALL = "row-span-2";
+const SMALL = "";
+function salonSpans(n: number) {
+  const out: string[] = [];
+  const full = Math.floor(n / 4);
+  for (let b = 0; b < full; b++) out.push(...(b % 2 ? [TALL, BIG, SMALL, SMALL] : [BIG, TALL, SMALL, SMALL]));
+  const rest = n % 4;
+  if (rest === 1) out.push("col-span-2 row-span-2 sm:col-span-4");
+  if (rest === 2) out.push("row-span-2 sm:col-span-2", "row-span-2 sm:col-span-2");
+  if (rest === 3) out.push(BIG, TALL, TALL);
+  return out;
+}
 
 /** Salon wall: mixed sizes hung edge to edge on a wall-colored ground. */
 export function WorkSalon({ works, isOwner }: { works: ArtistWork[]; isOwner?: boolean }) {
   if (works.length === 0) return <EmptyWall isOwner={isOwner} />;
+  const spans = salonSpans(works.length);
   return (
     <div className="rounded-lg bg-[#ebe7de] p-3 shadow-[inset_0_2px_12px_rgba(21,22,27,.06)] sm:p-6">
       <ul className="grid grid-flow-dense auto-rows-[118px] grid-cols-2 gap-3 sm:auto-rows-[150px] sm:grid-cols-4 sm:gap-5">
         {works.map((w, i) => (
-          <li key={w.id} className={cn("min-w-0", SALON[i % SALON.length])}>
+          <li key={w.id} className={cn("min-w-0", spans[i])}>
             <Link href={hrefFor(w)} className="group relative block h-full w-full text-ink no-underline" aria-label={`${w.title}, from ${money(w.fromCents)}`}>
               <div className="absolute inset-0 border-[5px] border-[#2a2622] bg-white p-[6%] shadow-[0_14px_24px_-10px_rgba(21,22,27,.55)] transition-transform duration-500 group-hover:-translate-y-1 sm:border-[7px]">
                 <div className="relative h-full w-full overflow-hidden bg-gallery">

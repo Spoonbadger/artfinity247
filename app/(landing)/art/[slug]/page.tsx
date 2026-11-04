@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getUserFromCookie } from "@/lib/auth";
 import ScanView from "@/components/art/ScanView";
+import { getArtistTrust } from "@/lib/artistTrust";
 import { parseDiscount, parseVenue, priceFor } from "@/components/art/pricing";
+import { editionOf, soldCount } from "@/lib/editions";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +27,7 @@ const artSelect = {
   markupMedium: true,
   markupLarge: true,
   markupXl: true,
+  editionSize: true,
   artist: { select: { id: true, slug: true, name: true, artist_name: true, profileImage: true, city: true, state: true } },
 } as const;
 
@@ -50,6 +53,7 @@ export default async function ArtPage({ params, searchParams }: Props) {
   // Buyers only see approved work; the artist and admins can preview anything.
   if (!art || (art.status !== "APPROVED" && !isOwner)) notFound();
 
+  const trustP = getArtistTrust(art.artistId);
   const moreRows = await prisma.artwork.findMany({
     where: { artistId: art.artistId, id: { not: art.id }, status: "APPROVED", slug: { not: null } },
     orderBy: { createdAt: "desc" },
@@ -57,6 +61,7 @@ export default async function ArtPage({ params, searchParams }: Props) {
     select: { slug: true, title: true, imageUrl: true, sensitive: true, markupSmall: true, markupMedium: true, markupLarge: true, markupXl: true },
   });
 
+  const edition = art.editionSize ? editionOf(art.editionSize, await soldCount(art.id)) : null;
   const a = art.artist;
   const place = [a.city, a.state].filter(Boolean).join(", ") || null;
 
@@ -74,6 +79,7 @@ export default async function ArtPage({ params, searchParams }: Props) {
         markupMedium: art.markupMedium ?? 0,
         markupLarge: art.markupLarge ?? 0,
         markupXl: art.markupXl ?? 0,
+        edition,
       }}
       artist={{ id: a.id, slug: a.slug, name: a.artist_name || a.name, avatar: a.profileImage || null, place }}
       more={moreRows.map((m) => ({
@@ -87,6 +93,7 @@ export default async function ArtPage({ params, searchParams }: Props) {
       pct={parseDiscount(searchParams.off)}
       isOwner={isOwner}
       status={art.status}
+      trust={await trustP}
     />
   );
 }

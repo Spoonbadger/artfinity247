@@ -1,5 +1,6 @@
 import type { CartItemProductType } from "@/types";
 import type { PrintSize } from "@/components/art/pricing";
+import type { Edition } from "@/lib/editionFormat";
 
 export type ScanArt = {
   id: string;
@@ -13,6 +14,8 @@ export type ScanArt = {
   markupMedium: number;
   markupLarge: number;
   markupXl: number;
+  /** Limited print run status; null/undefined = open edition. */
+  edition?: Edition | null;
 };
 
 export type ScanArtist = {

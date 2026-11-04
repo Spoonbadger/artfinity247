@@ -5,13 +5,19 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { BadgeCheck, Lock, ShoppingBag } from "lucide-react";
+import { Lock, ShoppingBag } from "lucide-react";
 import { useCart, useUser } from "@/components/contexts";
 import SensitiveImage from "@/components/site/SensitiveImage";
 import { useSensitivePref } from "@/components/site/useSensitivePref";
 import { tagSVG } from "@/lib/qr/render";
 import { cn } from "@/lib/utils";
 import WallPreview from "@/components/art/WallPreview";
+import EditionBadge from "@/components/art/EditionBadge";
+import QtyStepper from "@/components/art/QtyStepper";
+import ArtZoom from "@/components/art/ArtZoom";
+import PrintNote from "@/components/art/PrintNote";
+import { InlineBadges } from "@/components/artist/TrustBlock";
+import type { Trust } from "@/lib/artistTrust";
 import {
   FRAME_COLORS,
   FrameColor,
@@ -40,6 +46,7 @@ export default function ScanView({
   pct,
   isOwner,
   status = "APPROVED",
+  trust = null,
 }: {
   art: ScanArt;
   artist: ScanArtist;
@@ -48,6 +55,8 @@ export default function ScanView({
   pct: number;
   isOwner: boolean;
   status?: string;
+  /** Medal + real verification for the artist line (lib/artistTrust). */
+  trust?: Trust | null;
 }) {
   const router = useRouter();
   const { addToCart, cartItems } = useCart();
@@ -59,6 +68,9 @@ export default function ScanView({
   const [frameColor, setFrameColor] = useState<FrameColor>("black");
   const [landscape, setLandscape] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [qty, setQty] = useState(1);
+  const [zoom, setZoom] = useState(false);
+  const maxQty = Math.max(1, Math.min(10, art.edition ? art.edition.left : 10));
   const [following, setFollowing] = useState(false);
 
   const followKey = `af:follow:${artist.slug}`;
@@ -93,7 +105,7 @@ export default function ScanView({
   const putInCart = (p: ScanCartProduct, onlyIfMissing: boolean) => {
     const exists = cartItems.some((ci) => cartKey(ci.product) === cartKey(p));
     if (onlyIfMissing && exists) return;
-    addToCart(p, 1);
+    addToCart(p, Math.min(qty, maxQty));
   };
 
   const onAdd = () => {
@@ -111,10 +123,18 @@ export default function ScanView({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: [{ product: p, quantity: 1 }],
+          items: [{ product: p, quantity: Math.min(qty, maxQty) }],
           buyer: { id: currentUser?.id ?? null, email: currentUser?.email ?? null },
         }),
       });
+      if (res.status === 409) {
+        // Limited edition ran out (or fewer left than asked)
+        const { error } = await res.json().catch(() => ({ error: "" }));
+        toast.error(error || "Sold out.");
+        setBusy(false);
+        router.refresh();
+        return;
+      }
       if (!res.ok) throw new Error(await res.text());
       const { url } = await res.json();
       if (!url) throw new Error("No checkout url");
@@ -133,7 +153,8 @@ export default function ScanView({
     if (next) toast.success("You'll hear about new work");
   };
 
-  const buyLabel = busy ? "Opening checkout…" : `Buy this print · ${usd(price.now)}`;
+  const soldOut = !!art.edition?.soldOut;
+  const buyLabel = soldOut ? "Sold out" : busy ? "Opening checkout…" : `${qty > 1 ? `Buy ${qty} prints` : "Buy this print"} · ${usd(price.now * Math.min(qty, maxQty))}`;
 
   return (
     <div>
@@ -184,10 +205,12 @@ export default function ScanView({
                       const img = e.currentTarget;
                       setLandscape(img.naturalWidth > img.naturalHeight * 1.05);
                     }}
-                    className="block h-auto max-h-[46svh] w-auto max-w-full md:max-h-[72vh]"
+                    onClick={() => setZoom(true)}
+                    className="block h-auto max-h-[46svh] w-auto max-w-full cursor-zoom-in md:max-h-[72vh]"
                   />
                 </SensitiveImage>
               </div>
+              <ZoomButton onClick={() => setZoom(true)} hidden={art.sensitive.length > 0 && !sensitivePref} />
               {pct > 0 && (
                 <div
                   className="pointer-events-none absolute -bottom-7 -right-3 w-[150px] rotate-[-7deg] drop-shadow-[0_4px_0_rgba(21,22,27,.18)] sm:w-[190px] md:-right-10 md:w-[230px]"
@@ -213,7 +236,7 @@ export default function ScanView({
               <span className="leading-tight">
                 <span className="flex items-center gap-1 text-[15px] font-bold group-hover:underline">
                   {artist.name}
-                  {art.approved && <BadgeCheck aria-label="Verified artist" className="h-4 w-4 text-scan" />}
+                  <InlineBadges trust={trust} size={17} className="ml-0.5" />
                 </span>
                 {artist.place && <span className="block text-[13px] text-ink-2">{artist.place}</span>}
               </span>
@@ -229,6 +252,7 @@ export default function ScanView({
               {framed ? " · framed" : ""}
             </span>
           </div>
+          <EditionBadge edition={art.edition} className="-mt-2" />
 
           {/* Size */}
           <fieldset className="grid gap-2">
@@ -315,10 +339,16 @@ export default function ScanView({
 
           {/* Buttons (desktop shows Buy here; on phones Buy is the sticky bar) */}
           <div className="grid gap-2.5">
-            <button type="button" onClick={onBuy} disabled={busy} className="btn btn-blue btn-lg hidden w-full text-[18px] md:inline-flex">
+            {!soldOut && (
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[15px] font-bold">Quantity{art.edition && <span className="num ml-1.5 text-[13px] font-normal text-ink-2">max {maxQty}</span>}</span>
+                <QtyStepper value={Math.min(qty, maxQty)} onChange={setQty} max={maxQty} />
+              </div>
+            )}
+            <button type="button" onClick={onBuy} disabled={busy || soldOut} className="btn btn-blue btn-lg hidden w-full text-[18px] md:inline-flex">
               {buyLabel}
             </button>
-            <button type="button" onClick={onAdd} className="btn btn-ghost w-full">
+            <button type="button" onClick={onAdd} disabled={soldOut} className="btn btn-ghost w-full">
               <ShoppingBag className="h-[18px] w-[18px]" aria-hidden /> Add to cart
             </button>
             <p className="hidden items-center justify-center gap-1.5 text-[13px] text-ink-2 md:flex">
@@ -332,6 +362,7 @@ export default function ScanView({
             <li className="flex items-center gap-2"><i className="paint-dab" style={{ ["--dab" as any]: "var(--af-earned)" }} />{firstName} gets 60% of profit</li>
             <li className="flex items-center gap-2"><i className="paint-dab" style={{ ["--dab" as any]: "var(--af-ink)" }} />Secure checkout by Stripe</li>
           </ul>
+          <PrintNote className="md:order-last" />
 
           {art.description?.trim() && (
             <details className="md:order-last group border-t border-line pt-4">
@@ -386,9 +417,11 @@ export default function ScanView({
         )}
       </section>
 
+      <ArtZoom open={zoom} onClose={() => setZoom(false)} src={art.imageUrl} alt={`${art.title} by ${artist.name}`} />
+
       {/* Sticky buy bar on phones */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 px-4 pt-3 backdrop-blur pb-[calc(10px+env(safe-area-inset-bottom))] md:hidden">
-        <button type="button" onClick={onBuy} disabled={busy} className="btn btn-blue w-full py-3.5 text-[17px]">
+        <button type="button" onClick={onBuy} disabled={busy || soldOut} className="btn btn-blue w-full py-3.5 text-[17px]">
           {buyLabel}
         </button>
         <p className="mt-1.5 flex items-center justify-center gap-1.5 text-[13px] text-ink-2">
@@ -396,5 +429,19 @@ export default function ScanView({
         </p>
       </div>
     </div>
+  );
+}
+
+function ZoomButton({ onClick, hidden }: { onClick: () => void; hidden?: boolean }) {
+  if (hidden) return null;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Zoom in on the painting"
+      className="absolute right-2 top-2 grid h-10 w-10 place-items-center rounded-full bg-white/90 text-ink shadow-[0_2px_8px_rgba(21,22,27,.25)] transition hover:bg-white focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-scan"
+    >
+      <svg viewBox="0 0 20 20" className="h-[18px] w-[18px]" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M13 13l4.5 4.5M8.5 6v5M6 8.5h5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+    </button>
   );
 }
