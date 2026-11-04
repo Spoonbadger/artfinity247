@@ -9,6 +9,7 @@ import { HungArt } from "@/components/browse/ArtCard";
 import { InlineBadges } from "@/components/artist/TrustBlock";
 import { getTrustBySlug } from "@/lib/artistTrust";
 import ClaimHandle from "@/components/home/ClaimHandle";
+import CodeNote from "@/components/qr/CodeNote";
 import HeroStory from "@/components/home/HeroStory";
 import SalonStrip from "@/components/home/SalonStrip";
 import CityRow from "@/components/home/CityRow";
@@ -62,7 +63,7 @@ async function printsThisMonth(artistId: string) {
   return r._sum.quantity ?? 0;
 }
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
   const [hero, artists, popular, cities] = await Promise.all([getHeroArt(), getArtists({ take: 4, pieces: 1 }), getPopular(), getCityCards()]);
   const trust = await getTrustBySlug(artists.map((a) => a.slug));
   const perPrint = hero ? breakdown("medium", hero.markupMedium ?? 0).artist : breakdown("medium", 1500).artist;
@@ -75,6 +76,7 @@ export default async function Home() {
 
   return (
     <>
+      {searchParams?.code === "unknown" && <CodeNote kind="unknown" />}
       {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="mx-auto grid max-w-[1240px] items-center gap-12 px-4 pb-16 pt-10 sm:px-6 md:pt-14 lg:grid-cols-[1.05fr_1fr] lg:gap-14 lg:pb-24 lg:pt-16">

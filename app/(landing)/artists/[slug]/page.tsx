@@ -6,6 +6,7 @@ import { bannerColor, getArtistPage, resolveBanner, venuesFor } from "@/componen
 import { paint, parseTheme } from "@/components/artist/theme";
 import TrustBlock, { NameBadges } from "@/components/artist/TrustBlock";
 import ArtistBanner from "@/components/artist/ArtistBanner";
+import CodeNote from "@/components/qr/CodeNote";
 import ArtistAvatar from "@/components/artist/ArtistAvatar";
 import ArtistActions from "@/components/artist/ArtistActions";
 import ArtistSocials from "@/components/links/ArtistSocials";
@@ -110,6 +111,7 @@ export default async function ArtistPage({ params, searchParams }: Props) {
 
   return (
     <div className="bg-white pb-16 sm:pb-24" style={{ ["--accent" as string]: accent.color, ["--accent-ink" as string]: accent.ink, ["--accent-soft" as string]: accent.soft }}>
+      {searchParams?.expired === "1" && <CodeNote kind="expired" name={artist.name} />}
       <ArtistBanner src={banner?.imageUrl ?? null} alt={banner ? `${banner.title}, by ${artist.name}` : ""} color={bannerColor(theme)} />
 
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
