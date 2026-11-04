@@ -8,6 +8,7 @@ import { getArtistTrust } from "@/lib/artistTrust";
 import ProCard from "@/components/pro/ProCard";
 import { getArtistPlan } from "@/components/pro/plan.server";
 import { prisma } from "@/lib/prisma";
+import { countArtistScans } from "@/lib/shortlinks";
 import { getBalance } from "@/lib/balance";
 import BalanceChip from "@/components/money/BalanceChip";
 import { requireArtist, firstName, getSales, getArtworks, dayKey, serverGreeting, timeAgo, SIZE_LABEL, STUDIO_TZ, usd } from "./_lib/data";
@@ -39,6 +40,12 @@ export default async function StudioHome() {
     getBalance(artist.id, now),
   ]);
   const sales = allSales.filter((s) => s.date >= since);
+  // Real scans of the artist's short link codes: last 30 days vs the 30 before.
+  const [scans, scansBefore] = await Promise.all([
+    countArtistScans(artist.id, since, now),
+    countArtistScans(artist.id, new Date(since.getTime() - 30 * DAY), since),
+  ]);
+  const scanDelta = !scans && !scansBefore ? "print a code to start" : !scansBefore ? "new this month" : `${scans >= scansBefore ? "+" : "−"}${Math.abs(Math.round(((scans - scansBefore) / scansBefore) * 100))}% vs last 30 days`;
 
   const prints = sales.reduce((n, s) => n + s.quantity, 0);
   const earned = sales.reduce((n, s) => n + s.shareCents, 0);
@@ -86,10 +93,9 @@ export default async function StudioHome() {
         <PaintChip color="#e8743b" value={prints.toLocaleString("en-US")} label="prints sold" note={`Cadmium · ${sales.length} ${sales.length === 1 ? "order" : "orders"}`} />
         <PaintChip color="#0f7a55" value={usd(earned)} label="you earned" note="Viridian · your share of profit" earned />
         <PaintChip color="#ffd43b" value={best ? best.title : "None yet"} label="best seller" note={best ? `Naples Yellow · ${best.prints} sold` : "Naples Yellow · hang a code"} />
-        <div className="relative">
-          <PaintChip color="#2b37f0" value="1,284" label="scans (sample data)" note="Preview: scan tracking arrives with short links" />
-          <span className="sticker-badge absolute right-2 top-2 text-[11px]">Preview</span>
-        </div>
+        <Link href="/studio/codes" className="rounded-[3px] text-ink no-underline hover:opacity-90" aria-label={`${scans.toLocaleString("en-US")} scans in 30 days. See my codes`}>
+          <PaintChip color="#2b37f0" value={scans.toLocaleString("en-US")} label="scans" note={`Ultramarine · ${scanDelta}`} />
+        </Link>
       </section>
 
       <BalanceChip b={balance} />
