@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma"
 import { ArtworkStatus } from "@prisma/client"
+import { getArtistManager } from "@/lib/admin"
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
@@ -37,6 +38,11 @@ export async function GET(
     })
 
     if (!artist) return new NextResponse("Artist not found", { status: 404 });
+
+    // Contact and payout details are private: only the artist themself or an admin sees them.
+    const { allowed } = await getArtistManager(artist.id)
+    const { email, phone, venmoHandle, ...publicArtist } = artist
+    const artistOut = allowed ? artist : publicArtist
 
     const where = { artistId: artist.id, status: ArtworkStatus.APPROVED };
 
@@ -77,7 +83,10 @@ export async function GET(
       prisma.artwork.count({ where }),
     ]);
 
-    return NextResponse.json({ artist, artworks, total }, { status: 200 })
+    return NextResponse.json(
+      { artist: artistOut, artworks, total },
+      { status: 200, headers: { "Cache-Control": "private, no-store" } }
+    )
   } catch (e) {
     console.error("GET /api/artists/[slug] failed", e)
     return new NextResponse("Server error", { status: 500 })
@@ -89,7 +98,17 @@ export async function PUT(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const body = await req.json()
+    const target = await prisma.artist.findUnique({
+      where: { slug: params.slug },
+      select: { id: true },
+    })
+    if (!target) return NextResponse.json({ error: "Artist not found" }, { status: 404 })
+
+    const { user, allowed } = await getArtistManager(target.id)
+    if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+
+    const body = await req.json().catch(() => ({}))
     let { venmoHandle } = body
 
     if (!venmoHandle || typeof venmoHandle !== "string") {
@@ -111,7 +130,7 @@ export async function PUT(
     }
 
     const artist = await prisma.artist.update({
-      where: { slug: params.slug },
+      where: { id: target.id },
       data: { venmoHandle },
       select: {
         id: true,

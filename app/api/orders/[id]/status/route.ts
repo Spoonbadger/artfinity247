@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { adminGuard } from "@/lib/admin"
 import { resend } from "@/lib/resend"
 import ShippingStatusEmail from "@/emails/ShippingStatusEmail"
 
@@ -12,7 +13,10 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { shippingStatus } = await req.json()
+  const denied = await adminGuard()
+  if (denied) return denied
+
+  const { shippingStatus } = await req.json().catch(() => ({}))
 
   if (!["pending", "shipped", "delivered"].includes(shippingStatus)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 })
@@ -51,6 +55,8 @@ export async function POST(
     (was === "pending" && now === "shipped") ||
     (was === "shipped" && now === "delivered")
   ) {
+    // The status change is saved; a failed email shouldn't make the admin UI report failure.
+    try {
     await resend.emails.send({
       from: "Artfinity <notifications@theartfinity.com>",
       to: order.email || "",
@@ -70,6 +76,9 @@ export async function POST(
         })),
       }),
     })
+    } catch (err) {
+      console.error("Shipping status email failed", err)
+    }
   }
 
   return NextResponse.json(order)
