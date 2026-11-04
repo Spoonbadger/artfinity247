@@ -69,7 +69,7 @@ function CityChip({ href, active, label, count }: { href: string; active: boolea
     <Link
       href={href}
       aria-current={active ? "true" : undefined}
-      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border-[1.5px] px-3.5 py-1.5 text-[14px] font-semibold no-underline transition ${active ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}
+      className={`inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-full border-[1.5px] px-4 py-1.5 text-[14px] md:min-h-0 md:px-3.5 font-semibold no-underline transition ${active ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}
     >
       {label}
       {count != null && <span className={`num text-[12px] ${active ? "text-white/70" : "text-ink-2"}`}>{count}</span>}

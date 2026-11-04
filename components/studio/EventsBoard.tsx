@@ -58,7 +58,7 @@ export default function EventsBoard() {
           <span className="label">Venue</span>
           <input value={venue} onChange={(e) => setVenue(e.target.value)} maxLength={80} placeholder="Booth 14, Riverview Station" />
         </label>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-3 min-[420px]:grid-cols-2">
           <label className="af-field">
             <span className="label">Starts</span>
             <input type="date" value={start} onChange={(e) => setStart(e.target.value)} required />

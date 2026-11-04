@@ -48,7 +48,7 @@ function NavItem({ href, label, dab, active, compact = false }: { href: string; 
       aria-current={active ? "page" : undefined}
       className={cn(
         "relative z-0 flex shrink-0 items-center gap-2.5 rounded-md font-semibold text-ink no-underline",
-        compact ? "px-3 py-2 text-[14px]" : "px-3 py-2.5 text-[15.5px] hover:bg-white/70"
+        compact ? "min-h-[44px] px-3 py-2 text-[15px]" : "px-3 py-2.5 text-[15.5px] hover:bg-white/70"
       )}
     >
       <i className="paint-dab" style={{ ["--dab" as string]: dab }} />
@@ -110,25 +110,30 @@ export default function StudioShell({ artist, children }: { artist: ShellArtist;
         </div>
       </aside>
 
-      {/* Mobile top bar */}
-      <header className="sticky top-0 z-30 border-b border-line bg-wall lg:hidden" style={canvasTexture}>
-        <div className="flex items-center justify-between gap-3 px-4 pt-3">
+      {/* Phones: the logo row scrolls away; only the tab row stays pinned (about 56px instead of 103px). */}
+      <div className="border-b border-line bg-wall lg:hidden" style={canvasTexture}>
+        <div className="flex items-center justify-between gap-3 px-4 py-1.5">
           <Logo href="/studio" className="text-[20px]" />
-          <div className="flex items-center gap-1.5">
-            <Link href={`/@${artist.slug}`} className="btn btn-ghost btn-sm" aria-label="View my page">
+          <div className="flex items-center gap-1">
+            <Link href={`/@${artist.slug}`} className="btn btn-ghost btn-sm min-h-[44px] px-4" aria-label="View my page">
               My page <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
             </Link>
-            <button type="button" onClick={logout} disabled={leaving} className="grid h-9 w-9 place-items-center rounded-full text-ink-2 hover:bg-white" aria-label="Log out">
-              <LogOut className="h-4 w-4" aria-hidden="true" />
+            <button type="button" onClick={logout} disabled={leaving} className="-mr-1.5 grid h-11 w-11 place-items-center rounded-full text-ink-2 hover:bg-white" aria-label="Log out">
+              <LogOut className="h-[18px] w-[18px]" aria-hidden="true" />
             </button>
           </div>
         </div>
-        <nav ref={mobileNav} aria-label="Studio" className="relative flex gap-1 overflow-x-auto px-2 pb-2 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      </div>
+      <div className="sticky top-0 z-30 border-b border-line bg-wall lg:hidden" style={canvasTexture}>
+        <nav ref={mobileNav} aria-label="Studio" className="relative flex gap-1 overflow-x-auto px-2 py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {STUDIO_NAV.map((n) => (
             <NavItem key={n.href} {...n} compact active={isActive(path, n.href)} />
           ))}
+          <span aria-hidden="true" className="w-2 shrink-0" />
         </nav>
-      </header>
+        {/* fade hints that the tabs scroll sideways */}
+        <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-wall to-transparent" />
+      </div>
 
       <main id="studio-main" className="min-w-0">{children}</main>
     </div>

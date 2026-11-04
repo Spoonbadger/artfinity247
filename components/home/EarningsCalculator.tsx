@@ -40,11 +40,11 @@ export default function EarningsCalculator({ compact = false }: { compact?: bool
         </fieldset>
         <label htmlFor={`${id}-m`} className="grid gap-2">
           <span className="flex items-baseline justify-between text-[15px] font-semibold">Your markup <span className="num font-display text-[22px] font-extrabold [font-variation-settings:'wdth'_80]">${markup}</span></span>
-          <input id={`${id}-m`} type="range" min={0} max={60} step={5} value={markup} onChange={(e) => setMarkup(+e.target.value)} className="w-full accent-[var(--af-scan)]" />
+          <input id={`${id}-m`} type="range" min={0} max={60} step={5} value={markup} onChange={(e) => setMarkup(+e.target.value)} className="h-11 w-full cursor-pointer accent-[var(--af-scan)]" />
         </label>
         <label htmlFor={`${id}-s`} className="grid gap-2">
           <span className="flex items-baseline justify-between text-[15px] font-semibold">Prints sold a month <span className="num font-display text-[22px] font-extrabold [font-variation-settings:'wdth'_80]">{sales}</span></span>
-          <input id={`${id}-s`} type="range" min={1} max={60} step={1} value={sales} onChange={(e) => setSales(+e.target.value)} className="w-full accent-[var(--af-scan)]" />
+          <input id={`${id}-s`} type="range" min={1} max={60} step={1} value={sales} onChange={(e) => setSales(+e.target.value)} className="h-11 w-full cursor-pointer accent-[var(--af-scan)]" />
         </label>
       </div>
 

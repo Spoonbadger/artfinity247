@@ -53,7 +53,7 @@ export default function ContactForm() {
         <div className="flex flex-wrap gap-2">
           {TOPICS.map(([v, l]) => (
             <button key={v} type="button" aria-pressed={topic === v} onClick={() => setTopic(v)}
-              className={cn("rounded-full border-[1.5px] px-3.5 py-1.5 text-[14px] font-semibold transition", topic === v ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>
+              className={cn("min-h-[44px] rounded-full border-[1.5px] px-4 py-1.5 text-[14px] font-semibold transition md:min-h-0", topic === v ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>
               {l}
             </button>
           ))}

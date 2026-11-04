@@ -25,7 +25,8 @@ function Blob({ className, color, d = 0 }: { className?: string; color: string; 
 /** Hero visual: a real piece on a gallery wall, its QR card beside it, sales popping in. */
 export default function HeroWall({ art, perPrint }: { art: HeroArt; perPrint: number }) {
   return (
-    <div className="relative mx-auto w-full max-w-[600px]">
+    <div className="mx-auto w-full max-w-[600px]">
+      <div className="relative">
       <style>{`@keyframes af-float{0%,100%{transform:translateY(0) rotate(var(--r,0deg))}50%{transform:translateY(-7px) rotate(var(--r,0deg))}}.af-float{animation:af-float 5.5s ease-in-out infinite}`}</style>
       <div
         className="relative aspect-[1/1.02] w-full overflow-hidden rounded-[22px] border-[1.5px] border-ink/10"
@@ -79,6 +80,7 @@ export default function HeroWall({ art, perPrint }: { art: HeroArt; perPrint: nu
       <div className="af-float absolute -left-1 bottom-[15%] rounded-2xl border-2 border-ink bg-white px-3.5 py-2 text-[13px] leading-tight shadow-[4px_4px_0_var(--af-ink)] [animation-delay:-2.7s] sm:-left-6" style={{ ["--r" as string]: "-2deg" }} aria-hidden="true">
         Scanned at the café
         <b className="num block font-display text-[19px] text-scan [font-variation-settings:'wdth'_80]">14 scans today</b>
+      </div>
       </div>
       <p className="mt-3 pl-1 text-[13px] text-ink-2">
         On the wall: <Link href={`/art/${art.slug}`} className="font-semibold text-ink no-underline hover:underline">{art.title}</Link> by{" "}

@@ -17,7 +17,7 @@ export default function AuthTopLink() {
     return (
       <span className="text-[14.5px] text-ink-2">
         <span className="hidden sm:inline">Have a page? </span>
-        <Link href={withNext("/login", next)} className="font-bold text-ink underline decoration-2 underline-offset-4 hover:text-scan">Log in</Link>
+        <Link href={withNext("/login", next)} className="inline-flex min-h-[44px] items-center px-1 font-bold text-ink underline decoration-2 underline-offset-4 hover:text-scan">Log in</Link>
       </span>
     );
   }

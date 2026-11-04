@@ -42,7 +42,7 @@ export function Pager({ page, pages, href }: { page: number; pages: number; href
       {nums.map((n, i) => (
         <span key={n} className="contents">
           {i > 0 && n - nums[i - 1] > 1 && <span className="px-1 text-ink-2">…</span>}
-          <Link href={href(n)} aria-current={n === page ? "page" : undefined} className={cn("num grid h-9 min-w-9 place-items-center rounded-full px-2 text-[14px] font-semibold no-underline", n === page ? "bg-ink text-white" : "text-ink hover:bg-wall")}>{n}</Link>
+          <Link href={href(n)} aria-current={n === page ? "page" : undefined} className={cn("num grid h-11 min-w-11 place-items-center rounded-full px-2 text-[14px] font-semibold no-underline", n === page ? "bg-ink text-white" : "text-ink hover:bg-wall")}>{n}</Link>
         </span>
       ))}
       {page < pages && <Link href={href(page + 1)} className="btn btn-ghost btn-sm" rel="next">Next</Link>}

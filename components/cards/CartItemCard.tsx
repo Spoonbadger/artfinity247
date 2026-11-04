@@ -43,15 +43,15 @@ const CartItemCard = ({ item, className, readOnly = false }: { item: CartItemTyp
         {!readOnly && (
           <div className="mt-2 flex items-center gap-3">
             <div className="flex items-center rounded-full border-2 border-ink">
-              <button type="button" onClick={() => setQ(q - 1)} disabled={q <= 1} aria-label={`One fewer ${p.title}`} className="grid h-8 w-8 place-items-center rounded-full disabled:opacity-30">
+              <button type="button" onClick={() => setQ(q - 1)} disabled={q <= 1} aria-label={`One fewer ${p.title}`} className="grid h-10 w-11 place-items-center rounded-full disabled:opacity-30">
                 <Minus className="h-4 w-4" />
               </button>
               <span className="num w-6 text-center text-[15px] font-bold" aria-live="polite" aria-label={`Quantity ${q}`}>{q}</span>
-              <button type="button" onClick={() => setQ(q + 1)} disabled={q >= MAX_QTY} aria-label={`One more ${p.title}`} className="grid h-8 w-8 place-items-center rounded-full disabled:opacity-30">
+              <button type="button" onClick={() => setQ(q + 1)} disabled={q >= MAX_QTY} aria-label={`One more ${p.title}`} className="grid h-10 w-11 place-items-center rounded-full disabled:opacity-30">
                 <Plus className="h-4 w-4" />
               </button>
             </div>
-            <button type="button" onClick={() => removeFromCart(item.product)} className="text-[13.5px] font-semibold text-ink-2 underline-offset-2 hover:text-ink hover:underline">
+            <button type="button" onClick={() => removeFromCart(item.product)} className="min-h-[44px] px-1 text-[14px] font-semibold text-ink-2 underline-offset-2 hover:text-ink hover:underline">
               Remove
             </button>
           </div>

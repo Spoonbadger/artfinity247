@@ -38,7 +38,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
           <div className="mt-8">
             <span className="eyebrow">Or browse a city</span>
             <div className="mt-3 flex flex-wrap gap-2">
-              {cities.map((c) => <Link key={c.slug} href={`/scenes/${c.slug}`} className="rounded-full border-[1.5px] border-line bg-white px-3.5 py-1.5 text-[14px] font-semibold text-ink no-underline hover:border-ink">{c.name}</Link>)}
+              {cities.map((c) => <Link key={c.slug} href={`/scenes/${c.slug}`} className="inline-flex min-h-[44px] items-center rounded-full border-[1.5px] border-line bg-white px-4 py-1.5 text-[14px] font-semibold text-ink no-underline hover:border-ink">{c.name}</Link>)}
             </div>
           </div>
         )}

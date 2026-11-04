@@ -14,7 +14,7 @@ export default function SensitiveImage({ labels, children, light = false }: { la
       {hidden && (
         <div className="absolute inset-0 grid place-content-center justify-items-center gap-2 bg-ink/25 p-3 text-center text-white">
           <span className="text-[13px] font-bold drop-shadow">{labels!.join(" · ")}</span>
-          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setRevealed(true); }} className="rounded-full bg-white px-4 py-1.5 text-[13px] font-bold text-ink">Show</button>
+          <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setRevealed(true); }} className="min-h-[44px] rounded-full bg-white px-5 text-[14px] font-bold text-ink">Show</button>
         </div>
       )}
     </div>

@@ -45,7 +45,7 @@ export default function LongForm({ eyebrow, title, sub, children, current }: { e
             <span className="eyebrow mb-2">Policies</span>
             {POLICIES.map(([label, href]) => (
               <Link key={href} href={href} aria-current={current === href ? "page" : undefined}
-                className={cn("rounded-lg px-2 py-1.5 text-[15px] no-underline", current === href ? "bg-white font-bold text-ink shadow-[inset_3px_0_0_var(--af-scan)]" : "text-ink-2 hover:text-ink")}>
+                className={cn("rounded-lg px-2 py-2.5 text-[15px] no-underline md:py-1.5", current === href ? "bg-white font-bold text-ink shadow-[inset_3px_0_0_var(--af-scan)]" : "text-ink-2 hover:text-ink")}>
                 {label}
               </Link>
             ))}

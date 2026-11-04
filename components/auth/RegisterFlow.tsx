@@ -369,16 +369,16 @@ export default function RegisterFlow() {
                 onDrop={onDrop}
               >
                 <div className="grid content-start gap-2">
-                  <div className="relative mx-auto w-full max-w-[220px] overflow-hidden rounded-md bg-wall shadow-[0_8px_20px_rgba(21,22,27,.18)]">
+                  <div className="relative mx-auto w-fit max-w-[220px] overflow-hidden rounded-md bg-wall shadow-[0_8px_20px_rgba(21,22,27,.18)]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={upload.preview} alt={title || "Your artwork"} className={cn("block h-auto w-full", upload.uploading && "opacity-60")} />
+                    <img src={upload.preview} alt={title || "Your artwork"} className={cn("block h-auto max-h-[30svh] w-auto max-w-full sm:max-h-none sm:w-full", upload.uploading && "opacity-60")} />
                     {upload.uploading && (
                       <span className="absolute inset-0 grid place-items-center">
                         <span className="flex items-center gap-2 rounded-full bg-paper px-3 py-1.5 text-[13.5px] font-bold"><Spinner /> Uploading</span>
                       </span>
                     )}
                   </div>
-                  <button type="button" onClick={() => fileRef.current?.click()} className="text-[14px] font-semibold text-ink-2 underline underline-offset-4 hover:text-scan">
+                  <button type="button" onClick={() => fileRef.current?.click()} className="min-h-[44px] text-[14px] font-semibold text-ink-2 underline underline-offset-4 hover:text-scan">
                     Use a different photo
                   </button>
                 </div>
@@ -407,7 +407,7 @@ export default function RegisterFlow() {
                     {printNote && <span className="text-[13.5px] text-ink-2">{printNote}</span>}
                   </div>
                   <div className="grid gap-2">
-                    <label className="flex cursor-pointer items-center gap-2 text-[14.5px] font-semibold">
+                    <label className="flex min-h-[44px] cursor-pointer items-center gap-2.5 text-[14.5px] font-semibold">
                       <input type="checkbox" checked={isSensitive} onChange={(e) => { setIsSensitive(e.target.checked); setErrors((x) => ({ ...x, sensitive: null })); }} className="h-[18px] w-[18px] accent-[var(--af-scan)]" />
                       Contains sensitive content
                     </label>
@@ -418,7 +418,7 @@ export default function RegisterFlow() {
                           {SENSITIVE.map((l) => {
                             const on = labels.includes(l);
                             return (
-                              <label key={l} className={cn("cursor-pointer rounded-full border-[1.5px] px-3 py-1 text-[13.5px] font-semibold has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-scan", on ? "border-ink bg-ink text-white" : "border-line bg-paper text-ink hover:border-ink")}>
+                              <label key={l} className={cn("inline-flex min-h-[44px] cursor-pointer items-center rounded-full border-[1.5px] px-4 py-1 text-[14px] font-semibold has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-scan", on ? "border-ink bg-ink text-white" : "border-line bg-paper text-ink hover:border-ink")}>
                                 <input type="checkbox" className="sr-only" checked={on} onChange={() => { setLabels((xs) => (on ? xs.filter((x) => x !== l) : [...xs, l])); setErrors((x) => ({ ...x, sensitive: null })); }} />
                                 {on && <span aria-hidden="true">✓ </span>}
                                 {l}
@@ -434,7 +434,7 @@ export default function RegisterFlow() {
               </div>
             )}
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <button type="button" className="text-[15px] font-semibold text-ink-2 underline underline-offset-4 hover:text-scan" onClick={() => go(4)} disabled={busy}>
+              <button type="button" className="min-h-[44px] text-[15px] font-semibold text-ink-2 underline underline-offset-4 hover:text-scan" onClick={() => go(4)} disabled={busy}>
                 Skip for now
               </button>
               <button type="submit" className="btn btn-blue btn-lg max-sm:w-full" disabled={busy || !upload?.url || upload.uploading}>

@@ -167,7 +167,7 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
                       onClick={() => setOpen(open === o.id ? null : o.id)}
                       aria-expanded={open === o.id}
                       aria-controls={`details-${o.id}`}
-                      className="mt-0.5 text-[13px] font-semibold text-scan hover:underline"
+                      className="-my-2 inline-flex min-h-[40px] items-center text-[14px] font-semibold text-scan hover:underline md:my-0 md:min-h-0 md:text-[13px]"
                     >
                       {open === o.id ? "Hide details" : "Details"}
                     </button>
@@ -209,7 +209,7 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
                         value={o.shippingStatus || "pending"}
                         disabled={busy === o.id}
                         onChange={(e) => setShipping(o, e.target.value)}
-                        className="cursor-pointer appearance-none rounded-full border-[1.5px] border-line bg-white py-1.5 pl-8 pr-7 text-[13px] sm:pl-9 sm:pr-8 sm:text-[13.5px] font-semibold text-ink hover:border-ink focus:border-scan"
+                        className="cursor-pointer appearance-none rounded-full border-[1.5px] border-line bg-white min-h-[44px] py-1.5 pl-8 pr-7 text-[16px] sm:pl-9 sm:pr-8 md:min-h-0 md:text-[13.5px] font-semibold text-ink hover:border-ink focus:border-scan"
                       >
                         <option value="pending">Pending</option>
                         <option value="shipped">Shipped</option>

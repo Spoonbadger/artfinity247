@@ -1,38 +1,47 @@
-// components/CookieBanner.tsx
 "use client";
-import { useEffect, useState } from "react";
 
+import { useEffect, useState } from "react";
+import Link from "next/link";
+
+/**
+ * Small cookie notice. On phones it floats as a compact pill ABOVE any sticky bottom bar:
+ * pages with one (the scan page's buy bar) set `--af-bottom-bar` on :root to the bar's height.
+ */
 export default function CookieBanner() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (localStorage.getItem("cookieConsent") === "accepted") return;
+    try {
+      if (localStorage.getItem("cookieConsent") === "accepted") return;
+    } catch {}
     setVisible(true);
   }, []);
 
   const accept = () => {
-    localStorage.setItem("cookieConsent", "accepted");
+    try {
+      localStorage.setItem("cookieConsent", "accepted");
+    } catch {}
     setVisible(false);
   };
 
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-slate-200 text-black p-3 text-sm shadow-md">
-      <div className="max-w-4xl mx-auto flex items-center justify-between gap-2 flex-wrap">
-        <p className="m-0">
-          This site uses cookies to improve your experience. By clicking{" "}
-          <strong>Accept</strong>, you consent to cookies.{" "}
-          <a href="/cookie-policy" className="underline text-blue-300">
-            Learn more
-          </a>
-          .
+    <div
+      role="region"
+      aria-label="Cookie notice"
+      className="pointer-events-none fixed inset-x-0 z-40 flex justify-center px-3 sm:px-4"
+      style={{ bottom: "calc(var(--af-bottom-bar, 0px) + env(safe-area-inset-bottom, 0px) + 10px)" }}
+    >
+      <div className="pointer-events-auto flex w-full max-w-[560px] items-center gap-3 rounded-full border-2 border-ink bg-white py-1 pl-4 pr-1 text-[14px] text-ink shadow-[0_10px_30px_-10px_rgba(21,22,27,.45)]">
+        <p className="m-0 min-w-0 flex-1 leading-snug">
+          We use cookies.{" "}
+          <Link href="/cookie-policy" className="font-semibold text-ink underline underline-offset-2">
+            Details
+          </Link>
         </p>
-        <button
-          onClick={accept}
-          className="bg-white text-black px-3 py-1 rounded font-semibold"
-        >
-          Accept
+        <button type="button" onClick={accept} className="btn btn-blue min-h-[44px] shrink-0 px-5 text-[15px]">
+          OK
         </button>
       </div>
     </div>

@@ -33,7 +33,7 @@ export default async function ArtistsPage({ searchParams }: { searchParams: Reco
           <label className="flex items-center gap-2 rounded-full border-2 border-ink bg-white px-4 py-2 focus-within:border-scan md:w-72">
             <Search className="h-4 w-4 shrink-0 text-ink-2" aria-hidden="true" />
             <span className="sr-only">Search artists</span>
-            <input name="q" type="search" defaultValue={q} placeholder="Find an artist" className="w-full min-w-0 border-0 bg-transparent p-0 text-[15px] outline-none placeholder:text-ink-2" />
+            <input name="q" type="search" defaultValue={q} placeholder="Find an artist" className="w-full min-w-0 border-0 bg-transparent p-0 py-1 text-[16px] md:py-0 md:text-[15px] outline-none placeholder:text-ink-2" />
           </label>
         </form>
       </PageHead>
@@ -45,7 +45,7 @@ export default async function ArtistsPage({ searchParams }: { searchParams: Reco
               const active = (city || "") === c.slug;
               return (
                 <Link key={c.slug || "all"} href={link(c.slug || undefined)} aria-current={active ? "true" : undefined}
-                  className={cn("inline-flex shrink-0 rounded-full border-[1.5px] px-3.5 py-1.5 text-[14px] font-semibold no-underline transition", active ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>
+                  className={cn("inline-flex min-h-[44px] shrink-0 items-center rounded-full border-[1.5px] px-4 py-1.5 text-[14px] md:min-h-0 md:px-3.5 font-semibold no-underline transition", active ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>
                   {c.name}
                 </Link>
               );

@@ -138,7 +138,8 @@ export default function ScanView({
   return (
     <div>
       {/* room for the sticky buy bar under the footer on phones */}
-      <style>{`@media (max-width: 767px) { body { padding-bottom: calc(96px + env(safe-area-inset-bottom)); } }`}</style>
+      {/* --af-bottom-bar lets the cookie notice float above the buy bar instead of covering it */}
+      <style>{`@media (max-width: 767px) { :root { --af-bottom-bar: 104px; } body { padding-bottom: calc(112px + env(safe-area-inset-bottom)); } }`}</style>
       {venue && (
         <div className="bg-ink text-white">
           <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-x-4 gap-y-0.5 px-4 py-2 text-[14px] sm:px-6">
@@ -167,7 +168,7 @@ export default function ScanView({
       <div className="mx-auto grid max-w-[1240px] md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] md:gap-12 md:px-6 md:py-10 lg:gap-16">
         {/* The painting */}
         <section aria-label="The painting" className="md:sticky md:top-24 md:self-start">
-          <div className="relative bg-gallery bg-[radial-gradient(ellipse_at_50%_0%,#f7f5f0_0%,#e9e6df_70%)] px-5 pb-9 pt-5 md:rounded-[22px] md:px-[10%] md:py-[9%]">
+          <div className="relative flex min-h-[calc(46svh+66px)] flex-col justify-center bg-gallery bg-[radial-gradient(ellipse_at_50%_0%,#f7f5f0_0%,#e9e6df_70%)] px-5 pb-9 pt-5 md:block md:min-h-0 md:rounded-[22px] md:px-[10%] md:py-[9%]">
             <div className="relative mx-auto w-fit">
               <div className="overflow-hidden bg-white p-[5px] shadow-[0_18px_40px_-12px_rgba(21,22,27,.45),0_2px_6px_rgba(21,22,27,.12)] md:p-2.5">
                 <SensitiveImage labels={art.sensitive} light>
@@ -200,7 +201,7 @@ export default function ScanView({
         {/* Buy panel */}
         <section aria-label="Buy a print" className="grid min-w-0 content-start gap-5 px-4 pt-5 sm:px-6 md:px-0 md:pt-2">
           <div className="grid gap-2">
-            <Link href={`/@${artist.slug}`} className="group flex w-fit items-center gap-2.5 text-ink no-underline">
+            <Link href={`/@${artist.slug}`} className="group flex min-h-[44px] w-fit items-center gap-2.5 text-ink no-underline">
               <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full bg-wall ring-2 ring-white">
                 {artist.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -252,7 +253,7 @@ export default function ScanView({
                       />
                     </span>
                     <span className="text-[15px] font-bold leading-tight">{SIZE_LABEL[s]}</span>
-                    <span className="num text-[12px] leading-tight text-ink-2">
+                    <span className="num text-[13px] leading-tight text-ink-2">
                       {landscape ? `${sh}×${sw}` : `${sw}×${sh}`} in
                     </span>
                     <span className="num text-[13px] font-semibold leading-tight">{usd(sizePrices[s].now)}</span>
@@ -334,7 +335,7 @@ export default function ScanView({
 
           {art.description?.trim() && (
             <details className="md:order-last group border-t border-line pt-4">
-              <summary className="cursor-pointer list-none text-[15px] font-bold marker:hidden">
+              <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-1 text-[15px] font-bold marker:hidden">
                 About this piece <span className="font-normal text-ink-2 group-open:hidden">· show</span>
               </summary>
               <p className="mt-2 whitespace-pre-line text-[15px] text-ink-2">{art.description}</p>
@@ -348,8 +349,8 @@ export default function ScanView({
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <h2 className="display text-[30px] md:text-[40px]">More by {firstName}</h2>
           <div className="flex items-center gap-2">
-            <Link href={`/@${artist.slug}`} className="btn btn-ghost btn-sm">See all</Link>
-            <button type="button" onClick={onFollow} aria-pressed={following} className={cn("btn btn-sm", following ? "btn-ghost" : "btn-blue")}>
+            <Link href={`/@${artist.slug}`} className="btn btn-ghost btn-sm min-h-[44px] px-4 md:min-h-0">See all</Link>
+            <button type="button" onClick={onFollow} aria-pressed={following} className={cn("btn btn-sm min-h-[44px] px-4 md:min-h-0", following ? "btn-ghost" : "btn-blue")}>
               {following ? "Following" : `Follow ${firstName}`}
             </button>
           </div>
@@ -390,7 +391,7 @@ export default function ScanView({
         <button type="button" onClick={onBuy} disabled={busy} className="btn btn-blue w-full py-3.5 text-[17px]">
           {buyLabel}
         </button>
-        <p className="mt-1.5 flex items-center justify-center gap-1.5 text-[12.5px] text-ink-2">
+        <p className="mt-1.5 flex items-center justify-center gap-1.5 text-[13px] text-ink-2">
           <Lock className="h-3 w-3" aria-hidden /> Apple Pay · Google Pay · Card
         </p>
       </div>

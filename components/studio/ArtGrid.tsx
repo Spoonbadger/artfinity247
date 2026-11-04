@@ -92,7 +92,7 @@ export default function ArtGrid({ items }: { items: GridArt[] }) {
               {a.status === "REJECTED" && a.flaggedReason ? a.flaggedReason : a.sold ? `${a.sold} sold` : "No sales yet"}
             </span>
           </div>
-          <div className="flex flex-wrap gap-x-3 gap-y-1 text-[13px] font-semibold">
+          <div className="-mb-2 flex flex-wrap gap-x-3.5 text-[14px] font-semibold [&>*]:inline-flex [&>*]:min-h-[44px] [&>*]:items-center lg:mb-0 lg:gap-y-1 lg:text-[13px] lg:[&>*]:min-h-0">
             <Link href={`/studio/art/${a.slug}`} className="text-scan">Edit</Link>
             <Link href={`/studio/qr?art=${a.slug}`} className="text-scan">Print code</Link>
             <Link href={`/art/${a.slug}`} className="text-scan">View</Link>

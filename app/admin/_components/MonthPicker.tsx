@@ -14,7 +14,7 @@ export default function MonthPicker({ months, value, allowAll = true }: { months
       <select
         value={value}
         onChange={(e) => router.push(`${pathname}?month=${e.target.value}`)}
-        className="cursor-pointer !text-[15px] font-semibold"
+        className="cursor-pointer py-1 !text-[16px] font-semibold md:py-0 md:!text-[15px]"
       >
         {opts.map((m) => (
           <option key={m} value={m}>{m === "all" ? "All months" : monthLabel(m)}</option>
