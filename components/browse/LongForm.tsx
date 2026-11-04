@@ -32,7 +32,7 @@ export default function LongForm({ eyebrow, title, sub, children, current }: { e
   return (
     <div className="pb-24">
       <header className="relative overflow-hidden border-b border-line bg-wall">
-        <BrushStroke className="pointer-events-none absolute -right-20 bottom-4 h-14 w-[420px] -rotate-[4deg] opacity-40" color="var(--af-sticker)" />
+        <BrushStroke className="pointer-events-none absolute -right-20 bottom-4 hidden h-14 w-[420px] -rotate-[4deg] opacity-40 md:block" color="var(--af-sticker)" />
         <div className="relative mx-auto max-w-[1240px] px-4 pb-10 pt-10 sm:px-6 md:pb-14 md:pt-16">
           <div className="mb-3 flex items-center gap-2.5"><DabRow /><span className="eyebrow">{eyebrow || "Artfinity"}</span></div>
           <h1 className="display max-w-[16ch] text-[44px] sm:text-[64px]">{title}</h1>

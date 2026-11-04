@@ -1,6 +1,6 @@
 import { breakdown, money, SIZE_NAME, type SizeKey } from "@/lib/earnings";
 
-const EDGE = ["48% 40% 52% 44% / 60% 50% 50% 40%", "40% 52% 44% 50% / 50% 60% 40% 50%"];
+const EDGE = ["6px 14px 8px 12px / 18px 10px 16px 8px", "12px 6px 14px 8px / 10px 18px 8px 16px"];
 
 /** One print's price, painted as a bar: costs, then the profit split 60/40. */
 export default function SplitBar({ size = "medium", markupCents = 0 }: { size?: SizeKey; markupCents?: number }) {

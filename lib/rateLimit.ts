@@ -9,7 +9,9 @@
 // `setRateLimitStore(new RedisStore(...))` at startup, then use `rateLimitAsync`
 // in routes (remote stores are async). No dependency is needed until then.
 
-export const RATE_LIMIT = 20 // requests
+// 20 requests a minute in production. Locally every request has the same "unknown" IP,
+// so dev gets a much higher ceiling to avoid one shared bucket blocking testing.
+export const RATE_LIMIT = process.env.NODE_ENV === "production" ? 20 : 300 // requests
 export const WINDOW_MS = 60 * 1000 // 1 minute
 
 export interface RateLimitStore {

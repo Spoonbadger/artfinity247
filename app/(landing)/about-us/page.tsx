@@ -29,7 +29,7 @@ const HANG = [
 
 export default async function AboutPage() {
   const art = await prisma.artwork.findMany({
-    where: { ...PUBLIC_ART, status: "APPROVED" },
+    where: { ...PUBLIC_ART, status: "APPROVED", sensitive: { isEmpty: true } },
     orderBy: { createdAt: "desc" },
     take: 24,
     select: { slug: true, title: true, imageUrl: true, sensitive: true, artistId: true },
@@ -48,7 +48,7 @@ export default async function AboutPage() {
 
       {wall.length > 0 && (
         <section aria-label="Art from Artfinity artists" className="mx-auto max-w-[1240px] px-4 sm:px-6">
-          <div className="relative aspect-[16/11] overflow-hidden rounded-[22px] bg-gallery sm:aspect-[16/7]">
+          <div className="relative aspect-[4/3] overflow-hidden rounded-[22px] bg-gallery sm:aspect-[16/7]">
             <BrushStroke className="absolute -left-10 top-[38%] h-[14%] w-[70%] -rotate-3 opacity-40" color="var(--af-sticker)" />
             {wall.map((a, i) => (
               <Link key={a.slug} href={`/art/${a.slug}`} className={cn("absolute aspect-[4/5] bg-white p-[0.6%] shadow-[0_14px_26px_-10px_rgba(21,22,27,.5)] transition hover:-translate-y-1", HANG[i])}>

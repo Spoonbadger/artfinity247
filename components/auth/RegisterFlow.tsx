@@ -9,6 +9,7 @@ import { useUser } from "@/components/contexts";
 import { scanUrl } from "@/lib/qr/render";
 import { cn } from "@/lib/utils";
 import { AuthCard, Field, FormAlert, PasswordField, Spinner } from "./ui";
+import { safeNext, withNext } from "./next";
 
 const HANDLE_RE = /^[a-z0-9_.]{3,30}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -56,6 +57,8 @@ function handleMessage(reason?: string) {
 export default function RegisterFlow() {
   const params = useSearchParams();
   const { currentUser, refreshUser } = useUser();
+  const next = safeNext(params.get("next"));
+  const home = next || "/studio";
   const [step, setStep] = useState<Step>(1);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -270,7 +273,7 @@ export default function RegisterFlow() {
         {currentUser && !created && step === 1 && (
           <FormAlert tone="ok">
             You're logged in{currentUser.slug ? ` as @${currentUser.slug}` : ""}.{" "}
-            <Link href="/studio" className="underline underline-offset-4">Go to your Studio</Link>
+            <Link href={home} className="underline underline-offset-4">Go to your Studio</Link>
           </FormAlert>
         )}
 
@@ -304,7 +307,7 @@ export default function RegisterFlow() {
             <Field label="Email" type="email" name="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => { setEmail(e.target.value); setErrors((x) => ({ ...x, email: null })); }} error={errors.email} autoFocus={!!handle} />
             {errors.email === "That email already has a page." && (
               <p className="-mt-3 px-1 text-[14px]">
-                <Link href={`/login?email=${encodeURIComponent(email.trim())}`} className="font-bold text-scan underline underline-offset-4">Log in instead</Link>
+                <Link href={withNext("/login", next, { email: email.trim() })} className="font-bold text-scan underline underline-offset-4">Log in instead</Link>
               </p>
             )}
             <PasswordField label="Password" name="password" autoComplete="new-password" value={password} onChange={(e) => { setPassword(e.target.value); setErrors((x) => ({ ...x, password: null })); }} error={errors.password} hint="8 or more characters" />
@@ -458,7 +461,7 @@ export default function RegisterFlow() {
                     Point your phone at it. It opens <b className="text-ink">{artwork.title}</b> with sizes and a buy button.
                   </p>
                   <Link href={`/studio/qr?art=${encodeURIComponent(artwork.slug)}`} className="btn btn-blue btn-lg">Style and print it</Link>
-                  <Link href="/studio" className="btn btn-ghost btn-lg">Go to my Studio</Link>
+                  <Link href={home} className="btn btn-ghost btn-lg">Go to my Studio</Link>
                   <p className="text-[13.5px] text-ink-2">We'll ask where to send your money after your first sale.</p>
                 </div>
               </div>
@@ -468,7 +471,7 @@ export default function RegisterFlow() {
                   You're at <b className="text-ink">theartfinity.com/@{handle}</b>. Add a piece and its code is ready to print.
                 </p>
                 <Link href="/studio/art/new" className="btn btn-blue btn-lg">Add your first piece</Link>
-                <Link href="/studio" className="btn btn-ghost btn-lg">Go to my Studio</Link>
+                <Link href={home} className="btn btn-ghost btn-lg">Go to my Studio</Link>
               </div>
             )}
           </div>

@@ -210,11 +210,15 @@ function DeleteAccount() {
   }
 
   return (
-    <div className="mt-6 grid gap-3 border-t border-dashed border-line pt-5">
+    <section aria-labelledby="acct-h" className="mt-8 grid gap-3 border-t border-dashed border-line pt-5">
+      <h2 id="acct-h" className="text-[18px] font-bold">Account</h2>
       {!open ? (
-        <button type="button" onClick={() => setOpen(true)} className="justify-self-start text-[13.5px] font-semibold text-ink-2 underline-offset-2 hover:text-coral hover:underline">
-          Delete my account
-        </button>
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[14px] font-semibold">
+          <Link href="/change-password" className="text-scan underline-offset-2 hover:underline">Change password</Link>
+          <button type="button" onClick={() => setOpen(true)} className="text-ink-2 underline-offset-2 hover:text-coral hover:underline">
+            Delete my account
+          </button>
+        </div>
       ) : (
         <div role="alertdialog" aria-labelledby="del-h" className="grid gap-3 rounded-2xl border-2 border-coral bg-[#fff6f3] p-4">
           <b id="del-h" className="font-display text-[22px] [font-variation-settings:'wdth'_80]">Delete your account?</b>
@@ -232,6 +236,6 @@ function DeleteAccount() {
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }

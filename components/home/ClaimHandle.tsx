@@ -7,7 +7,8 @@ import { cn } from "@/lib/utils";
 
 type Result = { handle: string; available: boolean; suggestion: string | null; reason: string | null };
 
-const clean = (v: string) => v.toLowerCase().replace(/^@/, "").replace(/[\s_.]+/g, "-").replace(/[^a-z0-9-]/g, "").slice(0, 30);
+// Same rules as sign-up (app/api/auth/_lib/handle.ts): a–z, 0–9, dots and underscores, 3–30.
+const clean = (v: string) => v.trim().replace(/^@/, "").toLowerCase().replace(/[^a-z0-9_.]/g, "").slice(0, 30);
 
 /** "theartfinity.com/@yourname [Claim it]": checks the name live, then hands it to sign-up. */
 export default function ClaimHandle({ className, dark = false, autoFocus = false }: { className?: string; dark?: boolean; autoFocus?: boolean }) {
@@ -62,7 +63,7 @@ export default function ClaimHandle({ className, dark = false, autoFocus = false
   else if (res && !res.available) {
     status = (
       <span className={cn("font-semibold", dark ? "text-[#ffb4a3]" : "text-[#c23a1d]")}>
-        {res.reason === "invalid" ? "Letters, numbers and dashes only." : `@${res.handle} is taken.`}
+        {res.reason === "invalid" ? "Use letters and numbers. Dots or underscores can’t start or end it." : `@${res.handle} is taken.`}
         {res.suggestion && (
           <> Try{" "}
             <button type="button" onClick={() => { setValue(res.suggestion!); input.current?.focus(); }} className={cn("rounded-full px-2 py-0.5 font-bold underline-offset-2 hover:underline", dark ? "bg-white/10 text-white" : "bg-scan-soft text-scan")}>

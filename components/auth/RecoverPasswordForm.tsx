@@ -5,10 +5,12 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Brushed } from "@/components/af/Brush";
 import { AuthCard, Field, FormAlert, Spinner } from "./ui";
+import { withNext } from "./next";
 
 export default function RecoverPasswordForm() {
   const params = useSearchParams();
   const [email, setEmail] = useState(params.get("email") || "");
+  const next = params.get("next");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,7 @@ export default function RecoverPasswordForm() {
           <p className="text-[16px] text-ink-2">
             If <b className="text-ink">{email.trim()}</b> has a page, a reset link is on its way. It works for 30 minutes.
           </p>
-          <Link href="/login" className="btn btn-ghost w-full">Back to log in</Link>
+          <Link href={withNext("/login", next)} className="btn btn-ghost w-full">Back to log in</Link>
           <button type="button" onClick={() => setSent(false)} className="text-[14.5px] font-semibold text-ink-2 underline underline-offset-4 hover:text-scan">
             Use a different email
           </button>
@@ -63,7 +65,7 @@ export default function RecoverPasswordForm() {
           </button>
           <p className="text-center text-[15px] text-ink-2">
             Remembered it?{" "}
-            <Link href="/login" className="font-bold text-ink underline decoration-2 underline-offset-4 hover:text-scan">Log in</Link>
+            <Link href={withNext("/login", next)} className="font-bold text-ink underline decoration-2 underline-offset-4 hover:text-scan">Log in</Link>
           </p>
         </form>
       )}

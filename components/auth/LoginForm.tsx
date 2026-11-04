@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Brushed } from "@/components/af/Brush";
 import { useUser } from "@/components/contexts";
 import { AuthCard, Field, FormAlert, PasswordField, Spinner } from "./ui";
+import { safeNext, withNext } from "./next";
 
 const MESSAGES: Record<string, string> = {
   user_not_found: "No account with that email.",
@@ -13,11 +14,6 @@ const MESSAGES: Record<string, string> = {
   missing_fields: "Enter your email and password.",
 };
 
-/** Only allow same-site paths as a post-login destination. */
-function safeNext(raw: string | null) {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return null;
-  return raw;
-}
 
 export default function LoginForm() {
   const router = useRouter();
@@ -28,6 +24,7 @@ export default function LoginForm() {
   const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const next = safeNext(params.get("next"));
   const notice = params.get("reset") ? "Password updated. Log in with the new one." : null;
 
   async function onSubmit(e: FormEvent) {
@@ -49,7 +46,7 @@ export default function LoginForm() {
       }
       await refreshUser();
       const admin = String(data?.artist?.role || "").toUpperCase() === "ADMIN";
-      router.push(safeNext(params.get("next")) || (admin ? "/admin/orders" : "/studio"));
+      router.push(next || (admin ? "/admin/orders" : "/studio"));
       router.refresh();
     } catch {
       setError("Couldn't reach Artfinity. Check your connection.");
@@ -72,7 +69,7 @@ export default function LoginForm() {
             <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-[18px] w-[18px] accent-[var(--af-scan)]" />
             Keep me logged in
           </label>
-          <Link href={`/recover-password${email ? `?email=${encodeURIComponent(email.trim())}` : ""}`} className="font-semibold text-ink-2 underline underline-offset-4 hover:text-scan">
+          <Link href={withNext("/recover-password", next, { email: email.trim() })} className="font-semibold text-ink-2 underline underline-offset-4 hover:text-scan">
             Forgot password?
           </Link>
         </div>
@@ -82,7 +79,7 @@ export default function LoginForm() {
         </button>
         <p className="text-center text-[15px] text-ink-2">
           New here?{" "}
-          <Link href="/register" className="font-bold text-ink underline decoration-2 underline-offset-4 hover:text-scan">
+          <Link href={withNext("/register", next)} className="font-bold text-ink underline decoration-2 underline-offset-4 hover:text-scan">
             Claim your page
           </Link>
         </p>

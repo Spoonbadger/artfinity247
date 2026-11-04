@@ -8,7 +8,7 @@ export default function NotFound() {
       <header className="border-b border-line px-4 py-3 sm:px-6"><Logo /></header>
       <main className="grid flex-1 place-content-center gap-8 px-4 py-14 text-center">
         <CrookedFrame>
-          <b className="display text-[64px] text-scan sm:text-[80px]">404</b>
+          <b className="display text-[52px] text-scan sm:text-[60px]">404</b>
         </CrookedFrame>
         <div className="grid justify-items-center gap-3">
           <h1 className="display text-[44px] sm:text-[60px]">This wall is empty.</h1>
