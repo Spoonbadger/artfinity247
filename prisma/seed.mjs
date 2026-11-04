@@ -6,9 +6,9 @@ const prisma = new PrismaClient();
 const PASSWORD = "artfinity123";
 
 const ARTISTS = [
-  { slug: "mayaokafor", artist_name: "Maya Okafor", first: "Maya", last: "Okafor", city: "Asheville", state: "NC", bio: "Painting the mountains the way they look at 6pm in October. Every print is made to order.", avatar: 1 },
-  { slug: "junopark", artist_name: "Juno Park", first: "Juno", last: "Park", city: "Austin", state: "TX", bio: "Big flat color, small moments. Mostly gouache, mostly Texas.", avatar: 2 },
-  { slug: "inesduarte", artist_name: "Ines Duarte", first: "Ines", last: "Duarte", city: "Santa Fe", state: "NM", bio: "Desert light and the colors that only show up after rain.", avatar: 3 },
+  { slug: "mayaokafor", verified: "VERIFIED", artist_name: "Maya Okafor", first: "Maya", last: "Okafor", city: "Asheville", state: "NC", bio: "Painting the mountains the way they look at 6pm in October. Every print is made to order.", avatar: 1 },
+  { slug: "junopark", verified: "PENDING", artist_name: "Juno Park", first: "Juno", last: "Park", city: "Austin", state: "TX", bio: "Big flat color, small moments. Mostly gouache, mostly Texas.", avatar: 2 },
+  { slug: "inesduarte", verified: "VERIFIED", artist_name: "Ines Duarte", first: "Ines", last: "Duarte", city: "Santa Fe", state: "NM", bio: "Desert light and the colors that only show up after rain.", avatar: 3 },
   { slug: "calebmoreno", artist_name: "Caleb Moreno", first: "Caleb", last: "Moreno", city: "Portland", state: "OR", bio: "Coastlines and fog. Oil on panel.", avatar: 4 },
   { slug: "priyanair", artist_name: "Priya Nair", first: "Priya", last: "Nair", city: "Asheville", state: "NC", bio: "Figures, rivers and the space between them.", avatar: 5 },
 ];
@@ -30,6 +30,7 @@ function rng(seed) { let a = seed >>> 0; return () => { a = a + 0x6D2B79F5 | 0; 
 const slugify = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
 async function main() {
+  await prisma.message.deleteMany(); await prisma.emailTemplate.deleteMany(); await prisma.artistLink.deleteMany();
   await prisma.orderItem.deleteMany(); await prisma.order.deleteMany(); await prisma.payout.deleteMany();
   await prisma.passwordResetToken.deleteMany(); await prisma.artwork.deleteMany(); await prisma.artist.deleteMany();
   const hash = await bcrypt.hash(PASSWORD, 10);
@@ -42,6 +43,16 @@ async function main() {
       name: a.artist_name, first_name: a.first, last_name: a.last, artist_name: a.artist_name,
       email: `${a.first.toLowerCase()}@artfinity.local`, password: hash, phone: "", city: a.city, citySlug: slugify(a.city), state: a.state, country: "US",
       slug: a.slug, bio: a.bio, profileImage: `/seed/avatar-${a.avatar}.jpg`, venmoHandle: `@${a.slug}`,
+      verification: a.verified || "NONE",
+      verifiedAt: a.verified === "VERIFIED" ? new Date(Date.now() - 20 * 86400000) : null,
+      verificationRequestedAt: a.verified ? new Date(Date.now() - 25 * 86400000) : null,
+      verificationEvidence: a.verified ? { instagram: `https://instagram.com/${a.slug}`, note: "Studio photos and my Instagram." } : undefined,
+      links: { create: [
+        { kind: "instagram", url: `https://instagram.com/${a.slug}`, position: 0 },
+        { kind: "tiktok", url: `https://tiktok.com/@${a.slug}`, position: 1 },
+        { kind: "website", url: `https://${a.slug}.art`, label: "My website", position: 2 },
+        { kind: "custom", url: `https://example.com/${a.slug}/newsletter`, label: "Studio newsletter", position: 3 },
+      ] },
     } });
     for (const [i, title] of WORKS[a.slug].entries()) {
       const markup = [1500, 1000, 2000, 500][i % 4];
@@ -55,14 +66,17 @@ async function main() {
     }
   }
 
-  // 40 paid orders over the last 30 days, weighted toward Maya so her Studio has data
-  const maya = arts.filter((x) => x.artist.slug === "mayaokafor");
-  for (let n = 0; n < 40; n++) {
-    const art = n < 23 ? maya[Math.floor(r() * 3)] : arts[Math.floor(r() * arts.length)];
+  // 100 paid orders over the last 60 days, spread so every medal level shows:
+  // Maya 55 (gold), Juno 27 (silver), Ines 12 (bronze), Caleb 6, Priya 0.
+  const by = (slug) => arts.filter((x) => x.artist.slug === slug);
+  const plan = [...Array(55).fill("mayaokafor"), ...Array(27).fill("junopark"), ...Array(12).fill("inesduarte"), ...Array(6).fill("calebmoreno")];
+  for (let n = 0; n < plan.length; n++) {
+    const pool = by(plan[n]);
+    const art = pool[Math.floor(r() * (plan[n] === "mayaokafor" ? 3 : pool.length))];
     const size = ["small", "medium", "medium", "large", "xl"][Math.floor(r() * 5)];
     const markup = size === "large" ? art.markupLarge : size === "xl" ? art.markupXl : art.markupSmall;
     const unit = BASE[size] + markup, lineTotal = unit;
-    const created = new Date(Date.now() - Math.floor(r() * 30) * 86400000 - Math.floor(r() * 36e6));
+    const created = new Date(Date.now() - Math.floor(r() * 60) * 86400000 - Math.floor(r() * 36e6));
     const fee = Math.ceil(lineTotal * 0.029) + 30;
     await prisma.order.create({ data: {
       stripeSessionId: `seed_${n}`, email: `buyer${n}@example.com`, amountTotal: lineTotal, currency: "usd", paymentStatus: "paid",
@@ -73,6 +87,6 @@ async function main() {
         printCost: COST[SIZE_KEY[size]], shippingCost: 0, laborCost: 0, websiteCost: fee + 100 }] },
     } });
   }
-  console.log(`Seeded ${ARTISTS.length} artists, ${arts.length} artworks, 40 orders. Log in as maya@artfinity.local / ${PASSWORD} (admin: admin@artfinity.local)`);
+  console.log(`Seeded ${ARTISTS.length} artists, ${arts.length} artworks, ${plan.length} orders. Log in as maya@artfinity.local / ${PASSWORD} (admin: admin@artfinity.local)`);
 }
 main().finally(() => prisma.$disconnect());

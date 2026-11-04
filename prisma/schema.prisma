@@ -84,6 +84,20 @@ model Artist {
   artworks     Artwork[]
   payouts      Payout[]
 
+  // Real verification (reviewed by an admin), not automatic
+  verification            VerificationStatus @default(NONE)
+  verifiedAt              DateTime?
+  verificationRequestedAt DateTime?
+  verificationEvidence    Json?    // { instagram, website, portfolio, note } submitted by the artist
+  verificationNote        String?  // admin's note, e.g. why a request was declined
+
+  // Customization
+  pageTheme        Json?    // artist page design: accent, banner artwork, layout, pinned ids
+  linksTheme       Json?    // /@handle/links design: background artwork, button style, colors
+  links            ArtistLink[]
+  messages         Message[]
+  emailTemplates   EmailTemplate[]
+
   passwordResetTokens PasswordResetToken[]
 
   @@index([citySlug])
@@ -131,4 +145,59 @@ model PasswordResetToken {
   artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
 
   @@index([artistId])
+}
+
+
+enum VerificationStatus {
+  NONE
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+// Socials and link-in-bio links. kind: instagram | tiktok | youtube | facebook | x | pinterest | threads | website | email | custom
+model ArtistLink {
+  id        String   @id @default(cuid())
+  artistId  String
+  kind      String
+  label     String?
+  url       String
+  position  Int      @default(0)
+  active    Boolean  @default(true)
+  clicks    Int      @default(0)
+  createdAt DateTime @default(now())
+  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@index([artistId, position])
+}
+
+// Artist <-> customer communications log: thank-you notes, messages, private notes
+// direction: out (artist to buyer) | in (buyer to artist) | note (private)
+model Message {
+  id        String    @id @default(cuid())
+  artistId  String
+  email     String
+  orderId   String?
+  direction String
+  subject   String?
+  body      String
+  sentAt    DateTime?
+  createdAt DateTime  @default(now())
+  artist    Artist    @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@index([artistId, email])
+}
+
+// An artist's own wording for the automated emails. kind: receipt | shipped | delivered | thank_you
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  artistId  String
+  kind      String
+  subject   String
+  body      String
+  enabled   Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@unique([artistId, kind])
 }
