@@ -78,7 +78,7 @@ export type LedgerLine = {
 
 /**
  * A refund on a sale that was already paid out, taken off a later payout (lib/refundPolicy.ts "deduct_next_payout").
- * Booked to the UTC month the refund was recorded; amountCents is negative. Kept apart from `ledger` (sales), but
+ * Booked to the artist's next unpaid payout month at refund time; amountCents is negative. Kept apart from `ledger` (sales), but
  * counted in every month total, pending/available figure and payout below.
  */
 export type AdjustmentLine = {
@@ -245,6 +245,15 @@ export function carriedInto(b: Pick<Balance, "payouts">, month: string): string[
   const out: string[] = [];
   for (let j = i - 1; j >= 0 && unpaid[j].payableCents === 0 && unpaid[j + 1].carryInCents < 0; j--) out.push(unpaid[j].month);
   return out.reverse();
+}
+
+/**
+ * The payout month a new Refund adjustment goes into: the oldest month not paid yet (all closed unpaid months go out
+ * in the next run), else the current month. So it comes off the artist's very next payout.
+ */
+export async function nextUnpaidMonth(artistId: string, now: Date = new Date()): Promise<string> {
+  const b = await getBalance(artistId, now);
+  return b.payouts.filter((p) => p.status !== "paid").map((p) => p.month).sort()[0] ?? b.currentMonth;
 }
 
 function adjustmentLine(a: RefundAdjustment, status: LedgerStatus): AdjustmentLine {

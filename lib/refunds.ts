@@ -10,7 +10,8 @@
 // the owner's setting and the refund reason (lib/refundPolicy.ts):
 //   - absorbed: the artist keeps that share and Artfinity absorbs the refund (the default; always for damaged prints).
 //   - deducted (details.deducted): the line keeps its paid share, and a negative "Refund adjustment" of that share
-//     is booked to the refund's UTC month (details.adjustMonth), lowering the artist's next payout. lib/balance.ts
+//     is booked to the artist's next unpaid payout month at refund time (details.adjustMonth, lib/balance.ts
+//     nextUnpaidMonth), so it lowers the very next payout. lib/balance.ts
 //     adds it to that month's total; a month can't be paid below $0, so the rest carries forward.
 import { prisma } from "@/lib/prisma";
 import { isRefundReason, type RefundReason } from "@/lib/refundPolicy";
@@ -97,7 +98,7 @@ export type RefundAdjustment = {
   orderRef: string;
   orderItemId: string;
   title: string;
-  /** UTC month it lowers ("YYYY-MM"): the month the refund was recorded. */
+  /** Payout month it lowers ("YYYY-MM"): the artist's next unpaid month when the refund was recorded. */
   month: string;
   cents: number;
   at: Date;

@@ -106,7 +106,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Refund adjustments (lib/refunds.ts) are booked to the month they were recorded, and a month can't pay below $0
+    // Refund adjustments (lib/refunds.ts) are booked to the artist's next unpaid month, and a month can't pay below $0
     // (lib/balance.ts carries the rest forward). Artists with any adjustment get their month from getBalance, so this
     // page, Pay all and their Money page agree.
     const [monthAdj, allAdj] = await Promise.all([adjustmentTotals({ month }), refundAdjustments()]);

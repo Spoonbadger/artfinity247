@@ -2,7 +2,7 @@
 //
 // BUSINESS DECISION (owner setting, /admin/settings):
 //   "absorb"              Artfinity absorbs the refund; the artist keeps the share they were paid. (default)
-//   "deduct_next_payout"  the share comes off the artist's next payout as a "Refund adjustment" (lib/refunds.ts,
+//   "deduct_next_payout"  the share comes off the artist's very next payout as a "Refund adjustment" (lib/refunds.ts,
 //                         lib/balance.ts). A payout never goes below $0: the rest carries to the month after.
 // It applies only to buyer returns and chargebacks. A damaged print is always absorbed: that's the public promise
 // (return policy: "at no cost to you"), and the artist did nothing wrong. Refunds on months NOT yet paid out

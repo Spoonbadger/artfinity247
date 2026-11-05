@@ -143,7 +143,7 @@ export async function GET(req: NextRequest) {
     byArtist.set(key, current)
   }
 
-  // Refund adjustments (lib/refunds.ts): booked to the month they were recorded. payout_cents is what the month pays
+  // Refund adjustments (lib/refunds.ts): booked to the artist's next unpaid month at refund time. payout_cents is what the month pays
   // (recorded amount once paid; else sales + adjustments + anything carried in, never below 0), same as lib/balance.ts.
   const [monthAdj, allAdj] = await Promise.all([adjustmentTotals({ month }), refundAdjustments()])
   for (const artistId of Array.from(monthAdj.keys())) {

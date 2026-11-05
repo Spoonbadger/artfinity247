@@ -11,7 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { logAdminAction } from "@/lib/audit";
 import { itemBreakdown } from "@/lib/sales";
 import { activeRefunds, REFUND_ACTION, REFUND_UNDO_ACTION } from "@/lib/refunds";
-import { utcMonth } from "@/lib/balance";
+import { nextUnpaidMonth, utcMonth } from "@/lib/balance";
 import { REFUND_REASON_LABEL, isRefundReason, refundEffect, refundPolicy } from "@/lib/refundPolicy";
 import { decideRequest, requestsForOrder, ReprintError } from "@/lib/reprints";
 import { REPRINT_DIRECTION, isReprintReason, statusSubject, type ReprintBody } from "@/lib/reprintFormat";
@@ -65,7 +65,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       const effect = artistId ? refundEffect({ monthPaid: !!paid?.paidAt, reason, policy }) : "absorb";
       const reversed = effect === "reverse";
       const deducted = effect === "deduct" && b.artistShare > 0;
-      const adjustMonth = deducted ? utcMonth(new Date()) : null;
+      // Into the artist's next payout: their oldest unpaid month (all closed unpaid months go out together), else this month.
+      const adjustMonth = deducted && artistId ? await nextUnpaidMonth(artistId) : null;
       const title = item.title || "print";
       const outcome = reversed ? `artist share ${money(b.artistShare)} reversed`
         : deducted ? `${month} already paid out: ${money(b.artistShare)} comes off the artist's next payout (Refund adjustment)`
