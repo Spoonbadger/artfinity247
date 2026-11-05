@@ -274,18 +274,6 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
                       <span className="break-all text-ink-2">{o.stripeSessionId}</span>
                       <a href={`/admin/orders/${o.id}/slip`} target="_blank" rel="noopener" className="mt-2 font-semibold text-scan">Packing slip</a>
                     </div>
-                    {!!o.parcelNotes?.length && (
-                      <div className="grid gap-2 md:col-span-2">
-                        <span className="eyebrow">Print this note in the parcel</span>
-                        {o.parcelNotes.map((n) => (
-                          <figure key={n.id} className="grid gap-1.5 rounded-lg border-[1.5px] border-dashed border-ink/30 bg-white p-3">
-                            <blockquote className="whitespace-pre-wrap text-[14px] leading-relaxed text-ink">{n.body}</blockquote>
-                            <figcaption className="text-[12.5px] text-ink-2">— {n.artistName}</figcaption>
-                          </figure>
-                        ))}
-                        <a href={`/admin/orders/${o.id}/slip`} target="_blank" rel="noopener" className="btn btn-ghost btn-sm justify-self-start">Print slip with note</a>
-                      </div>
-                    )}
                     <div className="overflow-x-auto">
                       <table className="num w-full min-w-[460px] text-left">
                         <thead className="text-[11.5px] uppercase tracking-[0.06em] text-ink-2">
@@ -311,6 +299,18 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
                         </tbody>
                       </table>
                     </div>
+                    {!!o.parcelNotes?.length && (
+                      <div className="grid gap-2 md:col-span-2">
+                        <span className="eyebrow">Print this note in the parcel</span>
+                        {o.parcelNotes.map((n) => (
+                          <figure key={n.id} className="grid gap-1.5 rounded-lg border-[1.5px] border-dashed border-ink/30 bg-white p-3">
+                            <blockquote className="whitespace-pre-wrap text-[14px] leading-relaxed text-ink">{n.body}</blockquote>
+                            <figcaption className="text-[12.5px] text-ink-2">— {n.artistName}</figcaption>
+                          </figure>
+                        ))}
+                        <a href={`/admin/orders/${o.id}/slip`} target="_blank" rel="noopener" className="btn btn-ghost btn-sm justify-self-start">Print slip with note</a>
+                      </div>
+                    )}
                   </div>
                 )}
               </li>
