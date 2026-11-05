@@ -4,22 +4,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DragEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Check, ImagePlus, Loader2, Lock } from "lucide-react";
-import { breakdown, money, SIZE_INCHES, SIZE_NAME, type SizeKey } from "@/lib/earnings";
-import { basePrices } from "@/lib/artwork_price";
+import { FolderOpen, ImagePlus, Loader2 } from "lucide-react";
+import type { SizeKey } from "@/lib/earnings";
 import { BrushStroke } from "@/components/af/Brush";
 import { cn } from "@/lib/utils";
 import { artPath } from "@/lib/urls";
-import { SENSITIVE_LABELS } from "./sensitive";
-import { EDITION_MAX, EDITION_MIN } from "@/lib/editionFormat";
-import { SIZE_IN } from "@/components/art/pricing";
-import { joinOriginal, splitOriginal } from "@/lib/originalSize";
-import type { PriceGuide } from "@/app/api/artworks/price-guide/route";
-
-const SIZES: SizeKey[] = ["small", "medium", "large", "xl"];
-const FIELD: Record<SizeKey, "markupSmall" | "markupMedium" | "markupLarge" | "markupXl"> = {
-  small: "markupSmall", medium: "markupMedium", large: "markupLarge", xl: "markupXl",
-};
+import { splitOriginal } from "@/lib/originalSize";
+import {
+  artworkFormData, checkArtwork, DetailsFields, EditionField, filesFromDrop, isImageFile, OwnershipField, PriceFields,
+  pricesFrom, PrintSizes, REVIEW_NOTE, SensitiveField, saveError, titleFromFile, useLastPrices, usePriceGuide, type ArtworkValues, type Prices,
+} from "./artworkFields";
 
 export type ArtworkInput = {
   slug: string;
@@ -36,15 +30,6 @@ export type ArtworkInput = {
   sold?: number;
   /** Sizes the current image prints sharply; empty = never checked. */
   printableSizes?: string[];
-};
-
-const REVIEW_NOTE = "In review — usually within a day";
-
-// The artist types the full print price. Markup = price - base, and the price can't go below the base.
-const priceFor = (size: SizeKey, markup: number | null | undefined) => ((basePrices[size] + Math.max(0, markup || 0)) / 100).toFixed(2);
-const toCents = (s: string) => {
-  const n = parseFloat(s.replace(/[^0-9.]/g, ""));
-  return Number.isFinite(n) ? Math.min(200000, Math.max(0, Math.round(n * 100))) : 0;
 };
 
 export default function ArtworkForm({ artwork, split, handle }: { artwork?: ArtworkInput; split?: number; handle: string }) {

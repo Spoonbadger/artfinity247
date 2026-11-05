@@ -11,6 +11,7 @@ import { parsePrintable } from "@/lib/printSizes"
 import { verifyPrintable } from "@/lib/printSign"
 import { announceArtworkLive, initialArtworkStatus } from "@/lib/artworkLive"
 import { checkUpload } from "@/lib/imageHash"
+import { DAILY_UPLOAD_LIMIT } from "@/lib/uploadLimits"
 
 export const dynamic = "force-dynamic"
 
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
       new TextEncoder().encode(process.env.JWT_SECRET!)
     )
 
-    // 50 uploads per day limit
+    // Daily upload limit
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
@@ -42,8 +43,8 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    if (uploadCount >= 50) {
-      return new NextResponse("Daily upload limit reached (50)", { status: 429 });
+    if (uploadCount >= DAILY_UPLOAD_LIMIT) {
+      return new NextResponse(`Daily upload limit reached (${DAILY_UPLOAD_LIMIT})`, { status: 429 });
     }
 
     const form = await req.formData();
@@ -57,6 +58,9 @@ export async function POST(req: NextRequest) {
     const printable = parsePrintable(form.get("printable"));
     // Rights: the artist ticks "This is my original work and I hold the rights to sell prints of it."
     const ownership = String(form.get("ownership") ?? "") === "yes";
+    // Part of an upload queue (several paintings at once): the artist's "it's live" email and the team's
+    // notification wait for one summary of the whole batch (POST /api/artworks/upload/summary).
+    const batch = String(form.get("batch") ?? "") === "1";
 
     if (!title) return new NextResponse("Title required", { status: 400 });
     if (!imageUrl) return new NextResponse("Image required", { status: 400 });
@@ -69,6 +73,10 @@ export async function POST(req: NextRequest) {
     const markupMedium = parseInt(form.get("markupMedium") as string) || 0;
     const markupLarge = parseInt(form.get("markupLarge") as string) || 0;
     const markupXl = parseInt(form.get("markupXl") as string) || 0
+    // A markup is what the artist adds on top of the base price, so it can't be negative.
+    if ([markupSmall, markupMedium, markupLarge, markupXl].some((m) => m < 0)) {
+      return new NextResponse("Prices can't go below the starting price for each size.", { status: 400 })
+    }
     // Limited print run: empty = open edition, otherwise EDITION_MIN..EDITION_MAX prints.
     const editionRaw = String(form.get("editionSize") ?? "").trim()
     const editionSize = editionRaw ? parseInt(editionRaw, 10) : null
@@ -121,9 +129,10 @@ export async function POST(req: NextRequest) {
     });
 
     // Live now: referral reward + the artist's "it's live" email. Pending pieces get these on approval.
-    if (artwork.status === "APPROVED") await announceArtworkLive(artwork.id)
+    // In a batch the email waits for the batch summary; the referral reward doesn't.
+    if (artwork.status === "APPROVED") await announceArtworkLive(artwork.id, { email: !batch })
 
-    try {
+    if (!batch) try {
       await resend.emails.send({
         from: "Artfinity <notifications@theartfinity.com>",
         to: "craig@theartfinity.com",

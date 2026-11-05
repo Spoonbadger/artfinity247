@@ -1,0 +1,21 @@
+// POST /api/admin/orders/bulk { ids: string[], action: "sent" }  Mark many orders as sent to the printer.
+import { NextRequest, NextResponse } from "next/server";
+import { getAdmin } from "@/lib/admin";
+import { prisma } from "@/lib/prisma";
+import { logAdminAction } from "@/lib/audit";
+
+export const dynamic = "force-dynamic";
+
+export async function POST(req: NextRequest) {
+  const admin = await getAdmin();
+  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const input = (await req.json().catch(() => ({}))) as { ids?: unknown; action?: unknown };
+  const ids = Array.from(new Set((Array.isArray(input.ids) ? input.ids : []).filter((x): x is string => typeof x === "string"))).slice(0, 200);
+  if (input.action !== "sent") return NextResponse.json({ error: "Unknown action." }, { status: 400 });
+  if (!ids.length) return NextResponse.json({ error: "Select some orders first." }, { status: 400 });
+
+  const todo = await prisma.order.findMany({ where: { id: { in: ids }, sentToPrinter: false }, select: { id: true } });
+  await prisma.order.updateMany({ where: { id: { in: todo.map((o) => o.id) } }, data: { sentToPrinter: true } });
+  for (const o of todo) await logAdminAction(admin, "order.sent_to_printer", { type: "order", id: o.id }, "Marked sent to printer (bulk)", { bulk: true });
+  return NextResponse.json({ ok: true, updated: todo.map((o) => o.id) });
+}

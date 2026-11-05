@@ -14,11 +14,10 @@ import { signPrintable } from "@/lib/printSign";
 import { verifyReview } from "@/lib/reviews";
 import { verifyHelp } from "@/lib/reprints";
 import { rateLimit } from "@/lib/rateLimit";
+import { MAX_UPLOAD_BYTES } from "@/lib/uploadLimits";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const MAX_BYTES = 25 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
   const user = await getUserFromCookie();
@@ -34,7 +33,7 @@ export async function POST(req: NextRequest) {
 
   const file = form.get("file");
   if (!(file instanceof File)) return NextResponse.json({ error: "No file received." }, { status: 400 });
-  if (file.size > MAX_BYTES) return NextResponse.json({ error: "That file is over 25 MB." }, { status: 413 });
+  if (file.size > MAX_UPLOAD_BYTES) return NextResponse.json({ error: "That file is over 25 MB." }, { status: 413 });
   if (!/^image\//.test(file.type)) return NextResponse.json({ error: "Upload a JPG, PNG, WEBP or HEIC image." }, { status: 415 });
 
   const buf = Buffer.from(await file.arrayBuffer());
