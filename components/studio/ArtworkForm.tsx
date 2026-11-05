@@ -270,6 +270,13 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
             </span>
           )}
         </label>
+        {many && !imageUrl && (
+          <div className="flex flex-wrap items-center gap-2">
+            <input ref={folderRef} type="file" accept="image/*" multiple className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => { const fs = Array.from(e.target.files || []); e.target.value = ""; if (fs.length) take(fs); }} />
+            <button type="button" onClick={() => folderRef.current?.click()} className="btn btn-ghost btn-sm"><FolderOpen className="h-4 w-4" aria-hidden="true" />Choose a folder</button>
+            <Link href="/help/getting-started/upload-several" target="_blank" className="text-[13px] text-scan underline-offset-2 hover:underline">How uploading several works</Link>
+          </div>
+        )}
         {!editing && !imageUrl && cloudImportAvailable(mock) && (
           <div className="grid gap-1.5">
             <span className="text-[13px] font-semibold text-ink-2">Or import from</span>
@@ -280,13 +287,6 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
         {cloudNote && <p role="status" className="rounded-lg bg-wall px-3 py-2 text-[13px]">{cloudNote}</p>}
         {retryCloud && !uploading && (
           <button type="button" className="btn btn-ghost btn-sm justify-self-start" onClick={() => importOne(retryCloud)}><RotateCcw className="h-4 w-4" aria-hidden="true" />Retry import</button>
-        )}
-        {many && !imageUrl && (
-          <div className="flex flex-wrap items-center gap-2">
-            <input ref={folderRef} type="file" accept="image/*" multiple className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => { const fs = Array.from(e.target.files || []); e.target.value = ""; if (fs.length) take(fs); }} />
-            <button type="button" onClick={() => folderRef.current?.click()} className="btn btn-ghost btn-sm"><FolderOpen className="h-4 w-4" aria-hidden="true" />Choose a folder</button>
-            <Link href="/help/getting-started/upload-several" target="_blank" className="text-[13px] text-scan underline-offset-2 hover:underline">How uploading several works</Link>
-          </div>
         )}
         {imageUrl && (
           <button type="button" onClick={() => fileRef.current?.click()} className="btn btn-ghost btn-sm justify-self-start">Replace image</button>

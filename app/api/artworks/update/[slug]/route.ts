@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from "@/lib/prisma";
-import {  } from '@/lib/auth'
-import { jwtVerify } from 'jose'
+import { verifyAuthTokenOrThrow } from '@/lib/auth'
 import { deleteUpload } from '@/lib/storage'
 import Busboy from 'busboy'
 import { toNodeReadable } from '@/lib/toNodeReadables'
@@ -26,10 +25,7 @@ export async function POST(
   if (!token) return new NextResponse('Not authenticated', { status: 401 })
 
   try {
-    const { payload } = await jwtVerify(
-      token,
-      new TextEncoder().encode(process.env.JWT_SECRET!)
-    )
+    const payload = await verifyAuthTokenOrThrow(token); // signature, expiry and session version
 
     const currentArtistId =
       (payload as any).id ||

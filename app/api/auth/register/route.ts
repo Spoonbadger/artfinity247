@@ -14,7 +14,8 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { hash } from "bcryptjs";
-import { SignJWT } from "jose";
+import { signAuthToken } from "@/lib/auth";
+import { sendVerifyEmail } from "@/lib/emailVerify";
 import slugify from "slugify";
 import { prisma } from "@/lib/prisma";
 import { resend } from "@/lib/resend";
@@ -81,6 +82,8 @@ export async function POST(req: Request) {
         slug: handle,
         role: "USER",
         termsAcceptedAt: new Date(),
+        // A provider-verified email (Google, Apple) is confirmed already; anything typed gets a confirmation email.
+        ...(oauth?.emailVerified && oauth.email === email ? { emailVerifiedAt: new Date() } : {}),
         referredById,
         ...(oauth
           ? {
@@ -112,10 +115,7 @@ export async function POST(req: Request) {
     userAgent: req.headers.get("user-agent") || null,
   }));
 
-  const token = await new SignJWT({ id: artist.id, slug: artist.slug, email: artist.email, role: artist.role })
-    .setProtectedHeader({ alg: "HS256" })
-    .setExpirationTime("30d")
-    .sign(new TextEncoder().encode(process.env.JWT_SECRET!));
+  const token = await signAuthToken(artist, "30d");
 
   // The provider's picture becomes their profile photo (copied to our storage; never blocks sign-up).
   if (oauth?.avatar) {
@@ -134,6 +134,9 @@ export async function POST(req: Request) {
   });
   // Hashed network + browser id, for the referral same-person check (lib/referrals.ts). Nothing raw is stored.
   res.cookies.set(deviceCookie(await recordDeviceSignal(artist.id, req, "signup")));
+
+  // "Confirm your email" (lib/emailVerify.ts). Never blocks sign-up.
+  if (!artist.emailVerifiedAt) await sendVerifyEmail(artist.id);
 
   // Emails never block sign-up.
   try {

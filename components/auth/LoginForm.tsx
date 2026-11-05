@@ -15,6 +15,7 @@ const MESSAGES: Record<string, string> = {
   bad_password: "That password doesn't match.",
   missing_fields: "Enter your email and password.",
   account_closed: "This account is closed — contact us to reopen.",
+  account_suspended: "This account is paused — contact us.",
 };
 
 

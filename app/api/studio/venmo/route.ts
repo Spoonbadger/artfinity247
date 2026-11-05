@@ -8,6 +8,7 @@ import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromCookie } from "@/lib/auth";
+import { UNVERIFIED_MESSAGE } from "@/lib/emailVerify";
 import { resend } from "@/lib/resend";
 import { emailHtml } from "@/lib/artistEmails";
 import { VENMO_CONFIRM_HOURS, normalizeVenmo, sameVenmo } from "@/lib/venmo";
@@ -22,7 +23,7 @@ async function me() {
   if (!user?.id) return null;
   const a = await prisma.artist.findUnique({
     where: { id: user.id },
-    select: { id: true, email: true, first_name: true, artist_name: true, name: true, venmoHandle: true, closedAt: true },
+    select: { id: true, email: true, first_name: true, artist_name: true, name: true, venmoHandle: true, closedAt: true, emailVerifiedAt: true },
   });
   return a && !a.closedAt ? a : null;
 }
@@ -30,6 +31,8 @@ async function me() {
 export async function POST(req: Request) {
   const artist = await me();
   if (!artist) return NextResponse.json({ error: "Log in first." }, { status: 401 });
+  // Payout details wait for a confirmed email (lib/emailVerify.ts).
+  if (!artist.emailVerifiedAt) return NextResponse.json({ error: UNVERIFIED_MESSAGE, code: "email_unverified" }, { status: 403 });
 
   const body = await req.json().catch(() => ({}));
   const raw = typeof body.venmoHandle === "string" ? body.venmoHandle : "";

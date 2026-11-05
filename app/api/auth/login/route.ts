@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rateLimit";
 import { compare } from "bcryptjs";
-import { SignJWT } from "jose";
+import { signAuthToken } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { deviceCookie, recordDeviceSignal } from "@/lib/referrals";
 export const runtime = "nodejs"
@@ -42,16 +42,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ code: "account_closed" }, { status: 403 });
     }
 
+    // Paused by an admin: no logging in (social sign-in refuses the same way, lib/oauth/account.ts loginBlock).
+    if (artist.suspendedAt) {
+      return NextResponse.json({ code: "account_suspended" }, { status: 403 });
+    }
+
     const jwtExpire = remember ? "30d" : "3h";
-    const token = await new SignJWT({
-      id: artist.id,
-      email: artist.email,
-      slug: artist.slug,
-      role: artist.role,
-    })
-      .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime(jwtExpire)
-      .sign(new TextEncoder().encode(process.env.JWT_SECRET!));
+    // Carries sessionVersion, so a password change/reset or suspension signs this session out (lib/auth.ts).
+    const token = await signAuthToken(artist, jwtExpire);
 
     const response = NextResponse.json({
       message: "Logged in",

@@ -257,6 +257,12 @@ function drawWall(c: Ctx, r: Rng, roll: Roll, crop: { x: number; y: number; w: n
   return { svg: out.join(""), wallColor };
 }
 
+/** Ambient occlusion: the wall darkens a little toward the floor and the corner where they meet. */
+function drawAO(c: Ctx, X0: number, W: number) {
+  c.defs.push(`<linearGradient id="${ID}ao" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a130d" stop-opacity="0"/><stop offset=".7" stop-color="#1a130d" stop-opacity=".07"/><stop offset="1" stop-color="#1a130d" stop-opacity=".2"/></linearGradient>`);
+  return rect(X0, Y(16), W, 16, `url(#${ID}ao)`);
+}
+
 function drawBaseboard(roll: Roll, X0: number, W: number, wallColor: string) {
   const bb = roll.finish === "brick" ? 0 : 5;
   if (!bb) return rect(X0, FLOOR - 0.6, W, 0.6, "#000", op(0.25));
@@ -365,19 +371,31 @@ function drawLight(c: Ctx, r: Rng, roll: Roll, crop: { x: number; y: number; w: 
         out.push(`<g opacity=".08" filter="url(#${ID}soft)">${leaves.join("")}</g>`);
       }
     }
-    c.defs.push(`<linearGradient id="${ID}side" x1="${roll.side < 0 ? 0 : 1}" y1="0" x2="${roll.side < 0 ? 1 : 0}" y2="0"><stop offset="0" stop-color="#fff8ea" stop-opacity=".14"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".08"/></linearGradient>`);
-    out.push(rect(X0, top, W, H, `url(#${ID}side)`));
+    // soft window light: a broad warm wash from the window side, falling off across the room
+    const sx = roll.side < 0 ? 0 : 1;
+    c.defs.push(
+      `<linearGradient id="${ID}side" x1="${sx}" y1="0" x2="${1 - sx}" y2="0"><stop offset="0" stop-color="#fff6e4" stop-opacity=".2"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#1c1610" stop-opacity=".12"/></linearGradient>`,
+      `<radialGradient id="${ID}win" cx="${sx}" cy=".18" r=".85"><stop offset="0" stop-color="#fffaf0" stop-opacity=".22"/><stop offset=".5" stop-color="#fff8ec" stop-opacity=".06"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>`,
+    );
+    out.push(rect(X0, top, W, H, `url(#${ID}side)`), rect(X0, top, W, H, `url(#${ID}win)`));
   } else {
-    c.defs.push(`<linearGradient id="${ID}eve" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7d7c95"/><stop offset=".6" stop-color="#a49aa6"/><stop offset="1" stop-color="#9890a0"/></linearGradient>`);
-    out.push(rect(X0, top, W, H, `url(#${ID}eve)`, ` style="mix-blend-mode:multiply"`));
+    // evening: a warm dusk grade, lightest around the print (as if a lamp or picture light falls on it), darker toward
+    // the ceiling and the corners. Warm rather than grey-violet so pale fabrics and walls don't go lilac.
+    const ay = hang.base != null ? Y(hang.base + 12) : Y(hang.center ?? 58);
+    c.defs.push(
+      `<radialGradient id="${ID}eve" gradientUnits="userSpaceOnUse" cx="${f(hang.cx)}" cy="${f(ay)}" r="${f(crop.w * 0.85)}"><stop offset="0" stop-color="#efe1cc"/><stop offset=".35" stop-color="#d6c3ad"/><stop offset=".75" stop-color="#b09d8d"/><stop offset="1" stop-color="#94847a"/></radialGradient>`,
+      `<linearGradient id="${ID}evc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a130d" stop-opacity=".22"/><stop offset=".4" stop-color="#1a130d" stop-opacity="0"/></linearGradient>`,
+    );
+    out.push(rect(X0, top, W, H, `url(#${ID}eve)`, ` style="mix-blend-mode:multiply"`), rect(X0, top, W, H, `url(#${ID}evc)`));
   }
   return out.join("");
 }
 
 function drawGlow(c: Ctx) {
   if (!c.evening) return "";
-  c.defs.push(`<radialGradient id="${ID}warm"><stop offset="0" stop-color="#ffd8a0" stop-opacity=".9"/><stop offset=".3" stop-color="#ffc67a" stop-opacity=".5"/><stop offset=".65" stop-color="#e8a060" stop-opacity=".16"/><stop offset="1" stop-color="#ffb860" stop-opacity="0"/></radialGradient>`);
-  return c.lights.map((l) => `<circle cx="${f(l.x)}" cy="${f(l.y)}" r="${f(l.r)}" fill="url(#${ID}warm)" opacity="${f(Math.min(1, l.a * 1.25))}" style="mix-blend-mode:screen"/>`).join("");
+  c.defs.push(`<radialGradient id="${ID}warm"><stop offset="0" stop-color="#ffd8a0" stop-opacity=".85"/><stop offset=".22" stop-color="#ffc67a" stop-opacity=".38"/><stop offset=".55" stop-color="#e8a060" stop-opacity=".1"/><stop offset="1" stop-color="#ffb860" stop-opacity="0"/></radialGradient>`);
+  // the glow stays a halo around the bulb: big soft discs screened over pale bedding read as fog
+  return c.lights.map((l) => `<circle cx="${f(l.x)}" cy="${f(l.y)}" r="${f(l.r * 0.85)}" fill="url(#${ID}warm)" opacity="${f(Math.min(0.9, l.a * 1.05))}" style="mix-blend-mode:screen"/>`).join("");
 }
 
 // ---------- crop ----------
@@ -402,7 +420,7 @@ function cropFor(roll: Roll, hang: Hang, focus: number, r: Rng) {
 }
 
 // ---------- build + cache ----------
-type Built = { info: SceneInfo; viewBox: string; defs: string; under: string; over: string; hang: Hang; side: -1 | 1; evening: boolean };
+type Built = { info: SceneInfo; viewBox: string; defs: string; under: string; over: string; hang: Hang; side: -1 | 1; evening: boolean; camX: number; cropW: number };
 const cache = new Map<number, Built>();
 
 export function buildScene(n: number): Built {
@@ -424,7 +442,7 @@ export function buildScene(n: number): Built {
   const defs = baseDefs(r, ro, crop);
   const wall = drawWall(c, r, ro, crop);
   const floor = drawFloor(c, r, ro, crop);
-  const base = drawBaseboard(ro, crop.x - 10, crop.w + 20, wall.wallColor);
+  const base = drawBaseboard(ro, crop.x - 10, crop.w + 20, wall.wallColor) + drawAO(c, crop.x - 10, crop.w + 20);
   const light = drawLight(c, r, ro, crop, res.hang, !!res.window);
   const glow = drawGlow(c);
   // a soft vignette, like a lens
@@ -440,6 +458,8 @@ export function buildScene(n: number): Built {
     hang: res.hang,
     side: ro.side,
     evening: ro.evening,
+    camX: crop.x + crop.w / 2,
+    cropW: crop.w,
   };
   if (cache.size > 400) cache.delete(cache.keys().next().value as number);
   cache.set(ro.n, built);
@@ -474,41 +494,85 @@ function artSVG(b: Built, o: ArtOpts) {
   const bottom = hang.base != null ? hang.base : (hang.center ?? 58) - box.H / 2;
   const x0 = hang.cx - box.W / 2;
   const y0 = Y(bottom + box.H);
+  const x1 = x0 + box.W;
+  const y1 = y0 + box.H;
   const out: string[] = [];
-  const sx = -b.side * 0.35;
-  const blur = o.frame ? 0.7 : 0.35;
-  out.push(`<filter id="${ID}ash" filterUnits="userSpaceOnUse" x="${f(x0 - 6)}" y="${f(y0 - 6)}" width="${f(box.W + 12)}" height="${f(box.H + 12)}"><feGaussianBlur stdDeviation="${blur}"/></filter>`);
-  out.push(rect(x0 + sx, y0 + (o.frame ? 0.9 : 0.4), box.W, box.H, "#000", ` opacity="${o.frame ? 0.38 : 0.28}" filter="url(#${ID}ash)"`));
+  const framed = !!o.frame;
+  // How far it stands off the wall (in): a frame about an inch, a bare print on its backing a hair.
+  const depth = framed ? 0.9 + box.mold * 0.35 : 0.12;
+  // Daylight comes from the window side and above; evening lamps are lower and closer, so shadows fall nearly straight down.
+  const lx = b.evening ? -b.side * 0.25 : -b.side;
+  const dx = lx * depth * 0.6;
+  const dy = depth * (b.evening ? 0.95 : 0.8);
+  const fr = (id: string, sd: number) =>
+    `<filter id="${ID}${id}" filterUnits="userSpaceOnUse" x="${f(x0 - 8)}" y="${f(y0 - 8)}" width="${f(box.W + 16)}" height="${f(box.H + 16)}"><feGaussianBlur stdDeviation="${f(sd)}"/></filter>`;
+  out.push(fr("ash", depth * 0.95 + 0.25), fr("ash2", 0.12 + depth * 0.12));
+  // cast shadow: wide and soft, pushed away from the light; then a tight contact shadow hugging the edges
+  out.push(rect(x0 + dx * 1.5, y0 + dy * 1.5, box.W, box.H, "#1d150e", ` opacity="${framed ? 0.3 : 0.16}" filter="url(#${ID}ash)"`));
+  out.push(rect(x0 + dx * 0.3, y0 + dy * 0.35, box.W, box.H, "#120c07", ` opacity="${framed ? 0.42 : 0.26}" filter="url(#${ID}ash2)"`));
+  // light falloff across the piece (lit side a touch brighter)
+  const ls = b.side < 0 ? 0 : 1;
+  out.push(`<linearGradient id="${ID}afall" x1="${ls}" y1="0" x2="${1 - ls}" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".07"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".07"/></linearGradient>`);
   let ix = x0;
   let iy = y0;
-  if (o.frame) {
-    const fc = FRAME_HEX[o.frame];
+  if (framed) {
+    const fc = FRAME_HEX[o.frame!];
     const mo = box.mold;
+    // the frame's side face, seen when the piece hangs off to one side of the camera
+    const off = Math.max(-1, Math.min(1, (hang.cx - b.camX) / (b.cropW / 2)));
+    const sw = Math.min(0.55, Math.abs(off) * depth * 0.5);
+    if (sw > 0.05) {
+      const sxe = off < 0 ? x1 : x0;
+      const s = off < 0 ? 1 : -1;
+      out.push(poly([[sxe, y0], [sxe + s * sw, y0 + sw * 0.4], [sxe + s * sw, y1 - sw * 0.2], [sxe, y1]], shade(fc, o.frame === "white" ? -0.16 : -0.32)));
+    }
     out.push(rect(x0, y0, box.W, box.H, fc));
     if (o.frame === "natural") out.push(rect(x0, y0, box.W, box.H, `url(#${ID}grain)`));
-    // bevel: light top/left, dark bottom/right of the molding
-    out.push(poly([[x0, y0], [x0 + box.W, y0], [x0 + box.W - mo, y0 + mo], [x0 + mo, y0 + mo]], "#fff", op(o.frame === "black" ? 0.1 : 0.25)));
-    out.push(poly([[x0, y0 + box.H], [x0 + box.W, y0 + box.H], [x0 + box.W - mo, y0 + box.H - mo], [x0 + mo, y0 + box.H - mo]], "#000", op(0.16)));
-    if (o.frame === "white") out.push(rect(x0, y0, box.W, box.H, "none", ` stroke="#000" stroke-opacity=".12" stroke-width=".12"`));
+    // molding: light catches the top and the window-side edge, the other two fall into shade
+    const hiA = o.frame === "black" ? 0.14 : 0.3;
+    const top = poly([[x0, y0], [x1, y0], [x1 - mo, y0 + mo], [x0 + mo, y0 + mo]], "#fff", op(hiA));
+    const bot = poly([[x0, y1], [x1, y1], [x1 - mo, y1 - mo], [x0 + mo, y1 - mo]], "#000", op(0.2));
+    const left = poly([[x0, y0], [x0 + mo, y0 + mo], [x0 + mo, y1 - mo], [x0, y1]], b.side < 0 ? "#fff" : "#000", op(b.side < 0 ? hiA * 0.7 : 0.12));
+    const right = poly([[x1, y0], [x1 - mo, y0 + mo], [x1 - mo, y1 - mo], [x1, y1]], b.side < 0 ? "#000" : "#fff", op(b.side < 0 ? 0.12 : hiA * 0.7));
+    out.push(top, bot, left, right);
+    // a crisp outer edge and the rabbet where the frame meets the mat
+    out.push(rect(x0, y0, box.W, box.H, "none", ` stroke="#000" stroke-opacity="${o.frame === "white" ? 0.16 : 0.22}" stroke-width=".1"`));
     ix += mo;
     iy += mo;
     const iw = box.W - 2 * mo;
     const ih = box.H - 2 * mo;
     out.push(rect(ix, iy, iw, ih, box.mat ? "#f6f3ec" : "#ffffff"));
-    out.push(rect(ix, iy, iw, 0.35, "#000", op(0.18)));
+    // the frame lip shades the mat along the top and the side away from the light
+    out.push(`<linearGradient id="${ID}lipt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d150e" stop-opacity=".28"/><stop offset="1" stop-color="#1d150e" stop-opacity="0"/></linearGradient>`);
+    out.push(`<linearGradient id="${ID}lips" x1="${1 - ls}" y1="0" x2="${ls}" y2="0"><stop offset="0" stop-color="#1d150e" stop-opacity=".18"/><stop offset="1" stop-color="#1d150e" stop-opacity="0"/></linearGradient>`);
+    out.push(rect(ix, iy, iw, Math.min(0.55, ih * 0.08), `url(#${ID}lipt)`));
+    out.push(rect(b.side < 0 ? ix + iw - Math.min(0.45, iw * 0.06) : ix, iy, Math.min(0.45, iw * 0.06), ih, `url(#${ID}lips)`));
     ix += box.mat;
     iy += box.mat;
-    if (box.mat) out.push(rect(ix - 0.18, iy - 0.18, box.w + 0.36, box.h + 0.36, "#fffdf8"), rect(ix - 0.18, iy - 0.18, box.w + 0.36, 0.12, "#000", op(0.1)));
+    if (box.mat) {
+      // bevel-cut opening: a bright core on the lit edges, a hairline of shade on the others
+      const bv = 0.16;
+      out.push(rect(ix - bv, iy - bv, box.w + 2 * bv, box.h + 2 * bv, "#fffdf7"));
+      out.push(rect(ix - bv, iy - bv, box.w + 2 * bv, 0.07, "#000", op(0.16)));
+      out.push(rect(b.side < 0 ? ix + box.w + bv - 0.07 : ix - bv, iy - bv, 0.07, box.h + 2 * bv, "#000", op(0.1)));
+    }
   }
   const imgFilter = o.blur ? ` filter="url(#${ID}sblur)"` : "";
   if (o.blur) out.push(`<filter id="${ID}sblur" filterUnits="userSpaceOnUse" x="${f(ix)}" y="${f(iy)}" width="${f(box.w)}" height="${f(box.h)}"><feGaussianBlur stdDeviation="${f(Math.max(box.w, box.h) / 14)}"/></filter>`);
   out.push(`<clipPath id="${ID}aclip"><rect x="${f(ix)}" y="${f(iy)}" width="${f(box.w)}" height="${f(box.h)}"/></clipPath>`);
   out.push(`<g clip-path="url(#${ID}aclip)"><image href="${esc(o.href)}" x="${f(ix)}" y="${f(iy)}" width="${f(box.w)}" height="${f(box.h)}" preserveAspectRatio="xMidYMid slice"${imgFilter}/></g>`);
-  if (o.frame) {
-    // glass catches a little light
-    out.push(poly([[ix, iy], [ix + box.w * 0.45, iy], [ix + box.w * 0.15, iy + box.h], [ix, iy + box.h]], "#fff", op(0.05)));
+  if (framed) {
+    const gx = x0 + box.mold;
+    const gy = y0 + box.mold;
+    const gw = box.W - 2 * box.mold;
+    const gh = box.H - 2 * box.mold;
+    // glass: a soft diagonal reflection band from the window side, and the overall light falloff
+    out.push(`<linearGradient id="${ID}glass" x1="${ls}" y1="0" x2="${1 - ls}" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".22" stop-color="#fff" stop-opacity=".04"/><stop offset=".34" stop-color="#fff" stop-opacity="0"/><stop offset=".52" stop-color="#fff" stop-opacity=".06"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></linearGradient>`);
+    out.push(rect(gx, gy, gw, gh, `url(#${ID}glass)`), rect(gx, gy, gw, gh, `url(#${ID}afall)`));
   } else {
-    out.push(rect(ix, iy, box.w, box.h, "none", ` stroke="#000" stroke-opacity=".08" stroke-width=".1"`));
+    // matte paper: just the falloff and a hairline edge
+    out.push(rect(ix, iy, box.w, box.h, `url(#${ID}afall)`));
+    out.push(rect(ix, iy, box.w, box.h, "none", ` stroke="#000" stroke-opacity=".12" stroke-width=".1"`));
   }
   return out.join("");
 }

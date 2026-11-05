@@ -34,13 +34,20 @@ export async function POST(req: Request) {
 
     const hashedPw = await hash(password, 10);
 
+    // New password signs out every existing session (sessionVersion, lib/auth.ts). The link was emailed, so the
+    // address is confirmed too.
+    const a = await prisma.artist.findUnique({ where: { id: record.artistId }, select: { emailVerifiedAt: true } });
     await prisma.artist.update({
       where: { id: record.artistId },
-      data: { password: hashedPw },
+      data: {
+        password: hashedPw,
+        sessionVersion: { increment: 1 },
+        ...(a && !a.emailVerifiedAt ? { emailVerifiedAt: new Date(), emailVerifyToken: null } : {}),
+      },
     });
 
-    // one-time use token
-    await prisma.passwordResetToken.delete({ where: { tokenHash } });
+    // one-time use: this token and any others still out there
+    await prisma.passwordResetToken.deleteMany({ where: { artistId: record.artistId } });
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (e) {

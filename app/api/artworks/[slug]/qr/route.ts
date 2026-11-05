@@ -3,6 +3,7 @@
 import { ensureArtworkCode, shortUrl } from "@/lib/shortlinks";
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
+import { verifyAuthTokenOrThrow } from "@/lib/auth";
 import { generateQrPdf } from "@/lib/generateQrPdf";
 import { DEFAULT_DESIGN } from "@/components/qr/card";
 import { baseUrl, findArt, pdfHeaders, toArtInfo } from "@/app/api/qr/art";
@@ -21,7 +22,8 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   try {
     const raw = token || req.cookies.get("auth-token")?.value;
     if (!raw) return new NextResponse("Unauthorized", { status: 401 });
-    payload = (await jwtVerify(raw, secret)).payload as Record<string, unknown>;
+    // Emailed download links carry their own token; otherwise it's the session (version-checked).
+    payload = token ? ((await jwtVerify(raw, secret)).payload as Record<string, unknown>) : ((await verifyAuthTokenOrThrow(raw)) as unknown as Record<string, unknown>);
   } catch {
     return new NextResponse("Link expired or invalid", { status: 401 });
   }

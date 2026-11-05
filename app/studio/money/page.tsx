@@ -12,6 +12,7 @@ import { getBalance, monthLabel, PAYOUT_DAY_OF_MONTH, RETURN_WINDOW_DAYS } from 
 import { FREE_SPLIT, PRO, isProActive } from "@/lib/plans";
 import { prisma } from "@/lib/prisma";
 import { VENMO_CONFIRM_HOURS } from "@/lib/venmo";
+import { UNVERIFIED_MESSAGE } from "@/lib/emailVerify";
 import { requireArtist } from "../_lib/data";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +35,7 @@ const STRIPE_NOTICE: Record<string, { ok: boolean; text: string }> = {
   "simulated-dashboard": { ok: false, text: "This is a test account, so there's no Stripe dashboard to open." },
   off: { ok: false, text: "Stripe isn't set up here yet. We'll keep paying you by Venmo." },
   error: { ok: false, text: "Stripe didn't open. Try again in a minute." },
+  unverified: { ok: false, text: UNVERIFIED_MESSAGE },
 };
 
 export default async function MoneyPage({ searchParams }: { searchParams: { venmo?: string; stripe?: string } }) {

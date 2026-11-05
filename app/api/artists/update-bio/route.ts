@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { jwtVerify } from "jose";
+
+import { verifyAuthTokenOrThrow } from "@/lib/auth";
 
 export const dynamic = "force-dynamic"
 
@@ -9,10 +10,7 @@ export async function POST(req: NextRequest) {
     const token = req.cookies.get("auth-token")?.value;
     if (!token) return new NextResponse("Not authenticated", { status: 401 });
 
-    const { payload } = await jwtVerify(
-      token,
-      new TextEncoder().encode(process.env.JWT_SECRET!)
-    );
+    const payload = await verifyAuthTokenOrThrow(token); // signature, expiry and session version
 
     // you sign { id, email, slug }
     const artistId =

@@ -41,7 +41,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       if (!reason) return fail("Add a reason. The artist sees it in Studio.");
       if (artist.role === "ADMIN") return fail("Admins can't be suspended.");
       if (artist.suspendedAt) return fail("Already suspended.", 409);
-      const updated = await prisma.artist.update({ where: { id: artist.id }, data: { suspendedAt: new Date(), suspendedReason: reason }, select: { suspendedAt: true, suspendedReason: true } });
+      // sessionVersion + 1 signs the artist out everywhere; suspended accounts can't log back in (lib/auth.ts).
+      const updated = await prisma.artist.update({ where: { id: artist.id }, data: { suspendedAt: new Date(), suspendedReason: reason, sessionVersion: { increment: 1 } }, select: { suspendedAt: true, suspendedReason: true } });
       await resend.emails.send({
         from: FROM, to: artist.email, subject: "Your Artfinity page is paused",
         text: `Hi ${first},\n\nWe've paused your Artfinity page. Your artist page, artwork pages and printed codes are offline for now, and buyers can't check out.\n\nReason: ${reason}\n\nYour earnings are safe and are still paid out on schedule. If you have questions or think this is a mistake, reply to ${CONTACT}.\n\nArtfinity`,

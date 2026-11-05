@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getUserFromCookie } from "@/lib/auth";
+import { UNVERIFIED_MESSAGE } from "@/lib/emailVerify";
 import { rateLimit } from "@/lib/rateLimit";
 import { MAX_ARTWORKS, MAX_BODY, MAX_SUBJECT } from "@/lib/newsletter";
 import { nextSendAt, sendNewsletter, sendTestNewsletter, SendTooSoonError } from "@/lib/newsletter.server";
@@ -25,7 +26,7 @@ const when = (d: Date) => d.toLocaleString("en-US", { weekday: "short", hour: "n
 export async function POST(req: Request) {
   const user = await getUserFromCookie();
   if (!user?.id) return NextResponse.json({ error: "Log in first." }, { status: 401 });
-  const artist = await prisma.artist.findUnique({ where: { id: user.id }, select: { id: true, slug: true, artist_name: true, name: true, profileImage: true, email: true, closedAt: true } });
+  const artist = await prisma.artist.findUnique({ where: { id: user.id }, select: { id: true, slug: true, artist_name: true, name: true, profileImage: true, email: true, closedAt: true, emailVerifiedAt: true } });
   if (!artist || artist.closedAt) return NextResponse.json({ error: "Log in first." }, { status: 401 });
 
   const parsed = Body.safeParse(await req.json().catch(() => null));
@@ -35,6 +36,8 @@ export async function POST(req: Request) {
   const owned = await prisma.artwork.findMany({ where: { id: { in: parsed.data.artworkIds }, artistId: artist.id }, select: { id: true } });
   const artworkIds = parsed.data.artworkIds.filter((a) => owned.some((o) => o.id === a));
 
+  // Sending (and test sends, which go to the account's email) waits for a confirmed email. Drafts are fine.
+  if (action !== "save" && !artist.emailVerifiedAt) return NextResponse.json({ error: UNVERIFIED_MESSAGE, code: "email_unverified" }, { status: 403 });
   if (action !== "save" && (!subject || !body)) return NextResponse.json({ error: "Add a subject and a few words first." }, { status: 400 });
 
   if (action === "test") {

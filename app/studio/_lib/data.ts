@@ -35,6 +35,7 @@ export async function requireArtist(nextPath?: string) {
     select: {
       id: true, slug: true, name: true, first_name: true, artist_name: true, city: true,
       profileImage: true, bio: true, venmoHandle: true, email: true, role: true, closedAt: true, suspendedAt: true, suspendedReason: true,
+      emailVerifiedAt: true,
     },
   });
   if (!artist) redirect(`/login?next=${encodeURIComponent(next)}`);

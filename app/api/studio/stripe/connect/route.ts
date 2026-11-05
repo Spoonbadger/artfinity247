@@ -7,4 +7,4 @@ import { go } from "../_go";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export const POST = (req: NextRequest) => go(req, onboardingUrl);
+export const POST = (req: NextRequest) => go(req, onboardingUrl, { verified: true });

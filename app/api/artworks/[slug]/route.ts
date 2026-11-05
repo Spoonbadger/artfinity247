@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from "@/lib/prisma";
-import { getUserFromCookie } from '@/lib/auth'
-import { jwtVerify } from 'jose'
+import { getUserFromCookie, verifyAuthTokenOrThrow } from '@/lib/auth'
 import cloudinary from '@/lib/cloudinary'
 
 export const dynamic = "force-dynamic"
@@ -68,10 +67,7 @@ export async function DELETE(
   if (!token) return new NextResponse("Not authenticated", { status: 401 });
 
   try {
-    const { payload } = await jwtVerify(
-      token,
-      new TextEncoder().encode(process.env.JWT_SECRET!)
-    );
+    const payload = await verifyAuthTokenOrThrow(token); // signature, expiry and session version
 
     const idOrSlug = params.slug;
 

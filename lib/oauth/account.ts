@@ -5,27 +5,29 @@
 //   3. The email is unverified (Facebook) or missing (Instagram) and an artist has it
 //                                                                       -> refuse ("email_in_use"); never link.
 //   4. Otherwise                                                        -> a new person: finish sign-up.
-// Closed accounts never get in (same message as password login); suspended accounts follow the password login
-// route (lib/oauth/account.ts loginBlock).
+//      If that artist never confirmed their email, whoever made the page may not own the address
+//      (pre-registration takeover), so the provider wins: the email is marked confirmed, the password is cleared,
+//      every old session is signed out (sessionVersion + 1) and the address gets a heads-up email.
+// Closed and suspended accounts never get in (same messages as password login, see loginBlock).
 import { Prisma } from "@prisma/client";
-import { SignJWT } from "jose";
 import type { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { signAuthToken } from "@/lib/auth";
+import { resend } from "@/lib/resend";
 import { deviceCookie, recordDeviceSignal } from "@/lib/referrals";
-import type { ProviderId } from "./meta";
+import { PROVIDER_LABEL, type ProviderId } from "./meta";
 import type { OAuthProfile } from "./providers";
 import type { PendingSignup } from "./flow";
 
-const artistSelect = { id: true, email: true, slug: true, role: true, closedAt: true, suspendedAt: true, password: true } as const;
+const artistSelect = {
+  id: true, email: true, slug: true, role: true, closedAt: true, suspendedAt: true, password: true, emailVerifiedAt: true, sessionVersion: true,
+} as const;
 export type SessionArtist = Prisma.ArtistGetPayload<{ select: typeof artistSelect }>;
 
-/**
- * Why this artist can't sign in, or null. Mirrors POST /api/auth/login: a closed account is refused with
- * "account_closed". Suspension is not checked there (a suspended artist can still log in to see why), so it
- * isn't checked here either; change both together.
- */
+/** Why this artist can't sign in, or null. Mirrors POST /api/auth/login (closed, then suspended). */
 export function loginBlock(a: Pick<SessionArtist, "closedAt" | "suspendedAt">): "account_closed" | "account_suspended" | null {
   if (a.closedAt) return "account_closed";
+  if (a.suspendedAt) return "account_suspended";
   return null;
 }
 
@@ -52,15 +54,29 @@ export async function resolveSignIn(provider: ProviderId, p: OAuthProfile): Prom
   if (match && p.email && p.emailVerified) {
     const block = loginBlock(match);
     if (block) return { kind: "blocked", code: block };
+    const takeover = !match.emailVerifiedAt;
+    let artist: SessionArtist = match;
     try {
-      await prisma.oAuthAccount.create({ data: { artistId: match.id, provider, providerAccountId: p.providerAccountId, email: p.email, lastUsedAt: new Date() } });
+      artist = await prisma.$transaction(async (tx) => {
+        await tx.oAuthAccount.create({ data: { artistId: match.id, provider, providerAccountId: p.providerAccountId, email: p.email, lastUsedAt: new Date() } });
+        if (!takeover) return match;
+        // Unconfirmed page: the provider has just proved who owns the address. Lock out whoever set the password.
+        await tx.passwordResetToken.deleteMany({ where: { artistId: match.id } });
+        return tx.artist.update({
+          where: { id: match.id },
+          data: { emailVerifiedAt: new Date(), emailVerifyToken: null, password: null, sessionVersion: { increment: 1 } },
+          select: artistSelect,
+        });
+      });
     } catch (e) {
       // Two tabs racing: the other one linked it first. Only fine if it went to the same artist.
       if (!(e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002")) throw e;
       const again = await prisma.oAuthAccount.findUnique({ where: key, select: { artistId: true } });
       if (again?.artistId !== match.id) return { kind: "email_in_use" };
+      artist = (await prisma.artist.findUnique({ where: { id: match.id }, select: artistSelect })) ?? match;
     }
-    return { kind: "login", artist: match, linked: true };
+    if (takeover) await sendTakeoverNotice(artist.email, provider, !!match.password);
+    return { kind: "login", artist, linked: true };
   }
   if (match) return { kind: "email_in_use" };
 
@@ -101,18 +117,36 @@ export async function linkToArtist(artistId: string, provider: ProviderId, p: OA
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") return { ok: false, code: "already_linked" };
     throw e;
   }
+  // The provider vouches for the same address the account uses: that confirms it.
+  if (!me.emailVerifiedAt && p.emailVerified && p.email && p.email === me.email.toLowerCase()) {
+    await prisma.artist.update({ where: { id: artistId }, data: { emailVerifiedAt: new Date(), emailVerifyToken: null } });
+  }
   return { ok: true };
+}
+
+async function sendTakeoverNotice(to: string, provider: ProviderId, hadPassword: boolean) {
+  const name = PROVIDER_LABEL[provider];
+  try {
+    await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || "Artfinity <no-reply@theartfinity.com>",
+      to,
+      subject: `Your Artfinity account is now linked to ${name}`,
+      text:
+        `Your Artfinity account is now linked to ${name}, and your email is confirmed.\n\n` +
+        (hadPassword ? "If you set a password before, set a new one in Studio → My page → Sign-in methods. The old one no longer works, and other devices were signed out.\n\n" : "") +
+        `From now on, log in with "Continue with ${name}".\n\nIf this wasn't you, reply to this email.\n\nArtfinity`,
+    });
+  } catch (e) {
+    console.error("TAKEOVER_NOTICE_FAIL", e);
+  }
 }
 
 /**
  * Signs the artist in on `res`: the same auth-token JWT as password login ("keep me logged in", 30 days) and the
  * same device signal for the referral checks.
  */
-export async function issueSession(res: NextResponse, artist: Pick<SessionArtist, "id" | "email" | "slug" | "role">, req: Request, kind: "login" | "signup" = "login") {
-  const token = await new SignJWT({ id: artist.id, email: artist.email, slug: artist.slug, role: artist.role })
-    .setProtectedHeader({ alg: "HS256" })
-    .setExpirationTime("30d")
-    .sign(new TextEncoder().encode(process.env.JWT_SECRET!));
+export async function issueSession(res: NextResponse, artist: Pick<SessionArtist, "id" | "email" | "slug" | "role" | "sessionVersion">, req: Request, kind: "login" | "signup" = "login") {
+  const token = await signAuthToken(artist, "30d");
   res.cookies.set("auth-token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

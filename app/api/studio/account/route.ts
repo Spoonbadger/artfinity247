@@ -2,11 +2,12 @@
 // PATCH /api/studio/account { first_name?, last_name?, email?, phone?, state? }
 // Legal name, email, phone and state are private (used for payouts and tax), never shown on the public page.
 import { NextResponse } from "next/server";
-import { SignJWT, jwtVerify } from "jose";
+import { jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { requireUser, signAuthToken } from "@/lib/auth";
+import { sendVerifyEmail } from "@/lib/emailVerify";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -61,6 +62,11 @@ export async function PATCH(req: Request) {
     });
     if (clash) return fail("That email is already in use.", 409, "email");
     data.email = email;
+    // A new address needs confirming again (payouts and newsletters wait for it).
+    if (email !== user.email?.toLowerCase()) {
+      data.emailVerifiedAt = null;
+      data.emailVerifyToken = null;
+    }
   }
 
   const phone = str("phone");
@@ -79,7 +85,7 @@ export async function PATCH(req: Request) {
 
   let account;
   try {
-    account = await prisma.artist.update({ where: { id: user.id }, data, select: { ...SELECT, id: true, slug: true, role: true } });
+    account = await prisma.artist.update({ where: { id: user.id }, data, select: { ...SELECT, id: true, slug: true, role: true, sessionVersion: true, emailVerifiedAt: true } });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") return fail("That email is already in use.", 409, "email");
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") return fail("Account not found.", 404);
@@ -87,8 +93,9 @@ export async function PATCH(req: Request) {
     return fail("Could not save. Try again.", 500);
   }
 
-  const { id, slug, role, ...out } = account;
-  const res = NextResponse.json({ account: out });
+  const { id, slug, role, sessionVersion, emailVerifiedAt, ...out } = account;
+  if (data.email && !emailVerifiedAt) await sendVerifyEmail(id);
+  const res = NextResponse.json({ account: out, emailVerified: !!emailVerifiedAt });
 
   // The session token carries the email; re-issue it with the same expiry so it stays in sync.
   if (data.email && data.email !== user.email) {
@@ -101,10 +108,7 @@ export async function PATCH(req: Request) {
         if (payload.exp) exp = payload.exp;
       } catch {}
     }
-    const token = await new SignJWT({ id, email: account.email, slug, role })
-      .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime(exp)
-      .sign(secret);
+    const token = await signAuthToken({ id, email: account.email, slug, role, sessionVersion }, exp);
     const left = exp - Math.floor(Date.now() / 1000);
     const base = { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/" };
     // "Remember me" logins (30-day tokens) keep a persistent cookie; short sessions stay session cookies.

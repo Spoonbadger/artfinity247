@@ -3,7 +3,7 @@
 // A point h inches above the floor and d inches in front of the wall is drawn at Y(h, d).
 
 import type { Rng } from "./rng";
-import { BOOKS, CERAMICS, METALS, WOODS, mix, shade, type Palette } from "./palettes";
+import { BOOKS, CERAMICS, METALS, WOODS, lum, mix, shade, type Palette } from "./palettes";
 
 export const FLOOR = 108; // floor line (9 ft walls, ceiling at y = 0)
 export const K = 0.28; // how much 1 inch of depth drops on screen (a slightly raised camera)
@@ -430,8 +430,13 @@ export function roundTable(c: Ctx, cx: number, dia: number, h: number, dc: numbe
 }
 
 export function bed(c: Ctx, o: { x0: number; w: number; head: "round" | "channel" | "slat" | "cane" | "wing"; headColor: string; wood: string; linen: string; duvet: string; throwColor: string; pillows: string[] }) {
-  const { x0, w, head, headColor, wood, linen, duvet } = o;
+  const { x0, w, head, wood, linen } = o;
   const x1 = x0 + w;
+  // keep the bed readable against the wall: pale bedding on a pale wall (or a headboard the wall's color) washes out
+  const wl = lum(c.pal.wall);
+  const away = (col: string, from: number, min: number) => (Math.abs(lum(col) - from) >= min ? col : shade(col, from > 0.5 ? -min * 1.6 : min * 1.4));
+  const headColor = away(away(o.headColor, wl, 0.12), lum(linen), 0.1);
+  const duvet = away(o.duvet, wl, 0.06);
   const hh = head === "wing" ? 54 : head === "slat" ? 44 : 50;
   const L = 80;
   wallShadow(c, x0, x1, hh, 0.3);
@@ -452,7 +457,9 @@ export function bed(c: Ctx, o: { x0: number; w: number; head: "round" | "channel
   // pillows (two sleeping + accents)
   const mY = Y(24, 8);
   const pw = (w - 6) / 2;
-  for (let i = 0; i < 2; i++) parts.push(rr(x0 + 3 + i * pw, mY - 10, pw - 1, 12, 4, linen), rr(x0 + 4 + i * pw, mY - 9.5, pw - 3, 2.6, 1.3, "#ffffff", op(0.45)));
+  // headboard shade behind the pillows
+  parts.push(rect(x0 + 1, mY - 16, w - 2, 8, "#1d150e", ` opacity=".12" filter="url(#${ID}soft)"`));
+  for (let i = 0; i < 2; i++) parts.push(rr(x0 + 3 + i * pw, mY - 10, pw - 1, 12, 4, linen), rr(x0 + 4 + i * pw, mY - 9.5, pw - 3, 2.6, 1.3, "#ffffff", op(0.45)), rr(x0 + 3 + i * pw, mY - 10, pw - 1, 12, 4, "none", ` stroke="#1d150e" stroke-opacity=".14" stroke-width=".35"`));
   o.pillows.forEach((pc, i) => {
     const s = 15;
     const px = x0 + w / 2 - (o.pillows.length * (s - 2)) / 2 + i * (s - 2);
@@ -462,6 +469,8 @@ export function bed(c: Ctx, o: { x0: number; w: number; head: "round" | "channel
   const dTop = Y(24, 14);
   const front = Y(24, L);
   parts.push(rr(x0 - 1, dTop - 1, w + 2, front - dTop + 2, 3, duvet));
+  // pillows shade the duvet where they rest on it
+  parts.push(rect(x0 + 2, dTop - 1, w - 4, 3.2, "#1d150e", ` opacity=".16" filter="url(#${ID}soft)"`));
   // folded duvet edge + throw at foot
   parts.push(rect(x0 - 1, dTop + 2.5, w + 2, 1.6, shade(duvet, 0.12)));
   const tY = Y(24, L - 22);
@@ -473,6 +482,7 @@ export function bed(c: Ctx, o: { x0: number; w: number; head: "round" | "channel
   parts.push(rect(x0, front + 6, w, 0.8, shade(wood, 0.15)));
   for (const lx of [x0 + 1, x1 - 3]) parts.push(rect(lx, Y(4, L), 2, 4, shade(wood, -0.2)));
   parts.push(sheen(x0 - 1, dTop - 1, w + 2, front - dTop + 8, 3));
+  parts.push(rr(x0 - 1.5, dTop - 1, w + 3, front - dTop + 8, 3, "none", ` stroke="#1d150e" stroke-opacity=".12" stroke-width=".4"`));
   c.front.push(parts.join(""));
   return { head: hh };
 }

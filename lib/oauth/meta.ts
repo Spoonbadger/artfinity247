@@ -18,7 +18,7 @@ export function isProviderId(v: unknown): v is ProviderId {
 /** Login-page error codes (?oauth_error=) and what to say. */
 export const OAUTH_ERROR_MESSAGES: Record<string, string> = {
   account_closed: "This account is closed — contact us to reopen.",
-  account_suspended: "This account is paused. Contact us if you think that's a mistake.",
+  account_suspended: "This account is paused — contact us.",
   cancelled: "Sign-in was cancelled. Try again, or use your email.",
   expired: "That sign-in took too long. Try again.",
   state_mismatch: "That sign-in link didn't match. Try again.",
