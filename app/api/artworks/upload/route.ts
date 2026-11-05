@@ -13,6 +13,8 @@ import { alertArtworkNeedsReview, announceArtworkLive, initialArtworkStatus } fr
 import { checkUpload } from "@/lib/imageHash"
 import { saveAutoCheck, screenUpload } from "@/lib/moderation"
 import { DAILY_UPLOAD_LIMIT } from "@/lib/uploadLimits"
+import { editsFromForm } from "@/lib/imageEdits.server"
+import type { Prisma } from "@prisma/client"
 
 export const dynamic = "force-dynamic"
 
@@ -63,6 +65,8 @@ export async function POST(req: NextRequest) {
     // Part of an upload queue (several paintings at once): the artist's "it's live" email and the team's
     // notification wait for one summary of the whole batch (POST /api/artworks/upload/summary).
     const batch = String(form.get("batch") ?? "") === "1";
+    // Photo edits behind imageUrl (POST /api/uploads/edit): kept so the artist can change or reset them later.
+    const imageEdits = editsFromForm(form.get("imageEdits"), { id: payload.id as string, slug: payload.slug as string | undefined });
 
     if (!title) return NextResponse.json({ error: "Give it a title.", code: "title_required" }, { status: 400 });
     if (!imageUrl) return NextResponse.json({ error: "Add an image first.", code: "image_required" }, { status: 400 });
@@ -122,6 +126,7 @@ export async function POST(req: NextRequest) {
         printableSizes: printable,
         ownershipConfirmedAt: new Date(),
         imageHash: dup.imageHash,
+        ...(imageEdits ? { imageEdits: imageEdits as unknown as Prisma.InputJsonValue } : {}),
         ...(flaggedReason ? { flaggedReason, flaggedBy: "system" } : {}),
       },
       include: {

@@ -74,7 +74,6 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
   return (
     <StudioPage
       title="Money"
-      sub="Sales in. Payouts out."
       actions={<><HelpLink href="/help/getting-paid/when-paid" label="How payouts work" /><Link href="/studio/sales" className="btn btn-ghost">Sales</Link></>}
     >
       {b.lateMonths.length > 0 && (
@@ -89,10 +88,10 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
       {venmoNotice && <Problem tone={venmoNotice.ok ? "success" : "error"} title={venmoNotice.text} fix={venmoNotice.fix} />}
 
       {/* Payout details wait for a confirmed email (lib/emailVerify.ts): say so up front, with the fix. */}
-      {!verified && (noPayoutMethod || searchParams.stripe === "unverified") && (
-        <ConfirmEmailProblem email={artist.email} tone={searchParams.stripe === "unverified" ? "error" : "warning"}>
-          {searchParams.stripe === "unverified" ? "Stripe opens once your email is confirmed. " : "Before you add Venmo or connect Stripe, confirm your email. "}
-          We sent a link to <b>{artist.email}</b>. Click it, then come back here.
+      {/* The "Confirm your email" bar at the top of every Studio page covers the usual case; this is for the Stripe bounce. */}
+      {!verified && searchParams.stripe === "unverified" && (
+        <ConfirmEmailProblem email={artist.email} tone="error">
+          Stripe opens once your email is confirmed. Click the link we sent to <b>{artist.email}</b>, then come back.
         </ConfirmEmailProblem>
       )}
 
@@ -103,45 +102,57 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
         </div>
       )}
 
-      {noPayoutMethod && verified && (
+      {/* Money is waiting with nowhere to go: that's a blocker. With $0 the balance card's "Add Venmo" is enough. */}
+      {noPayoutMethod && verified && b.lifetimeCents > 0 && (
         <Problem title="Add a way to get paid" fix={{ label: "Add Venmo", href: "/studio/page#venmo" }}>
-          Add your Venmo, or connect Stripe below to get paid to your bank. Your earnings are safe until you do.
+          Your earnings are safe until you do. Or connect Stripe below.
         </Problem>
       )}
 
       <BalanceCard b={b} />
 
-      {b.ledger.length === 0 ? (
+      {b.ledger.length === 0 && (
         <EmptyState
           title="No sales yet"
-          body={<>Your first sale shows here the moment it happens. Each sale clears after the {RETURN_WINDOW_DAYS}-day return window, then it&apos;s paid by the {ordinal(PAYOUT_DAY_OF_MONTH)} of the next month.</>}
+          body={<>Each sale clears after {RETURN_WINDOW_DAYS} days, then it&apos;s paid by the {ordinal(PAYOUT_DAY_OF_MONTH)} of the next month.</>}
           action={hasArt ? { label: "Print a QR code", href: "/studio/qr" } : { label: "Add your first piece", href: "/studio/art/new" }}
           secondary={hasArt ? { label: "Share your page", href: "/studio/share" } : undefined}
-          help={{ label: "How payouts work", href: "/help/getting-paid/when-paid" }}
         />
-      ) : (
-        <MoneyInsights ledger={b.ledger} nowIso={b.now} />
       )}
 
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <PayoutsList payouts={b.payouts} ledger={b.ledger} adjustments={b.adjustments} lateMonths={b.lateMonths} />
-        <div className="grid content-start gap-4">
+      <div className={b.payouts.length ? "grid items-start gap-4 lg:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)]" : "grid items-start gap-4 lg:grid-cols-2"}>
+        {b.payouts.length > 0 && <PayoutsList payouts={b.payouts} ledger={b.ledger} adjustments={b.adjustments} lateMonths={b.lateMonths} />}
         <GetPaidCard status={b.stripeStatus} mode={connectMode()} venmoHandle={b.venmoHandle} nextDate={dayUTC(b.nextPayout.date)} verified={verified} email={artist.email} />
-        <section aria-labelledby="how-h" className="af-card grid content-start gap-3 p-4 sm:p-5">
-          <h2 id="how-h" className="text-[20px] font-bold">How payouts work</h2>
-          <ul className="grid gap-2.5 text-[14.5px]">
-            {how.map((h, i) => (
-              <li key={i} className="grid grid-cols-[14px_minmax(0,1fr)] items-start gap-2.5">
-                <i className="paint-dab mt-1 h-3 w-3" style={{ ["--dab" as string]: h.dab }} />
-                <span>{h.text}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-        </div>
       </div>
 
       {(b.ledger.length > 0 || b.adjustments.length > 0) && <Ledger ledger={b.ledger} adjustments={b.adjustments} currentMonth={b.currentMonth} />}
+
+      {b.ledger.length > 0 && (
+        <details className="af-card group p-4 sm:p-5">
+          <summary className="flex min-h-[40px] cursor-pointer list-none items-center justify-between gap-3 text-[18px] font-bold [&::-webkit-details-marker]:hidden">
+            Earnings
+            <span className="text-[13.5px] font-semibold text-ink-2 group-open:hidden">Charts, best pieces, sources</span>
+          </summary>
+          <div className="mt-4">
+            <MoneyInsights ledger={b.ledger} nowIso={b.now} />
+          </div>
+        </details>
+      )}
+
+      <details className="af-card group p-4 sm:p-5">
+        <summary className="flex min-h-[40px] cursor-pointer list-none items-center justify-between gap-3 text-[18px] font-bold [&::-webkit-details-marker]:hidden">
+          How payouts work
+          <span className="text-[13.5px] font-semibold text-ink-2 group-open:hidden">{pct(pro ? PRO.split : FREE_SPLIT)} of profit · paid by the {ordinal(PAYOUT_DAY_OF_MONTH)}</span>
+        </summary>
+        <ul className="mt-3 grid gap-2.5 text-[14.5px]">
+          {how.map((h, i) => (
+            <li key={i} className="grid grid-cols-[14px_minmax(0,1fr)] items-start gap-2.5">
+              <i className="paint-dab mt-1 h-3 w-3" style={{ ["--dab" as string]: h.dab }} />
+              <span>{h.text}</span>
+            </li>
+          ))}
+        </ul>
+      </details>
     </StudioPage>
   );
 }

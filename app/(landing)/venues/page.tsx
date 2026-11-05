@@ -25,7 +25,7 @@ export default async function VenuesIndex() {
       <PageHead
         eyebrow="Partner venues"
         title="Where to see the art"
-        sub={<>Local art on real walls, in {venues.length} {venues.length === 1 ? "place" : "places"} around New York. Every piece is for sale: scan the code beside it.</>}
+        sub={<>Local art in {venues.length} NYC {venues.length === 1 ? "spot" : "spots"}. Scan the code beside a piece to buy a print.</>}
         stroke="var(--af-coral)"
       />
       <div className="mx-auto grid max-w-[1240px] gap-10 px-4 sm:px-6">

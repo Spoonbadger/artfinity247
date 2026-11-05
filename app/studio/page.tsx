@@ -13,6 +13,7 @@ import { countArtistViews } from "@/lib/pageviews";
 import { getBalance } from "@/lib/balance";
 import BalanceChip from "@/components/money/BalanceChip";
 import { EmptyState } from "@/components/studio/EmptyState";
+import { readScanSettings } from "@/lib/scanning.server";
 import { requireArtist, firstName, getSales, getArtworks, dayKey, serverGreeting, timeAgo, SIZE_LABEL, STUDIO_TZ, usd } from "./_lib/data";
 
 export const dynamic = "force-dynamic";
@@ -44,6 +45,15 @@ export default async function StudioHome() {
     prisma.qrCode.count({ where: { artistId: artist.id } }),
   ]);
   const sales = allSales.filter((s) => s.date >= since);
+  // Painting scans: suggest one when more than one piece can't print at the biggest size (lib/scanning.server.ts).
+  const [scanOn, limitedCount, scanOpen] = await Promise.all([
+    readScanSettings().then((s) => s.enabled).catch(() => false),
+    prisma.artwork.count({ where: { artistId: artist.id, status: { not: "REJECTED" }, printableSizes: { isEmpty: false }, NOT: { printableSizes: { has: "xl" } } } }),
+    prisma.scanBooking.count({ where: { artistId: artist.id, status: { in: ["requested", "confirmed", "paid", "scanning"] } } }),
+  ]);
+  const scanSuggestion = limitedCount > 1 && !scanOpen
+    ? { label: `${limitedCount} pieces can't print at XL yet`, note: scanOn ? "We scan the originals in NYC so every size prints sharp." : "Painting scans are coming soon. Join the waitlist.", href: "/studio/scanning", act: scanOn ? "Book a scan" : "Join" }
+    : null;
   // Real scans of the artist's short link codes: last 30 days vs the 30 before.
   const [scans, scansBefore, viewsWeek] = await Promise.all([
     countArtistScans(artist.id, since, now),
@@ -145,7 +155,7 @@ export default async function StudioHome() {
           )}
         </section>
 
-        <NextSteps hasProfile={!!artist.profileImage && !!artist.bio?.trim()} hasArt={artworks.length > 0} hasSold={allSales.length > 0} hasVenmo={!!artist.venmoHandle || balance.payoutVia === "stripe"} hasEvent={eventCount > 0} slug={artist.slug} />
+        <NextSteps hasProfile={!!artist.profileImage && !!artist.bio?.trim()} hasArt={artworks.length > 0} hasSold={allSales.length > 0} hasVenmo={!!artist.venmoHandle || balance.payoutVia === "stripe"} hasEvent={eventCount > 0} slug={artist.slug} suggestion={scanSuggestion} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">

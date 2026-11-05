@@ -153,16 +153,17 @@ export default async function ArtistPage({ params, searchParams }: Props) {
             </h1>
             <ReviewStars average={rating.average} count={rating.count} href="#reviews" className="w-fit" />
           </div>
+          {/* Follow first on phones; socials and Links sit after it */}
           <div className="flex flex-wrap items-center gap-3 pb-2 sm:ml-auto">
+            <ArtistActions slug={artist.slug} firstName={artist.firstName} className="max-sm:order-first" />
             <ArtistSocials links={socials} />
             <Link href={`/@${artist.slug}/links`} className="btn btn-ghost btn-sm h-11 px-5">Links</Link>
-            <ArtistActions slug={artist.slug} firstName={artist.firstName} />
           </div>
         </header>
 
         <div className="mt-8 grid gap-10 sm:mt-10 lg:grid-cols-[270px_minmax(0,1fr)] lg:gap-12">
-          {/* Left column */}
-          <aside className="grid content-start gap-7">
+          {/* Left column. On phones it drops below the work, so the art is on the first screen. */}
+          <aside className="grid content-start gap-7 max-lg:order-last">
             <div className="grid grid-cols-[auto_auto_minmax(0,1fr)] gap-x-7 gap-y-4">
               <Stat value={artist.works.length} label={artist.works.length === 1 ? "work" : "works"} dab="#f7c8a8" />
               {theme.showStats && artist.sales > 0 ? <Stat value={artist.sales} label={artist.sales === 1 ? "print sold" : "prints sold"} dab="var(--accent)" /> : null}
@@ -198,7 +199,7 @@ export default async function ArtistPage({ params, searchParams }: Props) {
                 <span className="sticker-badge absolute -top-3 left-4 text-[12px]">Your page</span>
                 <p className="pt-1 text-[14px] text-ink-2">Only you see this.</p>
                 <div className="flex flex-wrap gap-2">
-                  <Link href="/studio/page" className="btn btn-blue btn-sm">Edit page</Link>
+                  <Link href="/studio/page" className="btn btn-sm">Edit page</Link>
                   <Link href="/studio/design" className="btn btn-ghost btn-sm">Design</Link>
                   {!artist.trust.verified && <Link href="/studio/verify" className="btn btn-ghost btn-sm">Get verified</Link>}
                 </div>

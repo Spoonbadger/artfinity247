@@ -100,13 +100,13 @@ export default function ArtZoom({ open, onClose, src, alt }: { open: boolean; on
         />
       </div>
       <div className="absolute right-3 top-3 flex gap-2" onPointerDown={(e) => e.stopPropagation()}>
-        <button type="button" onClick={() => zoomTo(t.s * 1.5)} className="grid h-11 w-11 place-items-center rounded-full bg-white/90 text-ink hover:bg-white focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-scan" aria-label="Zoom in">
+        <button type="button" onClick={() => zoomTo(t.s * 1.5)} className="grid h-11 w-11 place-items-center rounded-full bg-white/90 text-ink hover:bg-white focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-scan" aria-label="Zoom in" title="Zoom in">
           <ZoomIn className="h-5 w-5" aria-hidden />
         </button>
-        <button type="button" onClick={() => zoomTo(t.s / 1.5)} disabled={t.s <= 1} className="grid h-11 w-11 place-items-center rounded-full bg-white/90 text-ink hover:bg-white disabled:opacity-40 focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-scan" aria-label="Zoom out">
+        <button type="button" onClick={() => zoomTo(t.s / 1.5)} disabled={t.s <= 1} className="grid h-11 w-11 place-items-center rounded-full bg-white/90 text-ink hover:bg-white disabled:opacity-40 focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-scan" aria-label="Zoom out" title="Zoom out">
           <ZoomOut className="h-5 w-5" aria-hidden />
         </button>
-        <button ref={closeRef} type="button" onClick={onClose} className="grid h-11 w-11 place-items-center rounded-full bg-white text-ink focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-scan" aria-label="Close">
+        <button ref={closeRef} type="button" onClick={onClose} className="grid h-11 w-11 place-items-center rounded-full bg-white text-ink focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-scan" aria-label="Close" title="Close">
           <X className="h-5 w-5" aria-hidden />
         </button>
       </div>

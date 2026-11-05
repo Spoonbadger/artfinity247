@@ -30,8 +30,8 @@ export const TEAM: TeamMember[] = [
 
 // TODO(Thomas): the story in your words. Two or three short paragraphs.
 export const STORY: string[] = [
-  "Every town has painters whose work hangs in cafés, markets and shows. People stop and look, but buying it means finding the artist, emailing, waiting.",
-  "Artfinity puts a code next to the painting. Scan it, pick a size, done. We print it, ship it, and send most of the profit to the artist.",
+  "New York painters hang work in cafés, markets and shows. People stop and look. Buying it used to mean tracking down the artist and waiting on email.",
+  "Artfinity puts a code next to the painting. Scan it and pick a size. We print and ship it, and most of the profit goes to the artist.",
 ];
 
 export const COMPANY = {

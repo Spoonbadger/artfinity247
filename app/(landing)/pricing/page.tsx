@@ -72,7 +72,7 @@ export default async function PricingPage() {
           <div className="mb-4 flex items-center gap-2.5"><DabRow /><span className="eyebrow">Pricing</span></div>
           <h1 className="display max-w-[12ch] text-[52px] sm:text-[84px]">Free to sell. <Brushed>Infinity</Brushed> to grow.</h1>
           <p className="mt-5 max-w-[34ch] text-[18px] text-ink-2 sm:text-[20px]">
-            Free keeps {pct(FREE_SPLIT)} of profit. Infinity keeps {pct(PRO.split)}, for {proPrice()} a month.
+            Keep {pct(FREE_SPLIT)} of the profit on Free, or {pct(PRO.split)} on {PRO.name} for {proPrice()} a month.
           </p>
         </div>
         {art.length > 0 && (
@@ -98,7 +98,7 @@ export default async function PricingPage() {
             <p className="display num text-[56px] leading-none">$0</p>
             <p className="text-[15px] text-ink-2">Everything you need to sell.</p>
           </div>
-          <Link href="/register" className="btn btn-ghost btn-lg w-full">Start selling free</Link>
+          <Link href="/register" className="btn btn-blue btn-lg w-full">Start selling free</Link>
           <FeatureList which="free" />
         </div>
 
@@ -107,12 +107,12 @@ export default async function PricingPage() {
           <div className="relative grid gap-1">
             <h2 className="display flex items-center gap-3 text-[36px] leading-none !text-white">Infinity plan</h2>
             <p className="display num text-[56px] leading-none !text-white">{proPrice()}<span className="text-[20px] text-white/70">/mo</span></p>
-            <p className="text-[15px] text-white/75">{pct(PRO.split)} of profit, and the tools that sell more.</p>
+            <p className="text-[15px] text-white/75">{pct(PRO.split)} of profit, plus auto videos and automations.</p>
           </div>
           <div className="relative grid gap-2">
-            <Link href="/studio/infinity#billing" className="btn btn-sticker btn-lg w-full">Get {PRO.name} — {proPrice()}/month</Link>
+            <Link href="/studio/infinity#billing" className="btn btn-sticker btn-lg w-full">Get {PRO.name} · {proPrice()}/month</Link>
             <span className="text-center text-[12.5px] text-white/70">Billed monthly by Stripe. Cancel anytime.</span>
-            <Link href="/studio/infinity#referrals" className="text-center text-[14px] font-bold text-white underline-offset-2 hover:underline">Or share Artfinity, get 2 months free</Link>
+            <Link href="/studio/infinity#referrals" className="text-center text-[14px] font-bold text-white underline-offset-2 hover:underline">Or share Artfinity, get {REFERRALS.rewardMonths} months free</Link>
           </div>
           <div className="relative"><FeatureList which="pro" dark /></div>
         </div>

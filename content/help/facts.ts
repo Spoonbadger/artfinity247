@@ -15,6 +15,7 @@ import { VENMO_CONFIRM_HOURS } from "@/lib/venmo";
 import { MAX_ARTWORKS as NEWSLETTER_MAX_ART, SEND_GAP_MS } from "@/lib/newsletter";
 import { HELP_DAYS_AFTER_DELIVERY, MAX_PHOTOS, REPRINT_REASONS } from "@/lib/reprintFormat";
 import { DISCOUNTS, FORMATS, PRESETS } from "@/components/qr/card";
+import { FORMAT_ORDER, PAPER, QUEUE_MAX_QTY } from "@/lib/printQueueFormat";
 import { LAYOUTS, MAX_PINNED, PAINTS } from "@/components/artist/theme";
 import { EDIT_WINDOW_DAYS } from "@/lib/reviews";
 import { SOURCE_LABEL } from "@/lib/pageviews";
@@ -86,6 +87,13 @@ export const EXAMPLE = {
 export const QR_PRESETS = Object.values(PRESETS).map((p) => ({ name: p.name, sub: p.sub, format: FORMATS[p.format] }));
 export const QR_FORMATS = Object.values(FORMATS);
 export const QR_DISCOUNTS = list(DISCOUNTS.filter(Boolean).map((d) => `${d}%`));
+/** | Format | Buy | Per sheet | for the print queue article. */
+export const QR_PAPER_TABLE = [
+  "| Format | What to buy | Per sheet |",
+  "|---|---|---|",
+  ...FORMAT_ORDER.map((f) => `| ${FORMATS[f].name} (${FORMATS[f].w} × ${FORMATS[f].h} in) | ${PAPER[f].buy} | ${FORMATS[f].sheet.cols * FORMATS[f].sheet.rows} |`),
+].join("\n");
+export { QUEUE_MAX_QTY };
 export const LEGACY_UNTIL_TEXT = LEGACY_UNTIL.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "America/New_York" });
 
 // ---------- Page design ----------

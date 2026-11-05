@@ -44,11 +44,11 @@ export default async function ScenePage({ params, searchParams }: { params: { sl
   return (
     <div className="pb-20">
       <div className="mx-auto max-w-[1240px] px-4 pt-6 sm:px-6">
-        <Link href="/scenes" className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-ink-2 no-underline hover:text-ink"><ArrowLeft className="h-4 w-4" aria-hidden="true" />All scenes</Link>
+        <Link href="/scenes" className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-ink-2 no-underline hover:text-ink"><ArrowLeft className="h-4 w-4" aria-hidden="true" />All neighborhoods</Link>
       </div>
       <PageHead
         className="pt-4 md:pt-6"
-        eyebrow={city?.label || "Scene"}
+        eyebrow={city?.label || "Neighborhood"}
         title={name}
         sub={<><span className="num">{city?.pieces ?? total}</span> pieces by <span className="num">{artists.length}</span> local {artists.length === 1 ? "artist" : "artists"}.</>}
         stroke="var(--af-scan)"

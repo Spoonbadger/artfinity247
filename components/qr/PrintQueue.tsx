@@ -376,6 +376,7 @@ function MailOrder({ quote, infinity, pricing, address, onOrdered, onPriceChange
 }) {
   const [a, setA] = useState<ShipAddress>(address);
   const [bad, setBad] = useState<keyof ShipAddress | null>(null);
+  const [badMsg, setBadMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const refs = useRef<Partial<Record<keyof ShipAddress, HTMLInputElement | HTMLSelectElement | null>>>({});
   const formRef = useRef<HTMLFormElement>(null);
@@ -391,6 +392,7 @@ function MailOrder({ quote, infinity, pricing, address, onOrdered, onPriceChange
         const p = await problemFrom(r, "Checkout didn't open. Nothing was charged. Try again.");
         if (p.code === "address_required" && j.field) {
           setBad(j.field);
+          setBadMsg(p.message);
           refs.current[j.field as keyof ShipAddress]?.focus();
           failed(p.message, { description: "Add it below, then order again." });
         } else if (p.code === "price_changed") {
@@ -408,14 +410,15 @@ function MailOrder({ quote, infinity, pricing, address, onOrdered, onPriceChange
   }
 
   const field = (k: keyof ShipAddress, label: string, opts: { auto: string; optional?: boolean; className?: string; inputMode?: "numeric" } = { auto: "" }) => (
-    <label className={cn("grid gap-1 text-[12.5px] font-semibold", opts.className)}>
-      {label}{opts.optional && <span className="font-normal text-ink-2"> (optional)</span>}
+    <label className={cn("grid min-w-0 gap-1 text-[12.5px] font-semibold", opts.className)}>
+      <span>{label}{opts.optional && <span className="font-normal text-ink-2"> (optional)</span>}</span>
       <input
         ref={(el) => { refs.current[k] = el; }}
         value={a[k]} onChange={(e) => set(k, e.target.value)} autoComplete={opts.auto} inputMode={opts.inputMode} required={!opts.optional}
-        aria-invalid={bad === k || undefined}
-        className={cn("min-h-[42px] rounded-lg border-[1.5px] bg-white px-2.5 text-[15px] font-normal text-ink", bad === k ? "border-coral" : "border-line")}
+        aria-invalid={bad === k || undefined} aria-describedby={bad === k ? "ship-err" : undefined}
+        className={cn("min-h-[42px] w-full min-w-0 rounded-lg border-[1.5px] bg-white px-2.5 text-[15px] font-normal text-ink", bad === k ? "border-coral" : "border-line")}
       />
+      {bad === k && <span id="ship-err" role="alert" className="text-[12.5px] font-semibold text-coral">{badMsg}</span>}
     </label>
   );
 
@@ -455,16 +458,17 @@ function MailOrder({ quote, infinity, pricing, address, onOrdered, onPriceChange
           {field("line1", "Street address", { auto: "address-line1", className: "col-span-6" })}
           {field("line2", "Apt, suite, studio", { auto: "address-line2", optional: true, className: "col-span-6" })}
           {field("city", "City", { auto: "address-level2", className: "col-span-6 sm:col-span-3 lg:col-span-6" })}
-          <label className="col-span-3 grid gap-1 text-[12.5px] font-semibold sm:col-span-1 lg:col-span-3">
+          <label className="col-span-3 grid min-w-0 gap-1 text-[12.5px] font-semibold sm:col-span-1 lg:col-span-3">
             State
             <select
               ref={(el) => { refs.current.state = el; }}
-              value={a.state} onChange={(e) => set("state", e.target.value)} autoComplete="address-level1" aria-invalid={bad === "state" || undefined}
-              className={cn("min-h-[42px] rounded-lg border-[1.5px] bg-white px-2 text-[15px] font-normal text-ink", bad === "state" ? "border-coral" : "border-line")}
+              value={a.state} onChange={(e) => set("state", e.target.value)} autoComplete="address-level1" aria-invalid={bad === "state" || undefined} aria-describedby={bad === "state" ? "ship-err" : undefined}
+              className={cn("min-h-[42px] w-full min-w-0 rounded-lg border-[1.5px] bg-white px-2 text-[15px] font-normal text-ink", bad === "state" ? "border-coral" : "border-line")}
             >
               <option value="">State</option>
               {US_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
+            {bad === "state" && <span id="ship-err" role="alert" className="text-[12.5px] font-semibold text-coral">{badMsg}</span>}
           </label>
           {field("zip", "ZIP", { auto: "postal-code", inputMode: "numeric", className: "col-span-3 sm:col-span-2 lg:col-span-3" })}
         </fieldset>

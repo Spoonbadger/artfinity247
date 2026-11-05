@@ -10,8 +10,10 @@ import { failed, saved } from "@/lib/feedback";
 export const SHARED_KEY = "af-studio-shared";
 
 type Step = { label: string; done: boolean; href?: string; act?: string; onClick?: () => void };
+/** An extra, optional idea under the checklist (not counted in the progress), e.g. "Book a scan". */
+export type Suggestion = { label: string; note?: string; href: string; act: string };
 
-export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true, hasEvent: serverHasEvent = false, slug }: { hasProfile: boolean; hasArt: boolean; hasSold: boolean; hasVenmo?: boolean; hasEvent?: boolean; slug: string }) {
+export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true, hasEvent: serverHasEvent = false, slug, suggestion }: { hasProfile: boolean; hasArt: boolean; hasSold: boolean; hasVenmo?: boolean; hasEvent?: boolean; slug: string; suggestion?: Suggestion | null }) {
   const [shared, setShared] = useState(false);
   const [hasEvent, setHasEvent] = useState(serverHasEvent);
   const [copied, setCopied] = useState(false);
@@ -77,6 +79,16 @@ export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true
           </li>
         ))}
       </ul>
+      {suggestion && (
+        <div className="mt-1 flex items-center gap-2.5 rounded-xl border border-dashed border-scan/50 bg-scan-soft px-3 py-2.5 text-[14px]">
+          <i aria-hidden="true" className="paint-dab h-[18px] w-[18px] shrink-0" style={{ ["--dab" as string]: "var(--af-scan)" }} />
+          <span className="min-w-0 flex-1">
+            <b className="block">{suggestion.label}</b>
+            {suggestion.note && <span className="block text-[12.5px] text-ink-2">{suggestion.note}</span>}
+          </span>
+          <Link href={suggestion.href} className="-my-3 inline-flex min-h-[44px] shrink-0 items-center px-1 text-[14px] font-bold text-scan underline-offset-2 hover:underline">{suggestion.act}</Link>
+        </div>
+      )}
     </section>
   );
 }

@@ -183,6 +183,35 @@ export async function readStoredImage(previewUrl: string): Promise<Buffer | null
   return null;
 }
 
+/**
+ * Full-resolution bytes behind a preview URL, for photo edits (lib/imageEdits.server.ts): the private original
+ * (local file or Cloudinary authenticated asset) when one was kept, else the best public copy. `original` says which.
+ */
+export async function readOriginalImage(previewUrl: string): Promise<{ data: Buffer; original: boolean } | null> {
+  const local = await localOriginal(previewUrl);
+  if (local) return { data: await fs.readFile(local), original: true };
+  const id = cloudinaryOn() ? cloudPublicId(previewUrl) : null;
+  if (id) {
+    const cloudinary = await cloud();
+    const r: any = await cloudinary.api.resource(id, { type: "authenticated" }).catch(() => null);
+    if (r) {
+      const src = cloudinary.utils.private_download_url(id, r.format, { type: "authenticated", expires_at: Math.floor(Date.now() / 1000) + 300 } as any);
+      const res = await fetch(src).catch(() => null);
+      if (res?.ok) return { data: Buffer.from(await res.arrayBuffer()), original: true };
+    }
+  }
+  const pub = await readStoredImage(previewUrl).catch(() => null);
+  return pub ? { data: pub, original: false } : null;
+}
+
+/** Whether a preview URL is in this artist's own upload folder (lib/uploadPipeline.ts artistUploadTarget). */
+export function inArtistFolder(previewUrl: string, user: { id: string; slug?: string | null }): boolean {
+  const m = LOCAL_RE.exec(previewUrl);
+  if (m) return m[1] === String(user.slug || user.id);
+  const id = cloudinaryOn() ? cloudPublicId(previewUrl) : null;
+  return !!id && !!user.slug && id.startsWith(`artfinity/artists/${user.slug}/artworks/`);
+}
+
 /** Removes a preview and its private original (e.g. after the artist replaces the image). */
 export async function deleteUpload(previewUrl: string): Promise<void> {
   if (LOCAL_RE.test(previewUrl)) {

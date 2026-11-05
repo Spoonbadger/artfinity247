@@ -8,6 +8,7 @@ import { useCart, useUser } from "@/components/contexts";
 import { CartItemCard, CartPricingInfo } from "@/components/cards";
 import { usd } from "@/components/art/pricing";
 import { cartArtistNames, lineSavings, startCheckout } from "@/components/art/checkout";
+import { checks, emailTypo } from "@/lib/smartFields";
 
 export default function CheckoutClient({ testMode, collectorEmail = null, reward = null }: { testMode: boolean; collectorEmail?: string | null; reward?: { code: string; pct: number } | null }) {
   const { cartItems, calculateTotalPrice } = useCart();
@@ -16,6 +17,7 @@ export default function CheckoutClient({ testMode, collectorEmail = null, reward
   const [useReward, setUseReward] = useState(!!reward);
   const [busy, setBusy] = useState(false);
   const [follow, setFollow] = useState(false); // opt-in, never pre-ticked
+  const [emailErr, setEmailErr] = useState<string | null>(null);
   useEffect(() => { if (currentUser?.email) setEmail((e) => e || currentUser.email); }, [currentUser?.email]);
 
   const total = calculateTotalPrice();
@@ -25,6 +27,8 @@ export default function CheckoutClient({ testMode, collectorEmail = null, reward
   const onPay = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cartItems.length || busy) return;
+    const bad = email.trim() ? checks.email(email) : null;
+    if (bad && !emailTypo(email)) { setEmailErr(bad); return; }
     setBusy(true);
     try {
       const rewardCode = reward && useReward && email.trim().toLowerCase() === (collectorEmail || "").toLowerCase() ? reward.code : null;
@@ -59,10 +63,24 @@ export default function CheckoutClient({ testMode, collectorEmail = null, reward
             <CartItemCard key={`${item.product.id}-${item.product.selectedSize}-${item.product.frameChosen}-${item.product.frameColor}`} item={item} readOnly />
           ))}
         </div>
-        <label className="af-field">
-          <span className="label">Email for your receipt</span>
-          <input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
-        </label>
+        <div className="grid gap-1.5">
+          <label className={`af-field${emailErr ? " !border-coral" : ""}`}>
+            <span className="label">Email for your receipt</span>
+            <input
+              type="email" name="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false}
+              value={email} onChange={(e) => { setEmail(e.target.value); if (emailErr) setEmailErr(null); }}
+              onBlur={() => setEmailErr(email.trim() ? checks.email(email) : null)}
+              aria-invalid={emailErr ? true : undefined} aria-describedby={emailErr ? "receipt-email-err" : undefined}
+              placeholder="you@example.com"
+            />
+          </label>
+          {emailErr && (
+            <p id="receipt-email-err" className="px-1 text-[13.5px] font-semibold text-coral" aria-live="polite">
+              {emailErr}
+              {emailTypo(email) && <button type="button" onClick={() => { setEmail(emailTypo(email)!); setEmailErr(null); }} className="ml-2 font-bold text-scan underline underline-offset-2">Use it</button>}
+            </p>
+          )}
+        </div>
         <label className="flex cursor-pointer items-start gap-2.5 text-left text-[14px] leading-snug text-ink">
           <input type="checkbox" checked={follow} onChange={(e) => setFollow(e.target.checked)} className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[rgb(var(--af-scan-rgb))]" />
           <span>Email me when {who} {who.includes(" and ") ? "post" : "posts"} new work</span>

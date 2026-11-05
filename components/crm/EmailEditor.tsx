@@ -1,5 +1,6 @@
 "use client";
 
+import { useUnsavedChanges } from "@/components/forms/useUnsavedChanges";
 import { useMemo, useRef, useState } from "react";
 import { Clock, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -34,6 +35,7 @@ export default function EmailEditor({
     const a = drafts[k], b = saved[k];
     return a.subject !== b.subject || a.body !== b.body || a.enabled !== b.enabled;
   };
+  useUnsavedChanges(!busy && (Object.keys(drafts) as EmailKind[]).some(dirty));
   const isDefaultText = draft.subject === DEFAULT_TEMPLATES[kind].subject && draft.body === DEFAULT_TEMPLATES[kind].body;
 
   const vars: EmailVars = useMemo(() => ({

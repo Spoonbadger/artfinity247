@@ -1,5 +1,6 @@
 "use client";
 
+import { useUnsavedChanges } from "@/components/forms/useUnsavedChanges";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -22,6 +23,7 @@ export default function DesignEditor({ slug, initial, works, hasMedal }: { slug:
   const [saving, setSaving] = useState(false);
   const json = JSON.stringify(theme);
   const dirty = json !== saved;
+  useUnsavedChanges(dirty && !saving);
 
   const set = <K extends keyof PageTheme>(k: K, v: PageTheme[K]) => setTheme((t) => ({ ...t, [k]: v }));
 

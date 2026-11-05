@@ -261,6 +261,7 @@ export default function ArtGallery({
             type="button"
             onClick={() => setZoom(true)}
             aria-label="Zoom in on the painting"
+            title="Zoom in"
             className="absolute right-2.5 top-2.5 grid h-10 w-10 place-items-center rounded-full bg-white/95 text-ink shadow-[0_2px_8px_rgba(21,22,27,.25)] transition hover:bg-white focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-scan"
           >
             <svg viewBox="0 0 20 20" className="h-[18px] w-[18px]" aria-hidden="true">
@@ -359,6 +360,7 @@ function Arrow({ side, onClick }: { side: "left" | "right"; onClick: () => void 
       type="button"
       onClick={onClick}
       aria-label={side === "left" ? "Previous picture" : "Next picture"}
+      title={side === "left" ? "Previous picture" : "Next picture"}
       className={cn(
         "absolute top-1/2 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-ink opacity-0 shadow-[0_2px_8px_rgba(21,22,27,.2)] transition hover:bg-white focus-visible:opacity-100 focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-scan group-hover:opacity-100 md:grid",
         side === "left" ? "left-2.5" : "right-2.5",

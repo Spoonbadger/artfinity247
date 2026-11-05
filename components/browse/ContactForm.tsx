@@ -1,8 +1,15 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { ChangeEvent, FocusEvent, FormEvent, useState } from "react";
 import { Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { checks } from "@/lib/smartFields";
+
+// Checked when the person leaves the field, so mistakes show before Send.
+const BLUR: Record<string, (v: string) => string | null> = {
+  name: (v) => (v.trim() ? null : "Add your name so we know who to reply to."),
+  email: checks.email,
+};
 
 const TOPICS: [string, string][] = [["order", "An order"], ["artist", "Selling my art"], ["other", "Something else"]];
 
@@ -43,6 +50,19 @@ export default function ContactForm() {
     );
   }
 
+  const onBlurCheck = (e: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const k = e.currentTarget.name;
+    const m = BLUR[k]?.(e.currentTarget.value);
+    setErrors((x) => {
+      const { [k]: _drop, ...rest } = x;
+      return m ? { ...rest, [k]: m } : rest;
+    });
+  };
+  const onFix = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const k = e.currentTarget.name;
+    if (errors[k] && !BLUR[k]?.(e.currentTarget.value)) setErrors(({ [k]: _drop, ...rest }) => rest);
+  };
+
   const err = (k: string) => errors[k] && <span id={`c-${k}-e`} className="pl-1 text-[13.5px] font-semibold text-[#c23a1d]">{errors[k]}</span>;
 
   return (
@@ -61,16 +81,16 @@ export default function ContactForm() {
       </fieldset>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="grid gap-1">
-          <label className="af-field" htmlFor="c-name"><span className="label">Your name</span><input id="c-name" name="name" autoComplete="name" required aria-invalid={!!errors.name} aria-describedby={errors.name ? "c-name-e" : undefined} /></label>
+          <label className="af-field" htmlFor="c-name"><span className="label">Your name</span><input id="c-name" name="name" autoComplete="name" autoCapitalize="words" required onBlur={onBlurCheck} onChange={onFix} aria-invalid={!!errors.name} aria-describedby={errors.name ? "c-name-e" : undefined} /></label>
           {err("name")}
         </div>
         <div className="grid gap-1">
-          <label className="af-field" htmlFor="c-email"><span className="label">Email</span><input id="c-email" name="email" type="email" autoComplete="email" required aria-invalid={!!errors.email} aria-describedby={errors.email ? "c-email-e" : undefined} /></label>
+          <label className="af-field" htmlFor="c-email"><span className="label">Email</span><input id="c-email" name="email" type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} required onBlur={onBlurCheck} onChange={onFix} aria-invalid={!!errors.email} aria-describedby={errors.email ? "c-email-e" : undefined} /></label>
           {err("email")}
         </div>
       </div>
       <div className="grid gap-1">
-        <label className="af-field" htmlFor="c-msg"><span className="label">Message</span><textarea id="c-msg" name="message" rows={5} required className="resize-y" placeholder={topic === "order" ? "Order number and what happened" : ""} aria-invalid={!!errors.message} aria-describedby={errors.message ? "c-message-e" : undefined} /></label>
+        <label className="af-field" htmlFor="c-msg"><span className="label">Message</span><textarea id="c-msg" name="message" rows={5} required onChange={onFix} className="resize-y" placeholder={topic === "order" ? "Order number and what happened" : ""} aria-invalid={!!errors.message} aria-describedby={errors.message ? "c-message-e" : undefined} /></label>
         {err("message")}
       </div>
       <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />

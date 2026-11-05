@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cantReason } from "@/lib/adminCaps";
 import { useAdminCan } from "../../_components/AdminRole";
+import LocationInput from "@/components/forms/LocationInput";
+import { checks } from "@/lib/smartFields";
 
 export type VenueFormValue = {
   id?: string;
@@ -30,6 +32,7 @@ export default function VenueForm({ initial, onDone }: { initial?: VenueFormValu
   const [f, setF] = useState<VenueFormValue>(initial ?? EMPTY);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [emailErr, setEmailErr] = useState<string | null>(null);
   const set = (p: Partial<VenueFormValue>) => setF((o) => ({ ...o, ...p }));
   const editing = !!initial?.id;
 
@@ -66,21 +69,35 @@ export default function VenueForm({ initial, onDone }: { initial?: VenueFormValu
           Name
           <input className={input} value={f.name} onChange={(e) => set({ name: e.target.value })} maxLength={80} required placeholder="Kalimera Coffee" />
         </label>
-        <label className="grid gap-1 text-[13px] font-semibold">
-          Neighborhood
-          <input className={input} value={f.neighborhood} onChange={(e) => set({ neighborhood: e.target.value })} maxLength={60} placeholder="Williamsburg" />
-        </label>
-        <label className="grid gap-1 text-[13px] font-semibold sm:col-span-2">
-          Address
-          <input className={input} value={f.address} onChange={(e) => set({ address: e.target.value })} maxLength={160} placeholder="123 Bedford Ave, Brooklyn, NY 11211" />
-        </label>
+        {/* Venue details are someone else's, so the browser shouldn't fill in the admin's own name and address. */}
+        <div className="grid gap-1 text-[13px] font-semibold">
+          <label htmlFor="venue-hood">Neighborhood</label>
+          <LocationInput
+            variant="bare" id="venue-hood" name="neighborhood" scope="nyc" autoComplete="off" inputClassName={`${input} w-full`}
+            value={f.neighborhood} onChange={(v) => set({ neighborhood: v })} onPick={(pl) => set({ neighborhood: pl.city })} maxLength={60} placeholder="Williamsburg"
+          />
+        </div>
+        <div className="grid gap-1 text-[13px] font-semibold sm:col-span-2">
+          <label htmlFor="venue-address">Address</label>
+          <LocationInput
+            variant="bare" id="venue-address" name="address" scope="address" autoComplete="off" inputClassName={`${input} w-full`}
+            value={f.address} onChange={(v) => set({ address: v })} maxLength={160} placeholder="123 Bedford Ave, Brooklyn, NY 11211"
+          />
+        </div>
         <label className="grid gap-1 text-[13px] font-semibold">
           Contact name
-          <input className={input} value={f.contactName} onChange={(e) => set({ contactName: e.target.value })} maxLength={80} />
+          <input className={input} name="contactName" autoComplete="off" value={f.contactName} onChange={(e) => set({ contactName: e.target.value })} maxLength={80} />
         </label>
         <label className="grid gap-1 text-[13px] font-semibold">
           Contact email
-          <input className={input} type="email" value={f.contactEmail} onChange={(e) => set({ contactEmail: e.target.value })} maxLength={120} placeholder="owner@cafe.com" />
+          <input
+            className={input} type="email" name="contactEmail" inputMode="email" autoComplete="off" value={f.contactEmail}
+            onChange={(e) => { set({ contactEmail: e.target.value }); if (emailErr) setEmailErr(null); }}
+            onBlur={(e) => setEmailErr(e.target.value.trim() ? checks.email(e.target.value) : null)}
+            aria-invalid={emailErr ? true : undefined} aria-describedby={emailErr ? "venue-email-err" : undefined}
+            maxLength={120} placeholder="owner@cafe.com"
+          />
+          {emailErr && <span id="venue-email-err" className="text-[12.5px] font-semibold text-coral">{emailErr}</span>}
         </label>
         <label className="grid gap-1 text-[13px] font-semibold">
           Share of Artfinity&apos;s profit (%)

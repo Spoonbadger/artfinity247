@@ -47,15 +47,12 @@ export default function BalanceCard({ b }: { b: Balance }) {
   const np = b.nextPayout;
   const handle = b.venmoHandle ? `@${b.venmoHandle.replace(/^@/, "")}` : null;
   const stripe = b.payoutVia === "stripe";
-  const sentTo = stripe ? "your bank via Stripe" : "your Venmo";
   const months = np.months.map((m) => monthName(m).split(" ")[0]);
   const monthsText = months.length > 2 ? `${months.slice(0, -1).join(", ")} and ${months[months.length - 1]}` : months.join(" and ");
   const clearing = b.ledger.filter((l) => np.months.includes(l.payoutMonth) && l.status === "pending");
-  const lastClear = clearing.reduce((m, l) => (l.clearsAt > m ? l.clearsAt : m), "");
   const late = b.lateMonths.length > 0;
-  // Overdue (past the grace days) / past the 5th but within it / normal.
-  const when = late ? "overdue" : np.late ? `due ${dayUTC(np.date)}, on its way` : `paid ${dayUTC(np.date)}`;
   const lateDue = late ? `${monthName(b.lateMonths[0], "long").split(" ")[0]} payout was due ${dayUTC(payoutDateFor(b.lateMonths[0]).toISOString())}. ` : "";
+  const fresh = b.lifetimeCents === 0 && b.paidTotalCents === 0;
 
   // Buckets by where the money goes: next payout, the one after, or already paid.
   const readyCents = np.projected ? 0 : np.amountCents;
@@ -66,89 +63,82 @@ export default function BalanceCard({ b }: { b: Balance }) {
   const adjInNext = b.payouts.filter((p) => np.months.includes(p.month) && p.status !== "paid").reduce((n, p) => n + p.adjustmentCents + p.carryInCents, 0);
 
   const segs = [
-    {
-      k: "pending" as const,
-      label: <>On hold <span className="font-normal text-ink-2">(return window)</span></>,
-      value: holdCents,
-      note: `${thisMonth} sales. They clear after the ${RETURN_WINDOW_DAYS}-day return window and are paid ${holdDate}.`,
-    },
-    {
-      k: "available" as const,
-      label: readyCents > 0 ? <>Ready for next payout <span className="whitespace-nowrap">— {when}</span></> : <>Ready for next payout</>,
-      value: readyCents,
-      note: readyCents > 0
-        ? `${monthsText} sales, sent to ${sentTo}.${clearing.length ? ` Includes ${usd(np.clearingCents)} still in the return window.` : ""}`
-        : `Nothing waiting. ${thisMonth}'s sales move here when the month ends.`,
-    },
-    { k: "paid" as const, label: <>Paid out</>, value: b.paidTotalCents, note: "Sent to you, all time." },
+    { k: "pending" as const, label: <>On hold <span className="font-normal text-ink-2">({RETURN_WINDOW_DAYS}-day returns)</span></>, value: holdCents, note: `${thisMonth} sales. Paid ${holdDate}.` },
+    { k: "available" as const, label: <>Ready for next payout</>, value: readyCents, note: readyCents > 0 ? `${monthsText} sales.` : `Empty until ${thisMonth} ends.` },
+    { k: "paid" as const, label: <>Paid out</>, value: b.paidTotalCents, note: "All time." },
   ];
 
   return (
     <section aria-labelledby="balance-h" className="af-card relative grid gap-5 overflow-hidden p-4 sm:p-6">
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+      <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] md:items-end md:gap-6">
         <div className="min-w-0">
           <h2 id="balance-h" className="eyebrow">Your balance</h2>
           <p className="display num mt-1 text-[clamp(44px,9vw,72px)] leading-none text-earned">{usd(b.pendingCents + b.availableCents)}</p>
-          {b.lifetimeCents === 0 && b.paidTotalCents === 0 ? (
-            <p className="mt-1.5 text-[13.5px] text-ink-2">
-              $0 ready for payout · Sales clear after a {RETURN_WINDOW_DAYS}-day return window, then they&apos;re paid monthly.{" "}
-              <Link href="/help/getting-paid/when-paid" className="font-semibold text-ink underline underline-offset-2">How payouts work</Link>
-            </p>
-          ) : (
-            <p className="mt-1.5 text-[13.5px] text-ink-2">Earned, not paid out yet · {usd(b.lifetimeCents)} earned all time</p>
-          )}
+          <p className="mt-1.5 text-[13.5px] text-ink-2">{fresh ? "Your first sale shows up here." : `Not paid out yet · ${usd(b.lifetimeCents)} earned all time`}</p>
         </div>
-      </div>
 
-      <div className="grid gap-3">
-        <PaintedBar pending={holdCents} available={readyCents} paid={b.paidTotalCents} />
-        <dl className="grid gap-3 sm:grid-cols-3 sm:gap-5">
-          {segs.map((s) => (
-            <div key={s.k} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-2.5 sm:grid-cols-1 sm:gap-y-0.5" title={s.note}>
-              <dt className="flex items-center gap-2.5 text-[14px] font-semibold">
-                <i
-                  aria-hidden="true"
-                  className="paint-dab h-3 w-3 shrink-0"
-                  style={{ ["--dab" as string]: STATUS_COLOR[s.k], ...(s.k === "pending" ? { backgroundImage: "repeating-linear-gradient(45deg, transparent 0 3px, rgba(15,122,85,.45) 3px 4.5px)" } : {}) }}
-                />
-                {s.label}
-              </dt>
-              <dd className="num text-right text-[18px] font-bold sm:pl-[22px] sm:text-left sm:text-[24px]">{usd(s.value)}</dd>
-              <dd className="col-span-2 pl-[22px] text-[12.5px] text-ink-2 sm:col-span-1">{s.note}</dd>
-            </div>
-          ))}
-        </dl>
-      </div>
-
-      <div className="grid gap-2 rounded-[4px] bg-wall p-3.5 sm:flex sm:items-center sm:justify-between sm:gap-6 sm:p-4">
-        <div className="min-w-0">
-          <p className="text-[15.5px] sm:text-[17px]">
-            <b>Next payout: {late ? "overdue" : dayUTC(np.date)}</b>
+        {/* Next payout and where it goes: the two things people open this page for. */}
+        <div className="grid gap-1 rounded-[4px] bg-wall p-3.5 sm:p-4">
+          <span className="text-[12.5px] font-semibold text-ink-2">Next payout</span>
+          <p className="text-[19px] leading-tight sm:text-[21px]">
+            <b className={late ? "text-coral" : undefined}>{late ? "Overdue" : dayUTC(np.date)}</b>
+            {np.late && !late && <span className="text-[14px] text-ink-2"> (on its way)</span>}
             <span className="text-ink-2"> · </span>
             <b className="num text-earned">{usd(np.amountCents)}</b>
+          </p>
+          <p className="flex flex-wrap items-center gap-x-2 text-[14px]">
             {stripe ? (
-              <><span className="text-ink-2"> to </span><b>your bank via Stripe</b></>
+              <><Tick />Your bank, via Stripe</>
+            ) : handle ? (
+              <><Tick />Venmo <b>{handle}</b></>
             ) : (
-              <><span className="text-ink-2"> by Venmo to </span>{handle ? <b>{handle}</b> : <Link href="/studio/page#venmo" className="font-bold text-coral underline">add Venmo</Link>}</>
+              <><span className="font-semibold text-coral">No payout method yet</span><Link href="/studio/page#venmo" className="font-bold text-ink underline underline-offset-2">Add Venmo</Link></>
             )}
           </p>
-          <p className="mt-0.5 text-[12.5px] text-ink-2">
-            {np.projected
-              ? `${monthsText} so far. Grows with every sale this month.`
-              : `${lateDue}${monthsText} sales${clearing.length ? ` · ${usd(np.clearingCents)} still clearing until ${dayUTC(lastClear)}, paid anyway` : ""}`}
-            {adjInNext < 0 && <> · after {usd(adjInNext)} in refund adjustments</>}
-          </p>
-          {b.carryForwardCents > 0 && (
-            <p className="mt-0.5 text-[12.5px] font-semibold text-coral">
-              {usd(-b.carryForwardCents)} in refund adjustments comes off your next payouts. A payout never goes below $0, so the rest carries forward.
+          {!fresh && (
+            <p className="text-[12.5px] text-ink-2">
+              {np.projected
+                ? `${monthsText} so far. Grows with each sale.`
+                : `${lateDue}${monthsText} sales${clearing.length ? ` · ${usd(np.clearingCents)} still in the return window, paid anyway` : ""}`}
+              {adjInNext < 0 && <> · after {usd(adjInNext)} in refund adjustments</>}
             </p>
           )}
+          {b.carryForwardCents > 0 && (
+            <p className="text-[12.5px] font-semibold text-coral">
+              {usd(-b.carryForwardCents)} in refunds comes off your next payouts. A payout never goes below $0; the rest carries over.
+            </p>
+          )}
+          {!late && <p className="text-[12.5px] text-ink-2">Sent automatically. Nothing to do.</p>}
         </div>
-        <p className="flex items-center gap-2 text-[13px] font-semibold text-ink sm:max-w-[260px] sm:text-right">
-          <i className="paint-dab h-3 w-3 sm:hidden" style={{ ["--dab" as string]: "#0f7a55" }} />
-          Artfinity sends payouts monthly. You don&apos;t need to do anything.
-        </p>
       </div>
+
+      {!fresh && (
+        <div className="grid gap-3">
+          <PaintedBar pending={holdCents} available={readyCents} paid={b.paidTotalCents} />
+          <dl className="grid gap-3 sm:grid-cols-3 sm:gap-5">
+            {segs.map((s) => (
+              <div key={s.k} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-2.5 sm:grid-cols-1 sm:gap-y-0.5">
+                <dt className="flex items-center gap-2.5 text-[14px] font-semibold">
+                  <i
+                    aria-hidden="true"
+                    className="paint-dab h-3 w-3 shrink-0"
+                    style={{ ["--dab" as string]: STATUS_COLOR[s.k], ...(s.k === "pending" ? { backgroundImage: "repeating-linear-gradient(45deg, transparent 0 3px, rgba(15,122,85,.45) 3px 4.5px)" } : {}) }}
+                  />
+                  {s.label}
+                </dt>
+                <dd className="num text-right text-[18px] font-bold sm:pl-[22px] sm:text-left sm:text-[24px]">{usd(s.value)}</dd>
+                <dd className="col-span-2 pl-[22px] text-[12.5px] text-ink-2 sm:col-span-1">{s.note}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
     </section>
+  );
+}
+
+function Tick() {
+  return (
+    <svg viewBox="0 0 12 12" className="h-3.5 w-3.5 text-earned" aria-hidden="true"><path d="M2 6.5l2.5 2.5L10 3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
   );
 }

@@ -13,6 +13,7 @@ import { breakdown, money, moneyRound } from "@/lib/earnings";
 import { itemBreakdown } from "@/lib/sales";
 import { getArtistSplit } from "@/lib/revenue";
 import { PRO } from "@/lib/plans";
+import { HELP_DAYS_AFTER_DELIVERY } from "@/lib/reprintFormat";
 import { COMPANY, STORY, TEAM } from "@/lib/about";
 
 export const dynamic = "force-dynamic";
@@ -71,12 +72,12 @@ export default async function AboutPage() {
   ];
 
   const promises: { color: string; title: string; text: string; href?: string; link?: string }[] = [
-    { color: "var(--af-earned)", title: `${pct(split)} to the artist`, text: `Of the profit on every print. ${pct(PRO.split)} on the ${PRO.name} plan. Free to join.`, href: "/pricing", link: "See the math" },
-    { color: "var(--af-coral)", title: "Damaged? Reprinted free", text: "Send a photo within 14 days of delivery and we print it again.", href: "/return-policy", link: "Return policy" },
+    { color: "var(--af-earned)", title: `${pct(split)} to the artist`, text: `Of the profit on every print, or ${pct(PRO.split)} on ${PRO.name}. Free to join.`, href: "/pricing", link: "See the math" },
+    { color: "var(--af-coral)", title: "Damaged? Reprinted free", text: `Send a photo within ${HELP_DAYS_AFTER_DELIVERY} days of delivery and we print it again.`, href: "/return-policy", link: "Return policy" },
     { color: "var(--af-scan)", title: "Artists keep their rights", text: "Copyright stays with the artist. We never train AI on their work.", href: "/artist-terms-and-agreement", link: "Artist terms" },
     { color: "var(--af-sticker)", title: "Stolen art comes down", text: "Report it and we review within 2 business days.", href: "/dmca", link: "How takedowns work" },
     { color: "var(--af-ink)", title: "Real verification", text: "A person checks every verified artist's portfolio and socials." },
-    { color: "var(--af-ink-2)", title: "Safe checkout", text: "Payments run on Stripe. We never see your card number." },
+    { color: "var(--af-ink-2)", title: "Safe checkout", text: "Payments run on Stripe. We never see card numbers." },
   ];
 
   return (
@@ -85,7 +86,7 @@ export default async function AboutPage() {
         <div className="mb-4 flex items-center gap-2.5"><DabRow /><span className="eyebrow">About Artfinity</span></div>
         <h1 className="display max-w-[12ch] text-[56px] sm:text-[88px]">Local art, on <Brushed>every wall.</Brushed></h1>
         <p className="mt-5 max-w-[40ch] text-[19px] text-ink-2 sm:text-[21px]">
-          We print and ship art for independent artists, and send most of the profit to them.
+          New York artists hang a code by their work. We print, ship and pay them.
         </p>
       </section>
 
@@ -107,17 +108,6 @@ export default async function AboutPage() {
           </p>
         )}
       </section>
-
-      {wall.length > 0 && (
-        <section aria-label="Art from Artfinity artists" className="relative overflow-hidden border-y border-line bg-gallery py-10 md:py-14">
-          <BrushStroke className="pointer-events-none absolute -left-10 top-[42%] h-16 w-[70%] -rotate-3 opacity-40" color="var(--af-sticker)" />
-          <div className="relative grid gap-8 md:gap-10">
-            <SalonStrip art={wall.slice(0, half)} seconds={80} label="Prints by Artfinity artists" />
-            <SalonStrip art={wall.slice(half)} seconds={95} reverse label="More prints by Artfinity artists" />
-          </div>
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-[#d7d1c4]" aria-hidden="true" />
-        </section>
-      )}
 
       {/* Story + people */}
       <section className="mx-auto grid max-w-[1240px] gap-12 px-4 py-16 sm:px-6 md:grid-cols-[1.1fr_1fr] md:gap-16 md:py-24">
@@ -150,6 +140,17 @@ export default async function AboutPage() {
           </ul>
         </div>
       </section>
+
+      {wall.length > 0 && (
+        <section aria-label="Art from Artfinity artists" className="relative overflow-hidden border-y border-line bg-gallery py-10 md:py-14">
+          <BrushStroke className="pointer-events-none absolute -left-10 top-[42%] h-16 w-[70%] -rotate-3 opacity-40" color="var(--af-sticker)" />
+          <div className="relative grid gap-8 md:gap-10">
+            <SalonStrip art={wall.slice(0, half)} seconds={80} label="Prints by Artfinity artists" />
+            <SalonStrip art={wall.slice(half)} seconds={95} reverse label="More prints by Artfinity artists" />
+          </div>
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-[#d7d1c4]" aria-hidden="true" />
+        </section>
+      )}
 
       {/* How a sale works, with real numbers */}
       <section className="border-y border-line bg-wall">

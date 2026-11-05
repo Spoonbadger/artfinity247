@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Brushed } from "@/components/af/Brush";
 import { useUser } from "@/components/contexts";
 import { AuthCard, FormAlert, PasswordField, Spinner } from "./ui";
+import { PasswordStrength } from "@/components/forms/PasswordInput";
 
 const MESSAGES: Record<string, string> = {
   bad_password: "Your current password doesn't match.",
@@ -96,7 +97,7 @@ export default function ChangePasswordForm() {
           )}
         </FormAlert>
         {hasPassword && <PasswordField label="Current password" name="current" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} required />}
-        <PasswordField label="New password" name="next" autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} hint="8 or more characters" required minLength={8} />
+        <PasswordField label="New password" name="next" autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} hint={<PasswordStrength value={next} />} required minLength={8} />
         <button type="submit" className="btn btn-blue btn-lg w-full" disabled={busy}>
           {busy && <Spinner />}
           Save new password

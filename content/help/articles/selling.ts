@@ -1,7 +1,7 @@
 import type { HelpArticle } from "../types";
 import {
   BULK_FEE, BULK_TABLE, BULK_TIER_TEXT, EDITION_MAX, EDITION_MIN, EXAMPLE, FREE_PCT, LAST_FEW, PRICE_TABLE, PRO_CAP_NOTE, PRO_PCT, PRO_PRICE,
-  RETURN_WINDOW_DAYS,
+  LARGEST, RETURN_WINDOW_DAYS,
 } from "../facts";
 
 const section = "selling" as const;
@@ -171,6 +171,54 @@ When there's enough data, the upload form shows what similar work sells for at e
 - **Leave room for a scan discount** if you plan to offer one at events.
 
 > Selling in person? [Bulk prints](/help/selling/bulk-prints) at cost leave you room for a market price that still pays well.
+`,
+  },
+  {
+    slug: "painting-scans",
+    section,
+    audience: "artist",
+    title: "Getting your paintings scanned",
+    summary: `Phone photo too small for big prints? We scan your original paintings in NYC, high-res and colour-accurate, and put the files straight onto your artworks so buyers can order every size up to ${LARGEST}.`,
+    link: { href: "/studio/scanning", label: "Book a scan" },
+    related: ["file-sizes-print-sharp", "why-sizes-hidden", "set-prices", "bulk-prints"],
+    body: `
+Every print size needs enough pixels to stay sharp (see [Which file sizes print sharp?](/help/getting-started/file-sizes-print-sharp)). Many phone photos are too small, or badly lit, for the bigger sizes, so those sizes are hidden from buyers. A scan of the original fixes both: every size unlocks, and buyers see your real colours.
+
+Scanning is done in New York City only.
+
+## How it works
+1. Open [Painting scans](/studio/scanning) in your Studio (it's in the **Art** folder). You can also get there from **Book a scan** on any piece whose file is too small for big prints.
+2. Pick the paintings: pieces already on your page, or a count of pieces you haven't uploaded yet, with their rough size.
+3. Choose **drop-off** at our NYC studio (free) or **NYC pickup** anywhere in the five boroughs, pick up to three days that work, and add any notes.
+4. You see a live estimate. Press **Request booking**. Nothing is charged yet.
+5. We confirm a date and the final price. You get an email and a **Pay** button at the top of your Studio.
+6. After you pay, drop the paintings off (or we collect them). We email you when they're with us.
+7. The scans go straight onto your artworks. We email you "Your scans are in", with the biggest size you can now sell.
+8. Your paintings come back to you, and the booking closes.
+
+## Sizes and prices
+Paintings are priced by size band: **Small**, **Medium**, **Large**, and **Oversized** (always quoted). Current prices and the size limits of each band are on the [scanning page](/scanning#prices). If a band shows "Ask for a quote", book anyway: we'll send the price before you pay.
+
+> Enter the real painting's size when you upload (the **Original size** field) and the booking form picks its size band for you.
+
+## Getting ready
+- Take paintings out of their frames if you can. Glass and frame edges cause glare and shadows.
+- Wrap each one in paper or a clean sheet for the trip.
+- Tell us in the notes about anything fragile, recently varnished or especially valuable.
+
+## While we have them
+Only our team handles your paintings, and they stay in a locked studio while they're with us. The [scanning page](/scanning) says how long scans and returns take. Ask us about anything valuable before you hand it over and we'll go over how pieces in our care are looked after.
+
+## After the scan
+- The scan replaces the image on your artwork. Your title, prices, edition and QR codes stay the same.
+- Buyers see the new sizes right away. Set prices for the bigger sizes in the piece's edit page if you haven't.
+- You can download the full file from the piece's page in your Studio (**Download original**).
+- Pieces you hadn't uploaded yet: upload a phone photo, reply to our email, and we attach the scan.
+
+## Cancelling
+You can cancel from your Studio until you pay. After that, message us and we'll sort it out.
+
+> Scanning not open yet? The Studio page and [/scanning](/scanning) have a waitlist. Leave your email and we'll tell you the day it opens.
 `,
   },
 ];

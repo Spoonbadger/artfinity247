@@ -12,8 +12,10 @@ import { SENSITIVE_LABELS } from "./sensitive";
 import { EDITION_MAX, EDITION_MIN } from "@/lib/editionFormat";
 import { SIZE_IN } from "@/components/art/pricing";
 import { joinOriginal } from "@/lib/originalSize";
+import type { StoredEdits } from "@/lib/imageEdits";
 import { problemFrom } from "@/lib/feedback";
 import type { PriceGuide } from "@/app/api/artworks/price-guide/route";
+import { cleanMoney } from "@/lib/smartFields";
 
 export const SIZES: SizeKey[] = ["small", "medium", "large", "xl"];
 export const FIELD: Record<SizeKey, "markupSmall" | "markupMedium" | "markupLarge" | "markupXl"> = {
@@ -143,7 +145,11 @@ export function checkArtwork(
 /** The fields POST /api/artworks/upload and /api/artworks/update/[slug] read. Call after checkArtwork. */
 export function artworkFormData(
   v: ArtworkValues,
-  o: { imageUrl: string; fresh: { printable: SizeKey[]; sig: string } | null; editionLocked?: boolean; ownership: boolean; batch?: boolean },
+  o: {
+    imageUrl: string; fresh: { printable: SizeKey[]; sig: string } | null; editionLocked?: boolean; ownership: boolean; batch?: boolean;
+    /** Photo edits behind imageUrl (components/media/ImageEditor.tsx). Leave out to keep what's stored; null clears them. */
+    edits?: StoredEdits | null;
+  },
 ): FormData {
   const ow = parseFloat(v.origW), oh = parseFloat(v.origH);
   const hasOrig = v.origW.trim() !== "" || v.origH.trim() !== "";
@@ -157,6 +163,7 @@ export function artworkFormData(
   if (o.fresh) { fd.append("printable", o.fresh.printable.join(",")); fd.append("printableSig", o.fresh.sig); }
   if (o.ownership) fd.append("ownership", "yes");
   if (o.batch) fd.append("batch", "1");
+  if (o.edits !== undefined) fd.append("imageEdits", o.edits ? JSON.stringify(o.edits) : "");
   return fd;
 }
 
@@ -175,7 +182,10 @@ export async function saveProblem(res: Response) {
 }
 
 /** Per-size crop previews: how each print size trims the picture, and which sizes are too small. */
-export function PrintSizes({ imageUrl, printable, dims, shape }: { imageUrl: string; printable: SizeKey[]; dims: { w: number; h: number } | null; shape: { w: number; h: number } | null }) {
+/** Where an artist books a painting scan, preselecting the piece when it already exists (app/studio/scanning). */
+export const scanHref = (slug?: string | null) => (slug ? `/studio/scanning?art=${encodeURIComponent(slug)}` : "/studio/scanning");
+
+export function PrintSizes({ imageUrl, printable, dims, shape, scanSlug }: { imageUrl: string; printable: SizeKey[]; dims: { w: number; h: number } | null; shape: { w: number; h: number } | null; /** Adds "Book a scan" when the file is too small for big prints; the piece's slug once it exists. */ scanSlug?: string | null }) {
   const ready = (s: SizeKey) => printable.includes(s);
   return (
     <div className="grid gap-2" aria-live="polite">
@@ -214,6 +224,12 @@ export function PrintSizes({ imageUrl, printable, dims, shape }: { imageUrl: str
       {printable.length === 0
         ? <p className="text-[12.5px] font-semibold text-coral">Too small to print. Try the original photo or a bigger scan.</p>
         : <p className="text-[12.5px] text-ink-2">{printable.length < SIZES.length && "Bigger file, bigger prints. "}Each crop shows how that size trims the edges.</p>}
+      {scanSlug !== undefined && !printable.includes("xl") && (
+        <p className="text-[12.5px] text-ink-2">
+          Only have phone photos? We scan the original in NYC so every size prints sharp.{" "}
+          <Link href={scanHref(scanSlug)} className="font-semibold text-scan underline-offset-2 hover:underline">Book a scan</Link>
+        </p>
+      )}
     </div>
   );
 }
@@ -270,7 +286,7 @@ export function PriceFields({ prices, setPrices, ready, split, guide, note }: { 
                 <input
                   id={FIELD_ID.price(s)}
                   inputMode="decimal" value={prices[s]} aria-label={`${SIZE_NAME[s]} print price in dollars`} aria-invalid={tooLow || undefined}
-                  onChange={(e) => { const v = e.target.value.replace(/[^0-9.]/g, "").slice(0, 7); setPrices((m) => ({ ...m, [s]: v })); }}
+                  onChange={(e) => { const v = cleanMoney(e.target.value, 9999); setPrices((m) => ({ ...m, [s]: v })); }}
                   onBlur={() => setPrices((m) => ({ ...m, [s]: (toCents(m[s]) / 100).toFixed(2) }))}
                   className="num w-full min-w-0 bg-transparent text-[16px] font-semibold outline-none"
                 />

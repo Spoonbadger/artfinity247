@@ -166,7 +166,7 @@ function ItemCard({ item, orderId, token, name, city, onSaved }: {
               <div className="relative w-fit">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={photo} alt="Your print on the wall" className="h-36 w-auto max-w-full rounded-[3px] border-4 border-white object-cover shadow-[0_8px_20px_-10px_rgba(21,22,27,.5)]" />
-                <button type="button" onClick={() => setPhoto(null)} aria-label="Remove photo" className="absolute -right-2.5 -top-2.5 grid h-8 w-8 place-items-center rounded-full border-[1.5px] border-ink bg-white text-ink">
+                <button type="button" onClick={() => setPhoto(null)} aria-label="Remove photo" title="Remove photo" className="absolute -right-2.5 -top-2.5 grid h-8 w-8 place-items-center rounded-full border-[1.5px] border-ink bg-white text-ink">
                   <X className="h-4 w-4" aria-hidden="true" />
                 </button>
               </div>

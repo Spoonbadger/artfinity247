@@ -12,6 +12,8 @@ import { SHARED_KEY } from "./NextSteps";
 import ResendConfirmButton from "./ResendConfirmButton";
 import { cn } from "@/lib/utils";
 import { failed, saved as savedToast } from "@/lib/feedback";
+import LocationInput from "@/components/forms/LocationInput";
+import { useUnsavedChanges } from "@/components/forms/useUnsavedChanges";
 
 type Profile = { name: string; city: string; bio: string; profileImage: string | null; venmoHandle: string };
 type Art = { id: string; title: string; imageUrl: string; sensitive: string[] };
@@ -45,6 +47,7 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
   const [pending, setPending] = useState<string | null>(venmoPending);
   const link = `theartfinity.com/@${slug}`;
   const dirty = p.name !== saved.name || p.city !== saved.city || p.bio !== saved.bio || p.venmoHandle !== saved.venmoHandle;
+  useUnsavedChanges(dirty && !saving);
 
   async function changePhoto(file: File) {
     setError(null);
@@ -159,10 +162,7 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
             <span className="label">Artist name</span>
             <input value={p.name} onChange={(e) => setP({ ...p, name: e.target.value })} maxLength={80} required autoComplete="name" />
           </label>
-          <label className="af-field">
-            <span className="label">City</span>
-            <input value={p.city} onChange={(e) => setP({ ...p, city: e.target.value })} maxLength={80} required autoComplete="address-level2" />
-          </label>
+          <LocationInput label="Neighborhood or borough" name="city" scope="nyc" value={p.city} onChange={(v) => setP((x) => ({ ...x, city: v }))} maxLength={80} required placeholder="Williamsburg, Brooklyn" />
         </div>
         <label className="af-field">
           <span className="label flex justify-between"><span>Bio</span><span className="num">{p.bio.length}/300</span></span>

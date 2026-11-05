@@ -16,6 +16,8 @@ import {
 } from "@/lib/bulk";
 import type { PrintSize } from "@/lib/revenue";
 import { cn } from "@/lib/utils";
+import AddressFields, { addressProblem } from "@/components/forms/AddressFields";
+import { cleanMoney } from "@/lib/smartFields";
 
 /** sizes: the print sizes this file is sharp enough for. */
 export type BulkArt = { id: string; slug: string; title: string; imageUrl: string; sensitive: string[]; edition: Edition | null; sizes: PrintSize[] };
@@ -77,8 +79,9 @@ export default function BulkOrder({ arts, past, placedId, defaultName }: { arts:
   async function placeOrder() {
     setError(null);
     if (!lines.length) { setError("Pick at least one piece.", { label: "Pick work", onClick: () => window.scrollTo({ top: 0, behavior: "smooth" }) }); return; }
-    if (!ship.name.trim() || !ship.line1.trim() || !ship.city.trim() || !ship.state.trim() || !/^\d{5}(-\d{4})?$/.test(ship.zip.trim())) {
-      setError("Add where to ship them: name, street, city, state and a 5-digit ZIP.", { label: "Fill in address", onClick: toShipTo });
+    const bad = addressProblem(ship);
+    if (bad) {
+      setError(`Ship to: ${bad.message}`, { label: "Fix address", onClick: () => { toShipTo(); setTimeout(() => document.getElementById(`bulk-ship-${bad.field}`)?.focus(), 300); } });
       toShipTo();
       return;
     }
@@ -256,16 +259,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName }: { arts:
             <h2 id="ship-h" className="flex items-baseline gap-2 text-[20px] font-bold">
               <i className="paint-dab" style={{ ["--dab" as string]: "var(--af-coral)" }} />Ship to you
             </h2>
-            <div className="grid gap-2.5 sm:grid-cols-6">
-              <label className="af-field sm:col-span-6"><span className="label">Name</span><input autoComplete="name" value={ship.name} onChange={(e) => setShip({ ...ship, name: e.target.value })} /></label>
-              <label className="af-field sm:col-span-4"><span className="label">Street</span><input autoComplete="address-line1" value={ship.line1} onChange={(e) => setShip({ ...ship, line1: e.target.value })} /></label>
-              <label className="af-field sm:col-span-2"><span className="label">Apt <span className="text-ink-2">(optional)</span></span><input autoComplete="address-line2" value={ship.line2} onChange={(e) => setShip({ ...ship, line2: e.target.value })} /></label>
-              <label className="af-field sm:col-span-3"><span className="label">City</span><input autoComplete="address-level2" value={ship.city} onChange={(e) => setShip({ ...ship, city: e.target.value })} /></label>
-              <div className="grid grid-cols-2 gap-2.5 sm:col-span-3">
-                <label className="af-field"><span className="label">State</span><input autoComplete="address-level1" maxLength={30} value={ship.state} onChange={(e) => setShip({ ...ship, state: e.target.value })} /></label>
-                <label className="af-field"><span className="label">ZIP</span><input autoComplete="postal-code" inputMode="numeric" maxLength={10} value={ship.zip} onChange={(e) => setShip({ ...ship, zip: e.target.value })} /></label>
-              </div>
-            </div>
+            <AddressFields idPrefix="bulk-ship" value={ship} onChange={(a) => setShip({ ...a, name: a.name ?? "" })} />
           </section>
         </div>
 
@@ -309,7 +303,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName }: { arts:
               Sell at
               <span className="flex items-center rounded-lg border-2 border-ink bg-white px-2 py-1 focus-within:border-scan">
                 <span className="text-ink-2">$</span>
-                <input inputMode="decimal" value={sellAt} onChange={(e) => setSellAt(e.target.value.replace(/[^0-9.]/g, "").slice(0, 6))} aria-label="Your price per print, in dollars" className="num w-16 bg-transparent text-[16px] font-semibold outline-none" />
+                <input inputMode="decimal" value={sellAt} onChange={(e) => setSellAt(cleanMoney(e.target.value, 999))} aria-label="Your price per print, in dollars" className="num w-16 bg-transparent text-[16px] font-semibold outline-none" />
               </span>
               each
             </label>

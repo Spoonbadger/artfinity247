@@ -3,7 +3,7 @@
 import { DragEvent, FormEvent, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { collectionPath } from "@/lib/urls";
-import { errorText, failed, saved as savedToast } from "@/lib/feedback";
+import { errorText, failed, saved as savedToast, undoable, withUndo } from "@/lib/feedback";
 import { EmptyState } from "@/components/studio/EmptyState";
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ExternalLink, GripVertical, Plus, Star, Trash2, X } from "lucide-react";
 import { BrushStroke } from "@/components/af/Brush";
@@ -99,13 +99,35 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
     }
   }
 
+  /** Gone right away with Undo for 6 seconds; the delete is sent after that (or when the page closes). */
   async function remove(c: StudioCollection) {
-    if (!window.confirm(`Delete "${c.title}"? The art stays on your page.`)) return;
+    const at = cols.findIndex((x) => x.id === c.id);
     const rest = cols.filter((x) => x.id !== c.id);
-    setCols(rest);
-    setActiveId(rest[0]?.id ?? null);
-    save(() => api(`/api/studio/collections/${c.id}`, "DELETE").then(() => savedToast(`Deleted ${c.title}`, { description: "The art stays on your page." })));
+    undoable(`Deleted ${c.title}`, {
+      description: "The art stays on your page.",
+      hide: () => {
+        setCols((cs) => cs.filter((x) => x.id !== c.id));
+        setActiveId(rest[0]?.id ?? null);
+      },
+      restore: () => {
+        setCols((cs) => (cs.some((x) => x.id === c.id) ? cs : [...cs.slice(0, at), c, ...cs.slice(at)]));
+        setActiveId(c.id);
+      },
+      commit: async () => {
+        const res = await fetch(`/api/studio/collections/${c.id}`, { method: "DELETE", credentials: "include", keepalive: true });
+        if (!res.ok && res.status !== 404) throw new Error((await res.json().catch(() => ({}))).error || "Didn't delete. Try again.");
+      },
+      failMessage: "Collection not deleted",
+    });
   }
+
+  /** Take a piece out (saved right away), with Undo to put it back in the same spot. */
+  const takeOut = (c: StudioCollection, id: string, title: string) => {
+    const before = c.artworkIds;
+    const cover = c.coverArtworkId;
+    setWorks(c, before.filter((x) => x !== id));
+    withUndo(`Took ${title} out`, () => update(c.id, { artworkIds: before, coverArtworkId: cover }, { artworkIds: before, coverArtworkId: cover }));
+  };
 
   const pick = (id: string) => {
     setActiveId(id);
@@ -308,7 +330,7 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
                         <img src={a.imageUrl} alt={a.title} draggable={false} className="max-h-full max-w-full bg-white object-contain shadow-[0_10px_20px_-8px_rgba(21,22,27,.45)]" />
                         <span className="num absolute left-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-white text-[13px] font-bold shadow-sm">{i + 1}</span>
                         {isCover && <span className="sticker-badge absolute bottom-2 left-2 text-[11.5px]">Cover</span>}
-                        <button type="button" onClick={() => setWorks(active, active.artworkIds.filter((x) => x !== id))} className="absolute right-1.5 top-1.5 grid h-8 w-8 place-items-center rounded-full bg-white/90 text-ink-2 shadow-sm hover:text-coral" aria-label={`Take ${a.title} out`}>
+                        <button type="button" onClick={() => takeOut(active, id, a.title)} className="absolute right-1.5 top-1.5 grid h-8 w-8 place-items-center rounded-full bg-white/90 text-ink-2 shadow-sm hover:text-coral" aria-label={`Take ${a.title} out`}>
                           <X className="h-4 w-4" aria-hidden />
                         </button>
                       </div>

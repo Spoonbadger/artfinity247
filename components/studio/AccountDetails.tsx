@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Check, Loader2, Lock } from "lucide-react";
 import { useUser } from "@/components/contexts";
+import { checks, formatPhone } from "@/lib/smartFields";
+import { stateCode } from "@/lib/places";
 
 export type Account = { first_name: string; last_name: string; email: string; phone: string; state: string };
 type Key = keyof Account;
@@ -33,6 +35,8 @@ export default function AccountDetails({ initial }: { initial: Account }) {
     if (!a.first_name.trim()) return setError({ msg: "Add your first name.", field: "first_name" });
     if (!a.last_name.trim()) return setError({ msg: "Add your last name.", field: "last_name" });
     if (!EMAIL_RE.test(a.email.trim())) return setError({ msg: "Enter a real email.", field: "email" });
+    const phoneMsg = checks.phone(a.phone);
+    if (phoneMsg) return setError({ msg: phoneMsg, field: "phone" });
     setSaving(true);
     try {
       const body: Partial<Account> = {};
@@ -94,10 +98,10 @@ export default function AccountDetails({ initial }: { initial: Account }) {
           {field("first_name", "Legal first name", { autoComplete: "given-name", maxLength: 60, required: true })}
           {field("last_name", "Legal last name", { autoComplete: "family-name", maxLength: 60, required: true })}
         </div>
-        {field("email", "Email", { type: "email", inputMode: "email", autoComplete: "email", maxLength: 254, required: true })}
+        {field("email", "Email", { type: "email", inputMode: "email", autoComplete: "email", autoCapitalize: "none", spellCheck: false, maxLength: 254, required: true, onBlur: (e) => { const m = e.target.value.trim() ? checks.email(e.target.value) : null; if (m) setError({ msg: m, field: "email" }); } })}
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_140px]">
-          {field("phone", "Phone", { type: "tel", inputMode: "tel", autoComplete: "tel", maxLength: 25 })}
-          {field("state", "State", { autoComplete: "address-level1", maxLength: 40 })}
+          {field("phone", "Phone", { type: "tel", inputMode: "tel", autoComplete: "tel", maxLength: 25, placeholder: "(212) 555-0123", onChange: (e) => set("phone", formatPhone(e.target.value)), onBlur: (e) => { const m = checks.phone(e.target.value); if (m) setError({ msg: m, field: "phone" }); } })}
+          {field("state", "State", { autoComplete: "address-level1", autoCapitalize: "characters", maxLength: 40, placeholder: "NY", onBlur: (e) => { const c = stateCode(e.target.value); if (c && c !== a.state) set("state", c); } })}
         </div>
         {error && (
           <p id="acct-err" role="alert" className="rounded-xl border-2 border-coral bg-[#fff1ed] px-3.5 py-2.5 text-[14px] font-semibold">

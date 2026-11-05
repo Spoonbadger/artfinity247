@@ -6,15 +6,18 @@ import { DragEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { errorText, failed, saved as savedToast } from "@/lib/feedback";
 import { Problem } from "./Problem";
 import AddToQueueButton from "@/components/qr/AddToQueueButton";
-import { FolderOpen, ImagePlus, Loader2, RotateCcw } from "lucide-react";
+import { Crop, FolderOpen, ImagePlus, Loader2, RotateCcw } from "lucide-react";
 import type { SizeKey } from "@/lib/earnings";
 import { BrushStroke } from "@/components/af/Brush";
 import { cn } from "@/lib/utils";
 import { artPath } from "@/lib/urls";
 import { splitOriginal } from "@/lib/originalSize";
+import { useUnsavedChanges } from "@/components/forms/useUnsavedChanges";
+import ImageEditor, { type EditResult } from "@/components/media/ImageEditor";
+import { parseStored, type StoredEdits } from "@/lib/imageEdits";
 import {
   artworkFormData, checkArtwork, DetailsFields, EditionField, filesFromDrop, isImageFile, OwnershipField, PriceFields,
-  pricesFrom, PrintSizes, REVIEW_NOTE, SensitiveField, saveProblem, titleFromFile, TOO_SMALL, useLastPrices, usePriceGuide, type ArtworkValues, type Prices,
+  pricesFrom, PrintSizes, REVIEW_NOTE, scanHref, SensitiveField, saveProblem, titleFromFile, TOO_SMALL, useLastPrices, usePriceGuide, type ArtworkValues, type Prices,
 } from "./artworkFields";
 import {
   Cancelled, cloudImportAvailable, CloudImportButtons, ImportFailed, importCloudFile, importFix, importingLabel, isCloudImage, pickCloud,
@@ -38,6 +41,8 @@ export type ArtworkInput = {
   sold?: number;
   /** Sizes the current image prints sharply; empty = never checked. */
   printableSizes?: string[];
+  /** Photo edits behind imageUrl (Artwork.imageEdits), so "Edit photo" reopens them on the untouched original. */
+  imageEdits?: unknown;
 };
 
 /**
@@ -65,7 +70,12 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
   const [imageUrl, setImageUrl] = useState(artwork?.imageUrl || "");
   // A fresh upload's measured sizes and their signature from /api/uploads.
   const [fresh, setFresh] = useState<{ printable: SizeKey[]; sig: string } | null>(null);
-  const stored = artwork?.printableSizes?.length ? (artwork.printableSizes as SizeKey[]) : null;
+  // Print sizes after an "Edit photo" that was saved straight to this piece.
+  const [committed, setCommitted] = useState<SizeKey[] | null>(null);
+  const stored = committed ?? (artwork?.printableSizes?.length ? (artwork.printableSizes as SizeKey[]) : null);
+  // Photo edits behind the image (components/media/ImageEditor.tsx) and whether the editor is open.
+  const [edits, setEdits] = useState<StoredEdits | null>(() => parseStored(artwork?.imageEdits));
+  const [editor, setEditor] = useState<{ auto: boolean } | null>(null);
   const printable = fresh ? fresh.printable : stored;
   const [dims, setDims] = useState<{ w: number; h: number } | null>(null);
   // Shown image's pixel size, for the crop previews' orientation.
@@ -106,6 +116,9 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
   // notice: set when the image looks like one already on Artfinity (lib/imageHash.ts); duplicate "review" = a person checks it.
   // moderation (automatic image check, lib/moderation): "review" = held for a person; "labeled" = a label was added (notice says which).
   const [done, setDone] = useState<{ slug: string; title: string; imageUrl: string; pending: boolean; notice?: string | null; duplicate?: string | null; moderation?: string | null } | null>(null);
+  // Warn before leaving with unsaved edits (an edit that changed something, or a new piece with a photo or title).
+  const [snapshot, setSnapshot] = useState(() => JSON.stringify(v) + (artwork?.imageUrl || ""));
+  useUnsavedChanges(!done && !saving && (editing ? JSON.stringify(v) + imageUrl !== snapshot : !!imageUrl || !!v.title.trim()));
 
   // React has no prop for folder picking.
   useEffect(() => { folderRef.current?.setAttribute("webkitdirectory", ""); }, [many]);
@@ -117,6 +130,39 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
     setFresh({ printable: (data.printable || []) as SizeKey[], sig: data.printableSig || "" });
     setDims(data.width ? { w: data.width, h: data.height } : null);
     setV((cur) => (cur.title ? cur : { ...cur, title: titleFromFile(fileName) }));
+    // A new photo: no edits yet, and the editor opens so the artist can crop or fix the angle (or skip).
+    setEdits(null);
+    setEditor({ auto: true });
+  }
+
+  /** "Edit photo" on an image that's already saved on this piece: store it right away (no rights box: same picture). */
+  async function commitEdit(r: EditResult) {
+    if (!editing || fresh) return;
+    const fd = new FormData();
+    fd.append("imageUrl", r.url);
+    fd.append("printable", r.printable.join(","));
+    fd.append("printableSig", r.printableSig);
+    fd.append("imageEdits", r.edits ? JSON.stringify(r.edits) : "");
+    const res = await fetch(`/api/artworks/update/${artwork!.slug}`, { method: "POST", body: fd, credentials: "include" });
+    if (!res.ok) throw new Error((await saveProblem(res)).message);
+  }
+
+  /** The editor closed: show the edited image (or nothing changed). */
+  function editDone(r: EditResult | null) {
+    setEditor(null);
+    if (!r) return;
+    const before = imageUrl;
+    setImageUrl(r.url);
+    setShape(null);
+    setDims({ w: r.width, h: r.height });
+    setEdits(r.edits);
+    if (editing && !fresh) {
+      setCommitted(r.printable as SizeKey[]);
+      setSnapshot((s) => (s.endsWith(before) ? s.slice(0, s.length - before.length) + r.url : s));
+      router.refresh();
+    } else {
+      setFresh({ printable: r.printable as SizeKey[], sig: r.printableSig });
+    }
   }
 
   async function upload(file: File) {
@@ -206,7 +252,7 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
     }
     setSaving(true);
     try {
-      const fd = artworkFormData(v, { imageUrl, fresh, editionLocked, ownership: needsOwnership && owned });
+      const fd = artworkFormData(v, { imageUrl, fresh, editionLocked, ownership: needsOwnership && owned, edits: !editing || fresh ? edits : undefined });
       const res = await fetch(editing ? `/api/artworks/update/${artwork!.slug}` : "/api/artworks/upload", { method: "POST", body: fd, credentials: "include" });
       if (!res.ok) {
         const p = await saveProblem(res);
@@ -327,9 +373,22 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
           <button type="button" className="btn btn-ghost btn-sm justify-self-start" onClick={() => importOne(retryCloud)}><RotateCcw className="h-4 w-4" aria-hidden="true" />Retry import</button>
         )}
         {imageUrl && (
-          <button type="button" onClick={() => fileRef.current?.click()} className="btn btn-ghost btn-sm justify-self-start">Replace image</button>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => setEditor({ auto: false })} className="btn btn-ghost btn-sm" disabled={!!uploading}><Crop className="h-4 w-4" aria-hidden="true" />Edit photo</button>
+            <button type="button" onClick={() => fileRef.current?.click()} className="btn btn-ghost btn-sm">Replace image</button>
+          </div>
         )}
-        {printable && imageUrl && <PrintSizes imageUrl={imageUrl} printable={printable} dims={dims} shape={shape} />}
+        {editor && imageUrl && (
+          <ImageEditor
+            source={edits?.source ?? imageUrl}
+            sourceSize={edits ? (edits.sourceW ? { w: edits.sourceW, h: edits.sourceH } : null) : dims}
+            initial={edits} previous={edits ? imageUrl : null} auto={editor.auto}
+            originalSize={parseFloat(v.origW) > 0 && parseFloat(v.origH) > 0 ? { w: parseFloat(v.origW), h: parseFloat(v.origH) } : null}
+            commit={editing && !fresh ? commitEdit : undefined}
+            onDone={editDone}
+          />
+        )}
+        {printable && imageUrl && <PrintSizes imageUrl={imageUrl} printable={printable} dims={dims} shape={shape} scanSlug={artwork?.slug ?? null} />}
       </div>
 
       {/* Details */}
@@ -346,7 +405,7 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
           <OwnershipField owned={owned} setOwned={setOwned} note={!editing ? <>New artists&apos; first few pieces get a quick look before they go live.</> : undefined} />
         )}
 
-        {error && <Problem tone="error" title={error.message} fix={error.fix} />}
+        {error && <Problem tone="error" title={error.message} fix={error.fix} secondary={error.message === TOO_SMALL ? { label: "Book a scan", href: scanHref(artwork?.slug) } : undefined} />}
 
         <div className="flex flex-wrap items-center gap-3">
           <button type="submit" className="btn btn-blue btn-lg relative z-0" disabled={saving || !!uploading}>

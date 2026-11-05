@@ -1,7 +1,8 @@
 "use client";
 
 import { FormEvent, PointerEvent as ReactPointerEvent, ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { failed, problemFrom, saved } from "@/lib/feedback";
+import { failed, problemFrom, saved, undoable } from "@/lib/feedback";
+import HandleInput, { resolveHandle, type HandlePlatform } from "@/components/forms/HandleInput";
 import { EmptyState } from "@/components/studio/EmptyState";
 import { ArrowDown, ArrowUp, Check, Copy, Download, Eye, GripVertical, Pencil, Plus, Trash2, X } from "lucide-react";
 import QRCode from "@/components/af/QRCode";
@@ -198,7 +199,6 @@ function Row({
   const kind = iconFor(link);
   const title = link.label || KIND_LABEL[kind];
   const [editing, setEditing] = useState(false);
-  const [confirm, setConfirm] = useState(false);
   const [url, setUrl] = useState(link.url.startsWith("mailto:") ? link.url.slice(7) : link.url);
   const [label, setLabel] = useState(link.label ?? "");
   const [display, setDisplay] = useState<"icon" | "button">(social ? "icon" : "button");
@@ -242,23 +242,13 @@ function Row({
         <button type="button" onClick={() => onMove(1)} disabled={index === count - 1} aria-label={`Move ${title} down`} className="grid h-9 w-9 place-items-center rounded-full text-ink hover:bg-wall disabled:opacity-30">
           <ArrowDown className="h-4 w-4" aria-hidden="true" />
         </button>
-        <button type="button" onClick={() => { setEditing((v) => !v); setConfirm(false); }} aria-expanded={editing} aria-label={`Edit ${title}`} className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[13.5px] font-semibold text-ink hover:bg-wall">
+        <button type="button" onClick={() => setEditing((v) => !v)} aria-expanded={editing} aria-label={`Edit ${title}`} className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[13.5px] font-semibold text-ink hover:bg-wall">
           <Pencil className="h-4 w-4" aria-hidden="true" /> Edit
         </button>
-        {confirm ? (
-          <span className="inline-flex items-center gap-1">
-            <button type="button" onClick={async () => { setBusy(true); await onDelete(); setBusy(false); }} disabled={busy} className="inline-flex h-9 items-center rounded-full bg-coral px-3 text-[13.5px] font-bold text-white">
-              Delete
-            </button>
-            <button type="button" onClick={() => setConfirm(false)} className="inline-flex h-9 items-center rounded-full px-3 text-[13.5px] font-semibold text-ink hover:bg-wall">
-              Keep
-            </button>
-          </span>
-        ) : (
-          <button type="button" onClick={() => setConfirm(true)} aria-label={`Delete ${title}`} className="grid h-9 w-9 place-items-center rounded-full text-ink-2 hover:bg-wall hover:text-coral">
-            <Trash2 className="h-4 w-4" aria-hidden="true" />
-          </button>
-        )}
+        {/* No "are you sure": it goes right away with an Undo toast (lib/feedback undoable). */}
+        <button type="button" onClick={() => void onDelete()} aria-label={`Delete ${title}`} className="grid h-9 w-9 place-items-center rounded-full text-ink-2 hover:bg-wall hover:text-coral">
+          <Trash2 className="h-4 w-4" aria-hidden="true" />
+        </button>
       </div>
       {editing && (
         <form onSubmit={save} className="grid gap-3 border-t border-line p-3">
@@ -315,9 +305,13 @@ function AddSocial({ onAdd, have }: { onAdd: (p: { url: string; display: "icon";
     return (prefix || "") + s.replace(/^@/, "");
   }
 
-  const url = toUrl(value);
+  // Social handles and websites: paste a profile link or @name and it becomes the handle (HandleInput).
+  const handleKind: HandlePlatform | null = kind && kind !== "email" ? (kind as HandlePlatform) : null;
+  const resolved = handleKind && value.trim() ? resolveHandle(handleKind, value) : null;
+  const [handleErr, setHandleErr] = useState<string | null>(null);
+  const url = resolved && "url" in resolved ? resolved.url : toUrl(value);
   const norm = value.trim() ? normalizeUrl(url) : null;
-  const err = norm && "error" in norm ? norm.error : null;
+  const err = resolved && "error" in resolved ? null : norm && "error" in norm ? norm.error : null;
   const detected = norm && "url" in norm ? detectKind(norm.url) : null;
   const mismatch = kind && detected && detected !== kind && kind !== "website";
 
@@ -326,6 +320,7 @@ function AddSocial({ onAdd, have }: { onAdd: (p: { url: string; display: "icon";
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (kind && !value.trim()) return setEmpty(true);
+    if (resolved && "error" in resolved) return setHandleErr(resolved.error);
     if (!kind || !norm || "error" in norm) return;
     setBusy(true);
     const ok = await onAdd({ url: norm.url, display: "icon", kind: detected && kind !== "email" ? detected : kind });
@@ -363,25 +358,37 @@ function AddSocial({ onAdd, have }: { onAdd: (p: { url: string; display: "icon";
       </div>
       {kind && (
         <form onSubmit={submit} className="grid gap-2 rounded-xl border-[1.5px] border-ink bg-[#f2f3ec99] p-3">
+          {handleKind ? (
+            <HandleInput
+              ref={inputRef}
+              platform={handleKind}
+              value={value}
+              onChange={(v) => { setValue(v); setEmpty(false); setHandleErr(null); }}
+              label={kind === "website" ? "Website" : `${KIND_LABEL[kind]} handle or link`}
+              error={handleErr}
+              inputClassName="text-[15px]"
+            />
+          ) : (
           <label className="af-field">
-            <span className="text-[12.5px] font-semibold text-ink-2">
-              {kind === "email" ? "Email address" : kind === "website" ? "Website" : `${KIND_LABEL[kind]} handle or link`}
-            </span>
+            <span className="text-[12.5px] font-semibold text-ink-2">Email address</span>
             <span className="flex min-w-0 items-center text-[15px]">
-              {prefix && !/[/:]/.test(value) && <span className="shrink-0 text-ink-2">{prefix.replace(/^https:\/\//, "")}</span>}
               <input
                 ref={inputRef}
+                type="email"
+                name="email"
                 value={value}
                 onChange={(e) => { setValue(e.target.value); setEmpty(false); }}
-                inputMode={kind === "email" ? "email" : "url"}
-                autoComplete="off"
+                inputMode="email"
+                autoComplete="email"
                 autoCapitalize="none"
-                placeholder={kind === "email" ? "you@studio.com" : kind === "website" ? "yourname.art" : "yourname"}
+                spellCheck={false}
+                placeholder="you@studio.com"
                 className="min-w-0 flex-1 bg-transparent outline-none"
                 aria-invalid={!!err}
               />
             </span>
           </label>
+          )}
           {err && <p className="text-[13px] font-semibold text-coral">{err}</p>}
           {empty && <p className="text-[13px] font-semibold text-coral">{kind === "email" ? "Type your email address first." : `Type your ${KIND_LABEL[kind]} ${kind === "website" ? "address" : "handle"} first.`}</p>}
           {mismatch && <p className="text-[13px] text-ink-2">That looks like {KIND_LABEL[detected!]}. It will show that icon.</p>}
@@ -576,14 +583,26 @@ export default function LinksEditor({
     if (!ok) setLinks((ls) => ls.map((l) => (l.id === id ? { ...l, active: !active } : l)));
   }
 
+  /** Gone right away, with Undo for 6 seconds; the delete is only sent after that (or when the page closes). */
   async function remove(id: string) {
-    try {
-      await api(`/api/studio/links/${id}`, "DELETE");
-      setLinks((ls) => ls.filter((l) => l.id !== id));
-      saved("Link deleted");
-    } catch (e) {
-      oops(e, () => remove(id));
-    }
+    const at = links.findIndex((l) => l.id === id);
+    const link = links[at];
+    if (!link) return;
+    undoable(`${link.label || KIND_LABEL[iconFor(link)]} deleted`, {
+      hide: () => setLinks((ls) => ls.filter((l) => l.id !== id)),
+      restore: () =>
+        setLinks((ls) => {
+          if (ls.some((l) => l.id === id)) return ls;
+          const next = [...ls];
+          next.splice(Math.min(at, next.length), 0, link);
+          return next;
+        }),
+      commit: async () => {
+        const res = await fetch(`/api/studio/links/${id}`, { method: "DELETE", credentials: "include", keepalive: true });
+        if (!res.ok && res.status !== 404) throw new Error((await problemFrom(res, "That link wasn't deleted.")).message);
+      },
+      failMessage: "Link not deleted",
+    });
   }
 
   async function persistOrder(next: LinkRow[]) {

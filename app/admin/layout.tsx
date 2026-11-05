@@ -19,7 +19,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   // Invite links are opened by people who aren't admins yet: no gate, no admin chrome (middleware sets x-af-path).
   if ((headers().get("x-af-path") || "").startsWith("/admin/invite/")) return <div className="min-h-[100svh] bg-wall">{children}</div>;
   const admin = await adminRoleOrRedirect();
-  const [openReports, heldReviews, openReprints, toModerate, toVerify, openAlerts, codeOrdersToPrint] = await Promise.all([
+  const [openReports, heldReviews, openReprints, toModerate, toVerify, openAlerts, codeOrdersToPrint, scanRequests] = await Promise.all([
     prisma.artReport.count({ where: { status: "open" } }).catch(() => 0),
     prisma.review.count({ where: { status: "flagged" } }).catch(() => 0),
     openRequestCount().catch(() => 0),
@@ -27,6 +27,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     prisma.artist.count({ where: { verification: "PENDING" } }).catch(() => 0),
     openAlertCount(),
     prisma.codePrintOrder.count({ where: { status: "paid" } }).catch(() => 0),
+    prisma.scanBooking.count({ where: { status: "requested" } }).catch(() => 0),
   ]);
   const counts = {
     "/admin/reports": openReports,
@@ -36,6 +37,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     "/admin/verification": toVerify,
     "/admin/alerts": openAlerts,
     "/admin/code-orders": codeOrdersToPrint,
+    "/admin/scanning": scanRequests,
   };
 
   return (

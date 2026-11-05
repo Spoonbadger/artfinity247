@@ -12,6 +12,9 @@ import { AuthCard, Field, FormAlert, PasswordField, Spinner } from "./ui";
 import { safeNext, withNext } from "./next";
 import SocialButtons, { OrDivider, PROVIDER_MARK } from "./SocialButtons";
 import type { ProviderId } from "@/lib/oauth/meta";
+import LocationInput from "@/components/forms/LocationInput";
+import { PasswordStrength } from "@/components/forms/PasswordInput";
+import { checks } from "@/lib/smartFields";
 
 const HANDLE_RE = /^[a-z0-9_.]{3,30}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -388,6 +391,7 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
                 autoComplete="email"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setErrors((x) => ({ ...x, email: null })); }}
+                onBlur={() => email.trim() && setErrors((x) => ({ ...x, email: checks.email(email) }))}
                 error={errors.email}
                 autoFocus={!!handle && !providers.length}
                 hint={oauth ? (oauth.provider === "instagram" ? "Instagram doesn't share your email. We send sales here." : "Check it's right. We send sales here.") : undefined}
@@ -401,7 +405,7 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
               </p>
             )}
             {!oauth && (
-              <PasswordField label="Password" name="password" autoComplete="new-password" value={password} onChange={(e) => { setPassword(e.target.value); setErrors((x) => ({ ...x, password: null })); }} error={errors.password} hint="8 or more characters" />
+              <PasswordField label="Password" name="password" autoComplete="new-password" value={password} onChange={(e) => { setPassword(e.target.value); setErrors((x) => ({ ...x, password: null })); }} onBlur={() => password && setErrors((x) => ({ ...x, password: checks.newPassword(password) }))} error={errors.password} hint={<PasswordStrength value={password} />} />
             )}
             <button type="submit" className="btn btn-blue btn-lg w-full" disabled={busy}>
               {busy && <Spinner />}
@@ -417,7 +421,7 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
             <FormAlert>{formError}</FormAlert>
             <Field label="Artist name" name="artist_name" autoComplete="name" maxLength={60} value={artistName} onChange={(e) => { setArtistName(e.target.value); setErrors((x) => ({ ...x, artistName: null })); }} error={errors.artistName} autoFocus placeholder="Maya Okafor" />
             <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_140px]">
-              <Field label="City" name="city" autoComplete="address-level2" maxLength={60} value={city} onChange={(e) => { setCity(e.target.value); setErrors((x) => ({ ...x, city: null })); }} error={errors.city} placeholder="Brooklyn" />
+              <LocationInput label="Neighborhood or borough" name="city" scope="nyc" maxLength={60} value={city} onChange={(v) => { setCity(v); setErrors((x) => ({ ...x, city: null })); }} onPick={(pl) => setRegion(pl.state)} error={errors.city} placeholder="Williamsburg, Brooklyn" />
               <Field label="State (optional)" name="state" autoComplete="address-level1" maxLength={40} value={region} onChange={(e) => setRegion(e.target.value)} placeholder="NY" />
             </div>
             <p className="-mt-1 text-[14px] text-ink-2">Your borough or neighborhood puts you on the local map.</p>

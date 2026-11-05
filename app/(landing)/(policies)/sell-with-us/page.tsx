@@ -8,25 +8,26 @@ import EarningsCalculator from "@/components/home/EarningsCalculator";
 import { DabRow } from "@/components/browse/PageHead";
 import Splat from "@/components/motion/Splat";
 import { FREE_SPLIT, PRO, pct, proPrice } from "@/lib/plans";
-import { PAYOUT_DAY_OF_MONTH, RETURN_WINDOW_DAYS } from "@/lib/balance";
+import { RETURN_WINDOW_DAYS } from "@/lib/balance";
+import { PAYOUT_DAY } from "@/content/help/facts";
 import BrushWipe from "@/components/motion/BrushWipe";
 
-export const metadata: Metadata = { title: "Sell with us", description: "Free for artists. We print, ship and pay you 60% of the profit." };
+export const metadata: Metadata = { title: "Sell with us", description: `Free for artists. We print, ship and pay you ${pct(FREE_SPLIT)} of the profit.` };
 
 const WE_DO: [string, string, string][] = [
   ["var(--af-sticker)", "Printing", "Gallery-quality, made to order."],
   ["var(--af-scan)", "Shipping", "Packed and sent to the buyer."],
   ["var(--af-coral)", "Checkout", "Card, Apple Pay, Google Pay."],
-  ["var(--af-earned)", "Payouts", "To your bank or Venmo, by the 5th, monthly."],
+  ["var(--af-earned)", "Payouts", `To your bank or Venmo by the ${PAYOUT_DAY}.`],
 ];
 
 const FAQ: [string, React.ReactNode][] = [
-  ["Does it cost anything?", `No. No sign-up fee, no upfront printing costs, no inventory. The Infinity plan is optional, at ${proPrice()} a month.`],
-  ["How do I get paid?", `After each order's printing, shipping and payment costs, the profit splits ${pct(FREE_SPLIT)} to you (${pct(PRO.split)} on Infinity). Each sale is held ${RETURN_WINDOW_DAYS} days for returns, then each month's earnings go to your bank through Stripe (or by Venmo) by the ${PAYOUT_DAY_OF_MONTH}th of the following month.`],
-  ["Who owns my art?", <>You do. You keep your copyright and give us a limited license to print, sell and promote the work while it&apos;s listed. We never use it to train AI. Details in the <Link href="/artist-terms-and-agreement">artist terms</Link>.</>],
-  ["Can I set my own prices?", "Yes. You set the price of each size, from the base price up. Bigger sizes pay more."],
-  ["What about shipping?", "Buyers in the US get free shipping. It's part of the print cost. Only sales tax is added at checkout, and it never comes out of your share."],
-  ["What about taxes?", "Artists report and pay their own taxes. Artfinity doesn’t withhold taxes for you."],
+  ["Does it cost anything?", `No. Joining, listing and printing cost you nothing. Infinity is optional, at ${proPrice()} a month.`],
+  ["How do I get paid?", `You get ${pct(FREE_SPLIT)} of the profit on each print (${pct(PRO.split)} on Infinity). Each sale is held ${RETURN_WINDOW_DAYS} days for returns. A month's sales are paid by the ${PAYOUT_DAY} of the next month, to your bank or Venmo.`],
+  ["Who owns my art?", <>You do. We get a limited license to print, sell and promote it while it&apos;s listed. We never use it to train AI. See the <Link href="/artist-terms-and-agreement">artist terms</Link>.</>],
+  ["Can I set my own prices?", "Yes. You set a markup on each size, on top of the base price."],
+  ["What about shipping?", "Shipping is free for US buyers and already in the print cost. Sales tax is added at checkout and never comes out of your share."],
+  ["What about taxes?", "You report and pay your own income tax. We don’t withhold any."],
 ];
 
 export default function SellWithUsPage() {
@@ -37,9 +38,9 @@ export default function SellWithUsPage() {
           <div className="min-w-0">
             <div className="mb-4 flex items-center gap-2.5"><DabRow /><span className="eyebrow">Sell with us</span></div>
             <h1 className="display text-[56px] sm:text-[84px]">
-              Your art.<br />Our printers.<br /><Brushed color="var(--af-earned-soft)"><span className="text-earned">60% to you.</span></Brushed>
+              Your art.<br />Our printers.<br /><Brushed color="var(--af-earned-soft)"><span className="text-earned">{pct(FREE_SPLIT)} to you.</span></Brushed>
             </h1>
-            <p className="mt-5 text-[19px] text-ink-2">Free to join. No inventory. Paid monthly.</p>
+            <p className="mt-5 text-[19px] text-ink-2">Free to join. Paid by the {PAYOUT_DAY} of every month.</p>
             <ClaimHandle className="mt-7" />
           </div>
           <SplitBar />
@@ -58,6 +59,13 @@ export default function SellWithUsPage() {
               </li>
             ))}
           </ul>
+          <Link href="/scanning" className="mt-10 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-2xl border-[1.5px] border-ink bg-white px-5 py-4 text-ink no-underline transition hover:-translate-y-0.5">
+            <span className="min-w-0">
+              <b className="block font-display text-[22px] leading-tight [font-variation-settings:'wdth'_80]">Only have phone photos?</b>
+              <span className="text-[15px] text-ink-2">We scan originals in NYC so you can sell bigger prints.</span>
+            </span>
+            <span className="font-bold text-scan">Painting scans →</span>
+          </Link>
         </div>
       </section>
 

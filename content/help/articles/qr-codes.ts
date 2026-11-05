@@ -1,5 +1,5 @@
 import type { HelpArticle } from "../types";
-import { LEGACY_MAX_PCT, LEGACY_UNTIL_TEXT, QR_DISCOUNTS, QR_FORMATS, QR_PRESETS } from "../facts";
+import { LEGACY_MAX_PCT, LEGACY_UNTIL_TEXT, QR_DISCOUNTS, QR_FORMATS, QR_PAPER_TABLE, QR_PRESETS, QUEUE_MAX_QTY } from "../facts";
 
 const section = "qr-codes" as const;
 
@@ -144,6 +144,45 @@ ${sheetTable}
 - **Print all my codes:** one PDF with a card for every piece, in the same look
 
 You can also print gallery labels for every live piece at once from [My art](/studio/art).
+
+Printing codes for several pieces? Line them up in the [print queue](/help/qr-codes/print-queue) and print them together on shared sheets.
+`,
+  },
+  {
+    slug: "print-queue",
+    section,
+    audience: "artist",
+    title: "The print queue: print all your codes at once",
+    summary: "Line up codes for several pieces, then print them together on label sheets at home, or have us print, laminate and mail them to you at cost.",
+    link: { href: "/studio/qr/queue", label: "Open the print queue" },
+    related: ["printing-sheets", "qr-templates", "hanging-codes"],
+    body: `
+## Add codes to the queue
+- **From QR Studio:** pick a piece and a look, set how many, then **Add to print queue**. Download PDF still prints one sheet right away.
+- **From My art:** tap **Select pieces to print codes**, pick several, choose a look (or your last-used one) and **Add codes to print queue**.
+- **Right after an upload:** **Add its code to the print queue**.
+
+Every card in the queue holds the piece's real code. If a piece doesn't have one yet, we make it when you add it, so what you print is what scans. Adding the same code in the same format again just adds to its quantity (up to ${QUEUE_MAX_QTY}).
+
+In the queue you can change how many of each, switch a card to another look, or remove it. Your queue is saved to your account, so it's the same on your phone and your laptop.
+
+## Print at home
+The queue makes one PDF per format, and packs **different pieces onto the same sheets**: 3 labels of one painting and 7 of another fill one 10-up sheet. You see each sheet before you print.
+
+${QR_PAPER_TABLE}
+
+> Print at **100% scale** ("Actual size"), not "Fit to page". Test-scan one before you print them all: print sheet 1 on plain paper, hold it over a label sheet to check the fit, and scan a card with your phone.
+
+When they're printed, tap **Mark as printed**. They leave the queue and My codes shows the date ("Printed Nov 5").
+
+## Have us print them
+Prefer not to fuss with label sheets? Choose **Have us print them**: we print every code in your queue, laminate them, cut them and mail them to you.
+
+- **At cost.** You pay what printing, laminating and postage cost us. We don't make money on these. The page shows the full breakdown before you pay.
+- **US addresses.** Pay on Stripe's secure checkout. We email you a confirmation, then the tracking link when they ship.
+- Your orders and their tracking show on the print queue and in [My purchases](/studio/purchases).
+
+> Payment didn't go through? Nothing was charged and your codes stay in the queue. Tap **Try again** on the order.
 `,
   },
   {

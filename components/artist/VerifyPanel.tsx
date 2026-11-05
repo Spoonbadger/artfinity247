@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import VerifiedBadge from "@/components/af/VerifiedBadge";
 import { fmtDate, type Evidence, type VerificationStatus } from "./verification";
+import HandleInput, { resolveHandle } from "@/components/forms/HandleInput";
 
 type State = {
   status: VerificationStatus;
@@ -26,8 +27,9 @@ export default function VerifyPanel({ initial, name, slug }: { initial: State; n
   const router = useRouter();
   const [s, setS] = useState(initial);
   const [editing, setEditing] = useState(initial.status === "NONE" || initial.status === "REJECTED");
-  const [instagram, setInstagram] = useState(initial.evidence.instagram ?? "");
-  const [website, setWebsite] = useState(initial.evidence.website ?? "");
+  // Shown as the bare handle / tidy site; the server turns them back into links.
+  const [instagram, setInstagram] = useState(() => { const r = resolveHandle("instagram", initial.evidence.instagram ?? ""); return r && "handle" in r ? r.handle : initial.evidence.instagram ?? ""; });
+  const [website, setWebsite] = useState(() => { const r = resolveHandle("website", initial.evidence.website ?? ""); return r && "handle" in r ? r.handle : initial.evidence.website ?? ""; });
   const [photo, setPhoto] = useState(initial.evidence.photo ?? "");
   const [note, setNote] = useState(initial.evidence.note ?? "");
   const [uploading, setUploading] = useState(false);
@@ -138,14 +140,8 @@ export default function VerifyPanel({ initial, name, slug }: { initial: State; n
             <h2 id="ev-h" className="text-[20px] font-bold">{s.status === "NONE" ? "Your evidence" : s.status === "PENDING" ? "Update evidence" : "Send it again"}</h2>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="af-field">
-                <span className="label">Instagram</span>
-                <input ref={igRef} value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@yourhandle" autoComplete="off" inputMode="url" />
-              </label>
-              <label className="af-field">
-                <span className="label">Website</span>
-                <input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="yourname.com" autoComplete="url" inputMode="url" />
-              </label>
+              <HandleInput ref={igRef} platform="instagram" name="instagram" label="Instagram" value={instagram} onChange={setInstagram} placeholder="yourhandle" />
+              <HandleInput platform="website" name="website" label="Website" value={website} onChange={setWebsite} placeholder="yourname.com" />
             </div>
             <p className="-mt-2 text-[13px] text-ink-2">One is enough. It should show the name <b className="text-ink">{name}</b>.</p>
 

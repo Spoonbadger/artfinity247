@@ -57,20 +57,20 @@ export default function CodePrintsForm({ value, placeholder }: { value: CodePrin
   return (
     <form onSubmit={save} className="grid gap-5 rounded-2xl border border-line bg-white p-5">
       <fieldset className="grid gap-3">
-        <legend className="mb-1 text-[16px] font-bold">Per card, printed, laminated and cut{placeholder && <span className="ml-2 rounded-full bg-sticker px-2 py-0.5 text-[11.5px] font-bold">set by Craig</span>}</legend>
+        <legend className="mb-1 text-[16px] font-bold">Per card, printed, laminated and cut{placeholder && <span className="ml-2 inline-block whitespace-nowrap rounded-full bg-sticker px-2 py-0.5 text-[11.5px] font-bold">set by Craig</span>}</legend>
         <div className="flex flex-wrap gap-4">
           {FORMAT_ORDER.map((f) => <div key={f}>{money(`${FORMATS[f].name} (${FORMATS[f].w} × ${FORMATS[f].h} in)`, v.unit[f], (s) => setV({ ...v, unit: { ...v.unit, [f]: s } }))}</div>)}
         </div>
       </fieldset>
       <fieldset className="grid gap-3">
-        <legend className="mb-1 text-[16px] font-bold">Per order{placeholder && <span className="ml-2 rounded-full bg-sticker px-2 py-0.5 text-[11.5px] font-bold">set by Craig</span>}</legend>
+        <legend className="mb-1 text-[16px] font-bold">Per order{placeholder && <span className="ml-2 inline-block whitespace-nowrap rounded-full bg-sticker px-2 py-0.5 text-[11.5px] font-bold">set by Craig</span>}</legend>
         <div className="flex flex-wrap gap-4">
           {money("Shipping (flat)", v.shipping, (s) => setV({ ...v, shipping: s }), "Postage and envelope, with tracking.")}
           {money("Handling", v.handling, (s) => setV({ ...v, handling: s }), "Optional. Leave at 0 for none.")}
         </div>
         <label className="flex cursor-pointer items-center gap-2.5 text-[14.5px] font-semibold">
           <input type="checkbox" checked={v.infinityFreeShipping} disabled={!canEdit} onChange={(e) => setV({ ...v, infinityFreeShipping: e.target.checked })} className="h-[18px] w-[18px] accent-[rgb(var(--af-scan-rgb))]" />
-          Free shipping for Infinity artists <span className="font-normal text-ink-2">(off by default)</span>
+          <span>Free shipping for Infinity artists <span className="font-normal text-ink-2">(off by default)</span></span>
         </label>
       </fieldset>
       <p className="rounded-xl bg-wall p-3 text-[13.5px]">

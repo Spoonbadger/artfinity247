@@ -5,6 +5,16 @@ import { Check, Loader2 } from "lucide-react";
 import SensitiveImage from "@/components/site/SensitiveImage";
 import { DMCA_STATEMENTS, REASON_LABEL, REPORT_REASONS, SITE_URL, type ReportReason } from "@/lib/reports";
 import { cn } from "@/lib/utils";
+import { checks, formatPhone } from "@/lib/smartFields";
+
+// Checked when the person leaves the field, with what to fix.
+const BLUR: Record<string, (v: string) => string | null> = {
+  name: (v) => (v.trim() ? null : "Add your name."),
+  email: checks.email,
+  phone: checks.phone,
+  artworkUrl: checks.url,
+  signature: (v) => (v.trim() ? null : "Type your full name to sign."),
+};
 
 export type ReportArt = { slug: string; title: string; imageUrl: string; sensitive: string[]; artist: string };
 
@@ -79,7 +89,18 @@ export default function ReportForm({ art, mode = "report" }: { art: ReportArt | 
       {err(k)}
     </div>
   );
-  const aria = (k: string) => ({ id: `r-${k}`, name: k, "aria-invalid": !!errors[k], "aria-describedby": errors[k] ? `r-${k}-e` : undefined });
+  const aria = (k: string) => ({
+    id: `r-${k}`, name: k, "aria-invalid": !!errors[k], "aria-describedby": errors[k] ? `r-${k}-e` : undefined,
+    onBlur: (e: { currentTarget: HTMLInputElement | HTMLTextAreaElement }) => {
+      const el = e.currentTarget;
+      if (k === "phone" && el.value.trim()) el.value = formatPhone(el.value);
+      const m = BLUR[k]?.(el.value) ?? null;
+      if (m || errors[k]) setErrors(({ [k]: _drop, ...rest }) => (m ? { ...rest, [k]: m } : rest));
+    },
+    onChange: (e: { currentTarget: HTMLInputElement | HTMLTextAreaElement }) => {
+      if (errors[k] && !BLUR[k]?.(e.currentTarget.value)) setErrors(({ [k]: _drop, ...rest }) => rest);
+    },
+  });
   const tick = (k: string, label: string) => (
     <div className="grid gap-1">
       <label className="flex cursor-pointer items-start gap-3 text-[15px] leading-snug text-ink">
@@ -141,7 +162,7 @@ export default function ReportForm({ art, mode = "report" }: { art: ReportArt | 
 
       <div className="grid gap-4 sm:grid-cols-2">
         {field("name", legal ? "Full legal name" : "Your name", <input {...aria("name")} autoComplete="name" />)}
-        {field("email", "Email", <input {...aria("email")} type="email" autoComplete="email" />)}
+        {field("email", "Email", <input {...aria("email")} type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} />)}
         {legal && field("address", "Mailing address", <input {...aria("address")} autoComplete="street-address" placeholder="Street, city, state, ZIP, country" />)}
         {legal && field("phone", "Phone", <input {...aria("phone")} type="tel" autoComplete="tel" />)}
       </div>

@@ -113,7 +113,7 @@ export default function MoneyInsights({ ledger, nowIso }: { ledger: LedgerLine[]
   return (
     <section aria-labelledby="insights-h" className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="insights-h" className="display text-[30px] sm:text-[34px]">Earnings</h2>
+        <h2 id="insights-h" className="text-[15px] font-semibold text-ink-2">Period</h2>
         <div role="radiogroup" aria-label="Period" className="flex rounded-full border-2 border-ink bg-white p-0.5">
           {PERIODS.map((p) => (
             <button

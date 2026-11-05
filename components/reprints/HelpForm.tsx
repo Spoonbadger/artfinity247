@@ -118,9 +118,9 @@ export default function HelpForm({ orderId, token, items }: { orderId: string; t
                   <div className="flex items-center justify-between gap-3 border-t border-line bg-wall/60 px-3 py-2">
                     <span className="text-[14px] font-semibold">How many need fixing?</span>
                     <span className="flex items-center gap-1">
-                      <button type="button" onClick={() => setQty(it, picked[it.id] - 1)} className="grid h-9 w-9 place-items-center rounded-full border-[1.5px] border-ink bg-white" aria-label="One fewer"><Minus className="h-4 w-4" aria-hidden="true" /></button>
+                      <button type="button" onClick={() => setQty(it, picked[it.id] - 1)} className="grid h-10 w-10 place-items-center rounded-full border-[1.5px] border-ink bg-white" aria-label="One fewer" title="One fewer"><Minus className="h-4 w-4" aria-hidden="true" /></button>
                       <span className="num w-8 text-center text-[16px] font-bold" aria-live="polite">{picked[it.id]}</span>
-                      <button type="button" onClick={() => setQty(it, picked[it.id] + 1)} className="grid h-9 w-9 place-items-center rounded-full border-[1.5px] border-ink bg-white" aria-label="One more"><Plus className="h-4 w-4" aria-hidden="true" /></button>
+                      <button type="button" onClick={() => setQty(it, picked[it.id] + 1)} className="grid h-10 w-10 place-items-center rounded-full border-[1.5px] border-ink bg-white" aria-label="One more" title="One more"><Plus className="h-4 w-4" aria-hidden="true" /></button>
                     </span>
                   </div>
                 )}
@@ -153,7 +153,7 @@ export default function HelpForm({ orderId, token, items }: { orderId: string; t
             <div key={p} className="relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={p} alt="Your photo" className="h-28 w-28 rounded-[3px] border-4 border-white object-cover shadow-[0_8px_20px_-10px_rgba(21,22,27,.5)]" />
-              <button type="button" onClick={() => setPhotos((ps) => ps.filter((x) => x !== p))} aria-label="Remove photo" className="absolute -right-2.5 -top-2.5 grid h-8 w-8 place-items-center rounded-full border-[1.5px] border-ink bg-white text-ink">
+              <button type="button" onClick={() => setPhotos((ps) => ps.filter((x) => x !== p))} aria-label="Remove photo" title="Remove photo" className="absolute -right-2.5 -top-2.5 grid h-8 w-8 place-items-center rounded-full border-[1.5px] border-ink bg-white text-ink">
                 <X className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>

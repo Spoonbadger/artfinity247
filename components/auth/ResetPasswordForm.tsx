@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Brushed } from "@/components/af/Brush";
 import { AuthCard, FormAlert, PasswordField, Spinner } from "./ui";
+import { PasswordStrength } from "@/components/forms/PasswordInput";
 
 const DEAD_LINK = {
   missing: { title: "That link is broken", body: "It's missing part of the address. Ask for a fresh one. It only takes a second." },
@@ -69,7 +70,7 @@ export default function ResetPasswordForm({ status = "ok" }: { status?: "ok" | k
             </>
           )}
         </FormAlert>
-        <PasswordField label="New password" name="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} hint="8 or more characters" autoFocus required minLength={8} />
+        <PasswordField label="New password" name="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} hint={<PasswordStrength value={password} />} autoFocus required minLength={8} />
         <button type="submit" className="btn btn-blue btn-lg w-full" disabled={busy}>
           {busy && <Spinner />}
           Save and log in

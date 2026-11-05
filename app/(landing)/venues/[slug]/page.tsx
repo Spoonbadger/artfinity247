@@ -60,7 +60,7 @@ export default async function VenuePage({ params }: Props) {
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
         <p className="mb-6 flex items-start gap-2.5 rounded-xl bg-sticker px-4 py-3 text-[15px] font-semibold text-ink sm:w-fit">
           <ScanLine className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
-          Art on these walls is for sale — scan the code beside each piece.
+          Scan the code beside any piece to buy a print.
         </p>
 
         {artworks.length ? (

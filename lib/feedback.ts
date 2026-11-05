@@ -130,3 +130,74 @@ export function errorText(e: unknown, fallback = "Something went wrong. Try agai
   if (e instanceof TypeError && /fetch|network|load failed/i.test(e.message)) return "You seem to be offline. Check your connection and try again.";
   return e instanceof Error && e.message ? e.message : fallback;
 }
+
+/**
+ * Undo instead of "Are you sure?" for deletes that can be put back. Hide the thing right away (`hide`), show a toast
+ * with Undo for about 6 seconds, and only then run the real delete (`commit`). Undo calls `restore` and nothing is
+ * deleted. If the page is closed before the toast ends, the delete is sent then (keepalive), so nothing is lost.
+ * When `commit` fails, `restore` runs and the error toast offers Try again.
+ */
+const pendingUndo = new Map<string, () => void>();
+let undoFlushBound = false;
+
+export function undoable(
+  message: string,
+  opts: { hide?: () => void; restore: () => void; commit: () => Promise<unknown>; description?: string; duration?: number; failMessage?: string },
+) {
+  const id = `undo-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const duration = opts.duration ?? 6000;
+  let settled = false;
+  opts.hide?.();
+  const run = async () => {
+    if (settled) return;
+    settled = true;
+    pendingUndo.delete(id);
+    clearTimeout(timer);
+    try {
+      await opts.commit();
+    } catch (e) {
+      opts.restore();
+      failed(opts.failMessage ?? "That wasn't deleted", { description: errorText(e, "It's back where it was."), retry: () => undoable(message, opts) });
+    }
+  };
+  const timer = setTimeout(run, duration);
+  pendingUndo.set(id, run);
+  if (!undoFlushBound && typeof window !== "undefined") {
+    undoFlushBound = true;
+    window.addEventListener("pagehide", () => pendingUndo.forEach((fn) => fn()));
+  }
+  toast(message, {
+    id,
+    description: opts.description,
+    duration,
+    action: {
+      label: "Undo",
+      onClick: () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        pendingUndo.delete(id);
+        opts.restore();
+        toast.success("Put back", { duration: 2000 });
+      },
+    },
+  });
+  return id;
+}
+
+/** For a change that's already saved and easy to reverse (taking a piece out of a collection): a toast with Undo. */
+export function withUndo(message: string, undo: () => void, opts?: { description?: string; duration?: number }) {
+  let done = false;
+  toast(message, {
+    description: opts?.description,
+    duration: opts?.duration ?? 6000,
+    action: {
+      label: "Undo",
+      onClick: () => {
+        if (done) return;
+        done = true;
+        undo();
+      },
+    },
+  });
+}

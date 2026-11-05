@@ -19,7 +19,7 @@ import { artPath } from "@/lib/urls";
 import { MAX_UPLOAD_BYTES, QUEUE_CONCURRENCY, QUEUE_MAX } from "@/lib/uploadLimits";
 import {
   artworkFormData, checkArtwork, DetailsFields, EditionField, filesFromDrop, isImageFile, OwnershipField, PriceFields,
-  pricesFrom, PrintSizes, REVIEW_NOTE, SensitiveField, saveError, sortFiles, titleFromFile, TOO_SMALL, useLastPrices, usePriceGuide,
+  pricesFrom, PrintSizes, REVIEW_NOTE, scanHref, SensitiveField, saveError, sortFiles, titleFromFile, TOO_SMALL, useLastPrices, usePriceGuide,
   type ArtworkValues, type Prices,
 } from "./artworkFields";
 import {
@@ -616,9 +616,9 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
               </Problem>
             )}
             {item.upload === "done" && item.source && printable && !printable.length && (
-              <Problem tone="warning" title={TOO_SMALL} fix={{ label: "Which files print sharp?", href: "/help/getting-started/file-sizes-print-sharp" }} />
+              <Problem tone="warning" title={TOO_SMALL} fix={{ label: "Which files print sharp?", href: "/help/getting-started/file-sizes-print-sharp" }} secondary={{ label: "Book a scan", href: scanHref(item.result?.slug) }} />
             )}
-            {item.upload === "done" && printable && <PrintSizes imageUrl={item.imageUrl} printable={printable} dims={item.dims} shape={item.dims} />}
+            {item.upload === "done" && printable && <PrintSizes imageUrl={item.imageUrl} printable={printable} dims={item.dims} shape={item.dims} scanSlug={item.result?.slug ?? null} />}
           </div>
 
           {/* Details: the familiar single form */}

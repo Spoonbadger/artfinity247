@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import ExportCsvButton from "./ExportCsvButton";
+import { Picker, useStoredSort } from "./SortSelect";
 import type { AdjustmentLine, LedgerLine } from "@/lib/balance";
 import { BUCKET_COLOR, BUCKET_LABEL, SIZE_LABEL, bucketOf, dayUTC, monthName, usd, type MoneyBucket } from "./format";
 
@@ -13,6 +14,7 @@ const FILTERS: { id: "" | MoneyBucket; label: string }[] = [
   { id: "paid", label: "Paid out" },
 ];
 const PAGE = 25;
+const SORTS = [{ value: "newest", label: "Newest" }, { value: "oldest", label: "Oldest" }, { value: "amount", label: "Your share" }];
 
 function StatusTag({ l, currentMonth, compact = false }: { l: Pick<LedgerLine, "status" | "payoutMonth"> & { clearsAt?: string }; currentMonth: string; compact?: boolean }) {
   const bucket = bucketOf(l, currentMonth);
@@ -83,6 +85,7 @@ export default function Ledger({ ledger, adjustments = [], currentMonth }: { led
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<"" | MoneyBucket>("");
   const [shown, setShown] = useState(PAGE);
+  const [sort, setSort] = useStoredSort("af:money:ledger-sort", SORTS);
 
   const all = useMemo<Row[]>(
     () => [...ledger.map((l) => ({ kind: "sale" as const, l })), ...adjustments.map((a) => ({ kind: "adjustment" as const, a }))].sort((x, y) => rowDate(y).localeCompare(rowDate(x))),
@@ -90,8 +93,11 @@ export default function Ledger({ ledger, adjustments = [], currentMonth }: { led
   );
   const rows = useMemo(() => {
     const t = q.trim().toLowerCase();
-    return all.filter((r) => (!status || bucketOf(r.kind === "sale" ? r.l : r.a, currentMonth) === status) && (!t || rowText(r).toLowerCase().includes(t)));
-  }, [all, q, status, currentMonth]);
+    const out = all.filter((r) => (!status || bucketOf(r.kind === "sale" ? r.l : r.a, currentMonth) === status) && (!t || rowText(r).toLowerCase().includes(t)));
+    if (sort === "oldest") out.reverse();
+    if (sort === "amount") out.sort((x, y) => rowCents(y) - rowCents(x));
+    return out;
+  }, [all, q, status, currentMonth, sort]);
   const total = rows.reduce((n, r) => n + rowCents(r), 0);
   const sales = rows.filter((r) => r.kind === "sale").length;
   const adjusted = rows.length - sales;
@@ -106,7 +112,10 @@ export default function Ledger({ ledger, adjustments = [], currentMonth }: { led
     <section aria-labelledby="ledger-h" className="af-card grid min-w-0 gap-3 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="ledger-h" className="text-[20px] font-bold">Transactions</h2>
-        <ExportCsvButton href={exportHref} label="CSV" className="btn-sm" />
+        <div className="flex flex-wrap items-center gap-2">
+          <Picker label="Sort" value={sort} options={SORTS} onChange={(v) => { setSort(v); setShown(PAGE); }} />
+          <ExportCsvButton href={exportHref} label="CSV" className="btn-sm" />
+        </div>
       </div>
 
       <div className="grid gap-2 sm:flex sm:items-center sm:justify-between">

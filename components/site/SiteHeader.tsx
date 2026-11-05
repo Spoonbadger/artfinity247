@@ -9,6 +9,7 @@ import FollowButton from "@/components/follow/FollowButton";
 import { useCart, useUser } from "@/components/contexts";
 import { cn } from "@/lib/utils";
 import { artistPath } from "@/lib/urls";
+import SearchTypeahead from "@/components/forms/SearchTypeahead";
 
 const LINKS = [
   { href: "/art", label: "Browse art" },
@@ -138,12 +139,11 @@ export default function SiteHeader({ brand = null, inPage = false }: { brand?: H
       aria-label="Menu"
     >
       <form onSubmit={search} role="search" aria-label="Search Artfinity" className="mb-1">
-        <label className="flex h-12 items-center gap-2 rounded-full border-2 border-ink bg-white pl-4 pr-1.5 focus-within:border-scan">
+        <div className="relative flex h-12 items-center gap-2 rounded-full border-2 border-ink bg-white pl-4 pr-1.5 focus-within:border-scan">
           <Search className="h-5 w-5 shrink-0 text-ink-2" aria-hidden="true" />
-          <span className="sr-only">Search art, artists and neighborhoods</span>
-          <input type="search" name="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search art, artists, neighborhoods" maxLength={80} enterKeyHint="search" className="min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-ink-2" />
-          <button type="submit" className="btn btn-blue btn-sm min-h-[38px]">Go</button>
-        </label>
+          <SearchTypeahead value={q} onChange={setQ} onNavigate={() => { setOpen(false); setQ(""); }} placeholder="Search art, artists, neighborhoods" inputClassName="min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-ink-2" />
+          <button type="submit" className="btn btn-sm min-h-[38px]">Go</button>
+        </div>
       </form>
       {LINKS.map((l) => (
         <Link key={l.href} href={l.href} aria-current={isActive(l.href) ? "page" : undefined} onClick={() => setOpen(false)} className="rounded-lg px-2 py-2.5 text-lg font-semibold text-ink no-underline hover:bg-wall">
@@ -212,11 +212,10 @@ export default function SiteHeader({ brand = null, inPage = false }: { brand?: H
           {currentUser ? null : <Link href="/login" className="text-ink no-underline hover:text-scan">Log in</Link>}
         </nav>
         <form onSubmit={search} role="search" aria-label="Search Artfinity" className="hidden lg:block">
-          <label className="flex h-10 w-44 items-center gap-2 rounded-full border-[1.5px] border-line bg-white pl-3 pr-1 transition-[width,border-color] focus-within:w-60 focus-within:border-ink">
+          <div className="relative flex h-10 w-44 items-center gap-2 rounded-full border-[1.5px] border-line bg-white pl-3 pr-1 transition-[width,border-color] focus-within:w-60 focus-within:border-ink">
             <Search className="h-4 w-4 shrink-0 text-ink-2" aria-hidden="true" />
-            <span className="sr-only">Search art, artists and neighborhoods</span>
-            <input type="search" name="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" maxLength={80} className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-2" />
-          </label>
+            <SearchTypeahead value={q} onChange={setQ} onNavigate={() => setQ("")} placeholder="Search" listClassName="left-auto w-[min(380px,calc(100vw-32px))]" inputClassName="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-2" />
+          </div>
         </form>
         <div className="ml-auto flex items-center gap-2 md:ml-0">
           <Link href="/search" className="hidden h-11 w-11 place-items-center rounded-full text-ink hover:bg-wall md:grid lg:hidden" aria-label="Search">
@@ -224,9 +223,9 @@ export default function SiteHeader({ brand = null, inPage = false }: { brand?: H
           </Link>
           {cart}
           {currentUser ? (
-            <Link href="/studio" className="btn btn-blue btn-sm min-h-[44px] px-4 md:min-h-0">My Studio</Link>
+            <Link href="/studio" className="btn btn-sm min-h-[44px] px-4 md:min-h-0">My Studio</Link>
           ) : (
-            <Link href="/register" className="btn btn-blue btn-sm hidden sm:inline-flex">Start selling free</Link>
+            <Link href="/register" className="btn btn-sm hidden sm:inline-flex">Start selling free</Link>
           )}
           {menuButton}
         </div>

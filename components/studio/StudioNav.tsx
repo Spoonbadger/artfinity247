@@ -20,6 +20,7 @@ export const STUDIO_SECTIONS: StudioSection[] = [
       { href: "/studio/collections", label: "Collections", dab: "#c98a5a" },
       { href: "/studio/rooms", label: "Rooms", dab: "#5bc0be" },
       { href: "/studio/bulk", label: "Bulk prints", dab: "#ff5a36" },
+      { href: "/studio/scanning", label: "Painting scans", dab: "#2b37f0" },
     ],
   },
   {

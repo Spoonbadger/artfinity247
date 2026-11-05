@@ -16,6 +16,7 @@ export function Problem({
   title,
   children,
   fix,
+  secondary,
   className,
 }: {
   tone?: keyof typeof TONES;
@@ -23,6 +24,8 @@ export function Problem({
   children?: ReactNode;
   /** The button or link that resolves it. Required for errors and warnings: a problem without a fix is a dead end. */
   fix?: { label: string; href?: string; onClick?: () => void };
+  /** A second way out, e.g. "Book a scan" next to "Pick a bigger file". */
+  secondary?: { label: string; href?: string; onClick?: () => void };
   className?: string;
 }) {
   return (
@@ -31,12 +34,17 @@ export function Problem({
         <p className="text-[14.5px] font-bold text-ink">{title}</p>
         {children && <div className="text-[13.5px] text-ink-2">{children}</div>}
       </div>
-      {fix &&
-        (fix.href ? (
-          <Link href={fix.href} className="btn btn-sm shrink-0">{fix.label}</Link>
-        ) : (
-          <button type="button" onClick={fix.onClick} className="btn btn-sm shrink-0">{fix.label}</button>
-        ))}
+      {(fix || secondary) && (
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {[fix, secondary].map((f, i) =>
+            !f ? null : f.href ? (
+              <Link key={i} href={f.href} className={i ? "btn btn-ghost btn-sm shrink-0" : "btn btn-sm shrink-0"}>{f.label}</Link>
+            ) : (
+              <button key={i} type="button" onClick={f.onClick} className={i ? "btn btn-ghost btn-sm shrink-0" : "btn btn-sm shrink-0"}>{f.label}</button>
+            ),
+          )}
+        </div>
+      )}
     </div>
   );
 }

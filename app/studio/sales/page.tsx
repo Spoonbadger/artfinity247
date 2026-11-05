@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { PaintChip } from "@/components/af/Brush";
 import { StudioPage } from "@/components/studio/StudioPage";
 import { EmptyState } from "@/components/studio/EmptyState";
 import HelpLink from "@/components/help/HelpLink";
@@ -15,6 +14,16 @@ export const metadata = { title: "Sales" };
 const monthKey = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: STUDIO_TZ, year: "numeric", month: "2-digit" });
 const monthName = (d: Date) => d.toLocaleDateString("en-US", { timeZone: STUDIO_TZ, month: "long", year: "numeric" });
 const shortDate = (d: Date) => d.toLocaleDateString("en-US", { timeZone: STUDIO_TZ, month: "short", day: "numeric", year: "numeric" });
+const dayKey = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: STUDIO_TZ });
+/** "Today", "Yesterday" or "Nov 2, 2026" */
+function whenSold(d: Date) {
+  const k = dayKey(d);
+  if (k === dayKey(new Date())) return "Today";
+  if (k === dayKey(new Date(Date.now() - 86_400_000))) return "Yesterday";
+  return shortDate(d);
+}
+/** Rows shown before "Show all". */
+const FIRST_ROWS = 25;
 
 type Extra = { expenses: number; email: string; first: string; city: string };
 
@@ -41,7 +50,7 @@ async function getExtras(artistId: string) {
   return { extras };
 }
 
-export default async function SalesPage({ searchParams }: { searchParams: { month?: string } }) {
+export default async function SalesPage({ searchParams }: { searchParams: { month?: string; all?: string } }) {
   const artist = await requireArtist("/studio/sales");
   const splitNow = await artistSplitNow(artist.id);
   const [allSales, { extras }, artCount] = await Promise.all([getSales(artist.id), getExtras(artist.id), prisma.artwork.count({ where: { artistId: artist.id } })]);
@@ -62,26 +71,51 @@ export default async function SalesPage({ searchParams }: { searchParams: { mont
   const picked = month ? months.find((m) => m.key === month) : null;
   const prints = sales.reduce((n, s) => n + s.quantity, 0);
   const thisMonth = months.find((m) => m.key === monthKey(new Date()));
+  const latest = allSales[0];
+  const latestX = latest ? extras.get(latest.id) : undefined;
+  const showAll = searchParams.all === "1" || sales.length <= FIRST_ROWS;
+  const rows = showAll ? sales : sales.slice(0, FIRST_ROWS);
+  const allHref = `/studio/sales?${new URLSearchParams({ ...(month ? { month } : {}), all: "1" })}#orders-h`;
+  const pctNow = Math.round(splitNow * 100);
 
   return (
     <StudioPage
       title="Sales"
-      sub={`You get ${Math.round(splitNow * 100)}% of profit on new orders${splitNow > 0.6 ? " with Infinity" : ""}. Orders before Oct 21, 2026 paid 50%.`}
       actions={
         <>
         <HelpLink href="/help/getting-paid/when-paid" label="How payouts work" />
-        <Link href="/studio/money" className="btn btn-ghost">Money</Link>
         {allSales.length > 0 && <ExportCsvButton href={`/api/my-sales/export${month ? `?year=${month.slice(0, 4)}` : ""}`} label={`Export CSV${month ? ` (${month.slice(0, 4)})` : ""}`} />}
         </>
       }
     >
-      {allSales.length > 0 && (
-      <section aria-label="Totals" className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-        <PaintChip color="#0f7a55" value={usd(total)} label="earned, all time" note="Viridian" earned />
-        <PaintChip color="#0f7a55" value={usd((picked || thisMonth)?.share || 0)} label={picked ? `earned in ${picked.name}` : "earned this month"} note={picked ? "Viridian" : new Date().toLocaleDateString("en-US", { month: "long", timeZone: STUDIO_TZ })} earned />
-        <PaintChip color="#e8743b" value={prints.toLocaleString("en-US")} label={picked ? `prints sold in ${picked.name.split(" ")[0]}` : "prints sold"} note="Cadmium" />
-        <PaintChip color="#15161b" value={usd(sales.reduce((n, s) => n + s.priceCents, 0))} label={picked ? `in sales, ${picked.name.split(" ")[0]}` : "in sales"} note="Ivory black" />
-      </section>
+      {latest && (
+        <div className="grid items-stretch gap-3 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-4">
+          {/* The newest sale, front and centre */}
+          <section aria-labelledby="latest-h" className="af-card grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 p-4 sm:grid-cols-[80px_minmax(0,1fr)_auto] sm:p-5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {latest.imageUrl ? <img src={latest.imageUrl} alt="" className="h-20 w-16 rounded-[3px] object-cover sm:h-[100px] sm:w-20" /> : <span className="h-20 w-16 rounded-[3px] bg-wall sm:h-[100px] sm:w-20" />}
+            <div className="min-w-0">
+              <h2 id="latest-h" className="eyebrow">Latest sale · {whenSold(latest.date)}</h2>
+              <b className="mt-1 block truncate text-[19px] sm:text-[22px]">{latest.title}</b>
+              <p className="text-[13.5px] text-ink-2">
+                {SIZE_LABEL[latest.size]}{latest.framed ? ", framed" : ""}{latest.quantity > 1 ? ` ×${latest.quantity}` : ""} · {usd(latest.priceCents)}
+                {latestX && <> · <Link href={customerHref(latestX.email)} className="font-semibold text-scan">{[latestX.first, latestX.city].filter(Boolean).join(", ")}</Link></>}
+              </p>
+            </div>
+            <div className="grid justify-items-end self-start text-right">
+              <b className="display num text-[28px] leading-none text-earned sm:text-[34px]">+{usd(latest.shareCents)}</b>
+              <span className="mt-1 text-[12px] text-ink-2">your share</span>
+            </div>
+          </section>
+
+          <section aria-label="Totals" className="af-card grid grid-cols-2 content-center gap-x-4 gap-y-3 p-4 sm:p-5">
+            <Total label={picked ? `Earned in ${picked.name.split(" ")[0]}` : "Earned this month"} value={usd((picked || thisMonth)?.share || 0)} earned />
+            <Total label="Earned, all time" value={usd(total)} earned />
+            <Total label={picked ? `Prints sold in ${picked.name.split(" ")[0]}` : "Prints sold"} value={prints.toLocaleString("en-US")} />
+            <Total label={picked ? `In sales, ${picked.name.split(" ")[0]}` : "In sales"} value={usd(sales.reduce((n, s) => n + s.priceCents, 0))} />
+            <Link href="/studio/money" className="col-span-2 text-[13.5px] font-bold text-scan">Balance and payouts →</Link>
+          </section>
+        </div>
       )}
 
       {months.length > 0 && (
@@ -102,45 +136,21 @@ export default async function SalesPage({ searchParams }: { searchParams: { mont
         artCount === 0 ? (
           <EmptyState
             title="No sales yet"
-            body="Your first sale shows here the moment it happens: the piece, the size, who bought it and your share. Start by adding a piece; its QR code is ready to print right after."
+            body="Each sale shows up here the moment it happens. Add a piece to get its QR code."
             action={{ label: "Add your first piece", href: "/studio/art/new" }}
             help={{ label: "How to add art", href: "/help/getting-started/upload-art" }}
           />
         ) : (
           <EmptyState
             title="No sales yet"
-            body="Your first sale shows here the moment it happens. Hang a printed code where people linger (a café wall, your studio door, a market table) or share your page."
+            body="Each sale shows up here the moment it happens. Hang a code where people stop and look."
             action={{ label: "Print a QR code", href: "/studio/qr" }}
             secondary={{ label: "Share your page", href: "/studio/share" }}
             help={{ label: "Where to hang codes", href: "/help/getting-started/hanging-codes" }}
           />
         )
       ) : (
-        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-          <div className="grid gap-4">
-          <section className="af-card grid gap-3 p-4 sm:p-5" aria-labelledby="months-h">
-            <h2 id="months-h" className="text-[20px] font-bold">By month</h2>
-            <ul className="grid gap-4">
-              {months.map((m) => (
-                <li key={m.key} className={`grid gap-1.5 ${month && month !== m.key ? "opacity-50" : ""}`}>
-                  <div className="flex items-baseline justify-between gap-3">
-                    <Link href={`/studio/sales?month=${m.key}`} scroll={false} className="text-[15px] font-bold text-ink underline-offset-2 hover:underline">{m.name}</Link>
-                    <b className="num text-[17px] text-earned">{usd(m.share)}</b>
-                  </div>
-                  <div className="h-3 overflow-hidden rounded-full bg-wall" aria-hidden="true">
-                    <div className="h-full rounded-full bg-earned" style={{ width: `${Math.max(4, (m.share / maxShare) * 100)}%` }} />
-                  </div>
-                  <span className="num text-[12.5px] text-ink-2">{m.prints} {m.prints === 1 ? "print" : "prints"} · {usd(m.gross)} in sales</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-          <Link href="/studio/money" className="af-card flex items-center justify-between gap-3 p-4 text-[15px] font-bold text-ink no-underline hover:border-ink sm:p-5">
-            <span className="flex items-center gap-2.5"><i className="paint-dab" style={{ ["--dab" as string]: "#0f7a55" }} />Payouts and balance</span>
-            <span className="text-scan">Money →</span>
-          </Link>
-          </div>
-
+        <>
           <section className="af-card min-w-0 p-4 sm:p-5" aria-labelledby="orders-h">
             <div className="mb-2 flex items-baseline justify-between gap-2">
               <h2 id="orders-h" className="text-[20px] font-bold">{picked ? `Orders, ${picked.name}` : "Orders"}</h2>
@@ -160,7 +170,7 @@ export default async function SalesPage({ searchParams }: { searchParams: { mont
                 </tr>
               </thead>
               <tbody>
-                {sales.map((s) => {
+                {rows.map((s) => {
                   const x = extras.get(s.id);
                   const buyer = x ? [x.first, x.city].filter(Boolean).join(", ") : "";
                   return (
@@ -197,9 +207,43 @@ export default async function SalesPage({ searchParams }: { searchParams: { mont
               </tbody>
             </table>
             </div>
+            <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 border-t border-line pt-3 text-[12.5px] text-ink-2">
+              <span>You get {pctNow}% of profit{splitNow > 0.6 ? " with Infinity" : ""}. Orders before Oct 21, 2026 paid 50%.</span>
+              {!showAll && <Link href={allHref} scroll={false} className="text-[14px] font-bold text-scan">Show all {sales.length}</Link>}
+            </div>
           </section>
-        </div>
+
+          <details className="af-card group p-4 sm:p-5">
+            <summary className="flex min-h-[40px] cursor-pointer list-none items-center justify-between gap-3 text-[18px] font-bold [&::-webkit-details-marker]:hidden">
+              By month
+              <span className="text-[13.5px] font-semibold text-ink-2 group-open:hidden">{months.length} {months.length === 1 ? "month" : "months"}</span>
+            </summary>
+            <ul className="mt-3 grid gap-4 md:grid-cols-2 md:gap-x-8">
+              {months.map((m) => (
+                <li key={m.key} className={`grid gap-1.5 ${month && month !== m.key ? "opacity-50" : ""}`}>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <Link href={`/studio/sales?month=${m.key}`} scroll={false} className="text-[15px] font-bold text-ink underline-offset-2 hover:underline">{m.name}</Link>
+                    <b className="num text-[17px] text-earned">{usd(m.share)}</b>
+                  </div>
+                  <div className="h-3 overflow-hidden rounded-full bg-wall" aria-hidden="true">
+                    <div className="h-full rounded-full bg-earned" style={{ width: `${Math.max(4, (m.share / maxShare) * 100)}%` }} />
+                  </div>
+                  <span className="num text-[12.5px] text-ink-2">{m.prints} {m.prints === 1 ? "print" : "prints"} · {usd(m.gross)} in sales</span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        </>
       )}
     </StudioPage>
+  );
+}
+
+function Total({ label, value, earned = false }: { label: string; value: string; earned?: boolean }) {
+  return (
+    <div className="grid min-w-0 gap-0.5">
+      <span className="truncate text-[12.5px] text-ink-2">{label}</span>
+      <b className={`display num truncate text-[24px] leading-tight sm:text-[28px] ${earned ? "text-earned" : ""}`}>{value}</b>
+    </div>
   );
 }

@@ -7,7 +7,7 @@ import { getArt, getCities } from "@/components/browse/data";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Scenes by neighborhood", description: "Local New York art, neighborhood by neighborhood. Prints made to order." };
+export const metadata: Metadata = { title: "Art by neighborhood", description: "Prints by New York artists, sorted by neighborhood." };
 
 const STROKES = ["var(--af-sticker)", "var(--af-scan)", "var(--af-coral)", "var(--af-earned)"];
 const HANG = ["left-[8%] top-[18%] w-[27%] -rotate-[2deg]", "left-[38%] top-[10%] w-[25%] rotate-[1deg]", "left-[67%] top-[22%] w-[24%] -rotate-[1deg]"];
@@ -18,7 +18,7 @@ export default async function ScenesPage() {
 
   return (
     <div className="pb-20">
-      <PageHead eyebrow="Local art, neighborhood by neighborhood" title="Scenes" sub="Find the artists on the walls near you." stroke="var(--af-scan)" />
+      <PageHead eyebrow="Local art" title="Neighborhoods" sub="See what artists near you are painting." stroke="var(--af-scan)" />
       <section className="mx-auto mt-2 max-w-[1240px] px-4 sm:px-6" aria-label="Neighborhoods">
         {withArt.length ? (
           <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-8">
@@ -49,7 +49,7 @@ export default async function ScenesPage() {
             ))}
           </div>
         ) : (
-          <EmptyCanvas title="No scenes yet">
+          <EmptyCanvas title="No neighborhoods yet">
             <Link href="/register" className="btn btn-blue">Be the first in your neighborhood</Link>
           </EmptyCanvas>
         )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ReviewStars from "@/components/reviews/ReviewStars";
 import MerchPreview from "@/components/art/MerchPreview";
 import ReviewList from "@/components/reviews/ReviewList";
@@ -24,6 +24,7 @@ import { FRAME_COLORS, FrameColor, PRINT_SIZES, PrintSize, SIZE_IN, SIZE_LABEL, 
 import type { MoreArt, ScanArt, ScanArtist, ScanCartProduct } from "@/components/art/types";
 import { artistPath, artPath } from "@/lib/urls";
 import { closestSize, originalText, splitOriginal } from "@/lib/originalSize";
+import { recall, remember } from "@/lib/smartFields";
 
 const canOptimize = (src: string) => src.startsWith("/") || src.includes("res.cloudinary.com");
 
@@ -88,6 +89,13 @@ export default function ScanView({
   const closest = useMemo(() => (original ? closestSize(original, sizes) : null), [original, sizes]);
   const [size, setSize] = useState<PrintSize>(() => (sizes.includes("medium") ? "medium" : sizes[0]));
   const [frame, setFrame] = useState<FrameColor | null>(null);
+  // Start from the size and frame this buyer picked last time (when this piece comes in that size).
+  useEffect(() => {
+    const last = recall<{ size?: PrintSize; frame?: FrameColor | null }>("print-format");
+    if (last?.size && sizes.includes(last.size)) setSize(last.size);
+    if (last && last.frame !== undefined && (last.frame === null || FRAME_COLORS.some((f) => f.key === last.frame))) setFrame(last.frame);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [aspect, setAspect] = useState<number>(aspectFromServer || 0.8);
   const [busy, setBusy] = useState(false);
   const [req, setReq] = useState<GalleryRequest>(null);
@@ -118,6 +126,7 @@ export default function ScanView({
   });
 
   const onAdd = () => {
+    remember("print-format", { size, frame });
     addToCart(product(), 1);
     toast.success("Added to cart", { action: { label: "View cart", onClick: () => router.push("/cart") } });
   };
@@ -125,6 +134,7 @@ export default function ScanView({
   const onBuy = async () => {
     if (busy) return;
     const p = product();
+    remember("print-format", { size, frame });
     // kept in the cart in case they back out of payment
     if (!cartItems.some((ci) => cartKey(ci.product) === cartKey(p))) addToCart(p, 1);
     setBusy(true);

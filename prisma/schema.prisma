@@ -197,6 +197,9 @@ model Artwork {
   wishlistItems   WishlistItem[]
   // Perceptual fingerprint (dHash, 16 hex chars) of the original, to catch re-uploads of the same image
   imageHash       String?
+  // Photo edits (lib/imageEdits.ts): crop, rotation, straighten and perspective corners applied on the server to the
+  // untouched original at `source` (its preview URL; that upload is kept so "Reset edits" can go back). null = unedited.
+  imageEdits      Json?
   @@index([imageHash])
 }
 

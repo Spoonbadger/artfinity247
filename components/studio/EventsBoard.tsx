@@ -6,6 +6,8 @@ import { EmptyState } from "./EmptyState";
 import { Problem } from "./Problem";
 import { CalendarDays, Loader2, MapPin, Pencil, Trash2 } from "lucide-react";
 import { eventsApi, migrateLocalEvents, todayKey, type StudioEvent } from "./events-store";
+import LocationInput from "@/components/forms/LocationInput";
+import { recall, remember } from "@/lib/smartFields";
 
 const DABS = ["#7b2d8e", "#e8743b", "#2b37f0", "#0f7a55", "#ffd43b"];
 
@@ -27,6 +29,9 @@ export default function EventsBoard({ initial }: { initial: StudioEvent[] }) {
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
+  // The last venue used, offered as a one-tap fill (most artists do the same market every week).
+  const [lastVenue, setLastVenue] = useState<string | null>(null);
+  useEffect(() => setLastVenue(recall<string>("event-venue")), []);
   const [busy, setBusy] = useState(false);
   const [error, setErrorState] = useState<{ message: string; fix?: { label: string; onClick: () => void } } | null>(null);
   const setError = (message: string | null, fix?: { label: string; onClick: () => void }) => setErrorState(message ? { message, fix } : null);
@@ -58,6 +63,7 @@ export default function EventsBoard({ initial }: { initial: StudioEvent[] }) {
     if (!start) { setError("Pick a start date.", focus("event-start")); document.getElementById("event-start")?.focus(); return; }
     if (end && end < start) { setError("End date is before the start.", focus("event-end")); document.getElementById("event-end")?.focus(); return; }
     const fields = { name: name.trim(), venue: venue.trim(), start, end: end || start };
+    if (fields.venue) { remember("event-venue", fields.venue); setLastVenue(fields.venue); }
     setBusy(true);
     try {
       if (editing) {
@@ -108,10 +114,22 @@ export default function EventsBoard({ initial }: { initial: StudioEvent[] }) {
           <span className="label">Event name</span>
           <input id="event-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} placeholder="Brooklyn Flea" required />
         </label>
-        <label className="af-field">
-          <span className="label">Venue</span>
-          <input value={venue} onChange={(e) => setVenue(e.target.value)} maxLength={80} placeholder="Booth 14, Riverview Station" />
-        </label>
+        <LocationInput
+          label="Where"
+          name="venue"
+          scope="nyc"
+          tail
+          autoComplete="off"
+          value={venue}
+          onChange={setVenue}
+          hint={!venue && lastVenue && !editing ? (
+            <button type="button" onClick={() => setVenue(lastVenue)} className="font-semibold text-scan underline-offset-2 hover:underline">
+              Same as last time: {lastVenue}
+            </button>
+          ) : undefined}
+          maxLength={80}
+          placeholder="Booth 14, DUMBO, Brooklyn"
+        />
         <div className="grid gap-3 min-[420px]:grid-cols-2">
           <label className="af-field">
             <span className="label">Starts</span>

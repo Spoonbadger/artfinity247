@@ -12,6 +12,9 @@ import { alertArtworkNeedsReview, initialArtworkStatus } from '@/lib/artworkLive
 import { checkUpload, duplicateOfId } from '@/lib/imageHash'
 import { saveAutoCheck, screenUpload, type Screened } from '@/lib/moderation'
 import { isAutoFlag } from '@/lib/moderation/policy'
+import { editsFromForm } from '@/lib/imageEdits.server'
+import { parseStored } from '@/lib/imageEdits'
+import { Prisma } from '@prisma/client'
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
@@ -63,12 +66,18 @@ export async function POST(
 
     // A new image: re-check print sizes and rights, like a new upload.
     const newImage = !!imageUrl && imageUrl !== artwork.imageUrl
+    // Photo edits (POST /api/uploads/edit). Left out: kept, unless the image itself was swapped for another.
+    const oldEdits = parseStored(artwork.imageEdits)
+    const sentEdits = editsFromForm(form.get("imageEdits"), { id: payload.id, slug: payload.slug }, [artwork.imageUrl, oldEdits?.source])
+    const nextEdits = sentEdits !== undefined ? sentEdits : newImage ? null : oldEdits
+    // An edit of this piece's own photo (or a reset back to it) is the same picture: no new rights box, no new review.
+    const derived = newImage && ((!!nextEdits && (nextEdits.source === artwork.imageUrl || nextEdits.source === oldEdits?.source)) || (!!oldEdits && imageUrl === oldEdits.source))
     let imageData: { printableSizes: string[]; ownershipConfirmedAt: Date; status?: "PENDING"; imageHash?: string | null; flaggedReason?: string | null; flaggedBy?: string | null; sensitive?: string[] } | undefined
     let dup: Awaited<ReturnType<typeof checkUpload>> | null = null
     let check: Screened | null = null
     if (newImage) {
       const printable = parsePrintable(form.get("printable"))
-      if (String(form.get("ownership") ?? "") !== "yes") {
+      if (!derived && String(form.get("ownership") ?? "") !== "yes") {
         return NextResponse.json({ error: "Confirm this is your original work and you hold the rights to sell prints of it.", code: "ownership_required" }, { status: 400 })
       }
       if (!printable || !verifyPrintable(imageUrl!, printable, form.get("printableSig"))) {
@@ -77,7 +86,7 @@ export async function POST(
       if (!printable.length) return NextResponse.json({ error: "This file is too small to print well. Try the original photo or a bigger scan.", code: "image_too_small" }, { status: 400 })
       imageData = { printableSizes: printable, ownershipConfirmedAt: new Date() }
       // Artists whose uploads are reviewed get a new image reviewed too.
-      if (artwork.status === "APPROVED" && (await initialArtworkStatus(artwork.artistId)) === "PENDING") imageData.status = "PENDING"
+      if (!derived && artwork.status === "APPROVED" && (await initialArtworkStatus(artwork.artistId)) === "PENDING") imageData.status = "PENDING"
       // Fingerprint the new image; if it looks like another artist's piece, a person checks it (lib/imageHash.ts).
       // The automatic image check (lib/moderation) runs on a new image too, like a new upload.
       const labels = sensitiveRaw !== null ? parseSensitive(sensitiveRaw) : artwork.sensitive
@@ -145,18 +154,25 @@ export async function POST(
         imageUrl: imageUrl || artwork.imageUrl,
         ...(sensitiveRaw !== null ? { sensitive: parseSensitive(sensitiveRaw) } : {}),
         ...(editionSize !== undefined ? { editionSize } : {}),
+        ...(nextEdits !== oldEdits ? { imageEdits: nextEdits ? (nextEdits as unknown as Prisma.InputJsonValue) : Prisma.DbNull } : {}),
         ...(imageData ?? {}),
         },
     })
 
 
-    // Replaced: delete the old preview and original, unless an order still needs the old file for printing.
+    // Replaced: delete the old preview and original, unless an order still needs the old file for printing,
+    // or it's the untouched photo the new edits were made from (kept so "Reset edits" can go back to it).
+    // An old edit source nothing points at any more goes too.
     if (newImage && artwork.imageUrl) {
-      try {
-        const ordered = await prisma.orderItem.count({ where: { imageUrl: artwork.imageUrl } })
-        if (!ordered) await deleteUpload(artwork.imageUrl)
-      } catch (err) {
-        console.error("Old image deletion failed:", err)
+      const keep = new Set([updated.imageUrl, nextEdits?.source].filter(Boolean))
+      for (const old of new Set([artwork.imageUrl, oldEdits?.source])) {
+        if (!old || keep.has(old)) continue
+        try {
+          const ordered = await prisma.orderItem.count({ where: { imageUrl: old } })
+          if (!ordered) await deleteUpload(old)
+        } catch (err) {
+          console.error("Old image deletion failed:", err)
+        }
       }
     }
 
