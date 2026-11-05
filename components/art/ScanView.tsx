@@ -57,6 +57,7 @@ export default function ScanView({
   artistSplit = FREE_SPLIT,
   arrives = null,
   reviews = null,
+  discountEnded = false,
 }: {
   art: ScanArt;
   artist: ScanArtist;
@@ -75,6 +76,8 @@ export default function ScanView({
   artistSplit?: number;
   /** Delivery estimate, e.g. "Nov 12–18" (lib/delivery). */
   arrives?: string | null;
+  /** An old card's discount that's no longer honored: say so instead of letting it vanish. */
+  discountEnded?: boolean;
   /** Verified buyer reviews: this piece's, or the artist's overall when the piece has few. */
   reviews?: { summary: ReviewSummary; reviews: PublicReview[]; scope: "art" | "artist" } | null;
 }) {
@@ -288,6 +291,9 @@ export default function ScanView({
               {framed ? " · framed" : ""}
             </span>
           </div>
+          {discountEnded && (
+            <p className="-mt-2 text-[14px] text-ink-2">The discount on this card has ended. Prices shown are current.</p>
+          )}
           <EditionBadge edition={art.edition} className="-mt-2" />
 
           {/* Size */}

@@ -25,3 +25,17 @@ export async function signedQrValue(d: { ev: string; disc: number }, slug: strin
   const { qrValue } = await import("@/components/qr/card");
   return qrValue(d, slug, base, d.disc ? signScan(slug, d.disc, d.ev.trim() || null) : null, null, handle);
 }
+
+// Cards printed before discounts were signed carry a plain ?off=. We honor those up to
+// LEGACY_MAX_PCT until LEGACY_UNTIL, so a buyer holding an old "10% off" card isn't let down.
+export const LEGACY_MAX_PCT = 10;
+export const LEGACY_UNTIL = new Date(process.env.LEGACY_DISCOUNT_UNTIL || "2027-03-01T00:00:00-05:00");
+
+/** The scan discount to apply: signed (any valid %), legacy unsigned (capped), or none with `ended` set. */
+export function scanDiscount(slug: string, off: number, at: string | null | undefined, sig: unknown, now = new Date()) {
+  if (!off) return { pct: 0, legacy: false, ended: false };
+  if (verifyScan(slug, off, at, sig)) return { pct: off, legacy: false, ended: false };
+  const unsigned = sig === undefined || sig === null || sig === "";
+  if (unsigned && now < LEGACY_UNTIL) return { pct: Math.min(off, LEGACY_MAX_PCT), legacy: true, ended: false };
+  return { pct: 0, legacy: false, ended: true };
+}

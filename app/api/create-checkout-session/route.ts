@@ -1,4 +1,4 @@
-import { verifyScan } from "@/lib/scanSign";
+import { scanDiscount } from "@/lib/scanSign";
 import { codeAppliesTo, resolveCode } from "@/lib/shortlinks";
 import Stripe from "stripe";
 import { randomBytes } from "crypto";
@@ -70,11 +70,11 @@ async function buildLines(items: any[]): Promise<Line[]> {
 
       // Scan discount. Short link codes (/q/CODE) are looked up: the discount and venue come from the code's record,
       // and only when it's live and belongs to this artwork (or its artist). Older printed codes carry a signed
-      // ?off= instead: 5–30%, and only with a valid signature (lib/scanSign.ts).
+      // ?off= instead: signed (5–30%), or an old unsigned card capped at 10% for a while (lib/scanSign.ts).
       const qr = p.code ? await resolveCode(p.code) : null;
       const byCode = qr && codeAppliesTo(qr, art) ? qr : null;
       const offRaw = parseDiscount(p.discountPct);
-      const discountPct = byCode ? parseDiscount(byCode.discountPct) || 0 : offRaw && verifyScan(slug, offRaw, parseVenue(p.venue), p.discountSig) ? offRaw : 0;
+      const discountPct = byCode ? parseDiscount(byCode.discountPct) || 0 : scanDiscount(slug, offRaw, parseVenue(p.venue), p.discountSig).pct;
       const venue = byCode ? byCode.venue : parseVenue(p.venue);
       const { list } = priceFor(art, size, frameChosen, 0);
       const unit = applyDiscount(list, discountPct);
