@@ -133,6 +133,9 @@ model Artist {
   venmoPendingAt     DateTime?
   // Account closing: the page goes offline right away; unpaid earnings are still paid out before the data is removed
   closedAt           DateTime?
+  // Admin can pause an account (page offline, no new sales) without closing it
+  suspendedAt        DateTime?
+  suspendedReason    String?
   events             StudioEvent[]
   reviews            Review[]
   followers          Follower[]
@@ -429,4 +432,32 @@ model PageView {
 
   @@index([artistId, createdAt])
   @@index([artworkId, createdAt])
+}
+
+// Audit log: every admin action (approve, take down, refund, payout, suspend...), so there's a record of who did what
+model AdminAction {
+  id         String   @id @default(cuid())
+  adminId    String
+  adminEmail String
+  action     String   // e.g. "artwork.approve", "order.refund", "artist.suspend"
+  targetType String   // artist | artwork | order | review | report | payout | reprint | setting
+  targetId   String?
+  summary    String   @default("")
+  details    Json?
+  createdAt  DateTime @default(now())
+
+  @@index([targetType, targetId])
+  @@index([createdAt])
+}
+
+// Notes admins leave on an artist or order (support history)
+model AdminNote {
+  id         String   @id @default(cuid())
+  targetType String   // artist | order
+  targetId   String
+  adminEmail String
+  body       String
+  createdAt  DateTime @default(now())
+
+  @@index([targetType, targetId])
 }
