@@ -29,7 +29,7 @@ export default async function EmailConfirmed({ searchParams }: { searchParams: {
             Email <Brushed>confirmed</Brushed>
           </h1>
           <p className="text-[16px] text-ink-2">
-            {status === "ok" ? "Thanks." : "You'd already confirmed it, so you're all set."} Payouts and newsletters are unlocked. Next, tell us where to send your money.
+            {status === "ok" ? "Thanks." : "You'd already confirmed it."} Payouts and newsletters are on. Next, tell us where to send your money.
           </p>
           {me ? (
             <>
@@ -45,9 +45,9 @@ export default async function EmailConfirmed({ searchParams }: { searchParams: {
   }
 
   const copy = {
-    expired: { title: "That link expired", body: `Confirmation links work for ${VERIFY_DAYS} days. Send yourself a fresh one; it takes a second.` },
-    used: { title: "That link was already used", body: "Each link works once, and sending a new one replaces the old one. If you've just confirmed in another tab, you're done. Otherwise, send a fresh link." },
-    invalid: { title: "That link didn't work", body: "It may have been cut off when you copied it. Open it straight from the email, or send yourself a fresh one." },
+    expired: { title: "That link expired", body: `Links work for ${VERIFY_DAYS} days. Send yourself a fresh one.` },
+    used: { title: "That link was already used", body: "Each link works once. If you just confirmed in another tab, you're done. If not, send a fresh one." },
+    invalid: { title: "That link didn't work", body: "It may have been cut off. Open it from the email, or send a fresh one." },
   }[status as Exclude<Status, "ok">];
 
   return (
@@ -68,7 +68,7 @@ export default async function EmailConfirmed({ searchParams }: { searchParams: {
           <>
             <Link href={`/login?next=${encodeURIComponent("/studio#confirm-email")}`} className="btn btn-blue btn-lg w-full">Log in to get a new link</Link>
             <p className="text-center text-[14px] text-ink-2">
-              Once you&apos;re in, press <b className="text-ink">Resend</b> at the top of your Studio. Trouble?{" "}
+              Then press <b className="text-ink">Resend</b> at the top of your Studio. Stuck?{" "}
               <Link href="/contact" className="font-semibold underline underline-offset-4">Contact us</Link>
             </p>
           </>

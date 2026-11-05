@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { PRO, REFERRALS, dollars, proPrice } from "@/lib/plans";
+import { PRO, REFERRALS, dollars } from "@/lib/plans";
 import type { BillingView } from "@/lib/billingStatus";
 import { cn } from "@/lib/utils";
 import { failed, problemFrom, saved } from "@/lib/feedback";
@@ -97,7 +97,7 @@ export default function BillingPanel({
       ) : (
         <>
           <button type="button" className="btn btn-blue btn-lg" disabled={!!busy} onClick={() => checkout("month")}>
-            {busy === "month" || busy === "subscribe" ? "Starting…" : `Get ${PRO.name} — ${proPrice()}/month`}
+            {busy === "month" || busy === "subscribe" ? "Starting…" : `Get ${PRO.name}`}
           </button>
           {intervals.includes("year") && (
             <button type="button" className={ghost} disabled={!!busy} onClick={() => checkout("year")}>

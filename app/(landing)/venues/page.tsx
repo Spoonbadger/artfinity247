@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 const SORTS = [
-  { value: "hood", label: "Neighborhood" },
+  { value: "hood", label: "By neighborhood" },
   { value: "az", label: "A to Z" },
   { value: "most", label: "Most art" },
 ];

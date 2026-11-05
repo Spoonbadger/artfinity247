@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Check, Copy, Share2 } from "lucide-react";
 
-/** Copy and share buttons for the referral link. */
-export default function ReferralShare({ link, code }: { link: string; code: string }) {
+/** Copy and share buttons for the referral link. `primary` when it's the page's main action (already on Infinity). */
+export default function ReferralShare({ link, code, primary = false }: { link: string; code: string; primary?: boolean }) {
   const [copied, setCopied] = useState<"link" | "code" | null>(null);
 
   async function copy(what: "link" | "code") {
@@ -31,7 +31,7 @@ export default function ReferralShare({ link, code }: { link: string; code: stri
         <input readOnly value={link} onFocus={(e) => e.currentTarget.select()} className="w-full min-w-0 rounded-xl border border-line bg-wall px-3 py-3 text-[15px] font-semibold text-ink" />
       </label>
       <div className="flex flex-wrap gap-2">
-        <button type="button" className="btn btn-blue" onClick={() => copy("link")}>
+        <button type="button" className={primary ? "btn btn-blue" : "btn"} onClick={() => copy("link")}>
           {copied === "link" ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
           {copied === "link" ? "Copied" : "Copy link"}
         </button>

@@ -46,7 +46,7 @@ export default function VerifyEmailBanner({ email, verified }: { email: string; 
       <div id="confirm-email" role="status" className="flex scroll-mt-4 flex-wrap items-center gap-x-3 gap-y-1 rounded-[4px] border-[1.5px] border-ink bg-sticker/40 px-4 py-2 text-[14px]">
         <b>{flag === "expired" ? "That link expired." : "Confirm your email"}</b>
         <span className="min-w-0 flex-1 text-ink-2 max-sm:order-last max-sm:basis-full">
-          {state === "sent" ? `Sent. Check ${email} (and spam). The link works for 7 days.` : state === "error" ? error : <>We sent a link to {email}. Payouts and newsletters unlock once you click it. Wrong address? <a href="/studio/page#account-details" className="underline underline-offset-2">Change it</a>.</>}
+          {state === "sent" ? `Sent. Check ${email} (and spam). The link works for 7 days.` : state === "error" ? error : <>Tap the link we sent to {email}. Payouts and newsletters wait until then. <a href="/studio/page#account-details" className="underline underline-offset-2">Wrong email?</a></>}
         </span>
         {state !== "sent" && (
           <button ref={resendRef} type="button" onClick={resend} disabled={state === "sending"} className="inline-flex min-h-[36px] items-center gap-1.5 font-semibold text-scan underline underline-offset-4">

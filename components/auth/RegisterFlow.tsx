@@ -85,7 +85,7 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
   // step 2
   const [artistName, setArtistName] = useState("");
   const [city, setCity] = useState("");
-  const [region, setRegion] = useState("");
+  const [region, setRegion] = useState("NY");
   const [agreed, setAgreed] = useState(false);
   const [created, setCreated] = useState(false);
   // step 3
@@ -417,7 +417,7 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
               {busy && <Spinner />}
               Continue
             </button>
-            <p className="text-center text-[14px] text-ink-2">Free. No card. About a minute.</p>
+            <p className="text-center text-[14px] text-ink-2">Free, and no card needed.</p>
           </form>
         )}
 
@@ -426,11 +426,8 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
             <StepHead n={2} refEl={headingRef}>What should buyers call you?</StepHead>
             <FormAlert>{formError}</FormAlert>
             <Field label="Artist name" name="artist_name" autoComplete="name" maxLength={60} value={artistName} onChange={(e) => { setArtistName(e.target.value); setErrors((x) => ({ ...x, artistName: null })); }} error={errors.artistName} autoFocus placeholder="Maya Okafor" />
-            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_140px]">
-              <LocationInput label="Neighborhood or borough" name="city" scope="nyc" maxLength={60} value={city} onChange={(v) => { setCity(v); setErrors((x) => ({ ...x, city: null })); }} onPick={(pl) => setRegion(pl.state)} error={errors.city} placeholder="Williamsburg, Brooklyn" />
-              <Field label="State (optional)" name="state" autoComplete="address-level1" maxLength={40} value={region} onChange={(e) => setRegion(e.target.value)} placeholder="NY" />
-            </div>
-            <p className="-mt-1 text-[14px] text-ink-2">Your borough or neighborhood puts you on the local map.</p>
+            {/* NYC only: the state comes from the picked place (or NY); no separate field to fill in. */}
+            <LocationInput label="Neighborhood or borough" name="city" scope="nyc" maxLength={60} value={city} onChange={(v) => { setCity(v); setErrors((x) => ({ ...x, city: null })); }} onPick={(pl) => setRegion(pl.state)} error={errors.city} placeholder="Williamsburg, Brooklyn" hint="Puts you on the local map." />
             <div className="grid gap-1.5">
               <label htmlFor="accept-terms" className="flex cursor-pointer items-start gap-3 text-[15px] leading-snug">
                 <input
@@ -616,25 +613,25 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
                 <div className="grid gap-3">
                   {artwork.pending && (
                     <p className="grid justify-items-start gap-2 text-[15px] text-ink-2">
-                      <span className="sticker-badge">In review — usually within a day</span>
-                      We look over every new artist&apos;s first pieces. Print the code now; it opens for buyers once {artwork.title} is live.
+                      <span className="sticker-badge">In review, usually within a day</span>
+                      Print it now. It opens for buyers once {artwork.title} is live.
                     </p>
                   )}
                   <p className="text-[16px] text-ink-2">
-                    Point your phone at it. It opens <b className="text-ink">{artwork.title}</b> with sizes and a buy button.
+                    Scan it: it opens <b className="text-ink">{artwork.title}</b>, ready to buy.
                   </p>
                   <Link href={`/studio/qr?art=${encodeURIComponent(artwork.slug)}`} className="btn btn-blue btn-lg">Style and print it</Link>
                   <Link href={home} className="btn btn-ghost btn-lg">Go to my Studio</Link>
-                  <p className="text-[13.5px] text-ink-2">We’ll ask where to send your money after your first sale.{!oauth?.emailVerified && <> First, click the link we sent to <b className="text-ink">{email.trim()}</b> to confirm your email.</>}</p>
+                  <p className="text-[13.5px] text-ink-2">{!oauth?.emailVerified && <>Confirm your email with the link we sent to <b className="text-ink">{email.trim()}</b>. </>}We&apos;ll ask where to send money after your first sale.</p>
                 </div>
               </div>
             ) : (
               <div className="grid gap-3">
                 <p className="text-[16px] text-ink-2">
-                  You’re at <b className="text-ink">theartfinity.com/@{handle}</b>. Add a piece and its code is ready to print.
+                  You&apos;re at <b className="text-ink">theartfinity.com/@{handle}</b>. Add a piece to get its code.
                 </p>
                 {!oauth?.emailVerified && (
-                  <p className="text-[14px] text-ink-2">We sent a link to <b className="text-ink">{email.trim()}</b>. Click it to confirm your email; payouts wait for it.</p>
+                  <p className="text-[14px] text-ink-2">Confirm your email with the link we sent to <b className="text-ink">{email.trim()}</b>. Payouts wait for it.</p>
                 )}
                 <Link href="/studio/art/new" className="btn btn-blue btn-lg">Add your first piece</Link>
                 <Link href={home} className="btn btn-ghost btn-lg">Go to my Studio</Link>

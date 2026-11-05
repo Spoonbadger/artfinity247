@@ -24,13 +24,13 @@ export default async function CollectorSettings() {
           <div className="flex flex-wrap gap-2"><dt className="text-ink-2">Since</dt><dd>{me.createdAt.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</dd></div>
           <div className="flex flex-wrap gap-2"><dt className="text-ink-2">Saved pieces</dt><dd className="num">{saved}</dd></div>
         </dl>
-        <p className="text-[14px] text-ink-2">Orders are matched to this email. To use a different one, sign out and sign in with it.</p>
+        <p className="text-[14px] text-ink-2">Orders are matched to this email. For another email, sign out and sign in with it.</p>
         <SignOutButton className="btn btn-ghost btn-sm w-fit min-h-[44px] px-4" />
       </section>
       <section aria-labelledby="del-section-h" className="grid gap-3 rounded-2xl border border-line bg-white p-5">
         <h2 id="del-section-h" className="text-[18px] font-bold">Delete your collection</h2>
         <p className="text-[14.5px] text-ink-2">
-          Deletes your collection and wishlist right away. Your orders stay on record (we need them for accounting and tax), and you can still open them from your order emails. Artist follows are separate: unfollow them on your collection page, or with the link in any artist email.
+          Your wishlist goes right away. Orders stay on record for tax, and your order emails still work. Follows are separate: unfollow on your collection page.
         </p>
         <DeleteCollection email={me.email} />
       </section>

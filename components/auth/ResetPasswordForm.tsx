@@ -8,9 +8,9 @@ import { AuthCard, FormAlert, PasswordField, Spinner } from "./ui";
 import { PasswordStrength } from "@/components/forms/PasswordInput";
 
 const DEAD_LINK = {
-  missing: { title: "That link is broken", body: "It's missing part of the address. Ask for a fresh one. It only takes a second." },
-  expired: { title: "That link expired", body: "Reset links work for 30 minutes. Ask for a fresh one and use it right away." },
-  used: { title: "That link was already used", body: "Each link works once, and asking for a new one cancels the old ones. Ask for a fresh link, or log in if you've already set a new password." },
+  missing: { title: "That link is broken", body: "Part of the address is missing. Ask for a fresh one." },
+  expired: { title: "That link expired", body: "Reset links work for 30 minutes. Ask for a fresh one." },
+  used: { title: "That link was already used", body: "Each link works once. If you already set a new password, log in. If not, ask for a fresh link." },
 } as const;
 
 export default function ResetPasswordForm({ status = "ok" }: { status?: "ok" | keyof typeof DEAD_LINK }) {

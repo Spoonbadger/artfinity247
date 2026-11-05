@@ -21,5 +21,10 @@ export default function AuthTopLink() {
       </span>
     );
   }
-  return <Link href={withNext("/register", next)} className="btn btn-blue btn-sm">Start selling free</Link>;
+  // A text link, not a button: the form below has the page's one primary button.
+  return (
+    <Link href={withNext("/register", next)} className="inline-flex min-h-[44px] items-center px-1 text-[14.5px] font-bold text-ink underline decoration-2 underline-offset-4 hover:text-scan">
+      Start selling free
+    </Link>
+  );
 }

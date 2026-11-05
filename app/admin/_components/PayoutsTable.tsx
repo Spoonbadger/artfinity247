@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
-import { PaintChip } from "@/components/af/Brush";
+import { failed, saved } from "@/lib/feedback";
+import { passes, sortRows, SortSelect, SortTh, TableToolbar, useTable, type SortDir } from "./table";
 import { cn } from "@/lib/utils";
 import { monthLabel, usd } from "./util";
 import { useAdminCan } from "./AdminRole";
@@ -66,10 +66,10 @@ export default function PayoutsTable({ month }: { month: string }) {
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.error || "");
-      toast.success(paid ? `${r.artistName} marked unpaid` : `${r.artistName} marked paid. Email sent.`);
+      saved(paid ? `${r.artistName} marked unpaid` : `${r.artistName} marked paid`, paid ? undefined : { description: "Email sent." });
       await load();
     } catch (e: any) {
-      toast.error(e?.message || "Couldn't update the payout.");
+      failed(e?.message || "Couldn't update the payout.", { retry: () => toggle(r) });
     } finally {
       setBusy(null);
     }
@@ -80,21 +80,38 @@ export default function PayoutsTable({ month }: { month: string }) {
   const paid = list.filter((r) => r.payout.status === "PAID").reduce((n, r) => n + r.payout.amountCents, 0);
   const gross = list.reduce((n, r) => n + r.gross, 0);
   const unpaidCount = list.filter((r) => r.payout.status !== "PAID").length;
+  const t = useTable("payouts", { sort: { key: "share", dir: "desc" } });
+  const statusOf = (r: Row) => (r.payout.status === "PAID" ? "paid" : r.late ? "late" : "unpaid");
+  const shown = sortRows(
+    list.filter((r) => passes(t.filters, { search: `${r.artistName} ${r.artistEmail} ${r.venmoHandle}`, status: statusOf(r) })),
+    t.sort,
+    (r, k) => (k === "artist" ? r.artistName.toLowerCase() : k === "to" ? (r.stripe === "ready" ? "Stripe" : r.venmoHandle || "") : k === "prints" ? r.itemsCount : k === "sales" ? r.gross : k === "costs" ? r.expenses : k === "profit" ? r.profit : k === "share" ? r.artistShare : statusOf(r) === "late" ? 0 : statusOf(r) === "unpaid" ? 1 : 2),
+  );
+  const SORTS: { key: string; dir: SortDir; label: string }[] = [
+    { key: "share", dir: "desc", label: "Most owed" },
+    { key: "status", dir: "asc", label: "Unpaid first" },
+    { key: "artist", dir: "asc", label: "Artist A–Z" },
+  ];
 
   return (
-    <div className="grid gap-6">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <PaintChip color="#a8dcc4" value={usd(gross)} label="sales" earned />
-        <PaintChip color="#f7c8a8" value={usd(owed)} label="artist share" earned />
-        <PaintChip color="#b8c4ff" value={usd(paid)} label="paid out" earned />
-        <PaintChip color="var(--af-sticker)" value={unpaidCount} label={unpaidCount === 1 ? "artist to pay" : "artists to pay"} />
-      </div>
+    <div className="grid min-w-0 gap-3">
+      <dl className="num flex flex-wrap gap-x-6 gap-y-1 text-[14px]">
+        <div className="flex gap-1.5"><dt className="text-ink-2">To pay</dt><dd className="font-semibold">{unpaidCount} {unpaidCount === 1 ? "artist" : "artists"}</dd></div>
+        <div className="flex gap-1.5"><dt className="text-ink-2">Artist share</dt><dd className="font-semibold text-earned">{usd(owed)}</dd></div>
+        <div className="flex gap-1.5"><dt className="text-ink-2">Paid out</dt><dd className="font-semibold">{usd(paid)}</dd></div>
+        <div className="flex gap-1.5"><dt className="text-ink-2">Sales</dt><dd className="font-semibold">{usd(gross)}</dd></div>
+      </dl>
+      {list.length > 0 && (
+        <TableToolbar filters={t.filters} setFilter={t.setFilter} clear={t.clear} active={t.active} search="Artist, email or Venmo" statuses={[{ value: "unpaid", label: "Unpaid" }, { value: "late", label: "Late" }, { value: "paid", label: "Paid" }]} count={shown.length} total={list.length}>
+          <SortSelect options={SORTS} sort={t.sort} onChange={t.setSort} className="md:hidden" />
+        </TableToolbar>
+      )}
 
       <div className="overflow-hidden rounded-2xl border border-line bg-white">
         {rows === null ? (
           <p className="px-4 py-14 text-center text-ink-2">Loading {monthLabel(month)}…</p>
         ) : error ? (
-          <p className="px-4 py-14 text-center text-coral">Couldn&apos;t load payouts.</p>
+          <p className="px-4 py-14 text-center text-coral">Couldn&apos;t load payouts. <button type="button" onClick={load} className="font-semibold underline">Try again</button></p>
         ) : list.length === 0 ? (
           <div className="grid justify-items-center gap-2 px-4 py-14 text-center">
             <span className="paint-dab h-6 w-6" style={{ ["--dab" as string]: "var(--af-sticker)" }} />
@@ -104,20 +121,21 @@ export default function PayoutsTable({ month }: { month: string }) {
           <>
             {/* desktop table */}
             <table className="num hidden w-full text-left text-[14px] md:table">
-              <thead className="border-b border-line bg-wall/60 text-[12px] uppercase tracking-[0.06em] text-ink-2">
+              <thead className="border-b border-line bg-wall/60 text-[12px] text-ink-2">
                 <tr>
-                  <th className="px-4 py-2.5 font-bold">Artist</th>
-                  <th className="px-3 py-2.5 font-bold">Paid to</th>
-                  <th className="px-3 py-2.5 text-right font-bold">Prints</th>
-                  <th className="px-3 py-2.5 text-right font-bold">Sales</th>
-                  <th className="px-3 py-2.5 text-right font-bold">Costs</th>
-                  <th className="px-3 py-2.5 text-right font-bold">Profit</th>
-                  <th className="px-3 py-2.5 text-right font-bold">To artist</th>
-                  <th className="px-4 py-2.5 text-right font-bold">Status</th>
+                  <SortTh k="artist" label="Artist" sort={t.sort} onSort={t.toggleSort} className="pl-4" />
+                  <SortTh k="to" label="Paid to" sort={t.sort} onSort={t.toggleSort} />
+                  <SortTh k="prints" label="Prints" sort={t.sort} onSort={t.toggleSort} align="right" />
+                  <SortTh k="sales" label="Sales" sort={t.sort} onSort={t.toggleSort} align="right" />
+                  <SortTh k="costs" label="Costs" sort={t.sort} onSort={t.toggleSort} align="right" />
+                  <SortTh k="profit" label="Profit" sort={t.sort} onSort={t.toggleSort} align="right" />
+                  <SortTh k="share" label="To artist" sort={t.sort} onSort={t.toggleSort} align="right" />
+                  <SortTh k="status" label="Status" sort={t.sort} onSort={t.toggleSort} align="right" firstDir="asc" className="pr-4" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {list.map((r) => (
+                {shown.length === 0 && <tr><td colSpan={8} className="px-4 py-8 text-center text-ink-2">Nothing matches. <button type="button" onClick={t.clear} className="font-semibold text-scan underline">Clear filters</button></td></tr>}
+                {shown.map((r) => (
                   <tr key={r.artistId}>
                     <td className="px-4 py-3">
                       <b className="flex flex-wrap items-center gap-1.5">{r.artistName}<Badges r={r} /></b>
@@ -137,7 +155,7 @@ export default function PayoutsTable({ month }: { month: string }) {
 
             {/* mobile cards */}
             <ul className="divide-y divide-line md:hidden">
-              {list.map((r) => (
+              {shown.map((r) => (
                 <li key={r.artistId} className="grid gap-2 px-4 py-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -186,7 +204,7 @@ function PayButton({ r, busy, onClick }: { r: Row; busy: boolean; onClick: () =>
     <div className="inline-flex flex-wrap items-center justify-end gap-2">
       {paid && (
         <span className="rounded-full bg-earned-soft px-2.5 py-1 text-[12.5px] font-bold text-earned" title={r.payout.stripeTransferId || undefined}>
-          Paid {r.payout.paidAt ? new Date(r.payout.paidAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}
+          Paid {r.payout.paidAt ? new Date(r.payout.paidAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" }) : ""}
           {viaStripe ? " · Stripe" : r.payout.method === "venmo" ? " · Venmo" : ""}
         </span>
       )}
@@ -194,7 +212,7 @@ function PayButton({ r, busy, onClick }: { r: Row; busy: boolean; onClick: () =>
         <span className="max-w-[260px] text-left text-[12px] font-semibold text-coral" title={r.payout.failureReason}>Stripe failed: {r.payout.failureReason}</span>
       )}
       {!realTransfer && (
-        <button type="button" disabled={busy || !canPay} title={canPay ? undefined : "Payouts need the admin or owner role."} onClick={onClick} className={cn("btn btn-sm", paid ? "btn-ghost" : "btn-blue")}>
+        <button type="button" disabled={busy || !canPay} title={canPay ? undefined : "Payouts need the admin or owner role."} onClick={onClick} className={cn("btn btn-sm", paid && "btn-ghost")}>
           {paid ? "Undo" : "Mark paid"}
         </button>
       )}

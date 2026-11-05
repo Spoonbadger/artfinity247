@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { StudioPage } from "@/components/studio/StudioPage";
@@ -60,14 +59,14 @@ export default async function BulkPage({ searchParams }: { searchParams: { place
   return (
     <StudioPage
       title="Bulk prints"
-      sub="Your own prints, at cost. Sell them at markets and shows."
-      actions={<><HelpLink href="/help/selling/bulk-prints" /><Link href="/studio/art" className="btn btn-ghost">My art</Link></>}
+      sub="Your own prints at cost, to sell at markets and shows."
+      actions={<HelpLink href="/help/selling/bulk-prints" />}
     >
       {arts.length === 0 ? (
         <EmptyState
           dab="#ff5a36"
-          title="Bulk prints open once you have art"
-          body="Order your own prints at cost, 10+ get 5% off, and sell them at markets and shows. Upload a piece to start."
+          title="Upload art first"
+          body="Then order your own prints at cost. 10 or more get 5% off."
           action={{ label: "Upload art", href: "/studio/art/new" }}
           help={{ label: "How bulk prints work", href: "/help/selling/bulk-prints" }}
         />

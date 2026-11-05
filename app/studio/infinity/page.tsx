@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { Check, Minus } from "lucide-react";
+import { Check } from "lucide-react";
 import { Brushed, BrushStroke } from "@/components/af/Brush";
 import QRCode from "@/components/af/QRCode";
 import { StudioPage } from "@/components/studio/StudioPage";
@@ -8,6 +8,7 @@ import HelpLink from "@/components/help/HelpLink";
 import BillingPanel from "@/components/pro/BillingPanel";
 import ReferralShare from "@/components/pro/ReferralShare";
 import ProCalculator from "@/components/pro/ProCalculator";
+import Disclosure from "@/components/money/Disclosure";
 import { getArtistPlan } from "@/components/pro/plan.server";
 import { BILLING, FREE_SPLIT, PRO, REFERRALS, dollars, formatPlanDate, pct, planFeatures, proPrice } from "@/lib/plans";
 import { ensureReferralCode, getReferrals, referralLink, type ReferralRow, type ReferralStatus } from "@/lib/referrals";
@@ -95,15 +96,18 @@ export default async function ProPage({ searchParams }: { searchParams?: { billi
   const dark = plan.active || view.kind === "payment_failed";
   const freeMonthsUntil = plan.active && plan.proUntil && plan.proUntil.getTime() > now.getTime() + BILLING.minTrialHours * 3_600_000 ? formatPlanDate(plan.proUntil) : null;
 
+  const adds = planFeatures().filter((f) => f.free !== true);
+  const plain = (f: (typeof adds)[number]) => (f.label === "Share of profit" ? `${typeof f.pro === "string" ? f.pro : pct(PRO.split)} of profit, up from ${pct(FREE_SPLIT)}` : f.label);
+  const featureHref: Record<string, string> = { "Auto videos": "/studio/share", Automations: "/studio/automations" };
+
   return (
     <StudioPage
-      title={plan.active ? <span className="inline-flex flex-wrap items-center gap-3">Infinity plan</span> : <>Go <Brushed>Infinity</Brushed></>}
-      sub={plan.active ? `${pct(PRO.split)} of profit, videos, automations.` : `${proPrice()} a month, billed by Stripe. Or share Artfinity and get it free.`}
+      title={plan.active ? "Infinity plan" : <>Go <Brushed>Infinity</Brushed></>}
+      sub={plan.active ? `${pct(PRO.split)} of profit on new orders.` : `${proPrice()} a month. Or bring an artist and get it free.`}
       actions={
         <>
           <HelpLink href="/help/growing/infinity-plan" />
-          <Link href="/studio/automations" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">Automations</Link>
-          <Link href="/pricing" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">Pricing</Link>
+          <Link href="/pricing" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">Compare plans</Link>
         </>
       }
     >
@@ -113,112 +117,111 @@ export default async function ProPage({ searchParams }: { searchParams?: { billi
         </p>
       )}
 
-      {/* current plan */}
-      <section id="billing" aria-labelledby="plan-h" className="scroll-mt-20 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-        <div className={dark ? "relative grid content-start gap-3 overflow-hidden rounded-2xl border-[1.5px] border-ink bg-ink p-5 text-white" : "af-card grid content-start gap-3 p-5"}>
+      {/* What you get, the price and the button, in one place */}
+      <section id="billing" aria-labelledby="plan-h" className="scroll-mt-20 grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+        <div className={dark ? "relative grid content-start gap-4 overflow-hidden rounded-2xl border-[1.5px] border-ink bg-ink p-5 text-white sm:p-6" : "af-card grid content-start gap-4 p-5 sm:p-6"}>
           {plan.active && view.kind !== "payment_failed" && <BrushStroke className="pointer-events-none absolute -right-8 top-3 h-10 w-60 rotate-[-4deg]" color="var(--af-sticker)" />}
-          <h2 id="plan-h" className={`relative text-[13px] font-bold uppercase tracking-[0.08em] opacity-70 ${dark ? "!text-white" : ""}`}>Your plan</h2>
-          <p className={`display relative text-[44px] leading-none ${view.kind === "payment_failed" ? "!text-sticker" : dark ? "!text-white" : ""}`}>{status.head}</p>
-          <p className={dark ? "relative text-[15px] font-semibold" : "text-[15px] text-ink-2"}>{status.line}</p>
-          {status.sub && <p className={dark ? "relative text-[13.5px] text-white/80" : "text-[13.5px] text-ink-2"}>{status.sub}</p>}
-          <p className={dark ? "relative text-[13px] text-white/70" : "text-[13px] text-ink-2"}>
-            Orders keep the split from when they were placed.
-          </p>
-          <div className="relative mt-1">
-            <BillingPanel mode={billing.mode} kind={view.kind} intervals={billing.intervals} freeMonthsUntil={freeMonthsUntil} onDark={dark} />
-          </div>
-        </div>
-
-        <div className="af-panel grid content-start gap-3 p-5">
-          <div className="flex items-baseline justify-between gap-3">
-            <h2 className="text-[20px] font-bold">What {PRO.name} adds, {proPrice()}/mo</h2>
-            <Link href="/pricing" className="text-[14px] font-bold text-scan">Compare</Link>
-          </div>
-          <ul className="grid gap-2">
-            {planFeatures().filter((f) => f.free !== true).map((f) => (
-              <li key={f.label} className="flex items-start gap-2.5 text-[15px]">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-earned" aria-hidden="true" />
-                <span><b>{f.label}</b>{typeof f.pro === "string" ? <span className="text-ink-2"> · {f.pro}</span> : null}</span>
+          {dark ? (
+            <div className="relative grid gap-1">
+              <h2 id="plan-h" className="text-[13px] font-bold uppercase tracking-[0.08em] !text-white opacity-70">Your plan</h2>
+              <p className={`display text-[44px] leading-none ${view.kind === "payment_failed" ? "!text-sticker" : "!text-white"}`}>{status.head}</p>
+              <p className="text-[15px] font-semibold">{status.line}</p>
+              {status.sub && <p className="text-[13.5px] text-white/80">{status.sub}</p>}
+            </div>
+          ) : (
+            <div className="grid gap-1">
+              <h2 id="plan-h" className="text-[20px] font-bold">What you get</h2>
+              <p className="text-[14px] text-ink-2">You&apos;re on Free: {pct(FREE_SPLIT)} of profit.</p>
+            </div>
+          )}
+          <ul className="relative grid gap-2">
+            {adds.map((f) => (
+              <li key={f.label} className="flex items-start gap-2.5 text-[15.5px]">
+                <Check className={`mt-1 h-4 w-4 shrink-0 ${dark ? "text-sticker" : "text-earned"}`} aria-hidden="true" />
+                {featureHref[f.label] && plan.active ? <Link href={featureHref[f.label]} className="font-bold underline-offset-2 hover:underline">{plain(f)}</Link> : <b>{plain(f)}</b>}
               </li>
             ))}
           </ul>
-          <p className="text-[13.5px] text-ink-2">
-            The bigger share applies to orders placed while {PRO.name} is on; earlier sales keep their split. Referral months work the same as paid ones, and they stack:
-            if you subscribe with free months left, the first charge waits until they run out.
+          {!plan.active && (
+            <p className="flex items-baseline gap-1.5">
+              <b className="display num text-[40px] leading-none">{proPrice()}</b>
+              <span className="text-[14px] text-ink-2">a month</span>
+            </p>
+          )}
+          <div className="relative">
+            <BillingPanel mode={billing.mode} kind={view.kind} intervals={billing.intervals} freeMonthsUntil={freeMonthsUntil} onDark={dark} />
+          </div>
+          <p className={dark ? "relative text-[12.5px] text-white/70" : "text-[12.5px] text-ink-2"}>
+            The higher share counts for orders placed while {PRO.name} is on. Earlier orders keep theirs.
           </p>
         </div>
-      </section>
 
-      {/* pays for itself? */}
-      <section aria-labelledby="worth-h" className="af-card grid gap-3 p-4 sm:p-5">
-        <h2 id="worth-h" className="text-[20px] font-bold">Does it pay for itself?</h2>
-        {worth.prints === 0 ? (
-          <p className="text-[15px] text-ink-2">No sales in the last 30 days yet. {PRO.name} pays {pct(PRO.split - FREE_SPLIT)} more of each sale&apos;s profit, so it pays for itself once that extra passes {proPrice()} a month. Try the calculator below.</p>
-        ) : (
-          <>
-            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="rounded-xl bg-wall p-3"><dt className="text-[12.5px] text-ink-2">Last 30 days</dt><dd className="num text-[20px] font-bold">{worth.prints} {worth.prints === 1 ? "print" : "prints"}</dd></div>
-              <div className="rounded-xl bg-wall p-3"><dt className="text-[12.5px] text-ink-2">Profit on them</dt><dd className="num text-[20px] font-bold">{money(worth.profitCents)}</dd></div>
-              <div className="rounded-xl bg-wall p-3"><dt className="text-[12.5px] text-ink-2">Extra {pct(PRO.split - FREE_SPLIT)} on {PRO.name}</dt><dd className="num text-[20px] font-bold text-earned">+{money(worth.extraCents)}</dd></div>
-              <div className="rounded-xl bg-wall p-3"><dt className="text-[12.5px] text-ink-2">{PRO.name} costs</dt><dd className="num text-[20px] font-bold">−{money(worth.priceCents)}</dd></div>
-            </dl>
-            <p className={worth.pays ? "rounded-xl border-[1.5px] border-earned bg-earned-soft px-4 py-3 text-[15px] font-semibold" : "rounded-xl border border-line bg-wall px-4 py-3 text-[15px] font-semibold"}>
-              {worth.pays
-                ? `Yes: on last month's sales you'd have come out ${money(worth.netCents)} ahead.`
-                : `Not yet: last month's sales would leave you ${money(-worth.netCents)} short. Referral months cost nothing.`}
-            </p>
-          </>
-        )}
+        {/* Does it pay for itself? From their own last 30 days */}
+        <div className="af-panel grid content-start gap-3 p-5 sm:p-6" aria-labelledby="worth-h" role="region">
+          <h2 id="worth-h" className="text-[20px] font-bold">Does it pay for itself?</h2>
+          {worth.prints === 0 ? (
+            <p className="text-[15px] text-ink-2">No sales in the last 30 days. It pays for itself once the extra {pct(PRO.split - FREE_SPLIT)} passes {proPrice()} a month.</p>
+          ) : (
+            <>
+              <p className={worth.pays ? "rounded-xl border-[1.5px] border-earned bg-earned-soft px-4 py-3 text-[16px] font-semibold" : "rounded-xl border border-line bg-wall px-4 py-3 text-[16px] font-semibold"}>
+                {worth.pays
+                  ? `Yes. On your last 30 days you'd be ${money(worth.netCents)} ahead.`
+                  : `Not yet. Your last 30 days would leave you ${money(-worth.netCents)} short. Referral months cost nothing.`}
+              </p>
+              <dl className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-white p-3"><dt className="text-[12.5px] text-ink-2">Prints, last 30 days</dt><dd className="num text-[20px] font-bold">{worth.prints}</dd></div>
+                <div className="rounded-xl bg-white p-3"><dt className="text-[12.5px] text-ink-2">Profit on them</dt><dd className="num text-[20px] font-bold">{money(worth.profitCents)}</dd></div>
+                <div className="rounded-xl bg-white p-3"><dt className="text-[12.5px] text-ink-2">Extra {pct(PRO.split - FREE_SPLIT)}</dt><dd className="num text-[20px] font-bold text-earned">+{money(worth.extraCents)}</dd></div>
+                <div className="rounded-xl bg-white p-3"><dt className="text-[12.5px] text-ink-2">{PRO.name} costs</dt><dd className="num text-[20px] font-bold">−{money(worth.priceCents)}</dd></div>
+              </dl>
+            </>
+          )}
+          <a href="#calc" className="text-[14px] font-bold text-scan">Try other numbers</a>
+        </div>
       </section>
 
       {/* referrals */}
       <section id="referrals" aria-labelledby="ref-h" className="scroll-mt-20 grid gap-5 rounded-2xl border border-line bg-wall p-4 sm:p-6">
         <header className="grid gap-1">
-          <span className="eyebrow">Referrals</span>
-          <h2 id="ref-h" className="display text-[34px] sm:text-[44px]">Share Artfinity, get <Brushed>2 months</Brushed> of Infinity</h2>
-          <p className="text-[15px] text-ink-2">For every artist who joins with your link, gets a piece live, and prints its code or makes a sale.</p>
+          <span className="eyebrow">Or get it free</span>
+          <h2 id="ref-h" className="display text-[30px] sm:text-[40px]">Bring an artist, get <Brushed>{REFERRALS.rewardMonths} months</Brushed> free</h2>
         </header>
 
-        <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_200px] md:items-start">
-          <div className="grid gap-5">
-            <ReferralShare link={link} code={code} />
-
-            <ol className="grid gap-2 sm:grid-cols-3">
-              {["They join with your link", "They get a piece live and print a code (or sell)", `${REFERRALS.holdDays} days later, you get ${REFERRALS.rewardMonths} months`].map((t, i) => (
-                <li key={t} className="flex items-center gap-2.5 rounded-xl bg-white p-3 text-[14px] font-semibold">
-                  <span className="num grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink text-[13px] font-extrabold text-white">{i + 1}</span>
+        <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_180px] md:items-start">
+          <div className="grid gap-4">
+            <ReferralShare link={link} code={code} primary={plan.active && view.kind !== "payment_failed"} />
+            <ol className="grid gap-1.5 text-[14px]">
+              {["They join with your link.", "They get a piece live and print its code, or make a sale.", `${REFERRALS.holdDays} days later, you get ${REFERRALS.rewardMonths} months.`].map((t, i) => (
+                <li key={t} className="flex items-center gap-2.5">
+                  <span className="num grid h-6 w-6 shrink-0 place-items-center rounded-full bg-ink text-[12px] font-extrabold text-white">{i + 1}</span>
                   {t}
                 </li>
               ))}
             </ol>
-
-            <div className="grid gap-2 rounded-xl bg-white p-4">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <b className="text-[15px]">{rewarded} {rewarded === 1 ? "reward" : "rewards"} earned</b>
-                <span className="num text-[13.5px] text-ink-2">
-                  {bankedMonths > 0 ? `${bankedMonths.toFixed(1)} of ${REFERRALS.maxBankedMonths} months banked` : `Bank up to ${REFERRALS.maxBankedMonths} months`}
-                </span>
-              </div>
-              <span className="block h-3 overflow-hidden rounded-full bg-wall" role="progressbar" aria-label="Months of Infinity banked" aria-valuemin={0} aria-valuemax={REFERRALS.maxBankedMonths} aria-valuenow={Math.round(bankedMonths * 10) / 10}>
-                <span className="block h-full rounded-full bg-earned" style={{ width: `${(bankedMonths / REFERRALS.maxBankedMonths) * 100}%` }} />
-              </span>
-            </div>
           </div>
-
-          <figure className="grid justify-items-center gap-2 rounded-xl bg-white p-4">
-            <QRCode value={link} dots="rounded" eyes="frame" eyeColor="#2b37f0" className="w-full max-w-[168px]" />
+          <figure className="hidden justify-items-center gap-2 rounded-xl bg-white p-4 md:grid">
+            <QRCode value={link} dots="rounded" eyes="frame" eyeColor="#2b37f0" className="w-full max-w-[148px]" />
             <figcaption className="text-center text-[12.5px] text-ink-2">Scan to join with your link</figcaption>
           </figure>
         </div>
 
-        <div className="grid gap-2">
-          <h3 className="text-[17px] font-extrabold">Artists you brought</h3>
+        <div className="grid gap-2 rounded-xl bg-white p-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <b className="text-[15px]">{rewarded} {rewarded === 1 ? "reward" : "rewards"} earned</b>
+            <span className="num text-[13.5px] text-ink-2">
+              {bankedMonths > 0 ? `${bankedMonths.toFixed(1)} of ${REFERRALS.maxBankedMonths} months banked` : `Bank up to ${REFERRALS.maxBankedMonths} months`}
+            </span>
+          </div>
+          <span className="block h-3 overflow-hidden rounded-full bg-wall" role="progressbar" aria-label="Months of Infinity banked" aria-valuemin={0} aria-valuemax={REFERRALS.maxBankedMonths} aria-valuenow={Math.round(bankedMonths * 10) / 10}>
+            <span className="block h-full rounded-full bg-earned" style={{ width: `${(bankedMonths / REFERRALS.maxBankedMonths) * 100}%` }} />
+          </span>
+          <h3 className="mt-2 text-[15px] font-bold">Artists you brought</h3>
           {referrals.length === 0 ? (
-            <p className="rounded-xl bg-white p-4 text-[14px] text-ink-2">No one yet. Send your link to an artist friend.</p>
+            <p className="text-[14px] text-ink-2">No one yet. Send your link to an artist friend.</p>
           ) : (
-            <ul className="grid divide-y divide-line rounded-xl bg-white">
+            <ul className="grid divide-y divide-line">
               {referrals.map((r) => (
-                <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 p-3 sm:px-4">
+                <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
                   <Link href={`/@${r.handle}`} className="min-w-0 flex-1 font-semibold text-ink no-underline hover:text-scan">
                     <span className="block truncate">{r.name || r.handle}</span>
                     <span className="block truncate text-[13px] font-normal text-ink-2">@{r.handle} · joined {formatPlanDate(r.joined)}</span>
@@ -241,29 +244,26 @@ export default async function ProPage({ searchParams }: { searchParams?: { billi
           )}
         </div>
 
-        <div className="grid gap-1 border-t border-dashed border-ink/20 pt-4 text-[13.5px] text-ink-2">
-          <p>
-            <b className="text-ink">Sharing your page counts too, once it brings an artist.</b> We can’t see shares, only sign-ups, so rewards come from artists who join and get going.{" "}
-            <Link href="/studio/share" className="font-bold text-scan">Share kit</Link>
-          </p>
-          <p>
-            Months unlock {REFERRALS.holdDays} days after an artist qualifies, if their piece is still live. Up to {REFERRALS.maxPerMonth} rewards a month and {REFERRALS.maxBankedMonths} months banked at a time; anything over waits its turn.
-            Accounts that look like your own (same email domain, and the same network or browser) don’t earn a reward.
-          </p>
-        </div>
+        <details className="group text-[13.5px] text-ink-2">
+          <summary className="inline-flex min-h-[40px] cursor-pointer list-none items-center font-bold text-ink [&::-webkit-details-marker]:hidden">
+            Referral rules <span aria-hidden="true" className="ml-1.5 transition group-open:rotate-180">▾</span>
+          </summary>
+          <ul className="grid list-disc gap-1 pl-5">
+            <li>Months unlock {REFERRALS.holdDays} days after an artist qualifies, if their piece is still live.</li>
+            <li>Up to {REFERRALS.maxPerMonth} rewards a month and {REFERRALS.maxBankedMonths} months banked. Extra ones wait their turn.</li>
+            <li>Referral months work like paid ones. If you subscribe with months left, the first charge waits.</li>
+            <li>Accounts that look like yours (same email domain, network or browser) don&apos;t count.</li>
+            <li>We only see sign-ups, not shares. <Link href="/studio/share" className="font-bold text-scan">Share kit</Link></li>
+          </ul>
+        </details>
       </section>
 
-      {/* worth it? */}
-      <section aria-labelledby="calc-h" className="af-panel grid gap-5 p-4 sm:p-6">
-        <header className="grid gap-1">
-          <h2 id="calc-h" className="display text-[30px] sm:text-[36px]">Is Infinity worth it for you?</h2>
-          <p className="text-[14px] text-ink-2">Starts from your last 30 days: {prints} {prints === 1 ? "print" : "prints"}.</p>
-        </header>
+      <Disclosure id="calc" title={`Is ${PRO.name} worth it for you?`} hint="Calculator">
+        <p className="mb-4 text-[14px] text-ink-2">Starts from your last 30 days: {prints} {prints === 1 ? "print" : "prints"}.</p>
         <ProCalculator initialPrints={Math.min(100, prints)} initialPrice={Math.max(45, Math.min(200, avg))} />
-      </section>
+      </Disclosure>
 
-      <p className="flex items-center gap-2 text-[13px] text-ink-2">
-        <Minus className="h-4 w-4" aria-hidden="true" />
+      <p className="text-[13px] text-ink-2">
         {billing.mode === "off"
           ? `Card billing is coming soon. Until then ${PRO.name} comes from referrals.`
           : `Billed by Stripe. Cancel anytime from Manage billing; you keep ${PRO.name} to the end of the period you paid for.`}

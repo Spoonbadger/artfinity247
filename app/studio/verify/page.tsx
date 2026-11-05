@@ -22,13 +22,13 @@ export default async function VerifyPage() {
 
   return (
     <StudioPage
-      title="Get verified"
-      sub={<>A real person at Artfinity checked this is you and your work.<br />Buyers see a blue seal next to your name.</>}
+      title={status === "VERIFIED" ? "Verified" : "Get verified"}
+      sub="Buyers see a blue seal next to your name."
       actions={<HelpLink href="/help/trust/verification-badge" label="How verification works" />}
     >
       {liveArt === 0 && status !== "VERIFIED" && (
-        <Problem tone="info" title="Add a piece before you ask" fix={{ label: "Add your first piece", href: "/studio/art/new" }}>
-          We check that the work on your page is yours, so a page with no art can&apos;t be verified yet. You can still send your evidence now.
+        <Problem tone="info" title="Add a piece first" fix={{ label: "Add your first piece", href: "/studio/art/new" }}>
+          We check that the work is yours. You can still send this now.
         </Problem>
       )}
       <VerifyPanel

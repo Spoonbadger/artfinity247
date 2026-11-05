@@ -345,7 +345,7 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
               </span>
               <b className="font-display text-[22px] [font-variation-settings:'wdth'_80]">Drop your art here</b>
               <span className="text-[13.5px] text-ink-2">or tap to pick {many ? "files" : "a file"} · JPG, PNG, HEIC · up to 25 MB</span>
-              {many && <span className="max-w-[300px] text-[13px] font-semibold text-ink">Got a lot? Pick several paintings or drop a whole folder, then fill them in one by one.</span>}
+              {many && <span className="max-w-[300px] text-[13px] font-semibold text-ink">Several at once? Drop them all, or a whole folder.</span>}
             </span>
           )}
           {uploading && (
@@ -358,14 +358,14 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
           <div className="flex flex-wrap items-center gap-2">
             <input ref={folderRef} type="file" accept="image/*" multiple className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => { const fs = Array.from(e.target.files || []); e.target.value = ""; if (fs.length) take(fs); }} />
             <button type="button" onClick={() => folderRef.current?.click()} className="btn btn-ghost btn-sm"><FolderOpen className="h-4 w-4" aria-hidden="true" />Choose a folder</button>
-            <Link href="/help/getting-started/upload-several" target="_blank" className="text-[13px] text-scan underline-offset-2 hover:underline">How uploading several works</Link>
+            <Link href="/help/getting-started/upload-several" target="_blank" className="text-[13px] text-scan underline-offset-2 hover:underline">How it works</Link>
           </div>
         )}
         {!editing && !imageUrl && cloudImportAvailable(mock) && (
           <div className="grid gap-1.5">
             <span className="text-[13px] font-semibold text-ink-2">Or import from</span>
             <CloudImportButtons onPick={takeCloud} mock={mock} max={many ? undefined : 1} disabled={!!uploading} />
-            {!many && <p className="text-[12.5px] text-ink-2">Your first upload is one piece. You can import more after it&apos;s published.</p>}
+            {!many && <p className="text-[12.5px] text-ink-2">Start with one piece. Import more once it&apos;s live.</p>}
           </div>
         )}
         {cloudNote && <p role="status" className="rounded-lg bg-wall px-3 py-2 text-[13px]">{cloudNote}</p>}

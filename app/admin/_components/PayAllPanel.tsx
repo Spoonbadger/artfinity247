@@ -3,7 +3,7 @@
 // "Pay all ready payouts": Stripe transfers for connected artists, a by-hand Venmo list for the rest (lib/payouts.ts).
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { failed, saved } from "@/lib/feedback";
 import { monthLabel, usd } from "./util";
 import { PAYOUTS_CHANGED } from "./PayoutsTable";
 import { useAdminCan } from "./AdminRole";
@@ -53,25 +53,24 @@ export default function PayAllPanel() {
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || "");
       setResult(d);
-      if (d.failed.length) toast.error(`${d.failed.length} ${d.failed.length === 1 ? "transfer" : "transfers"} failed. See below.`);
-      else toast.success(`Sent ${d.paid.length} ${d.paid.length === 1 ? "payout" : "payouts"}.`);
+      if (d.failed.length) failed(`${d.failed.length} ${d.failed.length === 1 ? "transfer" : "transfers"} failed`, { description: "The reasons are listed under Ready to pay.", retry: run });
+      else saved(`Sent ${d.paid.length} ${d.paid.length === 1 ? "payout" : "payouts"}`);
       window.dispatchEvent(new Event(PAYOUTS_CHANGED));
       router.refresh();
       await load();
     } catch (e: any) {
-      toast.error(e?.message || "Pay all failed.");
+      failed(e?.message || "Pay all failed.", { fix: { label: "Check Stripe setup", href: "/admin#integrations" } });
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <section aria-labelledby="payall-h" className="af-card grid gap-4 p-4 sm:p-5">
+    <section aria-labelledby="payall-h" className="af-panel grid gap-4 p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="eyebrow">Every closed, unpaid month</p>
-          <h2 id="payall-h" className="text-[22px] font-bold">Pay all ready payouts</h2>
-          <p className="text-[13.5px] text-ink-2">Same amounts artists see on their Money page.</p>
+          <h2 id="payall-h" className="text-[20px] font-bold">Ready to pay</h2>
+          <p className="text-[13.5px] text-ink-2">Every closed, unpaid month. Same amounts artists see.</p>
         </div>
         <button type="button" onClick={run} disabled={!canPay || busy} title={allowed ? undefined : "Payouts need the admin or owner role."} className="btn btn-blue">
           {busy ? "Sending…" : stripe.length ? `Pay ${stripe.length} by Stripe · ${usd(sum(stripe))}` : "Pay all by Stripe"}
@@ -107,7 +106,7 @@ export default function PayAllPanel() {
       ) : !data ? (
         <p className="text-ink-2">Loading…</p>
       ) : data.ready.length === 0 ? (
-        <p className="flex items-center gap-2 text-[14px] font-semibold"><i className="paint-dab h-3 w-3" style={{ ["--dab" as string]: "var(--af-earned)" }} />Everyone&apos;s paid. Nothing waiting.</p>
+        <p className="flex items-center gap-2 text-[14px] font-semibold"><i className="paint-dab h-3 w-3" style={{ ["--dab" as string]: "var(--af-earned)" }} />Everyone&apos;s paid.</p>
       ) : (
         <div className="grid items-start gap-4 md:grid-cols-2">
           <Group
@@ -122,7 +121,7 @@ export default function PayAllPanel() {
             dab="var(--af-sticker)"
             empty="No one to pay by hand."
             rows={venmo}
-            note="Send it in Venmo, then press Mark paid on that month below."
+            note="Send it in Venmo, then Mark paid below."
             right={(r) => <span className={r.venmoHandle ? "text-ink-2" : "font-semibold text-coral"}>{r.venmoHandle ? `@${r.venmoHandle.replace(/^@/, "")}` : "No Venmo"}</span>}
           />
         </div>

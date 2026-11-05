@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { BrushStroke } from "@/components/af/Brush";
 import { cn } from "@/lib/utils";
 import { readLocalEvents } from "./events-store";
 import { failed, saved } from "@/lib/feedback";
@@ -42,45 +41,48 @@ export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true
   const steps: Step[] = [
     { label: "Upload your first piece", done: hasArt, href: "/studio/art/new", act: "Upload" },
     { label: "Add a photo and bio", done: hasProfile, href: "/studio/page", act: "Add" },
-    { label: "Hang a code, make a sale", done: hasSold, href: "/studio/qr", act: "Print" },
+    { label: "Hang a code and make a sale", done: hasSold, href: "/studio/qr", act: "Print" },
     { label: "Add your next event", done: hasEvent, href: "/studio/events", act: "Add" },
     { label: "Share your page", done: shared, act: copied ? "Copied" : "Copy link", onClick: copyLink },
   ];
   // Only shown while missing, so it reads as a warning rather than a chore.
-  if (!hasVenmo) steps.unshift({ label: "Add your Venmo to get paid", done: false, href: "/studio/page#venmo", act: "Add" });
+  // Before the first upload, uploading comes first; after that, getting paid does.
+  if (!hasVenmo) steps.splice(hasArt ? 0 : 1, 0, { label: "Add Venmo so we can pay you", done: false, href: "/studio/page#venmo", act: "Add" });
   const done = steps.filter((s) => s.done).length;
+  const todo = steps.filter((s) => !s.done);
+  // All done: the card goes away (bar an optional suggestion), so the dashboard leads with the numbers.
+  if (!todo.length && !suggestion) return null;
 
   return (
     <section className="af-card grid content-start gap-3 p-4 sm:p-5" aria-labelledby="next-h">
-      <div className="flex items-baseline justify-between gap-2">
-        <h2 id="next-h" className="text-[20px] font-bold">Next steps</h2>
-        <span className="num text-[12.5px] text-ink-2">{done} of {steps.length}</span>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <h2 id="next-h" className="text-[18px] font-bold">Next up</h2>
+        {todo.length > 0 && (
+          <div className="flex items-center gap-2.5">
+            <span className="num text-[12.5px] font-semibold text-ink-2">{done} of {steps.length} done</span>
+            <div className="relative h-2.5 w-24 overflow-hidden rounded-full bg-wall" role="progressbar" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={done} aria-label="Steps done">
+              {done > 0 && <span className="absolute inset-y-0 left-0 rounded-full bg-scan transition-[width]" style={{ width: `${(done / steps.length) * 100}%` }} />}
+            </div>
+          </div>
+        )}
       </div>
-      <div className="relative h-6 overflow-hidden rounded-full bg-wall" role="progressbar" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={done} aria-label="Steps done">
-        {done > 0 && <BrushStroke className="absolute -left-1 top-px h-[calc(100%-2px)] transition-[width]" color="var(--af-scan)" style={{ width: `${(done / steps.length) * 100 + 2}%` }} />}
-      </div>
-      <ul className="grid gap-2.5 text-[14.5px]">
-        {steps.map((s) => (
-          <li key={s.label} className="flex items-center gap-2.5">
-            <span
-              aria-hidden="true"
-              className={cn("h-[18px] w-[18px] shrink-0 rounded-md border-2", s.done ? "border-scan bg-scan shadow-[inset_0_0_0_3px_#fff]" : "border-ink")}
-            />
-            <span className={cn("min-w-0 flex-1", s.done && "text-ink-2 line-through")}>
-              {s.label}
-              <span className="sr-only">{s.done ? " (done)" : " (to do)"}</span>
-            </span>
-            {!s.done && s.href && (
-              <Link href={s.href} className="-my-3 inline-flex min-h-[44px] items-center px-1 text-[14px] font-bold text-scan underline-offset-2 hover:underline">{s.act}</Link>
-            )}
-            {s.onClick && (
-              <button type="button" onClick={s.onClick} className="-my-3 inline-flex min-h-[44px] items-center px-1 text-[14px] font-bold text-scan underline-offset-2 hover:underline">{s.act}</button>
-            )}
-          </li>
-        ))}
-      </ul>
+      {todo.length > 0 && (
+        <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {todo.map((s, i) => {
+            const cls = cn("inline-flex min-h-[40px] shrink-0 items-center text-[14px] font-bold", i === 0 ? "btn btn-sm" : "px-1 text-scan underline-offset-2 hover:underline");
+            return (
+              <li key={s.label} className={cn("flex items-center gap-2.5 rounded-xl border px-3 py-2 text-[14.5px]", i === 0 ? "border-ink bg-white" : "border-line bg-wall/50")}>
+                <span aria-hidden="true" className="h-[18px] w-[18px] shrink-0 rounded-md border-2 border-ink" />
+                <span className={cn("min-w-0 flex-1", i === 0 && "font-semibold")}>{s.label}</span>
+                {s.href && <Link href={s.href} className={cls}>{s.act}</Link>}
+                {s.onClick && <button type="button" onClick={s.onClick} className={cls}>{s.act}</button>}
+              </li>
+            );
+          })}
+        </ul>
+      )}
       {suggestion && (
-        <div className="mt-1 flex items-center gap-2.5 rounded-xl border border-dashed border-scan/50 bg-scan-soft px-3 py-2.5 text-[14px]">
+        <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-scan/50 bg-scan-soft px-3 py-2.5 text-[14px]">
           <i aria-hidden="true" className="paint-dab h-[18px] w-[18px] shrink-0" style={{ ["--dab" as string]: "var(--af-scan)" }} />
           <span className="min-w-0 flex-1">
             <b className="block">{suggestion.label}</b>

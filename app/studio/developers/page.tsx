@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { StudioPage } from "@/components/studio/StudioPage";
 import { EmptyState } from "@/components/studio/EmptyState";
 import EmbedBuilder from "@/components/devtools/EmbedBuilder";
+import Disclosure from "@/components/money/Disclosure";
 import Code from "@/components/devtools/Code";
 import { SITE } from "@/components/devtools/snippets";
 import { requireArtist } from "../_lib/data";
@@ -30,7 +31,7 @@ export default async function StudioDevelopersPage() {
   return (
     <StudioPage
       title="Embed on your site"
-      sub="Copy, paste, sell prints from your own website."
+      sub="Sell prints from your own website."
       actions={<Link href="/developers" className="btn btn-ghost btn-sm">Developer docs <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" /></Link>}
     >
       {arts.length ? (
@@ -75,34 +76,32 @@ export default async function StudioDevelopersPage() {
         )
       )}
 
-      <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-        <section className="af-panel grid min-w-0 content-start gap-3 p-4 sm:p-6">
-          <div className="flex items-center gap-2.5">
-            <span className="paint-dab" style={{ ["--dab" as string]: "var(--af-earned)" }} aria-hidden="true" />
-            <h2 className="font-display text-[22px] font-extrabold [font-variation-settings:'wdth'_80]">Your data, as JSON</h2>
-          </div>
-          <p className="text-[14px] text-ink-2">Public, read-only, no key needed. Only approved pieces.</p>
-          <Code
-            lang="shell"
-            title="Your endpoints"
-            code={[`curl ${api}`, `curl ${api}/artworks`, `curl ${api}/collections`].join("\n")}
-          />
-        </section>
+      <Disclosure title="For developers" hint="Your data as JSON · API keys">
+        <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+          <section className="grid min-w-0 content-start gap-3" aria-labelledby="json-h">
+            <h2 id="json-h" className="text-[17px] font-bold">Your data, as JSON</h2>
+            <p className="text-[14px] text-ink-2">Public and read-only. No key needed. Approved pieces only.</p>
+            <Code
+              lang="shell"
+              title="Your endpoints"
+              code={[`curl ${api}`, `curl ${api}/artworks`, `curl ${api}/collections`].join("\n")}
+            />
+          </section>
 
-        <section className="relative grid min-w-0 content-start gap-3 overflow-hidden rounded-2xl border-[1.5px] border-dashed border-ink/40 bg-wall p-4 sm:p-6">
-          <span className="sticker-badge justify-self-start">Coming with webhooks</span>
-          <div className="flex items-center gap-2.5">
-            <KeyRound className="h-5 w-5 text-ink-2" aria-hidden="true" />
-            <h2 className="font-display text-[22px] font-extrabold [font-variation-settings:'wdth'_80]">API keys</h2>
-          </div>
-          <p className="text-[14px] text-ink-2">Private keys arrive with sale webhooks, so your site can react when a print sells.</p>
-          <p className="text-[14px] text-ink-2">Until then, the public JSON above covers your pieces and collections, no key needed. Building something that needs a key? Tell us and we&apos;ll get you in early.</p>
-          <div className="flex flex-wrap gap-2">
-            <Link href="/contact" className="btn btn-sm">Ask for early access</Link>
-            <Link href="/developers" className="btn btn-ghost btn-sm">Read the docs</Link>
-          </div>
-        </section>
-      </div>
+          <section className="grid min-w-0 content-start gap-3 rounded-2xl border-[1.5px] border-dashed border-ink/40 bg-wall p-4" aria-labelledby="keys-h">
+            <span className="sticker-badge justify-self-start">Coming with webhooks</span>
+            <div className="flex items-center gap-2.5">
+              <KeyRound className="h-5 w-5 text-ink-2" aria-hidden="true" />
+              <h2 id="keys-h" className="text-[17px] font-bold">API keys</h2>
+            </div>
+            <p className="text-[14px] text-ink-2">Private keys come with sale webhooks, so your site can react when a print sells. Need one sooner? Tell us.</p>
+            <div className="flex flex-wrap gap-2">
+              <Link href="/contact" className="btn btn-ghost btn-sm">Ask for early access</Link>
+              <Link href="/developers" className="btn btn-ghost btn-sm">Read the docs</Link>
+            </div>
+          </section>
+        </div>
+      </Disclosure>
     </StudioPage>
   );
 }

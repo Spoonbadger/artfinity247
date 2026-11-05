@@ -13,7 +13,7 @@ export default async function NewArtPage() {
   // A first upload stays one piece; after that the form also takes several files or a whole folder.
   const canQueue = count > 0;
   return (
-    <StudioPage title="Upload art" sub={canQueue ? "One piece, or a whole folder of them." : "One piece, a few prices, done."}>
+    <StudioPage title="Upload art">
       {/* mockImport: the dev-only "Sample files" import button (ALLOW_MOCK_IMPORT=1, never in production). */}
       <NewArtwork split={split} handle={artist.slug} canQueue={canQueue} mockImport={mockImportAllowed()} />
     </StudioPage>

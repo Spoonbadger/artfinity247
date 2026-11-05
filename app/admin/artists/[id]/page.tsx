@@ -8,6 +8,10 @@ import { PROVIDER_LABEL, isProviderId } from "@/lib/oauth/meta";
 import { deleteBlocker } from "@/lib/adminAccounts";
 import { usd } from "../../_components/util";
 import ActionButton from "../../_components/ActionButton";
+import MoreMenu from "../../_components/MoreMenu";
+import { PageHead, Pill, StatusPill } from "../../_components/ui";
+import { DataTable, type Row as TRow } from "../../_components/table";
+import { Problem } from "@/components/studio/Problem";
 import NotesPanel from "../../_components/NotesPanel";
 import AuditList from "../../_components/AuditList";
 import { getBalance, monthLabel } from "@/lib/balance";
@@ -22,7 +26,7 @@ import { cn } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Artist" };
 
-const day = (d: Date | string | null | undefined) => (d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—");
+const day = (d: Date | string | null | undefined) => (d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" }) : "—");
 const ART_STATUS: Record<string, string> = { PENDING: "bg-sticker text-ink", APPROVED: "bg-scan-soft text-scan", REJECTED: "bg-coral/15 text-coral" };
 const STRIPE_LABEL: Record<string, string> = { ready: "Connected, payouts on", pending: "Started, not finished", not_connected: "Not connected" };
 const BILLING_LABEL: Record<BillingView["kind"], string> = {
@@ -84,67 +88,71 @@ export default async function AdminArtistPage({ params }: { params: { id: string
   const teammate = isAdmin && !self && !roleCan(me.adminRole, "team");
   const blocker = roleCan(me.adminRole, "deleteAccount") ? await deleteBlocker(a.id) : null;
 
+  const payoutRows: TRow[] = balance.payouts.map((p) => {
+    const late = balance.lateMonths.includes(p.month);
+    return {
+      id: p.month,
+      status: p.status === "paid" ? "paid" : late ? "late" : p.status === "scheduled" ? "due" : "open",
+      sort: { month: p.month, amount: p.amountCents, status: p.status === "paid" ? 2 : late ? 0 : 1, sales: p.sales },
+      cells: {
+        month: p.label,
+        amount: <b>{usd(p.amountCents)}</b>,
+        status: p.status === "paid" ? <Pill tone="green">Paid {day(p.paidAt)}</Pill> : p.status === "scheduled" ? (late ? <Pill tone="red">Late</Pill> : <Pill tone="amber">Due {day(p.dueDate)}</Pill>) : <Pill>This month</Pill>,
+        method: <span className="text-ink-2">{p.method}</span>,
+        sales: p.sales,
+      },
+    };
+  });
+  const orderTable: TRow[] = orderRows.map((o) => {
+    const st = o.paymentStatus === "paid" || o.kind === "reprint" ? o.shippingStatus : o.paymentStatus;
+    return {
+      id: o.id,
+      date: o.createdAt.toISOString(),
+      search: `${orderNumber(o.id)} ${o.shippingName ?? ""} ${o.email}`,
+      sort: { date: o.createdAt.toISOString(), buyer: (o.shippingName || o.email).toLowerCase(), total: o.amountTotal, status: st },
+      cells: {
+        date: <><Link href={`/admin/orders/${o.id}`} className="font-semibold text-scan">{orderNumber(o.id)}</Link><span className="block text-[12px] text-ink-2">{day(o.createdAt)}</span></>,
+        buyer: <span className="block max-w-[200px] truncate">{o.shippingName || o.email}</span>,
+        total: usd(o.amountTotal),
+        status: <span className="flex flex-wrap gap-1">{o.kind !== "retail" && <Pill tone="amber">{o.kind}</Pill>}<StatusPill status={st} /></span>,
+      },
+    };
+  });
+  const codeTable: TRow[] = codes.map((c) => ({
+    id: c.id,
+    search: `${c.code} ${c.artwork?.title ?? ""} ${c.label ?? ""} ${c.venue ?? ""}`,
+    sort: { code: c.code, to: c.artwork?.title || "Artist page", where: [c.label, c.venue].filter(Boolean).join(" · "), scans: c._count.scans },
+    cells: {
+      code: <span className="font-semibold">{c.code}{!c.active && <span className="ml-1 text-[11.5px] font-normal text-ink-2">(off)</span>}</span>,
+      to: <span className="block max-w-[180px] truncate">{c.artwork?.title || "Artist page"}</span>,
+      where: <span className="block max-w-[180px] truncate text-ink-2">{[c.label, c.venue].filter(Boolean).join(" · ") || "—"}{c.discountPct ? ` · ${c.discountPct}% off` : ""}</span>,
+      scans: c._count.scans,
+    },
+  }));
+
   return (
     <div className="grid gap-6">
-      <div className="grid gap-3">
-        <Link href="/admin/artists" className="text-[13.5px] font-semibold text-ink-2 no-underline hover:text-ink">← Artists</Link>
-        <div className="flex flex-wrap items-center gap-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          {a.profileImage ? <img src={a.profileImage} alt="" className="h-16 w-16 rounded-full object-cover" /> : <span className="h-16 w-16 rounded-full bg-gallery" />}
-          <div className="min-w-0">
-            <h1 className="display text-[40px] sm:text-[52px]">{name}</h1>
-            <p className="text-[14px] text-ink-2">@{a.slug} · {a.email} · {a.phone || "no phone"} · {[a.city, a.state].filter(Boolean).join(", ")} · joined {day(a.createdAt)}</p>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {isAdmin && <Chip c="bg-ink text-white">{ROLE_LABEL[asAdminRole(a.adminRole)]}</Chip>}
-          <Chip c={a.emailVerifiedAt ? "bg-earned-soft text-earned" : "bg-coral/15 text-coral"}>{a.emailVerifiedAt ? "Email confirmed" : "Email not confirmed"}</Chip>
-          {a.suspendedAt && <Chip c="bg-coral text-white">Suspended {day(a.suspendedAt)}</Chip>}
-          {a.closedAt && <Chip c="bg-coral/15 text-coral">Closed {day(a.closedAt)}</Chip>}
-          <Chip c={a.verification === "VERIFIED" ? "bg-scan-soft text-scan" : a.verification === "PENDING" ? "bg-sticker text-ink" : "bg-wall text-ink-2"}>
-            {a.verification === "VERIFIED" ? `Verified ${day(a.verifiedAt)}` : a.verification === "PENDING" ? "Verification requested" : a.verification === "REJECTED" ? "Verification declined" : "Not verified"}
-          </Chip>
-          <Chip c={infinity ? "bg-[#e6dcff] text-ink" : "bg-wall text-ink-2"}>{infinity ? `Infinity until ${formatPlanDate(a.proUntil!)}` : "Free plan"}</Chip>
-          {billing.view.kind !== "free" && billing.view.kind !== "earned" && (
-            <Chip c={billing.view.kind === "payment_failed" ? "bg-coral/15 text-coral" : "bg-[#e6dcff] text-ink"}>{BILLING_LABEL[billing.view.kind]}</Chip>
-          )}
-          <Chip c="bg-wall text-ink-2">{followers} followers</Chip>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {!a.closedAt && !a.suspendedAt && <a href={artistPath(a.slug)} target="_blank" rel="noopener" className="btn btn-ghost btn-sm">Public page ↗</a>}
-          {(a.closedAt || a.suspendedAt) && <span className="self-center text-[13px] text-ink-2">Public page is offline.</span>}
-          <Link href={`/admin/activity?id=${a.id}`} className="btn btn-ghost btn-sm">Full activity</Link>
-        </div>
-        {a.suspendedAt && (
-          <p className="rounded-lg border-[1.5px] border-coral bg-[#fff1ed] px-3 py-2 text-[14px]"><b>Suspended:</b> {a.suspendedReason || "no reason given"}. Their pages 404, codes go nowhere and checkout is blocked. They see a banner in Studio.</p>
-        )}
-      </div>
-
-      <section aria-label="Actions" className="af-card grid gap-3 p-4">
-        <div className="flex flex-wrap gap-2">
-        {a.verification === "VERIFIED" ? (
-          <ActionButton url={`/api/admin/verification/${a.id}`} body={{ action: "revoke" }} label="Unverify" title={`Remove ${name}'s verified seal?`} tone="danger"
-            confirm="The seal comes off their page and they get an email with your note." fields={[{ name: "note", label: "Note for the artist", type: "textarea", placeholder: "Optional" }]} confirmLabel="Unverify" done="Verification removed" />
-        ) : (
-          <ActionButton url={`/api/admin/verification/${a.id}`} body={{ action: "approve" }} label="Verify" title={`Verify ${name}?`} tone="blue"
-            confirm="Their page shows the verified seal and they get an email." confirmLabel="Verify" done="Verified" />
-        )}
-        {a.suspendedAt ? (
-          <ActionButton url={target} body={{ action: "unsuspend" }} need="suspend" label="Unsuspend" title={`Unsuspend ${name}?`} tone="blue"
-            confirm="Their page, art and printed codes come back online and buyers can check out again. They get an email." confirmLabel="Unsuspend" done="Unsuspended" />
-        ) : (
-          <ActionButton url={target} body={{ action: "suspend" }} need="suspend" label="Suspend" title={`Suspend ${name}?`} tone="danger" disabled={isAdmin}
-            confirm="Their public pages 404, printed codes go nowhere and nobody can check out their work. Earnings are still paid. They get an email and see the reason in Studio."
-            fields={[{ name: "reason", label: "Reason (the artist sees this)", type: "textarea", required: true, placeholder: "e.g. Several copyright reports while we look into it" }]} confirmLabel="Suspend" done="Suspended" />
-        )}
-        {a.closedAt ? (
-          <ActionButton url={target} body={{ action: "reopen" }} need="suspend" label="Reopen account" title={`Reopen ${name}'s account?`}
-            confirm="Their art goes back to how it was before they closed, and they can log in again." confirmLabel="Reopen" done="Account reopened" />
-        ) : (
-          <ActionButton url={target} body={{ action: "close" }} need="suspend" label="Close account" title={`Close ${name}'s account?`} tone="danger" disabled={isAdmin}
-            confirm="Same as the artist closing it: their page and art go offline, printed codes stop working and they're signed out. Orders and unpaid earnings stay and are paid on schedule. You can reopen it later."
-            fields={[{ name: "reason", label: "Reason (for the audit log)", type: "textarea", placeholder: "Optional" }]} confirmLabel="Close account" done="Account closed" />
-        )}
+      <PageHead
+        back={{ href: "/admin/artists", label: "Artists" }}
+        title={
+          <span className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {a.profileImage ? <img src={a.profileImage} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover" /> : <span className="h-12 w-12 shrink-0 rounded-full bg-gallery" />}
+            <span className="min-w-0 break-words">{name}</span>
+          </span>
+        }
+        sub={<>@{a.slug} · {a.email} · joined {day(a.createdAt)}</>}
+        action={
+          <>
+            {a.verification === "VERIFIED" ? (
+              <ActionButton url={`/api/admin/verification/${a.id}`} body={{ action: "revoke" }} label="Unverify" title={`Remove ${name}'s verified seal?`} tone="danger"
+                confirm="The seal comes off their page and they get an email with your note." fields={[{ name: "note", label: "Note for the artist", type: "textarea", placeholder: "Optional" }]} confirmLabel="Unverify" done="Verification removed" />
+            ) : (
+              <ActionButton url={`/api/admin/verification/${a.id}`} body={{ action: "approve" }} label="Verify" title={`Verify ${name}?`} tone={a.verification === "PENDING" ? "blue" : "ghost"}
+                confirm="Their page shows the verified seal and they get an email." confirmLabel="Verify" done="Verified" />
+            )}
+            {!a.closedAt && !a.suspendedAt && <a href={artistPath(a.slug)} target="_blank" rel="noopener" className="btn btn-ghost btn-sm">Public page ↗</a>}
+            <MoreMenu label="Account">
         <ActionButton url={target} body={{ action: "grant_infinity" }} need="accounts" label="Grant Infinity" title={`Give ${name} Infinity months`}
           confirm={infinity ? `Adds to their current Infinity, which runs until ${formatPlanDate(a.proUntil!)}.` : "Starts today. They get the Infinity split on new sales while it lasts."}
           fields={[{ name: "months", label: "Months", type: "number", defaultValue: "2", required: true, hint: "1 to 24" }]} confirmLabel="Grant" done="Infinity granted" />
@@ -154,15 +162,10 @@ export default async function AdminArtistPage({ params }: { params: { id: string
         )}
         <ActionButton url={target} body={{ action: "resend_payout_email" }} label="Resend payout email" title="Resend the payout email?" disabled={!lastPaid}
           confirm={lastPaid ? `Sends the “payout sent” email for ${lastPaid.label} (${usd(lastPaid.amountCents)}) to ${a.email} again.` : "No paid payout yet."} confirmLabel="Send" done="Payout email sent" />
-        </div>
-        <div className="flex flex-wrap gap-2 border-t border-line pt-3">
-          <span className="self-center text-[12px] font-bold uppercase tracking-[0.06em] text-ink-2">Account</span>
           <ActionButton url={target} body={{ action: "send_password_reset" }} need="accountSupport" disabled={teammate} label={hasPassword ? "Send password reset link" : "Send set-password link"}
             title="Email a password link?" confirm={`Sends the “Reset your password” email to ${a.email}. The link works for 30 minutes and signs them out everywhere once used.${hasPassword ? "" : " They have no password yet, so this lets them add one."}`} confirmLabel="Send link" done="Link sent" />
           <ActionButton url={target} body={{ action: "resend_verification" }} need="accountSupport" disabled={!!a.emailVerifiedAt} label="Resend email confirmation"
             title="Resend the confirmation link?" confirm={`Sends a fresh “Confirm your email” link to ${a.email} (good for 7 days).`} confirmLabel="Send" done="Confirmation sent" />
-          <ActionButton url={target} body={{ action: "sign_out_everywhere" }} need="accountSupport" disabled={teammate} label="Sign out everywhere" tone="danger"
-            title={`Sign ${name} out everywhere?`} confirm={self ? "Every session ends, including this one. You'll need to log in again." : "Every logged-in browser and phone is signed out on its next click. Their password and sign-in methods stay the same."} confirmLabel="Sign out everywhere" done="Signed out everywhere" />
           <ActionButton url={target} body={{ action: "change_email" }} need="accounts" disabled={teammate} label="Change email"
             title={`Change ${name}'s email`} confirm={`Now ${a.email}. The new address has to be confirmed (we email a link), and they're signed out everywhere. Payouts and newsletters wait until it's confirmed.`}
             fields={[{ name: "email", label: "New email", required: true, defaultValue: a.email }]} confirmLabel="Change email" done="Email changed" />
@@ -173,44 +176,51 @@ export default async function AdminArtistPage({ params }: { params: { id: string
               { name: "handle", label: "Handle", defaultValue: a.slug, required: true, hint: "3–30 letters, numbers, dots or underscores" },
               { name: "city", label: "City", defaultValue: a.city, required: true },
             ]} confirmLabel="Save" done="Profile saved" />
-          {roleCan(me.adminRole, "deleteAccount") && !self && (
-            <ActionButton url={target} body={{ action: "delete" }} need="deleteAccount" tone="danger" label="Delete permanently" disabled={!!blocker} redirectTo="/admin/artists"
-              title={`Delete ${name} for good?`}
-              confirm={blocker ? <>Can&apos;t delete: {blocker}</> : <>Removes the account, its art, links, codes and everything else. <b>This can&apos;t be undone.</b> Type the handle to confirm.</>}
-              fields={blocker ? [] : [{ name: "confirm", label: `Type ${a.slug}`, required: true }]} confirmLabel="Delete forever" done="Deleted" />
-          )}
+          <ActionButton url={target} body={{ action: "sign_out_everywhere" }} need="accountSupport" disabled={teammate} label="Sign out everywhere" tone="danger"
+            title={`Sign ${name} out everywhere?`} confirm={self ? "Every session ends, including this one. You'll need to log in again." : "Every logged-in browser and phone is signed out on its next click. Their password and sign-in methods stay the same."} confirmLabel="Sign out everywhere" done="Signed out everywhere" />
+              <Link href={`/admin/activity?id=${a.id}`} className="btn btn-ghost btn-sm">Full activity</Link>
+            </MoreMenu>
+          </>
+        }
+      >
+        <div className="flex flex-wrap gap-1.5">
+          {isAdmin && <Pill tone="ink">{ROLE_LABEL[asAdminRole(a.adminRole)]}</Pill>}
+          {a.suspendedAt && <Pill tone="red">Suspended {day(a.suspendedAt)}</Pill>}
+          {a.closedAt && <Pill tone="red">Closed {day(a.closedAt)}</Pill>}
+          {a.verification === "VERIFIED" ? <Pill tone="blue">Verified</Pill> : a.verification === "PENDING" ? <Pill tone="amber">Verification requested</Pill> : a.verification === "REJECTED" ? <Pill>Verification declined</Pill> : null}
+          <Pill tone={infinity ? "blue" : "grey"}>{infinity ? `Infinity to ${formatPlanDate(a.proUntil!)}` : "Free plan"}</Pill>
+          {billing.view.kind === "payment_failed" && <Pill tone="red">{BILLING_LABEL[billing.view.kind]}</Pill>}
+          {!a.emailVerifiedAt && <Pill tone="amber">Email not confirmed</Pill>}
+          <Pill>{followers} followers</Pill>
         </div>
-        {blocker && roleCan(me.adminRole, "deleteAccount") && <p className="text-[12.5px] text-ink-2">Can&apos;t delete permanently: {blocker}</p>}
-        {teammate && <p className="text-[12.5px] text-ink-2">This is another admin&apos;s account: only an owner can change its sign-in, email or profile.</p>}
-      </section>
+      </PageHead>
 
-      <section aria-label="Money" className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-        <Stat label="Prints sold" value={String(prints)} />
-        <Stat label="Sales" value={usd(gross)} />
-        <Stat label="Lifetime earnings" value={usd(balance.lifetimeCents)} earned />
-        <Stat label="On hold (14 days)" value={usd(balance.pendingCents)} />
+      {a.suspendedAt && (
+        <Problem tone="error" title={`Suspended: ${a.suspendedReason || "no reason given"}`}>Pages 404, codes go nowhere, checkout is blocked.</Problem>
+      )}
+      {teammate && <p className="text-[12.5px] text-ink-2">Another admin&apos;s account: only an owner can change its sign-in, email or profile.</p>}
+
+      <section aria-label="Money" className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="Ready to pay" value={usd(balance.availableCents)} earned />
+        <Stat label="On hold (14 days)" value={usd(balance.pendingCents)} />
         <Stat label="Paid out" value={usd(balance.paidTotalCents)} />
+        <Stat label={`${prints} prints · ${usd(gross)} sales`} value={usd(balance.lifetimeCents)} earned />
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <div className="grid content-start gap-6">
-          <Card title="Payouts" sub={`${balance.payoutVia === "stripe" ? "Paid by Stripe" : "Paid by Venmo"} · Stripe: ${STRIPE_LABEL[balance.stripeStatus]} · Venmo: ${a.venmoHandle ? `@${a.venmoHandle.replace(/^@/, "")}` : "none"}${a.venmoPending ? ` (change to @${a.venmoPending} unconfirmed)` : ""}`}>
+          <Card title="Payouts" sub={`${balance.payoutVia === "stripe" ? "Stripe" : "Venmo"} · Stripe ${STRIPE_LABEL[balance.stripeStatus].toLowerCase()} · Venmo ${a.venmoHandle ? `@${a.venmoHandle.replace(/^@/, "")}` : "none"}${a.venmoPending ? ` (@${a.venmoPending} unconfirmed)` : ""}`}>
             {balance.lateMonths.length > 0 && <p className="mb-2 rounded-lg bg-coral/10 px-3 py-2 text-[13.5px] font-semibold text-coral">Late: {balance.lateMonths.map((m) => monthLabel(m)).join(", ")}</p>}
             {balance.adjustmentCents !== 0 && <p className="mb-2 text-[13px] text-ink-2">Paid months differ from today&apos;s recompute by {usd(balance.adjustmentCents)} (a refund or change after payout).</p>}
-            {balance.payouts.length === 0 ? <Empty>No sales yet.</Empty> : (
-              <Table head={["Month", "Amount", "Status", "Method", "Sales"]}>
-                {balance.payouts.map((p) => (
-                  <tr key={p.month} className="border-t border-line">
-                    <td className="py-1.5 pr-3">{p.label}</td>
-                    <td className="py-1.5 pr-3 text-right font-semibold">{usd(p.amountCents)}</td>
-                    <td className="py-1.5 pr-3">{p.status === "paid" ? `Paid ${day(p.paidAt)}` : p.status === "scheduled" ? (balance.lateMonths.includes(p.month) ? <span className="font-semibold text-coral">Late</span> : `Due ${day(p.dueDate)}`) : "This month"}</td>
-                    <td className="py-1.5 pr-3 text-ink-2">{p.method}</td>
-                    <td className="py-1.5 text-right">{p.sales}</td>
-                  </tr>
-                ))}
-              </Table>
-            )}
+            <DataTable id="artist-payouts" caption="Payouts" minWidth={480} defaultSort={{ key: "month", dir: "desc" }}
+              columns={[{ key: "month", label: "Month", firstDir: "desc" }, { key: "amount", label: "Amount", align: "right" }, { key: "status", label: "Status" }, { key: "method", label: "Method", sortable: false }, { key: "sales", label: "Sales", align: "right" }]}
+              rows={payoutRows} empty={<Empty>No sales yet.</Empty>} />
+          </Card>
+
+          <Card title="Orders" sub="Latest 25 with their work">
+            <DataTable id="artist-orders" caption="Orders" minWidth={480} defaultSort={{ key: "date", dir: "desc" }} search="Order or buyer"
+              columns={[{ key: "date", label: "Order", firstDir: "desc" }, { key: "buyer", label: "Buyer" }, { key: "total", label: "Total", align: "right" }, { key: "status", label: "Status" }]}
+              rows={orderTable} empty={<Empty>No orders.</Empty>} />
           </Card>
 
           <Card title="Artworks" sub={`${artworks.filter((x) => x.status === "APPROVED").length} live of ${artworks.length}`}>
@@ -235,39 +245,16 @@ export default async function AdminArtistPage({ params }: { params: { id: string
             )}
           </Card>
 
-          <Card title="Orders" sub="Latest 25 with their work">
-            {orderRows.length === 0 ? <Empty>No orders.</Empty> : (
-              <Table head={["Order", "Buyer", "Total", "Status"]}>
-                {orderRows.map((o) => (
-                  <tr key={o.id} className="border-t border-line">
-                    <td className="py-1.5 pr-3"><Link href={`/admin/orders/${o.id}`} className="font-semibold text-scan">{orderNumber(o.id)}</Link><span className="block text-[12px] text-ink-2">{day(o.createdAt)}</span></td>
-                    <td className="max-w-[200px] truncate py-1.5 pr-3">{o.shippingName || o.email}</td>
-                    <td className="py-1.5 pr-3 text-right">{usd(o.amountTotal)}</td>
-                    <td className="py-1.5 text-[12.5px]">{o.kind !== "retail" ? `${o.kind} · ` : ""}{o.paymentStatus === "paid" || o.kind === "reprint" ? o.shippingStatus : o.paymentStatus}</td>
-                  </tr>
-                ))}
-              </Table>
-            )}
-          </Card>
-
           <Card title="Printed codes" id="codes" sub={`${codes.length} codes`}>
-            {codes.length === 0 ? <Empty>No codes.</Empty> : (
-              <Table head={["Code", "Points to", "Where", "Scans"]}>
-                {codes.map((c) => (
-                  <tr key={c.id} className="border-t border-line">
-                    <td className="py-1.5 pr-3 font-semibold">{c.code}{!c.active && <span className="ml-1 text-[11.5px] text-ink-2">(off)</span>}</td>
-                    <td className="max-w-[180px] truncate py-1.5 pr-3">{c.artwork?.title || "Artist page"}</td>
-                    <td className="max-w-[180px] truncate py-1.5 pr-3 text-ink-2">{[c.label, c.venue].filter(Boolean).join(" · ") || "—"}{c.discountPct ? ` · ${c.discountPct}% off` : ""}</td>
-                    <td className="py-1.5 text-right">{c._count.scans}</td>
-                  </tr>
-                ))}
-              </Table>
-            )}
+            <DataTable id="artist-codes" caption="Printed codes" minWidth={480} defaultSort={{ key: "scans", dir: "desc" }} search={codes.length > 8 ? "Code, art or place" : undefined}
+              columns={[{ key: "code", label: "Code" }, { key: "to", label: "Points to" }, { key: "where", label: "Where" }, { key: "scans", label: "Scans", align: "right" }]}
+              rows={codeTable} empty={<Empty>No codes.</Empty>} />
           </Card>
         </div>
 
-        <div className="grid content-start gap-6">
-          <Card title="Sign-in and account" sub={`Session version ${a.sessionVersion}`}>
+        <div className="grid content-start gap-4">
+          <NotesPanel targetType="artist" targetId={a.id} notes={notes.map((n) => ({ id: n.id, adminEmail: n.adminEmail, body: n.body, createdAt: n.createdAt.toISOString() }))} />
+          <Card fold title="Sign-in and account" sub={`Session v${a.sessionVersion}`}>
             <dl className="grid gap-1.5 text-[13.5px]">
               <Row k="Email">{a.email} {a.emailVerifiedAt ? <span className="text-earned">· confirmed {day(a.emailVerifiedAt)}</span> : <span className="text-coral">· not confirmed</span>}</Row>
               <Row k="Password">{hasPassword ? "Set" : "None (signs in with a provider, or hasn't set one yet)"}</Row>
@@ -296,9 +283,7 @@ export default async function AdminArtistPage({ params }: { params: { id: string
             )}
           </Card>
 
-          <NotesPanel targetType="artist" targetId={a.id} notes={notes.map((n) => ({ id: n.id, adminEmail: n.adminEmail, body: n.body, createdAt: n.createdAt.toISOString() }))} />
-
-          <Card title="Verification">
+          <Card fold open={a.verification === "PENDING"} title="Verification">
             <dl className="grid gap-1.5 text-[13.5px]">
               <Row k="State">{a.verification.toLowerCase()}{a.verifiedAt ? ` · ${day(a.verifiedAt)}` : ""}</Row>
               {a.verificationRequestedAt && <Row k="Requested">{day(a.verificationRequestedAt)}</Row>}
@@ -311,7 +296,7 @@ export default async function AdminArtistPage({ params }: { params: { id: string
             {a.verification === "PENDING" && <Link href="/admin/verification" className="btn btn-ghost btn-sm mt-2">Review in Verification</Link>}
           </Card>
 
-          <Card title="Infinity billing" sub={billing.mode === "simulated" ? "Test mode (no Stripe keys)" : billing.mode === "off" ? "Billing not set up" : "Stripe Billing"}>
+          <Card fold open={billing.view.kind === "payment_failed"} title="Infinity billing" sub={billing.mode === "simulated" ? "Test mode (no Stripe keys)" : billing.mode === "off" ? "Billing not set up" : "Stripe Billing"}>
             <dl className="grid gap-1.5 text-[13.5px]">
               <Row k="Plan">{infinity ? `Infinity until ${formatPlanDate(a.proUntil!)}` : "Free"}</Row>
               <Row k="Billing">{BILLING_LABEL[billing.view.kind]}</Row>
@@ -344,7 +329,7 @@ export default async function AdminArtistPage({ params }: { params: { id: string
             {subLive && infinity && <p className="mt-2 text-[12.5px] text-ink-2">To take Infinity away from a paying artist, cancel the subscription here first; End Infinity is blocked while it&apos;s live.</p>}
           </Card>
 
-          <Card title="Referrals">
+          <Card fold title="Referrals">
             <dl className="grid gap-1.5 text-[13.5px]">
               <Row k="Their code">{a.referralCode || "—"}</Row>
               <Row k="Referred by">{referredBy ? <Link href={`/admin/artists/${referredBy.id}`} className="text-scan">{referredBy.artist_name || referredBy.name}</Link> : "—"}</Row>
@@ -352,7 +337,7 @@ export default async function AdminArtistPage({ params }: { params: { id: string
             </dl>
           </Card>
 
-          <Card title="Reviews" sub={`${reviews.length} latest`}>
+          <Card fold title="Reviews" sub={`${reviews.length} latest`}>
             {reviews.length === 0 ? <Empty>No reviews.</Empty> : (
               <ul className="grid gap-2">
                 {reviews.map((r) => (
@@ -368,7 +353,7 @@ export default async function AdminArtistPage({ params }: { params: { id: string
             <Link href="/admin/reviews" className="mt-2 inline-block text-[13px] font-semibold text-scan">Manage reviews →</Link>
           </Card>
 
-          <Card title="Reports against their work">
+          <Card fold open={reports.some((r) => r.status === "open")} title="Reports" sub={`${reports.length}`}>
             {reports.length === 0 ? <Empty>None.</Empty> : (
               <ul className="grid gap-1.5 text-[13.5px]">
                 {reports.map((r) => (
@@ -379,11 +364,40 @@ export default async function AdminArtistPage({ params }: { params: { id: string
             <Link href="/admin/reports" className="mt-2 inline-block text-[13px] font-semibold text-scan">Open reports →</Link>
           </Card>
 
-          <Card title="Audit trail" sub="Admin actions about this artist">
+          <Card fold title="Audit trail" sub={`${audit.length}`}>
             <AuditList rows={audit} compact empty="No admin actions yet." />
           </Card>
         </div>
       </div>
+
+      <details className="af-panel border-coral/40 p-4">
+        <summary className="cursor-pointer text-[15px] font-bold text-coral">Suspend, close or delete</summary>
+        <div className="mt-3 flex flex-wrap gap-2">
+        {a.suspendedAt ? (
+          <ActionButton url={target} body={{ action: "unsuspend" }} need="suspend" label="Unsuspend" title={`Unsuspend ${name}?`}
+            confirm="Their page, art and printed codes come back online and buyers can check out again. They get an email." confirmLabel="Unsuspend" done="Unsuspended" />
+        ) : (
+          <ActionButton url={target} body={{ action: "suspend" }} need="suspend" label="Suspend" title={`Suspend ${name}?`} tone="danger" disabled={isAdmin}
+            confirm="Their public pages 404, printed codes go nowhere and nobody can check out their work. Earnings are still paid. They get an email and see the reason in Studio."
+            fields={[{ name: "reason", label: "Reason (the artist sees this)", type: "textarea", required: true, placeholder: "e.g. Several copyright reports while we look into it" }]} confirmLabel="Suspend" done="Suspended" />
+        )}
+        {a.closedAt ? (
+          <ActionButton url={target} body={{ action: "reopen" }} need="suspend" label="Reopen account" title={`Reopen ${name}'s account?`}
+            confirm="Their art goes back to how it was before they closed, and they can log in again." confirmLabel="Reopen" done="Account reopened" />
+        ) : (
+          <ActionButton url={target} body={{ action: "close" }} need="suspend" label="Close account" title={`Close ${name}'s account?`} tone="danger" disabled={isAdmin}
+            confirm="Same as the artist closing it: their page and art go offline, printed codes stop working and they're signed out. Orders and unpaid earnings stay and are paid on schedule. You can reopen it later."
+            fields={[{ name: "reason", label: "Reason (for the audit log)", type: "textarea", placeholder: "Optional" }]} confirmLabel="Close account" done="Account closed" />
+        )}
+          {roleCan(me.adminRole, "deleteAccount") && !self && (
+            <ActionButton url={target} body={{ action: "delete" }} need="deleteAccount" tone="danger" label="Delete permanently" disabled={!!blocker} redirectTo="/admin/artists"
+              title={`Delete ${name} for good?`}
+              confirm={blocker ? <>Can&apos;t delete: {blocker}</> : <>Removes the account, its art, links, codes and everything else. <b>This can&apos;t be undone.</b> Type the handle to confirm.</>}
+              fields={blocker ? [] : [{ name: "confirm", label: `Type ${a.slug}`, required: true }]} confirmLabel="Delete forever" done="Deleted" />
+          )}
+        </div>
+        {blocker && roleCan(me.adminRole, "deleteAccount") && <p className="mt-2 text-[12.5px] text-ink-2">Can&apos;t delete permanently: {blocker}</p>}
+      </details>
     </div>
   );
 }
@@ -399,11 +413,23 @@ function Stat({ label, value, earned }: { label: string; value: string; earned?:
     </div>
   );
 }
-function Card({ title, sub, id, children }: { title: string; sub?: string; id?: string; children: React.ReactNode }) {
+function Card({ title, sub, id, children, fold, open }: { title: string; sub?: string; id?: string; children: React.ReactNode; fold?: boolean; open?: boolean }) {
+  if (fold) {
+    return (
+      <details id={id} open={open} className="af-panel group p-4">
+        <summary className="flex cursor-pointer list-none flex-wrap items-baseline gap-x-2 [&::-webkit-details-marker]:hidden">
+          <h2 className="text-[16px] font-bold">{title}</h2>
+          {sub && <span className="text-[12.5px] text-ink-2">{sub}</span>}
+          <span aria-hidden="true" className="ml-auto text-ink-2 transition group-open:rotate-180">▾</span>
+        </summary>
+        <div className="mt-2 grid gap-2">{children}</div>
+      </details>
+    );
+  }
   return (
-    <section id={id} className="af-card grid content-start gap-2 p-4">
+    <section id={id} className="af-panel grid content-start gap-2 p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-        <h2 className="text-[17px] font-bold">{title}</h2>
+        <h2 className="text-[16px] font-bold">{title}</h2>
         {sub && <span className="text-[12.5px] text-ink-2">{sub}</span>}
       </div>
       {children}

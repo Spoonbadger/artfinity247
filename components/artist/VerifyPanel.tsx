@@ -88,7 +88,8 @@ export default function VerifyPanel({ initial, name, slug }: { initial: State; n
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:items-start">
       <div className="grid gap-5">
-        {/* Status */}
+        {/* Status (nothing to say before the first request: the form below is the whole story) */}
+        {s.status !== "NONE" && (
         <section aria-label="Status" className="af-card grid gap-3 p-4 sm:p-5">
           <div className="flex flex-wrap items-center gap-3">
             <span className="paint-dab h-4 w-5" style={{ ["--dab" as string]: st.dab }} aria-hidden="true" />
@@ -131,13 +132,16 @@ export default function VerifyPanel({ initial, name, slug }: { initial: State; n
             </>
           )}
 
-          {s.status === "NONE" && <p className="text-[14.5px] text-ink-2">Send a link and a photo. It takes a minute.</p>}
         </section>
+        )}
 
         {/* Form */}
         {editing && s.status !== "VERIFIED" && (
           <form onSubmit={submit} className="af-card grid gap-4 p-4 sm:p-5" aria-labelledby="ev-h" noValidate>
-            <h2 id="ev-h" className="text-[20px] font-bold">{s.status === "NONE" ? "Your evidence" : s.status === "PENDING" ? "Update evidence" : "Send it again"}</h2>
+            <div className="grid gap-1">
+              <h2 id="ev-h" className="text-[20px] font-bold">{s.status === "NONE" ? "Show us it's you" : s.status === "PENDING" ? "Update evidence" : "Send it again"}</h2>
+              {s.status === "NONE" && <p className="text-[14px] text-ink-2">A link and a photo. Takes a minute.</p>}
+            </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
               <HandleInput ref={igRef} platform="instagram" name="instagram" label="Instagram" value={instagram} onChange={setInstagram} placeholder="yourhandle" />

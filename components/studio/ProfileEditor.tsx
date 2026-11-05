@@ -332,12 +332,14 @@ function DeleteAccount() {
           <a href="/" className="btn btn-ghost justify-self-start">Go to the homepage</a>
         </div>
       ) : !open ? (
-        <div className="flex flex-wrap items-center gap-x-5 text-[14px] font-semibold [&>*]:inline-flex [&>*]:min-h-[44px] [&>*]:items-center">
-          <Link href="/studio/purchases" className="text-scan underline-offset-2 hover:underline">My purchases</Link>
-          <Link href="/change-password" className="text-scan underline-offset-2 hover:underline">Change password</Link>
-          <Link href="/studio/verify" className="text-scan underline-offset-2 hover:underline">Verification</Link>
-          <Link href="/studio/infinity" className="text-scan underline-offset-2 hover:underline">My plan</Link>
-          <button type="button" onClick={() => setOpen(true)} className="text-ink-2 underline-offset-2 hover:text-coral hover:underline">
+        <div className="grid gap-2 text-[14px] font-semibold">
+          <div className="flex flex-wrap items-center gap-x-5 [&>*]:inline-flex [&>*]:min-h-[44px] [&>*]:items-center">
+            <Link href="/studio/purchases" className="text-scan underline-offset-2 hover:underline">My purchases</Link>
+            <Link href="/change-password" className="text-scan underline-offset-2 hover:underline">Change password</Link>
+            <Link href="/studio/verify" className="text-scan underline-offset-2 hover:underline">Verification</Link>
+            <Link href="/studio/infinity" className="text-scan underline-offset-2 hover:underline">My plan</Link>
+          </div>
+          <button type="button" onClick={() => setOpen(true)} className="inline-flex min-h-[44px] w-fit items-center text-ink-2 underline-offset-2 hover:text-coral hover:underline">
             Close my account
           </button>
         </div>

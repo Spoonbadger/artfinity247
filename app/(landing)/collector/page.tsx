@@ -19,6 +19,10 @@ import { DabRow } from "@/components/browse/PageHead";
 import { BrushStroke } from "@/components/af/Brush";
 import { FollowToggle, RemoveSaved, SignOutButton } from "@/components/collector/CollectorActions";
 import { cn } from "@/lib/utils";
+import { UrlPicker } from "@/components/money/SortSelect";
+
+const ORDER_SORTS = [{ value: "newest", label: "Newest" }, { value: "oldest", label: "Oldest" }, { value: "price", label: "Price" }];
+const SAVED_SORTS = [{ value: "newest", label: "Recently saved" }, { value: "price", label: "Price, low to high" }, { value: "title", label: "Title, A–Z" }];
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Your collection", robots: { index: false, follow: false } };
@@ -26,14 +30,17 @@ export const metadata: Metadata = { title: "Your collection", robots: { index: f
 const day = (d: Date | null | undefined) => (d ? d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" }) : null);
 const displayName = (a: { artist_name: string | null; name: string }) => a.artist_name?.trim() || a.name;
 
-function Section({ id, title, count, children, dab }: { id: string; title: string; count?: number; children: React.ReactNode; dab: string }) {
+function Section({ id, title, count, children, dab, action }: { id: string; title: string; count?: number; children: React.ReactNode; dab: string; action?: React.ReactNode }) {
   return (
     <section id={id} aria-labelledby={`${id}-h`} className="scroll-mt-24 grid gap-4">
-      <h2 id={`${id}-h`} className="flex items-center gap-2.5 text-[24px] font-extrabold tracking-[-0.01em] sm:text-[28px]">
-        <span className="paint-dab" style={{ ["--dab" as string]: dab }} aria-hidden />
-        {title}
-        {count ? <span className="num text-[16px] font-semibold text-ink-2">{count}</span> : null}
-      </h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 id={`${id}-h`} className="flex items-center gap-2.5 text-[24px] font-extrabold tracking-[-0.01em] sm:text-[28px]">
+          <span className="paint-dab" style={{ ["--dab" as string]: dab }} aria-hidden />
+          {title}
+          {count ? <span className="num text-[16px] font-semibold text-ink-2">{count}</span> : null}
+        </h2>
+        {action}
+      </div>
       {children}
     </section>
   );
@@ -79,7 +86,7 @@ function Timeline({ step, dates, tracking }: { step: number; dates: (string | nu
   );
 }
 
-export default async function CollectorPage() {
+export default async function CollectorPage({ searchParams }: { searchParams: { sort?: string; wsort?: string } }) {
   const me = await requireCollector("/collector");
 
   const [orders, follows, saved, rewards] = await Promise.all([
@@ -128,6 +135,16 @@ export default async function CollectorPage() {
   ]);
 
   const r = rewards.settings.enabled ? rewards : null;
+  const sort = ORDER_SORTS.some((o) => o.value === searchParams.sort) ? searchParams.sort! : "newest";
+  if (sort === "oldest") orders.reverse();
+  if (sort === "price") orders.sort((a, b) => (b.amountTotal || 0) - (a.amountTotal || 0));
+  const wsort = SAVED_SORTS.some((o) => o.value === searchParams.wsort) ? searchParams.wsort! : "newest";
+  const fromPrice = (a: (typeof saved)[number]["artwork"]) => {
+    const sizes = PRINT_SIZES.filter((s) => sizeAllowed(a.printableSizes, s));
+    return Math.min(...(sizes.length ? sizes : PRINT_SIZES).map((s) => priceFor(a, s).list));
+  };
+  if (wsort === "price") saved.sort((x, y) => fromPrice(x.artwork) - fromPrice(y.artwork));
+  if (wsort === "title") saved.sort((x, y) => x.artwork.title.localeCompare(y.artwork.title));
   const firstName = me.name?.split(" ")[0];
 
   return (
@@ -178,7 +195,7 @@ export default async function CollectorPage() {
         </aside>
       )}
 
-      <Section id="orders" title="Orders" count={orders.length} dab="var(--af-scan)">
+      <Section id="orders" title="Orders" count={orders.length} dab="var(--af-scan)" action={orders.length > 1 ? <UrlPicker param="sort" label="Sort orders" value={sort} options={ORDER_SORTS} storageKey="af:collector:orders-sort" /> : undefined}>
         {orders.length === 0 ? (
           <Empty cta={{ href: "/art", label: "Browse art" }}>No orders for {me.email} yet. When you buy with this email, the order shows up here, even as a guest.</Empty>
         ) : (
@@ -284,7 +301,7 @@ export default async function CollectorPage() {
         )}
       </Section>
 
-      <Section id="wishlist" title="Wishlist" count={saved.length} dab="var(--af-sticker)">
+      <Section id="wishlist" title="Wishlist" count={saved.length} dab="var(--af-sticker)" action={saved.length > 1 ? <UrlPicker param="wsort" label="Sort wishlist" value={wsort} options={SAVED_SORTS} storageKey="af:collector:wishlist-sort" /> : undefined}>
         {saved.length === 0 ? (
           <Empty cta={{ href: "/art", label: "Browse art" }}>Nothing saved yet. Tap the heart on any painting to keep it here.</Empty>
         ) : (

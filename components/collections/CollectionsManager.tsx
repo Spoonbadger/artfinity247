@@ -6,7 +6,6 @@ import { collectionPath } from "@/lib/urls";
 import { errorText, failed, saved as savedToast, undoable, withUndo } from "@/lib/feedback";
 import { EmptyState } from "@/components/studio/EmptyState";
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ExternalLink, GripVertical, Plus, Star, Trash2, X } from "lucide-react";
-import { BrushStroke } from "@/components/af/Brush";
 import { cn } from "@/lib/utils";
 import type { StudioCollection } from "@/components/collections/server";
 
@@ -159,7 +158,7 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
             <span className="label">New collection</span>
             <input ref={titleRef} id="new-collection" value={newTitle} onChange={(e) => { setNewTitle(e.target.value); if (nameHint) setNameHint(false); }} maxLength={80} placeholder="East River series" aria-describedby={nameHint ? "new-collection-hint" : undefined} />
           </label>
-          <button type="submit" className="btn btn-blue shrink-0 self-stretch px-4" disabled={creating} aria-label="Add collection">
+          <button type="submit" className="btn shrink-0 self-stretch px-4" disabled={creating} aria-label="Add collection" title="Add collection">
             <Plus className="h-5 w-5" aria-hidden /><span className="hidden sm:inline">Add</span>
           </button>
         </form>
@@ -218,7 +217,7 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
             className="lg:min-h-[320px] lg:content-center"
             dab="#c98a5a"
             title={cols.length ? "Pick a collection to edit" : "No collections yet"}
-            body="Hang a few together: a series, a place, a season. Name a collection above, tap pieces to add them and sort them. Each one gets its own page buyers can browse."
+            body="A series, a place, a season. Each collection gets its own page buyers can browse."
             action={{ label: cols.length ? "Make another" : "Name your first", onClick: () => titleRef.current?.focus() }}
             help={{ label: "How collections work", href: "/help/selling/collections" }}
           />
@@ -241,12 +240,9 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
                   />
                 </label>
                 <div className="flex gap-2 sm:pt-2">
-                  <Link href={collectionPath(artistSlug, active.slug)} target="_blank" className="btn btn-ghost btn-sm">
-                    <ExternalLink className="h-4 w-4" aria-hidden />View
+                  <Link href={collectionPath(artistSlug, active.slug)} target="_blank" className="btn btn-ghost btn-sm" title="Open its page in a new tab">
+                    <ExternalLink className="h-4 w-4" aria-hidden />Live page
                   </Link>
-                  <button type="button" onClick={() => remove(active)} className="btn btn-ghost btn-sm text-coral" aria-label={`Delete ${active.title}`}>
-                    <Trash2 className="h-4 w-4" aria-hidden />
-                  </button>
                 </div>
               </div>
               <label className="af-field">
@@ -359,10 +355,12 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
                 })}
               </ol>
             )}
-            <p className="relative w-fit text-[13px] text-ink-2">
-              Drag to sort, or use the arrows. Saves as you go.
-              <BrushStroke className="absolute -bottom-1.5 left-0 h-1.5 w-24 opacity-70" />
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+              <p className="text-[13px] text-ink-2">Drag or use the arrows to sort. Saves as you go.</p>
+              <button type="button" onClick={() => remove(active)} className="btn btn-ghost btn-sm text-coral" aria-label={`Delete ${active.title}`}>
+                <Trash2 className="h-4 w-4" aria-hidden />Delete collection
+              </button>
+            </div>
           </section>
         )}
       </div>

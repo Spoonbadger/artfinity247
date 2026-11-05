@@ -143,18 +143,18 @@ export default function BulkOrder({ arts, past, placedId, defaultName }: { arts:
             <h2 id="pick-h" className="flex items-baseline gap-2 text-[20px] font-bold">
               <i className="paint-dab" style={{ ["--dab" as string]: "var(--af-scan)" }} />Pick work
             </h2>
-            <ul className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0 xl:grid-cols-6">
+            <ul className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0 xl:grid-cols-5">
               {arts.map((a) => {
                 const n = lines.filter((l) => l.artworkId === a.id).reduce((s, l) => s + l.quantity, 0);
                 const out = !!a.edition?.soldOut;
                 return (
-                  <li key={a.id} className="w-[34vw] max-w-[150px] shrink-0 snap-start sm:w-auto sm:max-w-none">
+                  <li key={a.id} className="w-[34vw] min-w-0 max-w-[150px] shrink-0 snap-start sm:w-auto sm:max-w-none">
                     <button
                       type="button"
                       onClick={() => add(a)}
                       disabled={out}
                       className={cn(
-                        "group relative grid w-full gap-1.5 rounded-xl p-1.5 text-left transition focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-scan disabled:opacity-50",
+                        "group relative grid w-full min-w-0 content-start gap-1.5 rounded-xl p-1.5 text-left transition focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-scan disabled:opacity-50",
                         n ? "bg-scan-soft" : "hover:bg-wall",
                       )}
                     >
@@ -166,7 +166,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName }: { arts:
                           {n ? n : <Plus className="h-4 w-4" aria-hidden />}
                         </span>
                       </span>
-                      <span className="truncate px-0.5 text-[13.5px] font-semibold">{a.title}</span>
+                      <span className="line-clamp-2 px-0.5 text-[13.5px] font-semibold leading-snug">{a.title}</span>
                       <EditionBadge edition={a.edition} compact className="mx-0.5" />
                     </button>
                   </li>

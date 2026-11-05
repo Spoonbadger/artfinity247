@@ -329,15 +329,13 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-1.5" aria-label="Sensitive labels">
-                {a.sensitive.length > 0 ? (
-                  a.sensitive.map((l) => (
+              {a.sensitive.length > 0 && (
+                <div className="flex flex-wrap gap-1.5" aria-label="Sensitive labels">
+                  {a.sensitive.map((l) => (
                     <span key={l} className="rounded-full border border-coral/40 bg-coral/10 px-2 py-0.5 text-[12px] font-semibold text-coral">{l}</span>
-                  ))
-                ) : (
-                  <span className="text-[12px] text-ink-2">No sensitive labels</span>
-                )}
-              </div>
+                  ))}
+                </div>
+              )}
 
               {flagged && <p className="text-[12.5px] font-semibold text-coral">Flagged: {flagged}</p>}
               {a.autoCheck && <AutoCheck c={a.autoCheck} />}

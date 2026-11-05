@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { StudioPage } from "@/components/studio/StudioPage";
@@ -24,14 +23,13 @@ export default async function CollectionsPage() {
   return (
     <StudioPage
       title="Collections"
-      sub="Group your work. Sort it your way."
-      actions={<Link href={`/@${artist.slug}`} className="btn btn-ghost">View my page</Link>}
+      sub="Group pieces into series buyers can browse."
     >
       {arts.length === 0 ? (
         <EmptyState
           dab="#c98a5a"
-          title="Collections appear once you have art"
-          body="Group pieces into a series, a place or a season. Each collection gets its own page buyers can browse."
+          title="Upload art first"
+          body="Then group it into series, places or seasons."
           action={{ label: "Upload art", href: "/studio/art/new" }}
           help={{ label: "How collections work", href: "/help/selling/collections" }}
         />

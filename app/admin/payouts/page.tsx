@@ -6,6 +6,8 @@ import PayoutsTable from "../_components/PayoutsTable";
 import PayAllPanel from "../_components/PayAllPanel";
 import { currentMonth, monthLabel, monthRange } from "../_components/util";
 import { latePayouts } from "@/lib/balance";
+import { PageHead } from "../_components/ui";
+import { Problem } from "@/components/studio/Problem";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Payouts" };
@@ -21,31 +23,25 @@ export default async function AdminPayoutsPage({ searchParams }: { searchParams:
   const lateByMonth = new Map<string, number>();
   for (const l of late) lateByMonth.set(l.month, (lateByMonth.get(l.month) || 0) + 1);
 
+  const lateList = Array.from(lateByMonth);
+
   return (
-    <div className="grid gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="eyebrow">{monthLabel(month)}</p>
-          <h1 className="display text-[44px] sm:text-[56px]">Payouts</h1>
-        </div>
-        <div className="flex flex-wrap items-end gap-2">
-          <MonthPicker months={months} value={month} allowAll={false} />
-          <a href={`/api/admin/payouts?month=${month}`} className="btn btn-ghost btn-sm mb-1">Export CSV</a>
-        </div>
-      </div>
-      {lateByMonth.size > 0 && (
-        <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border-2 border-coral bg-[#fff1ed] px-4 py-3 text-[14.5px]">
-          <span className="rounded-full bg-coral px-2 py-px text-[11.5px] font-bold text-white">Late</span>
-          <b>Unpaid more than 3 days past the 5th:</b>
-          {Array.from(lateByMonth).map(([m, n]) => (
-            <a key={m} href={`/admin/payouts?month=${m}`} className="font-semibold text-scan underline-offset-2 hover:underline">
-              {monthLabel(m)} ({n} {n === 1 ? "artist" : "artists"})
-            </a>
-          ))}
-        </div>
+    <div className="grid gap-5">
+      <PageHead title="Payouts" sub="Paid by the 5th. Late after the 8th." />
+      {lateList.length > 0 && (
+        <Problem tone="error" title={`Late: ${lateList.map(([m, n]) => `${monthLabel(m)} (${n} ${n === 1 ? "artist" : "artists"})`).join(", ")}`} fix={{ label: "Open month", href: `/admin/payouts?month=${lateList[0][0]}` }} />
       )}
       <PayAllPanel />
-      <PayoutsTable key={month} month={month} />
+      <section aria-labelledby="month-h" className="grid gap-3">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <h2 id="month-h" className="text-[20px] font-bold">By month</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <MonthPicker months={months} value={month} allowAll={false} />
+            <a href={`/api/admin/payouts?month=${month}`} className="btn btn-ghost btn-sm">Export CSV</a>
+          </div>
+        </div>
+        <PayoutsTable key={month} month={month} />
+      </section>
     </div>
   );
 }
