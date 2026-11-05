@@ -37,6 +37,8 @@ const PAGES = [
   { id: "links", path: "/@mayaokafor/links" },
   { id: "help", path: "/help" },
   { id: "help-article", path: "/help/buyers/shipping-delivery" },
+  { id: "venues", path: "/venues" },
+  { id: "venue", path: "/venues/lumen-cafe" },
   { id: "accessibility", path: "/accessibility" },
   { id: "offline", path: "/offline" },
   { id: "login", path: "/login" },

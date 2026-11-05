@@ -29,7 +29,7 @@ export default async function VenueKitPage({ params }: { params: { id: string } 
 
   return (
     <div className="grid gap-5">
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @page { size: letter; margin: 0.5in; }
         @media print {
           header, nav[aria-label="Admin"], .no-print { display: none !important; }
@@ -39,7 +39,7 @@ export default async function VenueKitPage({ params }: { params: { id: string } 
           .kit-page:last-child { break-after: auto; }
           * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
-      `}</style>
+      ` }} />
       <div className="no-print flex flex-wrap items-center justify-between gap-3">
         <Link href={`/admin/venues/${v.id}`} className="inline-flex items-center gap-1 text-[13.5px] font-semibold text-ink-2 no-underline hover:text-ink"><ArrowLeft className="h-4 w-4" aria-hidden="true" />{v.name}</Link>
         <div className="flex flex-wrap items-center gap-2">

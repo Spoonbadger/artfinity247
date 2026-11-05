@@ -236,14 +236,14 @@ export function carryForward(monthCents: Map<string, number>, paidMonths: Set<st
 
 /**
  * Unpaid months that are settled together with `month` when it's paid: the run of unpaid months right before it
- * that pay $0 (a refund adjustment carried through them into `month`). They're recorded as paid at $0
+ * that pay $0 (refund adjustments used them up, and any rest carried into `month`). They're recorded as paid at $0
  * (Payout.method "carried") so their adjustment isn't counted again.
  */
 export function carriedInto(b: Pick<Balance, "payouts">, month: string): string[] {
   const unpaid = b.payouts.filter((p) => p.status !== "paid").sort((x, y) => x.month.localeCompare(y.month));
   const i = unpaid.findIndex((p) => p.month === month);
   const out: string[] = [];
-  for (let j = i - 1; j >= 0 && unpaid[j].payableCents === 0 && unpaid[j + 1].carryInCents < 0; j--) out.push(unpaid[j].month);
+  for (let j = i - 1; j >= 0 && unpaid[j].payableCents === 0 && (unpaid[j].adjustmentCents < 0 || unpaid[j].carryInCents < 0); j--) out.push(unpaid[j].month);
   return out.reverse();
 }
 

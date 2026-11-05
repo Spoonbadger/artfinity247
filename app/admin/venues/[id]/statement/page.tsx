@@ -27,7 +27,7 @@ export default async function VenueStatementPage({ params, searchParams }: { par
 
   return (
     <div className="grid gap-5">
-      <style>{`@media print { header, nav[aria-label="Admin"], .no-print { display: none !important; } main { padding: 0 !important; } .af-card { box-shadow: none !important; } }`}</style>
+      <style dangerouslySetInnerHTML={{ __html: `@media print { header, nav[aria-label="Admin"], .no-print { display: none !important; } main { padding: 0 !important; } .af-card { box-shadow: none !important; } }` }} />
       <div className="no-print flex flex-wrap items-end justify-between gap-3">
         <Link href={`/admin/venues/${v.id}`} className="inline-flex items-center gap-1 text-[13.5px] font-semibold text-ink-2 no-underline hover:text-ink"><ArrowLeft className="h-4 w-4" aria-hidden="true" />{v.name}</Link>
         <div className="flex flex-wrap items-end gap-2">
