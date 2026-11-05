@@ -53,7 +53,15 @@ that matters, and filling up with long, samey copy. When in doubt: less, and the
 - Same component for the same job: `EmptyState` for nothing-yet, `Problem` for blockers (always with a fix), the
   `lib/feedback.ts` toasts for results.
 
-## 7. Check it
+## 7. Lists, grids and actions
+
+- Every list, grid or table people browse can be sorted (and filtered where it helps). Remember the last choice.
+  Admin tables sort by clicking column headers.
+- Fewer buttons per item. The item itself is the main click (usually Edit); one or two quick actions with icons;
+  everything else (delete, rare tools) lives inside the item's edit page.
+- Every icon-only button has a tooltip and an aria-label. Icons and words together beat either alone.
+
+## 8. Check it
 
 - Look at it at 390 px and 1280 px. No sideways scrolling, nothing cut off, tap targets at least 40 px.
 - Read every line of copy out loud. If it sounds like a brochure or a chatbot, rewrite it.
