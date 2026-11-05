@@ -24,6 +24,11 @@ model Order {
   // When the work order went to the print lab automatically, and the lab's reference if it sends one back
   printerSentAt DateTime?
   printerRef    String?
+  // Shipping, set by admin, the lab, or a carrier-tracking webhook
+  trackingCarrier String?
+  trackingNumber  String?
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
   adminNotificationSentAt  DateTime?
   // retail = a buyer's order; bulk = an artist ordering their own prints at cost to sell in person
   kind            String  @default("retail")
@@ -140,6 +145,10 @@ model Artist {
   emailVerifyToken   String?   @unique
   // Bumped to sign out every existing session (password reset, account takeover fix)
   sessionVersion     Int       @default(0)
+  // Admin team: owner | admin | support (null for artists). Support can't touch money or other admins.
+  adminRole          String?
+  // Which admin alerts this admin gets, and how: { "<kind>": "instant" | "digest" | "off" }
+  adminNotify        Json?
   suspendedAt        DateTime?
   suspendedReason    String?
   events             StudioEvent[]
@@ -481,4 +490,48 @@ model OAuthAccount {
 
   @@unique([provider, providerAccountId])
   @@index([artistId])
+}
+
+// Invite someone to the admin team by email
+model AdminInvite {
+  id         String    @id @default(cuid())
+  email      String
+  role       String    // owner | admin | support
+  token      String    @unique
+  invitedBy  String
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([email])
+}
+
+// Something that needs an admin. One row per thing (key), so the same issue never emails twice.
+model AdminAlert {
+  id         String    @id @default(cuid())
+  kind       String    // report | reprint | duplicate | review_flagged | verification | work_order_failed | payout_late | payout_failed | order_stuck | job_failed ...
+  key        String    @unique // e.g. "report:<id>"
+  title      String
+  link       String    @default("")
+  severity   String    @default("normal") // urgent | normal | low
+  createdAt  DateTime  @default(now())
+  emailedAt  DateTime?
+  digestedAt DateTime?
+  resolvedAt DateTime?
+
+  @@index([resolvedAt, createdAt])
+}
+
+// Log of background jobs (payout run, digests, retries, tracking sync...)
+model JobRun {
+  id         String    @id @default(cuid())
+  job        String
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  ok         Boolean   @default(false)
+  summary    String    @default("")
+  details    Json?
+
+  @@index([job, startedAt])
 }
