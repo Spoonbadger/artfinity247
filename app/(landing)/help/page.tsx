@@ -58,9 +58,10 @@ export default function HelpIndex() {
               );
             })}
           </ul>
+          <div className="mt-10 lg:hidden"><StillStuck /></div>
         </section>
 
-        <aside className="grid content-start gap-8">
+        <aside className="order-first grid content-start gap-8 lg:order-none">
           <section aria-labelledby="popular-h">
             <h2 id="popular-h" className="display mb-4 text-[32px]">Popular</h2>
             <ol className="grid divide-y divide-line border-y border-line">
@@ -74,7 +75,7 @@ export default function HelpIndex() {
               ))}
             </ol>
           </section>
-          <StillStuck />
+          <div className="hidden lg:block"><StillStuck /></div>
         </aside>
       </div>
     </div>

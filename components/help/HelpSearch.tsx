@@ -9,6 +9,7 @@ import type { SearchDoc } from "@/content/help";
 
 const SYNONYMS: Record<string, string[]> = {
   paid: ["payout", "pay", "venmo", "stripe"],
+  payed: ["paid", "payout"],
   pay: ["payout", "paid"],
   payout: ["paid", "pay"],
   money: ["payout", "earn", "paid"],
@@ -38,6 +39,8 @@ const SYNONYMS: Record<string, string[]> = {
   email: ["newsletter", "emails"],
 };
 
+const STOP = new Set(["a", "an", "the", "i", "my", "me", "do", "does", "is", "are", "can", "how", "what", "when", "where", "why", "who", "to", "of", "for", "on", "in", "it", "get", "will", "be", "with", "and", "or", "you", "your"]);
+
 const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 const words = (s: string) => norm(s).split(/[^a-z0-9%]+/).filter(Boolean);
 
@@ -58,6 +61,7 @@ type Prepared = SearchDoc & { t: string; s: string; b: string; tw: string[] };
 
 function score(d: Prepared, terms: string[]) {
   let total = 0;
+  let matched = 0;
   for (const term of terms) {
     const alts = [term, ...(SYNONYMS[term] || [])];
     let best = 0;
@@ -67,10 +71,11 @@ function score(d: Prepared, terms: string[]) {
       best = Math.max(best, hit * weight);
     }
     if (!best && term.length >= 4 && d.tw.some((w) => oneEdit(term, w))) best = 2;
-    if (!best) return 0;
+    if (best) matched++;
     total += best;
   }
-  return total;
+  // Every word must match, except one miss is allowed in queries of three or more words.
+  return matched >= (terms.length >= 3 ? terms.length - 1 : terms.length) ? total * (matched / terms.length) : 0;
 }
 
 export default function HelpSearch({ docs, autoFocus = false }: { docs: SearchDoc[]; autoFocus?: boolean }) {
@@ -80,7 +85,11 @@ export default function HelpSearch({ docs, autoFocus = false }: { docs: SearchDo
     () => docs.map((d) => ({ ...d, t: norm(d.title), s: norm(d.summary), b: norm(d.text), tw: words(`${d.title} ${d.summary}`) })),
     [docs],
   );
-  const terms = useMemo(() => words(q).filter((w) => w.length > 1 || /\d/.test(w)), [q]);
+  const terms = useMemo(() => {
+    const all = words(q).filter((w) => w.length > 1 || /\d/.test(w));
+    const kept = all.filter((w) => !STOP.has(w));
+    return kept.length ? kept : all;
+  }, [q]);
   const results = useMemo(() => {
     if (!terms.length) return [];
     return prepared
@@ -115,7 +124,7 @@ export default function HelpSearch({ docs, autoFocus = false }: { docs: SearchDo
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Escape") setQ(""); }}
-          placeholder="Search: payouts, file size, damaged print…"
+          placeholder="Payouts, file size, damaged print…"
           autoFocus={autoFocus}
           autoComplete="off"
           className="min-w-0 flex-1 bg-transparent py-3 text-[17px] outline-none placeholder:text-ink-2/70 [&::-webkit-search-cancel-button]:hidden"

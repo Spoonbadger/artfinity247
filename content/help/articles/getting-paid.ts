@@ -34,7 +34,7 @@ You don't need to request a payout. Artfinity sends them automatically.
     section,
     audience: "artist",
     title: "How payouts reach you: Venmo or Stripe",
-    summary: "Connect your bank through Stripe in Money → Get paid for automatic payouts, or add your Venmo handle and we'll send it there.",
+    summary: "Connect your bank through Stripe in Money → Get paid automatically, or add your Venmo handle and we'll send it there.",
     popular: 5,
     faq: true,
     link: { href: "/studio/money", label: "Open Money" },

@@ -75,7 +75,7 @@ export default function HelpArticlePage({ params }: { params: { section: string;
             </nav>
           )}
 
-          <article className={PROSE}>
+          <article className={`${PROSE} [&>h2:first-child]:mt-0`}>
             <ArticleBody body={a.body} />
           </article>
 
