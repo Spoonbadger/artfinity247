@@ -135,6 +135,11 @@ model Artist {
   closedAt           DateTime?
   // Admin can pause an account (page offline, no new sales) without closing it
   oauthAccounts      OAuthAccount[]
+  // Set when the artist clicks the confirm link in their email, or signs in with a provider that verified it
+  emailVerifiedAt    DateTime?
+  emailVerifyToken   String?   @unique
+  // Bumped to sign out every existing session (password reset, account takeover fix)
+  sessionVersion     Int       @default(0)
   suspendedAt        DateTime?
   suspendedReason    String?
   events             StudioEvent[]
