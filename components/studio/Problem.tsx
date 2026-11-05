@@ -1,0 +1,42 @@
+// Inline notice for a problem or a blocker, always with the way to fix it.
+// Use for things like "Confirm your email to get paid" or "This file is too small for XL".
+import Link from "next/link";
+import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
+
+const TONES = {
+  error: "border-coral/50 bg-coral/10",
+  warning: "border-sticker bg-sticker/20",
+  info: "border-scan/30 bg-scan-soft",
+  success: "border-earned/40 bg-earned-soft",
+} as const;
+
+export function Problem({
+  tone = "warning",
+  title,
+  children,
+  fix,
+  className,
+}: {
+  tone?: keyof typeof TONES;
+  title: string;
+  children?: ReactNode;
+  /** The button or link that resolves it. Required for errors and warnings: a problem without a fix is a dead end. */
+  fix?: { label: string; href?: string; onClick?: () => void };
+  className?: string;
+}) {
+  return (
+    <div role={tone === "error" ? "alert" : "status"} className={cn("flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border px-4 py-3", TONES[tone], className)}>
+      <div className="min-w-0 flex-1">
+        <p className="text-[14.5px] font-bold text-ink">{title}</p>
+        {children && <div className="text-[13.5px] text-ink-2">{children}</div>}
+      </div>
+      {fix &&
+        (fix.href ? (
+          <Link href={fix.href} className="btn btn-sm shrink-0">{fix.label}</Link>
+        ) : (
+          <button type="button" onClick={fix.onClick} className="btn btn-sm shrink-0">{fix.label}</button>
+        ))}
+    </div>
+  );
+}
