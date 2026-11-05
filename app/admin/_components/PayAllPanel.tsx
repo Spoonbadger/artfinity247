@@ -107,7 +107,7 @@ export default function PayAllPanel() {
       ) : data.ready.length === 0 ? (
         <p className="flex items-center gap-2 text-[14px] font-semibold"><i className="paint-dab h-3 w-3" style={{ ["--dab" as string]: "var(--af-earned)" }} />Everyone&apos;s paid. Nothing waiting.</p>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid items-start gap-4 md:grid-cols-2">
           <Group
             title="Stripe: automatic"
             dab="var(--af-earned)"
