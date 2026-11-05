@@ -138,8 +138,9 @@ export async function nextPosition() {
  * has no post yet. Safe to run often (the cron and the admin page both run it).
  */
 export async function autoQueueNewArt(s: SocialSettings, now = new Date()): Promise<{ queued: number }> {
-  if (!s.autoQueue || !s.autoQueueSince) return { queued: 0 };
-  const since = new Date(s.autoQueueSince);
+  if (!s.autoQueue) return { queued: 0 };
+  // never saved yet: start with the last 3 days, so turning it on doesn't draft the whole catalog
+  const since = s.autoQueueSince ? new Date(s.autoQueueSince) : new Date(now.getTime() - 3 * 86_400_000);
   const approvals = await prisma.adminAction.findMany({ where: { action: "artwork.approve", createdAt: { gte: since } }, select: { targetId: true }, take: 500 });
   const approvedIds = approvals.map((a) => a.targetId).filter(Boolean) as string[];
   const arts = await prisma.artwork.findMany({

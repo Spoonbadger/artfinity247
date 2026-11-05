@@ -22,7 +22,7 @@ export const STATUS: Record<string, { label: string; cls: string }> = {
   draft: { label: "Draft", cls: "bg-wall text-ink ring-1 ring-line" },
   approved: { label: "Approved", cls: "bg-scan/15 text-scan" },
   posting: { label: "Posting", cls: "bg-sticker text-ink" },
-  posted: { label: "Posted", cls: "bg-earned/15 text-earned" },
+  posted: { label: "Posted", cls: "bg-earned text-white" },
   failed: { label: "Failed", cls: "bg-coral/15 text-coral" },
   skipped: { label: "Skipped", cls: "bg-line text-ink-2" },
 };

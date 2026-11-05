@@ -215,14 +215,13 @@ export default function VideoStudio({ art, arts, base, pro }: { art: ShareArt; a
           <div className="grid gap-2 sm:grid-cols-3">
             {extra.map((p) => (
               <button key={p.id} type="button" aria-pressed={preset === p.id} disabled={busy} onClick={() => setPreset(p.id)}
-                aria-label={`${p.name}${pro ? "" : " (Infinity)"}`}
                 className={cn("flex items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left transition sm:block", preset === p.id ? "border-ink bg-ink text-white" : "border-line bg-white hover:border-ink", !pro && preset !== p.id && "bg-wall")}>
                 <span className="flex items-center gap-2 sm:mb-2">
                   <span className="paint-dab" style={{ ["--dab" as string]: p.dab }} aria-hidden="true" />
                   {!pro && <Lock size={13} aria-hidden="true" />}
                 </span>
                 <span className="grid">
-                  <b className="text-[15px] leading-tight">{p.name}</b>
+                  <b className="text-[15px] leading-tight">{p.name}{!pro && <span className="sr-only"> (Infinity)</span>}</b>
                   <span className={cn("text-[12.5px]", preset === p.id ? "text-white/75" : "text-ink-2")}>{p.sub}</span>
                 </span>
               </button>
@@ -332,7 +331,7 @@ export default function VideoStudio({ art, arts, base, pro }: { art: ShareArt; a
                 </label>
                 {music !== "none" && <button type="button" className="btn btn-ghost btn-sm" onClick={listen}><Volume2 size={14} aria-hidden="true" /> Listen</button>}
               </div>
-              <p className="text-[12.5px] text-ink-2">{MUSIC[music].sub}. {music === "none" ? "Silent on purpose: Instagram and TikTok let you add licensed trending sounds when you post." : "Our tracks are made right here in your browser, so there's no copyright claim. With music, recording takes the video's full length."}</p>
+              <p className="text-[12.5px] text-ink-2">{music === "none" ? "No sound, on purpose: add licensed trending audio in Instagram or TikTok when you post." : "Made right here in your browser, so it's royalty-free with no copyright claims. With music, recording takes the video's full length."}</p>
             </>
           ) : (
             <div className="flex flex-wrap items-center gap-3">

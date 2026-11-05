@@ -45,7 +45,8 @@ export default function VideoStage({
       if (barRef.current) barRef.current.style.width = `${(timeRef.current / dur) * 100}%`;
     };
     const loop = (now: number) => {
-      const dt = Math.min(0.1, (now - last) / 1000);
+      // a rAF timestamp can be a hair before the performance.now() taken when the loop started: never go backwards
+      const dt = Math.max(0, Math.min(0.1, (now - last) / 1000));
       last = now;
       if (playing && visibleRef.current && !busy) { timeRef.current = (timeRef.current + dt) % dur; draw(); }
       raf = requestAnimationFrame(loop);

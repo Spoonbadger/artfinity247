@@ -72,20 +72,26 @@ function canvas(w: number, h: number) {
   return c;
 }
 
-/** A blurred copy (for the countdown): shrink a lot, then grow back with smoothing, twice. */
+/** A blurred copy (for the countdown): a real blur where canvas filters exist, else shrink and grow back in steps. */
 function soften(img: CanvasImageSource, iw: number, ih: number) {
-  const tiny = canvas(Math.max(8, Math.round(24 * (iw / ih))), 24);
-  const t = tiny.getContext("2d")!;
-  t.imageSmoothingQuality = "high";
-  t.drawImage(img, 0, 0, tiny.width, tiny.height);
-  const mid = canvas(tiny.width * 4, 96);
-  const m = mid.getContext("2d")!;
-  m.imageSmoothingQuality = "high";
-  m.drawImage(tiny, 0, 0, mid.width, mid.height);
   const out = canvas(Math.round(540 * (iw / ih)), 540);
   const o = out.getContext("2d")!;
+  if (typeof (o as { filter?: unknown }).filter === "string") {
+    o.filter = "blur(22px)";
+    o.drawImage(img, -40, -40, out.width + 80, out.height + 80);
+    o.filter = "none";
+    return out;
+  }
+  let src: CanvasImageSource = img, w = Math.max(8, Math.round(16 * (iw / ih))), h = 16;
+  for (let i = 0; i < 5; i++) {
+    const c = canvas(w, h);
+    const x = c.getContext("2d")!;
+    x.imageSmoothingQuality = "high";
+    x.drawImage(src, 0, 0, w, h);
+    src = c; w *= 2; h *= 2;
+  }
   o.imageSmoothingQuality = "high";
-  o.drawImage(mid, 0, 0, out.width, out.height);
+  o.drawImage(src, 0, 0, out.width, out.height);
   return out;
 }
 

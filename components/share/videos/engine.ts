@@ -317,7 +317,7 @@ function priceCard(ctx: Ctx, l: L, t: number, A: VideoAssets, S: VideoSpec) {
   const p = A.pieces[0], F = A.fonts, ink = S.brand.ink;
   paper(ctx, l, A, S.brand.bg);
   brandMark(ctx, A, 80, l.v ? 140 : 90, l.v ? 38 : 30, ink, seg(t, 0, 0.5));
-  const box = l.v ? { x: 140, y: 230, w: l.W - 280, h: 760 } : { x: 70, y: 140, w: 470, h: 600 };
+  const box = l.v ? { x: 140, y: 230, w: l.W - 280, h: 760 } : { x: 70, y: 170, w: 400, h: 560 };
   const pic = fit(p.iw, p.ih, box.x, box.y, box.w, box.h);
   // accent swatch sweeps in behind the piece
   const sw = easeOut(seg(t, 0.2, 1));
@@ -328,7 +328,7 @@ function priceCard(ctx: Ctx, l: L, t: number, A: VideoAssets, S: VideoSpec) {
   ctx.restore();
   const float = Math.sin(t * 1.4) * 6;
   framed(ctx, p, { ...pic, y: pic.y + float + (1 - easeOut(seg(t, 0.3, 1.1))) * 50 }, { mat: 16, rot: -1.5, alpha: seg(t, 0.3, 0.8) });
-  const tx = l.v ? 80 : 590, tw = l.v ? l.W - 160 : l.W - 650;
+  const tx = l.v ? 80 : 580, tw = l.v ? l.W - 160 : l.W - 640;
   let y = l.v ? box.y + box.h + 80 : 200;
   y += block(ctx, F.display, p.title, tx, y, { max: l.v ? 88 : 64, min: 44, maxW: tw, maxH: l.v ? 170 : 150, lh: 0.95 }, ink, "start", seg(t, 0.9, 1.4));
   txt(ctx, F.body, `by ${S.text.artist}`, tx, y + 60, l.v ? 38 : 32, ink, "start", seg(t, 1.1, 1.6) * 0.8);
@@ -339,10 +339,10 @@ function priceCard(ctx: Ctx, l: L, t: number, A: VideoAssets, S: VideoSpec) {
   if (l.v) buyCard(ctx, l, A, S, p.price, seg(t, 2.5, 3.6), { y: l.H - 470, noPrice: true });
   else {
     // square: code and buy line under the price
-    const a3 = seg(t, 2.5, 3.1), qs = 240, qy = y + ps * 1.75 + 40;
+    const a3 = seg(t, 2.5, 3.1), qs = 200, qy = y + ps * 1.75 + 40;
     ctx.save(); ctx.globalAlpha = a3; rrect(ctx, tx - 10, qy, qs + 20, qs + 20, 18, "#ffffff"); ctx.drawImage(A.qr, tx, qy + 10, qs, qs); ctx.restore();
-    block(ctx, F.display, S.text.cta, tx + qs + 40, qy + 30, { max: 44, min: 30, maxW: tw - qs - 40, maxH: 110, lh: 1 }, ink, "start", a3);
-    txt(ctx, F.semi, S.text.handle, tx + qs + 40, qy + 200, 24, ink, "start", a3 * 0.8);
+    block(ctx, F.display, S.text.cta, tx + qs + 34, qy + 40, { max: 42, min: 28, maxW: tw - qs - 34, maxH: 110, lh: 1 }, ink, "start", a3);
+    block(ctx, F.semi, S.text.handle, tx, qy + qs + 50, { max: 26, min: 18, maxW: tw, maxH: 30, lines: 1 }, ink, "start", a3 * 0.8);
   }
 }
 
@@ -622,6 +622,7 @@ const DRAW: Record<PresetId, (ctx: Ctx, l: L, t: number, A: VideoAssets, S: Vide
 export function drawFrame(ctx: Ctx, S: VideoSpec, A: VideoAssets, t: number) {
   const l = geo(S.format);
   const base = presetOf(S.preset).duration;
+  t = Math.max(0, t || 0);
   ctx.save();
   if (A.logo && t >= base) outro(ctx, l, A, S, seg(t, base, base + OUTRO_SECONDS));
   else DRAW[S.preset](ctx, l, Math.min(t, base), A, S);

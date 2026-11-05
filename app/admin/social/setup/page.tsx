@@ -60,7 +60,7 @@ function render(md: string): ReactNode[] {
       i++;
       while (i < lines.length && !lines[i].trim().startsWith("```")) code.push(lines[i++].trim());
       i++;
-      out.push(<pre key={k++} className="overflow-x-auto rounded-xl bg-ink p-3 text-[12.5px] text-white"><code>{code.join("\n")}</code></pre>);
+      out.push(<pre key={k++} tabIndex={0} className="overflow-x-auto rounded-xl bg-ink p-3 text-[12.5px] text-white"><code>{code.join("\n")}</code></pre>);
       continue;
     }
     if (l.startsWith("|")) {
@@ -68,7 +68,7 @@ function render(md: string): ReactNode[] {
       while (i < lines.length && lines[i].startsWith("|")) { rows.push(lines[i].split("|").slice(1, -1).map((c) => c.trim())); i++; }
       const [head, , ...body] = rows;
       out.push(
-        <div key={k++} className="overflow-x-auto">
+        <div key={k++} tabIndex={0} role="region" aria-label="Environment variables" className="overflow-x-auto">
           <table className="w-full min-w-[560px] text-left text-[13.5px]">
             <thead><tr>{head.map((h, j) => <th key={j} className="border-b border-line py-2 pr-3 font-bold">{inline(h)}</th>)}</tr></thead>
             <tbody>{body.map((r, j) => <tr key={j}>{r.map((c, n) => <td key={n} className="border-b border-line py-2 pr-3 align-top">{inline(c, `${j}-${n}`)}</td>)}</tr>)}</tbody>
@@ -104,7 +104,7 @@ function render(md: string): ReactNode[] {
               {it.sub.length > 0 && (
                 <div className="mt-1 grid gap-1">
                   {it.sub.map((s, n) => s.startsWith("\u0000")
-                    ? <pre key={n} className="overflow-x-auto rounded-xl bg-ink p-3 text-[12.5px] text-white"><code>{s.slice(1)}</code></pre>
+                    ? <pre key={n} tabIndex={0} className="overflow-x-auto rounded-xl bg-ink p-3 text-[12.5px] text-white"><code>{s.slice(1)}</code></pre>
                     : <Fragment key={n}><span className="block pl-3 text-ink-2">• {inline(s, `s${j}${n}`)}</span></Fragment>)}
                 </div>
               )}
@@ -141,7 +141,7 @@ export default async function SocialSetupPage() {
         <ul className="grid gap-1 text-[14px] sm:grid-cols-2">
           {checks.map((c) => (
             <li key={c.label} className="flex items-center gap-2">
-              <span className={cn("rounded-full px-2 py-0.5 text-[12px] font-bold", c.ok ? "bg-earned/15 text-earned" : c.optional ? "bg-line text-ink-2" : "bg-coral/15 text-coral")}>{c.ok ? "Set" : c.optional ? "Optional" : "Missing"}</span>
+              <span className={cn("rounded-full px-2 py-0.5 text-[12px] font-bold", c.ok ? "bg-earned text-white" : c.optional ? "bg-line text-ink-2" : "bg-coral/15 text-coral")}>{c.ok ? "Set" : c.optional ? "Optional" : "Missing"}</span>
               {c.label}
             </li>
           ))}
