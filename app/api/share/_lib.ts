@@ -8,7 +8,7 @@ import { fromCents, paletteFromPixels, type ShareArt } from "@/components/share/
 const select = {
   slug: true, title: true, description: true, imageUrl: true, status: true, sensitive: true, artistId: true,
   markupSmall: true, editionSize: true,
-  artist: { select: { name: true, artist_name: true, slug: true, city: true } },
+  artist: { select: { name: true, artist_name: true, slug: true, city: true, closedAt: true, suspendedAt: true } },
 } as const;
 
 export async function findShareArt(slug: string) {
@@ -26,7 +26,9 @@ export async function findShareArt(slug: string) {
     editionSize: r.editionSize ?? null,
     sensitive: r.sensitive ?? [],
   };
-  return { art, status: r.status, artistId: r.artistId };
+  // A closed or suspended artist's work is offline like unapproved work.
+  const offline = !!(r.artist.closedAt || r.artist.suspendedAt);
+  return { art, status: offline ? "OFFLINE" : r.status, artistId: r.artistId };
 }
 
 /** Approved art is public; anything else only for its artist or an admin. */

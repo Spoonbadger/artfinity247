@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 const pct = (n: number) => `${Math.round(n * 100)}%`;
 
 async function getStats() {
-  const liveArtist = { role: "USER" as const, closedAt: null, artworks: { some: { status: "APPROVED" as const } } };
+  const liveArtist = { role: "USER" as const, closedAt: null, suspendedAt: null, artworks: { some: { status: "APPROVED" as const } } };
   const [artists, cities, items, reviews] = await Promise.all([
     prisma.artist.count({ where: liveArtist }),
     prisma.artist.findMany({ where: { ...liveArtist, citySlug: { not: "" } }, distinct: ["citySlug"], select: { citySlug: true } }),

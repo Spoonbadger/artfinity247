@@ -32,9 +32,9 @@ export async function sceneCacheDir() {
  */
 export async function artForRender(slug: string) {
   if (!slug) return null;
-  const art = await prisma.artwork.findUnique({ where: { slug }, select: { imageUrl: true, title: true, status: true, artistId: true, sensitive: true } });
+  const art = await prisma.artwork.findUnique({ where: { slug }, select: { imageUrl: true, title: true, status: true, artistId: true, sensitive: true, artist: { select: { closedAt: true, suspendedAt: true } } } });
   if (!art) return null;
-  if (art.status === "APPROVED") return art;
+  if (art.status === "APPROVED" && !art.artist.closedAt && !art.artist.suspendedAt) return art;
   const u = await getUserFromCookie().catch(() => null);
   return u && (u.id === art.artistId || u.role === "ADMIN") ? art : null;
 }

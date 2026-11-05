@@ -66,6 +66,7 @@ export const getArtistPage = cache(async (rawSlug: string): Promise<ArtistPageDa
       createdAt: true,
       pageTheme: true,
       closedAt: true,
+      suspendedAt: true,
       artworks: {
         where: { status: "APPROVED" },
         orderBy: { createdAt: "desc" },
@@ -87,8 +88,8 @@ export const getArtistPage = cache(async (rawSlug: string): Promise<ArtistPageDa
   const artist =
     (await prisma.artist.findUnique({ where: { slug }, select })) ??
     (await prisma.artist.findFirst({ where: { slug: { equals: slug, mode: "insensitive" } }, select }));
-  // A closed account's page is offline.
-  if (!artist || artist.closedAt) return null;
+  // A closed or suspended account's page is offline.
+  if (!artist || artist.closedAt || artist.suspendedAt) return null;
 
   // Paid prints per artwork (sum of quantities on paid orders).
   const soldRows = await prisma.orderItem.groupBy({

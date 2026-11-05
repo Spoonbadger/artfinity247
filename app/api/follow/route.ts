@@ -40,7 +40,7 @@ export async function POST(req: Request) {
   }
 
   const artist = await prisma.artist.findFirst({
-    where: { slug: { equals: handle, mode: "insensitive" }, closedAt: null },
+    where: { slug: { equals: handle, mode: "insensitive" }, closedAt: null, suspendedAt: null },
     select: { id: true },
   });
   if (!artist) return NextResponse.json({ error: "Artist not found." }, { status: 404 });

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic"
 
 // Public listings only ever show approved work (pending/rejected stay private).
-const PUBLIC = { status: "APPROVED" as const }
+const PUBLIC = { status: "APPROVED" as const, artist: { closedAt: null, suspendedAt: null } }
 
 export async function GET(req: NextRequest) {
   try {
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
         SELECT a.*, ar."name" as "artistName", ar."slug" as "artistSlug"
         FROM "Artwork" a
         LEFT JOIN "Artist" ar ON a."artistId" = ar."id"
-        WHERE a."status" = 'APPROVED'
+        WHERE a."status" = 'APPROVED' AND ar."closedAt" IS NULL AND ar."suspendedAt" IS NULL
         ORDER BY RANDOM()
         LIMIT ${limit} OFFSET ${skip}
       `)

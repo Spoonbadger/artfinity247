@@ -12,7 +12,7 @@ export const GET = handler<Ctx>(async (req, { params }) => {
   const handle = cleanHandle(params.handle);
   if (!handle) return notFound("Artist");
   const artist = await prisma.artist.findFirst({
-    where: { slug: handle, closedAt: null },
+    where: { slug: handle, closedAt: null, suspendedAt: null },
     select: {
       slug: true,
       collections: {

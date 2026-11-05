@@ -2,13 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAdmin } from "@/lib/admin"
 import { logAdminAction } from "@/lib/audit"
-import { resend } from "@/lib/resend"
-import ShippingStatusEmail from "@/emails/ShippingStatusEmail"
-import { sendArtistOrderEmail } from "@/lib/artistEmails.server"
 import { TRACKING_SUBJECT, cleanTracking, trackingText, type Tracking } from "@/lib/tracking"
 import { sendReviewRequest } from "@/lib/reviews"
-import { helpLine, helpUrl } from "@/lib/reprints"
-import { certLines, certLinksFor } from "@/lib/certificates"
+import { sendShippingEmail } from "@/lib/orderEmails"
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
@@ -97,41 +93,7 @@ export async function POST(
     (was === "shipped" && now === "delivered")
   ) {
     // The status change is saved; a failed email shouldn't make the admin UI report failure.
-    try {
-      // The artist's own wording when they wrote one; otherwise Artfinity's default below.
-      // Under the artist's words: tracking (when shipping) and the signed "Problem with your print?" link.
-      // Limited editions: the shipped email links each print's certificate of authenticity.
-      const certificates = now === "shipped" ? await certLinksFor(order.id).catch(() => []) : []
-      const append = [tracking ? trackingText(tracking) : "", certLines(certificates), helpLine(order.id)].filter(Boolean).join("\n\n")
-      const sentByArtist = await sendArtistOrderEmail(order.id, now === "shipped" ? "shipped" : "delivered", { append }).catch((err) => {
-        console.error("Artist shipping email failed, sending default", err)
-        return false
-      })
-      if (!sentByArtist) await resend.emails.send({
-        from: "Artfinity <notifications@theartfinity.com>",
-        to: order.email || "",
-        subject:
-          now === "shipped"
-            ? "Your Artfinity order has shipped!"
-            : "Your Artfinity order was delivered!",
-        react: ShippingStatusEmail({
-          name: existing.shippingName || "Customer",
-          status: now,
-          orderId: order.id,
-          items: existing.items.map(i => ({
-            title: i.title ?? "Untitled",
-            size: i.size ?? "",
-            quantity: i.quantity ?? 1,
-            imageUrl: i.imageUrl ?? null,
-          })),
-          tracking,
-          helpUrl: helpUrl(order.id),
-          certificates,
-        }),
-      })
-    } catch (err) {
-      console.error("Shipping status email failed", err)
-    }
+    await sendShippingEmail(order.id, now === "shipped" ? "shipped" : "delivered", tracking).catch((err) => console.error("Shipping status email failed", err))
   }
 
   // Delivered: ask the buyer for a review (lib/reviews.ts skips bulk orders and already-reviewed items).

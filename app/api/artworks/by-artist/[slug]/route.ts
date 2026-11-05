@@ -12,7 +12,7 @@ export async function GET(
 
     const artist = await prisma.artist.findUnique({
         where: { slug },
-        select: { id: true },
+        select: { id: true, closedAt: true, suspendedAt: true },
     })
 
     const { searchParams } = new URL(req.url)
@@ -20,7 +20,7 @@ export async function GET(
     const limit = parseInt(req.nextUrl.searchParams.get('limit') || '12')
     const skip = (page -1) * limit
 
-    if (!artist) return new NextResponse('Artist not found', { status: 404 })
+    if (!artist || artist.closedAt || artist.suspendedAt) return new NextResponse('Artist not found', { status: 404 })
 
     const [artworks, total] = await Promise.all([
         prisma.artwork.findMany({

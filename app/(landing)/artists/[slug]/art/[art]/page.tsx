@@ -40,7 +40,7 @@ const artSelect = {
   editionSize: true,
   roomScenes: true,
   printableSizes: true,
-  artist: { select: { id: true, slug: true, name: true, artist_name: true, profileImage: true, city: true, state: true, proUntil: true } },
+  artist: { select: { id: true, slug: true, name: true, artist_name: true, profileImage: true, city: true, state: true, proUntil: true, closedAt: true, suspendedAt: true } },
 } as const;
 
 async function loadArt(rawSlug: string) {
@@ -50,7 +50,7 @@ async function loadArt(rawSlug: string) {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const art = await loadArt(params.art).catch(() => null);
-  if (!art || art.status !== "APPROVED") return { title: "Artwork" };
+  if (!art || art.status !== "APPROVED" || art.artist.closedAt || art.artist.suspendedAt) return { title: "Artwork" };
   const name = art.artist.artist_name || art.artist.name;
   const url = artPath(art.artist.slug, art.slug!);
   return {
@@ -71,6 +71,8 @@ export default async function ArtPage({ params, searchParams }: Props) {
   const isOwner = !!user && !!art && (user.id === art.artistId || user.role === "ADMIN");
   // Buyers only see approved work; the artist and admins can preview anything.
   if (!art || (art.status !== "APPROVED" && !isOwner)) notFound();
+  // A suspended or closed artist's page is offline (admins can still look).
+  if ((art.artist.closedAt || art.artist.suspendedAt) && user?.role !== "ADMIN") notFound();
   // Wrong or old handle (renamed artist): send to the right one, query string and all.
   if (decodeURIComponent(params.slug) !== art.artist.slug) permanentRedirect(withQuery(artPath(art.artist.slug, art.slug!), searchParams));
 

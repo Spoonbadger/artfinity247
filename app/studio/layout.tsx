@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import StudioShell from "@/components/studio/StudioShell";
 import { requireArtist, displayName } from "./_lib/data";
 import { getArtistPlan } from "@/components/pro/plan.server";
+import SuspendedBanner from "./_lib/SuspendedBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,7 @@ export default async function StudioLayout({ children }: { children: ReactNode }
   const plan = await getArtistPlan(artist.id);
   return (
     <StudioShell artist={{ name: displayName(artist), slug: artist.slug, profileImage: artist.profileImage, pro: plan.active }}>
+      {artist.suspendedAt && <SuspendedBanner since={artist.suspendedAt} reason={artist.suspendedReason} />}
       {children}
     </StudioShell>
   );

@@ -16,6 +16,7 @@ export async function GET(req: Request) {
     where: {
       citySlug: { not: "" },
       closedAt: null,
+      suspendedAt: null,
       artworks: { some: {} },
     },
     select: {

@@ -61,11 +61,11 @@ async function buildLines(items: any[]): Promise<Line[]> {
         select: {
           id: true, slug: true, title: true, imageUrl: true, artistId: true, status: true,
           markupSmall: true, markupMedium: true, markupLarge: true, markupXl: true, editionSize: true, printableSizes: true,
-          artist: { select: { name: true, artist_name: true } },
+          artist: { select: { name: true, artist_name: true, closedAt: true, suspendedAt: true } },
         },
       });
-      // Only approved work can be bought (PENDING and REJECTED are skipped).
-      if (!art || art.status !== "APPROVED") return null;
+      // Only approved work can be bought (PENDING and REJECTED are skipped), and not from a suspended or closed artist.
+      if (!art || art.status !== "APPROVED" || art.artist.closedAt || art.artist.suspendedAt) return null;
       // No blurry prints: only sizes the file is sharp enough for.
       if (!sizeAllowed(art.printableSizes, size)) {
         throw new SizeUnavailableError(`${art.title} isn't available at ${SIZE_LABEL[size]} (${sizeInches(size)}). Pick a smaller size and it will print sharp.`);

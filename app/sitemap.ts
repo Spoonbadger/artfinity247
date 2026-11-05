@@ -29,13 +29,13 @@ const STATIC: [string, number][] = [
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [artworks, artists] = await Promise.all([
     prisma.artwork.findMany({
-      where: { status: "APPROVED", slug: { not: null }, artist: { closedAt: null } },
+      where: { status: "APPROVED", slug: { not: null }, artist: { closedAt: null, suspendedAt: null } },
       select: { slug: true, createdAt: true, artist: { select: { slug: true } } },
       orderBy: { createdAt: "desc" },
       take: 45_000,
     }),
     prisma.artist.findMany({
-      where: { closedAt: null, role: "USER", artworks: { some: { status: "APPROVED" } } },
+      where: { closedAt: null, suspendedAt: null, role: "USER", artworks: { some: { status: "APPROVED" } } },
       select: { slug: true, createdAt: true },
       take: 5_000,
     }),

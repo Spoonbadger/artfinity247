@@ -39,8 +39,8 @@ export async function GET(req: Request, { params }: { params: { scene: string } 
   const frame = (FRAMES as string[]).includes(q.get("frame") || "") ? (q.get("frame") as RoomFrame) : null;
   const w = Math.min(2000, Math.max(320, Math.round(Number(q.get("w")) || 1200)));
 
-  const art = slug ? await prisma.artwork.findUnique({ where: { slug }, select: { imageUrl: true, title: true, status: true, sensitive: true } }) : null;
-  if (!art || art.status !== "APPROVED") return NextResponse.json({ error: "Artwork not found." }, { status: 404 });
+  const art = slug ? await prisma.artwork.findUnique({ where: { slug }, select: { imageUrl: true, title: true, status: true, sensitive: true, artist: { select: { closedAt: true, suspendedAt: true } } } }) : null;
+  if (!art || art.status !== "APPROVED" || art.artist.closedAt || art.artist.suspendedAt) return NextResponse.json({ error: "Artwork not found." }, { status: 404 });
 
   const buf = await loadImage(art.imageUrl);
   if (!buf) return NextResponse.json({ error: "Image unavailable." }, { status: 502 });
