@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import SiteHeader from "@/components/site/SiteHeader";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import SensitiveImage from "@/components/site/SensitiveImage";
 import EditionBadge from "@/components/art/EditionBadge";
@@ -110,6 +111,8 @@ export default async function CollectionPage({ params }: Props) {
   const n = collection.works.length;
 
   return (
+    <>
+      <SiteHeader brand={{ handle: artist.slug, name: artist.name, avatar: artist.avatar }} />
     <div className="bg-[#efece5] bg-[radial-gradient(ellipse_at_50%_0%,#f7f5f0_0%,#ebe7df_55%,#e4dfd5_100%)] pb-16 sm:pb-24">
       <header className="mx-auto grid max-w-[1240px] gap-4 px-4 pb-8 pt-8 sm:px-6 sm:pb-12 sm:pt-14">
         <Link href={artistPath(artist.slug)} className="flex w-fit min-h-[44px] items-center gap-2.5 text-ink no-underline">
@@ -147,5 +150,6 @@ export default async function CollectionPage({ params }: Props) {
         <Link href={artistPath(artist.slug)} className="btn btn-ghost">All of {artist.name.split(" ")[0]}&apos;s work</Link>
       </p>
     </div>
+    </>
   );
 }

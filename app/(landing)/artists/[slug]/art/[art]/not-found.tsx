@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SiteHeader from "@/components/site/SiteHeader";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { BrushStroke } from "@/components/af/Brush";
@@ -15,6 +16,9 @@ export default async function ArtNotFound() {
     .catch(() => []);
 
   return (
+    <>
+      {/* the layout's header steps aside on /@handle paths */}
+      <SiteHeader inPage />
     <div className="mx-auto grid max-w-[1000px] gap-10 px-4 py-12 sm:px-6 md:py-20">
       <div className="grid justify-items-center gap-4 text-center">
         {/* an empty frame on the wall */}
@@ -49,5 +53,6 @@ export default async function ArtNotFound() {
         </div>
       )}
     </div>
+    </>
   );
 }

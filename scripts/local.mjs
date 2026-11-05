@@ -40,6 +40,7 @@ try {
   await pg.start();
   if (firstRun) await pg.createDatabase("artfinity");
   run("npx", ["prisma", "migrate", "deploy"]);
+  run("npx", ["prisma", "generate"]); // keeps the database code in step after a git pull
   if (firstRun) { console.log("Loading demo artists, artworks and orders…"); run("node", ["--env-file=.env", "prisma/seed.mjs"]); }
 } catch (e) {
   console.error("\nCould not start the local database:", e?.message || e);

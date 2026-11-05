@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import SiteHeader from "@/components/site/SiteHeader";
 import { getUserFromCookie } from "@/lib/auth";
 import { bannerColor, getArtistPage, resolveBanner, venuesFor } from "@/components/artist/data";
 import { paint, parseTheme } from "@/components/artist/theme";
-import TrustBlock, { NameBadges } from "@/components/artist/TrustBlock";
+import TrustBlock from "@/components/artist/TrustBlock";
+import Medal from "@/components/af/Medal";
+import VerifiedBadge from "@/components/af/VerifiedBadge";
 import ArtistBanner from "@/components/artist/ArtistBanner";
 import CodeNote from "@/components/qr/CodeNote";
 import ArtistAvatar from "@/components/artist/ArtistAvatar";
@@ -114,6 +117,8 @@ export default async function ArtistPage({ params, searchParams }: Props) {
   );
 
   return (
+    <>
+      <SiteHeader inPage />
     <div className="bg-white pb-16 sm:pb-24" style={{ ["--accent" as string]: accent.color, ["--accent-ink" as string]: accent.ink, ["--accent-soft" as string]: accent.soft }}>
       {searchParams?.expired === "1" && <CodeNote kind="expired" name={artist.name} />}
       <ArtistBanner src={banner?.imageUrl ?? null} alt={banner ? `${banner.title}, by ${artist.name}` : ""} color={bannerColor(theme)} />
@@ -121,18 +126,19 @@ export default async function ArtistPage({ params, searchParams }: Props) {
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
         {/* Head: avatar overlapping the banner, name, actions */}
         <header className="relative -mt-12 flex flex-wrap items-end gap-x-6 gap-y-4 sm:-mt-16">
-          {/* Avatar with the verified badge and medal pinned to its bottom-right */}
+          {/* Avatar with the sales medal pinned to its bottom-right */}
           <div className="relative shrink-0">
             <ArtistAvatar src={artist.avatar} name={artist.name} className="h-24 w-24 sm:h-36 sm:w-36" />
-            {(trust.verified || trust.medal) && (
-              <span className="absolute -bottom-1 -right-2 rounded-full bg-white px-1.5 py-1 shadow-[0_4px_12px_-4px_rgba(21,22,27,.35)] sm:bottom-0 sm:right-0">
-                <NameBadges trust={trust} size={26} />
+            {trust.medal && (
+              <span className="absolute -bottom-1 -right-1 grid place-items-center rounded-full bg-white p-1 shadow-[0_4px_12px_-4px_rgba(21,22,27,.35)] sm:bottom-0 sm:right-0">
+                <Medal tier={trust.medal} size={30} />
               </span>
             )}
           </div>
           <div className="grid min-w-0 flex-1 basis-[260px] gap-1.5 self-end sm:min-h-[96px] sm:content-center">
             <h1 className="display text-[44px] sm:text-[64px]">
               <span className="min-w-0 [overflow-wrap:anywhere]">{artist.name}</span>
+              {trust.verified && <VerifiedBadge size={30} verifiedAt={trust.verifiedAt} className="relative -top-1 ml-2.5 align-middle" />}
             </h1>
             <ReviewStars average={rating.average} count={rating.count} href="#reviews" className="w-fit" />
           </div>
@@ -207,5 +213,6 @@ export default async function ArtistPage({ params, searchParams }: Props) {
         </div>
       </div>
     </div>
+    </>
   );
 }

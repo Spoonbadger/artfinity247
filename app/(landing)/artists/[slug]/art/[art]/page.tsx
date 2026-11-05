@@ -7,6 +7,7 @@ import { artPath, SITE_URL, withQuery } from "@/lib/urls";
 import { prisma } from "@/lib/prisma";
 import { getUserFromCookie } from "@/lib/auth";
 import ScanView from "@/components/art/ScanView";
+import SiteHeader from "@/components/site/SiteHeader";
 import { getArtistTrust } from "@/lib/artistTrust";
 import { PRINT_SIZES, parseDiscount, parseVenue, priceFor } from "@/components/art/pricing";
 import { editionOf, soldCount } from "@/lib/editions";
@@ -96,6 +97,8 @@ export default async function ArtPage({ params, searchParams }: Props) {
   const place = [a.city, a.state].filter(Boolean).join(", ") || null;
 
   return (
+    <>
+      <SiteHeader brand={{ handle: a.slug, name: a.artist_name || a.name, avatar: a.profileImage || null }} />
     <ScanView
       art={{
         id: art.id,
@@ -132,5 +135,6 @@ export default async function ArtPage({ params, searchParams }: Props) {
       arrives={deliveryRange()}
       reviews={reviews}
     />
+    </>
   );
 }

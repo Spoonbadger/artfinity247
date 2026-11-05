@@ -1,8 +1,12 @@
 import Link from "next/link";
+import SiteHeader from "@/components/site/SiteHeader";
 import { Swatch } from "@/components/af/Brush";
 
 export default function ArtistNotFound() {
   return (
+    <>
+      {/* the layout's header steps aside on /@handle paths */}
+      <SiteHeader inPage />
     <section className="mx-auto grid max-w-[560px] justify-items-center gap-5 px-4 py-20 text-center sm:py-28">
       <div className="flex w-[220px] gap-2" aria-hidden="true">
         <Swatch color="#f7c8a8" className="h-10" />
@@ -16,5 +20,6 @@ export default function ArtistNotFound() {
         <Link href="/register" className="btn btn-blue">Claim your page</Link>
       </div>
     </section>
+    </>
   );
 }

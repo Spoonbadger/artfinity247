@@ -19,13 +19,13 @@ const LINKS = [
 /** On an artist's pages the artist's name takes the wordmark's place. */
 export type HeaderBrand = { handle: string; name: string; avatar: string | null };
 
-// The @header slot can keep an old artist header after a client-side move away, so check the path too.
-function onArtistPage(pathname: string | null, handle: string) {
+// An artist's storefront pages (/@handle, /@handle/art/…, /@handle/collections…) render their own header,
+// so the layout's copy steps aside there. (On the server the path may be the rewritten /artists/handle form.)
+const STOREFRONT = /^\/(@|artists\/)[^/]+(\/(art|collections)(\/.*)?)?\/?$/;
+function isStorefront(pathname: string | null) {
   let p = pathname || "";
   try { p = decodeURIComponent(p); } catch {}
-  p = p.toLowerCase();
-  const h = handle.toLowerCase();
-  return [`/@${h}`, `/artists/${h}`].some((base) => p === base || p.startsWith(base + "/"));
+  return STOREFRONT.test(p);
 }
 
 const DABS = ["#f7c8a8", "#b8c4ff", "#ffd43b", "#a8dcc4", "#f5b3c8"];
@@ -54,7 +54,11 @@ function ArtistBrand({ brand }: { brand: HeaderBrand }) {
   );
 }
 
-export default function SiteHeader({ brand = null }: { brand?: HeaderBrand | null }) {
+/**
+ * `brand`: show the artist's name instead of the wordmark. Pages that render their own header pass it
+ * (or `inPage` for a plain one, e.g. not-found); the layout's header hides on storefront paths.
+ */
+export default function SiteHeader({ brand = null, inPage = false }: { brand?: HeaderBrand | null; inPage?: boolean }) {
   const { currentUser } = useUser();
   const { cartItems } = useCart();
   const pathname = usePathname();
@@ -81,13 +85,15 @@ export default function SiteHeader({ brand = null }: { brand?: HeaderBrand | nul
     };
   }, [open]);
   const count = cartItems?.reduce((n: number, i: any) => n + (i.quantity || 1), 0) || 0;
-  const shop = brand && onArtistPage(pathname, brand.handle) ? brand : null;
+  const hidden = !brand && !inPage && isStorefront(pathname);
+
+  if (hidden) return null;
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-[1240px] items-center gap-6 px-4 py-3 sm:px-6">
-        {shop ? <ArtistBrand brand={shop} /> : <Logo />}
-        <nav className={cn("ml-auto hidden items-center gap-6 text-[15px] font-medium md:flex", shop && "shrink-0")} aria-label="Main">
+        {brand ? <ArtistBrand brand={brand} /> : <Logo />}
+        <nav className={cn("ml-auto hidden items-center gap-6 text-[15px] font-medium md:flex", brand && "shrink-0")} aria-label="Main">
           {LINKS.map((l) => (
             <Link key={l.href} href={l.href} className={cn("text-ink no-underline hover:text-scan", pathname === l.href && "text-scan")}>{l.label}</Link>
           ))}
@@ -100,7 +106,7 @@ export default function SiteHeader({ brand = null }: { brand?: HeaderBrand | nul
             <input type="search" name="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" maxLength={80} className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-2" />
           </label>
         </form>
-        <div className={cn("ml-auto flex items-center gap-2 md:ml-0", shop && "shrink-0")}>
+        <div className={cn("ml-auto flex items-center gap-2 md:ml-0", brand && "shrink-0")}>
           <Link href="/search" className="hidden h-11 w-11 place-items-center rounded-full text-ink hover:bg-wall md:grid lg:hidden" aria-label="Search">
             <Search className="h-5 w-5" aria-hidden="true" />
           </Link>

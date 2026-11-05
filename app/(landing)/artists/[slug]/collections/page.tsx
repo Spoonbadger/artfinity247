@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import SiteHeader from "@/components/site/SiteHeader";
+import { artistPath } from "@/lib/urls";
 import { prisma } from "@/lib/prisma";
 import CollectionsTab from "@/components/collections/CollectionsTab";
 import { getPublicCollections } from "@/components/collections/data";
@@ -11,7 +13,7 @@ export const dynamic = "force-dynamic";
 type Props = { params: { slug: string } };
 
 async function artistOf(slug: string) {
-  return prisma.artist.findFirst({ where: { slug: { equals: decodeURIComponent(slug), mode: "insensitive" }, closedAt: null }, select: { slug: true, name: true, artist_name: true } });
+  return prisma.artist.findFirst({ where: { slug: { equals: decodeURIComponent(slug), mode: "insensitive" }, closedAt: null }, select: { slug: true, name: true, artist_name: true, profileImage: true } });
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -26,13 +28,16 @@ export default async function ArtistCollectionsPage({ params }: Props) {
   const collections = await getPublicCollections(artist.slug);
   const name = artist.artist_name || artist.name;
   return (
+    <>
+      <SiteHeader brand={{ handle: artist.slug, name, avatar: artist.profileImage || null }} />
     <div className="mx-auto grid max-w-[1240px] gap-8 px-4 pb-20 pt-8 sm:px-6 sm:pt-14">
       <header>
-        <Link href={`/@${artist.slug}`} className="text-[15px] font-bold text-ink hover:underline">{name}</Link>
+        <Link href={artistPath(artist.slug)} className="text-[15px] font-bold text-ink hover:underline">{name}</Link>
         <h1 className="display mt-2 text-[52px] sm:text-[80px]">Collections</h1>
         <BrushStroke className="mt-1 h-3 w-44" />
       </header>
       <CollectionsTab artistSlug={artist.slug} collections={collections} />
     </div>
+    </>
   );
 }
