@@ -151,6 +151,8 @@ model Artist {
   adminNotify        Json?
   suspendedAt        DateTime?
   suspendedReason    String?
+  // "Let Artfinity feature my work on its social accounts" (Share kit). The social queue skips artists who turn it off.
+  socialFeature      Boolean   @default(true)
   events             StudioEvent[]
   reviews            Review[]
   followers          Follower[]
@@ -575,4 +577,54 @@ model Venue {
   notes        String?
   createdAt    DateTime  @default(now())
   codes        QrCode[]
+}
+
+// A post for Artfinity's own Instagram (/admin/social). draft -> approved -> posting -> posted | failed; or skipped.
+// The video is rendered in the approving admin's browser and uploaded (mediaUrl); the social-publish job posts it.
+model SocialPost {
+  id            String    @id @default(cuid())
+  status        String    @default("draft") // draft | approved | posting | posted | failed | skipped
+  kind          String    @default("artwork") // artwork | collection | event | artist
+  source        String    @default("manual") // auto (new art) | manual (Promote)
+  artistId      String?
+  artworkId     String?
+  artworkIds    String[]  @default([]) // pieces in the video (several for walks and carousels)
+  collectionId  String?
+  eventId       String?
+  headline      String?   // e.g. "Artist of the week"
+  preset        String
+  format        String    @default("vertical") // vertical 1080x1920 | square 1080x1080
+  caption       String    @default("")
+  position      Int       @default(0)
+  mediaUrl      String?
+  mediaType     String?   // video/mp4 | video/webm
+  scheduledFor  DateTime?
+  postedAt      DateTime?
+  postedBy      String?   // "instagram" (Graph API) or "manual" (marked as posted by an admin)
+  igContainerId String?
+  igMediaId     String?
+  permalink     String?
+  error         String?
+  errorCode     String?   // token | rate_limit | media | config | unknown
+  attempts      Int       @default(0)
+  createdById   String?
+  approvedById  String?
+  approvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([status, scheduledFor])
+  @@index([artworkId])
+  @@index([artistId])
+}
+
+// Connected social account state that can't live in env: a refreshed Instagram token and when it expires.
+model SocialAccount {
+  id          String    @id // "instagram"
+  accessToken String?
+  expiresAt   DateTime?
+  checkedAt   DateTime?
+  refreshedAt DateTime?
+  note        String?
+  updatedAt   DateTime  @updatedAt
 }

@@ -15,7 +15,10 @@ import {
   artworkFormData, checkArtwork, DetailsFields, EditionField, filesFromDrop, isImageFile, OwnershipField, PriceFields,
   pricesFrom, PrintSizes, REVIEW_NOTE, SensitiveField, saveProblem, titleFromFile, TOO_SMALL, useLastPrices, usePriceGuide, type ArtworkValues, type Prices,
 } from "./artworkFields";
-import { cloudImportAvailable, CloudImportButtons, ImportFailed, importCloudFile, importingLabel, isCloudImage, type CloudFile, type UploadedImage } from "./cloudImport";
+import {
+  Cancelled, cloudImportAvailable, CloudImportButtons, ImportFailed, importCloudFile, importFix, importingLabel, isCloudImage, pickCloud,
+  type CloudFile, type CloudSource, type UploadedImage,
+} from "./cloudImport";
 
 type ProblemFix = { label: string; href?: string; onClick?: () => void };
 
@@ -141,12 +144,25 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
     setRetryCloud(null);
     setUploading(importingLabel(file.source));
     try {
-      applyImage(await importCloudFile(file), file.name);
+      const data = await importCloudFile(file);
+      applyImage(data, file.name);
+      if (data.duplicate) setCloudNote(`This looks like “${data.duplicate.title}”, already on your page. Publish it anyway if it's a different version.`);
     } catch (e: any) {
-      setError(errorText(e, "Import failed. Try again."));
+      // Expired link or a file we can't print: the fix is picking again (cloudImport.tsx importFix).
+      const fix = e instanceof ImportFailed ? importFix(e.code, file.source) : null;
+      setError(errorText(e, "Import failed. Try again."), fix ? (fix.href ? { label: fix.label, href: fix.href } : { label: fix.label, onClick: () => repickCloud(file.source) }) : undefined);
       if (!(e instanceof ImportFailed) || e.retry) setRetryCloud(file);
     } finally {
       setUploading(null);
+    }
+  }
+
+  async function repickCloud(source: CloudSource) {
+    setError(null);
+    try {
+      takeCloud(await pickCloud(source, many ? undefined : 1));
+    } catch (e) {
+      if (!(e instanceof Cancelled)) setError(errorText(e, "Couldn't open the picker."), { label: "Try again", onClick: () => repickCloud(source) });
     }
   }
 

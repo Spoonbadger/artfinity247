@@ -16,6 +16,7 @@ const SECTIONS: { title: string; links: NavLink[] }[] = [
     { href: "/admin/artworks", label: "Artworks", dab: "#7c8cff" },
     { href: "/admin/moderation", label: "Moderation", dab: "var(--af-coral)" },
     { href: "/admin/scenes", label: "Scenes", dab: "#5bc0be" },
+    { href: "/admin/social", label: "Social", dab: "#c13584" },
   ] },
   { title: "Orders", links: [
     { href: "/admin/orders", label: "Orders", dab: "var(--af-scan)" },

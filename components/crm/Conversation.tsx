@@ -139,7 +139,7 @@ export default function Conversation({
       if (!res.ok) {
         const p = await problemFrom(res, mode === "thank_you" ? "The note didn't send." : "Couldn't save the note.");
         setStatus({ ok: false, text: p.message });
-        failed(p.message, { fix: p.fix, retry: p.fix || res.status < 500 ? undefined : () => submit() });
+        failed(p.message, { description: res.status < 500 ? "" : undefined, fix: p.fix, retry: p.fix || res.status < 500 ? undefined : () => submit() });
         return;
       }
       const data = await res.json().catch(() => ({}));
@@ -173,7 +173,7 @@ export default function Conversation({
         saved("Note deleted");
       } else {
         const p = await problemFrom(res, "Couldn't delete that note.");
-        failed(p.message, { fix: p.fix, retry: p.fix || res.status < 500 ? undefined : () => remove(id) });
+        failed(p.message, { description: res.status < 500 ? "" : undefined, fix: p.fix, retry: p.fix || res.status < 500 ? undefined : () => remove(id) });
       }
     } catch {
       failed("You seem to be offline", { description: "Check your connection and try again.", retry: () => remove(id) });

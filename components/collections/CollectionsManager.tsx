@@ -143,15 +143,8 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
         </form>
         {nameHint && <p id="new-collection-hint" role="alert" className="-mt-1 text-[13px] font-semibold text-coral">Type a name first, like &ldquo;East River series&rdquo;.</p>}
 
-        {cols.length === 0 ? (
-          <EmptyState
-            compact
-            dab="#c98a5a"
-            title="No collections yet"
-            body="Name one above, then tap pieces to add them. Each collection gets its own page on your site."
-            action={{ label: "Name your first", onClick: () => titleRef.current?.focus() }}
-          />
-        ) : (
+        {/* No collections yet: the editor side says what they are and how to start, so this list stays quiet. */}
+        {cols.length === 0 ? null : (
           <ol className="grid gap-2">
             {cols.map((c, i) => {
               const cover = coverOf(c);
@@ -200,11 +193,11 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
       <div ref={editorRef} className="min-w-0 scroll-mt-4">
         {!active ? (
           <EmptyState
-            className="min-h-[320px] content-center"
+            className="lg:min-h-[320px] lg:content-center"
             dab="#c98a5a"
-            title="Hang a few together"
-            body="A series, a place, a season. Name a collection, pick its pieces and sort them. Buyers see it on your page."
-            action={{ label: "Make a collection", onClick: () => titleRef.current?.focus() }}
+            title={cols.length ? "Pick a collection to edit" : "No collections yet"}
+            body="Hang a few together: a series, a place, a season. Name a collection above, tap pieces to add them and sort them. Each one gets its own page buyers can browse."
+            action={{ label: cols.length ? "Make another" : "Name your first", onClick: () => titleRef.current?.focus() }}
             help={{ label: "How collections work", href: "/help/selling/collections" }}
           />
         ) : (

@@ -43,11 +43,12 @@ export default async function CodePage({ params }: { params: { code: string } })
   const c = code ? await getCode(artist.id, code) : null;
   if (!c) notFound();
 
-  const arts = await prisma.artwork.findMany({
-    where: { artistId: artist.id, status: "APPROVED", slug: { not: null } },
-    select: { id: true, title: true, imageUrl: true },
+  // Pieces in review count too: a code printed before approval must keep pointing at its piece when edited here.
+  const arts = (await prisma.artwork.findMany({
+    where: { artistId: artist.id, status: { in: ["APPROVED", "PENDING"] }, slug: { not: null } },
+    select: { id: true, title: true, imageUrl: true, status: true },
     orderBy: { createdAt: "desc" },
-  });
+  })).map(({ status: st, ...a }) => (st === "PENDING" ? { ...a, title: `${a.title} (in review)` } : a));
   const venues = await venueOptions(c.venueId);
   const base = process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com";
   const d = c.design ? sanitizeDesign(c.design) : { ...DEFAULT_DESIGN, disc: 0 };

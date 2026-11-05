@@ -48,7 +48,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `That's today's upload limit (${DAILY_UPLOAD_LIMIT}). Upload more tomorrow.`, code: "upload_limit" }, { status: 429 });
     }
 
-    const form = await req.formData();
+    const form = await req.formData().catch(() => null);
+    if (!form) return NextResponse.json({ error: "Nothing came through. Refresh and try again.", code: "bad_request" }, { status: 400 });
 
     const title = String(form.get("title") ?? "").trim();
     const description = String(form.get("description") ?? "");

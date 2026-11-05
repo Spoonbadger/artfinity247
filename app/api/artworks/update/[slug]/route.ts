@@ -36,7 +36,8 @@ export async function POST(
       (payload as any).sub
 
 
-    const form = await req.formData()
+    const form = await req.formData().catch(() => null)
+    if (!form) return NextResponse.json({ error: "Nothing came through. Refresh and try again.", code: "bad_request" }, { status: 400 })
 
     const title = form.get("title") as string | null
     const description = form.get("description") as string | null

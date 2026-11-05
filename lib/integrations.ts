@@ -72,6 +72,11 @@ export function integrationsHealth(): Integration[] {
     ? { id: "pexels", name: "Pexels", status: "green", state: "Set", fix: null }
     : { id: "pexels", name: "Pexels", status: "amber", state: "Missing (only for fetching room photos)", fix: "Set PEXELS_API_KEY to run npm run scenes:fetch." });
 
+  // Artfinity's own Instagram (lib/social, SOCIAL_SETUP.md). Off is fine: /admin/social works in manual mode.
+  out.push(set("INSTAGRAM_BUSINESS_ACCOUNT_ID") && set("INSTAGRAM_ACCESS_TOKEN")
+    ? { id: "instagram", name: "Instagram posting", status: "green", state: "Connected: approved posts publish on schedule", fix: null }
+    : { id: "instagram", name: "Instagram posting", status: "amber", state: "Manual mode: admins download and post by hand", fix: "Set INSTAGRAM_BUSINESS_ACCOUNT_ID and INSTAGRAM_ACCESS_TOKEN (see SOCIAL_SETUP.md, or /admin/social/setup)." });
+
   out.push(set("CRON_SECRET")
     ? { id: "cron", name: "Cron secret", status: "green", state: "Set", fix: null }
     : { id: "cron", name: "Cron secret", status: prod ? "red" : "amber", state: "Missing: the monthly payout cron does nothing", fix: "Set CRON_SECRET (any long random string); Vercel sends it to /api/cron/payouts." });

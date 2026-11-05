@@ -46,7 +46,7 @@ async function api<T>(url: string, method: string, body?: unknown): Promise<T> {
     throw new ApiError("You seem to be offline. Check your connection and try again.");
   }
   if (!res.ok) {
-    const p = await problemFrom(res, "Something went wrong. Try again.");
+    const p = await problemFrom(res, "That didn't save. Something went wrong on our side.");
     throw new ApiError(p.message, p.fix, res.status);
   }
   return (await res.json().catch(() => ({}))) as T;
@@ -55,7 +55,7 @@ async function api<T>(url: string, method: string, body?: unknown): Promise<T> {
 /** Error toast with the server's fix, or Try again when there's nothing to fix but the connection. */
 function oops(e: unknown, retry?: () => void) {
   const err = e instanceof ApiError ? e : new ApiError("Something went wrong. Try again.");
-  failed(err.message, { fix: err.fix, retry: err.fix || (err.status >= 400 && err.status < 500) ? undefined : retry });
+  failed(err.message, { description: err.status >= 400 && err.status < 500 ? "" : undefined, fix: err.fix, retry: err.fix || (err.status >= 400 && err.status < 500) ? undefined : retry });
 }
 
 const num = (n: number) => n.toLocaleString("en-US");

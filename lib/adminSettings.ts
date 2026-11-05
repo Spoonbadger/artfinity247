@@ -9,7 +9,8 @@ import { prisma } from "@/lib/prisma";
 const FILE = path.join(process.cwd(), "data", "admin-settings.json");
 const ACTION = "settings.snapshot";
 
-export type AdminSettings = { testStartDate?: string; testTarget?: number; refundPaidOutPolicy?: string };
+/** `social`: Instagram auto-posting (lib/social/settings.ts). */
+export type AdminSettings = { testStartDate?: string; testTarget?: number; refundPaidOutPolicy?: string; social?: unknown };
 
 async function readFile(): Promise<AdminSettings> {
   try {

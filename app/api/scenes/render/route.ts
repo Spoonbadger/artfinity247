@@ -1,5 +1,6 @@
 // GET /api/scenes/render?scene=<0-999>&art=<slug>&size=small|medium|large|xl&frame=none|black|white|natural&w=800&mat=0&blur=1
 // One photo scene with the print hung at true size, as a JPEG. Cached on disk by content key, with an ETag.
+// X-Art-Box: where the framed print sits, as x0,y0,x1,y1 fractions of the image (the Share kit videos pan to it).
 // 404 when no photo scenes are built (the site then draws the procedural rooms instead).
 import { NextResponse } from "next/server";
 import path from "node:path";
@@ -53,15 +54,23 @@ export async function GET(req: Request) {
   if (file) {
     try {
       const buf = await fsp.readFile(file);
-      return new NextResponse(new Uint8Array(buf), { headers: { ...headers, "X-Cache": "hit" } });
+      const meta = JSON.parse(await fsp.readFile(file.replace(/\.jpg$/, ".json"), "utf8").catch(() => "{}")) as { box?: string; size?: string };
+      // files cached before the sidecar existed are rendered again once, to learn where the print is
+      if (meta.box && meta.size) return new NextResponse(new Uint8Array(buf), { headers: { ...headers, "X-Cache": "hit", "X-Art-Box": meta.box, "X-Print-Size": meta.size } });
     } catch {}
   }
   const img = await readArtImage(art.imageUrl);
   if (!img) return NextResponse.json({ error: "Image unavailable." }, { status: 502 });
   try {
     const r = await composite({ scene: n, art: img, size, frame, mat, width, blur, catalog });
-    if (file) fsp.writeFile(file, r.jpeg).catch(() => {});
-    return new NextResponse(new Uint8Array(r.jpeg), { headers: { ...headers, "X-Cache": "miss", "X-Print-Size": r.rect.label.replace("×", "x") } });
+    const printed = r.rect.label.replace("×", "x");
+    const xs = r.rect.quad.map((p) => p[0] / r.width), ys = r.rect.quad.map((p) => p[1] / r.height);
+    const box = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)].map((v) => Math.max(0, Math.min(1, v)).toFixed(4)).join(",");
+    if (file) {
+      fsp.writeFile(file, r.jpeg).catch(() => {});
+      fsp.writeFile(file.replace(/\.jpg$/, ".json"), JSON.stringify({ box, size: printed })).catch(() => {});
+    }
+    return new NextResponse(new Uint8Array(r.jpeg), { headers: { ...headers, "X-Cache": "miss", "X-Print-Size": printed, "X-Art-Box": box } });
   } catch (e) {
     console.error("scene render failed", e);
     return NextResponse.json({ error: "Render failed." }, { status: 500 });

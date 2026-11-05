@@ -89,6 +89,16 @@ export function isPrivateAddress(ip: string): boolean {
   return /^f[cd]/.test(a) || /^fe[89ab]/.test(a) || /^ff/.test(a);
 }
 
+/**
+ * Image types an import may be: what the upload pipeline reads (lib/storage.ts: sharp reads JPG, PNG, WEBP and TIFF;
+ * HEIC/HEIF only through Cloudinary, so without it a HEIC file gets a clear "export as JPG" error). GIF and AVIF
+ * aren't offered: they aren't print files. The pickers filter to these too (components/studio/cloudImport.tsx).
+ */
+export const IMPORT_TYPES = ["image/jpeg", "image/png", "image/webp", "image/tiff", "image/heic", "image/heif"] as const;
+export const IMPORT_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "tif", "tiff", "heic", "heif"] as const;
+export const isImportType = (type: string) => (IMPORT_TYPES as readonly string[]).includes(type);
+export const isHeic = (type: string) => type === "image/heic" || type === "image/heif";
+
 const IMAGE_EXT: Record<string, string> = {
   jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", heic: "image/heic", heif: "image/heif",
   tif: "image/tiff", tiff: "image/tiff", avif: "image/avif", gif: "image/gif",
@@ -100,10 +110,16 @@ const IMAGE_EXT: Record<string, string> = {
  * extension. null = not an image. The bytes are decoded afterwards anyway, so a mislabelled file still fails safely.
  */
 export function importedType(contentType: string | null, name: string, declared?: string): string | null {
-  const ct = (contentType || "").split(";")[0].trim().toLowerCase();
+  const ct = normalType((contentType || "").split(";")[0]);
   if (/^image\/[\w.+-]+$/.test(ct)) return ct;
   if (ct && ct !== "application/octet-stream" && ct !== "binary/octet-stream") return null;
-  const d = (declared || "").toLowerCase();
+  const d = normalType(declared || "");
   if (/^image\/[\w.+-]+$/.test(d)) return d;
   return IMAGE_EXT[name.split(".").pop()?.toLowerCase() || ""] ?? null;
+}
+
+/** "image/jpg" and "image/pjpeg" are JPEG too. */
+function normalType(t: string): string {
+  const v = t.trim().toLowerCase();
+  return v === "image/jpg" || v === "image/pjpeg" ? "image/jpeg" : v;
 }

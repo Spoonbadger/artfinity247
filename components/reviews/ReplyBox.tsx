@@ -16,7 +16,7 @@ export default function ReplyBox({ reviewId, initial, buyerFirst }: { reviewId: 
       const r = await fetch(`/api/studio/reviews/${reviewId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reply: text }) });
       if (!r.ok) {
         const p = await problemFrom(r, "Couldn't save your reply.");
-        failed(p.message, { fix: p.fix, retry: p.fix || r.status < 500 ? undefined : () => save(text) });
+        failed(p.message, { description: r.status < 500 ? "" : undefined, fix: p.fix, retry: p.fix || r.status < 500 ? undefined : () => save(text) });
         return;
       }
       const j = await r.json().catch(() => ({}));

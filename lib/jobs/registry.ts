@@ -8,6 +8,7 @@ import { runBookkeeping, runPayouts } from "@/lib/jobs/monthly";
 import type { JobContext, JobResult } from "@/lib/jobs/run";
 import { sweepAdminAlerts } from "@/lib/alertSweep";
 import { sendAdminDigest } from "@/lib/alerts";
+import { SOCIAL_JOB, runSocialJob } from "@/lib/social/publish";
 
 export type JobDef = {
   name: string;
@@ -91,6 +92,14 @@ export const JOBS: JobDef[] = [
         : `Digest of ${digest.alerts} alert${digest.alerts === 1 ? "" : "s"} to ${digest.sent.length} admin${digest.sent.length === 1 ? "" : "s"} (sweep: ${sweep.raised} new, ${sweep.resolved} resolved)`;
       return { summary, details: { sweep, digest } };
     },
+  },
+  {
+    name: SOCIAL_JOB,
+    label: "Instagram posts",
+    description: "Drafts a post for each newly approved piece (if auto-queue is on), checks the Instagram token (refreshes it or warns 7 days ahead) and publishes approved posts whose time has come. Without Instagram keys it only drafts: posts are made by hand from /admin/social.",
+    schedule: "5 * * * *",
+    when: "Every hour at :05",
+    run: runSocialJob,
   },
   {
     name: "alert-sweep",

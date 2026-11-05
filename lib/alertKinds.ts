@@ -21,7 +21,9 @@ export type AlertKind =
   | "webhook_failed" // a Stripe webhook handler errored (lib/monitor.ts); Stripe retries it
   | "payout_insufficient_funds" // Stripe balance too low for the payout run (urgent, lib/jobs/monthly.ts)
   | "billing_failed" // an artist's Infinity subscription payment failed (low, lib/billing.ts)
-  | "image_check_failed"; // the automatic image check on upload is down (lib/moderation; uploads go through unchecked)
+  | "image_check_failed" // the automatic image check on upload is down (lib/moderation; uploads go through unchecked)
+  | "social_post_failed" // an Instagram post for Artfinity's account failed (lib/social/publish.ts)
+  | "social_token"; // the Instagram token expired or expires within 7 days (lib/social/instagram.ts)
 
 /** urgent: "always" = every alert of this kind is urgent; "sometimes" = some are (DMCA among reports). */
 type KindMeta = { kind: AlertKind; label: string; plural: string; queue: string; money?: boolean; urgent?: "always" | "sometimes"; defaultPref: NotifyPref };
@@ -43,6 +45,8 @@ export const ALERT_KINDS: KindMeta[] = [
   { kind: "webhook_failed", label: "Stripe webhook errors", plural: "webhook errors", queue: "/admin/alerts", urgent: "always", defaultPref: "instant" },
   { kind: "billing_failed", label: "Infinity subscription payments that failed", plural: "failed Infinity payments", queue: "/admin/artists?plan=infinity", money: true, defaultPref: "digest" },
   { kind: "image_check_failed", label: "Automatic image check errors", plural: "image check errors", queue: "/admin", defaultPref: "digest" },
+  { kind: "social_post_failed", label: "Instagram posts that failed", plural: "failed Instagram posts", queue: "/admin/social#queue", defaultPref: "digest" },
+  { kind: "social_token", label: "Instagram token expiring or expired", plural: "Instagram token warnings", queue: "/admin/social/setup", urgent: "sometimes", defaultPref: "instant" },
 ];
 
 const META = new Map(ALERT_KINDS.map((k) => [k.kind as string, k]));

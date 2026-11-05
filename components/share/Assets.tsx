@@ -140,10 +140,10 @@ export function ImageAssets({ art }: { art: ShareArt }) {
 export function Captions({ art, base }: { art: ShareArt; base: string }) {
   const list = useMemo(() => captions(art, artLink(base, art.handle, art.slug, "share-post")), [art, base]);
   return (
-    <ol className="grid gap-3 lg:grid-cols-3">
+    <ol className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-3">
       {list.map((c, i) => (
-        <li key={i} className="grid content-between gap-3 rounded-2xl border border-line bg-white p-4">
-          <p className="whitespace-pre-wrap break-words text-[14.5px] leading-snug">{c}</p>
+        <li key={i} className="grid min-w-0 content-between gap-3 rounded-2xl border border-line bg-white p-4">
+          <p className="whitespace-pre-wrap text-[14.5px] leading-snug [overflow-wrap:anywhere]">{c}</p>
           <CopyButton text={c} label="Copy caption" className="w-max" />
         </li>
       ))}

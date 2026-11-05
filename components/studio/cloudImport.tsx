@@ -1,16 +1,25 @@
 "use client";
 // "Google Drive" and "Dropbox" buttons next to the device pickers on /studio/art/new (ArtworkForm, UploadQueue).
-// Google Drive: the Google Picker with the drive.file scope (access only to the files the artist picks). The Google
-//   scripts (api.js + Identity Services) load when the button is pressed, never on page load. The picker hands back
-//   file ids and a short-lived access token; both go to POST /api/uploads/import, which downloads the files. The token
-//   lives only in memory for this page (so a second pick or a retry doesn't ask again) and is never saved anywhere.
-// Dropbox: the Dropbox Chooser (dropins.js, loaded on press) with temporary direct links (they expire after ~4 hours).
-// Each button shows only when its NEXT_PUBLIC_* keys are set (setup: AUTH_SETUP.md, "Google Drive" and "Dropbox").
-// Dev only: a "Sample files" button (ALLOW_MOCK_IMPORT=1, decided on the server) imports from the dev server itself.
+// Picked files join the same one-by-one upload queue as files from the device.
+// Google Drive: the Google Picker with the drive.file scope (access only to the files the artist picks), signed in
+//   through Google Identity Services' token client. The Google scripts (api.js + gsi/client) load when the button is
+//   hovered or pressed, never on page load. Picking a folder expands it to the images inside (and its subfolders).
+//   File ids and the short-lived access token go to POST /api/uploads/import, which downloads the files server-side.
+//   The token lives only in memory for this page (so a second pick or a retry doesn't ask again), never in storage.
+// Dropbox: the Dropbox Chooser (dropins.js, loaded on hover/press) with temporary direct links (they expire after
+//   about 4 hours, so the queue imports them straight away).
+// Why the server downloads (not the browser): the bytes go cloud → server once instead of cloud → phone → server,
+// which matters on a phone connection, and big originals don't hit the platform's request-body limit.
+// Each button shows only when its NEXT_PUBLIC_* keys are set (setup: IMPORT_SETUP.md). With no keys nothing shows.
+// Dev only: a "Sample files" button (ALLOW_MOCK_IMPORT=1, decided on the server) imports generated paintings from the
+// dev server itself, so the whole flow can be tested without accounts (add ?mockImport=problems to the page URL to
+// also get one file that fails in each way).
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MAX_UPLOAD_BYTES, QUEUE_MAX } from "@/lib/uploadLimits";
+import { IMPORT_EXTENSIONS, IMPORT_TYPES } from "@/lib/cloudImport/sources";
+import { Problem } from "./Problem";
 
 export type CloudSource = "drive" | "dropbox" | "mock";
 
@@ -30,6 +39,8 @@ export type CloudFile = {
 
 /** What POST /api/uploads and POST /api/uploads/import return for an image. */
 export type UploadedImage = { url: string; width: number; height: number; printable: string[]; printableSig: string };
+/** An imported image, plus what the import's duplicate check found (lib/imageHash.ts duplicateOfUpload). */
+export type ImportedImage = UploadedImage & { duplicate: { slug: string; title: string } | null; duplicateOther: boolean };
 
 export const SOURCE_LABEL: Record<CloudSource, string> = { drive: "Google Drive", dropbox: "Dropbox", mock: "sample files" };
 const SOURCE_SHORT: Record<CloudSource, string> = { drive: "Drive", dropbox: "Dropbox", mock: "samples" };
@@ -47,13 +58,18 @@ export const dropboxEnabled = !!DROPBOX_APP_KEY;
 export const cloudImportAvailable = (mock?: boolean) => driveEnabled || dropboxEnabled || !!mock;
 
 const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
-// Image types the upload pipeline reads (lib/storage.ts uses sharp; HEIC goes through Cloudinary when it's on).
-const DRIVE_MIME_TYPES = "image/jpeg,image/png,image/webp,image/heic,image/heif,image/tiff,image/avif,image/gif";
+const DRIVE_FOLDER = "application/vnd.google-apps.folder";
+// Image types the upload pipeline reads (lib/cloudImport/sources.ts IMPORT_TYPES), plus folders so they can be picked.
+const DRIVE_MIME_TYPES = [...IMPORT_TYPES, DRIVE_FOLDER].join(",");
+const DROPBOX_EXTENSIONS = IMPORT_EXTENSIONS.map((e) => `.${e}`);
 
-/** Picker cancelled or nothing chosen: not an error. */
-class Cancelled extends Error {}
+/** Picker closed without choosing: not an error. */
+export class Cancelled extends Error {}
 
-// ---------- script loading (once per page, on first press) ----------
+/** Something stopped the picker (popup blocked, sign-in cancelled, script blocked): shown with "Try again". */
+export class PickProblem extends Error {}
+
+// ---------- script loading (once per page, on first hover or press) ----------
 
 const scripts = new Map<string, Promise<void>>();
 function loadScript(src: string, attrs: Record<string, string> = {}): Promise<void> {
@@ -65,7 +81,11 @@ function loadScript(src: string, attrs: Record<string, string> = {}): Promise<vo
     s.async = true;
     for (const [k, v] of Object.entries(attrs)) s.setAttribute(k, v);
     s.onload = () => resolve();
-    s.onerror = () => { scripts.delete(src); s.remove(); reject(new Error(`Couldn't load ${new URL(src).hostname}. Check your connection or ad blocker and try again.`)); };
+    s.onerror = () => {
+      scripts.delete(src);
+      s.remove();
+      reject(new PickProblem(`Couldn't load ${new URL(src).hostname}. Check your connection or ad blocker.`));
+    };
     document.head.appendChild(s);
   });
   scripts.set(src, p);
@@ -75,6 +95,12 @@ function loadScript(src: string, attrs: Record<string, string> = {}): Promise<vo
 // The Google and Dropbox globals ship without types.
 const w = () => window as any;
 
+/** Load a source's scripts early (button hover / focus), so the popup opens straight from the click. */
+function preload(s: CloudSource) {
+  if (s === "drive") loadGoogle().catch(() => {});
+  if (s === "dropbox") loadDropbox().catch(() => {});
+}
+
 // ---------- Google Drive ----------
 
 let driveToken: { value: string; expires: number } | null = null;
@@ -82,7 +108,9 @@ let pickerLoaded: Promise<void> | null = null;
 
 async function loadGoogle() {
   await Promise.all([loadScript("https://apis.google.com/js/api.js"), loadScript("https://accounts.google.com/gsi/client")]);
-  pickerLoaded ||= new Promise<void>((resolve, reject) => w().gapi.load("picker", { callback: () => resolve(), onerror: () => { pickerLoaded = null; reject(new Error("Couldn't open Google Drive. Try again.")); } }));
+  pickerLoaded ||= new Promise<void>((resolve, reject) =>
+    w().gapi.load("picker", { callback: () => resolve(), onerror: () => { pickerLoaded = null; reject(new PickProblem("Couldn't open Google Drive.")); } }),
+  );
   await pickerLoaded;
 }
 
@@ -94,103 +122,199 @@ function driveAccessToken(): Promise<string> {
       client_id: GOOGLE_CLIENT_ID,
       scope: DRIVE_SCOPE,
       callback: (resp: any) => {
-        if (resp?.error || !resp?.access_token) { reject(resp?.error === "access_denied" ? new Cancelled() : new Error("Google didn't give access to Drive. Try again.")); return; }
+        if (resp?.error || !resp?.access_token) {
+          reject(new PickProblem(resp?.error === "access_denied" ? "Google sign-in was cancelled, so we can't see your Drive." : "Google didn't give access to Drive."));
+          return;
+        }
         driveToken = { value: resp.access_token, expires: Date.now() + (Number(resp.expires_in) || 3600) * 1000 };
         resolve(resp.access_token);
       },
       error_callback: (err: any) => {
-        if (err?.type === "popup_closed") reject(new Cancelled());
-        else if (err?.type === "popup_failed_to_open") reject(new Error("Your browser blocked the Google window. Press Google Drive again."));
-        else reject(new Error("Couldn't connect to Google Drive. Try again."));
+        if (err?.type === "popup_closed") reject(new PickProblem("Google sign-in was cancelled, so we can't see your Drive."));
+        else if (err?.type === "popup_failed_to_open") reject(new PickProblem("Your browser blocked the Google sign-in window. Allow pop-ups for this site, then try again."));
+        else reject(new PickProblem("Couldn't connect to Google Drive."));
       },
     });
     client.requestAccessToken(driveToken ? { prompt: "" } : {});
   });
 }
 
+const DRIVE_ID = /^[A-Za-z0-9_-]{10,200}$/;
+
+/** The images in a picked folder (and up to two levels of subfolders), in name order, at most `max`. */
+async function driveFolderImages(folder: { id: string; name: string }, token: string, max: number): Promise<CloudFile[]> {
+  const out: CloudFile[] = [];
+  const queue: { id: string; depth: number }[] = [{ id: folder.id, depth: 0 }];
+  while (queue.length && out.length < max) {
+    const { id, depth } = queue.shift()!;
+    if (!DRIVE_ID.test(id)) continue;
+    let pageToken = "";
+    do {
+      const qs = new URLSearchParams({
+        q: `'${id}' in parents and trashed = false`,
+        fields: "nextPageToken,files(id,name,mimeType,size)",
+        pageSize: "200",
+        orderBy: "folder,name_natural",
+        supportsAllDrives: "true",
+        includeItemsFromAllDrives: "true",
+      });
+      if (pageToken) qs.set("pageToken", pageToken);
+      const res = await fetch(`https://www.googleapis.com/drive/v3/files?${qs}`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+      if (!res) throw new PickProblem("Couldn't reach Google Drive. Check your connection.");
+      if (res.status === 401) { driveToken = null; throw new PickProblem("Google Drive access ran out."); }
+      if (!res.ok) throw new PickProblem(`Google Drive didn't let us look inside “${folder.name}”. Open the folder and select the images instead.`);
+      const data = await res.json().catch(() => ({}));
+      for (const f of (data.files || []) as { id: string; name: string; mimeType: string; size?: string }[]) {
+        if (f.mimeType === DRIVE_FOLDER) { if (depth < 2) queue.push({ id: f.id, depth: depth + 1 }); continue; }
+        if (!/^image\//.test(f.mimeType) || out.length >= max) continue;
+        out.push({ source: "drive", id: f.id, name: f.name || "image", mimeType: f.mimeType, bytes: Number(f.size) || undefined, token });
+      }
+      pageToken = data.nextPageToken || "";
+    } while (pageToken && out.length < max);
+  }
+  if (!out.length) throw new PickProblem(`We couldn't see any images in “${folder.name}”. Open the folder and select the images inside (Shift-click picks a range).`);
+  return out;
+}
+
 async function pickFromDrive(max: number): Promise<CloudFile[]> {
   await loadGoogle();
   const token = await driveAccessToken();
   const picker = w().google.picker;
-  return new Promise((resolve, reject) => {
-    // Folders show so the artist can open them; picking stays on images (drive.file grants access per picked file).
-    const view = new picker.DocsView(picker.ViewId.DOCS).setMimeTypes(DRIVE_MIME_TYPES).setIncludeFolders(true).setSelectFolderEnabled(false).setMode(picker.DocsViewMode.GRID);
+  const docs = await new Promise<any[]>((resolve, reject) => {
+    const view = new picker.DocsView(picker.ViewId.DOCS)
+      .setMimeTypes(DRIVE_MIME_TYPES).setIncludeFolders(true).setSelectFolderEnabled(max > 1).setMode(picker.DocsViewMode.GRID);
     const builder = new picker.PickerBuilder()
       .setAppId(GOOGLE_APP_ID)
       .setDeveloperKey(GOOGLE_API_KEY)
       .setOAuthToken(token)
       .setOrigin(window.location.protocol + "//" + window.location.host)
-      .setTitle(max > 1 ? "Pick your paintings" : "Pick a painting")
+      .setTitle(max > 1 ? "Pick paintings or a folder" : "Pick a painting")
       .addView(view)
       .setCallback((data: any) => {
         const action = data?.[picker.Response.ACTION];
         if (action === picker.Action.CANCEL) { reject(new Cancelled()); return; }
-        if (action !== picker.Action.PICKED) return;
-        const docs: any[] = data[picker.Response.DOCUMENTS] || [];
-        resolve(docs.map((d) => ({ source: "drive" as const, id: String(d.id), name: String(d.name || "image"), mimeType: d.mimeType, bytes: Number(d.sizeBytes) || undefined, token })));
+        if (action === picker.Action.PICKED) resolve(data[picker.Response.DOCUMENTS] || []);
       });
     if (max > 1) builder.enableFeature(picker.Feature.MULTISELECT_ENABLED).setMaxItems(max);
     builder.build().setVisible(true);
   });
+  const out: CloudFile[] = [];
+  for (const d of docs) {
+    if (out.length >= max) break;
+    if (d.mimeType === DRIVE_FOLDER) out.push(...(await driveFolderImages({ id: String(d.id), name: String(d.name || "that folder") }, token, max - out.length)));
+    else out.push({ source: "drive", id: String(d.id), name: String(d.name || "image"), mimeType: d.mimeType, bytes: Number(d.sizeBytes) || undefined, token });
+  }
+  return out;
 }
 
 // ---------- Dropbox ----------
 
+const loadDropbox = () => loadScript("https://www.dropbox.com/static/api/2/dropins.js", { id: "dropboxjs", "data-app-key": DROPBOX_APP_KEY });
+
 async function pickFromDropbox(max: number): Promise<CloudFile[]> {
-  await loadScript("https://www.dropbox.com/static/api/2/dropins.js", { id: "dropboxjs", "data-app-key": DROPBOX_APP_KEY });
+  await loadDropbox();
   return new Promise((resolve, reject) => {
-    w().Dropbox.choose({
-      linkType: "direct",
-      multiselect: max > 1,
-      extensions: ["images"],
-      folderselect: false,
-      sizeLimit: MAX_UPLOAD_BYTES,
-      success: (files: any[]) => resolve(files.map((f) => ({ source: "dropbox" as const, link: String(f.link), name: String(f.name || "image"), bytes: Number(f.bytes) || undefined }))),
-      cancel: () => reject(new Cancelled()),
-    });
+    // The Chooser opens a popup window; notice when the browser blocks it instead of failing silently.
+    const realOpen = window.open;
+    let blocked = false;
+    window.open = function (...args: Parameters<typeof window.open>) {
+      const win = realOpen.apply(window, args);
+      if (!win) blocked = true;
+      return win;
+    };
+    try {
+      w().Dropbox.choose({
+        linkType: "direct",
+        multiselect: max > 1,
+        extensions: DROPBOX_EXTENSIONS,
+        folderselect: false,
+        sizeLimit: MAX_UPLOAD_BYTES,
+        success: (files: any[]) => resolve(files.slice(0, max).map((f) => ({ source: "dropbox" as const, link: String(f.link), name: String(f.name || "image"), bytes: Number(f.bytes) || undefined }))),
+        cancel: () => reject(new Cancelled()),
+      });
+    } finally {
+      window.open = realOpen;
+    }
+    if (blocked) reject(new PickProblem("Your browser blocked the Dropbox window. Allow pop-ups for this site, then try again."));
   });
 }
 
 // ---------- dev mock ----------
 
 async function pickMock(max: number): Promise<CloudFile[]> {
-  const res = await fetch(`/api/uploads/import?count=${Math.min(3, max)}`, { credentials: "include" });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || "The sample picker isn't on. Set ALLOW_MOCK_IMPORT=1.");
-  return (data.files || []).map((f: { link: string; name: string; bytes?: number }) => ({ source: "mock" as const, ...f }));
+  const problems = new URLSearchParams(window.location.search).get("mockImport") === "problems";
+  const res = await fetch(`/api/uploads/import?count=${Math.min(3, max)}${problems ? "&problems=1" : ""}`, { credentials: "include" }).catch(() => null);
+  const data = res ? await res.json().catch(() => ({})) : {};
+  if (!res?.ok) throw new PickProblem(data.error || "The sample picker isn't on. Set ALLOW_MOCK_IMPORT=1.");
+  return (data.files || []).slice(0, max).map((f: { link: string; name: string; bytes?: number }) => ({ source: "mock" as const, ...f }));
+}
+
+/** Opens a source's picker. Throws Cancelled (closed, nothing to say) or PickProblem (say it, offer "Try again"). */
+export async function pickCloud(source: CloudSource, max = QUEUE_MAX): Promise<CloudFile[]> {
+  const cap = Math.max(1, max);
+  return source === "drive" ? pickFromDrive(cap) : source === "dropbox" ? pickFromDropbox(cap) : pickMock(cap);
 }
 
 // ---------- import ----------
 
-/** Sends one picked file to POST /api/uploads/import. Resolves with the same result /api/uploads gives. */
-export async function importCloudFile(f: CloudFile, signal?: AbortSignal): Promise<UploadedImage> {
-  const file = f.source === "drive" ? { id: f.id, name: f.name, mimeType: f.mimeType } : { link: f.link, name: f.name, bytes: f.bytes };
-  const res = await fetch("/api/uploads/import", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ source: f.source, files: [file], ...(f.source === "drive" ? { accessToken: f.token } : {}) }),
-    signal,
-  });
-  const data = await res.json().catch(() => ({}));
-  if (res.status === 401 && f.source !== "drive") throw new ImportFailed("You're logged out. Log in and import it again.", false);
-  const r = data.results?.[0];
-  if (!res.ok || !r) throw new ImportFailed(data.error || "Import failed. Try again.", res.status >= 500 || res.status === 429);
-  if (!r.ok) {
-    // An expired Drive token can't be retried with the same token: drop it so the next press asks Google again.
-    if (f.source === "drive" && /access ran out/i.test(r.error)) driveToken = null;
-    throw new ImportFailed(r.error, !!r.retry);
-  }
-  return { url: r.url, width: r.width, height: r.height, printable: r.printable, printableSig: r.printableSig };
-}
-
 export class ImportFailed extends Error {
-  constructor(message: string, public retry: boolean) {
+  constructor(message: string, public retry: boolean, public code?: string) {
     super(message);
   }
 }
 
-/** Picked files that look like images (the pickers already filter, this is a second check). */
+/** Sends one picked file to POST /api/uploads/import. Resolves with the same result /api/uploads gives, plus duplicates. */
+export async function importCloudFile(f: CloudFile, signal?: AbortSignal): Promise<ImportedImage> {
+  const file = f.source === "drive" ? { id: f.id, name: f.name, mimeType: f.mimeType } : { link: f.link, name: f.name, bytes: f.bytes };
+  let res: Response;
+  try {
+    res = await fetch("/api/uploads/import", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ source: f.source, files: [file], ...(f.source === "drive" ? { accessToken: f.token } : {}) }),
+      signal,
+    });
+  } catch (e) {
+    if ((e as Error)?.name === "AbortError") throw e;
+    throw new ImportFailed("You seem to be offline. Check your connection and try again.", true, "offline");
+  }
+  const data = await res.json().catch(() => ({}));
+  const r = data.results?.[0];
+  if (!res.ok || !r) throw new ImportFailed(data.error || "Import failed. Try again.", res.status >= 500 || res.status === 429, data.code);
+  if (!r.ok) {
+    // An expired Drive token can't be retried with the same token: drop it so the next pick asks Google again.
+    if (r.code === "drive_access_expired") driveToken = null;
+    throw new ImportFailed(r.error, !!r.retry, r.code);
+  }
+  return { url: r.url, width: r.width, height: r.height, printable: r.printable, printableSig: r.printableSig, duplicate: r.duplicate ?? null, duplicateOther: !!r.duplicateOther };
+}
+
+/**
+ * The fix for a failed import, by the server's code. repick = open the same picker again for a fresh link / token or
+ * another file; href = the page that explains. null = nothing beyond retry (when the failure is retryable) or remove.
+ */
+export function importFix(code: string | undefined, source: CloudSource): { label: string; href?: string; repick?: boolean } | null {
+  switch (code) {
+    case "link_expired":
+    case "drive_access_expired":
+    case "not_found":
+    case "link_not_allowed":
+      return { label: `Pick it again from ${source === "mock" ? "samples" : SOURCE_LABEL[source]}`, repick: true };
+    case "not_image":
+    case "heic_unreadable":
+    case "unreadable_image":
+    case "file_too_big":
+    case "empty_file":
+      return { label: "Pick another file", repick: true };
+    case "not_logged_in":
+      return { label: "Log in", href: "/login" };
+    default:
+      return null;
+  }
+}
+
+/** Picked files that look like images (the pickers already filter; the server checks the real type and says why). */
 export const isCloudImage = (f: CloudFile) =>
   f.mimeType ? /^image\//.test(f.mimeType) : /\.(jpe?g|png|webp|heic|heif|tiff?|avif|gif)$/i.test(f.name);
 
@@ -209,20 +333,19 @@ export function CloudImportButtons({ onPick, mock, max = QUEUE_MAX, disabled, si
   className?: string;
 }) {
   const [busy, setBusy] = useState<CloudSource | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [problem, setProblem] = useState<{ source: CloudSource; message: string } | null>(null);
   if (!cloudImportAvailable(mock)) return null;
   const sources: CloudSource[] = [...(driveEnabled ? ["drive" as const] : []), ...(dropboxEnabled ? ["dropbox" as const] : []), ...(mock ? ["mock" as const] : [])];
 
   async function open(s: CloudSource) {
     if (busy) return;
-    setError(null);
+    setProblem(null);
     setBusy(s);
     try {
-      const cap = Math.max(1, max);
-      const files = await (s === "drive" ? pickFromDrive(cap) : s === "dropbox" ? pickFromDropbox(cap) : pickMock(cap));
+      const files = await pickCloud(s, max);
       if (files.length) onPick(files);
     } catch (e) {
-      if (!(e instanceof Cancelled)) setError((e as Error)?.message || "Something went wrong. Try again.");
+      if (!(e instanceof Cancelled)) setProblem({ source: s, message: (e as Error)?.message || `Couldn't open ${SOURCE_LABEL[s]}.` });
     } finally {
       setBusy(null);
     }
@@ -233,16 +356,16 @@ export function CloudImportButtons({ onPick, mock, max = QUEUE_MAX, disabled, si
       <div className="flex flex-wrap items-center gap-2">
         {sources.map((s) => (
           <button
-            key={s} type="button" onClick={() => open(s)} disabled={disabled || !!busy}
+            key={s} type="button" onClick={() => open(s)} onPointerEnter={() => preload(s)} onFocus={() => preload(s)} disabled={disabled || !!busy}
             className={size === "link" ? "inline-flex min-h-[32px] items-center gap-1.5 font-semibold text-scan hover:underline disabled:opacity-50" : "btn btn-ghost btn-sm"}
-            aria-label={s === "mock" ? undefined : `Import from ${SOURCE_LABEL[s]}`}
+            aria-label={s === "mock" ? "Import sample files (dev only)" : `Import from ${SOURCE_LABEL[s]}`}
           >
             {busy === s ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <SourceIcon source={s} />}
             {s === "mock" ? "Sample files (dev)" : SOURCE_LABEL[s]}
           </button>
         ))}
       </div>
-      {error && <p role="alert" className="text-[13px] font-semibold text-coral">{error}</p>}
+      {problem && <Problem tone="error" title={problem.message} fix={{ label: "Try again", onClick: () => open(problem.source) }} className="text-left" />}
     </div>
   );
 }

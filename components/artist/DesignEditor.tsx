@@ -42,7 +42,7 @@ export default function DesignEditor({ slug, initial, works, hasMedal }: { slug:
       const res = await fetch("/api/studio/design", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ theme }) });
       if (!res.ok) {
         const p = await problemFrom(res, "Couldn't save your design.");
-        failed(p.message, { fix: p.fix, retry: p.fix || res.status < 500 ? undefined : save });
+        failed(p.message, { description: res.status < 500 ? "" : undefined, fix: p.fix, retry: p.fix || res.status < 500 ? undefined : save });
         return;
       }
       const j = await res.json().catch(() => ({}));

@@ -5,9 +5,12 @@
 // Prices, print run and labels carry over from the previous painting; the ownership box is ticked once for the batch.
 // The queue is kept in sessionStorage so a refresh doesn't lose the titles typed so far.
 // Paintings picked in Google Drive or Dropbox (./cloudImport.tsx) join the same queue: they go through
-// POST /api/uploads/import instead, which runs the same pipeline and returns the same result as /api/uploads.
+// POST /api/uploads/import instead, which runs the same pipeline and returns the same result as /api/uploads,
+// plus an early duplicate check. Each import shows "Importing 3 of 12…", ends with a toast, and a failed file says
+// why with its fix (pick it again for an expired link, another file for a wrong type).
 import Link from "next/link";
-import { errorText } from "@/lib/feedback";
+import { errorText, failed, saved } from "@/lib/feedback";
+import { Problem } from "./Problem";
 import { DragEvent, useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { AlertCircle, ArrowLeft, ArrowRight, Check, FolderOpen, Loader2, Plus, RotateCcw, Trash2 } from "lucide-react";
 import type { SizeKey } from "@/lib/earnings";
@@ -16,10 +19,12 @@ import { artPath } from "@/lib/urls";
 import { MAX_UPLOAD_BYTES, QUEUE_CONCURRENCY, QUEUE_MAX } from "@/lib/uploadLimits";
 import {
   artworkFormData, checkArtwork, DetailsFields, EditionField, filesFromDrop, isImageFile, OwnershipField, PriceFields,
-  pricesFrom, PrintSizes, REVIEW_NOTE, SensitiveField, saveError, sortFiles, titleFromFile, useLastPrices, usePriceGuide,
+  pricesFrom, PrintSizes, REVIEW_NOTE, SensitiveField, saveError, sortFiles, titleFromFile, TOO_SMALL, useLastPrices, usePriceGuide,
   type ArtworkValues, type Prices,
 } from "./artworkFields";
-import { CloudImportButtons, ImportFailed, importCloudFile, importingLabel, isCloudImage, SOURCE_LABEL, type CloudFile, type CloudSource } from "./cloudImport";
+import {
+  Cancelled, CloudImportButtons, ImportFailed, importCloudFile, importFix, importingLabel, isCloudImage, pickCloud, SOURCE_LABEL, type CloudFile, type CloudSource,
+} from "./cloudImport";
 
 type Result = {
   state: "live" | "review" | "failed";
@@ -49,6 +54,11 @@ export type QueueItem = {
   result?: Result;
   /** Picked in Google Drive / Dropbox: imported by the server rather than uploaded from this device. */
   source?: CloudSource;
+  /** Why an import failed (server code, e.g. "link_expired"): picks the fix (cloudImport.tsx importFix). */
+  uploadCode?: string;
+  /** The import's duplicate check: the artist's own piece with this picture, or someone else's (review at publish). */
+  duplicate?: { slug: string; title: string } | null;
+  duplicateOther?: boolean;
 };
 
 export type QueueDraft = { items: QueueItem[]; index: number; owned: boolean; announced: string[]; finished: boolean };
@@ -131,6 +141,9 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
   const [error, setError] = useState<string | null>(null);
   const [banner, setBanner] = useState<{ itemId: string } | null>(null);
   const [dragging, setDragging] = useState(false);
+  // The current Drive / Dropbox import: its items, for "Importing 3 of 12…" and the toast when it ends.
+  const [importRun, setImportRun] = useState<string[]>([]);
+  const [repicking, setRepicking] = useState<string | null>(null);
   const guide = usePriceGuide();
 
   const patch = useCallback((id: string, p: Partial<QueueItem> | ((it: QueueItem) => Partial<QueueItem>)) => {
@@ -167,12 +180,14 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
       }
       const big = (isFile ? f.size : f.bytes || 0) > MAX_UPLOAD_BYTES;
       return {
-        id, name: f.name, upload: big ? "error" : "waiting", progress: 0, uploadError: big ? TOO_BIG : undefined,
+        id, name: f.name, upload: big ? "error" : "waiting", progress: 0, uploadError: big ? TOO_BIG : undefined, uploadCode: big ? "file_too_big" : undefined,
         imageUrl: "", fresh: null, dims: null, carry: true, source: isFile ? undefined : f.source,
         v: { ...BLANK, title: titleFromFile(f.name), prices: last?.prices ?? startPrices.current, sensitive: last?.sensitive ?? [], limited: last?.limited ?? false, edition: last?.edition ?? "25" },
       };
     });
     if (added.length) setItems((c) => [...c, ...added].slice(0, QUEUE_MAX));
+    const imports = added.filter((it) => it.source && it.upload === "waiting").map((it) => it.id);
+    if (imports.length) setImportRun((run) => [...run, ...imports]);
   }, []);
 
   // First files from the picker.
@@ -209,14 +224,18 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
         active.current.add(id);
         const ctrl = new AbortController();
         xhrs.current.set(id, ctrl);
-        patch(id, { upload: "uploading", progress: 0, uploadError: undefined });
+        patch(id, { upload: "uploading", progress: 0, uploadError: undefined, uploadCode: undefined });
         importCloudFile(remote, ctrl.signal).then(
-          (data) => done({ ...data, printable: data.printable as SizeKey[] }),
+          (data) => {
+            patch(id, { duplicate: data.duplicate, duplicateOther: data.duplicateOther });
+            done({ ...data, printable: data.printable as SizeKey[] });
+          },
           (e) => {
             if (ctrl.signal.aborted) { active.current.delete(id); xhrs.current.delete(id); return; }
             // Some failures (expired Drive access or Dropbox link) need the file picked again, not a retry.
-            if (e instanceof ImportFailed && !e.retry) remotes.current.delete(id);
-            end({ upload: "error", uploadError: e?.message || "Import failed. Try again." });
+            const retry = !(e instanceof ImportFailed) || e.retry;
+            if (!retry) remotes.current.delete(id);
+            end({ upload: "error", uploadError: e?.message || "Import failed. Try again.", uploadCode: e instanceof ImportFailed ? e.code : undefined });
           },
         );
         continue;
@@ -260,6 +279,30 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
     writeDraft(handle, { items, index, owned, announced, finished });
   }, [handle, items, index, owned, announced, finished]);
 
+  // A Drive / Dropbox import ends: one toast for the lot ("12 pieces added — fill in details below").
+  useEffect(() => {
+    if (!importRun.length) return;
+    const run = items.filter((i) => importRun.includes(i.id));
+    if (run.some((i) => i.upload === "waiting" || i.upload === "uploading")) return;
+    setImportRun([]);
+    if (!run.length) return;
+    const ok = run.filter((i) => i.upload === "done").length;
+    const bad = run.length - ok;
+    const pieces = (n: number) => `${n} ${n === 1 ? "piece" : "pieces"}`;
+    if (ok) {
+      saved(`${pieces(ok)} added — fill in details below`, bad ? { description: `${bad} couldn't be imported. ${bad === 1 ? "It says" : "Each one says"} why, with a fix.` } : undefined);
+    } else {
+      const retryable = run.filter((i) => remotes.current.has(i.id)).map((i) => i.id);
+      failed(`Couldn't import ${bad === 1 ? "that file" : `those ${bad} files`}`, {
+        description: `${bad === 1 ? "It says" : "Each one says"} why, with a fix.`,
+        retry: retryable.length ? () => {
+          setItems((cur) => cur.map((it) => (retryable.includes(it.id) && it.upload === "error" ? { ...it, upload: "waiting", uploadError: undefined, uploadCode: undefined } : it)));
+          setImportRun(retryable);
+        } : undefined,
+      });
+    }
+  }, [items, importRun]);
+
   // Warn before leaving while images are still uploading or a painting is publishing.
   const busy = publishing !== null || items.some((i) => i.upload === "waiting" || i.upload === "uploading");
   useEffect(() => {
@@ -302,6 +345,10 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
   const done = items.filter(published);
   const uploadedCount = items.filter((i) => i.upload === "done").length;
   const left = items.filter((i) => !published(i));
+  const runItems = items.filter((i) => importRun.includes(i.id));
+  const importing = runItems.some((i) => i.upload === "waiting" || i.upload === "uploading");
+  const runDone = runItems.filter((i) => i.upload === "done" || i.upload === "error").length;
+  const localPending = items.some((i) => !i.source && (i.upload === "waiting" || i.upload === "uploading"));
 
   /** "Same as last one": an untouched painting takes the prices, run and labels of `from`. */
   const carryInto = (list: QueueItem[], toId: string, from: ArtworkValues) =>
@@ -343,6 +390,27 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
     focusHeading.current = true;
     if (!next.some((i) => !published(i))) { setFinished(true); return; }
     setIndex(Math.min(Math.max(0, at), next.length - 1));
+  }
+
+  /** An import that can't be retried as it is (expired link, wrong type): pick a file again for the same slot. */
+  async function repick(it: QueueItem) {
+    if (!it.source || repicking) return;
+    setRepicking(it.id);
+    try {
+      const [f] = await pickCloud(it.source, 1);
+      if (!f) return;
+      remotes.current.set(it.id, f);
+      patch(it.id, (cur) => ({
+        name: f.name, source: f.source, upload: "waiting", progress: 0, uploadError: undefined, uploadCode: undefined, duplicate: null, duplicateOther: false,
+        // A title still taken from the old file name follows the new file.
+        v: cur.v.title === titleFromFile(cur.name) ? { ...cur.v, title: titleFromFile(f.name) } : cur.v,
+      }));
+      setImportRun((run) => [...run, it.id]);
+    } catch (e) {
+      if (!(e instanceof Cancelled)) patch(it.id, { uploadError: (e as Error)?.message || `Couldn't open ${SOURCE_LABEL[it.source]}. Try again.` });
+    } finally {
+      setRepicking(null);
+    }
   }
 
   function setV(patchV: Partial<ArtworkValues>, carrySafe = true) {
@@ -437,7 +505,8 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
           </h2>
           <p className="text-[13.5px] text-ink-2" aria-live="polite">
             <span className="num">{done.length}</span> published · <span className="num">{left.length}</span> to go
-            {uploadedCount < total && <> · {items.some((i) => i.source && i.upload !== "done") ? "importing" : "uploading"} <span className="num">{uploadedCount}</span>/<span className="num">{total}</span></>}
+            {importing && <> · <b className="text-ink">Importing <span className="num">{Math.min(runDone + 1, runItems.length)}</span> of <span className="num">{runItems.length}</span>…</b></>}
+            {localPending && uploadedCount < total && <> · uploading <span className="num">{uploadedCount}</span>/<span className="num">{total}</span></>}
           </p>
         </div>
         <ol className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 pt-0.5" aria-label="Paintings in this batch">
@@ -529,11 +598,25 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
                 <b>{item.uploadError || "Upload failed."}</b>
                 <div className="flex flex-wrap gap-2">
                   {(files.current.has(item.id) || remotes.current.has(item.id)) && item.uploadError !== TOO_BIG && (
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => patch(item.id, { upload: "waiting", progress: 0, uploadError: undefined })}><RotateCcw className="h-4 w-4" aria-hidden="true" />{item.source ? "Retry import" : "Retry upload"}</button>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => { patch(item.id, { upload: "waiting", progress: 0, uploadError: undefined, uploadCode: undefined }); if (item.source) setImportRun((run) => [...run, item.id]); }}><RotateCcw className="h-4 w-4" aria-hidden="true" />{item.source ? "Retry import" : "Retry upload"}</button>
                   )}
+                  {item.source && <ImportFixButton fix={importFix(item.uploadCode, item.source)} busy={repicking === item.id} onRepick={() => repick(item)} />}
                   <button type="button" className="btn btn-ghost btn-sm" onClick={() => remove(item.id)}><Trash2 className="h-4 w-4" aria-hidden="true" />Remove</button>
                 </div>
               </div>
+            )}
+            {item.upload === "done" && item.duplicate && (
+              <Problem tone="warning" title={`Looks like “${item.duplicate.title}”, already on your page.`} fix={{ label: "See it", href: `/studio/art/${item.duplicate.slug}` }}>
+                Publish it anyway if it&apos;s a different version, or use Skip and remove.
+              </Problem>
+            )}
+            {item.upload === "done" && !item.duplicate && item.duplicateOther && (
+              <Problem tone="info" title="This looks like a piece already on Artfinity." fix={{ label: "How we check", href: "/help/trust/duplicate-detection" }}>
+                You can still publish it. A person checks it first, usually within a day.
+              </Problem>
+            )}
+            {item.upload === "done" && item.source && printable && !printable.length && (
+              <Problem tone="warning" title={TOO_SMALL} fix={{ label: "Which files print sharp?", href: "/help/getting-started/file-sizes-print-sharp" }} />
             )}
             {item.upload === "done" && printable && <PrintSizes imageUrl={item.imageUrl} printable={printable} dims={item.dims} shape={item.dims} />}
           </div>
@@ -573,6 +656,17 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
         </form>
       )}
     </div>
+  );
+}
+
+/** The fix for a failed import: pick the file again (expired link, wrong type) or the page that explains. */
+function ImportFixButton({ fix, busy, onRepick }: { fix: ReturnType<typeof importFix>; busy: boolean; onRepick: () => void }) {
+  if (!fix) return null;
+  if (fix.href) return <Link href={fix.href} className="btn btn-sm">{fix.label}</Link>;
+  return (
+    <button type="button" className="btn btn-sm" onClick={onRepick} disabled={busy}>
+      {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}{fix.label}
+    </button>
   );
 }
 

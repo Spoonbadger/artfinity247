@@ -26,7 +26,7 @@ export default function FollowerImport({ defaultOpen = false }: { defaultOpen?: 
       const res = await fetch("/api/studio/followers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, consent }) });
       if (!res.ok) {
         const p = await problemFrom(res, "Import failed.");
-        failed(p.message, { fix: p.fix, retry: p.fix || res.status < 500 ? undefined : () => submit() });
+        failed(p.message, { description: res.status < 500 ? "" : undefined, fix: p.fix, retry: p.fix || res.status < 500 ? undefined : () => submit() });
         return;
       }
       const data = await res.json().catch(() => ({}));

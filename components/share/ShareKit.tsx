@@ -5,13 +5,12 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BrushStroke } from "@/components/af/Brush";
-import VideoMaker from "./VideoMaker";
-import VideoUpsell from "@/components/pro/VideoUpsell";
+import VideoStudio from "./videos/VideoStudio";
 import { Captions, EmbedKit, ImageAssets, ShareLinks } from "./Assets";
 import { dollars, type ShareArt } from "./shareData";
 
 const SECTIONS = [
-  { id: "video", label: "Video", dab: "#ff5a36" },
+  { id: "video", label: "Videos", dab: "#ff5a36" },
   { id: "images", label: "Images", dab: "#ffd43b" },
   { id: "captions", label: "Captions", dab: "#2b37f0" },
   { id: "links", label: "Links", dab: "#0f7a55" },
@@ -93,9 +92,9 @@ export default function ShareKit({ arts, initialSlug, base, pro = true }: { arts
         </nav>
       </div>
 
-      <Section id="video" title="Auto video" sub="Vertical, 10 seconds. Reels, TikTok, Shorts." dab="#ff5a36">
-        {/* Auto videos are an Infinity tool (lib/plans.ts). */}
-        {pro ? <VideoMaker art={art} base={base} /> : <VideoUpsell imageUrl={art.imageUrl} title={art.title} />}
+      <Section id="video" title="Videos" sub="6 to 15 seconds, vertical or square. Reels, TikTok, Shorts." dab="#ff5a36">
+        {/* Three presets free, the rest Infinity (lib/social/presets.ts). */}
+        <VideoStudio art={art} arts={arts} base={base} pro={pro} />
       </Section>
 
       <Section id="images" title="Story and post images" sub="Each one has a QR code to this piece." dab="#ffd43b">

@@ -123,7 +123,7 @@ export default function NewsletterComposer({
         if (p.code === "no_followers") setBlocker("followers");
         if (p.code === "missing_content") setBlocker("content");
         if (p.code === "daily_limit") router.refresh();
-        failed(p.message, { fix: p.code === "email_unverified" ? { label: "Resend confirmation", href: "/studio#confirm-email" } : p.fix, retry: p.fix ? undefined : () => call(action) });
+        failed(p.message, { description: res.status < 500 && res.status !== 429 ? "" : undefined, fix: p.code === "email_unverified" ? { label: "Resend confirmation", href: "/studio#confirm-email" } : p.fix, retry: p.fix ? undefined : () => call(action) });
         return;
       }
       const data = await res.json().catch(() => ({}));

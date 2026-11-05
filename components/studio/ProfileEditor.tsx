@@ -32,6 +32,7 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
   const router = useRouter();
   const { refreshUser } = useUser();
   const fileRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const [saved, setSaved] = useState(initial);
   const [p, setP] = useState(initial);
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -99,6 +100,13 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
     } catch (e: any) {
       setError(e.message || "Could not save.");
       setErrorCode(e.code || null);
+      // The inline error sits by Save; the toast makes sure it's seen, with a way forward.
+      const offline = !e?.message || e.message === "Failed to fetch";
+      failed(offline ? "You seem to be offline" : e.message, {
+        description: offline ? "Your changes are still here. Check your connection and try again." : undefined,
+        fix: e.code === "email_unverified" ? { label: "Resend confirmation", href: "/studio#confirm-email" } : e.code === "not_logged_in" ? { label: "Log in", href: "/login?next=/studio/page" } : undefined,
+        retry: e.code === "email_unverified" || e.code === "not_logged_in" || e.code === "invalid_input" ? undefined : () => formRef.current?.requestSubmit(),
+      });
     } finally {
       setSaving(false);
     }
@@ -131,7 +139,7 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] lg:gap-10">
       <div className="grid">
-      <form onSubmit={save} className="grid gap-5" noValidate>
+      <form ref={formRef} onSubmit={save} className="grid gap-5" noValidate>
         <div className="flex flex-wrap items-center gap-4">
           <div className="relative">
             <Avatar src={p.profileImage} name={p.name || "A"} className="h-24 w-24 border-2 border-ink text-3xl" />
@@ -185,6 +193,7 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
           <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border-2 border-coral bg-[#fff1ed] px-3.5 py-2.5 text-[14px] font-semibold">
             <span className="min-w-0 flex-1">{error}</span>
             {errorCode === "email_unverified" && <ResendConfirmButton />}
+            {errorCode === "venmo_taken" && <Link href="/contact" className="btn btn-sm shrink-0">Message us</Link>}
           </div>
         )}
         <div className="flex flex-wrap items-center gap-3">

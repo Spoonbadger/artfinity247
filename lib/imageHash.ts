@@ -96,3 +96,16 @@ export async function checkUpload(imageUrl: string, artistId: string, excludeId?
 
 export const duplicateOfId = (flaggedReason: string | null | undefined) =>
   flaggedReason?.startsWith(DUPLICATE_PREFIX) ? flaggedReason.slice(DUPLICATE_PREFIX.length) || null : null;
+
+/**
+ * Early check for an imported painting (POST /api/uploads/import), on the downloaded bytes, so the queue can say so
+ * before the artist fills it in. `own` = the artist's own piece (title + slug, to link to); `other` = looks like
+ * another artist's piece (no details shown: checkUpload sends it to review when it's published).
+ */
+export async function duplicateOfUpload(buf: Buffer, artistId: string): Promise<{ own: { slug: string; title: string } | null; other: boolean }> {
+  const hash = await dHash(buf);
+  if (!hash) return { own: null, other: false };
+  const { other, own } = await findDuplicates(hash, artistId);
+  const mine = own ? await prisma.artwork.findUnique({ where: { id: own.artworkId }, select: { slug: true, title: true } }) : null;
+  return { own: mine?.slug ? { slug: mine.slug, title: mine.title } : null, other: !!other };
+}

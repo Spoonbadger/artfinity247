@@ -70,6 +70,13 @@ export default function EmailEditor({
   }
 
   async function save() {
+    if (!draft.subject.trim() || !draft.body.trim()) {
+      const which = !draft.subject.trim() ? "subject" : "message";
+      setStatus({ ok: false, text: `Add a ${which} first.` });
+      failed(`Add a ${which} first`, { description: "Every email needs a subject and a message, so buyers know what it's about.", fix: { label: "How buyer emails work", href: "/help/growing/buyer-emails" } });
+      (which === "subject" ? subjectRef : bodyRef).current?.focus();
+      return;
+    }
     setBusy(true);
     setStatus(null);
     try {
@@ -81,7 +88,7 @@ export default function EmailEditor({
       if (!res.ok) {
         const p = await problemFrom(res, "Couldn't save this email.");
         setStatus({ ok: false, text: p.message });
-        failed(p.message, { fix: p.fix, retry: p.fix || res.status < 500 ? undefined : save });
+        failed(p.message, { description: res.status < 500 ? "" : undefined, fix: p.fix, retry: p.fix || res.status < 500 ? undefined : save });
         return;
       }
       const data = await res.json().catch(() => ({}));

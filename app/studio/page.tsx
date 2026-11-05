@@ -33,7 +33,7 @@ export default async function StudioHome() {
   const artist = await requireArtist("/studio");
   const now = new Date();
   const since = new Date(now.getTime() - 30 * DAY);
-  const [allSales, artworks, trust, ver, plan, balance, eventCount] = await Promise.all([
+  const [allSales, artworks, trust, ver, plan, balance, eventCount, codeCount] = await Promise.all([
     getSales(artist.id),
     getArtworks(artist.id),
     getArtistTrust(artist.id),
@@ -41,6 +41,7 @@ export default async function StudioHome() {
     getArtistPlan(artist.id),
     getBalance(artist.id, now),
     prisma.studioEvent.count({ where: { artistId: artist.id } }),
+    prisma.qrCode.count({ where: { artistId: artist.id } }),
   ]);
   const sales = allSales.filter((s) => s.date >= since);
   // Real scans of the artist's short link codes: last 30 days vs the 30 before.
@@ -49,7 +50,7 @@ export default async function StudioHome() {
     countArtistScans(artist.id, new Date(since.getTime() - 30 * DAY), since),
     countArtistViews(artist.id, new Date(now.getTime() - 7 * DAY), now),
   ]);
-  const scanDelta = !scans && !scansBefore ? "print a code to start" : !scansBefore ? "new this month" : `${scans >= scansBefore ? "+" : "−"}${Math.abs(Math.round(((scans - scansBefore) / scansBefore) * 100))}% vs last 30 days`;
+  const scanDelta = !scans && !scansBefore ? (codeCount ? "hang your codes to start" : "print a code to start") : !scansBefore ? "new this month" : `${scans >= scansBefore ? "+" : "−"}${Math.abs(Math.round(((scans - scansBefore) / scansBefore) * 100))}% vs last 30 days`;
 
   const prints = sales.reduce((n, s) => n + s.quantity, 0);
   const earned = sales.reduce((n, s) => n + s.shareCents, 0);
