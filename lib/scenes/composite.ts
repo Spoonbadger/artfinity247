@@ -266,7 +266,11 @@ export async function composite(o: CompositeOptions): Promise<CompositeResult> {
 
   // background: crop, mirror, resize
   let bgPipe = sharp(path.resolve(ROOT, photo.file), { failOn: "none" }).rotate().extract({ left: crop.x, top: crop.y, width: crop.w, height: crop.h });
-  if (v.mirror) bgPipe = bgPipe.flop();
+  if (v.mirror) {
+    // With rotate() in the pipeline sharp flops before it extracts, which crops the wrong side. Crop first, then mirror.
+    const cut = await bgPipe.removeAlpha().toColorspace("srgb").raw().toBuffer({ resolveWithObject: true });
+    bgPipe = sharp(cut.data, { raw: { width: cut.info.width, height: cut.info.height, channels: cut.info.channels } }).flop();
+  }
   const bgRaw = await bgPipe.resize(outW, outH, { fit: "fill" }).removeAlpha().toColorspace("srgb").raw().toBuffer({ resolveWithObject: true });
   const bg = new Uint8Array(bgRaw.data.buffer, bgRaw.data.byteOffset, bgRaw.data.length);
   const C = bgRaw.info.channels; // 3
