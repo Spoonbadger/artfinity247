@@ -21,7 +21,7 @@ export default function Page() {
               <strong>Login</strong> (auth-token): keeps you signed in.
             </li>
             <li>
-              <strong>QR scans</strong> (af_vid, af_qc): a random visitor id so artists can count unique scans, and the last code you scanned so its discount and credit carry
+              <strong>QR scans and visits</strong> (af_vid, af_qc): a random visitor id so artists can count unique scans and visitors, and the last code you scanned so its discount and credit carry
               over to the artist&apos;s other pieces.
             </li>
             <li>

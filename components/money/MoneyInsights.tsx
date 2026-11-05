@@ -161,14 +161,14 @@ export default function MoneyInsights({ ledger, nowIso }: { ledger: LedgerLine[]
   );
 }
 
-/** Your share by source (the printed code a sale came through). Placeholder until any sale carries one. */
+/** Your share by source (the printed code a sale came through). An empty note until a sale in the period carries one. */
 function Sources({ lines, periodLabel }: { lines: LedgerLine[]; periodLabel: string }) {
   const tracked = lines.filter((l) => l.source);
   if (!tracked.length) {
     return (
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[4px] border-2 border-dashed border-line bg-wall/60 px-4 py-3 text-[13.5px]">
         <b>Where sales come from</b>
-        <span className="text-ink-2">Source tracking arrives with short links.</span>
+        <span className="text-ink-2">No sales through your printed codes {periodLabel === "All" ? "yet" : "in this period"}. When one sells, it shows here.</span>
       </div>
     );
   }

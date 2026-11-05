@@ -26,6 +26,8 @@ export type AdminOrderItem = {
   profit: number;
   artistShare: number;
   companyShare: number;
+  /** Signed certificate-of-authenticity page, for limited-edition lines. */
+  certPath?: string | null;
 };
 
 export type AdminOrder = {
@@ -202,6 +204,9 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
                       <div key={i.id} className="truncate">
                         <span className="font-semibold">{i.title}</span>
                         <span className="text-ink-2"> · {SIZE_LABEL[i.size] ?? i.size}{i.frameChosen ? `, framed${i.frameColor ? ` ${i.frameColor}` : ""}` : ""}</span>
+                        {i.certPath && (
+                          <> · <a href={i.certPath} target="_blank" rel="noopener" className="font-semibold text-scan hover:underline">Certificate</a></>
+                        )}
                       </div>
                     ))}
                   </div>

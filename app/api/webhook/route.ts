@@ -5,6 +5,7 @@ import { artistSplitsForOrder, calcItemProfitCents } from "@/lib/revenue"
 import { normalizeSize } from "@/lib/sales"
 import { sendOrderNotifications } from "@/lib/orderNotifications"
 import { claimEditionNumbers } from "@/lib/editions"
+import { artistIdsForOrder, followFromCheckout } from "@/lib/followers"
 
 export const dynamic = "force-dynamic"
 export const runtime = 'nodejs'
@@ -180,6 +181,12 @@ export async function POST(req: NextRequest) {
             await tx.orderItem.createMany({ data: itemsToCreate.map((it, i) => ({ ...it, editionNumber: numbers[i] })) })
           })
         }
+      }
+
+      // Buyer ticked "Email me when … posts new work": a confirmed follow per artist (upsert, retry-safe).
+      if (!isBulk && session.metadata?.follow === "1" && session.payment_status === "paid") {
+        await followFromCheckout(buyerEmail, await artistIdsForOrder(order.id), shipping?.name)
+          .catch((e) => console.error("checkout follow failed", order.id, e))
       }
 
       // 3) Emails: admin, each artist, buyer receipt. Each kind is sent at most

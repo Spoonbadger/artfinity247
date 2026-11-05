@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { adminOrRedirect } from "../_components/gate";
 import { cn } from "@/lib/utils";
 import ModerationList, { type ModArtwork } from "../_components/ModerationList";
+import { duplicateOfId, hamming } from "@/lib/imageHash";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Moderation" };
@@ -40,10 +41,24 @@ export default async function ModerationPage({ searchParams }: { searchParams: {
     take: 120,
     select: {
       id: true, title: true, slug: true, imageUrl: true, createdAt: true, status: true,
-      sensitive: true, flaggedReason: true, description: true,
-      artist: { select: { slug: true, artist_name: true, name: true, email: true } },
+      sensitive: true, flaggedReason: true, description: true, imageHash: true,
+      artist: { select: { slug: true, artist_name: true, name: true, email: true, createdAt: true, verification: true } },
     },
   });
+
+  // Possible duplicates (lib/imageHash.ts): load the piece each one resembles, for the side-by-side.
+  const dupIds = Array.from(new Set(rows.map((r) => duplicateOfId(r.flaggedReason)).filter((x): x is string => !!x)));
+  const originals = dupIds.length
+    ? await prisma.artwork.findMany({
+        where: { id: { in: dupIds } },
+        select: {
+          id: true, title: true, slug: true, imageUrl: true, createdAt: true, status: true, imageHash: true,
+          artist: { select: { slug: true, artist_name: true, name: true, email: true, createdAt: true, verification: true } },
+        },
+      })
+    : [];
+  const originalById = new Map(originals.map((o) => [o.id, o]));
+  const since = (d: Date) => d.toISOString();
 
   const artworks: ModArtwork[] = rows.map((r) => ({
     id: r.id,
@@ -58,6 +73,28 @@ export default async function ModerationPage({ searchParams }: { searchParams: {
     artistName: r.artist.artist_name || r.artist.name,
     artistSlug: r.artist.slug,
     artistEmail: r.artist.email,
+    artistSince: since(r.artist.createdAt),
+    artistVerified: r.artist.verification === "VERIFIED",
+    duplicateOf: (() => {
+      const id = duplicateOfId(r.flaggedReason);
+      if (!id) return null;
+      const o = originalById.get(id);
+      if (!o) return { id, missing: true as const };
+      return {
+        id: o.id,
+        title: o.title,
+        slug: o.slug,
+        imageUrl: o.imageUrl,
+        createdAt: since(o.createdAt),
+        status: o.status,
+        artistName: o.artist.artist_name || o.artist.name,
+        artistSlug: o.artist.slug,
+        artistEmail: o.artist.email,
+        artistSince: since(o.artist.createdAt),
+        artistVerified: o.artist.verification === "VERIFIED",
+        distance: r.imageHash && o.imageHash ? hamming(r.imageHash, o.imageHash) : null,
+      };
+    })(),
   }));
 
   return (

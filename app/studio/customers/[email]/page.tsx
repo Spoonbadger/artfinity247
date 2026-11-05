@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, Mail, MapPin } from "lucide-react";
 import { StudioPage } from "@/components/studio/StudioPage";
 import Conversation, { type ThreadMessage, type ComposerOrder } from "@/components/crm/Conversation";
@@ -7,17 +7,23 @@ import OrderCard from "@/components/crm/OrderCard";
 import { RepeatChip } from "@/components/crm/CustomerList";
 import { usd, shortDate } from "@/components/crm/format";
 import { displayName, firstName, requireArtist } from "../../_lib/data";
-import { emailFromParam, getCustomer, getMessages } from "../_lib";
+import { customerFromParam, customerHref, getCustomer, getMessages } from "../_lib";
+import { certPathsFor } from "@/lib/certificates";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Customer" };
 
+// The [email] segment holds an opaque customer id (customerHref); old links with the email redirect to it.
 export default async function CustomerPage({ params }: { params: { email: string } }) {
   const artist = await requireArtist("/studio/customers");
-  const email = emailFromParam(params.email);
-  if (!email) notFound();
+  const found = await customerFromParam(artist.id, params.email);
+  if (!found) notFound();
+  if (found.legacy) redirect(customerHref(found.email));
+  const email = found.email;
   const [customer, messages] = await Promise.all([getCustomer(artist.id, email), getMessages(artist.id, email)]);
   if (!customer) notFound();
+  // Limited-edition lines get a printable certificate of authenticity (lib/certificates.ts).
+  const certs = await certPathsFor(customer.orders.flatMap((o) => o.items.map((i) => i.id)));
 
   const thread: ThreadMessage[] = messages.map((m) => ({
     id: m.id,
@@ -81,7 +87,7 @@ export default async function CustomerPage({ params }: { params: { email: string
                 date: o.date.toISOString(),
                 stage: o.stage,
                 spentCents: o.spentCents,
-                items: o.items.map((i) => ({ id: i.id, title: i.title, imageUrl: i.imageUrl, size: i.size, framed: i.framed, quantity: i.quantity, priceCents: i.priceCents })),
+                items: o.items.map((i) => ({ id: i.id, title: i.title, imageUrl: i.imageUrl, size: i.size, framed: i.framed, quantity: i.quantity, priceCents: i.priceCents, certPath: certs.get(i.id) ?? null })),
                 reprint: o.reprint,
               }}
             />

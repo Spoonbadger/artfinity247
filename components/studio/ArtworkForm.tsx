@@ -13,6 +13,8 @@ import { artPath } from "@/lib/urls";
 import { SENSITIVE_LABELS } from "./sensitive";
 import { EDITION_MAX, EDITION_MIN } from "@/lib/editionFormat";
 import { SIZE_IN } from "@/components/art/pricing";
+import { joinOriginal, splitOriginal } from "@/lib/originalSize";
+import type { PriceGuide } from "@/app/api/artworks/price-guide/route";
 
 const SIZES: SizeKey[] = ["small", "medium", "large", "xl"];
 const FIELD: Record<SizeKey, "markupSmall" | "markupMedium" | "markupLarge" | "markupXl"> = {
@@ -63,7 +65,13 @@ export default function ArtworkForm({ artwork, split, handle }: { artwork?: Artw
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [title, setTitle] = useState(artwork?.title || "");
-  const [description, setDescription] = useState(artwork?.description || "");
+  // The original's size is saved as the description's first line ("Original: 24 × 30 in", lib/originalSize.ts).
+  const [parsed] = useState(() => splitOriginal(artwork?.description));
+  const [description, setDescription] = useState(parsed.body);
+  const [origW, setOrigW] = useState(parsed.original ? String(parsed.original.w) : "");
+  const [origH, setOrigH] = useState(parsed.original ? String(parsed.original.h) : "");
+  // "Similar work sells at $X–$Y" per size (other artists' approved work; null = too few to say).
+  const [guide, setGuide] = useState<PriceGuide | null>(null);
   const [prices, setPrices] = useState<Record<SizeKey, string>>({
     small: priceFor("small", artwork?.markupSmall), medium: priceFor("medium", artwork?.markupMedium),
     large: priceFor("large", artwork?.markupLarge), xl: priceFor("xl", artwork?.markupXl),
@@ -76,7 +84,8 @@ export default function ArtworkForm({ artwork, split, handle }: { artwork?: Artw
   const editionLocked = editing && sold > 0;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<{ slug: string; title: string; imageUrl: string; pending: boolean } | null>(null);
+  // notice: set when the image looks like one already on Artfinity (lib/imageHash.ts); duplicate "review" = a person checks it.
+  const [done, setDone] = useState<{ slug: string; title: string; imageUrl: string; pending: boolean; notice?: string | null; duplicate?: string | null } | null>(null);
 
   // New pieces start from the artist's last prices.
   useEffect(() => {
@@ -89,6 +98,13 @@ export default function ArtworkForm({ artwork, split, handle }: { artwork?: Artw
       })
       .catch(() => {});
   }, [editing]);
+
+  useEffect(() => {
+    fetch("/api/artworks/price-guide", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((g) => g && setGuide(g))
+      .catch(() => {});
+  }, []);
 
   async function upload(file: File) {
     setError(null);
@@ -132,12 +148,15 @@ export default function ArtworkForm({ artwork, split, handle }: { artwork?: Artw
       setError(`An edition is ${EDITION_MIN} to ${EDITION_MAX} prints.`);
       return;
     }
+    const ow = parseFloat(origW), oh = parseFloat(origH);
+    const hasOrig = origW.trim() !== "" || origH.trim() !== "";
+    if (hasOrig && !(ow >= 1 && oh >= 1 && ow <= 600 && oh <= 600)) { setError("Original size: both sides in inches, or leave it empty."); return; }
     if (needsOwnership && !owned) { setError("Tick the box to confirm it's your original work."); return; }
     setSaving(true);
     try {
       const fd = new FormData();
       fd.append("title", title.trim());
-      fd.append("description", description.trim());
+      fd.append("description", joinOriginal(hasOrig ? { w: ow, h: oh } : null, description));
       fd.append("imageUrl", imageUrl);
       for (const s of SIZES) fd.append(FIELD[s], String(Math.max(0, toCents(prices[s]) - basePrices[s])));
       fd.append("sensitive", sensitive.join(","));
@@ -148,11 +167,12 @@ export default function ArtworkForm({ artwork, split, handle }: { artwork?: Artw
       if (!res.ok) throw new Error((await res.text()) || "Could not save. Try again.");
       const saved = await res.json();
       if (editing) {
-        toast.success(saved.status === "PENDING" && fresh ? `Saved. New image ${REVIEW_NOTE.toLowerCase()}.` : "Saved");
+        if (saved.duplicate === "review") toast.message(saved.notice, { duration: 9000 });
+        else toast.success(saved.status === "PENDING" && fresh ? `Saved. New image ${REVIEW_NOTE.toLowerCase()}.` : saved.notice ? `Saved. ${saved.notice}` : "Saved");
         router.push("/studio/art");
         router.refresh();
       } else {
-        setDone({ slug: saved.slug, title: saved.title, imageUrl: saved.imageUrl, pending: saved.status === "PENDING" });
+        setDone({ slug: saved.slug, title: saved.title, imageUrl: saved.imageUrl, pending: saved.status === "PENDING", notice: saved.notice, duplicate: saved.duplicate });
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     } catch (e: any) {
@@ -171,18 +191,19 @@ export default function ArtworkForm({ artwork, split, handle }: { artwork?: Artw
           <div className="grid justify-items-center gap-3">
             <span className="sticker-badge">{REVIEW_NOTE}</span>
             <h2 className="display text-[40px]">Almost on the wall.</h2>
-            <p className="text-ink-2">We look over every new artist&apos;s first pieces. We&apos;ll email you when {done.title} is live. You can print its code now.</p>
+            <p className="text-ink-2">{done.duplicate === "review" ? done.notice : <>We look over every new artist&apos;s first pieces.</>} We&apos;ll email you when {done.title} is live. You can print its code now.</p>
           </div>
         ) : (
           <div>
             <h2 className="display text-[40px]">It&apos;s live.</h2>
             <p className="mt-2 text-ink-2">{done.title} is on your page. Next: hang its code.</p>
+            {done.notice && <p className="mt-2 text-[13.5px] text-ink-2">{done.notice}</p>}
           </div>
         )}
         <div className="flex flex-wrap justify-center gap-2">
           <Link href={`/studio/qr?art=${done.slug}`} className="btn btn-blue">Print its code</Link>
           <Link href={artPath(handle, done.slug)} className="btn btn-ghost">View</Link>
-          <button type="button" className="btn btn-ghost" onClick={() => { setDone(null); setImageUrl(""); setFresh(null); setShape(null); setOwned(false); setDims(null); setTitle(""); setDescription(""); setSensitive([]); setLimited(false); }}>
+          <button type="button" className="btn btn-ghost" onClick={() => { setDone(null); setImageUrl(""); setFresh(null); setShape(null); setOwned(false); setDims(null); setTitle(""); setDescription(""); setOrigW(""); setOrigH(""); setSensitive([]); setLimited(false); }}>
             Upload another
           </button>
         </div>
@@ -283,6 +304,16 @@ export default function ArtworkForm({ artwork, split, handle }: { artwork?: Artw
             <span className="label">A line about it <span className="text-ink-2">(optional)</span></span>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} maxLength={1200} placeholder="Medium, place, a story. Short is fine." className="resize-y" />
           </label>
+          <div className="af-field">
+            <span className="label" id="orig-label">Original size <span className="text-ink-2">(optional)</span></span>
+            <div className="flex items-center gap-2" role="group" aria-labelledby="orig-label">
+              <input inputMode="decimal" value={origW} onChange={(e) => setOrigW(e.target.value.replace(/[^0-9.]/g, "").slice(0, 5))} placeholder="24" aria-label="Original width in inches" className="num !w-[64px] !border-b-2 !border-line text-center focus:!border-scan" />
+              <span aria-hidden="true" className="text-ink-2">×</span>
+              <input inputMode="decimal" value={origH} onChange={(e) => setOrigH(e.target.value.replace(/[^0-9.]/g, "").slice(0, 5))} placeholder="30" aria-label="Original height in inches" className="num !w-[64px] !border-b-2 !border-line text-center focus:!border-scan" />
+              <span className="text-[14px] text-ink-2">in</span>
+            </div>
+            <span className="text-[12.5px] text-ink-2">Buyers see which print size is closest to the real thing.</span>
+          </div>
         </div>
 
         <fieldset className="grid gap-3">
@@ -315,6 +346,12 @@ export default function ArtworkForm({ artwork, split, handle }: { artwork?: Artw
                       ? <span className="font-semibold text-coral">At least {money(basePrices[s])}</span>
                       : <>you earn <b className="num text-[16px] text-earned">{money(b.artist)}</b> per print</>}
                   </p>
+                  {guide?.[s] && (
+                    <p className="col-span-2 flex items-center gap-1.5 text-[12.5px] text-ink-2 sm:col-span-3">
+                      <i className="paint-dab !h-2.5 !w-2.5" style={{ ["--dab" as string]: "#ffd43b" }} aria-hidden="true" />
+                      Similar work on Artfinity sells at <b className="num font-semibold text-ink">${guide[s]!.lo / 100}–${guide[s]!.hi / 100}</b>
+                    </p>
+                  )}
                 </li>
               );
             })}

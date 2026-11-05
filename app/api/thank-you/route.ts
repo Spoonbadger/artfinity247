@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from "@/lib/prisma";
 import { helpPath } from "@/lib/reprints";
+import { certPathsFor } from "@/lib/certificates";
 
 export const dynamic = "force-dynamic"
 export const runtime = 'nodejs'
@@ -56,5 +57,8 @@ export async function GET(req: NextRequest) {
 
   // Holding the session id stands in for the buyer: once it ships, offer the signed "Problem with your print?" link.
   const shipped = order.shippingStatus === "shipped" || order.shippingStatus === "delivered"
-  return NextResponse.json({ ...order, helpPath: shipped ? helpPath(order.id) : null })
+  // Limited-edition lines: a signed link to the printable certificate of authenticity (lib/certificates.ts).
+  const certs = order.paymentStatus === "paid" ? await certPathsFor(order.items.map((i: { id: string }) => i.id)) : new Map<string, string>()
+  const items = order.items.map((i: { id: string }) => ({ ...i, certPath: certs.get(i.id) ?? null }))
+  return NextResponse.json({ ...order, items, helpPath: shipped ? helpPath(order.id) : null })
 }

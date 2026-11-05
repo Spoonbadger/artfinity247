@@ -7,24 +7,26 @@ import { toast } from "sonner";
 import { useCart, useUser } from "@/components/contexts";
 import { CartItemCard, CartPricingInfo } from "@/components/cards";
 import { usd } from "@/components/art/pricing";
-import { lineSavings, startCheckout } from "@/components/art/checkout";
+import { cartArtistNames, lineSavings, startCheckout } from "@/components/art/checkout";
 
 export default function CheckoutClient({ testMode }: { testMode: boolean }) {
   const { cartItems, calculateTotalPrice } = useCart();
   const { currentUser } = useUser();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
+  const [follow, setFollow] = useState(false); // opt-in, never pre-ticked
   useEffect(() => { if (currentUser?.email) setEmail((e) => e || currentUser.email); }, [currentUser?.email]);
 
   const total = calculateTotalPrice();
   const savings = cartItems.reduce((s, ci) => s + lineSavings(ci), 0);
+  const who = cartArtistNames(cartItems);
 
   const onPay = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cartItems.length || busy) return;
     setBusy(true);
     try {
-      window.location.href = await startCheckout(cartItems, { id: currentUser?.id, email: email.trim() || null });
+      window.location.href = await startCheckout(cartItems, { id: currentUser?.id, email: email.trim() || null }, { follow });
     } catch (err) {
       console.error(err);
       toast.error("Payment didn't open. Try again in a moment.");
@@ -58,6 +60,10 @@ export default function CheckoutClient({ testMode }: { testMode: boolean }) {
         <label className="af-field">
           <span className="label">Email for your receipt</span>
           <input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+        </label>
+        <label className="flex cursor-pointer items-start gap-2.5 text-left text-[14px] leading-snug text-ink">
+          <input type="checkbox" checked={follow} onChange={(e) => setFollow(e.target.checked)} className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[rgb(var(--af-scan-rgb))]" />
+          <span>Email me when {who} {who.includes(" and ") ? "post" : "posts"} new work</span>
         </label>
       </div>
 

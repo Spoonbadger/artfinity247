@@ -7,23 +7,25 @@ import { toast } from "sonner";
 import { useCart, useUser } from "@/components/contexts";
 import { CartItemCard, CartPricingInfo } from "@/components/cards";
 import { usd } from "@/components/art/pricing";
-import { lineSavings, startCheckout } from "@/components/art/checkout";
+import { cartArtistNames, lineSavings, startCheckout } from "@/components/art/checkout";
 import { deliveryRange } from "@/lib/delivery";
 
 export default function CartPage() {
   const { cartItems, calculateTotalPrice } = useCart();
   const { currentUser } = useUser();
   const [busy, setBusy] = useState(false);
+  const [follow, setFollow] = useState(false); // opt-in, never pre-ticked
 
   const total = calculateTotalPrice();
   const savings = cartItems.reduce((s, ci) => s + lineSavings(ci), 0);
   const count = cartItems.reduce((n, ci) => n + ci.quantity, 0);
+  const who = cartArtistNames(cartItems);
 
   const onCheckout = async () => {
     if (!cartItems.length || busy) return;
     setBusy(true);
     try {
-      window.location.href = await startCheckout(cartItems, { id: currentUser?.id, email: currentUser?.email });
+      window.location.href = await startCheckout(cartItems, { id: currentUser?.id, email: currentUser?.email }, { follow });
     } catch (e) {
       console.error(e);
       toast.error("Checkout didn't open. Try again in a moment.");
@@ -50,6 +52,10 @@ export default function CartPage() {
               ))}
             </div>
             <CartPricingInfo subtotal={total / 100} savings={savings / 100} shipping={0} total={total / 100} className="md:sticky md:top-24">
+              <label className="flex cursor-pointer items-start gap-2.5 text-left text-[14px] leading-snug text-ink">
+                <input type="checkbox" checked={follow} onChange={(e) => setFollow(e.target.checked)} className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[rgb(var(--af-scan-rgb))]" />
+                <span>Email me when {who} {who.includes(" and ") ? "post" : "posts"} new work</span>
+              </label>
               <button type="button" onClick={onCheckout} disabled={busy} className="btn btn-blue btn-lg w-full">
                 {busy ? "Opening checkout…" : `Check out · ${usd(total)}`}
               </button>

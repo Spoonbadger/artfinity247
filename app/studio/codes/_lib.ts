@@ -1,6 +1,7 @@
 // Server data for My codes (/studio/codes).
 import { prisma } from "@/lib/prisma";
 import { isLive, statsFor, type CodeStats } from "@/lib/shortlinks";
+import { calcItemProfitCents } from "@/lib/revenue";
 import { dayKey, STUDIO_TZ } from "../_lib/data";
 
 const DAY = 86400000;
@@ -62,4 +63,31 @@ export function status(c: { active: boolean; expiresAt: Date | null; live: boole
   if (c.live) return { text: "Active", on: true };
   if (!c.active) return { text: "Paused", on: false };
   return { text: "Ended", on: false };
+}
+
+export const WINDOW_DAYS = 30;
+
+/**
+ * Headline totals across all of an artist's codes for one window [since, now): scans, unique scanners, sales
+ * credited to a code, and the artist's share of those sales. Every tile on My codes uses this same window.
+ */
+export async function windowTotals(codeIds: string[], since: Date) {
+  if (!codeIds.length) return { scans: 0, people: 0, sales: 0, shareCents: 0 };
+  const [scans, people, items] = await Promise.all([
+    prisma.scanEvent.count({ where: { qrCodeId: { in: codeIds }, createdAt: { gte: since } } }),
+    prisma.scanEvent.groupBy({ by: ["visitorId"], where: { qrCodeId: { in: codeIds }, createdAt: { gte: since }, visitorId: { not: null } } }),
+    prisma.orderItem.findMany({
+      where: { qrCodeId: { in: codeIds }, order: { paymentStatus: "paid", kind: { not: "bulk" }, createdAt: { gte: since } } },
+      select: { size: true, frameChosen: true, quantity: true, unitPrice: true, lineTotal: true, artistSplit: true, order: { select: { createdAt: true } } },
+    }),
+  ]);
+  let shareCents = 0;
+  for (const it of items) {
+    const qty = it.quantity ?? 1;
+    const line = it.lineTotal ?? (it.unitPrice ?? 0) * qty;
+    const v = String(it.size || "").toLowerCase();
+    const size = v === "s" || v === "small" ? "S" : v === "l" || v === "large" ? "L" : v === "xl" || v === "x-large" ? "XL" : "M";
+    shareCents += calcItemProfitCents({ lineTotal: line, size, frameChosen: it.frameChosen, quantity: qty, orderDate: it.order.createdAt, artistSplit: it.artistSplit }).artistShare;
+  }
+  return { scans, people: people.length, sales: items.length, shareCents };
 }

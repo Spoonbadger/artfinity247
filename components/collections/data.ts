@@ -55,7 +55,7 @@ export async function getPublicCollection(artistSlug: string, collectionSlug: st
   if (i < 0) return null;
   const pick = (c: (typeof all)[number] | undefined) => (c ? { slug: c.slug, title: c.title, cover: c.cover } : null);
   return {
-    artist: { slug: artist.slug, name: artist.artist_name || artist.name, avatar: artist.profileImage, city: artist.city },
+    artist: { id: artist.id, slug: artist.slug, name: artist.artist_name || artist.name, avatar: artist.profileImage, city: artist.city },
     collection: all[i],
     prev: pick(all[i - 1]),
     next: pick(all[i + 1]),

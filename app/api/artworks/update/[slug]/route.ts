@@ -10,6 +10,7 @@ import { EDITION_MAX, EDITION_MIN, soldCount } from '@/lib/editions'
 import { parsePrintable } from '@/lib/printSizes'
 import { verifyPrintable } from '@/lib/printSign'
 import { initialArtworkStatus } from '@/lib/artworkLive'
+import { checkUpload, duplicateOfId } from '@/lib/imageHash'
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
@@ -63,7 +64,8 @@ export async function POST(
 
     // A new image: re-check print sizes and rights, like a new upload.
     const newImage = !!imageUrl && imageUrl !== artwork.imageUrl
-    let imageData: { printableSizes: string[]; ownershipConfirmedAt: Date; status?: "PENDING" } | undefined
+    let imageData: { printableSizes: string[]; ownershipConfirmedAt: Date; status?: "PENDING"; imageHash?: string | null; flaggedReason?: string | null; flaggedBy?: string | null } | undefined
+    let dup: Awaited<ReturnType<typeof checkUpload>> | null = null
     if (newImage) {
       const printable = parsePrintable(form.get("printable"))
       if (String(form.get("ownership") ?? "") !== "yes") {
@@ -76,6 +78,12 @@ export async function POST(
       imageData = { printableSizes: printable, ownershipConfirmedAt: new Date() }
       // Artists whose uploads are reviewed get a new image reviewed too.
       if (artwork.status === "APPROVED" && (await initialArtworkStatus(artwork.artistId)) === "PENDING") imageData.status = "PENDING"
+      // Fingerprint the new image; if it looks like another artist's piece, a person checks it (lib/imageHash.ts).
+      dup = await checkUpload(imageUrl!, artwork.artistId, artwork.id)
+      imageData.imageHash = dup.imageHash
+      if (dup.flaggedReason && artwork.status !== "REJECTED") Object.assign(imageData, { status: "PENDING", flaggedReason: dup.flaggedReason, flaggedBy: "system" })
+      // The old image's duplicate flag doesn't describe the new one (it stays in review if it was).
+      else if (!dup.flaggedReason && duplicateOfId(artwork.flaggedReason)) Object.assign(imageData, { flaggedReason: null, flaggedBy: null })
     }
 
     // Limited print run. Leave the field out to keep it; "" = open edition; else EDITION_MIN..EDITION_MAX.
@@ -152,6 +160,8 @@ export async function POST(
     return NextResponse.json({
       ...updated,
       artistSlug: artist?.slug,
+      duplicate: dup?.duplicate ?? null,
+      notice: dup?.notice ?? null,
     })
   } catch (err) {
     console.error('Editing error', err)

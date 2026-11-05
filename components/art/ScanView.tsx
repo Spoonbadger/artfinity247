@@ -37,6 +37,9 @@ import {
 } from "@/components/art/pricing";
 import type { MoreArt, ScanArt, ScanArtist, ScanCartProduct } from "@/components/art/types";
 import { artistPath, artPath } from "@/lib/urls";
+import FollowButton from "@/components/follow/FollowButton";
+import { closestSize, originalText, splitOriginal } from "@/lib/originalSize";
+import FrameNote from "@/components/art/FrameNote";
 
 const canOptimize = (src: string) => src.startsWith("/") || src.includes("res.cloudinary.com");
 
@@ -91,6 +94,9 @@ export default function ScanView({
     const ok = PRINT_SIZES.filter((s) => art.printableSizes?.includes(s));
     return ok.length ? ok : PRINT_SIZES;
   }, [art.printableSizes]);
+  // "Original: 24 × 30 in" rides on the description's first line (lib/originalSize.ts).
+  const { original, body: aboutText } = useMemo(() => splitOriginal(art.description), [art.description]);
+  const closest = useMemo(() => (original ? closestSize(original, sizes) : null), [original, sizes]);
   const [size, setSize] = useState<PrintSize>(() => (sizes.includes("medium") ? "medium" : sizes[0]));
   const [framed, setFramed] = useState(false);
   const [frameColor, setFrameColor] = useState<FrameColor>("black");
@@ -299,7 +305,7 @@ export default function ScanView({
           {/* Size */}
           <fieldset className="grid gap-2">
             <legend className="mb-2 text-[15px] font-bold">Size</legend>
-            <div className={cn("grid gap-2", sizes.length === 4 ? "grid-cols-4" : "grid-cols-3")}>
+            <div className={cn("grid gap-2", sizes.length === 4 ? "grid-cols-4" : "grid-cols-3", closest && "pt-1.5")}>
               {sizes.map((s) => {
                 const on = s === size;
                 const [sw, sh] = SIZE_IN[s];
@@ -311,7 +317,12 @@ export default function ScanView({
                       on ? "border-ink shadow-[inset_0_0_0_1px_var(--af-ink)]" : "border-line hover:border-ink-2",
                     )}
                   >
-                    <input type="radio" name="size" value={s} checked={on} onChange={() => setSize(s)} className="sr-only" />
+                    <input type="radio" name="size" value={s} checked={on} onChange={() => setSize(s)} className="sr-only" aria-describedby={s === closest ? "closest-note" : undefined} />
+                    {s === closest && (
+                      <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border-[1.5px] border-ink bg-sticker px-1.5 text-[10.5px] font-bold leading-[16px]" aria-hidden>
+                        ≈ original
+                      </span>
+                    )}
                     <span className="grid h-7 place-items-end" aria-hidden>
                       <span
                         className={cn("block rounded-[2px] border-[1.5px]", on ? "border-ink bg-sticker" : "border-ink-2 bg-wall")}
@@ -327,6 +338,18 @@ export default function ScanView({
                 );
               })}
             </div>
+            {/* Size help: wrong-size prints are final (return policy), so point at the original and the room preview */}
+            <p className="mt-0.5 grid gap-0.5 text-[13.5px] leading-snug text-ink-2">
+              {original && closest && (
+                <span id="closest-note">
+                  <b className="font-semibold text-ink">Original {originalText(original)}</b> · ≈ marks the size closest to the original
+                </span>
+              )}
+              <span>
+                Not sure? Prints are final sale for size —{" "}
+                <a href="#on-a-wall" className="font-semibold text-scan underline decoration-scan/40 underline-offset-2 hover:decoration-scan">see it on a wall</a>
+              </span>
+            </p>
           </fieldset>
 
           {/* Frame */}
@@ -366,17 +389,19 @@ export default function ScanView({
                 ))}
               </fieldset>
             )}
+            {framed && <FrameNote color={frameColor} size={size} />}
           </div>
 
           {/* The print at true size in rooms the artist picked (or auto-picked); a different room each visit */}
-          <RoomCarousel
-            className="md:order-last"
-            artwork={{ slug: art.slug, imageUrl: art.imageUrl, title: art.title, roomScenes: art.roomScenes ?? [] }}
-            size={size}
-            frame={framed ? frameColor : null}
-            landscape={landscape}
-            blur={art.sensitive.length > 0 && !sensitivePref}
-          />
+          <div id="on-a-wall" className="scroll-mt-20 md:order-last">
+            <RoomCarousel
+              artwork={{ slug: art.slug, imageUrl: art.imageUrl, title: art.title, roomScenes: art.roomScenes ?? [] }}
+              size={size}
+              frame={framed ? frameColor : null}
+              landscape={landscape}
+              blur={art.sensitive.length > 0 && !sensitivePref}
+            />
+          </div>
 
           {/* Buttons (desktop shows Buy here; on phones Buy is the sticky bar) */}
           <div className="grid gap-2.5">
@@ -435,12 +460,12 @@ export default function ScanView({
           </ul>
           <PrintNote className="md:order-last" />
 
-          {art.description?.trim() && (
+          {aboutText.trim() && (
             <details className="md:order-last group border-t border-line pt-4">
               <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-1 text-[15px] font-bold marker:hidden">
                 About this piece <span className="font-normal text-ink-2 group-open:hidden">· show</span>
               </summary>
-              <p className="mt-2 whitespace-pre-line text-[15px] text-ink-2">{art.description}</p>
+              <p className="mt-2 whitespace-pre-line text-[15px] text-ink-2">{aboutText}</p>
             </details>
           )}
         </section>
@@ -462,9 +487,7 @@ export default function ScanView({
           <h2 className="display text-[30px] md:text-[40px]">More by {firstName}</h2>
           <div className="flex items-center gap-2">
             <Link href={artistPath(artist.slug)} className="btn btn-ghost btn-sm min-h-[44px] px-4 md:min-h-0">See all</Link>
-            <button type="button" onClick={onFollow} aria-pressed={following} className={cn("btn btn-sm min-h-[44px] px-4 md:min-h-0", following ? "btn-ghost" : "btn-blue")}>
-              {following ? "Following" : `Follow ${firstName}`}
-            </button>
+            <FollowButton handle={artist.slug} firstName={firstName} label={`Follow ${firstName}`} className="btn btn-sm min-h-[44px] px-4 md:min-h-0" idleClassName="btn-blue" doneClassName="btn-ghost" />
           </div>
         </div>
         {more.length ? (

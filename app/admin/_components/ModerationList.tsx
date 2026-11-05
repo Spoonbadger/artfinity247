@@ -19,7 +19,63 @@ export type ModArtwork = {
   artistName: string;
   artistSlug: string;
   artistEmail: string;
+  artistSince?: string;
+  artistVerified?: boolean;
+  /** Set when the image looks like another artist's piece (flaggedReason "possible_duplicate:<id>", lib/imageHash.ts). */
+  duplicateOf?: DuplicateOf | { id: string; missing: true } | null;
 };
+
+export type DuplicateOf = {
+  id: string;
+  title: string;
+  slug: string | null;
+  imageUrl: string;
+  createdAt: string;
+  status: ModArtwork["status"];
+  artistName: string;
+  artistSlug: string;
+  artistEmail: string;
+  artistSince: string;
+  artistVerified: boolean;
+  /** Bits that differ out of 64 (0 = same picture). */
+  distance: number | null;
+};
+
+const day = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+/** Both images and both artists next to each other, so the reviewer can tell who made it. */
+function Comparison({ a, d }: { a: ModArtwork; d: DuplicateOf }) {
+  const side = (label: string, x: { title: string; imageUrl: string; createdAt: string; artistName: string; artistSlug: string; artistEmail: string; artistSince?: string; artistVerified?: boolean }, extra?: React.ReactNode) => (
+    <figure className="grid min-w-0 content-start gap-1.5">
+      <span className="text-[11.5px] font-bold uppercase tracking-[0.06em] text-ink-2">{label}</span>
+      <div className="aspect-[4/5] overflow-hidden rounded-[4px] bg-gallery">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={x.imageUrl} alt={x.title} loading="lazy" className="h-full w-full object-contain" />
+      </div>
+      <figcaption className="grid min-w-0 gap-0.5 text-[12.5px]">
+        <b className="truncate text-[13.5px]">{x.title}</b>
+        <span className="truncate">
+          <Link href={`/@${x.artistSlug}`} className="font-semibold text-ink hover:text-scan">{x.artistName}</Link>
+          {x.artistVerified && <span className="ml-1 rounded-full bg-scan-soft px-1.5 text-[11px] font-bold text-scan">Verified</span>}
+        </span>
+        <span className="truncate text-ink-2">{x.artistEmail}</span>
+        <span className="text-ink-2">Uploaded {day(x.createdAt)}{x.artistSince ? ` · joined ${day(x.artistSince)}` : ""}</span>
+        {extra}
+      </figcaption>
+    </figure>
+  );
+  return (
+    <div className="grid gap-2 rounded-xl border-[1.5px] border-coral/50 bg-coral/5 p-3">
+      <p className="text-[13px] font-semibold text-coral">
+        Looks like another artist&apos;s piece{d.distance !== null ? ` (${d.distance === 0 ? "identical fingerprint" : `${d.distance} of 64 bits differ`})` : ""}. Approve if it&apos;s really theirs, reject if not.
+      </p>
+      <div className="grid grid-cols-2 gap-3">
+        {side("New upload", a)}
+        {side("Already on Artfinity", d, <span className="text-ink-2">{STATUS[d.status].label}{d.slug ? <> · <a href={`/api/admin/originals/${d.id}`} className="font-semibold text-scan">Original</a></> : null}</span>)}
+      </div>
+    </div>
+  );
+}
 
 const STATUS: Record<ModArtwork["status"], { label: string; cls: string }> = {
   PENDING: { label: "Waiting", cls: "bg-sticker text-ink" },
@@ -96,7 +152,31 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
     <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {items.map((a) => {
         const st = STATUS[a.status];
-        const flagged = a.flaggedReason && a.flaggedReason !== "rejected_by_admin" ? a.flaggedReason : null;
+        const dup = a.duplicateOf && !("missing" in a.duplicateOf) ? a.duplicateOf : null;
+        const flagged = a.duplicateOf
+          ? (dup ? null : "possible duplicate of a piece that has since been deleted")
+          : a.flaggedReason && a.flaggedReason !== "rejected_by_admin" ? a.flaggedReason : null;
+        if (dup) {
+          return (
+            <li key={a.id} className="grid content-start gap-3 rounded-2xl border border-line bg-white p-3 sm:col-span-2">
+              <Comparison a={a} d={dup} />
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={cn("rounded-full px-2 py-0.5 text-[11.5px] font-bold", st.cls)}>{st.label}</span>
+                {(a.status !== "APPROVED" || a.flaggedReason) && (
+                  <button type="button" disabled={busy === a.id} onClick={() => act(a, "approve")} className="btn btn-blue btn-sm">Approve</button>
+                )}
+                {a.status !== "REJECTED" && (
+                  <button type="button" disabled={busy === a.id} onClick={() => act(a, "reject")} className="btn btn-ghost btn-sm">Reject</button>
+                )}
+                <Link href={`/admin/artworks/${a.id}/edit`} className="btn btn-ghost btn-sm" aria-label={`Edit ${a.title}`}>Edit</Link>
+                <a href={`/api/admin/originals/${a.id}`} className="btn btn-ghost btn-sm" aria-label={`Download the original of ${a.title}`}>Original</a>
+                <button type="button" disabled={busy === a.id} onClick={() => remove(a)} className="ml-auto text-[13px] font-semibold text-ink-2 underline-offset-2 hover:text-coral hover:underline">
+                  Delete
+                </button>
+              </div>
+            </li>
+          );
+        }
         return (
           <li key={a.id} className="grid grid-cols-[104px_minmax(0,1fr)] gap-3 rounded-2xl border border-line bg-white p-3 sm:grid-cols-1">
             <div className="relative aspect-[4/5] overflow-hidden rounded-[4px] bg-gallery">

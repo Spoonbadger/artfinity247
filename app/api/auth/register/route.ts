@@ -16,7 +16,7 @@ import { resend } from "@/lib/resend";
 import NewArtistNotificationEmail from "@/emails/NewArtistNotificationEmail";
 import WelcomeArtistEmail from "@/emails/WelcomeArtistEmail";
 import { checkHandle, normalizeHandle } from "../_lib/handle";
-import { referrerForCode } from "@/lib/referrals";
+import { deviceCookie, recordDeviceSignal, referrerForCode } from "@/lib/referrals";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -99,6 +99,8 @@ export async function POST(req: Request) {
     path: "/",
     maxAge: 60 * 60 * 24 * 30,
   });
+  // Hashed network + browser id, for the referral same-person check (lib/referrals.ts). Nothing raw is stored.
+  res.cookies.set(deviceCookie(await recordDeviceSignal(artist.id, req, "signup")));
 
   // Emails never block sign-up.
   try {

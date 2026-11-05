@@ -20,6 +20,8 @@ type OrderItem = {
   frameChosen?: boolean;
   frameColor?: string | null;
   editionNumber?: number | null;
+  /** Signed link to the printable certificate of authenticity (limited editions only). */
+  certPath?: string | null;
   artwork?: { imageUrl?: string | null; title?: string | null; slug?: string | null; editionSize?: number | null; artist?: { name?: string | null; slug?: string | null } | null } | null;
 };
 type Order = {
@@ -136,6 +138,11 @@ export default function ThankYouClient({ sessionId }: { sessionId: string }) {
                 {it.editionNumber && it.artwork?.editionSize ? (
                   <span className="mt-1 block w-fit rounded-full bg-sticker px-2 py-0.5 text-[12px] font-bold">{editionLabel(it.editionNumber, it.quantity, it.artwork.editionSize)}</span>
                 ) : null}
+                {it.certPath && (
+                  <a href={it.certPath} target="_blank" rel="noopener" className="mt-1 block w-fit text-[13px] font-semibold text-scan underline-offset-2 hover:underline">
+                    Certificate of authenticity
+                  </a>
+                )}
               </div>
               <span className="num font-semibold">{usd(it.lineTotal)}</span>
             </li>

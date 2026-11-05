@@ -8,6 +8,7 @@ import { artistSplitsForOrder, calcItemProfitCents, type PrintSize as RevenueSiz
 import { claimEditionNumbers, EditionSoldOutError, editionMessage, editionShortfalls } from "@/lib/editions";
 import { applyDiscount, isPrintSize, parseDiscount, parseVenue, priceFor, SIZE_LABEL, sizeInches, type PrintSize } from "@/components/art/pricing";
 import { sizeAllowed } from "@/lib/printSizes";
+import { followFromCheckout } from "@/lib/followers";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -98,6 +99,8 @@ export async function POST(req: Request) {
   const items = Array.isArray(body?.items) ? body.items : [];
   const buyer: { id?: string | null; email?: string | null; name?: string | null } = body?.buyer || {};
   const buyerEmail = (typeof buyer.email === "string" ? buyer.email : "").trim().toLowerCase() || undefined;
+  // Ticked "Email me when … posts new work" (unchecked by default). Counts as consent, so no opt-in email.
+  const follow = body?.follow === true;
 
   let lines: Line[];
   try {
@@ -115,7 +118,7 @@ export async function POST(req: Request) {
 
   if (!process.env.STRIPE_SECRET_KEY) {
     if (!testCheckoutAllowed()) return checkoutUnavailable("checkout");
-    return devCheckout(lines, buyerEmail, buyer);
+    return devCheckout(lines, buyerEmail, buyer, follow);
   }
 
   // ---- Real Stripe Checkout (Apple Pay / Google Pay / card are offered by Stripe) ----
@@ -159,7 +162,7 @@ export async function POST(req: Request) {
       locale: "en",
       customer_creation: "always",
       customer_email: buyerEmail,
-      metadata: { userId: buyer?.id || "", buyerEmail: buyerEmail ?? "" },
+      metadata: { userId: buyer?.id || "", buyerEmail: buyerEmail ?? "", ...(follow ? { follow: "1" } : {}) },
       shipping_address_collection: { allowed_countries: ["US"] },
       shipping_options: [{ shipping_rate_data: { display_name: "Free US shipping", fixed_amount: { amount: 0, currency: "usd" }, type: "fixed_amount" } }],
     });
@@ -174,7 +177,7 @@ export async function POST(req: Request) {
  * No STRIPE_SECRET_KEY (localhost): record a paid order directly, with the same
  * fields and cost math as app/api/webhook/route.ts, then send the buyer to thank-you.
  */
-async function devCheckout(lines: Line[], email: string | undefined, buyer: { name?: string | null }) {
+async function devCheckout(lines: Line[], email: string | undefined, buyer: { name?: string | null }, follow = false) {
   const sessionId = `dev_${randomBytes(12).toString("hex")}`;
   try {
     const order = await prisma.$transaction(async (tx) => {
@@ -227,6 +230,7 @@ async function devCheckout(lines: Line[], email: string | undefined, buyer: { na
       `[checkout:dev] order ${order.id} ${sessionId} $${(order.amountTotal / 100).toFixed(2)} ` +
         lines.map((l) => `${l.art.slug}/${l.size}${l.frameChosen ? "+frame" : ""}×${l.quantity}${l.discountPct ? ` -${l.discountPct}%${l.venue ? ` @${l.venue}` : ""}` : ""}`).join(", "),
     );
+    if (follow && email) await followFromCheckout(email, lines.map((l) => l.art.artistId), buyer?.name).catch((e) => console.error("[checkout:dev] follow failed", e));
     return json({ url: `/thank-you?session_id=${sessionId}`, dev: true });
   } catch (err) {
     if (err instanceof EditionSoldOutError) return json({ error: err.message, soldOut: err.shortfalls }, 409);

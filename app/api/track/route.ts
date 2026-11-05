@@ -15,7 +15,8 @@ export const runtime = "nodejs";
 const ID_RE = /^[A-Za-z0-9_-]{8,40}$/;
 const done = (why: string) => new NextResponse(null, { status: 204, headers: { "Cache-Control": "no-store", "X-Track": why } });
 
-const hostOf = (u: string) => { try { return new URL(u).host.toLowerCase().replace(/^www\./, ""); } catch { return ""; } };
+const bare = (h: string) => h.toLowerCase().replace(/^www\./, "").replace(/:\d+$/, "");
+const hostOf = (u: string) => { try { return bare(new URL(u).host); } catch { return ""; } };
 
 export async function POST(req: NextRequest) {
   const h = req.headers;
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
     res.cookies.set(VISITOR_COOKIE, vid, { httpOnly: true, sameSite: "lax", secure: req.nextUrl.protocol === "https:", path: "/", maxAge: 60 * 60 * 24 * 365 });
   }
 
-  const own = [hostOf(SITE_URL), (h.get("host") || "").toLowerCase().replace(/^www\./, "")].filter(Boolean);
+  const own = [hostOf(SITE_URL), bare(h.get("host") || "")].filter(Boolean);
   const { source, referrer } = classify({ ref: body.ref, utm: body.utm, src: body.src, c: body.c, qr: body.qr }, own);
 
   try {

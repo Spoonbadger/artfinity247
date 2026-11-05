@@ -4,6 +4,8 @@ import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import LinkPage from "@/components/links/LinkPage";
 import { getLinksPage } from "@/components/links/data";
+import ViewBeacon from "@/components/analytics/ViewBeacon";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -41,5 +43,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function LinksRoute({ params }: Props) {
   const data = await getLinksPage(params.slug);
   if (!data) notFound();
-  return <LinkPage data={data} />;
+  const artist = await prisma.artist.findUnique({ where: { slug: data.slug }, select: { id: true } });
+  return (
+    <>
+      {artist && <ViewBeacon artistId={artist.id} />}
+      <LinkPage data={data} />
+    </>
+  );
 }

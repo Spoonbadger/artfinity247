@@ -2,9 +2,8 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { PaintChip } from "@/components/af/Brush";
 import { StudioPage } from "@/components/studio/StudioPage";
-import { countArtistScans } from "@/lib/shortlinks";
 import { requireArtist, usd } from "../_lib/data";
-import { getCodes, pct, status, type CodeRow } from "./_lib";
+import { getCodes, pct, status, windowTotals, WINDOW_DAYS, type CodeRow } from "./_lib";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "My codes" };
@@ -45,8 +44,10 @@ function Deal({ c }: { c: CodeRow }) {
 export default async function CodesPage() {
   const artist = await requireArtist("/studio/codes");
   const now = new Date();
-  const [codes, scans30] = await Promise.all([getCodes(artist.id), countArtistScans(artist.id, new Date(now.getTime() - 30 * DAY), now)]);
-  const tot = codes.reduce((a, c) => ({ scans: a.scans + c.stats.scans, visitors: a.visitors + c.stats.visitors, sales: a.sales + c.stats.sales, share: a.share + c.stats.shareCents }), { scans: 0, visitors: 0, sales: 0, share: 0 });
+  const codes = await getCodes(artist.id);
+  // Every headline tile uses the same window; the table below is all-time per code.
+  const win = await windowTotals(codes.map((c) => c.id), new Date(now.getTime() - WINDOW_DAYS * DAY));
+  const allScans = codes.reduce((n, c) => n + c.stats.scans, 0);
 
   return (
     <StudioPage
@@ -62,11 +63,17 @@ export default async function CodesPage() {
         </div>
       ) : (
         <>
-          <section aria-label="Totals" className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-            <PaintChip color="#2b37f0" value={n(scans30)} label="scans, 30 days" note={`Ultramarine · ${n(tot.scans)} all time`} />
-            <PaintChip color="#7b2d8e" value={n(tot.visitors)} label="people scanned" note="Dioxazine · unique visitors" />
-            <PaintChip color="#e8743b" value={n(tot.sales)} label="sales from codes" note={`Cadmium · ${pct(tot.sales, tot.scans)} of scans`} />
-            <PaintChip color="#0f7a55" value={usd(tot.share)} label="you earned" note="Viridian · from code sales" earned />
+          <section aria-labelledby="totals-h" className="grid gap-2">
+            <h2 id="totals-h" className="flex flex-wrap items-baseline justify-between gap-2 text-[13px] font-bold uppercase tracking-[0.08em] text-ink-2">
+              Last {WINDOW_DAYS} days
+              <span className="num text-[12.5px] font-semibold normal-case tracking-normal">{n(allScans)} scans all time</span>
+            </h2>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+              <PaintChip color="#2b37f0" value={n(win.scans)} label="scans" note="Ultramarine · every scan" />
+              <PaintChip color="#7b2d8e" value={n(win.people)} label="people scanned" note="Dioxazine · unique visitors" />
+              <PaintChip color="#e8743b" value={n(win.sales)} label="sales from codes" note={`Cadmium · ${pct(win.sales, win.scans)} of scans`} />
+              <PaintChip color="#0f7a55" value={usd(win.shareCents)} label="you earned" note="Viridian · from code sales" earned />
+            </div>
           </section>
 
           {/* Phones: cards */}

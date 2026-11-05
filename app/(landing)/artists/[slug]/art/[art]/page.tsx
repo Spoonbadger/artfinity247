@@ -7,6 +7,7 @@ import { artPath, SITE_URL, withQuery } from "@/lib/urls";
 import { prisma } from "@/lib/prisma";
 import { getUserFromCookie } from "@/lib/auth";
 import ScanView from "@/components/art/ScanView";
+import ViewBeacon from "@/components/analytics/ViewBeacon";
 import SiteHeader from "@/components/site/SiteHeader";
 import { getArtistTrust } from "@/lib/artistTrust";
 import { PRINT_SIZES, parseDiscount, parseVenue, priceFor } from "@/components/art/pricing";
@@ -100,6 +101,7 @@ export default async function ArtPage({ params, searchParams }: Props) {
   return (
     <>
       <SiteHeader brand={{ handle: a.slug, name: a.artist_name || a.name, avatar: a.profileImage || null }} />
+      <ViewBeacon artistId={a.id} artworkId={art.id} />
     <ScanView
       art={{
         id: art.id,

@@ -50,7 +50,7 @@ const FAQ: [string, string][] = [
   ["Can I cancel?", "Anytime. Infinity runs to the end of the month you paid for, then you’re on Free."],
   ["What happens to my split if I go back to Free?", `New orders pay ${pct(FREE_SPLIT)}. Your art, page, codes and links all stay.`],
   ["Do old orders change?", "No. Every order keeps the split from the moment it was placed."],
-  ["How do I get Infinity free?", `Share your link. Each artist who joins and uploads a piece gives you ${REFERRALS.rewardMonths} months, up to ${REFERRALS.maxBankedMonths} banked.`],
+  ["How do I get Infinity free?", `Share your link. Each artist who joins, gets a piece live and prints a code or makes a sale gives you ${REFERRALS.rewardMonths} months, up to ${REFERRALS.maxBankedMonths} banked.`],
 ];
 
 export default async function PricingPage() {

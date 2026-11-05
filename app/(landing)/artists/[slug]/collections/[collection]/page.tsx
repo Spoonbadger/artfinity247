@@ -12,6 +12,7 @@ import type { Edition } from "@/lib/editionFormat";
 import { money } from "@/lib/earnings";
 import { cn } from "@/lib/utils";
 import { artistPath, artPath, collectionPath } from "@/lib/urls";
+import ViewBeacon from "@/components/analytics/ViewBeacon";
 
 export const dynamic = "force-dynamic";
 
@@ -113,6 +114,7 @@ export default async function CollectionPage({ params }: Props) {
   return (
     <>
       <SiteHeader brand={{ handle: artist.slug, name: artist.name, avatar: artist.avatar }} />
+      <ViewBeacon artistId={artist.id} />
     <div className="bg-[#efece5] bg-[radial-gradient(ellipse_at_50%_0%,#f7f5f0_0%,#ebe7df_55%,#e4dfd5_100%)] pb-16 sm:pb-24">
       <header className="mx-auto grid max-w-[1240px] gap-4 px-4 pb-8 pt-8 sm:px-6 sm:pb-12 sm:pt-14">
         <Link href={artistPath(artist.slug)} className="flex w-fit min-h-[44px] items-center gap-2.5 text-ink no-underline">

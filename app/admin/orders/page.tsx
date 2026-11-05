@@ -7,6 +7,8 @@ import MonthPicker from "../_components/MonthPicker";
 import OrdersBoard, { type AdminOrder } from "../_components/OrdersBoard";
 import { currentMonth, monthLabel, monthRange, usd } from "../_components/util";
 import { TRACKING_SUBJECT, parseTrackingMessage, type Tracking } from "@/lib/tracking";
+import { PARCEL_TAG, splitParcelTag } from "@/lib/artistEmails";
+import { certPath } from "@/lib/certificates";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Orders" };
@@ -45,6 +47,22 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
     if (t && m.orderId) trackingByOrder.set(m.orderId, t);
   }
 
+  // Artists' thank-you notes to print into the parcel: Messages tagged [parcel] on the order (Studio customer page).
+  const parcelRows = orders.length
+    ? await prisma.message.findMany({
+        where: { orderId: { in: orders.map((o) => o.id) }, direction: "out", subject: { startsWith: PARCEL_TAG } },
+        orderBy: { createdAt: "asc" },
+        select: { id: true, orderId: true, subject: true, body: true, createdAt: true, artist: { select: { artist_name: true, name: true } } },
+      })
+    : [];
+  const parcelByOrder = new Map<string, NonNullable<AdminOrder["parcelNotes"]>>();
+  for (const m of parcelRows) {
+    if (!m.orderId) continue;
+    const list = parcelByOrder.get(m.orderId) ?? [];
+    list.push({ id: m.id, artistName: m.artist.artist_name || m.artist.name, subject: splitParcelTag(m.subject).subject, body: m.body, createdAt: m.createdAt.toISOString() });
+    parcelByOrder.set(m.orderId, list);
+  }
+
   const shaped: AdminOrder[] = orders.map((o) => {
     const items = o.items.map((it) => {
       // Authoritative money math (60/40 or 50/50 by order date) lives in lib/sales.ts.
@@ -70,6 +88,8 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
         profit: b.profit,
         artistShare: b.artistShare,
         companyShare: b.companyShare,
+        // Limited editions: print the certificate of authenticity into the parcel (lib/certificates.ts).
+        certPath: o.paymentStatus === "paid" && it.editionNumber && it.artworkId ? certPath(it.id) : null,
       };
     });
     return {
@@ -86,6 +106,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
       kind: o.kind,
       items,
       tracking: trackingByOrder.get(o.id) ?? null,
+      parcelNotes: parcelByOrder.get(o.id) ?? [],
     };
   });
 

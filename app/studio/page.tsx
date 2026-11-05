@@ -9,6 +9,7 @@ import ProCard from "@/components/pro/ProCard";
 import { getArtistPlan } from "@/components/pro/plan.server";
 import { prisma } from "@/lib/prisma";
 import { countArtistScans } from "@/lib/shortlinks";
+import { countArtistViews } from "@/lib/pageviews";
 import { getBalance } from "@/lib/balance";
 import BalanceChip from "@/components/money/BalanceChip";
 import { requireArtist, firstName, getSales, getArtworks, dayKey, serverGreeting, timeAgo, SIZE_LABEL, STUDIO_TZ, usd } from "./_lib/data";
@@ -42,9 +43,10 @@ export default async function StudioHome() {
   ]);
   const sales = allSales.filter((s) => s.date >= since);
   // Real scans of the artist's short link codes: last 30 days vs the 30 before.
-  const [scans, scansBefore] = await Promise.all([
+  const [scans, scansBefore, viewsWeek] = await Promise.all([
     countArtistScans(artist.id, since, now),
     countArtistScans(artist.id, new Date(since.getTime() - 30 * DAY), since),
+    countArtistViews(artist.id, new Date(now.getTime() - 7 * DAY), now),
   ]);
   const scanDelta = !scans && !scansBefore ? "print a code to start" : !scansBefore ? "new this month" : `${scans >= scansBefore ? "+" : "−"}${Math.abs(Math.round(((scans - scansBefore) / scansBefore) * 100))}% vs last 30 days`;
 
@@ -98,6 +100,11 @@ export default async function StudioHome() {
           <PaintChip color="#2b37f0" value={scans.toLocaleString("en-US")} label="scans" note={`Ultramarine · ${scanDelta}`} />
         </Link>
       </section>
+
+      <Link href="/studio/analytics" className="af-panel -mt-2 flex items-center justify-between gap-3 px-4 py-3 text-[14px] text-ink no-underline hover:border-ink">
+        <span className="flex items-baseline gap-2"><b className="num text-[18px]">{viewsWeek.toLocaleString("en-US")}</b> page views this week</span>
+        <span className="font-bold text-scan">Analytics →</span>
+      </Link>
 
       <BalanceChip b={balance} />
 

@@ -9,7 +9,7 @@ import ReferralShare from "@/components/pro/ReferralShare";
 import ProCalculator from "@/components/pro/ProCalculator";
 import { getArtistPlan } from "@/components/pro/plan.server";
 import { FREE_SPLIT, PRO, REFERRALS, formatPlanDate, pct, planFeatures, proPrice } from "@/lib/plans";
-import { ensureReferralCode, getReferrals, referralLink, type ReferralStatus } from "@/lib/referrals";
+import { ensureReferralCode, getReferrals, referralLink, type ReferralRow, type ReferralStatus } from "@/lib/referrals";
 import { testCheckoutAllowed } from "@/lib/testCheckout";
 import { requireArtist, getSales } from "../_lib/data";
 
@@ -18,21 +18,43 @@ export const metadata: Metadata = { title: "Infinity plan" };
 
 const DAY = 86400000;
 
-const STATUS: Record<ReferralStatus, { label: string; dab: string }> = {
-  joined: { label: "Joined", dab: "#9aa0ff" },
-  uploaded: { label: "Uploaded", dab: "#2b37f0" },
-  rewarded: { label: "Reward earned", dab: "#0f7a55" },
+const DAB: Record<ReferralStatus, string> = {
+  joined: "#c9ccff",
+  live: "#9aa0ff",
+  held: "#2b37f0",
+  capped: "#e8a33b",
+  blocked: "#b9bcc4",
+  rewarded: "#0f7a55",
 };
+const shortDay = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+
+/** Honest, plain status for one referred artist (rules in lib/referrals.ts). */
+function statusText(r: ReferralRow): { label: string; note?: string } {
+  switch (r.status) {
+    case "joined": return { label: `Joined · waiting for ${r.firstName}'s first piece` };
+    case "live": return { label: "Piece live · waiting for a printed code or a sale" };
+    case "held": return { label: `Unlocks ${shortDay(r.unlockAt!)}`, note: `${REFERRALS.holdDays}-day hold after they qualify` };
+    case "capped":
+      return r.capReason === "month"
+        ? { label: `Unlocks ${shortDay(r.unlockAt!)}`, note: `${REFERRALS.maxPerMonth} rewards a month max` }
+        : r.capReason === "banked"
+          ? { label: "Waiting for room", note: `You have ${REFERRALS.maxBankedMonths} months banked` }
+          : { label: "Unlocking now" };
+    case "blocked": return { label: "Not eligible", note: "Looks like the same person as you" };
+    case "rewarded": return { label: "Rewarded", note: r.rewardedAt ? `+${REFERRALS.rewardMonths} months on ${shortDay(r.rewardedAt)}` : undefined };
+  }
+}
 
 export default async function ProPage() {
   const artist = await requireArtist("/studio/infinity");
   const now = new Date();
+  // Referrals first: getting them settles any months that came due, so the plan below is current.
+  const referrals = await getReferrals(artist.id);
   const [plan, code, sales] = await Promise.all([
     getArtistPlan(artist.id),
     ensureReferralCode(artist.id),
     getSales(artist.id, new Date(now.getTime() - 30 * DAY)),
   ]);
-  const referrals = await getReferrals(artist.id);
   const link = referralLink(code);
   const rewarded = referrals.filter((r) => r.status === "rewarded").length;
   const daysLeft = plan.active && plan.proUntil ? Math.ceil((plan.proUntil.getTime() - now.getTime()) / DAY) : 0;
@@ -95,7 +117,7 @@ export default async function ProPage() {
         <header className="grid gap-1">
           <span className="eyebrow">Referrals</span>
           <h2 id="ref-h" className="display text-[34px] sm:text-[44px]">Share Artfinity, get <Brushed>2 months</Brushed> of Infinity</h2>
-          <p className="text-[15px] text-ink-2">For every artist who joins with your link and uploads their first piece.</p>
+          <p className="text-[15px] text-ink-2">For every artist who joins with your link, gets a piece live, and prints its code or makes a sale.</p>
         </header>
 
         <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_200px] md:items-start">
@@ -103,7 +125,7 @@ export default async function ProPage() {
             <ReferralShare link={link} code={code} />
 
             <ol className="grid gap-2 sm:grid-cols-3">
-              {["They join with your link", "They upload a piece", `You get ${REFERRALS.rewardMonths} months of Infinity`].map((t, i) => (
+              {["They join with your link", "They get a piece live and print a code (or sell)", `${REFERRALS.holdDays} days later, you get ${REFERRALS.rewardMonths} months`].map((t, i) => (
                 <li key={t} className="flex items-center gap-2.5 rounded-xl bg-white p-3 text-[14px] font-semibold">
                   <span className="num grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink text-[13px] font-extrabold text-white">{i + 1}</span>
                   {t}
@@ -142,10 +164,18 @@ export default async function ProPage() {
                     <span className="block truncate">{r.name || r.handle}</span>
                     <span className="block truncate text-[13px] font-normal text-ink-2">@{r.handle} · joined {formatPlanDate(r.joined)}</span>
                   </Link>
-                  <span className="inline-flex items-center gap-1.5 text-[13.5px] font-bold">
-                    <i className="paint-dab !h-2.5 !w-2.5" style={{ ["--dab" as string]: STATUS[r.status].dab }} aria-hidden="true" />
-                    {STATUS[r.status].label}
-                  </span>
+                  {(() => {
+                    const t = statusText(r);
+                    return (
+                      <span className="grid justify-items-end text-right">
+                        <span className="inline-flex items-center gap-1.5 text-[13.5px] font-bold">
+                          <i className="paint-dab !h-2.5 !w-2.5" style={{ ["--dab" as string]: DAB[r.status] }} aria-hidden="true" />
+                          {t.label}
+                        </span>
+                        {t.note && <span className="text-[12.5px] text-ink-2">{t.note}</span>}
+                      </span>
+                    );
+                  })()}
                 </li>
               ))}
             </ul>
@@ -154,10 +184,13 @@ export default async function ProPage() {
 
         <div className="grid gap-1 border-t border-dashed border-ink/20 pt-4 text-[13.5px] text-ink-2">
           <p>
-            <b className="text-ink">Sharing your page counts too, once it brings an artist.</b> We can’t see shares, only sign-ups, so rewards come from artists who join and upload.{" "}
+            <b className="text-ink">Sharing your page counts too, once it brings an artist.</b> We can’t see shares, only sign-ups, so rewards come from artists who join and get going.{" "}
             <Link href="/studio/share" className="font-bold text-scan">Share kit</Link>
           </p>
-          <p>Up to {REFERRALS.maxBankedMonths} months banked at a time. Soon a referral will also need a first sale or verification within {REFERRALS.verifyWithinDays} days.</p>
+          <p>
+            Months unlock {REFERRALS.holdDays} days after an artist qualifies, if their piece is still live. Up to {REFERRALS.maxPerMonth} rewards a month and {REFERRALS.maxBankedMonths} months banked at a time; anything over waits its turn.
+            Accounts that look like your own (same email domain, and the same network or browser) don’t earn a reward.
+          </p>
         </div>
       </section>
 

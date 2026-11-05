@@ -1,24 +1,38 @@
 // lib/referrals.ts (server only)
 // "Share Artfinity, get 2 months of Infinity."
 //
-// Rule: an artist who signs up with ?ref=CODE and makes their first approved upload earns the
-// referrer REFERRALS.rewardMonths of Infinity, extended from max(now, proUntil) and capped at
-// REFERRALS.maxBankedMonths ahead of today.
+// A referral pays REFERRALS.rewardMonths of Infinity once the artist who signed up with ?ref=CODE:
+//   1. has a live (approved) piece, AND
+//   2. has printed a code (a QrCode row exists; codes are made when the artist prints or downloads one) or made a
+//      paid retail sale, AND
+//   3. isn't the referrer on a second account: same email domain plus the same network (hashed sign-up/login IP)
+//      or the same browser (first-party device cookie) as the referrer gets no reward ("blocked").
+// Email verification would be a 4th rule, but Artfinity has no email verification yet, so it's skipped.
+// The reward is held REFERRALS.holdDays days after the artist qualifies (the later of their first live piece and
+// their first code or sale), then unlocks if they still qualify. At most REFERRALS.maxPerMonth rewards unlock per
+// calendar month (UTC), and only while the months fit under REFERRALS.maxBankedMonths ahead of today; otherwise
+// the reward waits for next month or for room. Nothing is lost by waiting.
 //
-// Planned anti-abuse (not enforced yet): also require a real sale or verification within
-// REFERRALS.verifyWithinDays days before the reward is granted.
+// State without schema fields: one Message row per referral on the referrer, direction "referral" and email
+// "ref:<referredArtistId>" (not an email, so the customer CRM never shows it):
+//   subject "Referral hold"     sentAt null   body {"qualifiedAt","unlockAt"}   waiting to unlock
+//   subject "Referral reward"   sentAt = when the months were added                 rewarded (older rows too)
+//   subject "Referral blocked"  body {"reason"}                                     never pays
+// It survives the referred artist deleting and re-uploading art, so one referral pays out once.
+// Sign-up and login signals are one Message row on each artist (direction "device"), hashed with the server
+// secret: never a raw IP.
 //
-// Idempotency: there is no schema field for "reward granted" yet (proposed: Artist.referralRewardedAt
-// DateTime? on the referred artist). Until then each grant is recorded as a Message row on the
-// referrer with direction "referral" and email "ref:<referredArtistId>". That address is not an
-// email, so the customer CRM (which looks messages up by buyer email) never shows it. It survives
-// the referred artist deleting and re-uploading art, so one referral pays out once.
-import { randomBytes } from "crypto";
+// Settling (creating holds, unlocking due ones) runs when a referred artist's piece goes live, when the referrer
+// opens /studio/infinity, and at most every few minutes from any Studio page (getArtistPlan).
+import { createHmac, randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
-import { REFERRALS, addMonths, isProActive } from "@/lib/plans";
+import { REFERRALS, addDays, addMonths, isProActive } from "@/lib/plans";
 
 export const REFERRAL_DIRECTION = "referral";
 const ledgerEmail = (referredId: string) => `ref:${referredId}`;
+const HOLD = "Referral hold";
+const REWARD = "Referral reward";
+const BLOCKED = "Referral blocked";
 
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O, 1/I
 
@@ -66,69 +80,289 @@ export async function referrerForCode(raw: unknown): Promise<string | null> {
   return a?.id ?? null;
 }
 
-export type RewardResult =
-  | { granted: true; referrerId: string; proUntil: Date; capped: boolean }
-  | { granted: false; reason: "not_referred" | "not_approved" | "already_rewarded" | "referrer_missing" };
+// ---------- Device signals (sign-up / login) ----------
+
+export const DEVICE_COOKIE = "af_dev";
+const SIGNAL_DIRECTION = "device";
+const SIGNAL_EMAIL = "device:signals";
+const SECRET = process.env.JWT_SECRET || "artfinity-dev";
+
+type Signal = { ip: string | null; dev: string | null; at: string };
+type Signals = { signup?: Signal; seen: Signal[] };
+
+const fp = (kind: string, value: string) => createHmac("sha256", SECRET).update(`${kind}|${value}`).digest("base64url").slice(0, 16);
+
+function cookieFrom(req: Request, name: string): string | null {
+  const raw = req.headers.get("cookie") || "";
+  for (const part of raw.split(";")) {
+    const [k, ...v] = part.trim().split("=");
+    if (k === name) return decodeURIComponent(v.join("="));
+  }
+  return null;
+}
+
+function parseSignals(body: string | null | undefined): Signals {
+  try {
+    const j = JSON.parse(body || "");
+    return { signup: j.signup, seen: Array.isArray(j.seen) ? j.seen : [] };
+  } catch {
+    return { seen: [] };
+  }
+}
 
 /**
- * Call after an artwork is created. Grants the referrer their months once, on the referred
- * artist's first approved upload. Safe to call more than once.
+ * Keeps hashed network and browser signals for an artist (at sign-up and each login), for the referral
+ * same-person check. Returns the device id to set as DEVICE_COOKIE (a random id per browser). Never throws.
  */
-export async function rewardReferralOnUpload(artistId: string): Promise<RewardResult> {
-  const me = await prisma.artist.findUnique({ where: { id: artistId }, select: { id: true, referredById: true } });
-  if (!me?.referredById || me.referredById === me.id) return { granted: false, reason: "not_referred" };
-  const approved = await prisma.artwork.count({ where: { artistId, status: "APPROVED" } });
-  if (approved < 1) return { granted: false, reason: "not_approved" };
+export async function recordDeviceSignal(artistId: string, req: Request, kind: "signup" | "login"): Promise<string> {
+  const existing = cookieFrom(req, DEVICE_COOKIE);
+  const device = existing && /^[\w-]{16,64}$/.test(existing) ? existing : randomBytes(16).toString("base64url");
+  try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "";
+    const sig: Signal = { ip: ip ? fp("ip", ip) : null, dev: fp("dev", device), at: new Date().toISOString() };
+    const row = await prisma.message.findFirst({ where: { artistId, direction: SIGNAL_DIRECTION, email: SIGNAL_EMAIL }, select: { id: true, body: true } });
+    const data = parseSignals(row?.body);
+    if (kind === "signup") data.signup = sig;
+    data.seen = [sig, ...data.seen.filter((s) => s.ip !== sig.ip || s.dev !== sig.dev)].slice(0, 8);
+    const body = JSON.stringify(data);
+    if (row) await prisma.message.update({ where: { id: row.id }, data: { body } });
+    else await prisma.message.create({ data: { artistId, email: SIGNAL_EMAIL, direction: SIGNAL_DIRECTION, subject: "Device signals", body } });
+  } catch (err) {
+    console.error("Device signal not recorded", err);
+  }
+  return device;
+}
 
-  const referrerId = me.referredById;
-  return prisma.$transaction(async (tx) => {
-    // Lock the referrer row so two uploads at once can't both grant.
-    const locked = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM "Artist" WHERE id = ${referrerId} FOR UPDATE`;
-    if (!locked.length) return { granted: false, reason: "referrer_missing" } as const;
-    const done = await tx.message.findFirst({ where: { artistId: referrerId, direction: REFERRAL_DIRECTION, email: ledgerEmail(artistId) }, select: { id: true } });
-    if (done) return { granted: false, reason: "already_rewarded" } as const;
+export const deviceCookie = (value: string) => ({
+  name: DEVICE_COOKIE,
+  value,
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  path: "/",
+  maxAge: 60 * 60 * 24 * 730,
+});
 
-    const ref = await tx.artist.findUnique({ where: { id: referrerId }, select: { proUntil: true } });
-    const now = new Date();
-    const from = isProActive(ref, now) ? ref!.proUntil! : now;
-    const ceiling = addMonths(now, REFERRALS.maxBankedMonths);
-    const wanted = addMonths(from, REFERRALS.rewardMonths);
-    const proUntil = wanted > ceiling ? ceiling : wanted;
-    const capped = wanted > ceiling;
+const domainOf = (email: string | null | undefined) => String(email || "").trim().toLowerCase().split("@")[1] || "";
 
-    await tx.artist.update({ where: { id: referrerId }, data: { proUntil } });
-    await tx.message.create({
-      data: {
-        artistId: referrerId,
-        email: ledgerEmail(artistId),
-        direction: REFERRAL_DIRECTION,
-        subject: "Referral reward",
-        body: `+${REFERRALS.rewardMonths} months of Infinity${capped ? " (capped at 12 months banked)" : ""}. Infinity until ${proUntil.toISOString()}.`,
-        sentAt: now,
+/** Same email domain AND (a shared hashed IP or the same browser). Unknown signals never block. */
+function samePerson(a: { email: string; signals: Signals }, b: { email: string; signals: Signals }) {
+  const domain = domainOf(a.email);
+  if (!domain || domain !== domainOf(b.email)) return false;
+  const list = (s: Signals) => [s.signup, ...s.seen].filter((x): x is Signal => !!x);
+  const aIps = new Set(list(a.signals).map((s) => s.ip).filter(Boolean));
+  const aDevs = new Set(list(a.signals).map((s) => s.dev).filter(Boolean));
+  return list(b.signals).some((s) => (s.ip && aIps.has(s.ip)) || (s.dev && aDevs.has(s.dev)));
+}
+
+// ---------- Qualifying and settling ----------
+
+type Facts = { liveAt: Date | null; actionAt: Date | null; qualifiedAt: Date | null };
+
+async function referredFacts(ids: string[]): Promise<Map<string, Facts & { email: string }>> {
+  if (!ids.length) return new Map();
+  const [artists, sales] = await Promise.all([
+    prisma.artist.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true, email: true,
+        artworks: { where: { status: "APPROVED" }, orderBy: { createdAt: "asc" }, take: 1, select: { createdAt: true } },
+        qrCodes: { orderBy: { createdAt: "asc" }, take: 1, select: { createdAt: true } },
       },
+    }),
+    prisma.$queryRaw<{ artistId: string; first: Date }[]>`
+      SELECT a."artistId" AS "artistId", MIN(o."createdAt") AS first
+      FROM "OrderItem" oi
+      JOIN "Artwork" a ON a.id = oi."artworkId"
+      JOIN "Order" o ON o.id = oi."orderId"
+      WHERE o."paymentStatus" = 'paid' AND o.kind = 'retail' AND a."artistId" = ANY(${ids}::text[])
+      GROUP BY a."artistId"`,
+  ]);
+  const firstSale = new Map(sales.map((s) => [s.artistId, new Date(s.first)]));
+  const out = new Map<string, Facts & { email: string }>();
+  for (const a of artists) {
+    const liveAt = a.artworks[0]?.createdAt ?? null;
+    const code = a.qrCodes[0]?.createdAt ?? null;
+    const sale = firstSale.get(a.id) ?? null;
+    const actionAt = code && sale ? (code < sale ? code : sale) : code || sale;
+    const qualifiedAt = liveAt && actionAt ? (liveAt > actionAt ? liveAt : actionAt) : null;
+    out.set(a.id, { email: a.email, liveAt, actionAt, qualifiedAt });
+  }
+  return out;
+}
+
+type LedgerRow = { id: string; email: string; subject: string | null; body: string; sentAt: Date | null; createdAt: Date };
+
+function holdInfo(row: LedgerRow): { unlockAt: Date; qualifiedAt: Date } | null {
+  try {
+    const j = JSON.parse(row.body);
+    return { unlockAt: new Date(j.unlockAt), qualifiedAt: new Date(j.qualifiedAt) };
+  } catch {
+    return null;
+  }
+}
+
+const isRewarded = (r: LedgerRow) => !!r.sentAt && r.subject !== HOLD && r.subject !== BLOCKED;
+const monthStart = (d: Date) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+const nextMonthStart = (d: Date) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1));
+
+/**
+ * Brings one referrer's referrals up to date: new qualifiers get a hold (or a block), holds that are due unlock
+ * within the monthly and banked caps. Safe to call often and concurrently.
+ */
+export async function settleReferrals(referrerId: string, now = new Date()): Promise<{ granted: number }> {
+  const referred = await prisma.artist.findMany({ where: { referredById: referrerId, NOT: { id: referrerId } }, select: { id: true } });
+  if (!referred.length) return { granted: 0 };
+  const facts = await referredFacts(referred.map((r) => r.id));
+  const signalRows = await prisma.message.findMany({
+    where: { artistId: { in: [referrerId, ...referred.map((r) => r.id)] }, direction: SIGNAL_DIRECTION, email: SIGNAL_EMAIL },
+    select: { artistId: true, body: true },
+  });
+  const signals = new Map(signalRows.map((r) => [r.artistId, parseSignals(r.body)]));
+
+  return prisma.$transaction(async (tx) => {
+    // Lock the referrer row so two settles at once can't both create or grant.
+    const locked = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM "Artist" WHERE id = ${referrerId} FOR UPDATE`;
+    if (!locked.length) return { granted: 0 };
+    const referrer = await tx.artist.findUnique({ where: { id: referrerId }, select: { email: true, proUntil: true } });
+    const ledger: LedgerRow[] = await tx.message.findMany({
+      where: { artistId: referrerId, direction: REFERRAL_DIRECTION },
+      select: { id: true, email: true, subject: true, body: true, sentAt: true, createdAt: true },
     });
-    console.info("REFERRAL_REWARD", JSON.stringify({ referrerId, referredId: artistId, proUntil: proUntil.toISOString(), capped }));
-    return { granted: true, referrerId, proUntil, capped } as const;
+    const byReferred = new Map(ledger.map((r) => [r.email.replace(/^ref:/, ""), r]));
+
+    // 1. New qualifiers: hold, or block when it looks like the referrer on a second account.
+    for (const [id, f] of Array.from(facts)) {
+      if (byReferred.has(id) || !f.qualifiedAt) continue;
+      const blocked = samePerson({ email: referrer!.email, signals: signals.get(referrerId) ?? { seen: [] } }, { email: f.email, signals: signals.get(id) ?? { seen: [] } });
+      const unlockAt = addDays(f.qualifiedAt, REFERRALS.holdDays);
+      const row = await tx.message.create({
+        data: {
+          artistId: referrerId,
+          email: ledgerEmail(id),
+          direction: REFERRAL_DIRECTION,
+          subject: blocked ? BLOCKED : HOLD,
+          body: JSON.stringify(blocked ? { reason: "same_person", at: now.toISOString() } : { qualifiedAt: f.qualifiedAt.toISOString(), unlockAt: unlockAt.toISOString() }),
+        },
+        select: { id: true, email: true, subject: true, body: true, sentAt: true, createdAt: true },
+      });
+      byReferred.set(id, row);
+      ledger.push(row);
+      console.info(blocked ? "REFERRAL_BLOCKED" : "REFERRAL_HELD", JSON.stringify({ referrerId, referredId: id, unlockAt: blocked ? null : unlockAt.toISOString() }));
+    }
+
+    // 2. Due holds unlock, oldest first, while the referred artist still qualifies and the caps allow.
+    let thisMonth = ledger.filter((r) => isRewarded(r) && r.sentAt! >= monthStart(now)).length;
+    let proUntil = referrer!.proUntil;
+    let granted = 0;
+    const due = ledger
+      .filter((r) => r.subject === HOLD && !r.sentAt)
+      .map((r) => ({ r, info: holdInfo(r) }))
+      .filter((x) => x.info && x.info.unlockAt <= now)
+      .sort((a, b) => a.info!.unlockAt.getTime() - b.info!.unlockAt.getTime());
+    for (const { r } of due) {
+      const id = r.email.replace(/^ref:/, "");
+      if (!facts.get(id)?.qualifiedAt) continue; // piece taken down or code gone: waits until they qualify again
+      if (thisMonth >= REFERRALS.maxPerMonth) break;
+      const from = isProActive({ proUntil }, now) ? proUntil! : now;
+      const next = addMonths(from, REFERRALS.rewardMonths);
+      if (next > addMonths(now, REFERRALS.maxBankedMonths)) break; // no room under the banked cap yet
+      proUntil = next;
+      await tx.artist.update({ where: { id: referrerId }, data: { proUntil } });
+      await tx.message.update({
+        where: { id: r.id },
+        data: { subject: REWARD, sentAt: now, body: `+${REFERRALS.rewardMonths} months of Infinity. Infinity until ${proUntil.toISOString()}.` },
+      });
+      thisMonth++;
+      granted++;
+      console.info("REFERRAL_REWARD", JSON.stringify({ referrerId, referredId: id, proUntil: proUntil.toISOString() }));
+    }
+    return { granted };
   });
 }
 
-export type ReferralStatus = "joined" | "uploaded" | "rewarded";
+/** After a referred artist's piece goes live: settle their referrer. Safe to call more than once. */
+export async function rewardReferralOnUpload(artistId: string) {
+  const me = await prisma.artist.findUnique({ where: { id: artistId }, select: { id: true, referredById: true } });
+  if (!me?.referredById || me.referredById === me.id) return { granted: 0 };
+  return settleReferrals(me.referredById);
+}
 
-/** Everyone this artist referred, newest first, with their status. */
+const lastSettle = new Map<string, number>();
+/** Cheap, throttled settle for Studio page loads (at most every 5 minutes per artist per server). */
+export async function settleReferralsSoon(artistId: string) {
+  const t = lastSettle.get(artistId) ?? 0;
+  if (Date.now() - t < 5 * 60_000) return;
+  lastSettle.set(artistId, Date.now());
+  try {
+    await settleReferrals(artistId);
+  } catch (err) {
+    console.error("Referral settle failed", err);
+  }
+}
+
+// ---------- What the referrer sees ----------
+
+/**
+ * joined: no live piece yet. live: piece live, no code printed or sale yet. held: waiting out the hold (unlockAt).
+ * capped: hold is over, waiting for next month's allowance (unlockAt = 1st of next month) or for banked room.
+ * blocked: looks like the referrer's own second account. rewarded: months added.
+ */
+export type ReferralStatus = "joined" | "live" | "held" | "capped" | "blocked" | "rewarded";
+
+/** Everyone this artist referred, newest first, with an honest status. Settles first. */
 export async function getReferrals(artistId: string) {
-  const [rows, ledger] = await Promise.all([
+  await settleReferrals(artistId).catch((err) => console.error("Referral settle failed", err));
+  const now = new Date();
+  const [rows, ledger, me] = await Promise.all([
     prisma.artist.findMany({
-      where: { referredById: artistId },
+      where: { referredById: artistId, NOT: { id: artistId } },
       orderBy: { createdAt: "desc" },
-      select: { id: true, slug: true, artist_name: true, name: true, createdAt: true, _count: { select: { artworks: { where: { status: "APPROVED" } } } } },
+      select: { id: true, slug: true, artist_name: true, name: true, first_name: true, createdAt: true },
     }),
-    prisma.message.findMany({ where: { artistId, direction: REFERRAL_DIRECTION }, select: { email: true, createdAt: true } }),
+    prisma.message.findMany({
+      where: { artistId, direction: REFERRAL_DIRECTION },
+      select: { id: true, email: true, subject: true, body: true, sentAt: true, createdAt: true },
+    }),
+    prisma.artist.findUnique({ where: { id: artistId }, select: { proUntil: true } }),
   ]);
-  const rewarded = new Map(ledger.map((m) => [m.email.replace(/^ref:/, ""), m.createdAt]));
+  const facts = await referredFacts(rows.map((r) => r.id));
+  const byReferred = new Map(ledger.map((m) => [m.email.replace(/^ref:/, ""), m]));
+  const thisMonth = ledger.filter((r) => isRewarded(r) && r.sentAt! >= monthStart(now)).length;
+  const from = isProActive(me, now) ? me!.proUntil! : now;
+  const roomForMore = addMonths(from, REFERRALS.rewardMonths) <= addMonths(now, REFERRALS.maxBankedMonths);
+
   return rows.map((r) => {
-    const rewardedAt = rewarded.get(r.id) ?? null;
-    const status: ReferralStatus = rewardedAt ? "rewarded" : r._count.artworks > 0 ? "uploaded" : "joined";
-    return { id: r.id, handle: r.slug, name: r.artist_name || r.name, joined: r.createdAt, status, rewardedAt };
+    const row = byReferred.get(r.id);
+    const f = facts.get(r.id);
+    let status: ReferralStatus;
+    let unlockAt: Date | null = null;
+    let capReason: "month" | "banked" | null = null;
+    if (row && isRewarded(row)) status = "rewarded";
+    else if (row?.subject === BLOCKED) status = "blocked";
+    else if (!f?.liveAt) status = "joined";
+    else if (!f.qualifiedAt) status = "live";
+    else {
+      unlockAt = (row && holdInfo(row)?.unlockAt) || addDays(f.qualifiedAt, REFERRALS.holdDays);
+      if (unlockAt > now) status = "held";
+      else {
+        status = "capped";
+        if (thisMonth >= REFERRALS.maxPerMonth) { capReason = "month"; unlockAt = nextMonthStart(now); }
+        else if (!roomForMore) { capReason = "banked"; unlockAt = null; }
+        else unlockAt = now; // unlocks on the next settle
+      }
+    }
+    return {
+      id: r.id,
+      handle: r.slug,
+      name: r.artist_name || r.name,
+      firstName: (r.first_name || r.artist_name || r.name || r.slug).split(/\s+/)[0],
+      joined: r.createdAt,
+      status,
+      unlockAt,
+      capReason,
+      rewardedAt: row && isRewarded(row) ? row.sentAt : null,
+    };
   });
 }
 

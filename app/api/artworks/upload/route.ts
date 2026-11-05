@@ -10,6 +10,7 @@ import { EDITION_MAX, EDITION_MIN } from "@/lib/editionFormat"
 import { parsePrintable } from "@/lib/printSizes"
 import { verifyPrintable } from "@/lib/printSign"
 import { announceArtworkLive, initialArtworkStatus } from "@/lib/artworkLive"
+import { checkUpload } from "@/lib/imageHash"
 
 export const dynamic = "force-dynamic"
 
@@ -82,7 +83,9 @@ export async function POST(req: NextRequest) {
       Date.now().toString(36).slice(-4) // To be unique
 
     // First pieces from new, unverified artists wait for a quick review.
-    const status = await initialArtworkStatus(payload.id as string)
+    // So does anything that looks like another artist's piece (lib/imageHash.ts): flagged, never auto-rejected.
+    const dup = await checkUpload(imageUrl, payload.id as string)
+    const status = dup.flaggedReason ? "PENDING" : await initialArtworkStatus(payload.id as string)
 
     const artwork = await prisma.artwork.create({
       data: {
@@ -100,6 +103,8 @@ export async function POST(req: NextRequest) {
         editionSize,
         printableSizes: printable,
         ownershipConfirmedAt: new Date(),
+        imageHash: dup.imageHash,
+        ...(dup.flaggedReason ? { flaggedReason: dup.flaggedReason, flaggedBy: "system" } : {}),
       },
       include: {
         artist: {
@@ -122,7 +127,7 @@ export async function POST(req: NextRequest) {
       await resend.emails.send({
         from: "Artfinity <notifications@theartfinity.com>",
         to: "craig@theartfinity.com",
-        subject: `${artwork.status === "PENDING" ? "To review" : "New Artwork"} – ${artwork.title}`,
+        subject: `${dup.duplicate === "review" ? "Possible duplicate" : artwork.status === "PENDING" ? "To review" : "New Artwork"} – ${artwork.title}`,
         react: NewArtworkUploadedEmail({
           artistName: artwork?.artist.artist_name || "unknown",
           title: artwork.title,
@@ -139,6 +144,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       ...artwork,
       artistSlug: artwork.artist?.slug,
+      // "review": looks like another artist's piece, a person checks it. "own": the artist uploaded it before.
+      duplicate: dup.duplicate,
+      notice: dup.notice,
     })
   } catch (err) {
     console.error('Upload error:', err);

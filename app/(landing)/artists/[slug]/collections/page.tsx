@@ -7,13 +7,14 @@ import { prisma } from "@/lib/prisma";
 import CollectionsTab from "@/components/collections/CollectionsTab";
 import { getPublicCollections } from "@/components/collections/data";
 import { BrushStroke } from "@/components/af/Brush";
+import ViewBeacon from "@/components/analytics/ViewBeacon";
 
 export const dynamic = "force-dynamic";
 
 type Props = { params: { slug: string } };
 
 async function artistOf(slug: string) {
-  return prisma.artist.findFirst({ where: { slug: { equals: decodeURIComponent(slug), mode: "insensitive" }, closedAt: null }, select: { slug: true, name: true, artist_name: true, profileImage: true } });
+  return prisma.artist.findFirst({ where: { slug: { equals: decodeURIComponent(slug), mode: "insensitive" }, closedAt: null }, select: { id: true, slug: true, name: true, artist_name: true, profileImage: true } });
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -30,6 +31,7 @@ export default async function ArtistCollectionsPage({ params }: Props) {
   return (
     <>
       <SiteHeader brand={{ handle: artist.slug, name, avatar: artist.profileImage || null }} />
+      <ViewBeacon artistId={artist.id} />
     <div className="mx-auto grid max-w-[1240px] gap-8 px-4 pb-20 pt-8 sm:px-6 sm:pt-14">
       <header>
         <Link href={artistPath(artist.slug)} className="text-[15px] font-bold text-ink hover:underline">{name}</Link>

@@ -21,6 +21,8 @@ import { WorkLayout } from "@/components/artist/WorkGrid";
 import { getReviews } from "@/lib/reviews";
 import ReviewStars from "@/components/reviews/ReviewStars";
 import ReviewList from "@/components/reviews/ReviewList";
+import { activeFollowerCount } from "@/lib/followers";
+import ViewBeacon from "@/components/analytics/ViewBeacon";
 
 export const dynamic = "force-dynamic";
 
@@ -90,6 +92,7 @@ export default async function ArtistPage({ params, searchParams }: Props) {
   const accent = paint(theme.accent);
   const trust = { ...artist.trust, medal: theme.showStats ? artist.trust.earned : null };
   const venues = await venuesFor(artist.id);
+  const followers = await activeFollowerCount(artist.id);
   const tagline = artist.bio ? firstSentence(artist.bio) : "";
   const [cityShort, stateShort] = artist.city.split(",").map((s) => s.trim());
   const since = artist.memberSince.toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -119,6 +122,7 @@ export default async function ArtistPage({ params, searchParams }: Props) {
   return (
     <>
       <SiteHeader inPage />
+      <ViewBeacon artistId={artist.id} />
     <div className="bg-white pb-16 sm:pb-24" style={{ ["--accent" as string]: accent.color, ["--accent-ink" as string]: accent.ink, ["--accent-soft" as string]: accent.soft }}>
       {searchParams?.expired === "1" && <CodeNote kind="expired" name={artist.name} />}
       <ArtistBanner src={banner?.imageUrl ?? null} alt={banner ? `${banner.title}, by ${artist.name}` : ""} color={bannerColor(theme)} />
@@ -157,6 +161,10 @@ export default async function ArtistPage({ params, searchParams }: Props) {
               {theme.showStats && artist.sales > 0 ? <Stat value={artist.sales} label={artist.sales === 1 ? "print sold" : "prints sold"} dab="var(--accent)" /> : null}
               {cityShort ? <Stat value={cityShort} label={stateShort || "city"} dab="#b8c4ff" /> : null}
             </div>
+            {/* Follower count, quietly, once it's worth showing */}
+            {theme.showStats && followers >= 10 && (
+              <p className="-mt-3 text-[13.5px] text-ink-2"><b className="num font-semibold text-ink">{followers.toLocaleString("en-US")}</b> followers</p>
+            )}
 
             <TrustBlock trust={trust} />
 

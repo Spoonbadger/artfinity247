@@ -3,6 +3,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import { compare } from "bcryptjs";
 import { SignJWT } from "jose";
 import { NextResponse } from "next/server";
+import { deviceCookie, recordDeviceSignal } from "@/lib/referrals";
 export const runtime = "nodejs"
 
 export const dynamic = "force-dynamic"
@@ -62,6 +63,9 @@ export async function POST(req: Request) {
         role: artist.role.toUpperCase(),
       },
     });
+
+    // Hashed network + browser id, for the referral same-person check (lib/referrals.ts).
+    response.cookies.set(deviceCookie(await recordDeviceSignal(artist.id, req, "login")));
 
     const cookieBase = {
       httpOnly: true,

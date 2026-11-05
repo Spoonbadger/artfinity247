@@ -25,7 +25,6 @@ const SOCIAL: { key: keyof AutomationPrefs; name: string; dab: string }[] = [
 ];
 
 const OTHER: { key: keyof AutomationPrefs; name: string; note: string; dab: string }[] = [
-  { key: "newsletter", name: "Send my newsletter when I add work", note: "To buyers who opted in.", dab: "#ffd43b" },
   { key: "video", name: "Make a video for every new painting", note: "10-second vertical reel, saved to your Share kit.", dab: "#ff5a36" },
 ];
 
@@ -70,7 +69,6 @@ export default function AutomationsPanel({ pro, storageKey, recent }: { pro: boo
   const socialOn = SOCIAL.filter((s) => prefs[s.key]).map((s) => s.name);
   const actions = [
     socialOn.length ? `Post to ${socialOn.join(", ")}` : null,
-    prefs.newsletter ? "Send newsletter" : null,
     prefs.video ? "Make a video" : null,
   ].filter(Boolean) as string[];
 
@@ -109,6 +107,15 @@ export default function AutomationsPanel({ pro, storageKey, recent }: { pro: boo
 
       <section aria-label="More automations" className="af-panel grid p-4 sm:p-5">
         <ul className="grid divide-y divide-line">
+          {/* Newsletter: real, on every plan. Starts a draft from work added since the last send. */}
+          <li className="flex flex-wrap items-center gap-3 py-3">
+            <i className="paint-dab" style={{ ["--dab" as string]: "#ffd43b" }} aria-hidden="true" />
+            <span className="grid min-w-0 flex-1">
+              <span className="text-[15.5px] font-semibold">Newsletter for new work</span>
+              <span className="text-[13px] text-ink-2">A draft with your latest pieces, ready for your followers.</span>
+            </span>
+            <Link href="/studio/newsletter?from=new" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">Draft one</Link>
+          </li>
           {OTHER.map((o) => (
             <li key={o.key} className="flex items-center gap-3 py-3">
               <i className="paint-dab" style={{ ["--dab" as string]: o.dab }} aria-hidden="true" />

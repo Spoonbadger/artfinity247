@@ -146,5 +146,17 @@ async function main() {
 
   const { seedPayouts } = await import("./seed-payouts.mjs");
   await seedPayouts(prisma);
+
+  // Image fingerprints for duplicate detection (lib/imageHash.ts). The seed images are distinct: the closest
+  // pair of public/seed/art-*.jpg is 10 bits apart (15 among the 25 used), well over the threshold of 6.
+  await import("../scripts/backfill-image-hashes.mjs");
+
+  // Page views from QR scans, Instagram, search and the rest, for Studio → Analytics (prisma/seed-views.mjs)
+  const { seedViews } = await import("./seed-views.mjs");
+  await seedViews(prisma);
+
+  // Email followers (page, links, checkout, a few unsubscribed) and one sent newsletter (prisma/seed-followers.mjs)
+  const { seedFollowers } = await import("./seed-followers.mjs");
+  await seedFollowers(prisma);
 }
 main().finally(() => prisma.$disconnect());

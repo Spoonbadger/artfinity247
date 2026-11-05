@@ -2,7 +2,7 @@
 
 import { CSSProperties, MouseEvent, ReactNode, useState } from "react";
 import { toast } from "sonner";
-import { ArrowRight, EyeOff, Share } from "lucide-react";
+import { ArrowRight, EyeOff, Mail, Share } from "lucide-react";
 import { LogoMark } from "@/components/af/Logo";
 import { BrushStroke } from "@/components/af/Brush";
 import Medal from "@/components/af/Medal";
@@ -11,6 +11,7 @@ import { useSensitivePref } from "@/components/site/useSensitivePref";
 import { medalFor } from "@/lib/medals";
 import { cn } from "@/lib/utils";
 import { artistPath, artPath, linksUrl } from "@/lib/urls";
+import { FollowSheet, followLabel, useFollowState } from "@/components/follow/FollowButton";
 import SocialIcon from "./SocialIcon";
 import { FONT_PAIRS, linkFontVars } from "./fonts";
 import { KIND_LABEL, iconFor, isLight, isSocialKind, type LinksPageData, type LinksTheme } from "./model";
@@ -118,6 +119,35 @@ function LinkButton({ href, children, icon, theme }: { href: string; children: R
       {icon && <span className="absolute left-5 top-1/2 -translate-y-1/2 opacity-90">{icon}</span>}
       <span className="min-w-0 [overflow-wrap:anywhere]">{children}</span>
     </a>
+  );
+}
+
+/* ---------------- Follow by email ---------------- */
+
+function FollowLink({ data, theme, mode }: { data: LinksPageData; theme: LinksTheme; mode: Mode }) {
+  const [open, setOpen] = useState(false);
+  const state = useFollowState(data.slug);
+  const look = buttonLook(theme);
+  const first = data.name.split(" ")[0] || data.name;
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => mode === "page" && setOpen(true)}
+        aria-haspopup="dialog"
+        className={cn(
+          "group relative z-0 flex min-h-[58px] w-full items-center justify-center px-14 py-3 text-center text-[16px] font-semibold leading-snug transition",
+          "hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-[3px] focus-visible:outline-white",
+          look.className
+        )}
+        style={look.style}
+      >
+        {look.brush && <BrushStroke className="absolute inset-x-[-10px] inset-y-[-4px] -z-10 h-[calc(100%+8px)] w-[calc(100%+20px)]" color={theme.buttonColor} />}
+        <Mail className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 opacity-90" aria-hidden="true" />
+        <span>{followLabel(state, `Get new work from ${first}`)}</span>
+      </button>
+      <FollowSheet handle={data.slug} firstName={first} source="links" open={open} onClose={() => setOpen(false)} />
+    </>
   );
 }
 
@@ -282,6 +312,9 @@ export default function LinkPage({ data, theme: themeOverride, mode = "page" }: 
           })}
           <li className={cn(buttons.length > 0 && "mt-2")}>
             <ShopCard data={data} theme={theme} />
+          </li>
+          <li>
+            <FollowLink data={data} theme={theme} mode={mode} />
           </li>
         </ul>
 

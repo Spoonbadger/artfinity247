@@ -7,7 +7,7 @@ export type OrderCardData = {
   date: string;
   stage: Stage;
   spentCents: number;
-  items: { id: string; title: string; imageUrl: string | null; size: string; framed: boolean; quantity: number; priceCents: number }[];
+  items: { id: string; title: string; imageUrl: string | null; size: string; framed: boolean; quantity: number; priceCents: number; certPath?: string | null }[];
   /** e.g. "Reprinted free by Artfinity (damaged in shipping)". The sale and earnings are unchanged. */
   reprint?: string | null;
 };
@@ -38,6 +38,11 @@ export default function OrderCard({ order }: { order: OrderCardData }) {
               <span className="text-[13px] text-ink-2">
                 {SIZE_TEXT[it.size] || it.size} in{it.framed ? ", framed" : ""}{it.quantity > 1 ? ` × ${it.quantity}` : ""}
               </span>
+              {it.certPath && (
+                <a href={it.certPath} target="_blank" rel="noopener" className="w-fit text-[13px] font-semibold text-scan underline-offset-2 hover:underline">
+                  Certificate of authenticity
+                </a>
+              )}
             </span>
             <span className="num shrink-0 text-[14px]">{usd(it.priceCents)}</span>
           </li>

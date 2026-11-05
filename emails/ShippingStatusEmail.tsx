@@ -14,6 +14,7 @@ export default function ShippingStatusEmail({
   items,
   tracking,
   helpUrl,
+  certificates = [],
 }: {
   name: string;
   status: "shipped" | "delivered";
@@ -22,6 +23,8 @@ export default function ShippingStatusEmail({
   tracking?: { carrier: string; number: string; url: string | null } | null;
   /** Signed link to report a damaged or wrong print (lib/reprints.ts). */
   helpUrl?: string;
+  /** Limited-edition prints: signed links to their certificates of authenticity (lib/certificates.ts). */
+  certificates?: { title: string; url: string }[];
 }) {
   return (
     <div style={{ fontFamily: "ui-sans-serif, system-ui", color: "#222" }}>
@@ -77,6 +80,13 @@ export default function ShippingStatusEmail({
       ) : (
         <p>Your print has been delivered. We hope you love it.</p>
       )}
+
+      {certificates.map((c) => (
+        <p key={c.url} style={{ marginTop: 12 }}>
+          <strong>{c.title}</strong> is a numbered limited edition.{" "}
+          <a href={c.url} style={{ color: "#2b37f0", fontWeight: 600 }}>Print its certificate of authenticity</a>
+        </p>
+      ))}
 
       {helpUrl && (
         <p style={{ marginTop: 16, fontSize: 14, color: "#5b5d66" }}>

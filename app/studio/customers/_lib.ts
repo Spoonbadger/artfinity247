@@ -1,4 +1,5 @@
 // Server-only data for the Studio customers pages and /api/studio/customers.
+import { createHmac } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { toPrintSize } from "../_lib/data";
 import type { PrintSize } from "@/lib/revenue";
@@ -158,5 +159,27 @@ export function emailFromParam(param: string) {
   return /^[^\s@]+@[^\s@]+$/.test(e) ? e : null;
 }
 
-export const customerHref = (email: string) => `/studio/customers/${encodeURIComponent(email)}`;
+/**
+ * Opaque, stable id for a buyer in URLs (so emails stay out of links, history and logs): a keyed hash of the
+ * lower-cased email, 16 url-safe chars. The detail page maps it back by scanning the artist's own buyers.
+ */
+export function customerId(email: string) {
+  return createHmac("sha256", process.env.JWT_SECRET || "artfinity-dev").update(`customer|${email.trim().toLowerCase()}`).digest("base64url").slice(0, 16);
+}
+
+export const customerHref = (email: string) => `/studio/customers/${customerId(email)}`;
+
+/** The route segment is an opaque id (current links) or an email (older links, which redirect to the id). */
+export async function customerFromParam(artistId: string, param: string): Promise<{ email: string; legacy: boolean } | null> {
+  const asEmail = emailFromParam(param);
+  if (asEmail) return { email: asEmail, legacy: true };
+  if (!/^[\w-]{16}$/.test(param)) return null;
+  const emails = await prisma.order.findMany({
+    where: { paymentStatus: "paid", kind: { not: "bulk" }, items: { some: { artwork: { artistId } } } },
+    select: { email: true },
+    distinct: ["email"],
+  });
+  const hit = emails.find((o) => customerId(o.email) === param);
+  return hit ? { email: hit.email.trim().toLowerCase(), legacy: false } : null;
+}
 

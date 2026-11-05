@@ -38,8 +38,10 @@ export const REFERRALS = {
   rewardMonths: 2,
   /** Never bank more than this many months of Infinity ahead of today. */
   maxBankedMonths: 12,
-  /** Planned anti-abuse: the referred artist also needs a real sale or verification within this many days. Not enforced yet. */
-  verifyWithinDays: 30,
+  /** A qualifying referral waits this many days before its months unlock (time to catch fakes). */
+  holdDays: 14,
+  /** At most this many rewards unlock per calendar month (UTC) for one referrer. */
+  maxPerMonth: 5,
 } as const;
 
 export const pct = (split: number) => `${Math.round(split * 100)}%`;

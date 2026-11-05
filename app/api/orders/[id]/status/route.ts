@@ -7,6 +7,7 @@ import { sendArtistOrderEmail } from "@/lib/artistEmails.server"
 import { TRACKING_SUBJECT, cleanTracking, trackingText, type Tracking } from "@/lib/tracking"
 import { sendReviewRequest } from "@/lib/reviews"
 import { helpLine, helpUrl } from "@/lib/reprints"
+import { certLines, certLinksFor } from "@/lib/certificates"
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
@@ -92,7 +93,9 @@ export async function POST(
     try {
       // The artist's own wording when they wrote one; otherwise Artfinity's default below.
       // Under the artist's words: tracking (when shipping) and the signed "Problem with your print?" link.
-      const append = [tracking ? trackingText(tracking) : "", helpLine(order.id)].filter(Boolean).join("\n\n")
+      // Limited editions: the shipped email links each print's certificate of authenticity.
+      const certificates = now === "shipped" ? await certLinksFor(order.id).catch(() => []) : []
+      const append = [tracking ? trackingText(tracking) : "", certLines(certificates), helpLine(order.id)].filter(Boolean).join("\n\n")
       const sentByArtist = await sendArtistOrderEmail(order.id, now === "shipped" ? "shipped" : "delivered", { append }).catch((err) => {
         console.error("Artist shipping email failed, sending default", err)
         return false
@@ -116,6 +119,7 @@ export async function POST(
           })),
           tracking,
           helpUrl: helpUrl(order.id),
+          certificates,
         }),
       })
     } catch (err) {

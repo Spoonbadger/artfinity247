@@ -162,6 +162,27 @@ export async function originalResponse(previewUrl: string, baseName: string): Pr
   return new Response(null, { status: 302, headers });
 }
 
+/**
+ * Bytes of the image behind a preview URL, for fingerprinting (lib/imageHash.ts): the private local original when
+ * one was kept, else the public file under public/ (/uploads, /seed), else a Cloudinary preview. Other hosts: null.
+ */
+export async function readStoredImage(previewUrl: string): Promise<Buffer | null> {
+  const orig = await localOriginal(previewUrl);
+  if (orig) return fs.readFile(orig);
+  const clean = previewUrl.split("?")[0];
+  if (/^\/(?:[\w.-]+\/)*[\w.-]+\.(?:jpe?g|png|webp|gif|avif|tiff?)$/i.test(clean) && !clean.includes("..")) {
+    const pub = path.join(process.cwd(), "public");
+    const file = path.join(pub, ...clean.split("/").filter(Boolean));
+    if (file.startsWith(pub + path.sep)) return fs.readFile(file).catch(() => null);
+    return null;
+  }
+  if (/^https:\/\/res\.cloudinary\.com\//.test(clean)) {
+    const res = await fetch(previewUrl).catch(() => null);
+    return res?.ok ? Buffer.from(await res.arrayBuffer()) : null;
+  }
+  return null;
+}
+
 /** Removes a preview and its private original (e.g. after the artist replaces the image). */
 export async function deleteUpload(previewUrl: string): Promise<void> {
   if (LOCAL_RE.test(previewUrl)) {
