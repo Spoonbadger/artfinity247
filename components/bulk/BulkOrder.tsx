@@ -154,8 +154,8 @@ export default function BulkOrder({ arts, past, placedId, defaultName }: { arts:
                         "group relative grid w-full gap-1.5 rounded-xl p-1.5 text-left transition focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-scan disabled:opacity-50",
                         n ? "bg-scan-soft" : "hover:bg-wall",
                       )}
-                      aria-label={`Add ${a.title}`}
                     >
+                      <span className="sr-only">Add </span>
                       <span className="relative grid aspect-square place-items-center overflow-hidden rounded-lg bg-gallery p-2">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={a.imageUrl} alt="" className="max-h-full max-w-full bg-white object-contain shadow-[0_6px_14px_-4px_rgba(21,22,27,.4)]" />

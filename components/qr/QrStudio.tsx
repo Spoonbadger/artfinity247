@@ -77,6 +77,18 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
   const qrText = qrValue(d, art.slug, base, null, code || PLACEHOLDER_CODE, handle);
   const card: Card | null = useMemo(() => (fonts ? renderCard(d, art, fonts, qrText) : null), [d, art, fonts, qrText]);
   const svg = card ? cardSVG(card) : initialCard?.svg || "";
+  // Each preset button shows the real card it makes, for this piece, so the choice is what you see.
+  const presetThumbs = useMemo(() => {
+    const out: Partial<Record<PresetKey, string>> = {};
+    if (!fonts) return out;
+    for (const k of Object.keys(PRESETS) as PresetKey[]) {
+      try {
+        const c = renderCard({ ...d, ...presetLook(k), preset: k }, art, fonts, qrText, `pt-${k}`);
+        out[k] = cardSVG(c).replace(/ role="img" aria-label="[^"]*"/, "").replace(/width="[^"]*in" height="[^"]*in"/, "");
+      } catch { /* the button falls back to its name */ }
+    }
+    return out;
+  }, [fonts, art, qrText, d]);
 
   const set = (patch: Partial<Design>) => setD((o) => ({ ...o, preset: "custom", ...patch }));
   const pick = (a: ArtInfo) => {
@@ -214,11 +226,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
                 const p = PRESETS[k];
                 return (
                   <button key={k} type="button" aria-pressed={d.preset === k} onClick={() => setD((o) => ({ ...o, ...presetLook(k), preset: k }))}>
-                    <span className={s.mini} style={{ background: p.bg }} aria-hidden="true">
-                      <i style={{ right: "12%", top: "18%", width: "28%", aspectRatio: "1", background: p.fg, borderRadius: 2 }} />
-                      <i style={{ left: "10%", top: "22%", width: "42%", height: "18%", background: p.fg, borderRadius: 2 }} />
-                      <i style={{ left: "10%", top: "52%", width: "24%", height: "24%", background: p.tag, borderRadius: 2, transform: "rotate(-6deg)" }} />
-                    </span>
+                    <span className={s.mini} aria-hidden="true" dangerouslySetInnerHTML={{ __html: presetThumbs[k] || "" }} />
                     <span>{p.name}<small>{p.sub}</small></span>
                   </button>
                 );
@@ -308,7 +316,20 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
                 <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => setView(v)}>{l}</button>
               ))}
             </div>
-            <div className={s.downloads}>
+          </div>
+
+          <div className={s.stage} aria-live="polite" data-view={view} ref={stageRef}>
+            {!svg ? <div className={s.loading}><Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" /> Mixing paint</div>
+              : view === "card" ? <div className={cx(s.face, s[`f_${d.format}`])} dangerouslySetInnerHTML={{ __html: svg }} />
+              : view === "wall" ? <Wall art={art} svg={svg} format={d.format} />
+              : <div className={s.sheet} dangerouslySetInnerHTML={{ __html: card ? sheetSVG(card, d.format) : initialCard?.sheet || "" }} />}
+          </div>
+          <p className={s.stageNote}>
+            {view === "card" && <>{F.name} · {F.w} × {F.h} in · shown larger than life</>}
+            {view === "wall" && <>To scale on an 8 ft wall, beside a 24 × 30 in original{sn && <>. Words read from {fmtDist(sn.readM * 100)}, code scans from {fmtDist(sn.scanCm)}</>}.</>}
+            {view === "sheet" && <>{F.sheet.note} US Letter, 100% scale{d.format === "poster" ? "" : ", crop marks included"}.</>}
+          </p>
+          <div className={s.downloads}>
               <button type="button" className="btn btn-blue btn-sm" onClick={() => downloadPdf()} disabled={!!busy}>
                 {busy === "pdf" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <FileText className="h-4 w-4" aria-hidden="true" />}
                 Download PDF
@@ -324,19 +345,6 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
                 {code ? (dirty ? `Save changes · ${code}` : `Saved · ${code}`) : "Save code"}
               </button>
             </div>
-          </div>
-
-          <div className={s.stage} aria-live="polite" data-view={view} ref={stageRef}>
-            {!svg ? <div className={s.loading}><Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" /> Mixing paint</div>
-              : view === "card" ? <div className={cx(s.face, s[`f_${d.format}`])} dangerouslySetInnerHTML={{ __html: svg }} />
-              : view === "wall" ? <Wall art={art} svg={svg} format={d.format} />
-              : <div className={s.sheet} dangerouslySetInnerHTML={{ __html: card ? sheetSVG(card, d.format) : initialCard?.sheet || "" }} />}
-          </div>
-          <p className={s.stageNote}>
-            {view === "card" && <>{F.name} · {F.w} × {F.h} in · shown larger than life</>}
-            {view === "wall" && <>To scale on an 8 ft wall, beside a 24 × 30 in original{sn && <>. Words read from {fmtDist(sn.readM * 100)}, code scans from {fmtDist(sn.scanCm)}</>}.</>}
-            {view === "sheet" && <>{F.sheet.note} US Letter, 100% scale{d.format === "poster" ? "" : ", crop marks included"}.</>}
-          </p>
           {arts.length > 1 && (
             <div className={s.printAll}>
               <span>Every piece, this look:</span>

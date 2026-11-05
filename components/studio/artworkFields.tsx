@@ -306,7 +306,7 @@ export function EditionField({ limited, edition, setLimited, setEdition, locked,
         {note && <span className="ml-2 text-[12.5px] text-ink-2">{note}</span>}
       </legend>
       {locked ? (
-        <div className="flex items-start gap-3 rounded-xl border-2 border-line bg-wall/60 p-3" aria-readonly="true">
+        <div className="flex items-start gap-3 rounded-xl border-2 border-line bg-wall/60 p-3">
           <Lock className="mt-0.5 h-4 w-4 shrink-0 text-ink-2" aria-hidden="true" />
           <p className="text-[14px] leading-snug text-ink-2">
             <b className="block text-[15px] text-ink">{locked.editionSize ? `Limited edition of ${locked.editionSize}` : "Open edition"}</b>

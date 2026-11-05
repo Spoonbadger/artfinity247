@@ -21,7 +21,7 @@ Other setup guides, linked where they come up:
 - [AUTH_SETUP.md](AUTH_SETUP.md): Google, Apple, Facebook and Instagram sign-in
 - [BILLING_SETUP.md](BILLING_SETUP.md): Stripe Billing for the Infinity plan
 - [MODERATION_SETUP.md](MODERATION_SETUP.md): automatic image checks on upload
-- [IMPORT_SETUP.md](IMPORT_SETUP.md): Import from Google Drive and Dropbox in Studio (being written)
+- [IMPORT_SETUP.md](IMPORT_SETUP.md): Import from Google Drive and Dropbox in Studio
 - [PEXELS_LOCAL_PROMPT.md](PEXELS_LOCAL_PROMPT.md): fetching room photos from Pexels or Pixabay (done on your computer, not on Vercel)
 - [LOCAL_DEV.md](LOCAL_DEV.md): running it on your own computer
 

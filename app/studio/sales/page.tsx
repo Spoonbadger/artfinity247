@@ -146,6 +146,7 @@ export default async function SalesPage({ searchParams }: { searchParams: { mont
               <h2 id="orders-h" className="text-[20px] font-bold">{picked ? `Orders, ${picked.name}` : "Orders"}</h2>
               <span className="num text-[12.5px] text-ink-2">{sales.length}</span>
             </div>
+            <div className="-mx-1 overflow-x-auto px-1">
             <table className="num w-full border-collapse text-[14px]">
               <thead className="sr-only sm:not-sr-only">
                 <tr className="text-left text-[12px] text-ink-2">
@@ -195,6 +196,7 @@ export default async function SalesPage({ searchParams }: { searchParams: { mont
                 })}
               </tbody>
             </table>
+            </div>
           </section>
         </div>
       )}

@@ -137,7 +137,7 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
             <span className="label">New collection</span>
             <input ref={titleRef} id="new-collection" value={newTitle} onChange={(e) => { setNewTitle(e.target.value); if (nameHint) setNameHint(false); }} maxLength={80} placeholder="East River series" aria-describedby={nameHint ? "new-collection-hint" : undefined} />
           </label>
-          <button type="submit" className="btn btn-blue shrink-0 self-stretch px-4" disabled={creating} aria-label="Create collection">
+          <button type="submit" className="btn btn-blue shrink-0 self-stretch px-4" disabled={creating} aria-label="Add collection">
             <Plus className="h-5 w-5" aria-hidden /><span className="hidden sm:inline">Add</span>
           </button>
         </form>

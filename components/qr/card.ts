@@ -14,7 +14,7 @@ export type CtaKey = "buy-painting" | "buy-print" | "scan-buy" | "custom";
 export type PresetKey = "gallery" | "sticker" | "market" | "poster";
 export type EndKey = "never" | "event" | "30";
 
-export const CTAS: [CtaKey, string][] = [["buy-painting", "Buy this painting"], ["buy-print", "Buy a print"], ["scan-buy", "Scan to buy"], ["custom", "Your own"]];
+export const CTAS: [CtaKey, string][] = [["buy-painting", "Take a print home"], ["buy-print", "Buy a print"], ["scan-buy", "Scan to buy"], ["custom", "Your own"]];
 
 type Sheet = { cols: number; rows: number; gx: number; gy: number; note: string };
 export const FORMATS: Record<FormatKey, { name: string; w: number; h: number; sheet: Sheet }> = {
@@ -143,11 +143,6 @@ const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 const n2 = (v: number) => +v.toFixed(2);
 
 // ---------------- shared pieces ----------------
-function qrAt(d: Design, qrText: string, x: number, y: number, size: number, title: string) {
-  return qrSVG(qrText, { fg: d.fg, dots: d.dots, eyes: d.eyes, eyeColor: eyeColor(d), label: esc(`QR code for ${title}`), logo: d.logo })
-    .replace("<svg ", `<svg x="${n2(x)}" y="${n2(y)}" width="${n2(size)}" height="${n2(size)}" `);
-}
-
 /** The Artfinity name, y is the baseline. With the logo in the code the mark is already there, so only the
  *  wordmark is set; without it, the paint-swatch mark leads (not finder-shaped, so scanners ignore it). */
 function brand(f: Fonts, x: number, y: number, size: number, ink: string, anchor: "start" | "middle" = "start", mark = true) {
@@ -163,37 +158,48 @@ function brand(f: Fonts, x: number, y: number, size: number, ink: string, anchor
   }
   return s + text(f.display, "artfinity", x0 + b + gap, y, size, ink) + "</g>";
 }
-const brandWidth = (f: Fonts, size: number, mark = true) => (mark ? size * 1.45 : 0) + width(f.display, "artfinity", size);
 
-/** Die-cut price tag (same shape as lib/qr/render tagSVG), text outlined. w is its width; height is w / 2. */
-function priceTag(f: Fonts, pct: number, fill: string, ink: string, string: string, x: number, y: number, w: number, rot = 0) {
-  const big = `${pct}% OFF`;
-  const bs = Math.min(48, (48 * 126) / width(f.display, big, 48));
-  const sub = "when you scan";
-  const ss = Math.min(15, (15 * 112) / width(f.semi, sub, 15));
-  return `<g transform="translate(${n2(x)} ${n2(y)}) scale(${n2(w / 200)}) rotate(${rot} 0 50)">` +
-    `<path d="M46 50 C 34 30, 20 22, 3 27" fill="none" stroke="${string}" stroke-width="3" stroke-linecap="round"/>` +
-    `<path fill="${fill}" fill-rule="evenodd" stroke="#000" stroke-opacity=".18" stroke-width="1.5" d="M60 4 H189 Q196 4 196 11 V89 Q196 96 189 96 H60 L20 50 Z M46 42 a8 8 0 1 0 0.01 0 Z"/>` +
-    text(f.display, big, 128, 62, bs, ink, "middle") + text(f.semi, sub, 128, 84, ss, ink, "middle") + "</g>";
+/**
+ * The scan discount, drawn the same way on every format: a flat rounded badge, "10% OFF" then "when you scan".
+ * (x, y) is its top-left corner, or its top-center with anchor "middle". Returns the svg and its width.
+ */
+function badge(f: Fonts, pct: number, fill: string, ink: string, x: number, y: number, h: number, maxW: number, anchor: "start" | "middle" = "start") {
+  const big = `${pct}% OFF`, sub = "when you scan";
+  let bs = h * 0.52, ss = h * 0.3;
+  const pad = h * 0.42, gap = h * 0.26;
+  let bw = width(f.display, big, bs), sw = width(f.semi, sub, ss);
+  let w = pad + bw + gap + sw + pad;
+  let withSub = true;
+  if (w > maxW) {
+    // Shrink a little, then drop the small words before anything gets too small to read.
+    const k = Math.max(0.82, (maxW - 2 * pad - gap) / (bw + sw));
+    bs *= k; ss *= k; bw *= k; sw *= k; w = pad + bw + gap + sw + pad;
+    if (w > maxW) { withSub = false; w = pad + bw + pad; }
+  }
+  const x0 = anchor === "middle" ? x - w / 2 : x;
+  const mid = y + h / 2;
+  let s = `<rect x="${n2(x0)}" y="${n2(y)}" width="${n2(w)}" height="${n2(h)}" rx="${n2(h * 0.24)}" fill="${fill}"/>`;
+  s += text(f.display, big, x0 + pad, mid + (capHeight(f.display) * bs) / 2, bs, ink);
+  if (withSub) s += text(f.semi, sub, x0 + pad + bw + gap, mid + (capHeight(f.semi) * ss) / 2, ss, ink);
+  return { svg: s, w };
 }
 
-/** "Title · Artist" on one line, title in semibold. y is the baseline. */
-function who(f: Fonts, art: ArtInfo, x: number, y: number, size: number, maxW: number, ink: string, anchor: "start" | "middle" = "start") {
-  let rest = " · " + art.artist;
-  let title = art.title;
-  const rw = width(f.body, rest, size);
-  if (width(f.semi, title, size) + rw > maxW) {
-    title = fit(f.semi, title, size, Math.max(maxW * 0.55, maxW - rw));
-    rest = fit(f.body, rest, size, maxW - width(f.semi, title, size));
-  }
-  const total = width(f.semi, title, size) + width(f.body, rest, size);
-  const x0 = anchor === "middle" ? x - total / 2 : x;
-  return text(f.semi, title, x0, y, size, ink) + text(f.body, rest, x0 + width(f.semi, title, size), y, size, ink, "start", 0.72);
+type Line = { t: string; font: "semi" | "body"; op: number };
+/** The small print every format shares, in the same order: title, artist, venue, price. */
+function smallPrint(art: ArtInfo, d: Design, ev: string, price: string): Line[] {
+  const out: Line[] = [];
+  if (d.showTitle) { out.push({ t: art.title, font: "semi", op: 1 }); out.push({ t: art.artist, font: "body", op: 0.72 }); }
+  if (ev) out.push({ t: ev, font: "semi", op: 0.72 });
+  if (price) out.push({ t: price, font: "body", op: 0.72 });
+  return out;
 }
 
 export type Card = { inner: string; w: number; h: number; qrPt: number; ctaPt: number; label: string };
 
 // ---------------- faces ----------------
+// One rule for all four: the same margin on every side, measured to the ink (the code is drawn without its own white
+// border, so its dots line up with the words). Landscape label: two columns whose tops and bottoms line up with the
+// code. Sticker, hang tag and poster: everything on one centre line, with equal gaps between the parts.
 export function renderCard(d: Design, art: ArtInfo, f: Fonts, qrText: string, uid = "c"): Card {
   const cta = ctaText(d);
   const ink = d.fg, tagInk = inkOn(d.tag);
@@ -204,132 +210,125 @@ export function renderCard(d: Design, art: ArtInfo, f: Fonts, qrText: string, ui
   const ev = d.evPrint ? d.ev.trim() : "";
   const label = `${FORMATS[d.format].name}: ${cta}.${d.disc ? ` ${d.disc}% off when you scan.` : ""} ${art.title} by ${art.artist}.`;
   const dcap = capHeight(f.display), bcap = capHeight(f.body);
+  const lines = smallPrint(art, d, ev, price);
+  const code = (x: number, y: number, size: number) =>
+    qrSVG(qrText, { fg: d.fg, dots: d.dots, eyes: d.eyes, eyeColor: eyeColor(d), label: esc(`QR code for ${art.title}`), logo: d.logo, quiet: 0 })
+      .replace("<svg ", `<svg x="${n2(x)}" y="${n2(y)}" width="${n2(size)}" height="${n2(size)}" `);
 
   if (d.format === "label") {
-    const W = 252, H = 144, u = W / 100, pad = 5 * u;
-    const Q = 37 * u, qx = W - pad - Q, qy = (H - Q) / 2;
-    const x0 = pad, tw = qx - 4.5 * u - pad;
-    let s = `<rect width="${W}" height="${H}" rx="${n2(2.4 * u)}" fill="${d.bg}"/>` + qrAt(d, qrText, qx, qy, Q, art.title);
-    // footer, bottom up
-    const fs = 3.1 * u, gap = 1.7 * u;
-    let base = H - pad - 0.18 * fs, top = H - pad;
-    if (d.showBrand || price) {
-      const bs = 3.6 * u;
-      if (d.showBrand) s += brand(f, x0, base, bs, ink, "start", !d.logo);
-      if (price) s += text(f.body, price, d.showBrand ? x0 + tw : x0, base, fs, ink, d.showBrand ? "end" : "start", 0.72);
-      top = base - dcap * bs; base = top - gap - 0.18 * fs;
+    // 3.5 × 2 in. Code on the right, as tall as the card allows; words on the left, top and bottom flush with it.
+    const W = 252, H = 144, m = 15, Q = H - 2 * m, qx = W - m - Q, gut = 14;
+    const x0 = m, tw = qx - gut - m;
+    let s = `<rect width="${W}" height="${H}" rx="6" fill="${d.bg}"/>` + code(qx, m, Q);
+    // Bottom group, bottom up: the last baseline sits on the bottom margin.
+    const fs = 7.2, lh = fs * 1.32, bsz = 8;
+    let base = H - m;
+    if (d.showBrand) { s += brand(f, x0, base, bsz, ink, "start", !d.logo); base -= dcap * bsz + fs * 0.85; }
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const L = lines[i];
+      s += text(f[L.font], fit(f[L.font], L.t, fs, tw), x0, base, fs, ink, "start", L.op);
+      if (i) base -= lh;
     }
-    if (ev) { s += text(f.semi, fit(f.semi, ev, fs, tw), x0, base, fs, ink, "start", 0.72); top = base - bcap * fs; base = top - gap - 0.18 * fs; }
-    if (d.showTitle) { s += who(f, art, x0, base, fs, tw, ink); top = base - bcap * fs; }
-    // tag, then the words
-    const tagW = 35 * u;
-    let ctaTop = pad;
-    if (d.disc) { s += priceTag(f, d.disc, d.tag, tagInk, ink, x0 - 0.8 * u, pad - 0.8 * u, tagW, -4); ctaTop = pad + tagW / 2 + 1.8 * u; }
-    const blk = fitBlock(f.display, cta, { max: (d.disc ? 9.8 : 11) * u, min: 4.5 * u, maxW: tw, maxH: top - 3 * u - ctaTop, lh: 0.9, maxLines: 3 });
-    let y = ctaTop + dcap * blk.size;
-    for (const line of blk.lines) { s += text(f.display, line, x0, y, blk.size, ink); y += blk.size * 0.9; }
+    const bottomTop = lines.length ? base - bcap * fs : d.showBrand ? base + fs * 0.85 : H - m;
+    // Top group: the first ink sits on the top margin.
+    let y = m;
+    if (d.disc) { s += badge(f, d.disc, d.tag, tagInk, x0, y, 19, tw).svg; y += 19 + 9; }
+    const blk = fitBlock(f.display, cta, { max: d.disc ? 25 : 30, min: 10, maxW: tw, maxH: bottomTop - 9 - y, lh: 0.92, maxLines: 3 });
+    y += dcap * blk.size;
+    for (const line of blk.lines) { s += text(f.display, line, x0, y, blk.size, ink); y += blk.size * 0.92; }
     return { inner: s, w: W, h: H, qrPt: Q, ctaPt: blk.size, label };
   }
 
   if (d.format === "sticker") {
-    const S = 144, k = S / 200;
-    let s = `<circle cx="100" cy="100" r="99" fill="${d.bg}" stroke="#000" stroke-opacity=".12" stroke-width="1"/>`;
+    // 2 in circle, drawn on a 200 grid. Code dead centre; words over the top and a badge (or the title) under it,
+    // each the same distance from the code.
+    const S = 144, k = S / 200, C = 100, R = 99, Q = 76, half = Q / 2;
+    let s = `<circle cx="${C}" cy="${C}" r="${R}" fill="${d.bg}" stroke="#000" stroke-opacity=".12" stroke-width="1"/>`;
+    s += code(C - half, C - half, Q);
+    // The words ride on a circle just clear of the code's corners; the badge or title under it sits the same
+    // distance from the centre, so the gaps above and below match.
+    const clear = half * Math.SQRT2 + 4;
     const up = cta.toUpperCase();
-    const cs = Math.min(27, (27 * 168) / arcWidth(f.display, up, 27, 0.6));
-    s += arcText(f.display, up, 100, 104, 72, cs, ink, 1, 0.6);
-    s += qrAt(d, qrText, 55, 47, 90, art.title);
-    if (d.disc) s += priceTag(f, d.disc, d.tag, tagInk, ink, 54, 139, 92);
-    else {
-      if (d.showTitle) {
-        // Keep the bottom arc inside the lower quarter so it never touches the code.
-        const maxW = 98;
-        let line = `${art.title} · ${art.artist}`;
-        if (arcWidth(f.semi, line, 9) > maxW) line = art.title;
-        const ts = Math.max(8, Math.min(11, (11 * maxW) / arcWidth(f.semi, line, 11)));
-        s += arcText(f.semi, fit(f.semi, line, ts, maxW), 100, 100, 70, ts, ink, -1, 0, 0.8);
-      }
-      if (d.showBrand) s += d.showTitle ? brand(f, 100, 152, 9.5, ink, "middle", !d.logo) : brand(f, 100, 160, 12, ink, "middle", !d.logo);
+    const cs = Math.min(24, (24 * clear * 2.05) / arcWidth(f.display, up, 24, 0.6), (R - clear - 7) / dcap);
+    s += arcText(f.display, up, C, C, clear, cs, ink, 1, 0.6);
+    if (d.disc) {
+      const bh = 22, top = C + clear - 4, chordHalf = Math.sqrt(R * R - (top + bh - C) ** 2);
+      s += badge(f, d.disc, d.tag, tagInk, C, top, bh, chordHalf * 2 - 8, "middle").svg;
+    } else if (d.showTitle) {
+      const ts = Math.min(12, (R - clear - 7) / capHeight(f.semi));
+      let line = `${art.title} · ${art.artist}`;
+      if (arcWidth(f.semi, line, ts, 0.2) > clear * 2.3) line = art.title;
+      s += arcText(f.semi, fit(f.semi, line, ts, clear * 2.3), C, C, clear + capHeight(f.semi) * ts, ts, ink, -1, 0.2, 0.85);
+    } else if (d.showBrand) {
+      s += brand(f, C, C + clear + dcap * 12, 12, ink, "middle", !d.logo);
     }
-    return { inner: `<g transform="scale(${k})">${s}</g>`, w: S, h: S, qrPt: 90 * k, ctaPt: cs * k, label };
+    return { inner: `<g transform="scale(${k})">${s}</g>`, w: S, h: S, qrPt: Q * k, ctaPt: cs * k, label };
   }
 
   if (d.format === "tag") {
-    const W = 144, H = 252, u = W / 100, side = 8 * u, cw = W - 2 * side;
-    const holeY = 9.5 * u, holeR = 4 * u, SH = d.disc ? 40 * u : 0, stubY = H - SH;
-    let s = `<defs><mask id="qs-m-${uid}" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="#fff"/><circle cx="${W / 2}" cy="${n2(holeY)}" r="${n2(holeR)}" fill="#000"/>` +
-      (d.disc ? `<circle cx="0" cy="${n2(stubY)}" r="${n2(5 * u)}" fill="#000"/><circle cx="${W}" cy="${n2(stubY)}" r="${n2(5 * u)}" fill="#000"/>` : "") + `</mask></defs>`;
-    s += `<g mask="url(#qs-m-${uid})"><rect width="${W}" height="${H}" rx="${n2(6 * u)}" fill="${d.bg}"/>`;
-    if (d.disc) s += `<path d="M0 ${n2(stubY)}H${W}V${H - 6 * u}a${n2(6 * u)} ${n2(6 * u)} 0 0 1 -${n2(6 * u)} ${n2(6 * u)}H${n2(6 * u)}a${n2(6 * u)} ${n2(6 * u)} 0 0 1 -${n2(6 * u)} -${n2(6 * u)}Z" fill="${d.tag}"/>` +
-      `<line x1="0" x2="${W}" y1="${n2(stubY)}" y2="${n2(stubY)}" stroke="${d.bg}" stroke-width="${n2(0.9 * u)}" stroke-dasharray="${n2(2 * u)} ${n2(1.4 * u)}"/>`;
-    s += `</g><circle cx="${W / 2}" cy="${n2(holeY)}" r="${n2(holeR)}" fill="none" stroke="#000" stroke-opacity=".2" stroke-width="${n2(0.7 * u)}"/>`;
+    // 2 × 3.5 in, hole at the top. One centre line; the code as wide as the margins allow.
+    const W = 144, H = 252, m = 14, cw = W - 2 * m, r = 7;
+    const holeY = 17, holeR = 5;
+    const SH = d.disc ? 50 : 0, stubY = H - SH;
+    let s = `<defs><mask id="qs-m-${uid}" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="#fff"/><circle cx="${W / 2}" cy="${holeY}" r="${holeR}" fill="#000"/>` +
+      (d.disc ? `<circle cx="0" cy="${stubY}" r="6" fill="#000"/><circle cx="${W}" cy="${stubY}" r="6" fill="#000"/>` : "") + `</mask></defs>`;
+    s += `<g mask="url(#qs-m-${uid})"><rect width="${W}" height="${H}" rx="${r}" fill="${d.bg}"/>`;
+    if (d.disc) s += `<path d="M0 ${stubY}H${W}V${H - r}a${r} ${r} 0 0 1 -${r} ${r}H${r}a${r} ${r} 0 0 1 -${r} -${r}Z" fill="${d.tag}"/>` +
+      `<line x1="8" x2="${W - 8}" y1="${stubY}" y2="${stubY}" stroke="${d.bg}" stroke-width="1.3" stroke-dasharray="3 2"/>`;
+    s += `</g><circle cx="${W / 2}" cy="${holeY}" r="${holeR}" fill="none" stroke="#000" stroke-opacity=".2" stroke-width="1"/>`;
 
-    const top0 = 15 * u, gap = 4 * u;
-    const ps = 4.8 * u;
-    const limit = d.disc ? stubY - 3 * u : H - 7 * u - (price ? bcap * ps + 3 * u : 0);
-    const bs = 5.6 * u, ws = 5 * u;
-    const brandH = d.showBrand ? dcap * bs + gap : 0;
-    const whoLines = (d.showTitle ? 2 : 0) + (ev ? 1 : 0);
-    const whoH = whoLines ? bcap * ws + (whoLines - 1) * ws * 1.25 + gap : 0;
-    let Q = 68 * u;
-    let avail = limit - top0 - brandH - whoH - Q - gap;
-    const blk = fitBlock(f.display, cta, { max: 15 * u, min: 8 * u, maxW: cw, maxH: Math.max(avail, 10 * u), lh: 0.9, maxLines: 3 });
-    const ch = blockH(f.display, blk.lines.length, blk.size, 0.9);
-    if (ch > avail) { Q = Math.max(54 * u, Q - (ch - avail)); avail = limit - top0 - brandH - whoH - Q - gap; }
-    const extra = Math.max(0, avail - ch) / (whoLines ? 4 : 3);
-    let y = top0 + extra * 0.5;
-    if (d.showBrand) { y += dcap * bs; s += brand(f, W / 2, y, bs, ink, "middle", !d.logo); y += gap + extra * 0.5; }
+    // The stack: [brand] · words · code · small print, centred in the space between the hole and the bottom.
+    const top = holeY + holeR + 10, bottom = (d.disc ? stubY : H) - m;
+    const fs = 7.4, lh = fs * 1.32, bsz = 8, gap = 10;
+    const brandH = d.showBrand ? dcap * bsz : 0;
+    const textH = lines.length ? bcap * fs + (lines.length - 1) * lh : 0;
+    const parts = (d.showBrand ? 1 : 0) + 2 + (lines.length ? 1 : 0);
+    let Q = cw;
+    const fixed = brandH + textH + gap * (parts - 1);
+    let blk = fitBlock(f.display, cta, { max: 22, min: 11, maxW: cw, maxH: 44, lh: 0.92, maxLines: 2 });
+    let ch = blockH(f.display, blk.lines.length, blk.size, 0.92);
+    Q = Math.min(cw, bottom - top - fixed - ch);
+    if (Q < 70) { blk = fitBlock(f.display, cta, { max: 15, min: 10, maxW: cw, maxH: 30, lh: 0.92, maxLines: 2 }); ch = blockH(f.display, blk.lines.length, blk.size, 0.92); Q = Math.min(cw, bottom - top - fixed - ch); }
+    const used = fixed + ch + Q;
+    let y = top + (bottom - top - used) / 2;
+    if (d.showBrand) { y += brandH; s += brand(f, W / 2, y, bsz, ink, "middle", !d.logo); y += gap; }
     y += dcap * blk.size;
-    for (const line of blk.lines) { s += text(f.display, line, W / 2, y, blk.size, ink, "middle"); y += blk.size * 0.9; }
-    y += -blk.size * 0.9 + gap + extra;
-    s += qrAt(d, qrText, (W - Q) / 2, y, Q, art.title);
-    y += Q + gap + extra;
-    if (whoLines) {
-      y += bcap * ws - ws * 1.25;
-      if (d.showTitle) {
-        y += ws * 1.25; s += text(f.semi, fit(f.semi, art.title, ws, cw), W / 2, y, ws, ink, "middle");
-        y += ws * 1.25; s += text(f.body, fit(f.body, art.artist, ws, cw), W / 2, y, ws, ink, "middle", 0.72);
-      }
-      if (ev) { y += ws * 1.25; s += text(f.semi, fit(f.semi, ev, ws, cw), W / 2, y, ws, ink, "middle", 0.72); }
-    }
+    blk.lines.forEach((line, i) => { s += text(f.display, line, W / 2, y, blk.size, ink, "middle"); if (i < blk.lines.length - 1) y += blk.size * 0.92; });
+    y += gap;
+    s += code((W - Q) / 2, y, Q);
+    y += Q + gap;
+    lines.forEach((L, i) => { y += i ? lh : bcap * fs; s += text(f[L.font], fit(f[L.font], L.t, fs, cw), W / 2, y, fs, ink, "middle", L.op); });
     if (d.disc) {
-      const ns = 27 * u, os = 12 * u, num = `${d.disc}%`;
-      const nw = width(f.display, num, ns), ow = width(f.display, "OFF", os), gapO = 0.06 * ns;
-      const x0 = W / 2 - (nw + gapO + ow) / 2, nb = stubY + 6 * u + dcap * ns;
-      s += text(f.display, num, x0, nb, ns, tagInk) + text(f.display, "OFF", x0 + nw + gapO, nb, os, tagInk);
-      s += text(f.semi, "when you scan this code", W / 2, H - 7 * u - 0.15 * ws, ws, tagInk, "middle");
-    } else if (price) s += text(f.body, price, W / 2, H - 7 * u, ps, ink, "middle", 0.72);
+      // The stub: "10% OFF" and "when you scan", centred, same margins as above.
+      const ns = 26, num = `${d.disc}% OFF`, ss = 7.4;
+      const nh = dcap * ns, sh = bcap * ss, g2 = 6;
+      const yy = stubY + (SH - (nh + g2 + sh)) / 2;
+      s += text(f.display, fit(f.display, num, ns, cw), W / 2, yy + nh, ns, tagInk, "middle");
+      s += text(f.semi, "when you scan this code", W / 2, yy + nh + g2 + sh, ss, tagInk, "middle");
+    }
     return { inner: s, w: W, h: H, qrPt: Q, ctaPt: blk.size, label };
   }
 
-  // poster: words, then the tag, then a big code, then the small print
-  const W = 612, H = 792, u = W / 100, pad = 8 * u, cw = W - 2 * pad;
+  // poster, 8.5 × 11 in: one centre line, ¾ in margins. Words · [badge] · code · small print, then the name at the foot.
+  const W = 612, H = 792, m = 54, cw = W - 2 * m;
   let s = `<rect width="${W}" height="${H}" fill="${d.bg}"/>`;
-  // bottom block first, so the rest can share what is left
-  const ws = 3.6 * u, lh = ws * 1.32, bsz = 4.4 * u;
-  const brandW = d.showBrand ? brandWidth(f, bsz, !d.logo) + 4 * u : 0;
-  const lines: [string, "semi" | "body", number][] = [];
-  if (d.showTitle) { lines.push([art.title, "semi", 1]); lines.push([art.artist, "body", 0.72]); }
-  if (ev) lines.push([ev, "body", 0.72]);
-  if (price) lines.push([price, "body", 0.72]);
-  const lastBase = H - pad - 0.2 * ws;
-  lines.forEach(([t, fk, op], i) => {
-    const fy = lastBase - (lines.length - 1 - i) * lh;
-    s += text(f[fk], fit(f[fk], t, ws, cw - brandW), pad, fy, ws, ink, "start", op);
-  });
-  if (d.showBrand) s += brand(f, W - pad - brandWidth(f, bsz, !d.logo), H - pad - 0.2 * bsz, bsz, ink, "start", !d.logo);
-  const bottomTop = lines.length ? lastBase - (lines.length - 1) * lh - bcap * ws : H - pad - (d.showBrand ? dcap * bsz : 0);
-  const gap = 4.5 * u, tagW = 46 * u, tagH = d.disc ? tagW / 2 : 0;
-  let Q = 56 * u;
-  const room = bottomTop - pad - gap * (d.disc ? 3 : 2) - tagH;
-  const blk = fitBlock(f.display, cta, { max: 17 * u, min: 9 * u, maxW: cw, maxH: Math.min(34 * u, room - 48 * u), lh: 0.9, maxLines: 3 });
-  const ch = blockH(f.display, blk.lines.length, blk.size, 0.9);
-  Q = Math.max(40 * u, Math.min(Q, room - ch));
-  const extra = Math.max(0, room - ch - Q) / (d.disc ? 4 : 3);
-  let y = pad + dcap * blk.size;
-  for (const line of blk.lines) { s += text(f.display, line, pad, y, blk.size, ink); y += blk.size * 0.9; }
-  y += -blk.size * 0.9 + gap + extra;
-  if (d.disc) { s += priceTag(f, d.disc, d.tag, tagInk, ink, pad - 1.5 * u, y - 1 * u, tagW, -4); y += tagH + gap + extra; }
-  s += qrAt(d, qrText, (W - Q) / 2, y, Q, art.title);
+  const fs = 21, lh = fs * 1.32, bsz = 24, gap = 30, bh = 64;
+  const brandH = d.showBrand ? dcap * bsz : 0;
+  const textH = lines.length ? bcap * fs + (lines.length - 1) * lh : 0;
+  const blk = fitBlock(f.display, cta, { max: 96, min: 48, maxW: cw, maxH: 190, lh: 0.92, maxLines: 2 });
+  const ch = blockH(f.display, blk.lines.length, blk.size, 0.92);
+  const parts = 2 + (d.disc ? 1 : 0) + (lines.length ? 1 : 0) + (d.showBrand ? 1 : 0);
+  const fixed = ch + (d.disc ? bh : 0) + textH + brandH + gap * (parts - 1);
+  const Q = Math.min(cw * 0.78, H - 2 * m - fixed);
+  let y = m + (H - 2 * m - fixed - Q) / 2;
+  y += dcap * blk.size;
+  blk.lines.forEach((line, i) => { s += text(f.display, line, W / 2, y, blk.size, ink, "middle"); if (i < blk.lines.length - 1) y += blk.size * 0.92; });
+  y += gap;
+  if (d.disc) { s += badge(f, d.disc, d.tag, tagInk, W / 2, y, bh, cw, "middle").svg; y += bh + gap; }
+  s += code((W - Q) / 2, y, Q);
+  y += Q + gap;
+  lines.forEach((L, i) => { y += i ? lh : bcap * fs; s += text(f[L.font], fit(f[L.font], L.t, fs, cw), W / 2, y, fs, ink, "middle", L.op); });
+  if (d.showBrand) s += brand(f, W / 2, H - m, bsz, ink, "middle", !d.logo);
   return { inner: s, w: W, h: H, qrPt: Q, ctaPt: blk.size, label };
 }
 
@@ -372,7 +371,8 @@ export function sheetSVG(c: Card, fmt: FormatKey, uid = "s") {
 // ---------------- scan maths ----------------
 export function scanNumbers(c: Card, qrText: string, f: Fonts, logo = false) {
   const n = qrMatrix(qrText, logo ? "H" : "M").length;
-  const qrIn = c.qrPt / 72, modIn = qrIn / (n + 4), codeIn = modIn * n;
+  // qrPt is the code's own size (drawn without a white border; the card's margin is the quiet zone).
+  const qrIn = c.qrPt / 72, modIn = qrIn / n, codeIn = qrIn;
   const capIn = (c.ctaPt * capHeight(f.display)) / 72;
   return { n, modMm: modIn * 25.4, codeIn, scanCm: codeIn * 2.54 * 10, readM: capIn * 3.05 };
 }

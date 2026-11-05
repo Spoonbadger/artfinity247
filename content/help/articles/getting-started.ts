@@ -88,6 +88,9 @@ Have a stack of paintings to get online? You don't need a separate tool. The nor
 4. Fill in the first painting: the title is already filled in from the file name ("east_river-late.jpg" becomes "East River Late"), so check it and set your prices.
 5. Press **Publish and next**. You see straight away whether it's live or in review, and the next painting opens.
 
+## From Google Drive or Dropbox
+Under the drop zone, press **Google Drive** or **Dropbox** and pick your paintings (in Google Drive you can pick a whole folder). They join the same batch and import in the background: you'll see "Importing 3 of 12…", then "12 pieces added". If a file can't come in, it says why with a fix, like **Pick it again** for a Dropbox link that has expired.
+
 ## Same as last one
 Each new painting starts with the prices, print run (open or limited edition) and sensitive labels of the one before it, so a batch priced the same way takes a few clicks. Change anything on a painting and it only changes that one.
 
