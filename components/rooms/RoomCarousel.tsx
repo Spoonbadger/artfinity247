@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ROOM_SIZE_IN, printBox, type RoomFrame, type RoomSize } from "@/lib/rooms";
 import { photoScene, sceneLabel, scenesForArt } from "@/lib/scenes/client";
 import { cn } from "@/lib/utils";
@@ -34,6 +34,8 @@ export default function RoomCarousel({ artwork, size, frame, mat = true, landsca
   const scenes = useMemo(() => (override && override.length ? override : scenesForArt(artwork)), [override, artwork]);
   const aspect = useImageAspect(artwork.imageUrl, landscape === undefined ? null : landscape ? 1.4 : 0.75);
   const track = useRef<HTMLDivElement>(null);
+  const dots = useRef<(HTMLButtonElement | null)[]>([]);
+  const uid = "rc" + useId().replace(/[^a-zA-Z0-9]/g, "");
   const [cur, setCur] = useState(0);
   const [ready, setReady] = useState(false);
   const [seen, setSeen] = useState<Set<number>>(() => new Set());
@@ -120,6 +122,8 @@ export default function RoomCarousel({ artwork, size, frame, mat = true, landsca
       <div
         ref={track}
         onScroll={onScroll}
+        role="region"
+        aria-label={`Rooms for ${artwork.title}`}
         tabIndex={0}
         className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain outline-none [scrollbar-width:none] focus-visible:ring-2 focus-visible:ring-scan [&::-webkit-scrollbar]:hidden"
       >
@@ -127,7 +131,8 @@ export default function RoomCarousel({ artwork, size, frame, mat = true, landsca
           <div
             key={`${n}-${i}`}
             className="aspect-[5/4] w-full shrink-0 snap-center snap-always"
-            role="group"
+            id={`${uid}-p${i}`}
+            role="tabpanel"
             aria-roledescription="slide"
             aria-label={`${i + 1} of ${scenes.length}: ${sceneLabel(n)}`}
             aria-hidden={i !== cur}
@@ -164,9 +169,9 @@ export default function RoomCarousel({ artwork, size, frame, mat = true, landsca
         </span>
       </figcaption>
       {photo?.credit && (
-        <p className="absolute bottom-11 left-2.5 max-w-[70%] truncate rounded bg-black/35 px-1.5 py-0.5 text-[10.5px] leading-tight text-white/90 sm:left-3">
+        <p className="absolute bottom-11 left-2.5 max-w-[70%] truncate rounded-full bg-white/95 px-2 py-0.5 text-[12px] leading-tight text-ink-2 shadow-[0_1px_3px_rgba(21,22,27,.18)] sm:left-3">
           {photo.url ? (
-            <a href={photo.url} target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">
+            <a href={photo.url} target="_blank" rel="noopener noreferrer" className="underline decoration-ink-2/40 underline-offset-2 hover:text-ink">
               {photo.credit}
             </a>
           ) : (
@@ -193,16 +198,34 @@ export default function RoomCarousel({ artwork, size, frame, mat = true, landsca
           >
             <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden><path d="M7.5 4.5 13 10l-5.5 5.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
-          <div className="absolute inset-x-0 top-2.5 flex justify-center gap-1.5" role="tablist" aria-label="Rooms">
+          <div
+            className="absolute inset-x-0 top-2.5 flex justify-center gap-1.5"
+            role="tablist"
+            aria-label="Rooms"
+            onKeyDown={(e) => {
+              const k = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+              if (!k) return;
+              e.preventDefault();
+              e.stopPropagation();
+              const i = (cur + k + scenes.length) % scenes.length;
+              go(k);
+              dots.current[i]?.focus();
+            }}
+          >
             {scenes.map((n, i) => (
               <button
                 key={`d${n}-${i}`}
+                ref={(el) => {
+                  dots.current[i] = el;
+                }}
                 type="button"
                 role="tab"
                 aria-selected={i === cur}
+                aria-controls={`${uid}-p${i}`}
+                tabIndex={i === cur ? 0 : -1}
                 aria-label={`Room ${i + 1}: ${sceneLabel(n)}`}
                 onClick={() => go(i - cur)}
-                className="grid h-5 w-5 place-items-center"
+                className="grid h-6 w-6 place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-scan"
               >
                 <span className={cn("block h-1.5 rounded-full shadow-[0_0_0_1px_rgba(21,22,27,.15)] transition-all", i === cur ? "w-4 bg-white" : "w-1.5 bg-white/60")} />
               </button>

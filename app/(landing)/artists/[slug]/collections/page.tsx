@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import SiteHeader from "@/components/site/SiteHeader";
-import { artistPath } from "@/lib/urls";
 import { prisma } from "@/lib/prisma";
 import CollectionsTab from "@/components/collections/CollectionsTab";
 import { getPublicCollections } from "@/components/collections/data";
@@ -34,8 +32,7 @@ export default async function ArtistCollectionsPage({ params }: Props) {
       <ViewBeacon artistId={artist.id} />
     <div className="mx-auto grid max-w-[1240px] gap-8 px-4 pb-20 pt-8 sm:px-6 sm:pt-14">
       <header>
-        <Link href={artistPath(artist.slug)} className="text-[15px] font-bold text-ink hover:underline">{name}</Link>
-        <h1 className="display mt-2 text-[52px] sm:text-[80px]">Collections</h1>
+        <h1 className="display text-[52px] sm:text-[80px]">Collections</h1>
         <BrushStroke className="mt-1 h-3 w-44" />
       </header>
       <CollectionsTab artistSlug={artist.slug} collections={collections} />

@@ -2,15 +2,23 @@ import * as React from "react";
 
 type Item = {
   title: string;
+  /** Friendly size, e.g. "Medium · 8 × 12 in" (lib/orderText.ts). */
   size: string;
   quantity: number;
   imageUrl: string | null;
+  artist?: string | null;
 };
+
+// Artfinity's paint: ink, Scan Blue.
+const INK = "#15161b";
+const INK2 = "#5a5d6b";
+const BLUE = "#2b37f0";
+const LINE = "#e1e2da";
 
 export default function ShippingStatusEmail({
   name,
   status,
-  orderId,
+  code,
   items,
   tracking,
   helpUrl,
@@ -18,7 +26,8 @@ export default function ShippingStatusEmail({
 }: {
   name: string;
   status: "shipped" | "delivered";
-  orderId: string;
+  /** The short order code shown on the thank-you page and in the receipt. */
+  code: string;
   items: Item[];
   tracking?: { carrier: string; number: string; url: string | null } | null;
   /** Signed link to report a damaged or wrong print (lib/reprints.ts). */
@@ -26,50 +35,35 @@ export default function ShippingStatusEmail({
   /** Limited-edition prints: signed links to their certificates of authenticity (lib/certificates.ts). */
   certificates?: { title: string; url: string }[];
 }) {
+  const artists = Array.from(new Set(items.map((i) => i.artist).filter(Boolean))) as string[];
   return (
-    <div style={{ fontFamily: "ui-sans-serif, system-ui", color: "#222" }}>
-      <h2 style={{ color: "#b05c5c" }}>
-        {status === "shipped"
-          ? "Your Artfinity order has shipped!"
-          : "Your Artfinity order was delivered!"}
-      </h2>
+    <div style={{ fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif", color: INK, maxWidth: 560 }}>
+      <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: INK2 }}>Order {code}</p>
+      <h1 style={{ margin: "6px 0 12px", fontSize: 26, lineHeight: 1.15 }}>{status === "shipped" ? "Your print is on its way" : "Your print was delivered"}</h1>
 
-      <p>Hi {name},</p>
-
-      <p>
-        Order reference: <strong>{orderId}</strong>
-      </p>
-
-      <hr style={{ margin: "16px 0" }} />
+      <p style={{ margin: "0 0 16px" }}>Hi {name},</p>
 
       {items.map((item, i) => (
-        <div key={i} style={{ marginBottom: 16 }}>
-          {item.imageUrl && (
-            <img
-              src={item.imageUrl}
-              alt={item.title}
-              style={{ width: 120, borderRadius: 6 }}
-            />
-          )}
-          <div style={{ marginTop: 6 }}>
-            <strong>{item.title}</strong><br />
-            Size: {item.size} • Qty: {item.quantity}
+        <div key={i} style={{ display: "flex", gap: 12, padding: "10px 0", borderTop: i ? `1px solid ${LINE}` : "none" }}>
+          {item.imageUrl && <img src={item.imageUrl} alt="" width={48} height={60} style={{ objectFit: "cover", borderRadius: 2, border: `1px solid ${LINE}` }} />}
+          <div>
+            <strong>{item.title}</strong>
+            {item.artist ? <div style={{ fontSize: 13, color: INK2 }}>by {item.artist}</div> : null}
+            <div style={{ fontSize: 13, color: INK2 }}>{[item.size, item.quantity > 1 ? `× ${item.quantity}` : null].filter(Boolean).join(" · ")}</div>
           </div>
         </div>
       ))}
 
-      <hr style={{ margin: "16px 0" }} />
-
       {status === "shipped" ? (
         <>
-          <p>Your print is on its way and should arrive soon.</p>
+          <p style={{ margin: "16px 0 0" }}>It&apos;s packed and with the carrier, and should arrive in a few days.</p>
           {tracking && (
-            <p>
+            <p style={{ margin: "12px 0 0" }}>
               <strong>{tracking.carrier} tracking:</strong> {tracking.number}
               {tracking.url && (
                 <>
                   <br />
-                  <a href={tracking.url} style={{ display: "inline-block", marginTop: 8, padding: "10px 14px", borderRadius: 6, background: "#2b37f0", color: "#fff", textDecoration: "none" }}>
+                  <a href={tracking.url} style={{ display: "inline-block", marginTop: 8, padding: "10px 16px", borderRadius: 999, background: BLUE, color: "#fff", fontWeight: 600, textDecoration: "none" }}>
                     Track your package
                   </a>
                 </>
@@ -78,31 +72,25 @@ export default function ShippingStatusEmail({
           )}
         </>
       ) : (
-        <p>Your print has been delivered. We hope you love it.</p>
+        <p style={{ margin: "16px 0 0" }}>We hope you love it.</p>
       )}
 
       {certificates.map((c) => (
-        <p key={c.url} style={{ marginTop: 12 }}>
+        <p key={c.url} style={{ margin: "12px 0 0" }}>
           <strong>{c.title}</strong> is a numbered limited edition.{" "}
-          <a href={c.url} style={{ color: "#2b37f0", fontWeight: 600 }}>Print its certificate of authenticity</a>
+          <a href={c.url} style={{ color: BLUE, fontWeight: 600 }}>Print its certificate of authenticity</a>
         </p>
       ))}
 
       {helpUrl && (
-        <p style={{ marginTop: 16, fontSize: 14, color: "#5b5d66" }}>
+        <p style={{ margin: "16px 0 0", fontSize: 14, color: INK2 }}>
           Arrived damaged or not quite right?{" "}
-          <a href={helpUrl} style={{ color: "#2b37f0", fontWeight: 600 }}>Problem with your print?</a>{" "}
-          Send a photo within 14 days and we reprint it free.
+          <a href={helpUrl} style={{ color: BLUE, fontWeight: 600 }}>Send us a photo</a> within 14 days and we reprint it free.
         </p>
       )}
 
-      <p style={{ marginTop: 16 }}>
-        Thank you for supporting independent artists.
-      </p>
-
-      <p style={{ marginTop: 16 }}>
-        — Artfinity
-      </p>
+      <p style={{ margin: "16px 0 0" }}>Thank you for supporting {artists.length ? artists.join(" and ") : "independent artists"}.</p>
+      <p style={{ margin: "16px 0 0", fontSize: 14 }}>— Artfinity</p>
     </div>
-  )
+  );
 }

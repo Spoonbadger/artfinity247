@@ -8,6 +8,7 @@ import { trackingText, type Tracking } from "@/lib/tracking"
 import { getTracking } from "@/lib/shipping/store"
 import { helpLine, helpUrl } from "@/lib/reprints"
 import { certLines, certLinksFor } from "@/lib/certificates"
+import { friendlySize, orderCode } from "@/lib/orderText"
 
 /** Latest tracking saved on the order (the tracking columns, else the older Message), or null. */
 export async function latestTracking(orderId: string): Promise<Tracking | null> {
@@ -23,7 +24,7 @@ export async function sendShippingEmail(orderId: string, status: "shipped" | "de
     where: { id: orderId },
     select: {
       id: true, email: true, shippingName: true,
-      items: { select: { title: true, size: true, quantity: true, imageUrl: true } },
+      items: { select: { title: true, size: true, quantity: true, imageUrl: true, artwork: { select: { artist: { select: { name: true, artist_name: true } } } } } },
     },
   })
   if (!order) throw new Error("Order not found")
@@ -37,12 +38,18 @@ export async function sendShippingEmail(orderId: string, status: "shipped" | "de
   const { error } = await resend.emails.send({
     from: "Artfinity <notifications@theartfinity.com>",
     to: order.email || "",
-    subject: status === "shipped" ? "Your Artfinity order has shipped!" : "Your Artfinity order was delivered!",
+    subject: status === "shipped" ? `Your Artfinity order ${orderCode(order.id)} has shipped` : `Your Artfinity order ${orderCode(order.id)} was delivered`,
     react: ShippingStatusEmail({
       name: order.shippingName || "Customer",
       status,
-      orderId: order.id,
-      items: order.items.map((i) => ({ title: i.title ?? "Untitled", size: i.size ?? "", quantity: i.quantity ?? 1, imageUrl: i.imageUrl ?? null })),
+      code: orderCode(order.id),
+      items: order.items.map((i) => ({
+        title: i.title ?? "Untitled",
+        size: friendlySize(i.size) ?? "",
+        quantity: i.quantity ?? 1,
+        imageUrl: i.imageUrl ?? null,
+        artist: i.artwork?.artist ? i.artwork.artist.artist_name || i.artwork.artist.name : null,
+      })),
       tracking,
       helpUrl: helpUrl(order.id),
       certificates,

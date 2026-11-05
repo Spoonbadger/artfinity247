@@ -5,8 +5,9 @@ import Link from "next/link";
 
 /**
  * Small cookie notice: a slim strip at the bottom on phones, a small pill in the bottom-left corner on wider screens.
- * Pages with a sticky bottom bar (the scan page's buy bar) set `--af-bottom-bar` on :root;
- * there it docks on top of the bar and waits for the first scroll, so the title and price stay clear on load.
+ * Pages with a sticky bottom bar (the scan page's buy bar) set `--af-bottom-bar` on :root and it docks on top of the bar.
+ * There, and on pages that set `--af-cookie-wait` (painting, cart), it waits for the first scroll, so the title, price
+ * and buttons stay clear on load.
  */
 export default function CookieBanner() {
   const [visible, setVisible] = useState(false);
@@ -15,8 +16,9 @@ export default function CookieBanner() {
     try {
       if (localStorage.getItem("cookieConsent") === "accepted") return;
     } catch {}
-    const bar = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--af-bottom-bar")) || 0;
-    if (!bar || window.scrollY > 80) {
+    const css = getComputedStyle(document.documentElement);
+    const wait = (parseFloat(css.getPropertyValue("--af-bottom-bar")) || 0) > 0 || css.getPropertyValue("--af-cookie-wait").trim() === "1";
+    if (!wait || window.scrollY > 80) {
       setVisible(true);
       return;
     }

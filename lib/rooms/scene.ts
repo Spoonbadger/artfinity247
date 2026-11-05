@@ -383,7 +383,7 @@ function drawLight(c: Ctx, r: Rng, roll: Roll, crop: { x: number; y: number; w: 
     // the ceiling and the corners. Warm rather than grey-violet so pale fabrics and walls don't go lilac.
     const ay = hang.base != null ? Y(hang.base + 12) : Y(hang.center ?? 58);
     c.defs.push(
-      `<radialGradient id="${ID}eve" gradientUnits="userSpaceOnUse" cx="${f(hang.cx)}" cy="${f(ay)}" r="${f(crop.w * 0.85)}"><stop offset="0" stop-color="#efe1cc"/><stop offset=".35" stop-color="#d6c3ad"/><stop offset=".75" stop-color="#b09d8d"/><stop offset="1" stop-color="#94847a"/></radialGradient>`,
+      `<radialGradient id="${ID}eve" gradientUnits="userSpaceOnUse" cx="${f(hang.cx)}" cy="${f(ay)}" r="${f(crop.w * 0.85)}"><stop offset="0" stop-color="#f6ecdc"/><stop offset=".35" stop-color="#e3d2bd"/><stop offset=".75" stop-color="#c2ae9b"/><stop offset="1" stop-color="#a59383"/></radialGradient>`,
       `<linearGradient id="${ID}evc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a130d" stop-opacity=".22"/><stop offset=".4" stop-color="#1a130d" stop-opacity="0"/></linearGradient>`,
     );
     out.push(rect(X0, top, W, H, `url(#${ID}eve)`, ` style="mix-blend-mode:multiply"`), rect(X0, top, W, H, `url(#${ID}evc)`));

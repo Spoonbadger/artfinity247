@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { orderCode } from "@/lib/orderText";
 import Link from "next/link";
 import { useCart } from "@/components/contexts";
 import { BrushStroke } from "@/components/af/Brush";
@@ -96,23 +97,23 @@ export default function ThankYouClient({ sessionId }: { sessionId: string }) {
   const first = order.items[0];
   const firstImg = first?.artwork?.imageUrl || first?.imageUrl;
   const artist = first?.artwork?.artist;
-  const code = order.id.slice(-6).toUpperCase();
+  const code = orderCode(order.id);
   const count = order.items.reduce((n, it) => n + (it.quantity || 1), 0);
 
   return (
-    <div className="mx-auto grid max-w-[880px] gap-8 px-4 py-8 sm:px-6 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)] md:items-center md:gap-12 md:py-14">
+    <div className="mx-auto grid max-w-[880px] gap-5 px-4 py-6 sm:px-6 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)] md:gap-x-12 md:gap-y-5 md:py-14">
       <title>Thank you · Artfinity</title>
       {firstImg && (
-        <div className="rounded-[22px] bg-gallery bg-[radial-gradient(ellipse_at_50%_0%,#f7f5f0_0%,#e9e6df_70%)] px-[14%] py-[10%]">
+        <div className="rounded-[22px] bg-gallery bg-[radial-gradient(ellipse_at_50%_0%,#f7f5f0_0%,#e9e6df_70%)] px-[14%] py-[8%] md:col-start-1 md:row-span-2 md:row-start-1 md:self-center md:py-[10%]">
           <div className="mx-auto w-fit rotate-[-1.5deg] bg-white p-2 shadow-[0_18px_40px_-12px_rgba(21,22,27,.45)]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={firstImg} alt={first?.artwork?.title || first?.title || "Your print"} className="block max-h-[38vh] w-auto md:max-h-[52vh]" />
+            <img src={firstImg} alt={first?.artwork?.title || first?.title || "Your print"} className="block max-h-[30vh] w-auto md:max-h-[52vh]" />
           </div>
         </div>
       )}
 
-      <div className="grid content-start gap-5">
-        <div>
+      {/* phones: "It's yours" and the arrival date come first, above the picture */}
+      <div className="order-first md:order-none md:col-start-2 md:row-start-1 md:self-end">
           <span className="sticker-badge">Order {code}</span>
           <h1 className="display relative mt-3 text-[48px] md:text-[64px]">
             It&apos;s yours
@@ -121,7 +122,9 @@ export default function ThankYouClient({ sessionId }: { sessionId: string }) {
           <p className="mt-2 text-[17px] text-ink-2">
             {count > 1 ? "We're printing them now." : "We're printing it now."} Arrives {deliveryRange()}.
           </p>
-        </div>
+      </div>
+
+      <div className="grid content-start gap-5 md:col-start-2 md:row-start-2">
 
         <ul className="divide-y divide-line rounded-2xl border border-line bg-white px-4">
           {order.items.map((it) => (
@@ -169,7 +172,7 @@ export default function ThankYouClient({ sessionId }: { sessionId: string }) {
         {artist?.name && <p className="text-[13.5px] text-ink-2">{artist.name} gets 60% of the profit from this sale.</p>}
         {order.helpPath && (
           <p className="text-[14px] text-ink-2">
-            Arrived damaged or not quite right? <Link href={order.helpPath} className="font-semibold text-ink underline underline-offset-4">Problem with your print?</Link>
+            Arrived damaged or not quite right? <Link href={order.helpPath} className="font-semibold text-ink underline underline-offset-4">Tell us and we&apos;ll fix it</Link>
           </p>
         )}
       </div>

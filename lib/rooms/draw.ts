@@ -74,11 +74,18 @@ export function addLight(c: Ctx, x: number, y: number, r: number, a = 0.55) {
 
 // ---------- seating ----------
 export type SofaStyle = "track" | "round" | "low" | "camel" | "tufted";
+/** Keep upholstery readable against the wall: a fabric within `min` luminance of the wall is nudged away from it. */
+function offWall(c: Ctx, col: string, min = 0.1) {
+  const wl = lum(c.pal.wall);
+  return Math.abs(lum(col) - wl) >= min ? col : shade(col, wl > 0.5 ? -min * 1.6 : min * 1.4);
+}
+
 export function sofa(
   c: Ctx,
   o: { x0: number; w: number; color: string; style: SofaStyle; legs?: string | null; cushions?: number; pillows?: string[]; throwColor?: string | null; depth?: number },
 ) {
-  const { x0, w, color, style } = o;
+  const { x0, w, style } = o;
+  const color = offWall(c, o.color);
   const x1 = x0 + w;
   const D = o.depth ?? 36;
   const back = style === "low" ? 27 : style === "camel" ? 33 : 31;

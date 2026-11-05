@@ -4,7 +4,8 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, Search, ShoppingBag, X } from "lucide-react";
-import Logo, { LogoMark } from "@/components/af/Logo";
+import Logo from "@/components/af/Logo";
+import FollowButton from "@/components/follow/FollowButton";
 import { useCart, useUser } from "@/components/contexts";
 import { cn } from "@/lib/utils";
 import { artistPath } from "@/lib/urls";
@@ -16,9 +17,19 @@ const LINKS = [
   { href: "/pricing", label: "Pricing" },
 ];
 
-/** On an artist's pages the artist's name takes the wordmark's place. */
-export type HeaderBrand = { handle: string; name: string; avatar: string | null };
-
+/**
+ * On an artist's painting and collection pages the artist is the star: a slim Artfinity bar, then a band with the
+ * artist's name and Follow, in their page accent (Artist.pageTheme).
+ */
+export type HeaderBrand = {
+  handle: string;
+  name: string;
+  avatar: string | null;
+  /** The artist's page accent; Scan Blue when they haven't picked one. */
+  accent?: { color: string; ink: string; soft: string } | null;
+  /** The artist (or an admin) looking at their own piece: a small "Your piece · QR code" chip instead of Follow. */
+  owner?: { href: string; note?: string | null } | null;
+};
 // An artist's storefront pages (/@handle, /@handle/art/…, /@handle/collections…) render their own header,
 // so the layout's copy steps aside there. (On the server the path may be the rewritten /artists/handle form.)
 const STOREFRONT = /^\/(@|artists\/)[^/]+(\/(art|collections)(\/.*)?)?\/?$/;
@@ -30,25 +41,52 @@ function isStorefront(pathname: string | null) {
 
 const DABS = ["#f7c8a8", "#b8c4ff", "#ffd43b", "#a8dcc4", "#f5b3c8"];
 
-function ArtistBrand({ brand }: { brand: HeaderBrand }) {
+function ArtistBand({ brand }: { brand: HeaderBrand }) {
   const href = artistPath(brand.handle);
   const initials = brand.name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("");
+  const firstName = brand.name.split(" ")[0] || brand.name;
+  // the artist's page accent; Ultramarine (Scan Blue) like the artist page's default theme
+  const accent = brand.accent ?? { color: "#2b37f0", ink: "#ffffff", soft: "#e6e8ff" };
   return (
-    <div className="flex min-w-0 items-center gap-2.5">
-      <Link href={href} tabIndex={-1} aria-hidden="true" className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-full bg-gallery shadow-[0_0_0_2px_#fff,0_0_0_3.5px_var(--af-line)] sm:h-11 sm:w-11">
-        {brand.avatar ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={brand.avatar} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <span className="grid h-full w-full place-items-center font-display text-[15px] font-extrabold text-ink" style={{ background: DABS[(brand.name.charCodeAt(0) || 0) % DABS.length] }}>{initials}</span>
-        )}
-      </Link>
-      <div className="grid min-w-0 gap-1">
-        <Link href={href} className="display truncate pb-0.5 text-[22px] leading-none text-ink no-underline hover:text-scan sm:text-[25px]">{brand.name}</Link>
-        <Link href="/" className="inline-flex w-fit items-center gap-1 text-[11.5px] font-semibold leading-none text-ink-2 no-underline hover:text-scan">
-          <LogoMark className="h-3.5 w-3.5" />
-          on Artfinity
+    <div
+      className="z-30 border-b border-line md:sticky md:top-0"
+      style={{ background: accent.soft, ["--accent" as string]: accent.color, ["--accent-ink" as string]: accent.ink }}
+    >
+      <div className="mx-auto flex h-12 max-w-[1240px] items-center gap-3 px-4 sm:px-6 md:h-14">
+        <Link href={href} className="group flex min-w-0 items-center gap-2.5 text-ink no-underline">
+          <span className="relative block h-8 w-8 shrink-0 overflow-hidden rounded-full bg-gallery shadow-[0_0_0_2px_#fff] md:h-9 md:w-9">
+            {brand.avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={brand.avatar} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <span className="grid h-full w-full place-items-center font-display text-[13px] font-extrabold text-ink" style={{ background: DABS[(brand.name.charCodeAt(0) || 0) % DABS.length] }} aria-hidden>
+                {initials}
+              </span>
+            )}
+          </span>
+          <span className="min-w-0 truncate leading-none">
+            <b className="font-display text-[18px] font-extrabold tracking-[-0.01em] group-hover:underline md:text-[20px]">{brand.name}</b>
+            <span className="text-[13px] font-medium text-ink-2"> on Artfinity</span>
+          </span>
         </Link>
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <Link href={href} className="hidden min-h-[36px] items-center rounded-full px-3 text-[14px] font-semibold text-ink no-underline hover:bg-white/70 sm:inline-flex">
+            All work
+          </Link>
+          {brand.owner ? (
+            <a href={brand.owner.href} target="_blank" rel="noopener" className="inline-flex min-h-[36px] items-center gap-1 rounded-full border-[1.5px] border-ink bg-white px-3 text-[13px] font-semibold text-ink no-underline hover:bg-wall">
+              Your piece{brand.owner.note ? <span className="hidden font-normal text-ink-2 sm:inline"> · {brand.owner.note}</span> : null} · QR code
+            </a>
+          ) : (
+            <FollowButton
+              handle={brand.handle}
+              firstName={firstName}
+              className="btn btn-sm min-h-[36px] px-4"
+              doneClassName="btn-ghost bg-white"
+              idleStyle={{ background: "var(--accent)", borderColor: "var(--accent)", color: "var(--accent-ink)" }}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
@@ -89,56 +127,110 @@ export default function SiteHeader({ brand = null, inPage = false }: { brand?: H
 
   if (hidden) return null;
 
+  const isActive = (href: string) => pathname === href;
+  const menu = (
+    <nav
+      id="site-menu"
+      className={cn(
+        "grid gap-1 border-t border-line px-4 pb-4 pt-3",
+        brand ? "md:absolute md:right-6 md:top-full md:z-50 md:w-[320px] md:rounded-2xl md:border md:bg-white md:shadow-[0_18px_40px_-12px_rgba(21,22,27,.35)]" : "md:hidden",
+      )}
+      aria-label="Menu"
+    >
+      <form onSubmit={search} role="search" aria-label="Search Artfinity" className="mb-1">
+        <label className="flex h-12 items-center gap-2 rounded-full border-2 border-ink bg-white pl-4 pr-1.5 focus-within:border-scan">
+          <Search className="h-5 w-5 shrink-0 text-ink-2" aria-hidden="true" />
+          <span className="sr-only">Search art, artists and neighborhoods</span>
+          <input type="search" name="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search art, artists, neighborhoods" maxLength={80} enterKeyHint="search" className="min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-ink-2" />
+          <button type="submit" className="btn btn-blue btn-sm min-h-[38px]">Go</button>
+        </label>
+      </form>
+      {LINKS.map((l) => (
+        <Link key={l.href} href={l.href} aria-current={isActive(l.href) ? "page" : undefined} onClick={() => setOpen(false)} className="rounded-lg px-2 py-2.5 text-lg font-semibold text-ink no-underline hover:bg-wall">
+          {l.label}
+        </Link>
+      ))}
+      {currentUser ? (
+        brand && <Link href="/studio" onClick={() => setOpen(false)} className="btn btn-blue mt-2">My Studio</Link>
+      ) : (
+        <>
+          <Link href="/login" onClick={() => setOpen(false)} className="rounded-lg px-2 py-2.5 text-lg font-semibold text-ink no-underline hover:bg-wall">Log in</Link>
+          <Link href="/register" onClick={() => setOpen(false)} className="btn btn-blue mt-2">Start selling free</Link>
+        </>
+      )}
+    </nav>
+  );
+  const menuButton = (
+    <button
+      type="button"
+      className={cn("-mr-1.5 grid h-11 w-11 place-items-center rounded-full hover:bg-wall", !brand && "md:hidden")}
+      onClick={() => setOpen(!open)}
+      aria-expanded={open}
+      aria-controls="site-menu"
+      aria-label="Menu"
+    >
+      {open ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
+    </button>
+  );
+  const cart = (
+    <Link href="/cart" className="relative grid h-11 w-11 place-items-center rounded-full text-ink hover:bg-wall" aria-label={`Cart, ${count} items`}>
+      <ShoppingBag className="h-5 w-5" aria-hidden="true" />
+      {count > 0 && <span className="num absolute right-0.5 top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-scan px-1 text-[11px] font-bold text-white">{count}</span>}
+    </Link>
+  );
+
+  // An artist's painting or collection: Artfinity is the quiet host (slim bar), the artist gets the band below.
+  if (brand)
+    return (
+      <>
+        <header className="relative z-40 border-b border-line bg-white">
+          <div className="mx-auto flex h-11 max-w-[1240px] items-center gap-1 px-4 sm:px-6">
+            <Logo className="text-[17px]" />
+            <div className="ml-auto flex items-center">
+              <Link href="/search" className="grid h-11 w-11 place-items-center rounded-full text-ink hover:bg-wall" aria-label="Search">
+                <Search className="h-5 w-5" aria-hidden="true" />
+              </Link>
+              {cart}
+              {menuButton}
+            </div>
+          </div>
+          {open && menu}
+        </header>
+        <ArtistBand brand={brand} />
+      </>
+    );
+
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-[1240px] items-center gap-6 px-4 py-3 sm:px-6">
-        {brand ? <ArtistBrand brand={brand} /> : <Logo />}
-        <nav className={cn("ml-auto hidden items-center gap-6 text-[15px] font-medium md:flex", brand && "shrink-0")} aria-label="Main">
+        <Logo />
+        <nav className="ml-auto hidden items-center gap-6 text-[15px] font-medium md:flex" aria-label="Main">
           {LINKS.map((l) => (
-            <Link key={l.href} href={l.href} className={cn("text-ink no-underline hover:text-scan", pathname === l.href && "text-scan")}>{l.label}</Link>
+            <Link key={l.href} href={l.href} aria-current={isActive(l.href) ? "page" : undefined} className={cn("text-ink no-underline hover:text-scan", isActive(l.href) && "text-scan")}>{l.label}</Link>
           ))}
           {currentUser ? null : <Link href="/login" className="text-ink no-underline hover:text-scan">Log in</Link>}
         </nav>
-        <form onSubmit={search} role="search" className="hidden lg:block">
+        <form onSubmit={search} role="search" aria-label="Search Artfinity" className="hidden lg:block">
           <label className="flex h-10 w-44 items-center gap-2 rounded-full border-[1.5px] border-line bg-white pl-3 pr-1 transition-[width,border-color] focus-within:w-60 focus-within:border-ink">
             <Search className="h-4 w-4 shrink-0 text-ink-2" aria-hidden="true" />
             <span className="sr-only">Search art, artists and neighborhoods</span>
             <input type="search" name="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" maxLength={80} className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-2" />
           </label>
         </form>
-        <div className={cn("ml-auto flex items-center gap-2 md:ml-0", brand && "shrink-0")}>
+        <div className="ml-auto flex items-center gap-2 md:ml-0">
           <Link href="/search" className="hidden h-11 w-11 place-items-center rounded-full text-ink hover:bg-wall md:grid lg:hidden" aria-label="Search">
             <Search className="h-5 w-5" aria-hidden="true" />
           </Link>
-          <Link href="/cart" className="relative grid h-11 w-11 place-items-center rounded-full text-ink hover:bg-wall" aria-label={`Cart, ${count} items`}>
-            <ShoppingBag className="h-5 w-5" />
-            {count > 0 && <span className="num absolute right-0.5 top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-scan px-1 text-[11px] font-bold text-white">{count}</span>}
-          </Link>
+          {cart}
           {currentUser ? (
             <Link href="/studio" className="btn btn-blue btn-sm min-h-[44px] px-4 md:min-h-0">My Studio</Link>
           ) : (
             <Link href="/register" className="btn btn-blue btn-sm hidden sm:inline-flex">Start selling free</Link>
           )}
-          <button type="button" className="-mr-1.5 grid h-11 w-11 place-items-center rounded-full hover:bg-wall md:hidden" onClick={() => setOpen(!open)} aria-expanded={open} aria-label="Menu">
-            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+          {menuButton}
         </div>
       </div>
-      {open && (
-        <nav className="grid gap-1 border-t border-line px-4 pb-4 pt-3 md:hidden" aria-label="Mobile">
-          <form onSubmit={search} role="search" className="mb-1">
-            <label className="flex h-12 items-center gap-2 rounded-full border-2 border-ink bg-white pl-4 pr-1.5 focus-within:border-scan">
-              <Search className="h-5 w-5 shrink-0 text-ink-2" aria-hidden="true" />
-              <span className="sr-only">Search art, artists and neighborhoods</span>
-              <input type="search" name="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search art, artists, neighborhoods" maxLength={80} enterKeyHint="search" className="min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-ink-2" />
-              <button type="submit" className="btn btn-blue btn-sm min-h-[38px]">Go</button>
-            </label>
-          </form>
-          {LINKS.map((l) => <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="rounded-lg px-2 py-2.5 text-lg font-semibold text-ink no-underline hover:bg-wall">{l.label}</Link>)}
-          {!currentUser && <Link href="/login" onClick={() => setOpen(false)} className="rounded-lg px-2 py-2.5 text-lg font-semibold text-ink no-underline hover:bg-wall">Log in</Link>}
-          {!currentUser && <Link href="/register" onClick={() => setOpen(false)} className="btn btn-blue mt-2">Start selling free</Link>}
-        </nav>
-      )}
+      {open && menu}
     </header>
   );
 }

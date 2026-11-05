@@ -117,17 +117,6 @@ export default async function CollectionPage({ params }: Props) {
       <ViewBeacon artistId={artist.id} />
     <div className="bg-[#efece5] bg-[radial-gradient(ellipse_at_50%_0%,#f7f5f0_0%,#ebe7df_55%,#e4dfd5_100%)] pb-16 sm:pb-24">
       <header className="mx-auto grid max-w-[1240px] gap-4 px-4 pb-8 pt-8 sm:px-6 sm:pb-12 sm:pt-14">
-        <Link href={artistPath(artist.slug)} className="flex w-fit min-h-[44px] items-center gap-2.5 text-ink no-underline">
-          <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-wall ring-2 ring-white">
-            {artist.avatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={artist.avatar} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <span className="grid h-full w-full place-items-center text-sm font-bold">{artist.name[0]}</span>
-            )}
-          </span>
-          <span className="text-[15px] font-bold hover:underline">{artist.name}</span>
-        </Link>
         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,380px)] md:items-end md:gap-10">
           <div>
             <p className="eyebrow">Collection · {n} {n === 1 ? "work" : "works"}</p>

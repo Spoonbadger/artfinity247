@@ -15,6 +15,8 @@ import { editionOf, soldCount } from "@/lib/editions";
 import { getArtistSplitFor } from "@/lib/revenue";
 import { deliveryRange } from "@/lib/delivery";
 import { getReviews } from "@/lib/reviews";
+import { galleryRooms, imageFacts } from "@/lib/artGallery";
+import { paint, parseTheme } from "@/components/artist/theme";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +42,7 @@ const artSelect = {
   editionSize: true,
   roomScenes: true,
   printableSizes: true,
-  artist: { select: { id: true, slug: true, name: true, artist_name: true, profileImage: true, city: true, state: true, proUntil: true, closedAt: true, suspendedAt: true } },
+  artist: { select: { id: true, slug: true, name: true, artist_name: true, profileImage: true, city: true, state: true, proUntil: true, closedAt: true, suspendedAt: true, pageTheme: true } },
 } as const;
 
 async function loadArt(rawSlug: string) {
@@ -83,6 +85,7 @@ export default async function ArtPage({ params, searchParams }: Props) {
   const pct = qr ? qr.discountPct ?? 0 : scanPct;
 
   const trustP = getArtistTrust(art.artistId);
+  const factsP = imageFacts(art.imageUrl);
   const moreRows = await prisma.artwork.findMany({
     where: { artistId: art.artistId, id: { not: art.id }, status: "APPROVED", slug: { not: null } },
     orderBy: { createdAt: "desc" },
@@ -99,10 +102,21 @@ export default async function ArtPage({ params, searchParams }: Props) {
   const edition = art.editionSize ? editionOf(art.editionSize, await soldCount(art.id)) : null;
   const a = art.artist;
   const place = [a.city, a.state].filter(Boolean).join(", ") || null;
+  const accent = paint(parseTheme(a.pageTheme).accent);
+  const facts = await factsP;
+  const ownerNote = art.status === "APPROVED" ? null : art.status === "REJECTED" ? "not approved" : "in review";
 
   return (
     <>
-      <SiteHeader brand={{ handle: a.slug, name: a.artist_name || a.name, avatar: a.profileImage || null }} />
+      <SiteHeader
+        brand={{
+          handle: a.slug,
+          name: a.artist_name || a.name,
+          avatar: a.profileImage || null,
+          accent: { color: accent.color, ink: accent.ink, soft: accent.soft },
+          owner: isOwner ? { href: `/api/artworks/${encodeURIComponent(art.slug!)}/qr?download=1`, note: ownerNote } : null,
+        }}
+      />
       <ViewBeacon artistId={a.id} artworkId={art.id} />
     <ScanView
       art={{
@@ -135,11 +149,13 @@ export default async function ArtPage({ params, searchParams }: Props) {
       discountEnded={!qr && scan.ended}
       code={qr?.code ?? null}
       isOwner={isOwner}
-      status={art.status}
       trust={await trustP}
       artistSplit={getArtistSplitFor({ orderDate: new Date(), proUntil: a.proUntil })}
       arrives={deliveryRange()}
       reviews={reviews}
+      rooms={galleryRooms({ slug: art.slug!, roomScenes: art.roomScenes })}
+      details={facts.details}
+      aspect={facts.aspect}
     />
     </>
   );

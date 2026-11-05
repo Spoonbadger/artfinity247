@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Lock } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useCart, useUser } from "@/components/contexts";
 import { CartItemCard, CartPricingInfo } from "@/components/cards";
@@ -36,6 +36,8 @@ export default function CartPage() {
   return (
     <>
       <title>Cart · Artfinity</title>
+      {/* the cookie notice waits for the first scroll, so it doesn't cover the summary on phones */}
+      <style>{`:root { --af-cookie-wait: 1; }`}</style>
       <div className="mx-auto max-w-[1040px] px-4 pb-16 pt-6 sm:px-6 md:pt-10">
         <Link href="/art" className="mb-3 inline-flex items-center gap-1.5 text-[14px] font-semibold text-ink-2 no-underline hover:text-ink">
           <ArrowLeft className="h-4 w-4" aria-hidden /> Keep looking
@@ -59,14 +61,9 @@ export default function CartPage() {
               <button type="button" onClick={onCheckout} disabled={busy} className="btn btn-blue btn-lg w-full">
                 {busy ? "Opening checkout…" : `Check out · ${usd(total)}`}
               </button>
-              <p className="flex items-center justify-center gap-1.5 text-[13px] text-ink-2">
-                <Lock className="h-3.5 w-3.5" aria-hidden /> Apple Pay · Google Pay · Card
+              <p className="text-center text-[13px] leading-snug text-ink-2">
+                Printed to order, arrives {deliveryRange()} · free US shipping · tax added at checkout
               </p>
-              <ul className="mt-1 grid gap-1 border-t border-line pt-3 text-[13.5px] text-ink-2">
-                <li>Free US shipping · sales tax added at checkout</li>
-                <li>Printed to order, arrives {deliveryRange()}</li>
-                <li>Artists get 60% of the profit</li>
-              </ul>
             </CartPricingInfo>
           </div>
         ) : (

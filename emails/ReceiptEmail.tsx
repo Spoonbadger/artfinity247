@@ -1,80 +1,87 @@
 import * as React from "react";
-import Image from 'next/image'
+import { SITE_URL } from "@/lib/urls";
 
 type Item = {
   title: string | null;
   imageUrl: string | null;
+  /** Friendly size, e.g. "Medium · 8 × 12 in" (lib/email.ts). */
   size: string | null;
   quantity: number | null;
   unitPrice: number | null; // cents
   edition?: string; // "Print 8 of 25" for limited editions
+  artist?: string | null;
+  frame?: string | null; // "Black frame"
 };
 
+// Artfinity's paint: ink, Scan Blue, a soft gallery wall.
+const INK = "#15161b";
+const INK2 = "#5a5d6b";
+const BLUE = "#2b37f0";
+const LINE = "#e1e2da";
+
 export default function ReceiptEmail({
-  orderId,
-  email,
+  code,
   totalCents,
   currency = "usd",
   shippingName,
   shippingAddressLine,
+  arrives,
   items,
 }: {
-  orderId: string;
-  email: string;
+  /** The short order code shown on the thank-you page (e.g. "XX1KP4"). */
+  code: string;
   totalCents: number;
   currency?: string;
   shippingName?: string | null;
   shippingAddressLine?: string | null;
+  /** Delivery estimate, e.g. "Nov 12–18". */
+  arrives?: string | null;
   items: Item[];
 }) {
-  const fmt = (cents?: number | null) =>
-    (cents ?? 0 / 100).toLocaleString("en-US", {
-      style: "currency",
-      currency: currency.toUpperCase(),
-    });
+  const fmt = (cents?: number | null) => ((cents ?? 0) / 100).toLocaleString("en-US", { style: "currency", currency: currency.toUpperCase() });
+  const artists = Array.from(new Set(items.map((i) => i.artist).filter(Boolean))) as string[];
 
   return (
-    <div style={{ fontFamily: "ui-sans-serif, system-ui", color: "#222" }}>
-      <h2 style={{ margin: 0, color: "#b05c5cff" }}>Thank you for your order!</h2>
-      <p style={{ margin: "8px 0 16px" }}>Receipt sent to: {email}</p>
+    <div style={{ fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif", color: INK, maxWidth: 560 }}>
+      <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: INK2 }}>Order {code}</p>
+      <h1 style={{ margin: "6px 0 4px", fontSize: 28, lineHeight: 1.1 }}>It&apos;s yours. Thank you!</h1>
+      <p style={{ margin: "0 0 20px", fontSize: 16, color: INK2 }}>
+        We&apos;re printing it now{arrives ? <>. It should arrive <strong style={{ color: INK }}>{arrives}</strong></> : null}.
+        {artists.length ? <> Your order supports {artists.join(" and ")}.</> : null}
+      </p>
 
-      {shippingName || shippingAddressLine ? (
-        <div style={{ margin: "12px 0 20px" }}>
-          <div style={{ fontSize: 20, color: "#b05c5c" }}>Shipping To</div>
-          <div>{shippingName}</div>
-          <div>{shippingAddressLine}</div>
-        </div>
-      ) : null}
-
-      <div style={{ border: "1px solid #eee", borderRadius: 8, padding: 16 }}>
-        <div style={{ fontSize: 18, color: "#b05c5c", marginBottom: 8 }}>Order summary</div>
+      <div style={{ border: `1px solid ${LINE}`, borderRadius: 12, padding: "4px 16px" }}>
         {items.map((it, i) => (
-          <div key={i} style={{ display: "flex", gap: 12, padding: "10px 0", borderTop: i ? "1px solid #f2f2f2" : "none" }}>
-            {it.imageUrl ? (
-              <img src={it.imageUrl} alt="" width={56} height={56} style={{ borderRadius: 6, objectFit: "cover" }} />
-            ) : null}
+          <div key={i} style={{ display: "flex", gap: 12, padding: "12px 0", borderTop: i ? `1px solid ${LINE}` : "none" }}>
+            {it.imageUrl ? <img src={it.imageUrl} alt="" width={48} height={60} style={{ objectFit: "cover", borderRadius: 2, border: `1px solid ${LINE}` }} /> : null}
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600 }}>{it.title}</div>
-              <div style={{ fontSize: 12, opacity: 0.8 }}>
-                Size: {it.size} • Qty: {it.quantity ?? 1}
+              <div style={{ fontWeight: 700 }}>{it.title}</div>
+              {it.artist ? <div style={{ fontSize: 13, color: INK2 }}>by {it.artist}</div> : null}
+              <div style={{ fontSize: 13, color: INK2 }}>
+                {[it.size, it.frame, (it.quantity ?? 1) > 1 ? `× ${it.quantity}` : null].filter(Boolean).join(" · ")}
               </div>
-              {it.edition ? <div style={{ fontSize: 12, fontWeight: 600 }}>{it.edition}</div> : null}
+              {it.edition ? <div style={{ fontSize: 13, fontWeight: 600 }}>{it.edition}</div> : null}
             </div>
-            <div style={{ whiteSpace: "nowrap" }}>{fmt(((it.unitPrice ?? 0)/100) * (it.quantity ?? 1))}</div>
+            <div style={{ whiteSpace: "nowrap", fontWeight: 600 }}>{fmt((it.unitPrice ?? 0) * (it.quantity ?? 1))}</div>
           </div>
         ))}
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, fontWeight: 700 }}>
-          <span>Total</span>
-          <span>{fmt(totalCents/100)}</span>
+        <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderTop: `1px solid ${LINE}`, fontWeight: 700 }}>
+          <span>Paid</span>
+          <span>{fmt(totalCents)}</span>
         </div>
       </div>
 
-      {/* TODO: ADD Artfinity Logo to email receipts */}
-      {/* <img src="/favicons/apple-touch-icon.png" alt="Artfinity" width={56} height={56} /> */}
+      {shippingName || shippingAddressLine ? (
+        <p style={{ margin: "16px 0 0", fontSize: 14, color: INK2 }}>
+          Ships to <span style={{ color: INK }}>{[shippingName, shippingAddressLine].filter(Boolean).join(", ")}</span>
+        </p>
+      ) : null}
 
-      <p style={{ marginTop: 16, fontSize: 12, opacity: 0.8 }}>
-        Order ID: {orderId}
+      <p style={{ margin: "16px 0 0", fontSize: 14, color: INK2 }}>
+        Free US shipping. If it arrives damaged, we reprint it free.{" "}
+        <a href={`${SITE_URL}/help/buyers`} style={{ color: BLUE, fontWeight: 600 }}>Shipping and returns</a>
       </p>
+      <p style={{ margin: "20px 0 0", fontSize: 14 }}>— Artfinity</p>
     </div>
   );
 }
