@@ -10,6 +10,8 @@ const nextConfig = {
   async rewrites() {
     return [
       // Artist pages live at theartfinity.com/@handle
+      // Painting (buy page): theartfinity.com/@handle/art/<slug>. Old /art/<slug> links 308 here.
+      { source: "/@:handle/art/:art", destination: "/artists/:handle/art/:art" },
       // Link-in-bio page: theartfinity.com/@handle/links
       { source: "/@:handle/links", destination: "/artists/:handle/links" },
       { source: "/@:handle/collections", destination: "/artists/:handle/collections" },
