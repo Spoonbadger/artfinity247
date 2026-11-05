@@ -13,6 +13,7 @@ const LINKS = [
   { href: "/admin/verification", label: "Verification", dab: "var(--af-sticker)" },
   { href: "/admin/reports", label: "Reports", dab: "var(--af-ink)" },
   { href: "/admin/reviews", label: "Reviews", dab: "#e3b23c" },
+  { href: "/admin/scenes", label: "Scenes", dab: "#5bc0be" },
 ];
 
 /** `counts` adds a small badge, e.g. open reports. */

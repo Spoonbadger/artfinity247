@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ROOM_LABEL, ROOM_SIZE_IN, ROOM_TYPES, autoScenes, sceneInfo, suggestScenes, type RoomFrame, type RoomSize, type RoomType } from "@/lib/rooms";
+import { ROOM_LABEL, ROOM_SIZE_IN, ROOM_TYPES, autoScenes, suggestScenes, type RoomFrame, type RoomSize, type RoomType } from "@/lib/rooms";
+import { autoPhotoScenes, photoRooms, photoSceneCount, photoScenesOn, photoSuggest, sceneLabel } from "@/lib/scenes/client";
+import { ROOM_TAG_LABEL, type RoomTag } from "@/lib/scenes/types";
 import { cn } from "@/lib/utils";
 import RoomCarousel from "./RoomCarousel";
 import { RoomScene, useImageAspect } from "./RoomScene";
@@ -31,11 +33,15 @@ const TYPE_DAB: Record<RoomType, string> = {
   cafe: "#7b5a3c",
   nook: "#ffd43b",
 };
+// photo scenes use their own room tags (procedural types stay as they are)
+const CHIP_TYPES: string[] = photoScenesOn ? photoRooms : [...ROOM_TYPES];
+const chipLabel = (t: string) => (photoScenesOn ? ROOM_TAG_LABEL[t as RoomTag] : ROOM_LABEL[t as RoomType]) ?? t;
+const chipDab = (t: string) => TYPE_DAB[t as RoomType] ?? "#5bc0be";
 
 export default function RoomPicker({ art, arts }: { art: Art; arts: { slug: string; title: string; imageUrl: string }[] }) {
   const [picks, setPicks] = useState<number[]>(art.roomScenes.slice(0, MAX));
   const [saved, setSaved] = useState<number[]>(art.roomScenes.slice(0, MAX));
-  const [type, setType] = useState<RoomType | null>(null);
+  const [type, setType] = useState<string | null>(null);
   const [round, setRound] = useState(0);
   const [size, setSize] = useState<RoomSize>("medium");
   const [frame, setFrame] = useState<RoomFrame | null>("black");
@@ -44,8 +50,11 @@ export default function RoomPicker({ art, arts }: { art: Art; arts: { slug: stri
   const aspect = useImageAspect(art.imageUrl);
   const blur = art.sensitive.length > 0;
 
-  const suggestions = useMemo(() => suggestScenes(art.slug, round, type, 24), [art.slug, round, type]);
-  const auto = useMemo(() => autoScenes(art.slug), [art.slug]);
+  const suggestions = useMemo(
+    () => (photoScenesOn ? photoSuggest(art.slug, round, type as RoomTag | null, 24) : suggestScenes(art.slug, round, type as RoomType | null, 24)),
+    [art.slug, round, type],
+  );
+  const auto = useMemo(() => (photoScenesOn ? autoPhotoScenes(art.slug) : autoScenes(art.slug)), [art.slug]);
   const dirty = picks.join(",") !== saved.join(",");
 
   function toggle(n: number) {
@@ -175,8 +184,8 @@ export default function RoomPicker({ art, arts }: { art: Art; arts: { slug: stri
                 );
               return (
                 <li key={n} className="group relative">
-                  <button type="button" onClick={() => setFocus(i)} className={cn("block w-full overflow-hidden rounded-lg border-2 transition", focus === i ? "border-ink" : "border-transparent")} aria-label={`Show ${sceneInfo(n).label}`}>
-                    <RoomScene scene={n} imageUrl={art.imageUrl} aspect={aspect} size={size} frame={frame} blur={blur} />
+                  <button type="button" onClick={() => setFocus(i)} className={cn("block w-full overflow-hidden rounded-lg border-2 transition", focus === i ? "border-ink" : "border-transparent")} aria-label={`Show ${sceneLabel(n)}`}>
+                    <RoomScene scene={n} slug={art.slug} sizes="96px" imageUrl={art.imageUrl} aspect={aspect} size={size} frame={frame} blur={blur} />
                   </button>
                   <span className="pointer-events-none absolute left-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-sticker text-[11px] font-bold text-ink shadow-[0_0_0_1.5px_#15161b]">{i + 1}</span>
                   <div className="mt-1 flex justify-between">
@@ -228,7 +237,7 @@ export default function RoomPicker({ art, arts }: { art: Art; arts: { slug: stri
           </button>
         </div>
         <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Room type">
-          {[null, ...ROOM_TYPES].map((t) => {
+          {[null, ...CHIP_TYPES].map((t) => {
             const on = type === t;
             return (
               <button
@@ -238,8 +247,8 @@ export default function RoomPicker({ art, arts }: { art: Art; arts: { slug: stri
                 onClick={() => setType(t)}
                 className={cn("flex shrink-0 items-center gap-1.5 rounded-full border-2 px-3 py-1.5 text-[14px] font-semibold transition", on ? "border-ink bg-ink text-white" : "border-line bg-white hover:border-ink/40")}
               >
-                {t && <span className="paint-dab !h-2.5 !w-2.5" style={{ ["--dab" as string]: TYPE_DAB[t] }} aria-hidden />}
-                {t ? ROOM_LABEL[t] : "All rooms"}
+                {t && <span className="paint-dab !h-2.5 !w-2.5" style={{ ["--dab" as string]: chipDab(t) }} aria-hidden />}
+                {t ? chipLabel(t) : "All rooms"}
               </button>
             );
           })}
@@ -249,7 +258,7 @@ export default function RoomPicker({ art, arts }: { art: Art; arts: { slug: stri
           {suggestions.map((n) => {
             const at = picks.indexOf(n);
             const on = at >= 0;
-            const info = sceneInfo(n);
+            const label = sceneLabel(n);
             return (
               <li key={n}>
                 <button
@@ -261,8 +270,18 @@ export default function RoomPicker({ art, arts }: { art: Art; arts: { slug: stri
                     on ? "shadow-[0_0_0_3px_#15161b]" : "shadow-[0_0_0_1px_rgba(21,22,27,.1)] hover:shadow-[0_0_0_2px_rgba(21,22,27,.45)]",
                   )}
                 >
-                  <RoomScene scene={n} imageUrl={art.imageUrl} aspect={aspect} size={size} frame={frame} blur={blur} className="transition duration-300 group-hover:scale-[1.02]" />
-                  <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/45 to-transparent truncate px-2 pb-1.5 pt-5 text-[12px] font-semibold text-white">{info.label}</span>
+                  <RoomScene
+                    scene={n}
+                    slug={art.slug}
+                    sizes="(min-width: 1280px) 22vw, (min-width: 640px) 33vw, 50vw"
+                    imageUrl={art.imageUrl}
+                    aspect={aspect}
+                    size={size}
+                    frame={frame}
+                    blur={blur}
+                    className="transition duration-300 group-hover:scale-[1.02]"
+                  />
+                  <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/45 to-transparent truncate px-2 pb-1.5 pt-5 text-[12px] font-semibold text-white">{label}</span>
                   {on ? (
                     <span className="sticker-badge absolute right-1.5 top-1.5 !px-2 !py-0.5 !text-[12px]">{at + 1}</span>
                   ) : (
@@ -277,7 +296,7 @@ export default function RoomPicker({ art, arts }: { art: Art; arts: { slug: stri
           })}
         </ul>
         <p className="text-center text-[13px] text-ink-2">
-          1,000 rooms.{" "}
+          {photoScenesOn ? `${photoSceneCount.toLocaleString("en-US")} photo scenes.` : "1,000 rooms."}{" "}
           <button type="button" className="font-semibold text-scan underline-offset-2 hover:underline" onClick={() => setRound((r) => r + 1)}>
             Shuffle for more
           </button>

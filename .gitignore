@@ -58,3 +58,7 @@ TODO.md
 
 # private artwork originals (lib/storage.ts)
 /storage
+
+# photo scenes: render cache, fetcher bookkeeping
+/.cache
+/scenes/photos/.pexels-state.json

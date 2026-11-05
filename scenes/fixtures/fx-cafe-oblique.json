@@ -1,0 +1,71 @@
+{
+  "fixture": true,
+  "source": "Synthetic test fixture",
+  "note": "Drawn by scripts/scenes/make-fixtures.mjs for testing. NOT a photograph; never ship as a real scene.",
+  "description": "Oblique brick café wall (38° to the camera), standing adult (66 in), seated adult, 30 in tables.",
+  "tags": [
+    "cafe",
+    "person",
+    "warm"
+  ],
+  "truth": {
+    "quad": [
+      [
+        102.1,
+        269.8
+      ],
+      [
+        1173.6,
+        441.1
+      ],
+      [
+        1173.6,
+        790.5
+      ],
+      [
+        102.1,
+        884.7
+      ]
+    ],
+    "anchors": [
+      [
+        716.9,
+        636.7
+      ],
+      [
+        381.1,
+        631.3
+      ],
+      [
+        1087.5,
+        642.6
+      ]
+    ],
+    "ref": {
+      "a": [
+        962.3,
+        1066.1
+      ],
+      "b": [
+        962.3,
+        626.5
+      ],
+      "kind": "adult",
+      "inches": 66
+    },
+    "ref2": {
+      "a": [
+        1512.6,
+        580.9
+      ],
+      "b": [
+        1582.6,
+        586.5
+      ],
+      "kind": "doorw",
+      "inches": 32
+    },
+    "ppiWall": 7.285945515325981,
+    "lens": 20.7032117526215
+  }
+}

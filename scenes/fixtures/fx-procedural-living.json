@@ -1,0 +1,48 @@
+{
+  "fixture": true,
+  "source": "Synthetic test fixture",
+  "note": "Drawn by scripts/scenes/make-fixtures.mjs for testing. NOT a photograph; never ship as a real scene.",
+  "description": "Procedural scene #8 from lib/rooms rendered to JPEG (drawn, not a photo).",
+  "tags": [
+    "living"
+  ],
+  "truth": {
+    "quad": [
+      [
+        246,
+        -35.3
+      ],
+      [
+        1222.2,
+        -35.3
+      ],
+      [
+        1222.2,
+        669.8
+      ],
+      [
+        246,
+        669.8
+      ]
+    ],
+    "anchors": [
+      [
+        734.1,
+        371.5
+      ]
+    ],
+    "ref": {
+      "a": [
+        1140.9,
+        642.7
+      ],
+      "b": [
+        1140.9,
+        100.3
+      ],
+      "kind": "custom",
+      "inches": 40
+    },
+    "ppiWall": 13.559322033898304
+  }
+}

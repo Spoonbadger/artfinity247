@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { StudioPage } from "@/components/studio/StudioPage";
 import RoomPicker from "@/components/rooms/RoomPicker";
 import { RoomScene } from "@/components/rooms/RoomScene";
-import { scenesFor } from "@/lib/rooms";
+import { scenesForArt } from "@/lib/scenes/client";
 import { requireArtist } from "../_lib/data";
 
 export const dynamic = "force-dynamic";
@@ -39,11 +39,11 @@ export default async function RoomsPage({ searchParams }: { searchParams: { art?
       <StudioPage title="Rooms" sub="Pick the rooms buyers see your print in.">
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {arts.map((a) => {
-            const scenes = scenesFor(a);
+            const scenes = scenesForArt(a);
             return (
               <li key={a.slug}>
                 <Link href={`/studio/rooms?art=${encodeURIComponent(a.slug)}`} className="af-card group block overflow-hidden transition hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-12px_rgba(21,22,27,.4)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-scan">
-                  <RoomScene scene={scenes[0]} imageUrl={a.imageUrl} size="large" frame="black" blur={a.sensitive.length > 0} />
+                  <RoomScene scene={scenes[0]} slug={a.slug} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" imageUrl={a.imageUrl} size="large" frame="black" blur={a.sensitive.length > 0} />
                   <div className="flex items-center justify-between gap-3 px-4 py-3">
                     <span className="min-w-0">
                       <span className="block truncate text-[16px] font-bold">{a.title}</span>

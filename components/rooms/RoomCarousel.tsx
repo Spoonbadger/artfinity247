@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ROOM_SIZE_IN, printBox, scenesFor, sceneInfo, type RoomFrame, type RoomSize } from "@/lib/rooms";
+import { ROOM_SIZE_IN, printBox, type RoomFrame, type RoomSize } from "@/lib/rooms";
+import { photoScene, sceneLabel, scenesForArt } from "@/lib/scenes/client";
 import { cn } from "@/lib/utils";
 import { RoomScene, useImageAspect } from "./RoomScene";
 
@@ -30,7 +31,7 @@ export type RoomCarouselProps = {
  * starting on a random one each visit. Swipe, arrows, dots. SVG only; offscreen slides stay empty.
  */
 export default function RoomCarousel({ artwork, size, frame, mat = true, landscape, blur, scenes: override, index, className }: RoomCarouselProps) {
-  const scenes = useMemo(() => (override && override.length ? override : scenesFor(artwork)), [override, artwork]);
+  const scenes = useMemo(() => (override && override.length ? override : scenesForArt(artwork)), [override, artwork]);
   const aspect = useImageAspect(artwork.imageUrl, landscape === undefined ? null : landscape ? 1.4 : 0.75);
   const track = useRef<HTMLDivElement>(null);
   const [cur, setCur] = useState(0);
@@ -103,7 +104,8 @@ export default function RoomCarousel({ artwork, size, frame, mat = true, landsca
   const box = printBox(size, aspect, frame, mat);
   const [a, b] = ROOM_SIZE_IN[size];
   const dims = box.land ? `${b} × ${a} in` : `${a} × ${b} in`;
-  const info = sceneInfo(scenes[cur] ?? scenes[0]);
+  const label = sceneLabel(scenes[cur] ?? scenes[0]);
+  const photo = photoScene(scenes[cur] ?? scenes[0]);
 
   return (
     <figure
@@ -127,11 +129,23 @@ export default function RoomCarousel({ artwork, size, frame, mat = true, landsca
             className="aspect-[5/4] w-full shrink-0 snap-center snap-always"
             role="group"
             aria-roledescription="slide"
-            aria-label={`${i + 1} of ${scenes.length}: ${sceneInfo(n).label}`}
+            aria-label={`${i + 1} of ${scenes.length}: ${sceneLabel(n)}`}
             aria-hidden={i !== cur}
           >
             {ready && seen.has(i) ? (
-              <RoomScene scene={n} imageUrl={artwork.imageUrl} aspect={aspect} size={size} frame={frame} mat={mat} blur={blur} className={cn("transition-opacity duration-300", ready ? "opacity-100" : "opacity-0")} />
+              <RoomScene
+                scene={n}
+                slug={artwork.slug}
+                eager={i === cur}
+                sizes="(min-width: 1024px) 560px, (min-width: 768px) 50vw, 100vw"
+                imageUrl={artwork.imageUrl}
+                aspect={aspect}
+                size={size}
+                frame={frame}
+                mat={mat}
+                blur={blur}
+                className={cn("transition-opacity duration-300", ready ? "opacity-100" : "opacity-0")}
+              />
             ) : (
               <div className="h-full w-full bg-[radial-gradient(ellipse_at_50%_30%,#f7f5f0,#e7e3db)]" />
             )}
@@ -142,13 +156,24 @@ export default function RoomCarousel({ artwork, size, frame, mat = true, landsca
       {/* caption: room + true size */}
       <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-2.5 sm:p-3">
         <span className="rounded-full bg-white/90 px-2.5 py-1 text-[12px] font-semibold text-ink shadow-[0_1px_3px_rgba(21,22,27,.18)] backdrop-blur sm:text-[13px]" aria-live="polite">
-          {info.label}
+          {label}
         </span>
         <span className="num rounded-full bg-ink/80 px-2.5 py-1 text-[12px] font-semibold text-white sm:text-[13px]">
           {dims}
           {frame ? " · framed" : ""}
         </span>
       </figcaption>
+      {photo?.credit && (
+        <p className="absolute bottom-11 left-2.5 max-w-[70%] truncate rounded bg-black/35 px-1.5 py-0.5 text-[10.5px] leading-tight text-white/90 sm:left-3">
+          {photo.url ? (
+            <a href={photo.url} target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">
+              {photo.credit}
+            </a>
+          ) : (
+            photo.credit
+          )}
+        </p>
+      )}
 
       {scenes.length > 1 && (
         <>
@@ -175,7 +200,7 @@ export default function RoomCarousel({ artwork, size, frame, mat = true, landsca
                 type="button"
                 role="tab"
                 aria-selected={i === cur}
-                aria-label={`Room ${i + 1}: ${sceneInfo(n).label}`}
+                aria-label={`Room ${i + 1}: ${sceneLabel(n)}`}
                 onClick={() => go(i - cur)}
                 className="grid h-5 w-5 place-items-center"
               >

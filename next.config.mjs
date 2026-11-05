@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // photo scenes: the render route reads the photos and the catalog from disk, so ship them with it
+  experimental: {
+    outputFileTracingIncludes: { "/api/scenes/render": ["./scenes/photos/**/*", "./data/scenes.json"] },
+  },
   images: {
     remotePatterns: [{ protocol: "https", hostname: "res.cloudinary.com" }],
   },

@@ -1,0 +1,58 @@
+{
+  "fixture": true,
+  "source": "Synthetic test fixture",
+  "note": "Drawn by scripts/scenes/make-fixtures.mjs for testing. NOT a photograph; never ship as a real scene.",
+  "description": "Frontal living-room wall, sofa (32 in back), standing adult (66 in) against the wall.",
+  "tags": [
+    "living",
+    "person"
+  ],
+  "truth": {
+    "quad": [
+      [
+        202.7,
+        302.5
+      ],
+      [
+        1364,
+        302.5
+      ],
+      [
+        1364,
+        822.5
+      ],
+      [
+        202.7,
+        822.5
+      ]
+    ],
+    "anchors": [
+      [
+        913.3,
+        597.2
+      ],
+      [
+        480,
+        597.2
+      ],
+      [
+        1260,
+        597.2
+      ]
+    ],
+    "ref": {
+      "a": [
+        1552.1,
+        1147.3
+      ],
+      "b": [
+        1552.1,
+        559.7
+      ],
+      "kind": "adult",
+      "inches": 66
+    },
+    "ppiWall": 8.666666666666666,
+    "ppiRef": 8.904109589041095
+  }
+}

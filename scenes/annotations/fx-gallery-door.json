@@ -1,0 +1,56 @@
+{
+  "id": "fx-gallery-door",
+  "version": 1,
+  "image": {
+    "w": 1400,
+    "h": 1750
+  },
+  "status": "ok",
+  "quad": [
+    [
+      350,
+      635
+    ],
+    [
+      1100,
+      635
+    ],
+    [
+      1100,
+      1015
+    ],
+    [
+      350,
+      1015
+    ]
+  ],
+  "anchors": [
+    [
+      725,
+      885
+    ]
+  ],
+  "ref": {
+    "a": [
+      205,
+      1185
+    ],
+    "b": [
+      205,
+      785
+    ],
+    "kind": "door",
+    "inches": 80
+  },
+  "lens": null,
+  "tint": "#ecebe7",
+  "shadow": {
+    "angle": 70,
+    "strength": 0.5
+  },
+  "tags": [
+    "gallery",
+    "person"
+  ],
+  "updatedAt": "2026-11-05T13:38:20.865Z"
+}
