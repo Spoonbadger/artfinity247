@@ -40,12 +40,14 @@ export async function seedFollowers(prisma) {
       const email = `${f}.${l}${n++ % 3 ? Math.floor(r() * 90 + 10) : ""}@${DOMAINS[Math.floor(r() * DOMAINS.length)]}`.toLowerCase();
       if (rows.has(email)) continue;
       const roll = r();
+      const source = roll < 0.68 ? "page" : roll < 0.88 ? "links" : "import";
       rows.set(email, {
         email,
         name: r() < 0.4 ? `${f} ${l}` : null,
-        source: roll < 0.68 ? "page" : roll < 0.88 ? "links" : "import",
+        source,
         createdAt: new Date(Date.now() - Math.floor(r() * 75) * DAY - Math.floor(r() * 8e7)),
-        confirmed: r() < 0.88,
+        // Page and links follows wait for the confirm click; about 1 in 6 hasn't yet.
+        confirmed: source === "import" || r() < 0.83,
       });
     }
 

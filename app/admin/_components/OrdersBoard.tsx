@@ -46,6 +46,8 @@ export type AdminOrder = {
   items: AdminOrderItem[];
   /** Latest tracking sent to the buyer, if any. */
   tracking?: Tracking | null;
+  /** The artist's thank-you note to print and put in the parcel ("Also print this note in the parcel"). */
+  parcelNotes?: { id: string; artistName: string; subject: string; body: string; createdAt: string }[];
 };
 
 type Filter = "all" | "print" | "ship" | "done";
@@ -183,6 +185,9 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
                         <span className="rounded-full bg-[#f3dcc8] px-2 text-[11.5px] font-bold text-ink" title="Free reprint for a damaged or wrong print. Artfinity pays. Not a sale, no payout.">Free reprint</span>
                       ) : o.paymentStatus !== "paid" && <span className="rounded-full bg-coral/15 px-2 text-[11.5px] font-bold text-coral">{o.paymentStatus}</span>}
                       {o.kind === "bulk" && <span className="rounded-full bg-sticker px-2 text-[11.5px] font-bold text-ink" title="Artist's own prints at cost. Not a sale, no payout.">Bulk</span>}
+                      {!!o.parcelNotes?.length && (
+                        <a href={`/admin/orders/${o.id}/slip`} target="_blank" rel="noopener" className="rounded-full bg-[#e6dcff] px-2 text-[11.5px] font-bold text-ink no-underline hover:underline" title="The artist wrote a note to print and put in the parcel">Parcel note</a>
+                      )}
                     </div>
                     <div className="truncate text-[13px] text-ink-2">
                       {date.toLocaleDateString("en-US", { month: "short", day: "numeric" })} · {date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })} · {o.email}
@@ -267,7 +272,20 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
                       <span className="text-ink-2">{o.shippingAddress || "No address"}</span>
                       <span className="mt-2 eyebrow">Stripe</span>
                       <span className="break-all text-ink-2">{o.stripeSessionId}</span>
+                      <a href={`/admin/orders/${o.id}/slip`} target="_blank" rel="noopener" className="mt-2 font-semibold text-scan">Packing slip</a>
                     </div>
+                    {!!o.parcelNotes?.length && (
+                      <div className="grid gap-2 md:col-span-2">
+                        <span className="eyebrow">Print this note in the parcel</span>
+                        {o.parcelNotes.map((n) => (
+                          <figure key={n.id} className="grid gap-1.5 rounded-lg border-[1.5px] border-dashed border-ink/30 bg-white p-3">
+                            <blockquote className="whitespace-pre-wrap text-[14px] leading-relaxed text-ink">{n.body}</blockquote>
+                            <figcaption className="text-[12.5px] text-ink-2">— {n.artistName}</figcaption>
+                          </figure>
+                        ))}
+                        <a href={`/admin/orders/${o.id}/slip`} target="_blank" rel="noopener" className="btn btn-ghost btn-sm justify-self-start">Print slip with note</a>
+                      </div>
+                    )}
                     <div className="overflow-x-auto">
                       <table className="num w-full min-w-[460px] text-left">
                         <thead className="text-[11.5px] uppercase tracking-[0.06em] text-ink-2">
