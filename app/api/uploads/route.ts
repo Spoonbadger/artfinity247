@@ -6,15 +6,13 @@
 // 1600px preview. Send kind=photo (profile, verification) to skip keeping the original.
 // Returns { url, width, height, printable, printableSig }: printable lists the print sizes the original can support,
 // printableSig lets the artwork routes trust that list (lib/printSign.ts).
+// The work itself is lib/uploadPipeline.ts processUpload, shared with POST /api/uploads/import (Google Drive, Dropbox).
 import { NextRequest, NextResponse } from "next/server";
-import { saveUpload, UnreadableImage } from "@/lib/storage";
 import { getUserFromCookie } from "@/lib/auth";
-import { printableFor } from "@/lib/printSizes";
-import { signPrintable } from "@/lib/printSign";
 import { verifyReview } from "@/lib/reviews";
 import { verifyHelp } from "@/lib/reprints";
 import { rateLimit } from "@/lib/rateLimit";
-import { MAX_UPLOAD_BYTES } from "@/lib/uploadLimits";
+import { artistUploadTarget, processUpload, UnreadableImage, UPLOAD_ERRORS, uploadProblem } from "@/lib/uploadPipeline";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,27 +27,21 @@ export async function POST(req: NextRequest) {
   const helpOrder = !user?.id && !reviewer ? String(form.get("helpOrder") || "") : "";
   const helper = !!helpOrder && verifyHelp(helpOrder, form.get("helpToken")) && rateLimit(`help-upload:${helpOrder}`, 15, 10 * 60_000);
   if (!user?.id && !reviewer && !helper) return NextResponse.json({ error: "Log in to upload." }, { status: 401 });
-  const folder = user?.id ? String(user.slug || user.id) : reviewer ? `reviews/${reviewOrder}` : `reprints/${helpOrder}`;
 
   const file = form.get("file");
   if (!(file instanceof File)) return NextResponse.json({ error: "No file received." }, { status: 400 });
-  if (file.size > MAX_UPLOAD_BYTES) return NextResponse.json({ error: "That file is over 25 MB." }, { status: 413 });
-  if (!/^image\//.test(file.type)) return NextResponse.json({ error: "Upload a JPG, PNG, WEBP or HEIC image." }, { status: 415 });
+  const problem = uploadProblem(file.size, file.type);
+  if (problem) return NextResponse.json({ error: problem.error }, { status: problem.status });
 
   const buf = Buffer.from(await file.arrayBuffer());
-  let saved;
+  const guestFolder = reviewer ? `reviews/${reviewOrder}` : `reprints/${helpOrder}`;
+  const target = user?.id
+    ? artistUploadTarget({ id: user.id, slug: user.slug }, form.get("kind") === "photo")
+    : { folder: guestFolder, cloudFolder: `artfinity/${guestFolder}`, keepOriginal: false };
   try {
-    saved = await saveUpload(buf, {
-      folder,
-      cloudFolder: user?.id ? `artfinity/artists/${user.slug}/artworks` : `artfinity/${folder}`,
-      keepOriginal: !!user?.id && form.get("kind") !== "photo",
-      fileName: file.name,
-    });
+    return NextResponse.json(await processUpload(buf, file.name, target));
   } catch (err) {
-    if (err instanceof UnreadableImage) return NextResponse.json({ error: "We couldn't read that image. Try a JPG or PNG." }, { status: 415 });
+    if (err instanceof UnreadableImage) return NextResponse.json({ error: UPLOAD_ERRORS.unreadable }, { status: 415 });
     throw err;
   }
-  const { url, width, height } = saved;
-  const printable = printableFor(width, height);
-  return NextResponse.json({ url, width, height, printable, printableSig: signPrintable(url, printable) });
 }

@@ -188,7 +188,7 @@ export default async function AdminDashboard() {
             <span className="text-[13px] text-ink-2"><b className="num text-ink">{activeArtists}</b> active artists (sold in 30 days)</span>
           </div>
           <div className="-mx-1 overflow-x-auto px-1">
-            <table className="num w-full min-w-[340px] text-[14px]">
+            <table className="num w-full text-[13px] sm:text-[14px]">
               <thead>
                 <tr className="border-b border-line text-left text-[12px] uppercase tracking-[0.06em] text-ink-2">
                   <th className="py-2 pr-2 font-bold" />
@@ -200,9 +200,9 @@ export default async function AdminDashboard() {
                   <tr key={r.label} className="border-b border-line last:border-b-0">
                     <th scope="row" className="py-2 pr-2 text-left font-semibold">
                       {r.label}
-                      {r.hint && <span className="block text-[11.5px] font-normal text-ink-2">{r.hint}</span>}
+                      {r.hint && <span className="hidden text-[11.5px] font-normal text-ink-2 sm:block">{r.hint}</span>}
                     </th>
-                    {stats.map((s) => <td key={s.id} className={cn("py-2 pl-2 text-right", r.label === "Artfinity profit" && "font-semibold text-earned")}>{r.fmt(s)}</td>)}
+                    {stats.map((s) => <td key={s.id} className={cn("whitespace-nowrap py-2 pl-2 text-right", r.label === "Artfinity profit" && "font-semibold text-earned")}>{r.fmt(s)}</td>)}
                   </tr>
                 ))}
               </tbody>

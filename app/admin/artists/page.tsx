@@ -32,7 +32,7 @@ export default async function AdminArtistsPage({ searchParams }: { searchParams:
         <a href={`/api/admin/artists/export?${qs}`} className="btn btn-ghost btn-sm" download>Export CSV</a>
       </div>
 
-      <form method="get" className="af-card grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-[1.6fr_repeat(5,minmax(0,1fr))_auto] xl:items-end [&>label]:min-w-0">
+      <form method="get" className="af-card grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end [&>label]:min-w-0">
         <label className="grid gap-1 text-[12.5px] font-semibold">Search
           <input name="q" defaultValue={f.q || ""} placeholder="Name, @handle, email, city" className={field} />
         </label>
