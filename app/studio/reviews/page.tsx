@@ -86,9 +86,9 @@ export default async function StudioReviewsPage({ searchParams }: { searchParams
           {reviews.length === 0 ? (
             <p className="rounded-2xl border border-line bg-white px-4 py-10 text-center text-ink-2">{show === "reply" ? "You've replied to everyone." : "Nothing here yet."}</p>
           ) : (
-            <ul className="grid gap-4 lg:grid-cols-2">
+            <ul className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
               {reviews.map((r) => (
-                <li key={r.id} className="af-panel grid content-start gap-3 p-4 sm:p-5">
+                <li key={r.id} className="af-panel grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-3 p-4 sm:p-5">
                   <div className="flex items-start gap-3">
                     {r.artwork && (
                       // eslint-disable-next-line @next/next/no-img-element

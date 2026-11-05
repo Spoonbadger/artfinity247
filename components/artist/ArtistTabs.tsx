@@ -43,7 +43,7 @@ export default function ArtistTabs({ tabs }: { tabs: Tab[] }) {
               aria-controls={`panel-${t.id}`}
               onClick={() => pick(t.id)}
               className={cn(
-                "relative -mb-px min-h-[44px] pb-3 pt-2 text-[15px] font-bold transition-colors",
+                "relative -mb-px min-h-[44px] scroll-mt-24 pb-3 pt-2 text-[15px] font-bold transition-colors",
                 on ? "text-ink" : "text-ink-2 hover:text-ink"
               )}
             >

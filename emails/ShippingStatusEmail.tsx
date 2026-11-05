@@ -12,11 +12,13 @@ export default function ShippingStatusEmail({
   status,
   orderId,
   items,
+  tracking,
 }: {
   name: string;
   status: "shipped" | "delivered";
   orderId: string;
   items: Item[];
+  tracking?: { carrier: string; number: string; url: string | null } | null;
 }) {
   return (
     <div style={{ fontFamily: "ui-sans-serif, system-ui", color: "#222" }}>
@@ -53,7 +55,22 @@ export default function ShippingStatusEmail({
       <hr style={{ margin: "16px 0" }} />
 
       {status === "shipped" ? (
-        <p>Your print is on its way and should arrive soon.</p>
+        <>
+          <p>Your print is on its way and should arrive soon.</p>
+          {tracking && (
+            <p>
+              <strong>{tracking.carrier} tracking:</strong> {tracking.number}
+              {tracking.url && (
+                <>
+                  <br />
+                  <a href={tracking.url} style={{ display: "inline-block", marginTop: 8, padding: "10px 14px", borderRadius: 6, background: "#2b37f0", color: "#fff", textDecoration: "none" }}>
+                    Track your package
+                  </a>
+                </>
+              )}
+            </p>
+          )}
+        </>
       ) : (
         <p>Your print has been delivered. We hope you love it.</p>
       )}

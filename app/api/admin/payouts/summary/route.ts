@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdmin } from "@/lib/admin"
 import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
+import { isPayoutLate } from "@/lib/balance"
 
 export const dynamic = "force-dynamic"
 
@@ -109,7 +110,7 @@ export async function GET(req: NextRequest) {
     // Fetch artist info in one go
     const artists = await prisma.artist.findMany({
       where: { id: { in: artistIds } },
-      select: { id: true, artist_name: true, email: true, venmoHandle: true },
+      select: { id: true, artist_name: true, name: true, email: true, venmoHandle: true, closedAt: true },
     });
     const artistMap = new Map<string, (typeof artists)[number]>(
       artists.map((a: any) => [a.id, a])
@@ -125,6 +126,9 @@ export async function GET(req: NextRequest) {
     )
 
 
+    // Late: unpaid more than a few days after this month's payout day (lib/balance.ts).
+    const monthLate = isPayoutLate(month)
+
     const rows = artistIds.map(artistId => {
       const agg = byArtist.get(artistId)!;
       const a = artistMap.get(artistId);
@@ -132,7 +136,7 @@ export async function GET(req: NextRequest) {
 
       return {
         artistId,
-        artistName: a?.artist_name || "(unknown)",
+        artistName: a?.artist_name || a?.name || "(unknown)",
         artistEmail: a?.email || "",
         venmoHandle: a?.venmoHandle || "",
         itemsCount: agg.itemsCount,
@@ -140,6 +144,9 @@ export async function GET(req: NextRequest) {
         expenses: agg.expenses,
         profit: agg.profit,
         artistShare: agg.artistShare,
+        // Closed accounts are still paid what they earned.
+        closed: !!a?.closedAt,
+        late: monthLate && !p?.paidAt && agg.artistShare > 0 && artistId !== "__unknown__",
         payout: {
           status: p?.paidAt ? "PAID" : "UNPAID",
           paidAt: p?.paidAt || null,

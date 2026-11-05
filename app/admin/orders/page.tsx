@@ -6,6 +6,7 @@ import { PaintChip } from "@/components/af/Brush";
 import MonthPicker from "../_components/MonthPicker";
 import OrdersBoard, { type AdminOrder } from "../_components/OrdersBoard";
 import { currentMonth, monthLabel, monthRange, usd } from "../_components/util";
+import { TRACKING_SUBJECT, parseTrackingMessage, type Tracking } from "@/lib/tracking";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Orders" };
@@ -29,6 +30,20 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
       },
     },
   });
+
+  // Tracking is kept as Messages on the order (Order has no tracking columns); newest wins.
+  const trackingRows = orders.length
+    ? await prisma.message.findMany({
+        where: { orderId: { in: orders.map((o) => o.id) }, subject: { startsWith: TRACKING_SUBJECT } },
+        orderBy: { createdAt: "asc" },
+        select: { orderId: true, subject: true, body: true },
+      })
+    : [];
+  const trackingByOrder = new Map<string, Tracking>();
+  for (const m of trackingRows) {
+    const t = parseTrackingMessage(m.subject, m.body);
+    if (t && m.orderId) trackingByOrder.set(m.orderId, t);
+  }
 
   const shaped: AdminOrder[] = orders.map((o) => {
     const items = o.items.map((it) => {
@@ -69,6 +84,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
       sentToPrinter: o.sentToPrinter,
       kind: o.kind,
       items,
+      tracking: trackingByOrder.get(o.id) ?? null,
     };
   });
 

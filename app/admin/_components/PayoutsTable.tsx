@@ -16,6 +16,8 @@ type Row = {
   expenses: number;
   profit: number;
   artistShare: number;
+  closed?: boolean;
+  late?: boolean;
   payout: { status: "PAID" | "UNPAID"; paidAt: string | null; amountCents: number };
 };
 
@@ -104,7 +106,7 @@ export default function PayoutsTable({ month }: { month: string }) {
                 {list.map((r) => (
                   <tr key={r.artistId}>
                     <td className="px-4 py-3">
-                      <b className="block">{r.artistName}</b>
+                      <b className="flex flex-wrap items-center gap-1.5">{r.artistName}<Badges r={r} /></b>
                       <span className="text-[12.5px] text-ink-2">{r.artistEmail}</span>
                     </td>
                     <td className="px-3 py-3">{r.venmoHandle ? `@${r.venmoHandle.replace(/^@/, "")}` : <span className="text-coral">Missing</span>}</td>
@@ -125,7 +127,7 @@ export default function PayoutsTable({ month }: { month: string }) {
                 <li key={r.artistId} className="grid gap-2 px-4 py-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <b className="block truncate">{r.artistName}</b>
+                      <b className="flex flex-wrap items-center gap-1.5"><span className="truncate">{r.artistName}</span><Badges r={r} /></b>
                       <span className="text-[13px] text-ink-2">{r.venmoHandle ? `Venmo @${r.venmoHandle.replace(/^@/, "")}` : "No Venmo"} · {r.itemsCount} {r.itemsCount === 1 ? "print" : "prints"}</span>
                     </div>
                     <b className="num shrink-0 text-[18px] text-earned">{usd(r.artistShare)}</b>
@@ -155,5 +157,14 @@ function PayButton({ r, busy, onClick }: { r: Row; busy: boolean; onClick: () =>
         {paid ? "Undo" : "Mark paid"}
       </button>
     </div>
+  );
+}
+
+function Badges({ r }: { r: Row }) {
+  return (
+    <>
+      {r.late && <span className="rounded-full bg-coral px-2 py-px text-[11.5px] font-bold text-white" title="Unpaid more than 3 days after the 5th">Late</span>}
+      {r.closed && <span className="rounded-full bg-wall px-2 py-px text-[11.5px] font-bold text-ink-2" title="Account closed. Still owed what they earned.">Closed</span>}
+    </>
   );
 }

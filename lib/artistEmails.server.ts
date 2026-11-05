@@ -63,15 +63,18 @@ export async function artistEmailForOrder(orderId: string, kind: EmailKind): Pro
  * Sends the artist's version of a shipped/delivered email. Returns true if it went out,
  * false if the caller should send Artfinity's default instead.
  */
-export async function sendArtistOrderEmail(orderId: string, kind: EmailKind): Promise<boolean> {
+export async function sendArtistOrderEmail(orderId: string, kind: EmailKind, opts: { append?: string } = {}): Promise<boolean> {
   const email = await artistEmailForOrder(orderId, kind);
   if (!email) return false;
+  // `append` adds Artfinity's lines (e.g. tracking) under the artist's own words.
+  const body = opts.append ? `${email.body}\n\n${opts.append}` : null;
+  const footer = "Sent with Artfinity. Every wall is a shop.";
   const { error } = await resend.emails.send({
     from: `${email.fromName} <${FROM_ADDRESS}>`,
     to: email.to,
     subject: email.subject,
-    html: email.html,
-    text: email.text,
+    html: body ? emailHtml(body, footer) : email.html,
+    text: body ? `${body}\n\n--\n${footer}` : email.text,
   });
   if (error) throw error;
   console.log(`[artist-email] order=${orderId} kind=${kind} template=artist`);

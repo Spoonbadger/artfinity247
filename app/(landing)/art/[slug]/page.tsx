@@ -11,6 +11,7 @@ import { PRINT_SIZES, parseDiscount, parseVenue, priceFor } from "@/components/a
 import { editionOf, soldCount } from "@/lib/editions";
 import { getArtistSplitFor } from "@/lib/revenue";
 import { deliveryRange } from "@/lib/delivery";
+import { getReviews } from "@/lib/reviews";
 
 export const dynamic = "force-dynamic";
 
@@ -77,6 +78,12 @@ export default async function ArtPage({ params, searchParams }: Props) {
     select: { slug: true, title: true, imageUrl: true, sensitive: true, markupSmall: true, markupMedium: true, markupLarge: true, markupXl: true, printableSizes: true },
   });
 
+  // This piece's reviews; with fewer than 3, show all of the artist's reviews instead.
+  const pieceReviews = await getReviews({ artworkId: art.id }, 12);
+  const reviews = pieceReviews.summary.count >= 3
+    ? { ...pieceReviews, scope: "art" as const }
+    : { ...(await getReviews({ artistId: art.artistId }, 12)), scope: "artist" as const };
+
   const edition = art.editionSize ? editionOf(art.editionSize, await soldCount(art.id)) : null;
   const a = art.artist;
   const place = [a.city, a.state].filter(Boolean).join(", ") || null;
@@ -116,6 +123,7 @@ export default async function ArtPage({ params, searchParams }: Props) {
       trust={await trustP}
       artistSplit={getArtistSplitFor({ orderDate: new Date(), proUntil: a.proUntil })}
       arrives={deliveryRange()}
+      reviews={reviews}
     />
   );
 }

@@ -4,6 +4,7 @@ import { adminGuard } from "@/lib/admin"
 import { resend } from "@/lib/resend"
 import ShippingStatusEmail from "@/emails/ShippingStatusEmail"
 import { sendArtistOrderEmail } from "@/lib/artistEmails.server"
+import { TRACKING_SUBJECT, cleanTracking, trackingText, type Tracking } from "@/lib/tracking"
 import { sendReviewRequest } from "@/lib/reviews"
 
 export const dynamic = "force-dynamic"
@@ -18,7 +19,8 @@ export async function POST(
   const denied = await adminGuard()
   if (denied) return denied
 
-  const { shippingStatus } = await req.json().catch(() => ({}))
+  const input = await req.json().catch(() => ({}))
+  const { shippingStatus } = input
 
   if (!["pending", "shipped", "delivered"].includes(shippingStatus)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 })
@@ -34,6 +36,7 @@ export async function POST(
           size: true,
           quantity: true,
           imageUrl: true,
+          artwork: { select: { artistId: true } },
         },
       },
     },
@@ -43,11 +46,38 @@ export async function POST(
     return NextResponse.json({ error: "Order not found" }, { status: 404 })
   }
 
+  // Marking shipped needs a carrier and tracking number; the buyer's email carries the link.
+  let tracking: Tracking | null = null
+  if (shippingStatus === "shipped" && existing.shippingStatus !== "shipped") {
+    const t = cleanTracking(input)
+    if ("error" in t) return NextResponse.json({ error: t.error }, { status: 400 })
+    tracking = t.tracking
+  }
+
   // Update status
   const order = await prisma.order.update({
     where: { id: params.id },
     data: { shippingStatus },
   })
+
+  // Order has no tracking columns: keep it as a Message on the order for each artist in it,
+  // which also shows the artist the tracking in their customer thread.
+  if (tracking) {
+    const artistIds = Array.from(new Set(existing.items.map((i) => i.artwork?.artistId).filter((x): x is string => !!x)))
+    if (artistIds.length) {
+      await prisma.message.createMany({
+        data: artistIds.map((artistId) => ({
+          artistId,
+          email: existing.email.trim().toLowerCase(),
+          orderId: existing.id,
+          direction: "out",
+          subject: `${TRACKING_SUBJECT}${tracking!.carrier} ${tracking!.number}`,
+          body: `Artfinity shipped this order.\n${trackingText(tracking!)}`,
+          sentAt: new Date(),
+        })),
+      }).catch((err) => console.error("Saving tracking failed", err))
+    }
+  }
 
   // Only email on real transitions
   const was = existing.shippingStatus
@@ -60,7 +90,7 @@ export async function POST(
     // The status change is saved; a failed email shouldn't make the admin UI report failure.
     try {
       // The artist's own wording when they wrote one; otherwise Artfinity's default below.
-      const sentByArtist = await sendArtistOrderEmail(order.id, now === "shipped" ? "shipped" : "delivered").catch((err) => {
+      const sentByArtist = await sendArtistOrderEmail(order.id, now === "shipped" ? "shipped" : "delivered", { append: tracking ? trackingText(tracking) : undefined }).catch((err) => {
         console.error("Artist shipping email failed, sending default", err)
         return false
       })
@@ -81,6 +111,7 @@ export async function POST(
             quantity: i.quantity ?? 1,
             imageUrl: i.imageUrl ?? null,
           })),
+          tracking,
         }),
       })
     } catch (err) {
@@ -93,5 +124,5 @@ export async function POST(
     await sendReviewRequest(order.id).catch((err) => console.error("Review request email failed", err))
   }
 
-  return NextResponse.json(order)
+  return NextResponse.json({ ...order, tracking })
 }

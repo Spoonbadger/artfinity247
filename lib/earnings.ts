@@ -8,14 +8,18 @@ export const SIZE_NAME: Record<SizeKey, string> = { small: "Small", medium: "Med
 export const SIZE_INCHES: Record<SizeKey, string> = { small: "5 × 7 in", medium: "8 × 12 in", large: "11 × 17 in", xl: "18 × 24 in" };
 const COST_KEY: Record<SizeKey, "S" | "M" | "L" | "XL"> = { small: "S", medium: "M", large: "L", xl: "XL" };
 
-export function breakdown(size: SizeKey, markupCents = 0, discountPct = 0, framed = false, date = new Date()) {
+/**
+ * `split` is the artist's share of profit (0.6 = 60%). Pass the artist's real split (Infinity is 70%);
+ * without it this uses the Free split for `date`.
+ */
+export function breakdown(size: SizeKey, markupCents = 0, discountPct = 0, framed = false, date = new Date(), split?: number) {
   const list = basePrices[size] + markupCents + (framed ? framePrices[size] : 0);
   const price = Math.round(list * (1 - discountPct / 100));
   const cost = framed ? COSTS.ITEM.FRAMED[COST_KEY[size]] : COSTS.ITEM.UNFRAMED[COST_KEY[size]];
   const fee = Math.ceil(price * COSTS.STRIPE_PERCENT) + COSTS.STRIPE_FIXED;
   const hosting = COSTS.HOSTING_PER_ITEM;
   const profit = Math.max(0, price - cost - fee - hosting);
-  const artist = Math.round(profit * getArtistSplit(date));
+  const artist = Math.round(profit * (split ?? getArtistSplit(date)));
   return { list, price, cost, fee, hosting, profit, artist, company: profit - artist };
 }
 

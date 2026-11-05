@@ -6,6 +6,7 @@ import { Check, Download, FileText, ImageIcon, Layers, Loader2, Plus } from "luc
 import { toast } from "sonner";
 import { qrSVG } from "@/lib/qr/render";
 import { breakdown, money, SIZE_NAME, SIZE_INCHES, type SizeKey } from "@/lib/earnings";
+import { getArtistSplit } from "@/lib/revenue";
 import { BrushStroke } from "@/components/af/Brush";
 import { PLACEHOLDER_CODE, shortLabel, shortUrl } from "@/lib/shortcode";
 import {
@@ -23,7 +24,9 @@ export type SavedCode = { code: string; slug: string; label: string; expiresAt: 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
-export default function QrStudio({ arts, initialSlug, initialDesign, initialCard, base, initialSaved = null }: {
+export default function QrStudio({ arts, initialSlug, initialDesign, initialCard, base, initialSaved = null, split }: {
+  /** The artist's current share of profit (Infinity pays more). */
+  split?: number;
   arts: ArtInfo[];
   initialSlug: string;
   initialDesign: Design;
@@ -335,7 +338,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
               <h2 id="qs-scan-h"><span className="paint-dab" style={{ ["--dab" as string]: "#0f7a55" }} aria-hidden="true" />Will it scan?</h2>
               {sn ? <Checks d={d} sn={sn} /> : <p className={s.note}>Checking…</p>}
             </section>
-            <Earnings d={d} art={art} />
+            <Earnings d={d} art={art} split={split} />
             <section className={cx(s.panel, s.wide)} aria-labelledby="qs-inside-h">
               <h2 id="qs-inside-h"><span className="paint-dab" style={{ ["--dab" as string]: "#2b37f0" }} aria-hidden="true" />What&rsquo;s inside the code</h2>
               <a className={s.link} href={code ? shortUrl(code, base) : undefined} target="_blank" rel="noreferrer" aria-disabled={!code || undefined}>
@@ -463,9 +466,12 @@ function Checks({ d, sn }: { d: Design; sn: SN }) {
   );
 }
 
-function Earnings({ d, art }: { d: Design; art: ArtInfo }) {
+function Earnings({ d, art, split }: { d: Design; art: ArtInfo; split?: number }) {
   const m = art.markups[d.size] || 0;
-  const full = breakdown(d.size, m, 0), sale = breakdown(d.size, m, d.disc);
+  const now = new Date();
+  const full = breakdown(d.size, m, 0, false, now, split), sale = breakdown(d.size, m, d.disc, false, now, split);
+  const youShare = split ?? getArtistSplit(now);
+  const pctOf = (n: number) => `${Math.round(n * 100)}%`;
   return (
     <section className={s.panel} aria-labelledby="qs-earn-h">
       <h2 id="qs-earn-h"><span className="paint-dab" style={{ ["--dab" as string]: "#0f7a55" }} aria-hidden="true" />Each sale pays you</h2>
@@ -478,8 +484,8 @@ function Earnings({ d, art }: { d: Design; art: ArtInfo }) {
         {d.disc > 0 && <thead><tr><th><span className="sr-only">Who</span></th><th>Full price</th><th>{d.disc}% off</th></tr></thead>}
         <tbody>
           <tr><td>Buyer pays</td><td>{money(full.price)}</td>{d.disc > 0 && <td>{money(sale.price)}</td>}</tr>
-          <tr className={s.you}><td>You (60%)</td><td>{money(full.artist)}</td>{d.disc > 0 && <td>{money(sale.artist)}</td>}</tr>
-          <tr><td>Artfinity (40%)</td><td>{money(full.company)}</td>{d.disc > 0 && <td>{money(sale.company)}</td>}</tr>
+          <tr className={s.you}><td>You ({pctOf(youShare)})</td><td>{money(full.artist)}</td>{d.disc > 0 && <td>{money(sale.artist)}</td>}</tr>
+          <tr><td>Artfinity ({pctOf(1 - youShare)})</td><td>{money(full.company)}</td>{d.disc > 0 && <td>{money(sale.company)}</td>}</tr>
         </tbody>
       </table>
       {d.disc > 0 && (

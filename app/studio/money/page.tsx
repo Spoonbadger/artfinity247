@@ -56,7 +56,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
     >
       {b.lateMonths.length > 0 && (
         <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[4px] border-2 border-coral bg-[#fff1ed] px-4 py-3 text-[14.5px]">
-          <i className="paint-dab h-3.5 w-3.5" style={{ ["--dab" as string]: "var(--af-coral, #e8743b)" }} aria-hidden="true" />
+          <i className="paint-dab h-3.5 w-3.5" style={{ ["--dab" as string]: "var(--af-coral)" }} aria-hidden="true" />
           <b className="min-w-0 flex-1">Your {lateText} late. We&apos;re on it — or message us.</b>
           <Link href="/contact" className="btn btn-sm border-coral bg-coral text-white">Message us</Link>
         </div>

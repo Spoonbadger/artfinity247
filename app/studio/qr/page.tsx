@@ -7,6 +7,7 @@ import { DEFAULT_DESIGN, DISCOUNTS, PRESETS, cardSVG, presetLook, qrValue, rende
 import { PLACEHOLDER_CODE, normalizeCode } from "@/lib/shortcode";
 import { loadFonts } from "@/components/qr/text";
 import { requireArtist, displayName } from "../_lib/data";
+import { getArtistSplitFor } from "@/lib/revenue";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "QR codes" };
@@ -26,6 +27,9 @@ export default async function QrPage({ searchParams }: { searchParams: { art?: s
     orderBy: { createdAt: "desc" },
   });
   const name = displayName(artist);
+  // Each sale pays the artist's real split today (70% on Infinity).
+  const plan = await prisma.artist.findUnique({ where: { id: artist.id }, select: { plan: true, proUntil: true } });
+  const split = getArtistSplitFor({ orderDate: new Date(), plan: plan?.plan, proUntil: plan?.proUntil });
   const arts: ArtInfo[] = rows.map((r) => ({
     slug: r.slug as string,
     title: r.title,
@@ -76,7 +80,7 @@ export default async function QrPage({ searchParams }: { searchParams: { art?: s
 
   return (
     <StudioPage title="QR codes" sub="Pick a piece. Pick a look. Print. Every code here really scans." actions={<Link href="/studio/codes" className="btn btn-ghost btn-sm">My codes</Link>}>
-      <QrStudio arts={arts} initialSlug={slug} initialDesign={design} initialCard={initialCard} base={base} initialSaved={savedCode} />
+      <QrStudio arts={arts} initialSlug={slug} initialDesign={design} initialCard={initialCard} base={base} initialSaved={savedCode} split={split} />
     </StudioPage>
   );
 }

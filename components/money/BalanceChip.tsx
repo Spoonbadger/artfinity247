@@ -17,7 +17,7 @@ export default function BalanceChip({ b }: { b: Balance }) {
           <span className="text-[13px] text-ink-2">balance</span>
         </span>
         <span className="block truncate text-[12.5px] text-ink-2">
-          Next payout {dayUTC(b.nextPayout.date)} · {usd(b.nextPayout.amountCents)}
+          {b.lateMonths.length > 0 ? <span className="font-semibold text-coral">Payout late</span> : <>Next payout {dayUTC(b.nextPayout.date)}</>} · {usd(b.nextPayout.amountCents)}
         </span>
       </span>
       <span className="text-[14px] font-bold text-scan group-hover:underline">Money →</span>

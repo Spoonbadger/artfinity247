@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import ReviewStars from "@/components/reviews/ReviewStars";
+import ReviewList from "@/components/reviews/ReviewList";
+import type { PublicReview, ReviewSummary } from "@/components/reviews/format";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -52,6 +55,7 @@ export default function ScanView({
   trust = null,
   artistSplit = FREE_SPLIT,
   arrives = null,
+  reviews = null,
 }: {
   art: ScanArt;
   artist: ScanArtist;
@@ -70,6 +74,8 @@ export default function ScanView({
   artistSplit?: number;
   /** Delivery estimate, e.g. "Nov 12–18" (lib/delivery). */
   arrives?: string | null;
+  /** Verified buyer reviews: this piece's, or the artist's overall when the piece has few. */
+  reviews?: { summary: ReviewSummary; reviews: PublicReview[]; scope: "art" | "artist" } | null;
 }) {
   const router = useRouter();
   const { addToCart, cartItems } = useCart();
@@ -267,6 +273,9 @@ export default function ScanView({
               </span>
             </Link>
             <h1 className="display text-[44px] leading-[0.92] sm:text-[56px] lg:text-[68px]">{art.title}</h1>
+            {reviews && reviews.summary.count > 0 && (
+              <ReviewStars average={reviews.summary.average} count={reviews.summary.count} size="sm" href="#reviews" className="mt-2" />
+            )}
           </div>
 
           <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
@@ -430,6 +439,16 @@ export default function ScanView({
       </div>
 
       {/* After the fold */}
+      {reviews && reviews.summary.count > 0 && (
+        <section id="reviews" aria-label="Reviews" className="mx-auto mt-10 max-w-[1240px] scroll-mt-20 border-t border-line px-4 pt-8 sm:px-6 md:mt-16 md:pt-12">
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+            <h2 className="display text-[30px] md:text-[40px]">{reviews.scope === "art" ? "What buyers say" : `Buyers of ${firstName}'s prints`}</h2>
+            <ReviewStars average={reviews.summary.average} count={reviews.summary.count} />
+          </div>
+          <ReviewList reviews={reviews.reviews} artistName={artist.name} showArtwork={reviews.scope === "artist"} initial={3} />
+        </section>
+      )}
+
       <section aria-label={`More by ${artist.name}`} className="mx-auto mt-10 max-w-[1240px] border-t border-line px-4 pt-8 sm:px-6 md:mt-16 md:pt-12">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <h2 className="display text-[30px] md:text-[40px]">More by {firstName}</h2>

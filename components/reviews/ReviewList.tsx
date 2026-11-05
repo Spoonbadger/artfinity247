@@ -7,12 +7,12 @@ import { RATING_WORDS, reviewMonth, type PublicReview } from "./format";
 
 function ReviewCard({ r, artistName, showArtwork }: { r: PublicReview; artistName?: string; showArtwork?: boolean }) {
   return (
-    <li className="af-panel grid content-start gap-3 p-4 sm:p-5">
+    <li className="af-panel grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-3 p-4 sm:p-5">
       <div className="flex items-center justify-between gap-3">
-        <span className="inline-flex items-center gap-2">
+        <span className="inline-flex shrink-0 items-center gap-2">
           <Dabs value={r.rating} size="sm" />
           <span className="sr-only">{r.rating} out of 5</span>
-          <span className="text-[13px] font-semibold text-ink-2">{RATING_WORDS[r.rating]}</span>
+          <span className="whitespace-nowrap text-[13px] font-semibold text-ink-2">{RATING_WORDS[r.rating]}</span>
         </span>
         {showArtwork && r.artwork && (
           r.artwork.slug ? (

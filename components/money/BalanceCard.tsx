@@ -51,6 +51,9 @@ export default function BalanceCard({ b }: { b: Balance }) {
   const clearing = b.ledger.filter((l) => np.months.includes(l.payoutMonth) && l.status === "pending");
   const lastClear = clearing.reduce((m, l) => (l.clearsAt > m ? l.clearsAt : m), "");
   const late = b.lateMonths.length > 0;
+  // Overdue (past the grace days) / past the 5th but within it / normal.
+  const when = late ? "overdue" : np.late ? `due ${dayUTC(np.date)}, on its way` : `paid ${dayUTC(np.date)}`;
+  const lateDue = late ? `${monthName(b.lateMonths[0], "long").split(" ")[0]} payout was due ${dayUTC(payoutDateFor(b.lateMonths[0]).toISOString())}. ` : "";
 
   // Buckets by where the money goes: next payout, the one after, or already paid.
   const readyCents = np.projected ? 0 : np.amountCents;
@@ -67,7 +70,7 @@ export default function BalanceCard({ b }: { b: Balance }) {
     },
     {
       k: "available" as const,
-      label: readyCents > 0 ? <>Ready for next payout <span className="whitespace-nowrap">— {late ? "was due" : "paid"} {dayUTC(np.date)}</span></> : <>Ready for next payout</>,
+      label: readyCents > 0 ? <>Ready for next payout <span className="whitespace-nowrap">— {when}</span></> : <>Ready for next payout</>,
       value: readyCents,
       note: readyCents > 0
         ? `${monthsText} sales, sent to your Venmo automatically.${clearing.length ? ` Includes ${usd(np.clearingCents)} still in the return window.` : ""}`
@@ -106,7 +109,7 @@ export default function BalanceCard({ b }: { b: Balance }) {
       <div className="grid gap-2 rounded-[4px] bg-wall p-3.5 sm:flex sm:items-center sm:justify-between sm:gap-6 sm:p-4">
         <div className="min-w-0">
           <p className="text-[15.5px] sm:text-[17px]">
-            <b>{late ? "Payout was due" : "Next payout"}: {dayUTC(np.date)}</b>
+            <b>Next payout: {late ? "overdue" : dayUTC(np.date)}</b>
             <span className="text-ink-2"> · </span>
             <b className="num text-earned">{usd(np.amountCents)}</b>
             <span className="text-ink-2"> to </span>
@@ -115,7 +118,7 @@ export default function BalanceCard({ b }: { b: Balance }) {
           <p className="mt-0.5 text-[12.5px] text-ink-2">
             {np.projected
               ? `${monthsText} so far. Grows with every sale this month.`
-              : `${monthsText} sales${clearing.length ? ` · ${usd(np.clearingCents)} still clearing until ${dayUTC(lastClear)}, paid anyway` : ""}`}
+              : `${lateDue}${monthsText} sales${clearing.length ? ` · ${usd(np.clearingCents)} still clearing until ${dayUTC(lastClear)}, paid anyway` : ""}`}
           </p>
         </div>
         <p className="flex items-center gap-2 text-[13px] font-semibold text-ink sm:max-w-[260px] sm:text-right">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SIZE_LABEL, usd } from "./util";
+import { CARRIERS, type Carrier, type Tracking } from "@/lib/tracking";
 
 export type AdminOrderItem = {
   id: string;
@@ -39,6 +40,8 @@ export type AdminOrder = {
   /** "bulk" = an artist's own at-cost order (no artist share). */
   kind?: string;
   items: AdminOrderItem[];
+  /** Latest tracking sent to the buyer, if any. */
+  tracking?: Tracking | null;
 };
 
 type Filter = "all" | "print" | "ship" | "done";
@@ -63,6 +66,8 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
   const [filter, setFilter] = useState<Filter>("all");
   const [busy, setBusy] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
+  // The order being marked shipped: its tracking form is open.
+  const [shipping, setShippingForm] = useState<string | null>(null);
 
   const counts = useMemo(() => Object.fromEntries(FILTERS.map((f) => [f.id, orders.filter(f.test).length])), [orders]);
   const shown = orders.filter(FILTERS.find((f) => f.id === filter)!.test);
@@ -85,17 +90,26 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
     }
   };
 
-  const setShipping = async (o: AdminOrder, status: string) => {
+  const setShipping = async (o: AdminOrder, status: string, tracking?: { carrier: Carrier; trackingNumber: string; trackingUrl?: string }) => {
+    // Shipped needs a tracking number first.
+    if (status === "shipped" && o.shippingStatus !== "shipped" && !tracking) {
+      setShippingForm(o.id);
+      return;
+    }
     const prev = o.shippingStatus;
     setBusy(o.id);
     patch(o.id, { shippingStatus: status });
     try {
-      const r = await fetch(`/api/orders/${o.id}/status`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ shippingStatus: status }) });
-      if (!r.ok) throw new Error();
-      toast.success(status === "pending" ? "Back to pending" : `Marked ${status}. Buyer emailed.`);
-    } catch {
+      const r = await fetch(`/api/orders/${o.id}/status`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ shippingStatus: status, ...tracking }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || "");
+      if (d.tracking) patch(o.id, { tracking: d.tracking });
+      setShippingForm(null);
+      const emailed = (prev === "pending" && status === "shipped") || (prev === "shipped" && status === "delivered");
+      toast.success(status === "pending" ? "Back to pending" : `Marked ${status}.${emailed ? " Buyer emailed." : ""}`);
+    } catch (e: any) {
       patch(o.id, { shippingStatus: prev });
-      toast.error("Couldn't update shipping. Try again.");
+      toast.error(e?.message || "Couldn't update shipping. Try again.");
     } finally {
       setBusy(null);
     }
@@ -224,6 +238,16 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
                   </div>
                 </div>
 
+                {shipping === o.id && (
+                  <ShipForm busy={busy === o.id} onCancel={() => setShippingForm(null)} onSubmit={(t) => setShipping(o, "shipped", t)} />
+                )}
+                {o.tracking && o.shippingStatus !== "pending" && shipping !== o.id && (
+                  <p className="mt-2 text-[13px] text-ink-2 lg:ml-[136px]">
+                    {o.tracking.carrier} <span className="num font-semibold text-ink">{o.tracking.number}</span>
+                    {o.tracking.url && <> · <a href={o.tracking.url} target="_blank" rel="noreferrer" className="font-semibold text-scan">Track</a></>}
+                  </p>
+                )}
+
                 {open === o.id && (
                   <div id={`details-${o.id}`} className="mt-3 grid gap-4 rounded-xl bg-wall/60 p-4 lg:ml-[136px] text-[13.5px] md:grid-cols-[220px_minmax(0,1fr)]">
                     <div className="grid content-start gap-1">
@@ -266,5 +290,47 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
         </ul>
       </div>
     </section>
+  );
+}
+
+function ShipForm({ busy, onSubmit, onCancel }: { busy: boolean; onSubmit: (t: { carrier: Carrier; trackingNumber: string; trackingUrl?: string }) => void; onCancel: () => void }) {
+  const [carrier, setCarrier] = useState<Carrier>("USPS");
+  const [num, setNum] = useState("");
+  const [url, setUrl] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (num.trim().length < 4) return setErr("Add the tracking number.");
+    if (carrier === "Other" && !/^https:\/\//.test(url.trim())) return setErr("Paste the https tracking link.");
+    setErr(null);
+    onSubmit({ carrier, trackingNumber: num.trim(), ...(carrier === "Other" ? { trackingUrl: url.trim() } : {}) });
+  };
+  return (
+    <form onSubmit={submit} className="mt-3 grid gap-3 rounded-xl border-[1.5px] border-ink bg-white p-3 lg:ml-[136px] sm:grid-cols-[140px_minmax(0,1fr)_auto] sm:items-end" noValidate>
+      <label className="grid gap-1 text-[12.5px] font-semibold">
+        Carrier
+        <select value={carrier} onChange={(e) => setCarrier(e.target.value as Carrier)} className="min-h-[40px] rounded-lg border-[1.5px] border-line bg-white px-2 text-[14px] text-ink">
+          {CARRIERS.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </label>
+      <div className="grid gap-2">
+        <label className="grid gap-1 text-[12.5px] font-semibold">
+          Tracking number
+          <input value={num} onChange={(e) => setNum(e.target.value)} maxLength={40} autoFocus className="min-h-[40px] rounded-lg border-[1.5px] border-line px-2.5 text-[14px] text-ink" placeholder="9400 1000 0000 0000 0000 00" />
+        </label>
+        {carrier === "Other" && (
+          <label className="grid gap-1 text-[12.5px] font-semibold">
+            Tracking link
+            <input value={url} onChange={(e) => setUrl(e.target.value)} maxLength={300} type="url" className="min-h-[40px] rounded-lg border-[1.5px] border-line px-2.5 text-[14px] text-ink" placeholder="https://" />
+          </label>
+        )}
+      </div>
+      <div className="flex gap-2">
+        <button type="submit" disabled={busy} className="btn btn-blue btn-sm">Mark shipped</button>
+        <button type="button" onClick={onCancel} className="btn btn-ghost btn-sm">Cancel</button>
+      </div>
+      {err && <p role="alert" className="text-[13px] font-semibold text-coral sm:col-span-3">{err}</p>}
+      <p className="text-[12.5px] text-ink-2 sm:col-span-3">The buyer gets the shipped email with this tracking link.</p>
+    </form>
   );
 }

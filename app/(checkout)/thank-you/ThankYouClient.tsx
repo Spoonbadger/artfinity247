@@ -6,6 +6,7 @@ import { useCart } from "@/components/contexts";
 import { BrushStroke } from "@/components/af/Brush";
 import { usd } from "@/components/art/pricing";
 import { editionLabel } from "@/lib/editionFormat";
+import { deliveryRange } from "@/lib/delivery";
 
 type OrderItem = {
   id: string;
@@ -114,7 +115,7 @@ export default function ThankYouClient({ sessionId }: { sessionId: string }) {
             <BrushStroke className="mt-1 h-3 w-40" />
           </h1>
           <p className="mt-2 text-[17px] text-ink-2">
-            {count > 1 ? "We're printing them now." : "We're printing it now."} Ships in a few days.
+            {count > 1 ? "We're printing them now." : "We're printing it now."} Arrives {deliveryRange()}.
           </p>
         </div>
 

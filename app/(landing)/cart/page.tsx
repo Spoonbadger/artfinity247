@@ -8,6 +8,7 @@ import { useCart, useUser } from "@/components/contexts";
 import { CartItemCard, CartPricingInfo } from "@/components/cards";
 import { usd } from "@/components/art/pricing";
 import { lineSavings, startCheckout } from "@/components/art/checkout";
+import { deliveryRange } from "@/lib/delivery";
 
 export default function CartPage() {
   const { cartItems, calculateTotalPrice } = useCart();
@@ -57,7 +58,7 @@ export default function CartPage() {
               </p>
               <ul className="mt-1 grid gap-1 border-t border-line pt-3 text-[13.5px] text-ink-2">
                 <li>Free US shipping</li>
-                <li>Printed to order, ships in a few days</li>
+                <li>Printed to order, arrives {deliveryRange()}</li>
                 <li>Artists get 60% of the profit</li>
               </ul>
             </CartPricingInfo>
