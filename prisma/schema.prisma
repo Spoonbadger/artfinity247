@@ -21,6 +21,9 @@ model Order {
   shippingStatus  String      @default("pending")
   items           OrderItem[]
   sentToPrinter Boolean @default(false)
+  // When the work order went to the print lab automatically, and the lab's reference if it sends one back
+  printerSentAt DateTime?
+  printerRef    String?
   adminNotificationSentAt  DateTime?
   // retail = a buyer's order; bulk = an artist ordering their own prints at cost to sell in person
   kind            String  @default("retail")
@@ -63,6 +66,9 @@ model Payout {
   month       String
   amountCents Int
   paidAt      DateTime?
+  method      String?   // "stripe" | "venmo" | "manual"
+  stripeTransferId String? @unique
+  failureReason    String?
   createdAt   DateTime  @default(now())
   artist      Artist    @relation(fields: [artistId], references: [id])
 
@@ -88,6 +94,9 @@ model Artist {
   createdAt    DateTime  @default(now())
   role         Role      @default(USER)
   venmoHandle  String?   @unique
+  // Automatic payouts through Stripe Connect (Express). Venmo stays as the fallback.
+  stripeAccountId       String?  @unique
+  stripePayoutsEnabled  Boolean  @default(false)
   artworks     Artwork[]
   payouts      Payout[]
 
