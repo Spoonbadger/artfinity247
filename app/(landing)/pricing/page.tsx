@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 function Cell({ v, dark = false }: { v: Feature["free"]; dark?: boolean }) {
-  if (v === false) return <Minus className={`h-4 w-4 shrink-0 ${dark ? "text-white/40" : "text-ink-2/50"}`} aria-label="Not included" />;
+  if (v === false) return <Minus className={`h-4 w-4 shrink-0 ${dark ? "text-white/75" : "text-ink-2"}`} aria-label="Not included" />;
   return <Check className={`h-4 w-4 shrink-0 ${dark ? "text-sticker" : "text-earned"}`} aria-label="Included" />;
 }
 
@@ -33,10 +33,11 @@ function FeatureList({ which, dark = false }: { which: "free" | "pro"; dark?: bo
       {rows.map((f) => {
         const v = f[which];
         return (
-          <li key={f.label} className={`flex items-start gap-2.5 text-[15px] ${v === false ? (dark ? "text-white/45" : "text-ink-2/70") : ""}`}>
+          <li key={f.label} className={`flex items-start gap-2.5 text-[15px] ${v === false ? (dark ? "text-white/75" : "text-ink-2") : ""}`}>
             <span className="mt-[3px]"><Cell v={v} dark={dark} /></span>
             <span>
               {f.label}
+              {v === false && <span className="text-[13px]"> · {PRO.name} only</span>}
               {typeof v === "string" && <b className={dark ? "text-sticker" : "text-ink"}> · {v}</b>}
             </span>
           </li>
