@@ -21,6 +21,8 @@ const SECTIONS: { title: string; links: NavLink[] }[] = [
   { title: "Orders", links: [
     { href: "/admin/orders", label: "Orders", dab: "var(--af-scan)" },
     { href: "/admin/reprints", label: "Reprints", dab: "#c98a5a" },
+    { href: "/admin/scanning", label: "Scanning", dab: "#2b37f0" },
+    { href: "/admin/code-orders", label: "Code orders", dab: "#ffd43b" },
   ] },
   { title: "People", links: [
     { href: "/admin/artists", label: "Artists", dab: "#b98bd9" },
@@ -38,6 +40,8 @@ const SECTIONS: { title: string; links: NavLink[] }[] = [
     { href: "/admin/settings", label: "Settings", dab: "var(--af-ink)", exact: true, owner: true },
     { href: "/admin/settings/notifications", label: "Alert emails", dab: "#9aa3b5" },
     { href: "/admin/settings/rewards", label: "Collector rewards", dab: "#e3b23c" },
+    { href: "/admin/settings/scanning", label: "Scanning service", dab: "#2b37f0" },
+    { href: "/admin/settings/code-prints", label: "Code print prices", dab: "#ff5a36" },
   ] },
 ];
 

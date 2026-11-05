@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { DragEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { errorText, failed, saved as savedToast } from "@/lib/feedback";
 import { Problem } from "./Problem";
+import AddToQueueButton from "@/components/qr/AddToQueueButton";
 import { FolderOpen, ImagePlus, Loader2, RotateCcw } from "lucide-react";
 import type { SizeKey } from "@/lib/earnings";
 import { BrushStroke } from "@/components/af/Brush";
@@ -253,6 +254,7 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
         )}
         <div className="flex flex-wrap justify-center gap-2">
           <Link href={`/studio/qr?art=${done.slug}`} className="btn btn-blue">Print its code</Link>
+          <AddToQueueButton slug={done.slug} title={done.title} />
           <Link href={artPath(handle, done.slug)} className="btn btn-ghost">View</Link>
           <button type="button" className="btn btn-ghost" onClick={() => { setDone(null); setImageUrl(""); setFresh(null); setShape(null); setOwned(false); setDims(null); set({ title: "", description: "", origW: "", origH: "", sensitive: [], limited: false }); }}>
             Upload another

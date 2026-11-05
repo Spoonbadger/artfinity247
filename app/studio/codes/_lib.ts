@@ -9,6 +9,8 @@ const DAY = 86400000;
 const codeSelect = {
   id: true, code: true, label: true, venue: true, venueId: true, discountPct: true, active: true, expiresAt: true, createdAt: true, design: true, artworkId: true,
   artwork: { select: { id: true, title: true, slug: true, imageUrl: true, status: true } },
+  // Last time it was printed (print queue "Mark as printed", or a mailed code order shipping).
+  printLogs: { orderBy: { createdAt: "desc" as const }, take: 1, select: { createdAt: true, method: true } },
 } as const;
 
 export type CodeRow = Awaited<ReturnType<typeof loadCodes>>[number] & { stats: CodeStats; live: boolean };

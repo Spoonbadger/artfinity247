@@ -44,6 +44,7 @@ export default async function SettingsPage() {
         <ul className="grid gap-2 text-[14.5px]">
           <li><Link href="/admin/settings/notifications" className="font-semibold text-scan">Alert emails</Link> <span className="text-ink-2">· what gets emailed to you, and when</span></li>
           <li><Link href="/admin/settings/rewards" className="font-semibold text-scan">Collector rewards</Link> <span className="text-ink-2">· the repeat-buyer discount</span></li>
+          <li><Link href="/admin/settings/code-prints" className="font-semibold text-scan">Code print prices</Link> <span className="text-ink-2">· what artists pay for printed, laminated codes we mail (at cost)</span></li>
           <li>
             <Link href="/admin" className="font-semibold text-scan">90-day test start</Link>{" "}
             <span className="text-ink-2">· {start.date ? `starts ${start.date}${start.source === "env" ? " (TEST_START_DATE)" : ""}` : "starts at the first paid order"}, set on the dashboard</span>

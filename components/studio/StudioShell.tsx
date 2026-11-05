@@ -34,7 +34,7 @@ export function Avatar({ src, name, className }: { src: string | null; name: str
   );
 }
 
-export default function StudioShell({ artist, children }: { artist: ShellArtist; children: ReactNode }) {
+export default function StudioShell({ artist, children, badges }: { artist: ShellArtist; children: ReactNode; badges?: Record<string, number> }) {
   const path = usePathname() || "/studio";
   const router = useRouter();
   const { refreshUser } = useUser();
@@ -105,7 +105,7 @@ export default function StudioShell({ artist, children }: { artist: ShellArtist;
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-screen flex-col gap-5 border-r border-line bg-wall py-6 lg:flex" style={canvasTexture}>
         <div className="-my-2.5 px-6">{brand("text-[22px]")}</div>
-        <StudioNav path={path} className="min-h-0 flex-1 overflow-y-auto px-4 [scrollbar-width:thin]" />
+        <StudioNav path={path} badges={badges} className="min-h-0 flex-1 overflow-y-auto px-4 [scrollbar-width:thin]" />
         <div className="grid gap-3 px-4">
           <Link href={`/@${artist.slug}`} className="btn btn-ghost btn-sm justify-between">
             View my page <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
@@ -153,7 +153,7 @@ export default function StudioShell({ artist, children }: { artist: ShellArtist;
             </button>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-6 pt-3">
-            <StudioNav path={path} size="lg" onNavigate={() => setMenuOpen(false)} />
+            <StudioNav path={path} badges={badges} size="lg" onNavigate={() => setMenuOpen(false)} />
             <div className="mt-4 grid gap-3 px-1">
               <Link href={`/@${artist.slug}`} className="btn btn-ghost min-h-[44px] justify-between">
                 View my page <ArrowUpRight className="h-4 w-4" aria-hidden="true" />

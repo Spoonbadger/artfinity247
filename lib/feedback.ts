@@ -76,6 +76,17 @@ const FIXES: Record<string, Fix> = {
   event_not_found: { label: "See events", href: "/studio/events" },
   event_limit: { label: "See events", href: "/studio/events" },
   not_your_art: { label: "See my art", href: "/studio/art" },
+  // Print queue and mailed code orders (/studio/qr/queue)
+  address_required: { label: "Add address", href: "/studio/qr/queue#ship" },
+  queue_empty: { label: "Make a code", href: "/studio/qr" },
+  queue_full: { label: "Open print queue", href: "/studio/qr/queue" },
+  queue_item_gone: { label: "Open print queue", href: "/studio/qr/queue" },
+  code_order_not_found: { label: "See my orders", href: "/studio/qr/queue#orders" },
+  // Painting scans (/studio/scanning)
+  scanning_off: { label: "Join the waitlist", href: "/studio/scanning#waitlist" },
+  scan_not_payable: { label: "See my bookings", href: "/studio/scanning#bookings" },
+  scan_not_cancellable: { label: "Message us", href: "/contact" },
+  scan_not_found: { label: "See my bookings", href: "/studio/scanning#bookings" },
 };
 
 export async function problemFrom(res: Response, fallback = "Something went wrong"): Promise<{ message: string; fix?: Fix; code?: string }> {

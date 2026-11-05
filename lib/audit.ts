@@ -4,7 +4,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export type AuditAdmin = { id: string; email?: string | null };
-export type AuditTargetType = "artist" | "artwork" | "order" | "review" | "report" | "payout" | "reprint" | "scene" | "setting" | "alert" | "invite" | "venue" | "social";
+export type AuditTargetType = "artist" | "artwork" | "order" | "review" | "report" | "payout" | "reprint" | "scene" | "setting" | "alert" | "invite" | "venue" | "social" | "code_order" | "scan";
 export type AuditTarget = { type: AuditTargetType; id?: string | null };
 
 export async function logAdminAction(
@@ -51,6 +51,8 @@ export function auditTargetHref(targetType: string, targetId: string | null, det
     case "invite": return "/admin/team";
     case "venue": return `/admin/venues/${targetId}`;
     case "social": return `/admin/social?post=${targetId}#queue`;
+    case "code_order": return `/admin/code-orders/${targetId}`;
+    case "scan": return `/admin/scanning/${targetId}`;
     default: return null;
   }
 }

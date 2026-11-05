@@ -120,6 +120,8 @@ model Artist {
   emailTemplates   EmailTemplate[]
   collections      Collection[]
   qrCodes          QrCode[]
+  printQueueItems  PrintQueueItem[]
+  codePrintOrders  CodePrintOrder[]
 
   // Legal: when the artist accepted the Artist Terms and Terms & Conditions
   termsAcceptedAt  DateTime?
@@ -183,6 +185,7 @@ model Artwork {
   roomScenes    Int[]         @default([])
   collectionItems CollectionItem[]
   qrCodes         QrCode[]
+  printQueueItems PrintQueueItem[]
   flaggedReason String?
   flaggedBy     String?
   // Print sizes this file is sharp enough for (small/medium/large/xl). Empty = not checked (older uploads).
@@ -332,6 +335,8 @@ model QrCode {
   artist      Artist      @relation(fields: [artistId], references: [id], onDelete: Cascade)
   artwork     Artwork?    @relation(fields: [artworkId], references: [id], onDelete: SetNull)
   scans       ScanEvent[]
+  printQueueItems PrintQueueItem[]
+  printLogs   QrPrintLog[]
 
   @@index([artistId])
 }
@@ -627,4 +632,145 @@ model SocialAccount {
   refreshedAt DateTime?
   note        String?
   updatedAt   DateTime  @updatedAt
+}
+
+// Print queue (/studio/qr/queue): codes an artist wants printed, across devices. One row per code + format; adding the
+// same code in the same format again adds to qty. design is the QR Studio look (components/qr/card.ts sanitizeDesign).
+model PrintQueueItem {
+  id        String   @id @default(cuid())
+  artistId  String
+  artworkId String
+  qrCodeId  String
+  design    Json
+  format    String   // label | sticker | tag | poster
+  qty       Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  qrCode    QrCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+
+  @@unique([artistId, qrCodeId, format])
+  @@index([artistId])
+}
+
+// When a code was printed: "Mark as printed" on the queue (method "home") or a mailed code order shipping ("mail").
+// My codes shows the latest one ("Printed Nov 5").
+model QrPrintLog {
+  id        String   @id @default(cuid())
+  qrCodeId  String
+  artistId  String
+  format    String
+  qty       Int
+  method    String   @default("home") // home | mail
+  orderId   String?  // CodePrintOrder for "mail"
+  createdAt DateTime @default(now())
+  qrCode    QrCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+
+  @@index([qrCodeId, createdAt])
+  @@index([artistId])
+}
+
+// "We print them for you": laminated, pre-cut codes mailed to the artist at cost (lib/codePrints.ts).
+// status: pending (checkout open) -> paid -> printing -> shipped -> delivered; canceled when the artist gives up on paying.
+model CodePrintOrder {
+  id              String    @id @default(cuid())
+  artistId        String?
+  email           String
+  artistName      String?
+  status          String    @default("pending")
+  items           Json      // snapshot: [{ qrCodeId, code, artworkId, format, qty, design, art, qrText }]
+  queueItemIds    String[]  @default([])
+  cards           Int       @default(0)
+  shipName        String
+  shipLine1       String
+  shipLine2       String?
+  shipCity        String
+  shipState       String
+  shipZip         String
+  subtotalCents   Int
+  shippingCents   Int
+  handlingCents   Int       @default(0)
+  totalCents      Int
+  pricing         Json?     // the unit costs used, for the record
+  stripeSessionId String?   @unique
+  carrier         String?
+  trackingNumber  String?
+  trackingUrl     String?
+  refundNote      String?
+  refundedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  paidAt          DateTime?
+  printingAt      DateTime?
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  canceledAt      DateTime?
+  artist          Artist?   @relation(fields: [artistId], references: [id], onDelete: SetNull)
+
+  @@index([artistId, createdAt])
+  @@index([status, createdAt])
+}
+
+// Painting scanning service (/scanning, /studio/scanning, /admin/scanning; lib/scanning.ts).
+// requested -> confirmed (admin sets the date and final price) -> paid -> scanning -> delivered -> returned; or cancelled.
+// artistId has no relation on purpose, like SocialPost: the booking outlives nothing it points at.
+model ScanBooking {
+  id              String    @id @default(cuid())
+  artistId        String
+  status          String    @default("requested") // requested | confirmed | paid | scanning | delivered | returned | cancelled
+  handoff         String    @default("dropoff") // dropoff | pickup
+  pickupAddress   String?
+  preferredDates  String[]  @default([]) // YYYY-MM-DD, the artist's picks
+  notes           String?
+  estimateCents   Int?      // live estimate when booked (null: needs a quote)
+  priceCents      Int?      // final price, set by an admin when confirming
+  scheduledFor    DateTime? // drop-off or pickup date, set when confirming
+  dropoffInfo     String?   // address and instructions, set when confirming
+  adminNote       String?
+  stripeSessionId String?   @unique
+  confirmedAt     DateTime?
+  paidAt          DateTime?
+  receivedAt      DateTime?
+  scanningAt      DateTime?
+  deliveredAt     DateTime?
+  returnedAt      DateTime?
+  cancelledAt     DateTime?
+  cancelReason    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  items           ScanBookingItem[]
+
+  @@index([artistId, createdAt])
+  @@index([status, scheduledFor])
+}
+
+// One painting in a booking: an artwork already on Artfinity, or a piece not uploaded yet (artworkId null).
+model ScanBookingItem {
+  id                String      @id @default(cuid())
+  bookingId         String
+  booking           ScanBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  artworkId         String?
+  title             String?
+  band              String      // small | medium | large | oversized (lib/scanning.ts)
+  widthIn           Float?
+  heightIn          Float?
+  // Delivery: the scan replaced the artwork's image. The old one is kept until the booking is returned, so it can be undone.
+  scanUrl           String?
+  previousImageUrl  String?
+  previousPrintable String[]    @default([])
+  printableSizes    String[]    @default([])
+  deliveredAt       DateTime?
+
+  @@index([bookingId])
+  @@index([artworkId])
+}
+
+// "Coming soon — join the waitlist" while the scanning service is off.
+model ScanWaitlist {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  artistId  String?
+  source    String   @default("public") // public | studio
+  createdAt DateTime @default(now())
 }

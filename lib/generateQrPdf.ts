@@ -2,7 +2,7 @@
 // rasterised at print resolution with sharp, then tiled on US Letter with pdf-lib.
 import sharp from "sharp";
 import { PDFDocument, StandardFonts, rgb, type PDFImage } from "pdf-lib";
-import { cardSVG, renderCard, sheetLayout, FORMATS, type ArtInfo, type Design } from "@/components/qr/card";
+import { cardSVG, renderCard, sheetLayout, FORMATS, type ArtInfo, type Design, type FormatKey } from "@/components/qr/card";
 import { loadFonts } from "@/components/qr/text";
 
 export type CardJob = { design: Design; art: ArtInfo; qrText: string };
@@ -11,7 +11,7 @@ export type CardJob = { design: Design; art: ArtInfo; qrText: string };
  * One job + fill: a full sheet of the same card (the Studio's "Download PDF").
  * Several jobs: one card each, as many sheets as needed. All jobs use the first job's format.
  */
-export async function generateQrPdf(jobs: CardJob[], opts: { fill?: boolean } = {}): Promise<Uint8Array> {
+export async function generateQrPdf(jobs: CardJob[], opts: { fill?: boolean; hint?: string | ((sheet: number, sheets: number) => string); title?: string } = {}): Promise<Uint8Array> {
   if (!jobs.length) throw new Error("No cards to print");
   const fonts = await loadFonts();
   const fmt = jobs[0].design.format;
@@ -21,7 +21,7 @@ export async function generateQrPdf(jobs: CardJob[], opts: { fill?: boolean } = 
   const gapY = FORMATS[fmt].sheet.gy * 72;
 
   const pdf = await PDFDocument.create();
-  pdf.setTitle(jobs.length === 1 ? `${jobs[0].art.title} · ${FORMATS[fmt].name}` : `Artfinity QR cards · ${FORMATS[fmt].name}`);
+  pdf.setTitle(opts.title || (jobs.length === 1 ? `${jobs[0].art.title} · ${FORMATS[fmt].name}` : `Artfinity QR cards · ${FORMATS[fmt].name}`));
   pdf.setAuthor(jobs[0].art.artist);
   pdf.setCreator("Artfinity QR Studio");
   const helv = await pdf.embedFont(StandardFonts.Helvetica);
@@ -36,7 +36,8 @@ export async function generateQrPdf(jobs: CardJob[], opts: { fill?: boolean } = 
       for (const [x1, y1, x2, y2] of L.marks) page.drawLine({ start: { x: x1, y: L.H - y1 }, end: { x: x2, y: L.H - y2 }, thickness: 0.5, color: ink });
       const bottom = L.slots.length ? L.H - (L.slots[L.slots.length - 1].y + L.ch) : 0;
       if (bottom > 22) {
-        const hint = "Print at 100% (actual size). Cut on the marks.";
+        const sheets = Math.ceil(list.length / L.slots.length);
+        const hint = (typeof opts.hint === "function" ? opts.hint(i / L.slots.length + 1, sheets) : opts.hint) || "Print at 100% (actual size). Cut on the marks.";
         page.drawText(hint, { x: (L.W - helv.widthOfTextAtSize(hint, 7)) / 2, y: 8, size: 7, font: helv, color: rgb(0.45, 0.46, 0.5) });
       }
     }
@@ -61,4 +62,22 @@ export async function generateQrPdf(jobs: CardJob[], opts: { fill?: boolean } = 
     }
   }
   return pdf.save();
+}
+
+/**
+ * The print queue's mixed sheets: DIFFERENT pieces packed onto the same sheets, each repeated `qty` times, in order
+ * (3 labels of piece A and 7 of piece B fill one 10-up sheet). Every job must be in `fmt`; others are skipped.
+ * Each distinct card is rasterised once.
+ */
+export async function generateMixedQrPdf(items: { job: CardJob; qty: number }[], fmt: FormatKey, opts: { title?: string; footer?: string } = {}): Promise<Uint8Array> {
+  const list: CardJob[] = [];
+  for (const it of items) {
+    if (it.job.design.format !== fmt) continue;
+    for (let i = 0; i < Math.max(0, Math.floor(it.qty)); i++) list.push(it.job);
+  }
+  if (!list.length) throw new Error("No cards to print");
+  return generateQrPdf(list, {
+    title: opts.title,
+    hint: (sheet, sheets) => `${opts.footer ? `${opts.footer} · ` : ""}Sheet ${sheet} of ${sheets} · Print at 100% (actual size). Cut on the marks.`,
+  });
 }

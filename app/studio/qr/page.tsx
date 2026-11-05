@@ -12,6 +12,8 @@ import { loadFonts } from "@/components/qr/text";
 import { requireArtist, displayName } from "../_lib/data";
 import { getArtistSplitFor } from "@/lib/revenue";
 import { venueOptions } from "@/lib/venues";
+import { queueCount } from "@/lib/printQueue";
+import QueueLink from "@/components/qr/QueueLink";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "QR codes" };
@@ -87,7 +89,7 @@ export default async function QrPage({ searchParams }: { searchParams: { art?: s
   }
 
   return (
-    <StudioPage title="QR codes" sub="Pick a piece. Pick a look. Print. Every code here really scans." actions={<><HelpLink href="/help/qr-codes/qr-templates" /><Link href="/studio/codes" className="btn btn-ghost btn-sm">My codes</Link></>}>
+    <StudioPage title="QR codes" sub="Pick a piece. Pick a look. Print. Every code here really scans." actions={<><HelpLink href="/help/qr-codes/qr-templates" /><Link href="/studio/codes" className="btn btn-ghost btn-sm">My codes</Link><QueueLink count={await queueCount(artist.id)} /></>}>
       {inReview.length > 0 && (
         <Problem tone="info" title={inReview.length === 1 ? `${inReview[0]} is in review` : `${inReview.length} pieces are in review`} fix={{ label: "See my art", href: "/studio/art" }}>
           You can print {inReview.length === 1 ? "its code" : "their codes"} now. Scans open the piece once it&apos;s live, usually within a day.

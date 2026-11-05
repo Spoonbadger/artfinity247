@@ -23,7 +23,9 @@ export type AlertKind =
   | "billing_failed" // an artist's Infinity subscription payment failed (low, lib/billing.ts)
   | "image_check_failed" // the automatic image check on upload is down (lib/moderation; uploads go through unchecked)
   | "social_post_failed" // an Instagram post for Artfinity's account failed (lib/social/publish.ts)
-  | "social_token"; // the Instagram token expired or expires within 7 days (lib/social/instagram.ts)
+  | "social_token" // the Instagram token expired or expires within 7 days (lib/social/instagram.ts)
+  | "code_print_order" // an artist paid for printed, laminated QR codes to be mailed (lib/codePrints.ts)
+  | "scan_booking"; // an artist booked a painting scan (lib/scanning.server.ts)
 
 /** urgent: "always" = every alert of this kind is urgent; "sometimes" = some are (DMCA among reports). */
 type KindMeta = { kind: AlertKind; label: string; plural: string; queue: string; money?: boolean; urgent?: "always" | "sometimes"; defaultPref: NotifyPref };
@@ -47,6 +49,8 @@ export const ALERT_KINDS: KindMeta[] = [
   { kind: "image_check_failed", label: "Automatic image check errors", plural: "image check errors", queue: "/admin", defaultPref: "digest" },
   { kind: "social_post_failed", label: "Instagram posts that failed", plural: "failed Instagram posts", queue: "/admin/social#queue", defaultPref: "digest" },
   { kind: "social_token", label: "Instagram token expiring or expired", plural: "Instagram token warnings", queue: "/admin/social/setup", urgent: "sometimes", defaultPref: "instant" },
+  { kind: "code_print_order", label: "New code print orders", plural: "code print orders to print", queue: "/admin/code-orders?status=paid", defaultPref: "instant" },
+  { kind: "scan_booking", label: "Painting scan bookings", plural: "scan bookings", queue: "/admin/scanning", defaultPref: "instant" },
 ];
 
 const META = new Map(ALERT_KINDS.map((k) => [k.kind as string, k]));

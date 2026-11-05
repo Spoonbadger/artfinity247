@@ -368,6 +368,26 @@ export function sheetSVG(c: Card, fmt: FormatKey, uid = "s") {
   return s + "</svg>";
 }
 
+/**
+ * One sheet of DIFFERENT cards in the same format (the print queue): `cards` fill the slots in order, empty slots stay
+ * blank. Callers split a longer list into pages of sheetLayout(fmt).slots.length. Same layout and marks as sheetSVG.
+ */
+export function mixedSheetSVG(cards: Card[], fmt: FormatKey, uid = "m") {
+  const L = sheetLayout(fmt);
+  const ids = new Map<Card, string>();
+  let defs = "";
+  for (const c of cards) if (!ids.has(c)) { const id = `qs-mix-${uid}-${ids.size}`; ids.set(c, id); defs += `<symbol id="${id}" viewBox="0 0 ${c.w} ${c.h}">${c.inner}</symbol>`; }
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${L.W} ${L.H}" width="8.5in" height="11in" role="img" aria-label="Print sheet: ${cards.length} of ${L.slots.length} ${esc(FORMATS[fmt].name.toLowerCase())} spots filled">` +
+    `<rect width="${L.W}" height="${L.H}" fill="#fff"/><defs>${defs}</defs>`;
+  L.slots.forEach((p, i) => {
+    const c = cards[i];
+    if (c) s += `<use href="#${ids.get(c)}" x="${n2(p.x)}" y="${n2(p.y)}" width="${c.w}" height="${c.h}"/>`;
+    else s += `<rect x="${n2(p.x + 3)}" y="${n2(p.y + 3)}" width="${n2(L.cw - 6)}" height="${n2(L.ch - 6)}" rx="${fmt === "sticker" ? n2(L.cw / 2) : 6}" fill="none" stroke="#c9ccd3" stroke-dasharray="4 3"/>`;
+  });
+  if (L.marks.length) s += `<path stroke="#15161b" stroke-width=".5" fill="none" d="${L.marks.map((m) => `M${m[0]} ${m[1]}L${m[2]} ${m[3]}`).join("")}"/>`;
+  return s + "</svg>";
+}
+
 // ---------------- scan maths ----------------
 export function scanNumbers(c: Card, qrText: string, f: Fonts, logo = false) {
   const n = qrMatrix(qrText, logo ? "H" : "M").length;

@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { Check, Download, FileText, ImageIcon, Layers, Loader2, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Check, Download, FileText, ImageIcon, Layers, ListPlus, Loader2, Plus } from "lucide-react";
 import { errorText, failed, problemFrom, saved as savedToast } from "@/lib/feedback";
 import { qrSVG } from "@/lib/qr/render";
 import { breakdown, money, SIZE_NAME, SIZE_INCHES, type SizeKey } from "@/lib/earnings";
@@ -43,7 +44,10 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
   const [d, setD] = useState<Design>(initialDesign);
   const [view, setView] = useState<View>("card");
   const [fonts, setFonts] = useState<Fonts | null>(null);
-  const [busy, setBusy] = useState<"" | "pdf" | "all" | "png" | "svg" | "save">("");
+  const [busy, setBusy] = useState<"" | "pdf" | "all" | "png" | "svg" | "save" | "queue">("");
+  const router = useRouter();
+  // "Add to print queue": how many cards of this piece, in this look.
+  const [queueQty, setQueueQty] = useState(1);
   // Short link codes saved this visit, by artwork. A code is made on the first download or "Save code";
   // later downloads of the same piece update that code's record instead of making another.
   const [codes, setCodes] = useState<Record<string, string>>(initialSaved ? { [initialSaved.slug]: initialSaved.code } : {});
@@ -173,6 +177,26 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
       else savedToast("Print sheet downloaded", { description: "Its code is saved in My codes. Print at 100% scale.", next: { label: "My codes", href: "/studio/codes" } });
     } catch (e) {
       failed(errorText(e, "The PDF didn't download. Try again."), { retry: () => { void downloadPdf(all); } });
+    } finally { setBusy(""); }
+  }
+  /** Saves the code (like Download PDF), then adds this piece + look to the print queue. */
+  async function addToQueue() {
+    setBusy("queue");
+    try {
+      const c = await ensureCode();
+      if (!c) return;
+      const n = Math.max(1, Math.min(500, Math.round(queueQty) || 1));
+      const r = await fetch("/api/studio/print-queue", { method: "POST", headers: JSON_HEADERS, body: JSON.stringify({ slug: art.slug, design: d, code: c, qty: n }) });
+      if (!r.ok) {
+        const p = await problemFrom(r, "Couldn't add it to your print queue. Try again.");
+        failed(p.message, { fix: p.fix, retry: p.fix ? undefined : () => { void addToQueue(); } });
+        return;
+      }
+      const j = await r.json().catch(() => ({}));
+      savedToast(`Added ${n} ${F.name.toLowerCase()}${n === 1 ? "" : "s"} to your print queue`, { description: `Code ${c}. ${j.cards ?? n} ${j.cards === 1 ? "card" : "cards"} waiting to print.`, next: { label: "Open print queue", href: "/studio/qr/queue" } });
+      router.refresh();
+    } catch (e) {
+      failed(errorText(e, "Couldn't add it to your print queue. Try again."), { retry: () => { void addToQueue(); } });
     } finally { setBusy(""); }
   }
   async function downloadSvg() {
@@ -345,6 +369,20 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
                 {code ? (dirty ? `Save changes · ${code}` : `Saved · ${code}`) : "Save code"}
               </button>
             </div>
+          <div className={s.printAll}>
+            <span>Printing several pieces?</span>
+            <span className="inline-flex items-center gap-2">
+              <label className="inline-flex items-center gap-1.5 text-[13px] font-semibold">
+                <span className="sr-only">How many {F.name.toLowerCase()}s</span>
+                <input type="number" min={1} max={500} inputMode="numeric" value={queueQty} onChange={(e) => setQueueQty(Number(e.target.value))}
+                  className="num h-9 w-16 rounded-lg border-[1.5px] border-line bg-white px-2 text-center text-[14px]" aria-label={`How many ${F.name.toLowerCase()}s of ${art.title}`} />
+              </label>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={addToQueue} disabled={!!busy}>
+                {busy === "queue" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <ListPlus className="h-4 w-4" aria-hidden="true" />}
+                Add to print queue
+              </button>
+            </span>
+          </div>
           {arts.length > 1 && (
             <div className={s.printAll}>
               <span>Every piece, this look:</span>

@@ -5,6 +5,8 @@ import { StudioPage } from "@/components/studio/StudioPage";
 import { EmptyState } from "@/components/studio/EmptyState";
 import HelpLink from "@/components/help/HelpLink";
 import { requireArtist, usd } from "../_lib/data";
+import QueueLink from "@/components/qr/QueueLink";
+import { queueCount } from "@/lib/printQueue";
 import { getCodes, pct, status, windowTotals, WINDOW_DAYS, type CodeRow } from "./_lib";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +35,14 @@ function Status({ c }: { c: CodeRow }) {
   );
 }
 
+/** "Printed Nov 5" (or "Mailed Nov 5" for codes we printed), from the print queue's log. */
+function Printed({ c }: { c: CodeRow }) {
+  const p = c.printLogs?.[0];
+  if (!p) return null;
+  const d = p.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" });
+  return <span className="text-[12px] font-semibold text-ink-2">{p.method === "mail" ? `Printed by us, shipped ${d}` : `Printed ${d}`}</span>;
+}
+
 function Deal({ c }: { c: CodeRow }) {
   return (
     <span className="flex flex-wrap items-center gap-1.5 text-[12.5px] text-ink-2">
@@ -55,7 +65,7 @@ export default async function CodesPage() {
     <StudioPage
       title="My codes"
       sub={codes.length ? "Every printed code. Edit any of them, even after printing." : undefined}
-      actions={<><HelpLink href="/help/qr-codes/change-after-printing" /><Link href="/studio/qr" className="btn btn-blue btn-sm"><Plus className="h-4 w-4" aria-hidden="true" />Make a code</Link></>}
+      actions={<><HelpLink href="/help/qr-codes/change-after-printing" /><QueueLink count={await queueCount(artist.id)} /><Link href="/studio/qr" className="btn btn-blue btn-sm"><Plus className="h-4 w-4" aria-hidden="true" />Make a code</Link></>}
     >
       {codes.length === 0 ? (
         <EmptyState
@@ -90,6 +100,7 @@ export default async function CodesPage() {
                     <div className="grid min-w-0 flex-1 gap-1">
                       <b className="truncate text-[16px]">{c.label || c.artwork?.title || "Your page"}</b>
                       <Deal c={c} />
+                      <Printed c={c} />
                     </div>
                     <Status c={c} />
                   </div>
@@ -133,6 +144,7 @@ export default async function CodesPage() {
                           <b className="max-w-[260px] truncate">{c.label || c.artwork?.title || "Your page"}</b>
                           <Deal c={c} />
                           <span className="text-[12px] text-ink-2">Made {date(c.createdAt)}</span>
+                          <Printed c={c} />
                         </span>
                       </Link>
                     </td>

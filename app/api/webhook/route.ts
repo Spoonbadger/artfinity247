@@ -10,6 +10,8 @@ import { artistIdsForOrder, followFromCheckout } from "@/lib/followers"
 import { onOrderPaid } from "@/lib/collector"
 import { markRewardUsed, preservedSplit } from "@/lib/collectorRewards"
 import { reportError } from "@/lib/monitor"
+import { markScanPaid } from "@/lib/scanning.server"
+import { markCodeOrderPaid } from "@/lib/codePrints"
 
 export const dynamic = "force-dynamic"
 export const runtime = 'nodejs'
@@ -67,6 +69,26 @@ export async function POST(req: NextRequest) {
 
     // Infinity subscriptions are not print orders: /api/webhook/billing handles them (lib/billing.ts).
     if (session.mode === 'subscription') return new Response(null, { status: 200 })
+
+    // Painting scan bookings (/studio/scanning) are not print orders either: mark the booking paid (lib/scanning.server.ts).
+    if (session.metadata?.kind === "scan") {
+      if (session.payment_status === "paid" && session.metadata.scanBookingId) await markScanPaid(session.metadata.scanBookingId, session.id)
+      return new Response(null, { status: 200 })
+    }
+
+    // Printed QR codes mailed to the artist (lib/codePrints.ts) are not print orders either: mark that order paid.
+    if (session.metadata?.kind === "code_print" && session.metadata?.codePrintOrderId) {
+      if (session.payment_status === "paid" || session.payment_status === "no_payment_required") {
+        try {
+          await markCodeOrderPaid(session.metadata.codePrintOrderId)
+        } catch (err) {
+          console.error("Code print order webhook failed", err)
+          await reportError(err, { area: "webhook", name: "code-print-order" })
+          return new Response("Code print order failed", { status: 500 })
+        }
+      }
+      return new Response(null, { status: 200 })
+    }
 
     const buyerEmail = (
       session.metadata?.buyerEmail ||

@@ -26,6 +26,7 @@ export const STUDIO_SECTIONS: StudioSection[] = [
     id: "selling", label: "QR & selling", dab: "#ffd43b", icon: QrCode,
     items: [
       { href: "/studio/qr", label: "QR codes", dab: "#ffd43b" },
+      { href: "/studio/qr/queue", label: "Print queue", dab: "#ff5a36" },
       { href: "/studio/codes", label: "My codes", dab: "#2b37f0" },
       { href: "/studio/events", label: "Events", dab: "#7b2d8e" },
     ],
@@ -73,6 +74,8 @@ export const STUDIO_SECTIONS: StudioSection[] = [
 export const STUDIO_NAV: StudioNavItem[] = [STUDIO_HOME, ...STUDIO_SECTIONS.flatMap((s) => s.items)];
 
 export function isActive(path: string, href: string) {
+  // The print queue lives under /studio/qr but has its own nav item.
+  if (href === "/studio/qr" && path.startsWith("/studio/qr/queue")) return false;
   if (href === "/studio/followers" && path.startsWith("/studio/newsletter")) return true;
   if (href === "/studio/infinity" && path.startsWith("/studio/pro")) return true;
   return href === "/studio" ? path === "/studio" : path === href || path.startsWith(href + "/");
@@ -134,7 +137,7 @@ function useFolders(path: string) {
   return { open, toggle, animate };
 }
 
-export function NavItem({ href, label, dab, active, size = "md", onNavigate }: StudioNavItem & { active: boolean; size?: "md" | "lg"; onNavigate?: () => void }) {
+export function NavItem({ href, label, dab, active, size = "md", onNavigate, badge }: StudioNavItem & { active: boolean; size?: "md" | "lg"; onNavigate?: () => void; badge?: number }) {
   return (
     <Link
       href={href}
@@ -148,12 +151,13 @@ export function NavItem({ href, label, dab, active, size = "md", onNavigate }: S
     >
       <i className="paint-dab" style={{ ["--dab" as string]: dab }} />
       <span className="truncate">{label}</span>
+      {!!badge && <span className="num ml-auto rounded-full bg-coral px-1.5 text-[12px] font-bold leading-[18px] text-white" aria-label={`${badge} waiting`}>{badge > 99 ? "99+" : badge}</span>}
       {active && <BrushStroke className="absolute -left-1 top-[3px] -z-10 h-[calc(100%-6px)] w-[calc(100%+8px)]" />}
     </Link>
   );
 }
 
-function Folder({ section, path, open, onToggle, size, animate, onNavigate }: { section: StudioSection; path: string; open: boolean; onToggle: () => void; size: "md" | "lg"; animate: boolean; onNavigate?: () => void }) {
+function Folder({ section, path, open, onToggle, size, animate, onNavigate, badges }: { section: StudioSection; path: string; open: boolean; onToggle: () => void; size: "md" | "lg"; animate: boolean; onNavigate?: () => void; badges?: Record<string, number> }) {
   const panelId = useId();
   const Icon = section.icon;
   const hasActive = section.items.some((n) => isActive(path, n.href));
@@ -196,7 +200,7 @@ function Folder({ section, path, open, onToggle, size, animate, onNavigate }: { 
         <div className="min-h-0 overflow-hidden">
           <div className={cn("grid gap-0.5 pb-2 pt-0.5", size === "lg" ? "pl-4" : "pl-3")}>
             {section.items.map((n) => (
-              <NavItem key={n.href} {...n} size={size} active={isActive(path, n.href)} onNavigate={onNavigate} />
+              <NavItem key={n.href} {...n} size={size} active={isActive(path, n.href)} onNavigate={onNavigate} badge={badges?.[n.href]} />
             ))}
           </div>
         </div>
@@ -206,14 +210,15 @@ function Folder({ section, path, open, onToggle, size, animate, onNavigate }: { 
 }
 
 /** Home on top, then the folders. Shared by the desktop sidebar and the phone menu. */
-export default function StudioNav({ path, size = "md", onNavigate, className }: { path: string; size?: "md" | "lg"; onNavigate?: () => void; className?: string }) {
+/** `badges`: a count beside a link, by href (e.g. cards waiting in the print queue). */
+export default function StudioNav({ path, size = "md", onNavigate, className, badges }: { path: string; size?: "md" | "lg"; onNavigate?: () => void; className?: string; badges?: Record<string, number> }) {
   const { open, toggle, animate } = useFolders(path);
   return (
     <nav aria-label="Studio" className={cn("grid content-start gap-1", className)}>
       <NavItem {...STUDIO_HOME} size={size} active={isActive(path, STUDIO_HOME.href)} onNavigate={onNavigate} />
       <span aria-hidden="true" className="mx-3 my-1.5 border-t border-dashed border-line" />
       {STUDIO_SECTIONS.map((s) => (
-        <Folder key={s.id} section={s} path={path} open={!!open[s.id]} onToggle={() => toggle(s.id)} size={size} animate={animate} onNavigate={onNavigate} />
+        <Folder key={s.id} section={s} path={path} open={!!open[s.id]} onToggle={() => toggle(s.id)} size={size} animate={animate} onNavigate={onNavigate} badges={badges} />
       ))}
     </nav>
   );
