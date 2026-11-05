@@ -20,7 +20,8 @@ function Cell({ v, dark = false }: { v: Feature["free"]; dark?: boolean }) {
 }
 
 function FeatureList({ which, dark = false }: { which: "free" | "pro"; dark?: boolean }) {
-  // Infinity lists what it adds; Free lists everything, with Infinity-only rows dimmed.
+  // Infinity lists what it adds; Free lists everything, with Infinity-only rows marked by a dash and "Infinity only"
+  // (full-contrast text, not faded, for WCAG 4.5:1).
   const rows = which === "pro" ? planFeatures().filter((f) => f.free !== true) : planFeatures();
   return (
     <ul className="grid gap-2.5">
