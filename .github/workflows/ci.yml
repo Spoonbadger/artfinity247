@@ -1,0 +1,53 @@
+# CI: install, Prisma client, type check, lint and a production build, on every push and pull request to main and
+# redesign/artist-first. Needs no secrets: the build runs with dummy env (no database, Stripe, Sentry or email).
+name: CI
+
+on:
+  push:
+    branches: [main, redesign/artist-first]
+  pull_request:
+    branches: [main, redesign/artist-first]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      # Dummy values: nothing connects to them during the build.
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
+      JWT_SECRET: ci-only-not-a-secret-0123456789abcdef0123456789
+      NEXT_PUBLIC_APP_URL: https://ci.example.com
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.13.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Prisma client
+        run: pnpm exec prisma generate
+
+      - name: Type check
+        run: pnpm exec tsc --noEmit -p .
+
+      - name: Lint
+        run: pnpm exec next lint --dir app --dir components --dir lib --dir content
+
+      - name: Build
+        run: pnpm exec next build

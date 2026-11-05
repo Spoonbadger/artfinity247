@@ -1,7 +1,7 @@
 // Collector rewards: "every 5th print earns 15% off your next order". Server only. OFF by default.
 //
 // Settings: env wins (COLLECTOR_REWARDS=1|0, COLLECTOR_REWARD_EVERY, COLLECTOR_REWARD_PCT), else the
-// `collectorRewards` entry in data/admin-settings.json (set at /admin/settings/rewards), else off / 5 / 15.
+// `collectorRewards` entry in the admin settings (lib/adminSettings) (set at /admin/settings/rewards), else off / 5 / 15.
 //
 // No tables: reward n (the nth time the buyer crossed the threshold) has a code signed for (email, n), e.g. THANKS2-7KQ4M9XA.
 // Prints are counted from paid retail orders with that email, so earning is derived, not stored. Two log rows in JobRun

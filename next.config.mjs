@@ -35,7 +35,7 @@ const sentryDsn = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
 
 async function withSentry(config) {
   if (!sentryDsn) return config;
-  const { withSentryConfig } = await import("@sentry/nextjs");
+  const { withSentryConfig } = await import("@sentry/nextjs/config");
   const upload = !!process.env.SENTRY_AUTH_TOKEN;
   return withSentryConfig(
     // Next 14 needs the instrumentation hook for instrumentation.ts (Sentry's server and edge init).

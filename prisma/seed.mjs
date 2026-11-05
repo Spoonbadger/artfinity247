@@ -58,12 +58,12 @@ async function main() {
   await prisma.passwordResetToken.deleteMany(); await prisma.artwork.deleteMany(); await prisma.artist.deleteMany();
   const hash = await bcrypt.hash(PASSWORD, 10);
 
-  await prisma.artist.create({ data: { name: "Artfinity Admin", artist_name: "Artfinity Admin", email: "admin@artfinity.local", password: hash, phone: "", city: "Brooklyn", citySlug: "brooklyn", state: "NY", country: "US", slug: "artfinity-admin", role: "ADMIN" } });
+  await prisma.artist.create({ data: { name: "Artfinity Admin", artist_name: "Artfinity Admin", email: "admin@artfinity.local", password: hash, phone: "", city: "Brooklyn", citySlug: "brooklyn", state: "NY", country: "US", slug: "artfinity-admin", role: "ADMIN", adminRole: "owner", emailVerifiedAt: new Date() } });
 
   let img = 1; const r = rng(2026); const arts = [];
   for (const a of ARTISTS) {
     const artist = await prisma.artist.create({ data: {
-      name: a.artist_name, first_name: a.first, last_name: a.last, artist_name: a.artist_name,
+      emailVerifiedAt: new Date(), name: a.artist_name, first_name: a.first, last_name: a.last, artist_name: a.artist_name,
       email: `${a.first.toLowerCase()}@artfinity.local`, password: hash, phone: "", city: a.city, citySlug: slugify(a.city), state: a.state, country: "US",
       slug: a.slug, bio: a.bio, profileImage: `/seed/avatar-${a.avatar}.jpg`, venmoHandle: `@${a.slug}`,
       verification: a.verified || "NONE",
