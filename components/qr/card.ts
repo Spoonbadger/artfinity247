@@ -67,7 +67,7 @@ export function presetLook(k: PresetKey): Look {
 export const DEFAULT_DESIGN: Design = {
   preset: "gallery", ...presetLook("gallery"),
   ctaCustom: "Take me home", showTitle: true, showPrice: true, showBrand: true, logo: true,
-  disc: 10, coupon: "SCAN10", ev: "", evPrint: false, size: "medium", end: "never",
+  disc: 0, coupon: "", ev: "", evPrint: false, size: "medium", end: "never",
 };
 
 export type ArtInfo = { slug: string; title: string; artist: string; imageUrl: string; markups: Record<SizeKey, number>; sensitive?: string[]; edition?: number | null };
