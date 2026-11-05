@@ -126,6 +126,8 @@ model Artist {
   closedAt           DateTime?
   events             StudioEvent[]
   reviews            Review[]
+  followers          Follower[]
+  newsletters        Newsletter[]
 
   @@index([citySlug])
 }
@@ -160,6 +162,9 @@ model Artwork {
   ownershipConfirmedAt DateTime?
   reports         ArtReport[]
   reviews         Review[]
+  // Perceptual fingerprint (dHash, 16 hex chars) of the original, to catch re-uploads of the same image
+  imageHash       String?
+  @@index([imageHash])
 }
 
 enum ArtworkStatus {
@@ -367,4 +372,52 @@ model Review {
 
   @@index([artworkId, status])
   @@index([artistId, status])
+}
+
+// Email follows: a buyer or fan follows an artist and gets their newsletter (double opt-in)
+model Follower {
+  id          String    @id @default(cuid())
+  artistId    String
+  artist      Artist    @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  email       String
+  name        String?
+  source      String    @default("page") // page | checkout | links | import
+  token       String    @unique          // confirm + unsubscribe links
+  confirmedAt DateTime?
+  unsubscribedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([artistId, email])
+  @@index([artistId, confirmedAt])
+}
+
+// A newsletter an artist writes and sends to confirmed followers
+model Newsletter {
+  id         String    @id @default(cuid())
+  artistId   String
+  artist     Artist    @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  subject    String
+  body       String    // markdown-lite text
+  artworkIds String[]  @default([])
+  sentAt     DateTime?
+  recipients Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  @@index([artistId, createdAt])
+}
+
+// Page views for artist analytics (no personal data: a random visitor cookie, referrer host, utm source)
+model PageView {
+  id        String   @id @default(cuid())
+  path      String
+  artistId  String?
+  artworkId String?
+  source    String   @default("direct") // qr | instagram | tiktok | facebook | pinterest | email | search | other site host | direct
+  referrer  String?  // host only
+  visitorId String?
+  device    String?  // mobile | desktop | tablet
+  createdAt DateTime @default(now())
+
+  @@index([artistId, createdAt])
+  @@index([artworkId, createdAt])
 }
