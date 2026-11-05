@@ -3,27 +3,36 @@ import Link from "next/link";
 import ArtFilters from "@/components/browse/ArtFilters";
 import { ArtGrid } from "@/components/browse/ArtCard";
 import PageHead, { EmptyCanvas, Pager } from "@/components/browse/PageHead";
-import { getArt, getCities, type ArtSort } from "@/components/browse/data";
+import { artSort, getArt, getArtists, getCities, priceBand, PRINT_SIZE_KEYS } from "@/components/browse/data";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Browse art", description: "Prints of original art from independent artists, made to order." };
 
-const SORTS: ArtSort[] = ["newest", "price-asc", "price-desc"];
-
 export default async function ArtPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
   const q = (searchParams.q || "").trim().slice(0, 80) || undefined;
   const city = searchParams.city || undefined;
-  const sort = SORTS.includes(searchParams.sort as ArtSort) ? (searchParams.sort as ArtSort) : "newest";
+  const sort = artSort(searchParams.sort);
+  const price = priceBand(searchParams.price)?.value;
+  const size = (PRINT_SIZE_KEYS as string[]).includes(searchParams.size || "") ? searchParams.size : undefined;
+  const artist = searchParams.artist?.slice(0, 60) || undefined;
   const page = Math.max(1, parseInt(searchParams.page || "1", 10) || 1);
 
-  const [{ art, total, pages }, cities] = await Promise.all([getArt({ q, city, sort, page }), getCities()]);
+  const [{ art, total, pages }, cities, artists] = await Promise.all([
+    getArt({ q, city, sort, page, price, size, artistSlug: artist }),
+    getCities(),
+    getArtists({ pieces: 0, sort: "az" }),
+  ]);
   const cityName = cities.find((c) => c.slug === city)?.label;
+  const filtered = !!(q || city || price || size || artist);
 
   const build = (o: { city?: string; page?: number }) => {
     const s = new URLSearchParams();
     if (q) s.set("q", q);
     if (o.city) s.set("city", o.city);
     if (sort !== "newest") s.set("sort", sort);
+    if (price) s.set("price", price);
+    if (size) s.set("size", size);
+    if (artist) s.set("artist", artist);
     if (o.page && o.page > 1) s.set("page", String(o.page));
     const str = s.toString();
     return str ? `/art?${str}` : "/art";
@@ -35,9 +44,9 @@ export default async function ArtPage({ searchParams }: { searchParams: Record<s
       <PageHead
         eyebrow={cityName ? `Art from ${cityName}` : "Prints, made to order"}
         title="Browse art"
-        sub={<><span className="num">{total}</span> {total === 1 ? "piece" : "pieces"}{q ? <> matching “{q}”</> : null}. Every print ships from us.</>}
+        sub={<><span className="num">{total}</span> {total === 1 ? "piece" : "pieces"}{q ? <> matching “{q}”</> : null}.</>}
       >
-        <ArtFilters q={q} city={city} sort={sort} cities={cities} />
+        <ArtFilters q={q} filters artists={artists.map((a) => ({ slug: a.slug, name: a.name }))} />
       </PageHead>
 
       {cities.length > 1 && (
@@ -54,8 +63,8 @@ export default async function ArtPage({ searchParams }: { searchParams: Record<s
           <ArtGrid art={art} />
         ) : (
           <EmptyCanvas title="Nothing on this wall yet">
-            <p className="text-ink-2">Try another neighborhood or a shorter search.</p>
-            <Link href="/art" className="btn btn-ghost">See all art</Link>
+            <p className="text-ink-2">Try fewer filters or a shorter search.</p>
+            {filtered && <Link href="/art" className="btn btn-ghost">Clear filters</Link>}
           </EmptyCanvas>
         )}
         <Pager page={page} pages={pages} href={href} />

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { previewImage, sharePreview } from "@/lib/og";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { movedHandle } from "@/lib/handleRedirects";
@@ -25,6 +26,24 @@ import ReviewStars from "@/components/reviews/ReviewStars";
 import ReviewList from "@/components/reviews/ReviewList";
 import { activeFollowerCount } from "@/lib/followers";
 import ViewBeacon from "@/components/analytics/ViewBeacon";
+import { UrlSort } from "@/components/browse/UrlSort";
+import type { ArtistWork } from "@/components/artist/data";
+
+const WORK_SORTS = [
+  { value: "newest", label: "Newest" },
+  { value: "popular", label: "Most popular" },
+  { value: "price-asc", label: "Price: low to high" },
+  { value: "price-desc", label: "Price: high to low" },
+];
+function sortWorks(works: ArtistWork[], sort: string | string[] | undefined) {
+  const by: Record<string, (a: ArtistWork, b: ArtistWork) => number> = {
+    popular: (a, b) => b.sold - a.sold,
+    "price-asc": (a, b) => a.fromCents - b.fromCents,
+    "price-desc": (a, b) => b.fromCents - a.fromCents,
+  };
+  const fn = typeof sort === "string" ? by[sort] : undefined;
+  return fn ? [...works].sort(fn) : works; // stable, so ties stay newest first
+}
 
 export const dynamic = "force-dynamic";
 
@@ -41,25 +60,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const a = await getArtistPage(params.slug);
   if (!a) return { title: "Artist not found" };
   const description = a.bio ? firstSentence(a.bio) : `Prints by ${a.name}${a.city ? `, ${a.city}` : ""}.`;
-  const image = a.banner?.imageUrl ?? a.avatar ?? undefined;
+  // The banner piece (never a sensitive one), else their photo, else the Artfinity card.
+  const image = previewImage(
+    a.banner && { url: a.banner.imageUrl, alt: `${a.banner.title}, by ${a.name}`, sensitive: a.banner.sensitive },
+    { url: a.avatar, alt: a.name },
+  );
   return {
     metadataBase: new URL(SITE),
     title: a.name,
     description,
     alternates: { canonical: `/@${a.slug}` },
-    openGraph: {
-      type: "profile",
-      title: `${a.name} on Artfinity`,
-      description,
-      url: `/@${a.slug}`,
-      images: image ? [{ url: image, alt: a.banner?.title ?? a.name }] : undefined,
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: `${a.name} on Artfinity`,
-      description,
-      images: image ? [image] : undefined,
-    },
+    ...sharePreview({ type: "profile", title: `${a.name} on Artfinity`, description, url: `/@${a.slug}`, image }),
   };
 }
 
@@ -211,7 +222,19 @@ export default async function ArtistPage({ params, searchParams }: Props) {
           <div className="min-w-0">
             <ArtistTabs
               tabs={[
-                { id: "work", label: "Work", count: artist.works.length, panel: <WorkLayout works={artist.works} layout={theme.layout} pinned={theme.pinned} isOwner={isOwner} /> },
+                {
+                  id: "work", label: "Work", count: artist.works.length,
+                  panel: (
+                    <>
+                      {artist.works.length > 3 && (
+                        <div className="mb-4 flex justify-end">
+                          <UrlSort storageKey="artist.work" options={WORK_SORTS} fallback="newest" />
+                        </div>
+                      )}
+                      <WorkLayout works={sortWorks(artist.works, searchParams?.sort)} layout={theme.layout} pinned={theme.pinned} isOwner={isOwner} />
+                    </>
+                  ),
+                },
                 ...(collections.length ? [{ id: "collections", label: "Collections", count: collections.length, panel: <CollectionsTab artistSlug={artist.slug} collections={collections} /> }] : []),
                 ...(rating.count ? [{
                   id: "reviews", label: "Reviews", count: rating.count,

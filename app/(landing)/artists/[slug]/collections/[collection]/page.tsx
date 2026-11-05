@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { previewImage, sharePreview } from "@/lib/og";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import SiteHeader from "@/components/site/SiteHeader";
@@ -11,22 +12,37 @@ import { editionsFor } from "@/lib/editions";
 import type { Edition } from "@/lib/editionFormat";
 import { money } from "@/lib/earnings";
 import { cn } from "@/lib/utils";
-import { artistPath, artPath, collectionPath } from "@/lib/urls";
+import { artistPath, artPath, collectionPath, SITE_URL } from "@/lib/urls";
 import ViewBeacon from "@/components/analytics/ViewBeacon";
+import { UrlSort } from "@/components/browse/UrlSort";
+
+const ORDER = [
+  { value: "artist", label: "Artist's order" },
+  { value: "price-asc", label: "Price: low to high" },
+  { value: "price-desc", label: "Price: high to low" },
+];
 
 export const dynamic = "force-dynamic";
 
-type Props = { params: { slug: string; collection: string } };
+type Props = { params: { slug: string; collection: string }; searchParams?: Record<string, string | undefined> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await getPublicCollection(params.slug, params.collection).catch(() => null);
   if (!data) return { title: "Collection" };
   const { artist, collection } = data;
+  const description = collection.description || `${collection.works.length} works by ${artist.name}. Prints with free US shipping.`;
+  const url = collectionPath(artist.slug, collection.slug);
+  // The cover, or the first piece that isn't sensitive.
+  const image = previewImage(
+    collection.cover && { url: collection.cover.imageUrl, alt: `${collection.cover.title}, by ${artist.name}`, sensitive: collection.cover.sensitive },
+    ...collection.works.map((w) => ({ url: w.imageUrl, alt: `${w.title}, by ${artist.name}`, sensitive: w.sensitive })),
+  );
   return {
+    metadataBase: new URL(SITE_URL),
     title: `${collection.title} by ${artist.name}`,
-    description: collection.description || `${collection.works.length} works by ${artist.name}. Prints with free US shipping.`,
-    alternates: { canonical: collectionPath(artist.slug, collection.slug) },
-    openGraph: { title: `${collection.title} · ${artist.name}`, images: collection.cover ? [{ url: collection.cover.imageUrl, alt: collection.cover.title }] : undefined },
+    description,
+    alternates: { canonical: url },
+    ...sharePreview({ title: `${collection.title} · ${artist.name}`, description, url, image }),
   };
 }
 
@@ -104,12 +120,16 @@ function Neighbor({ dir, artistSlug, c }: { dir: "prev" | "next"; artistSlug: st
   );
 }
 
-export default async function CollectionPage({ params }: Props) {
+export default async function CollectionPage({ params, searchParams }: Props) {
   const data = await getPublicCollection(params.slug, params.collection);
   if (!data) notFound();
   const { artist, collection, prev, next } = data;
   const editions = await editionsFor(collection.works.map((w) => ({ id: w.id, editionSize: w.editionSize })));
   const n = collection.works.length;
+  const sort = searchParams?.sort;
+  const works = sort === "price-asc" || sort === "price-desc"
+    ? [...collection.works].sort((a, b) => (sort === "price-asc" ? a.fromCents - b.fromCents : b.fromCents - a.fromCents))
+    : collection.works;
 
   return (
     <>
@@ -129,8 +149,13 @@ export default async function CollectionPage({ params }: Props) {
         </div>
       </header>
 
+      {n > 3 && (
+        <div className="mx-auto flex max-w-[1240px] justify-end px-4 sm:px-6">
+          <UrlSort storageKey="collection.work" options={ORDER} fallback="artist" />
+        </div>
+      )}
       <ul className="mx-auto flex max-w-[1240px] flex-wrap items-start justify-center gap-x-[6%] gap-y-14 px-8 pb-10 pt-6 sm:gap-x-[7%] sm:px-6 lg:gap-x-[4%] lg:gap-y-16">
-        {collection.works.map((w, i) => <Hung key={w.id} w={w} i={i} edition={editions.get(w.id) ?? null} handle={artist.slug} />)}
+        {works.map((w, i) => <Hung key={w.id} w={w} i={i} edition={editions.get(w.id) ?? null} handle={artist.slug} />)}
       </ul>
 
       <nav aria-label="More collections" className="mx-auto mt-4 grid max-w-[1240px] gap-3 px-4 sm:grid-cols-2 sm:px-6">

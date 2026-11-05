@@ -1,4 +1,3 @@
-import Link from "next/link";
 import ProfileEditor from "@/components/studio/ProfileEditor";
 import AccountDetails from "@/components/studio/AccountDetails";
 import ConnectedAccounts from "@/components/studio/ConnectedAccounts";
@@ -36,13 +35,6 @@ export default async function MyPageEditor() {
     <StudioPage
       title="My page"
       sub="What buyers see when they scan."
-      actions={
-        <>
-          <Link href="/studio/design" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">Design</Link>
-          <Link href="/studio/verify" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">Verification</Link>
-          <Link href="/studio/infinity" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">Infinity</Link>
-        </>
-      }
     >
       <ProfileEditor
         initial={{ name: displayName(artist), city: artist.city || "", bio: artist.bio || "", profileImage: artist.profileImage, venmoHandle: artist.venmoHandle || "" }}

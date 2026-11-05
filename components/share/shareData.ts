@@ -14,6 +14,8 @@ export type ShareArt = {
   fromCents: number; // smallest print, list price
   editionSize: number | null;
   sensitive: string[];
+  /** Prints sold, for the Share kit's "Best selling" sort. */
+  sold?: number;
 };
 
 export type ImageFormat = "story" | "square" | "landscape";

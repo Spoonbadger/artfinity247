@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { PaintChip } from "@/components/af/Brush";
 import { StudioPage } from "@/components/studio/StudioPage";
 import { EmptyState } from "@/components/studio/EmptyState";
 import { Problem } from "@/components/studio/Problem";
 import { Dabs } from "@/components/reviews/ReviewStars";
 import ReplyBox from "@/components/reviews/ReplyBox";
+import SortedList from "@/components/crm/SortedList";
 import { RATING_WORDS, ratingLabel, reviewMonth } from "@/components/reviews/format";
 import { prisma } from "@/lib/prisma";
 import { artPath } from "@/lib/urls";
@@ -42,11 +42,31 @@ export default async function StudioReviewsPage({ searchParams }: { searchParams
     }),
   ]);
 
+  const counts: Record<string, number> = { all: summary.count, reply: needsReply, photos: withPhotos };
+  const filterNav = (
+    <nav aria-label="Filter reviews" className="flex flex-wrap gap-2">
+      {FILTERS.map((f) => (
+        <Link
+          key={f.id}
+          href={f.id === "all" ? "/studio/reviews" : `/studio/reviews?show=${f.id}`}
+          aria-current={show === f.id ? "page" : undefined}
+          className={cn(
+            "inline-flex min-h-[40px] items-center rounded-full border-[1.5px] px-3.5 text-[14px] font-semibold no-underline transition",
+            show === f.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"
+          )}
+        >
+          {f.label}
+          <span className="num ml-1.5 font-normal opacity-70">{counts[f.id]}</span>
+        </Link>
+      ))}
+    </nav>
+  );
+
   return (
     <StudioPage
       title="Reviews"
-      sub={summary.count ? `What buyers say once the print is on their wall. You can reply once to each.` : undefined}
-      actions={summary.count ? <Link href={`/@${artist.slug}#reviews`} className="btn btn-ghost btn-sm">See them on my page</Link> : undefined}
+      sub={summary.count ? `${ratingLabel(summary.average)} average from ${summary.count} ${summary.count === 1 ? "review" : "reviews"}. Reply once to each.` : undefined}
+      actions={summary.count ? <Link href={`/@${artist.slug}#reviews`} className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">See them on my page</Link> : undefined}
     >
       {summary.count === 0 ? (
         <>
@@ -54,47 +74,23 @@ export default async function StudioReviewsPage({ searchParams }: { searchParams
             title="No reviews yet"
             body={
               <>
-                Buyers get a review link when their print arrives, and we ask how it looks on their wall.
-                Their words and wall photos show up here and on your page, and you can reply once to each.
-                {held > 0 && <> {held === 1 ? "One review is" : `${held} reviews are`} already in and waiting on a quick check by Artfinity.</>}
+                Buyers get a review link when their print arrives. Their words and wall photos land here.
+                {held > 0 && <> {held === 1 ? "One is" : `${held} are`} already in, waiting on a quick check by us.</>}
               </>
             }
-            action={{ label: "How reviews work", href: "/help/growing/reviews" }}
-            secondary={{ label: "Edit the delivery email", href: "/studio/emails" }}
+            action={{ label: "Edit the delivery email", href: "/studio/emails" }}
+            help={{ label: "How reviews work", href: "/help/growing/reviews" }}
           />
         </>
       ) : (
         <>
-          <section aria-label="Totals" className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-            <PaintChip color="#ffd43b" value={ratingLabel(summary.average)} label="average rating" note="Hansa yellow" />
-            <PaintChip color="#e8743b" value={summary.count} label={summary.count === 1 ? "review" : "reviews"} note="Cadmium" />
-            <PaintChip color="#5bc0be" value={withPhotos} label={withPhotos === 1 ? "wall photo" : "wall photos"} note="Phthalo turquoise" />
-            <PaintChip color="#2b37f0" value={needsReply} label="waiting on a reply" note="Ultramarine" />
-          </section>
-
           {held > 0 && (
             <Problem tone="info" title={`${held === 1 ? "1 review is" : `${held} reviews are`} waiting on a quick check by Artfinity`} fix={{ label: "How checks work", href: "/help/growing/reviews" }}>
-              It had a link or rough language. Nothing for you to do. It shows up here once it&apos;s cleared, usually within a day.
+              It had a link or rough language. Nothing for you to do. It shows up here within a day.
             </Problem>
           )}
 
-          <nav aria-label="Filter reviews" className="flex flex-wrap gap-2">
-            {FILTERS.map((f) => (
-              <Link
-                key={f.id}
-                href={f.id === "all" ? "/studio/reviews" : `/studio/reviews?show=${f.id}`}
-                aria-current={show === f.id ? "page" : undefined}
-                className={cn(
-                  "rounded-full border-[1.5px] px-3.5 py-1.5 text-[14px] font-semibold no-underline transition",
-                  show === f.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"
-                )}
-              >
-                {f.label}
-                {f.id === "reply" && needsReply > 0 && <span className="num ml-1.5 opacity-70">{needsReply}</span>}
-              </Link>
-            ))}
-          </nav>
-
+          {reviews.length === 0 && filterNav}
           {reviews.length === 0 ? (
             show === "reply" ? (
               <EmptyState
@@ -108,14 +104,24 @@ export default async function StudioReviewsPage({ searchParams }: { searchParams
               <EmptyState
                 compact
                 title="No wall photos yet"
-                body="Buyers can add a photo of the print on their wall when they review. The ones who do show up here."
+                body="Reviews that come with a wall photo show up here."
                 action={{ label: "See all reviews", href: "/studio/reviews" }}
                 help={{ label: "How reviews work", href: "/help/growing/reviews" }}
               />
             )
           ) : (
-            <ul className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
-              {reviews.map((r) => (
+            <SortedList
+              storageKey="studio.reviews"
+              toolbar={filterNav}
+              listClassName="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2"
+              listLabel="Reviews"
+              options={[
+                { value: "newest", label: "Newest", by: "date", desc: true },
+                { value: "high", label: "Highest rated", by: "rating", desc: true },
+                { value: "low", label: "Lowest rated", by: "rating" },
+                { value: "reply", label: "Needs a reply first", by: "replied" },
+              ]}
+              items={reviews.map((r) => ({ id: r.id, sort: { date: r.createdAt.getTime(), rating: r.rating, replied: r.artistReply ? 1 : 0 }, node: (
                 <li key={r.id} className="af-panel grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-3 p-4 sm:p-5">
                   <div className="flex items-start gap-3">
                     {r.artwork && (
@@ -143,8 +149,8 @@ export default async function StudioReviewsPage({ searchParams }: { searchParams
                   )}
                   <ReplyBox reviewId={r.id} initial={r.artistReply} buyerFirst={r.buyerName.split(" ")[0]} />
                 </li>
-              ))}
-            </ul>
+              ) }))}
+            />
           )}
         </>
       )}

@@ -22,7 +22,7 @@ export default async function DesignPage() {
   const theme = parseTheme(row?.pageTheme, works.map((w) => w.id));
 
   return (
-    <StudioPage title="Design your page" sub="Color, banner, layout. Changes show live.">
+    <StudioPage title="Design your page" sub="See changes in the preview before you save.">
       <DesignEditor slug={artist.slug} initial={theme} works={works.map((w) => ({ ...w, sensitive: w.sensitive ?? [] }))} hasMedal={!!trust.earned} />
     </StudioPage>
   );

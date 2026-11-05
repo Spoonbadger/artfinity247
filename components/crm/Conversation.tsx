@@ -51,6 +51,7 @@ function MessageItem({ m, titleFor, onDelete }: { m: ThreadMessage; titleFor: (i
           onClick={() => onDelete(m.id)}
           className="absolute right-1.5 top-1.5 grid h-8 w-8 place-items-center rounded-full text-ink-2 hover:bg-white/70 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-scan"
           aria-label="Delete note"
+          title="Delete note"
         >
           <Trash2 className="h-4 w-4" aria-hidden="true" />
         </button>
@@ -185,12 +186,7 @@ export default function Conversation({
       <h2 id="talk-h" className="text-[20px] font-bold">Notes &amp; messages</h2>
 
       {messages.length === 0 ? (
-        <EmptyState
-          compact
-          title="No notes yet"
-          body={<>A short thank-you goes a long way, and buyers who hear from you come back. Write one below, or keep a private note only you can see.</>}
-          action={{ label: "Write a thank-you", onClick: () => { setMode("thank_you"); setStatus(null); requestAnimationFrame(() => textRef.current?.focus()); } }}
-        />
+        <EmptyState compact title="No notes yet" body="Buyers who hear from you come back. A short thank-you below is plenty." />
       ) : (
         <ol className="grid max-h-[560px] gap-2.5 overflow-y-auto p-0.5" aria-label="Thread">
           {messages.map((m) => <MessageItem key={m.id} m={m} titleFor={titleFor} onDelete={remove} />)}

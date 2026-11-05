@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { previewImage, sharePreview } from "@/lib/og";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MapPin, ScanLine } from "lucide-react";
@@ -21,12 +22,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const v = await loadVenue(params.slug).catch(() => null);
   if (!v) return { title: "Venue" };
   const title = headline(v);
+  const description = `Prints of the art hanging at ${v.name}${v.neighborhood ? ` in ${v.neighborhood}` : ""}, by local artists. Scan the code beside each piece, or buy here.`;
+  // The first piece on the wall that isn't sensitive.
+  const { artworks } = await hangingAt(v.id).catch(() => ({ artworks: [] as Awaited<ReturnType<typeof hangingAt>>["artworks"] }));
+  const image = previewImage(...artworks.map((a) => ({ url: a.imageUrl, alt: `${a.title}, by ${a.artist.name}`, sensitive: a.sensitive })));
   return {
     metadataBase: new URL(SITE_URL),
     title,
-    description: `Prints of the art hanging at ${v.name}${v.neighborhood ? ` in ${v.neighborhood}` : ""}, by local artists. Scan the code beside each piece, or buy here.`,
+    description,
     alternates: { canonical: `/venues/${v.slug}` },
-    openGraph: { title, url: `/venues/${v.slug}` },
+    ...sharePreview({ title, description, url: `/venues/${v.slug}`, image }),
   };
 }
 

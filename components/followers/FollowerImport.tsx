@@ -47,7 +47,7 @@ export default function FollowerImport({ defaultOpen = false }: { defaultOpen?: 
       <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 marker:hidden">
         <span className="grid">
           <b className="text-[17px]">Add followers</b>
-          <span className="text-[13.5px] text-ink-2">Bring your list from a market sign-up sheet or another tool.</span>
+          <span className="text-[13.5px] text-ink-2">Paste emails from a market sign-up sheet or another tool.</span>
         </span>
         <span className="btn btn-ghost btn-sm group-open:hidden">Add</span>
       </summary>
@@ -58,10 +58,10 @@ export default function FollowerImport({ defaultOpen = false }: { defaultOpen?: 
         </label>
         <label className="flex cursor-pointer items-start gap-2.5 text-[14.5px]">
           <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[rgb(var(--af-scan-rgb))]" />
-          <span><b>These people agreed to hear from me.</b> <span className="text-ink-2">Don&apos;t add anyone who didn&apos;t ask. It hurts delivery for every artist.</span></span>
+          <span><b>These people agreed to hear from me.</b> <span className="text-ink-2">Adding people who didn&apos;t ask hurts delivery for every artist.</span></span>
         </label>
         <div>
-          <button type="submit" disabled={busy} className="btn btn-blue btn-sm min-h-[44px] px-5">{busy ? "Adding…" : "Add to my list"}</button>
+          <button type="submit" disabled={busy} className="btn btn-sm min-h-[44px] px-5">{busy ? "Adding…" : "Add to my list"}</button>
           {!consent && text.trim() && <span className="ml-3 text-[13px] text-ink-2">Tick the box above to add them.</span>}
         </div>
       </form>

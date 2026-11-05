@@ -12,7 +12,9 @@ import Link from "next/link";
 import { errorText, failed, saved } from "@/lib/feedback";
 import { Problem } from "./Problem";
 import { DragEvent, useCallback, useEffect, useRef, useState, type RefObject } from "react";
-import { AlertCircle, ArrowLeft, ArrowRight, Check, FolderOpen, Loader2, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, Check, Crop, FolderOpen, Loader2, Plus, RotateCcw, Trash2 } from "lucide-react";
+import ImageEditor from "@/components/media/ImageEditor";
+import type { StoredEdits } from "@/lib/imageEdits";
 import type { SizeKey } from "@/lib/earnings";
 import { cn } from "@/lib/utils";
 import { artPath } from "@/lib/urls";
@@ -59,6 +61,10 @@ export type QueueItem = {
   /** The import's duplicate check: the artist's own piece with this picture, or someone else's (review at publish). */
   duplicate?: { slug: string; title: string } | null;
   duplicateOther?: boolean;
+  /** Photo edits behind imageUrl (components/media/ImageEditor.tsx); their source is the untouched upload. */
+  edits?: StoredEdits | null;
+  /** The editor has been shown for this painting (it opens by itself once per new upload). */
+  reviewed?: boolean;
 };
 
 export type QueueDraft = { items: QueueItem[]; index: number; owned: boolean; announced: string[]; finished: boolean };
@@ -132,7 +138,8 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
   const [notice, setNotice] = useState<string | null>(() =>
     restored?.dropped ? `${restored.dropped} ${restored.dropped === 1 ? "image was" : "images were"} still uploading when the page reloaded. Add ${restored.dropped === 1 ? "it" : "them"} again.` : null,
   );
-  const [items, setItems] = useState<QueueItem[]>(() => restored?.draft.items ?? []);
+  // Restored paintings were already seen before the reload, so the photo editor doesn't pop up for each again.
+  const [items, setItems] = useState<QueueItem[]>(() => (restored?.draft.items ?? []).map((i) => ({ ...i, reviewed: true })));
   const [index, setIndex] = useState(() => restored?.draft.index ?? 0);
   const [owned, setOwned] = useState(() => restored?.draft.owned ?? false);
   const [announced, setAnnounced] = useState<string[]>(() => restored?.draft.announced ?? []);
@@ -350,6 +357,15 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
   const runDone = runItems.filter((i) => i.upload === "done" || i.upload === "error").length;
   const localPending = items.some((i) => !i.source && (i.upload === "waiting" || i.upload === "uploading"));
 
+  // The photo editor: opens by itself once for each new upload as it becomes the current painting.
+  const [photoEditor, setPhotoEditor] = useState<{ id: string; auto: boolean } | null>(null);
+  useEffect(() => {
+    if (photoEditor) { if (!items.some((i) => i.id === photoEditor.id)) setPhotoEditor(null); return; }
+    if (finished || !item) return;
+    if (item.upload === "done" && item.imageUrl && !item.reviewed && !published(item)) setPhotoEditor({ id: item.id, auto: true });
+  }, [item, items, photoEditor, finished]);
+  const editorItem = photoEditor ? items.find((i) => i.id === photoEditor.id) : undefined;
+
   /** "Same as last one": an untouched painting takes the prices, run and labels of `from`. */
   const carryInto = (list: QueueItem[], toId: string, from: ArtworkValues) =>
     list.map((it) => (it.id === toId && it.carry && !it.result ? { ...it, v: { ...it.v, prices: from.prices, limited: from.limited, edition: from.edition, sensitive: from.sensitive } } : it));
@@ -439,7 +455,7 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
     try {
       const res = await fetch("/api/artworks/upload", {
         method: "POST", credentials: "include",
-        body: artworkFormData(item.v, { imageUrl: item.imageUrl, fresh: item.fresh, ownership: owned, batch: true }),
+        body: artworkFormData(item.v, { imageUrl: item.imageUrl, fresh: item.fresh, ownership: owned, batch: true, edits: item.edits ?? undefined }),
       });
       if (!res.ok) throw new Error(await saveError(res));
       const saved = await res.json();
@@ -617,6 +633,22 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
             )}
             {item.upload === "done" && item.source && printable && !printable.length && (
               <Problem tone="warning" title={TOO_SMALL} fix={{ label: "Which files print sharp?", href: "/help/getting-started/file-sizes-print-sharp" }} secondary={{ label: "Book a scan", href: scanHref(item.result?.slug) }} />
+            )}
+            {item.upload === "done" && item.imageUrl && (
+              <button type="button" onClick={() => setPhotoEditor({ id: item.id, auto: false })} className="btn btn-ghost btn-sm justify-self-start"><Crop className="h-4 w-4" aria-hidden="true" />Edit photo</button>
+            )}
+            {editorItem && photoEditor && (
+              <ImageEditor
+                key={editorItem.id}
+                source={editorItem.edits?.source ?? editorItem.imageUrl}
+                sourceSize={editorItem.edits ? (editorItem.edits.sourceW ? { w: editorItem.edits.sourceW, h: editorItem.edits.sourceH } : null) : editorItem.dims}
+                initial={editorItem.edits} previous={editorItem.edits ? editorItem.imageUrl : null} auto={photoEditor.auto}
+                originalSize={parseFloat(editorItem.v.origW) > 0 && parseFloat(editorItem.v.origH) > 0 ? { w: parseFloat(editorItem.v.origW), h: parseFloat(editorItem.v.origH) } : null}
+                onDone={(r) => {
+                  patch(editorItem.id, r ? { reviewed: true, imageUrl: r.url, fresh: { printable: r.printable as SizeKey[], sig: r.printableSig }, dims: { w: r.width, h: r.height }, edits: r.edits } : { reviewed: true });
+                  setPhotoEditor(null);
+                }}
+              />
             )}
             {item.upload === "done" && printable && <PrintSizes imageUrl={item.imageUrl} printable={printable} dims={item.dims} shape={item.dims} scanSlug={item.result?.slug ?? null} />}
           </div>

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { adminOrRedirect } from "../_components/gate";
 import { itemBreakdown, normalizeSize } from "@/lib/sales";
-import { PaintChip } from "@/components/af/Brush";
 import MonthPicker from "../_components/MonthPicker";
+import { PageHead } from "../_components/ui";
 import OrdersBoard, { type AdminOrder, type Filter } from "../_components/OrdersBoard";
 import { activeRefunds } from "@/lib/refunds";
 import { currentMonth, monthLabel, monthRange, usd } from "../_components/util";
@@ -115,29 +115,30 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
   const companyTotal = paid.reduce((n, o) => n + o.items.reduce((m, i) => m + i.companyShare, 0), 0);
   const prints = paid.reduce((n, o) => n + o.items.reduce((m, i) => m + i.quantity, 0), 0);
 
+  const toPrint = shaped.filter((o) => !o.sentToPrinter && o.shippingStatus === "pending").length;
+  const toShip = shaped.filter((o) => o.shippingStatus === "pending").length;
+
   return (
-    <div className="grid gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="eyebrow">{month === "all" ? "All time" : monthLabel(month)}</p>
-          <h1 className="display text-[44px] sm:text-[56px]">Orders</h1>
-        </div>
-        <div className="flex flex-wrap items-end gap-2">
-          <MonthPicker months={months} value={month} />
-          {month !== "all" && (
-            <a href={`/api/admin/payouts?month=${month}`} className="btn btn-ghost btn-sm mb-1">Export CSV</a>
-          )}
-        </div>
-      </div>
+    <div className="grid gap-5">
+      <PageHead
+        title="Orders"
+        sub={toPrint || toShip ? `${toPrint} to print · ${toShip} to ship` : "Everything's shipped"}
+        action={
+          <>
+            <MonthPicker months={months} value={month} />
+            {month !== "all" && <a href={`/api/admin/payouts?month=${month}`} className="btn btn-ghost btn-sm">Export CSV</a>}
+          </>
+        }
+      />
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <PaintChip color="#b8c4ff" value={paid.length} label="paid orders" note={`${prints} prints`} />
-        <PaintChip color="#a8dcc4" value={usd(gross)} label="sales (incl. tax)" earned />
-        <PaintChip color="#f7c8a8" value={usd(artistTotal)} label="owed to artists" earned />
-        <PaintChip color="var(--af-sticker)" value={usd(companyTotal)} label="Artfinity share" earned />
-      </div>
+      <dl className="num flex flex-wrap gap-x-6 gap-y-1 text-[14px]">
+        <div className="flex gap-1.5"><dt className="text-ink-2">{month === "all" ? "All time" : monthLabel(month)}:</dt><dd className="font-semibold">{paid.length} paid · {prints} prints</dd></div>
+        <div className="flex gap-1.5"><dt className="text-ink-2">Sales</dt><dd className="font-semibold">{usd(gross)}</dd></div>
+        <div className="flex gap-1.5"><dt className="text-ink-2">Owed to artists</dt><dd className="font-semibold">{usd(artistTotal)}</dd></div>
+        <div className="flex gap-1.5"><dt className="text-ink-2">Artfinity</dt><dd className="font-semibold text-earned">{usd(companyTotal)}</dd></div>
+      </dl>
 
-      <OrdersBoard key={month} orders={shaped} printerAuto={printerAuto()} initialFilter={FILTERS[searchParams.filter || ""] ?? "all"} />
+      <OrdersBoard key={month} orders={shaped} printerAuto={printerAuto()} initialFilter={FILTERS[searchParams.filter || ""]} />
     </div>
   );
 }

@@ -27,3 +27,17 @@ export function normalizeSize(raw: string | null | undefined): "S" | "M" | "L" |
 }
 
 export const SIZE_LABEL: Record<string, string> = { S: "Small 5×7", M: "Medium 8×12", L: "Large 11×17", XL: "XL 18×24" };
+
+const NY = "America/New_York";
+/** The one admin date format: "Nov 5, 2026" (New York time). */
+export function day(d: Date | string | null | undefined) {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: NY });
+}
+/** Date and time: "Nov 5, 2026, 3:04 PM" (New York time). */
+export function dayTime(d: Date | string | null | undefined) {
+  if (!d) return "—";
+  return new Date(d).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: NY });
+}
+/** ISO string or null, for sort values and date filters. */
+export const iso = (d: Date | string | null | undefined) => (d ? new Date(d).toISOString() : null);

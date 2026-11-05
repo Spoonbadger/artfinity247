@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import ReviewStars from "@/components/reviews/ReviewStars";
 import MerchPreview from "@/components/art/MerchPreview";
-import ReviewList from "@/components/reviews/ReviewList";
+import SortableReviews, { ReviewSortPill, useReviewSort } from "@/components/reviews/SortableReviews";
 import type { PublicReview, ReviewSummary } from "@/components/reviews/format";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ShoppingBag } from "lucide-react";
+import { MapPin, ShoppingBag } from "lucide-react";
+import { SortMenu, useSortPref } from "@/components/studio/SortMenu";
 import { useCart, useUser } from "@/components/contexts";
 import SensitiveImage from "@/components/site/SensitiveImage";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,14 @@ import type { MoreArt, ScanArt, ScanArtist, ScanCartProduct } from "@/components
 import { artistPath, artPath } from "@/lib/urls";
 import { closestSize, originalText, splitOriginal } from "@/lib/originalSize";
 import { recall, remember } from "@/lib/smartFields";
+
+type MoreSort = "newest" | "price-asc" | "price-desc" | "az";
+const MORE_SORTS: { value: MoreSort; label: string }[] = [
+  { value: "newest", label: "Newest" },
+  { value: "price-asc", label: "Price: low to high" },
+  { value: "price-desc", label: "Price: high to low" },
+  { value: "az", label: "A–Z" },
+];
 
 const canOptimize = (src: string) => src.startsWith("/") || src.includes("res.cloudinary.com");
 
@@ -99,6 +108,15 @@ export default function ScanView({
   const [aspect, setAspect] = useState<number>(aspectFromServer || 0.8);
   const [busy, setBusy] = useState(false);
   const [req, setReq] = useState<GalleryRequest>(null);
+  const [reviewSort, setReviewSort] = useReviewSort();
+  const [moreSort, setMoreSort] = useSortPref<MoreSort>("buyer.more-art", "newest", MORE_SORTS.map((o) => o.value));
+  const moreSorted = useMemo(() => {
+    const list = [...more]; // arrives newest first
+    if (moreSort === "price-asc") list.sort((a, b) => a.fromCents - b.fromCents);
+    else if (moreSort === "price-desc") list.sort((a, b) => b.fromCents - a.fromCents);
+    else if (moreSort === "az") list.sort((a, b) => a.title.localeCompare(b.title));
+    return list;
+  }, [more, moreSort]);
   const landscape = aspect > 1.05;
   const framed = !!frame;
   const soldOut = !!art.edition?.soldOut;
@@ -174,7 +192,6 @@ export default function ScanView({
     trust?.showStats && trust.printsSold > 0 ? `${trust.printsSold.toLocaleString("en-US")} print${trust.printsSold === 1 ? "" : "s"} sold` : null,
   ].filter(Boolean).join(" · ");
   const buyLabel = soldOut ? "Sold out" : busy ? "Opening checkout…" : `Buy this print · ${usd(price.now)}`;
-  const discountTag = pct > 0 ? `${pct}% off${venue ? ` · ${venue}` : ""}` : null;
 
   return (
     <div>
@@ -200,8 +217,22 @@ export default function ScanView({
 
         {/* Buy panel: everything needed to buy, once */}
         <section aria-label="Buy a print" className="grid min-w-0 content-start gap-4 px-4 pt-3 sm:px-6 md:px-0 md:pt-1">
+          {/* Scanned a code: say where, once, above everything else */}
+          {venue && (
+            <p className="-mb-1 flex items-center gap-1.5 text-[14px] text-ink-2">
+              <MapPin className="h-4 w-4 shrink-0 text-scan" aria-hidden />
+              <span className="min-w-0 truncate">
+                You scanned this at{" "}
+                {venueHref ? <a href={venueHref} className="font-semibold text-ink underline decoration-line underline-offset-2 hover:decoration-ink">{venue}</a> : <b className="font-semibold text-ink">{venue}</b>}
+              </span>
+            </p>
+          )}
+
           <div className="grid gap-1.5">
-            <h1 className="display text-[34px] leading-[0.95] sm:text-[40px] lg:text-[46px]">{art.title}</h1>
+            <div className="flex items-start justify-between gap-3">
+              <h1 className="display min-w-0 text-[34px] leading-[0.95] sm:text-[40px] lg:text-[46px]">{art.title}</h1>
+              <WishlistHeart artworkId={art.id} title={art.title} variant="inline" className="shrink-0" />
+            </div>
             {reviews && reviews.summary.count > 0 && <ReviewStars average={reviews.summary.average} count={reviews.summary.count} size="sm" href="#reviews" className="w-fit" />}
           </div>
 
@@ -214,12 +245,10 @@ export default function ScanView({
                   {usd(price.list)}
                 </s>
               )}
-              {discountTag && <span className="max-w-full truncate rounded-full bg-sticker px-2.5 py-1 text-[12.5px] font-bold leading-none text-ink">{discountTag}</span>}
+              {pct > 0 && <span className="rounded-full bg-sticker px-2.5 py-1 text-[12.5px] font-bold leading-none text-ink">{pct}% off for scanning</span>}
               <EditionBadge edition={art.edition} compact />
-              <WishlistHeart artworkId={art.id} title={art.title} variant="inline" className="-my-1 ml-auto" />
             </div>
-            {venue && (!pct || venueHref) && <p className="text-[13.5px] text-ink-2">Scanned at {venueHref ? <a href={venueHref} className="font-semibold text-ink underline decoration-line underline-offset-2 hover:decoration-ink">{venue}</a> : <b className="font-semibold text-ink">{venue}</b>}</p>}
-            {discountEnded && <p className="text-[13.5px] text-ink-2">The discount on this card has ended. Prices shown are current.</p>}
+            {discountEnded && <p className="text-[13.5px] text-ink-2">This card&apos;s discount has ended.</p>}
           </div>
 
           {/* Size */}
@@ -285,17 +314,17 @@ export default function ScanView({
           </fieldset>
 
           {/* Buy (desktop; on phones Buy is the sticky bar) and a quiet Add to cart */}
-          <div className="flex items-center gap-3 md:pt-1">
-            <button type="button" onClick={onBuy} disabled={busy || soldOut} className="btn btn-blue btn-lg hidden flex-1 text-[18px] md:inline-flex">
+          <div className="hidden items-center gap-3 pt-1 md:flex">
+            <button type="button" onClick={onBuy} disabled={busy || soldOut} className="btn btn-blue btn-lg flex-1 text-[18px]">
               {buyLabel}
             </button>
-            <button type="button" onClick={onAdd} disabled={soldOut} className="inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-full px-3 text-[15px] font-semibold text-ink underline-offset-2 hover:bg-wall hover:underline disabled:opacity-50 max-md:-ml-3">
+            <button type="button" onClick={onAdd} disabled={soldOut} className="inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-full px-3 text-[15px] font-semibold text-ink underline-offset-2 hover:bg-wall hover:underline disabled:opacity-50">
               <ShoppingBag className="h-[18px] w-[18px]" aria-hidden /> Add to cart
             </button>
           </div>
 
           {/* One trust line */}
-          <p className="-mt-1 text-[13px] leading-relaxed text-ink-2">
+          <p className="-mt-1 hidden text-[13px] leading-relaxed text-ink-2 md:block">
             {arrives ? <><b className="font-semibold text-ink">Arrives {arrives}</b> · free US shipping</> : <b className="font-semibold text-ink">Free US shipping</b>}
             {" · "}
             <Link href="/return-policy" className="underline decoration-line underline-offset-2 hover:text-ink">damaged? free reprint</Link>
@@ -333,11 +362,11 @@ export default function ScanView({
           <h2 id="print-h" className="text-[18px] font-bold">The print{framed ? " and frame" : ""}</h2>
           <ul className="grid list-disc gap-1.5 pl-5 text-[15px] leading-snug text-ink-2 marker:text-line">
             <li>
-              {SIZE_LABEL[size]}, {sizeInches(size)}. 12-color giclée on smooth matte, FSC-certified 310gsm archival paper, with a ½-inch handling border. Keeps the artwork&apos;s proportions.
+              {SIZE_LABEL[size]}, {sizeInches(size)}. Giclée on 310gsm archival matte paper, ½-inch border.
             </li>
-            {frame && <li>{FRAME_COLORS.find((f) => f.key === frame)?.label} frame made for the {sizeInches(size)} print, ready to hang. Priced by Artfinity, the same for every artist.</li>}
+            {frame && <li>{FRAME_COLORS.find((f) => f.key === frame)?.label} frame, ready to hang.</li>}
             <li>Printed and shipped by Artfinity. {firstName} gets {pctOf(artistSplit)} of the profit.</li>
-            <li>Size is final sale, so check it in a room first. Arrives damaged? <Link href="/return-policy" className="font-semibold text-ink underline decoration-line underline-offset-2">We reprint it free.</Link></li>
+            <li>Size is final sale. Arrives damaged? <Link href="/return-policy" className="font-semibold text-ink underline decoration-line underline-offset-2">We reprint it free.</Link></li>
           </ul>
           <Link href="/help/buyers" className="w-fit text-[14px] text-ink-2 underline decoration-line underline-offset-2 hover:text-ink">Shipping, frames and returns</Link>
         </section>
@@ -346,21 +375,27 @@ export default function ScanView({
       {reviews && reviews.summary.count > 0 && (
         <section id="reviews" aria-labelledby="reviews-h" className="mx-auto mt-12 max-w-[1240px] scroll-mt-20 px-4 sm:px-6 md:mt-16">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-            <h2 id="reviews-h" className="display text-[28px] md:text-[36px]">{reviews.scope === "art" ? "What buyers say" : `Buyers of ${firstName}'s prints`}</h2>
-            <ReviewStars average={reviews.summary.average} count={reviews.summary.count} />
+            <div className="grid gap-1.5">
+              <h2 id="reviews-h" className="display text-[28px] md:text-[36px]">{reviews.scope === "art" ? "What buyers say" : `Buyers of ${firstName}'s prints`}</h2>
+              <ReviewStars average={reviews.summary.average} count={reviews.summary.count} />
+            </div>
+            {reviews.reviews.length > 1 && <ReviewSortPill value={reviewSort} onChange={setReviewSort} />}
           </div>
-          <ReviewList reviews={reviews.reviews} artistName={artist.name} showArtwork={reviews.scope === "artist"} initial={3} />
+          <SortableReviews reviews={reviews.reviews} sort={reviewSort} artistName={artist.name} showArtwork={reviews.scope === "artist"} initial={3} />
         </section>
       )}
 
       <section aria-labelledby="more-h" className="mx-auto mt-12 max-w-[1240px] px-4 sm:px-6 md:mt-16">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <h2 id="more-h" className="display text-[28px] md:text-[36px]">More by {firstName}</h2>
-          <Link href={artistPath(artist.slug)} className="btn btn-ghost btn-sm min-h-[44px] px-4 md:min-h-0">See all</Link>
+          <div className="flex items-center gap-2">
+            {more.length > 1 && <SortMenu label="Sort artworks" value={moreSort} onChange={setMoreSort} options={MORE_SORTS} />}
+            <Link href={artistPath(artist.slug)} className="btn btn-ghost btn-sm min-h-[40px] px-4">See all</Link>
+          </div>
         </div>
         {more.length ? (
           <ul className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-4 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-5 sm:overflow-visible sm:px-0 sm:[&>li:nth-child(n+4)]:hidden lg:grid-cols-4 lg:[&>li:nth-child(4)]:block">
-            {more.map((m) => (
+            {moreSorted.map((m) => (
               <li key={m.slug} className="w-[44vw] max-w-[220px] shrink-0 snap-start sm:w-auto sm:max-w-none">
                 <Link href={artPath(artist.slug, m.slug)} className="group grid gap-2 text-ink no-underline">
                   <div className="aspect-[4/5] overflow-hidden rounded-lg bg-gallery">
@@ -397,15 +432,18 @@ export default function ScanView({
         </Link>
       </p>
 
-      {/* Sticky buy bar on phones: price, and arrival + secure once */}
-      {(
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 px-4 pb-[calc(8px+env(safe-area-inset-bottom))] pt-2.5 backdrop-blur md:hidden">
-          <button type="button" onClick={onBuy} disabled={busy || soldOut} className="btn btn-blue w-full py-3 text-[17px]">
-            {buyLabel}
+      {/* Sticky buy bar on phones: Buy, Add to cart, and arrival once */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 px-4 pb-[calc(8px+env(safe-area-inset-bottom))] pt-2.5 backdrop-blur md:hidden">
+        <div className="flex gap-2">
+          <button type="button" onClick={onAdd} disabled={soldOut} className="btn btn-ghost shrink-0 gap-1.5 px-4 py-3 text-[15px]">
+            <ShoppingBag className="h-[18px] w-[18px]" aria-hidden /> Add to cart
           </button>
-          <p className="mt-1 text-center text-[12.5px] text-ink-2">{arrives ? `Arrives ${arrives} · free shipping · secure checkout` : "Free US shipping · secure checkout"}</p>
+          <button type="button" onClick={onBuy} disabled={busy || soldOut} className="btn btn-blue min-w-0 flex-1 py-3 text-[17px]">
+            {soldOut ? "Sold out" : busy ? "Opening…" : `Buy · ${usd(price.now)}`}
+          </button>
         </div>
-      )}
+        <p className="mt-1 text-center text-[12.5px] text-ink-2">{arrives ? `Arrives ${arrives} · free US shipping` : "Free US shipping"} · free reprint if damaged</p>
+      </div>
     </div>
   );
 }

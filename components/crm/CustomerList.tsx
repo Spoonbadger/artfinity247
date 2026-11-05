@@ -6,6 +6,7 @@ import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STAGE_META, ago, pigmentFor, shortDate, usd, type Stage } from "./format";
 import { EmptyState } from "@/components/studio/EmptyState";
+import { SortMenu, useSortPref } from "@/components/studio/SortMenu";
 
 export type CustomerRow = {
   email: string;
@@ -26,11 +27,16 @@ export type CustomerRow = {
 };
 
 const SORTS = [
-  { key: "recent", label: "Recent" },
-  { key: "prints", label: "Most prints" },
-  { key: "spend", label: "Top spend" },
+  { value: "recent", label: "Most recent" },
+  { value: "spend", label: "Most spent" },
+  { value: "orders", label: "Most orders" },
+  { value: "name", label: "A–Z" },
 ] as const;
-type SortKey = (typeof SORTS)[number]["key"];
+type SortKey = (typeof SORTS)[number]["value"];
+const SORT_KEYS = SORTS.map((s) => s.value);
+
+const FILTERS = ["all", "waiting", "repeat"] as const;
+type FilterKey = (typeof FILTERS)[number];
 
 export function StageDot({ stage, className }: { stage: Stage; className?: string }) {
   const m = STAGE_META[stage];
@@ -59,20 +65,26 @@ function Thumb({ row, size = 48 }: { row: CustomerRow; size?: number }) {
 
 export default function CustomerList({ rows }: { rows: CustomerRow[] }) {
   const [q, setQ] = useState("");
-  const [sort, setSort] = useState<SortKey>("recent");
+  const [sort, setSort] = useSortPref<SortKey>("customers", "recent", SORT_KEYS);
+  const [filter, setFilter] = useSortPref<FilterKey>("customers.show", "all", FILTERS);
+  const waiting = rows.filter((r) => r.stage !== "delivered").length;
+  const repeat = rows.filter((r) => r.repeat).length;
 
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    const list = needle
+    let list = needle
       ? rows.filter((r) => [r.name, r.city, r.email, ...r.pieces].some((s) => s.toLowerCase().includes(needle)))
       : rows.slice();
+    if (filter === "waiting") list = list.filter((r) => r.stage !== "delivered");
+    if (filter === "repeat") list = list.filter((r) => r.repeat);
     list.sort((a, b) =>
-      sort === "prints" ? b.prints - a.prints || b.last.localeCompare(a.last)
+      sort === "orders" ? b.orders - a.orders || b.last.localeCompare(a.last)
         : sort === "spend" ? b.spentCents - a.spentCents || b.last.localeCompare(a.last)
-          : b.last.localeCompare(a.last)
+          : sort === "name" ? a.name.localeCompare(b.name)
+            : b.last.localeCompare(a.last)
     );
     return list;
-  }, [rows, q, sort]);
+  }, [rows, q, sort, filter]);
 
   return (
     <section aria-label="Customer list" className="grid gap-4">
@@ -88,34 +100,40 @@ export default function CustomerList({ rows }: { rows: CustomerRow[] }) {
             className="w-full min-w-0 border-0 bg-transparent py-2 text-[16px] text-ink outline-none placeholder:text-ink-2"
           />
         </label>
-        <div role="radiogroup" aria-label="Sort customers" className="flex gap-1 rounded-full border border-line bg-white p-1">
-          {SORTS.map((s) => (
-            <button
-              key={s.key}
-              type="button"
-              role="radio"
-              aria-checked={sort === s.key}
-              onClick={() => setSort(s.key)}
-              className={cn(
-                "flex-1 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[13.5px] font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-scan sm:flex-none",
-                sort === s.key ? "bg-ink text-white" : "text-ink hover:bg-wall"
-              )}
-            >
-              {s.label}
-            </button>
-          ))}
+        <div className="grid grid-cols-2 gap-2 sm:flex">
+          <SortMenu
+            kind="filter"
+            label="Show"
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { value: "all", label: `Everyone (${rows.length})` },
+              { value: "waiting", label: `Waiting on a print (${waiting})` },
+              { value: "repeat", label: `Repeat buyers (${repeat})` },
+            ]}
+          />
+          <SortMenu label="Sort" value={sort} onChange={setSort} options={[...SORTS]} />
         </div>
       </div>
 
       <p className="sr-only" aria-live="polite">{shown.length} customers shown</p>
 
       {shown.length === 0 ? (
-        <EmptyState
-          compact
-          title={`No customers match "${q.trim()}"`}
-          body="Search looks at names, cities and the pieces they bought. Try fewer letters, or clear it to see everyone."
-          action={{ label: "Clear search", onClick: () => setQ("") }}
-        />
+        q.trim() ? (
+          <EmptyState
+            compact
+            title={`No customers match "${q.trim()}"`}
+            body="Search covers names, cities and pieces. Try fewer letters."
+            action={{ label: "Clear search", onClick: () => setQ("") }}
+          />
+        ) : (
+          <EmptyState
+            compact
+            title={filter === "waiting" ? "Every print has arrived" : "No repeat buyers yet"}
+            body={filter === "waiting" ? "Orders on their way show up here." : "A thank-you note helps bring people back."}
+            action={{ label: "See everyone", onClick: () => setFilter("all") }}
+          />
+        )
       ) : (
         <>
           {/* Phones: cards */}

@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { basePrices } from "@/lib/artwork_price";
+import { priceBand, PRINT_SIZE_KEYS, type ArtSort, type ArtistSort } from "./sortOptions";
 
 /** Public listings never show rejected work. */
 // Only approved work is public (matches the public APIs and the scan page).
@@ -31,25 +32,42 @@ export function toCard(a: ArtRow): CardArt {
   };
 }
 
-export type ArtSort = "newest" | "price-asc" | "price-desc";
+export { ART_SORTS, artSort, PRICE_BANDS, priceBand, PRINT_SIZE_KEYS, ARTIST_SORTS, artistSort } from "./sortOptions";
+export type { ArtSort, PriceBand, ArtistSort } from "./sortOptions";
 
-export async function getArt(opts: { city?: string; q?: string; sort?: ArtSort; page?: number; perPage?: number; artistSlug?: string } = {}) {
-  const { city, q, sort = "newest", page = 1, perPage = 24, artistSlug } = opts;
+export async function getArt(opts: { city?: string; q?: string; sort?: ArtSort; page?: number; perPage?: number; artistSlug?: string; price?: string; size?: string } = {}) {
+  const { city, q, sort = "newest", page = 1, perPage = 24, artistSlug, price, size } = opts;
   const where: Prisma.ArtworkWhereInput = { ...PUBLIC_ART };
+  const and: Prisma.ArtworkWhereInput[] = [];
   const artist: Prisma.ArtistWhereInput = {};
   if (city) artist.citySlug = city;
   if (artistSlug) artist.slug = artistSlug;
-  if (Object.keys(artist).length) where.artist = { is: artist };
+  if (Object.keys(artist).length) where.artist = { is: { ...artist, closedAt: null, suspendedAt: null } };
   if (q) {
-    where.OR = [
+    and.push({ OR: [
       { title: { contains: q, mode: "insensitive" } },
       { description: { contains: q, mode: "insensitive" } },
       { artist: { is: { OR: [{ name: { contains: q, mode: "insensitive" } }, { artist_name: { contains: q, mode: "insensitive" } }, { city: { contains: q, mode: "insensitive" } }] } } },
-    ];
+    ] });
   }
+  const band = priceBand(price);
+  if (band) {
+    // priceFrom = small base price + small markup (a missing markup counts as 0)
+    const markup: Prisma.IntNullableFilter = {};
+    if ("min" in band) markup.gte = band.min - basePrices.small;
+    if ("max" in band) markup.lt = band.max - basePrices.small;
+    const zeroFits = (!("min" in band) || band.min <= basePrices.small) && (!("max" in band) || band.max > basePrices.small);
+    and.push(zeroFits ? { OR: [{ markupSmall: markup }, { markupSmall: null }] } : { markupSmall: markup });
+  }
+  if (size && (PRINT_SIZE_KEYS as string[]).includes(size)) {
+    // Sharp enough for that size; older uploads were never checked, so they count.
+    and.push({ OR: [{ printableSizes: { has: size } }, { printableSizes: { isEmpty: true } }] });
+  }
+  if (and.length) where.AND = and;
   const orderBy: Prisma.ArtworkOrderByWithRelationInput[] =
     sort === "price-asc" ? [{ markupSmall: "asc" }, { createdAt: "desc" }]
     : sort === "price-desc" ? [{ markupSmall: "desc" }, { createdAt: "desc" }]
+    : sort === "popular" ? [{ OrderItem: { _count: "desc" } }, { createdAt: "desc" }]
     : [{ createdAt: "desc" }];
   const [rows, total] = await Promise.all([
     prisma.artwork.findMany({ where, orderBy, skip: (page - 1) * perPage, take: perPage, select: artSelect }),
@@ -74,23 +92,26 @@ export async function getCities() {
 }
 
 /** Artists with public work, with their newest few pieces. */
-export async function getArtists(opts: { take?: number; city?: string; q?: string; pieces?: number } = {}) {
-  const { take, city, q, pieces = 3 } = opts;
+export async function getArtists(opts: { take?: number; city?: string; q?: string; pieces?: number; sort?: ArtistSort } = {}) {
+  const { take, city, q, pieces = 3, sort = "popular" } = opts;
   const where: Prisma.ArtistWhereInput = { role: "USER", artworks: { some: PUBLIC_ART } };
   if (city) where.citySlug = city;
   if (q) where.OR = [{ name: { contains: q, mode: "insensitive" } }, { artist_name: { contains: q, mode: "insensitive" } }, { city: { contains: q, mode: "insensitive" } }];
   const rows = await prisma.artist.findMany({
-    where, take,
+    where, take: sort === "az" ? undefined : take,
     select: {
       slug: true, name: true, artist_name: true, city: true, state: true, citySlug: true, profileImage: true, bio: true,
       _count: { select: { artworks: { where: PUBLIC_ART } } },
       artworks: { where: PUBLIC_ART, orderBy: { createdAt: "desc" }, take: pieces, select: { slug: true, title: true, imageUrl: true, sensitive: true } },
     },
-    orderBy: { artworks: { _count: "desc" } },
+    orderBy: sort === "newest" ? { createdAt: "desc" } : { artworks: { _count: "desc" } },
   });
-  return rows.map((r) => ({
+  const list = rows.map((r) => ({
     slug: r.slug, name: displayName(r), city: cityLabel(r), citySlug: r.citySlug, avatar: r.profileImage, bio: r.bio || "",
     count: r._count.artworks, art: r.artworks.map((a) => ({ ...a, slug: a.slug!, sensitive: a.sensitive ?? [] })),
   }));
+  // A to Z goes by the name people see (artist_name or name), so it's sorted here.
+  if (sort === "az") list.sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" }));
+  return take && sort === "az" ? list.slice(0, take) : list;
 }
 export type DirArtist = Awaited<ReturnType<typeof getArtists>>[number];

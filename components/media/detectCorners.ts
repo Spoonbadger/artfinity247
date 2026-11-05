@@ -3,11 +3,11 @@
 // Heuristic: the photo's border is mostly wall. Fit the wall colour (allowing a linear light falloff) to the border,
 // flood the wall in from the edges through pixels close to that fit, and treat what the flood can't reach as the
 // painting (holes filled). The corners are the extreme points of the largest such blob
-// (min x+y, max x−y, max x+y, max y−x). The guess is thrown away unless it looks like a solid four-sided shape that
-// fills its quad, sits inside the photo, and isn't just the whole photo. Returns normalized TL, TR, BR, BL or null.
+// (min x+y, max x−y, max x+y, max y−x). The guess is thrown away unless the blob matches that four-sided shape almost
+// exactly (straight edges, no gaps), sits inside the photo, and isn't just the whole photo. Returns normalized TL, TR, BR, BL or null.
 import { convex, quadArea, type Quad } from "@/lib/imageEdits";
 
-const SIDE = 160;
+const SIDE = 256;
 
 export function detectCorners(source: CanvasImageSource, sw: number, sh: number): Quad | null {
   try {
@@ -53,7 +53,7 @@ export function cornersFromPixels(px: Uint8ClampedArray, w: number, h: number): 
   const ringD = ring.map((j) => d[j]).sort((a, b) => a - b);
   const p95 = ringD[Math.floor(ringD.length * 0.95)];
   if (p95 > 45) return null;
-  const thr = Math.max(22, p95 * 2.2 + 8);
+  const thr = Math.max(20, p95 * 1.6 + 6);
 
   // Flood the wall in from the border; whatever it can't reach is the painting (holes filled).
   const bg = new Uint8Array(n);
@@ -100,9 +100,18 @@ export function cornersFromPixels(px: Uint8ClampedArray, w: number, h: number): 
   if (!convex(q)) return null;
   const area = quadArea(q);
   if (area < 0.08 || area > 0.95) return null;
-  // solid: the blob fills its quad (a stray shadow or a frame-less blob of colour doesn't)
-  const fill = bestBlob.length / n / area;
-  if (fill < 0.88 || fill > 1.12) return null;
+  // Solid and straight-edged: the blob and its quad overlap almost exactly (IoU). A painting whose dark half blends
+  // into a dark wall leaves a wavy blob, so it fails here rather than giving a wrong guess.
+  const inBlob = new Uint8Array(n);
+  for (const j of bestBlob) inBlob[j] = 1;
+  const qpx = q.map(([x, y]) => [x * w, y * h] as [number, number]);
+  let both = 0, either = 0;
+  for (let j = 0; j < n; j++) {
+    const inside = inQuad(qpx, (j % w) + 0.5, ((j / w) | 0) + 0.5);
+    if (inside && inBlob[j]) both++;
+    if (inside || inBlob[j]) either++;
+  }
+  if (!either || both / either < 0.955) return null;
   // each side at least a sixth of the photo, so a sliver doesn't pass
   const side = (a: [number, number], b: [number, number]) => Math.hypot((a[0] - b[0]) * w, (a[1] - b[1]) * h) / Math.max(w, h);
   if ([side(q[0], q[1]), side(q[1], q[2]), side(q[2], q[3]), side(q[3], q[0])].some((s) => s < 1 / 6)) return null;
@@ -116,4 +125,13 @@ function solve3(m: number[][], v: number[]): [number, number, number] | null {
   if (Math.abs(D) < 1e-9) return null;
   const col = (k: number) => m.map((row, r) => row.map((x, c) => (c === k ? v[r] : x)));
   return [det(col(0)) / D, det(col(1)) / D, det(col(2)) / D];
+}
+
+function inQuad(q: [number, number][], x: number, y: number): boolean {
+  let inside = false;
+  for (let i = 0, j = 3; i < 4; j = i++) {
+    const [xi, yi] = q[i], [xj, yj] = q[j];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
 }

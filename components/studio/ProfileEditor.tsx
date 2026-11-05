@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, ReactNode, useRef, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowUpRight, Camera, Check, Copy, Loader2 } from "lucide-react";
+import { ArrowUpRight, Camera, Check, ChevronDown, Copy, Loader2 } from "lucide-react";
 import { useUser } from "@/components/contexts";
 import { BrushStroke } from "@/components/af/Brush";
 import { Avatar } from "./StudioShell";
@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { failed, saved as savedToast } from "@/lib/feedback";
 import LocationInput from "@/components/forms/LocationInput";
 import { useUnsavedChanges } from "@/components/forms/useUnsavedChanges";
+import AvatarCropper from "@/components/media/AvatarCropper";
 
 type Profile = { name: string; city: string; bio: string; profileImage: string | null; venmoHandle: string };
 type Art = { id: string; title: string; imageUrl: string; sensitive: string[] };
@@ -38,6 +39,8 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
   const [saved, setSaved] = useState(initial);
   const [p, setP] = useState(initial);
   const [photoBusy, setPhotoBusy] = useState(false);
+  // A picked photo waiting in the cropper (components/media/AvatarCropper.tsx).
+  const [cropping, setCropping] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Venmo waits for a confirmed email: that error gets a [Resend confirmation] button.
@@ -140,8 +143,7 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
   }
 
   return (
-    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] lg:gap-10">
-      <div className="grid">
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] lg:gap-x-10">
       <form ref={formRef} onSubmit={save} className="grid gap-5" noValidate>
         <div className="flex flex-wrap items-center gap-4">
           <div className="relative">
@@ -150,10 +152,18 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
           </div>
           <div className="grid gap-1.5">
             <label className="btn btn-ghost btn-sm cursor-pointer justify-self-start focus-within:outline focus-within:outline-[3px] focus-within:outline-offset-2 focus-within:outline-scan">
-              <input ref={fileRef} type="file" accept="image/*" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) changePhoto(f); e.target.value = ""; }} />
+              <input ref={fileRef} type="file" accept="image/*" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) setCropping(f); e.target.value = ""; }} />
               <Camera className="h-4 w-4" aria-hidden="true" />{p.profileImage ? "Change photo" : "Add a photo"}
             </label>
-            <span className="text-[12.5px] text-ink-2">A face or your studio. Square works best.</span>
+            {cropping && (
+              <AvatarCropper
+                file={cropping}
+                onCancel={() => setCropping(null)}
+                onSave={async (f) => { setCropping(null); await changePhoto(f); }}
+                onUnreadable={(f) => { setCropping(null); changePhoto(f); }}
+              />
+            )}
+            <span className="text-[12.5px] text-ink-2">A face or your studio. You can crop it.</span>
           </div>
         </div>
 
@@ -170,7 +180,7 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
         </label>
         <div id="venmo" className="grid scroll-mt-24 gap-2">
           <label className="af-field">
-            <span className="label">Venmo handle · where we send your payouts</span>
+            <span className="label">Venmo for payouts · private</span>
             <input value={p.venmoHandle} onChange={(e) => setP({ ...p, venmoHandle: e.target.value.replace(/\s/g, "") })} maxLength={30} placeholder="@yourname" />
           </label>
           {pending !== null && (
@@ -179,7 +189,7 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
                 {pending ? <>Waiting for you to confirm by email: {pending}</> : <>Waiting for you to confirm by email: remove your Venmo</>}
               </b>
               <button type="button" onClick={cancelVenmo} className="font-semibold text-ink-2 underline underline-offset-2 hover:text-coral">Cancel change</button>
-              <span className="basis-full text-[12.5px] text-ink-2">We emailed you a link (good for 24 hours). Payouts keep going to {saved.venmoHandle || "your current Venmo"} until then.</span>
+              <span className="basis-full text-[12.5px] text-ink-2">The link works for 24 hours. Until then, payouts go to {saved.venmoHandle || "your current Venmo"}.</span>
             </div>
           )}
           {!saved.venmoHandle && pending === null && (
@@ -203,12 +213,9 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
           {!dirty && !saving && <span className="flex items-center gap-1.5 text-[13px] text-ink-2"><Check className="h-4 w-4" aria-hidden="true" />All saved</span>}
         </div>
       </form>
-      {account}
-      <DeleteAccount />
-      </div>
 
-      {/* Live preview of the public page */}
-      <aside className="grid gap-3 lg:sticky lg:top-6" aria-label="Preview of your page">
+      {/* Live preview of the public page: under the form on phones, beside it on desktop */}
+      <aside className="grid gap-3 lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1" aria-label="Preview of your page">
         <div className="flex items-center gap-2 rounded-full border-2 border-ink bg-white py-1.5 pl-4 pr-1.5">
           <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{link}</span>
           <button type="button" onClick={copy} className="btn btn-sm shrink-0" aria-live="polite">
@@ -242,11 +249,50 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
             )}
           </div>
         </div>
-        <Link href={`/@${slug}`} className="justify-self-start text-[13.5px] font-bold text-scan">
-          Open my page <ArrowUpRight className="inline h-4 w-4" aria-hidden="true" />
-        </Link>
+        <div className="flex flex-wrap gap-x-5 gap-y-1 text-[13.5px] font-bold [&>*]:inline-flex [&>*]:min-h-[40px] [&>*]:items-center">
+          <Link href={`/@${slug}`} className="text-scan">
+            Open my page <ArrowUpRight className="ml-0.5 h-4 w-4" aria-hidden="true" />
+          </Link>
+          <Link href="/studio/design" className="text-ink-2 hover:text-ink">Colors and layout</Link>
+        </div>
       </aside>
+
+      <div className="grid min-w-0 gap-6 lg:col-start-1">
+        {account && <AccountDrawer>{account}</AccountDrawer>}
+        <DeleteAccount />
+      </div>
     </div>
+  );
+}
+
+// Private account details and sign-in methods, folded away. Links to #account-details or #connected
+// (and the ?connected / ?oauth_error return from a provider) open it.
+const ACCOUNT_HASHES = ["#account", "#account-details", "#connected"];
+
+function AccountDrawer({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const open = () => {
+      const q = new URLSearchParams(window.location.search);
+      if (!ACCOUNT_HASHES.includes(window.location.hash) && !q.has("connected") && !q.has("oauth_error")) return;
+      if (ref.current) ref.current.open = true;
+      document.querySelector(window.location.hash || "#account")?.scrollIntoView({ block: "start" });
+    };
+    open();
+    window.addEventListener("hashchange", open);
+    return () => window.removeEventListener("hashchange", open);
+  }, []);
+  return (
+    <details ref={ref} id="account" className="group scroll-mt-24 border-t border-dashed border-line pt-4">
+      <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+        <span className="grid">
+          <b className="text-[17px]">Account and sign-in</b>
+          <span className="text-[13.5px] text-ink-2">Legal name, email, phone, password. Never shown on your page.</span>
+        </span>
+        <ChevronDown className="h-5 w-5 shrink-0 transition group-open:rotate-180" aria-hidden="true" />
+      </summary>
+      <div className="grid gap-8 pt-2">{children}</div>
+    </details>
   );
 }
 
@@ -277,8 +323,8 @@ function DeleteAccount() {
   }
 
   return (
-    <section aria-labelledby="acct-h" className="mt-8 grid gap-3 border-t border-dashed border-line pt-5">
-      <h2 id="acct-h" className="text-[18px] font-bold">Account</h2>
+    <section aria-labelledby="acct-h" className="grid gap-1">
+      <h2 id="acct-h" className="sr-only">More account options</h2>
       {done ? (
         <div role="status" className="grid gap-2 rounded-2xl border-2 border-ink bg-wall p-4">
           <b className="font-display text-[22px] [font-variation-settings:'wdth'_80]">Your account is closed.</b>
@@ -289,6 +335,8 @@ function DeleteAccount() {
         <div className="flex flex-wrap items-center gap-x-5 text-[14px] font-semibold [&>*]:inline-flex [&>*]:min-h-[44px] [&>*]:items-center">
           <Link href="/studio/purchases" className="text-scan underline-offset-2 hover:underline">My purchases</Link>
           <Link href="/change-password" className="text-scan underline-offset-2 hover:underline">Change password</Link>
+          <Link href="/studio/verify" className="text-scan underline-offset-2 hover:underline">Verification</Link>
+          <Link href="/studio/infinity" className="text-scan underline-offset-2 hover:underline">My plan</Link>
           <button type="button" onClick={() => setOpen(true)} className="text-ink-2 underline-offset-2 hover:text-coral hover:underline">
             Close my account
           </button>

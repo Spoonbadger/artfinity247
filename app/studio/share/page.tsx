@@ -16,7 +16,7 @@ export default async function SharePage({ searchParams }: { searchParams: { art?
 
   const rows = await prisma.artwork.findMany({
     where: { artistId: artist.id, status: "APPROVED", slug: { not: null } },
-    select: { slug: true, title: true, description: true, imageUrl: true, markupSmall: true, editionSize: true, sensitive: true },
+    select: { slug: true, title: true, description: true, imageUrl: true, markupSmall: true, editionSize: true, sensitive: true, _count: { select: { OrderItem: true } } },
     orderBy: { createdAt: "desc" },
   });
   const name = displayName(artist);
@@ -31,23 +31,19 @@ export default async function SharePage({ searchParams }: { searchParams: { art?
     fromCents: fromCents(r.markupSmall),
     editionSize: r.editionSize ?? null,
     sensitive: r.sensitive ?? [],
+    sold: r._count.OrderItem,
   }));
 
   if (!arts.length) {
     const pending = await prisma.artwork.count({ where: { artistId: artist.id, status: "PENDING" } });
     return (
-      <StudioPage title="Share kit" sub="Videos, posts and links that sell prints.">
+      <StudioPage title="Share kit" sub="Everything here links back to the print.">
         <EmptyState
           title={pending ? "Your share kit is almost ready" : "No approved art yet"}
           body={
-            pending ? (
-              <>
-                {pending === 1 ? "Your piece is" : `${pending} pieces are`} waiting on a quick review. Once approved, each one gets story and post images with a QR code,
-                captions to copy, tracked links for every channel and a website widget, right here.
-              </>
-            ) : (
-              <>Add a piece and once it&apos;s approved, this fills with story and post images with a QR code, captions to copy, tracked links for every channel and a website widget.</>
-            )
+            pending
+              ? `${pending === 1 ? "Your piece is" : `${pending} pieces are`} in review. Once approved, videos, images and captions show up here.`
+              : "Once a piece is approved, videos, images and captions for it show up here."
           }
           action={pending ? { label: "See my art", href: "/studio/art" } : { label: "Add your first piece", href: "/studio/art/new" }}
           secondary={{ label: "Share your page link", href: "/studio/links" }}
@@ -62,7 +58,7 @@ export default async function SharePage({ searchParams }: { searchParams: { art?
   const plan = await getArtistPlan(artist.id);
 
   return (
-    <StudioPage title="Share kit" sub="Post it anywhere. Every piece leads to the print.">
+    <StudioPage title="Share kit" sub="Everything here links back to the print.">
       <ShareKit arts={arts} initialSlug={slug} base={base} pro={plan.active} />
     </StudioPage>
   );

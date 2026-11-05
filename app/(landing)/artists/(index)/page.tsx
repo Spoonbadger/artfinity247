@@ -3,7 +3,8 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import ArtistCard, { YourSpotCard } from "@/components/browse/ArtistCard";
 import PageHead, { EmptyCanvas } from "@/components/browse/PageHead";
-import { getArtists, getCities } from "@/components/browse/data";
+import { ARTIST_SORTS, artistSort, getArtists, getCities } from "@/components/browse/data";
+import { UrlSort } from "@/components/browse/UrlSort";
 import { cn } from "@/lib/utils";
 import { getTrustBySlug } from "@/lib/artistTrust";
 
@@ -13,12 +14,14 @@ export const metadata: Metadata = { title: "Artists", description: "Independent 
 export default async function ArtistsPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
   const q = (searchParams.q || "").trim().slice(0, 60) || undefined;
   const city = searchParams.city || undefined;
-  const [artists, cities] = await Promise.all([getArtists({ q, city }), getCities()]);
+  const sort = artistSort(searchParams.sort);
+  const [artists, cities] = await Promise.all([getArtists({ q, city, sort }), getCities()]);
   const trust = await getTrustBySlug(artists.map((a) => a.slug));
   const link = (c?: string) => {
     const s = new URLSearchParams();
     if (q) s.set("q", q);
     if (c) s.set("city", c);
+    if (sort !== "popular") s.set("sort", sort);
     return s.toString() ? `/artists?${s}` : "/artists";
   };
 
@@ -30,14 +33,18 @@ export default async function ArtistsPage({ searchParams }: { searchParams: Reco
         sub={<><span className="num">{artists.length}</span> {artists.length === 1 ? "artist" : "artists"}{city ? "" : <> in <span className="num">{cities.length}</span> {cities.length === 1 ? "neighborhood" : "neighborhoods"}</>}.</>}
         stroke="var(--af-coral)"
       >
+        <div className="grid w-full gap-2 md:w-auto md:justify-items-end">
         <form action="/artists" method="get" role="search" className="w-full md:w-auto">
           {city && <input type="hidden" name="city" value={city} />}
+          {sort !== "popular" && <input type="hidden" name="sort" value={sort} />}
           <label className="flex items-center gap-2 rounded-full border-2 border-ink bg-white px-4 py-2 focus-within:border-scan md:w-72">
             <Search className="h-4 w-4 shrink-0 text-ink-2" aria-hidden="true" />
             <span className="sr-only">Search artists</span>
             <input name="q" type="search" defaultValue={q} placeholder="Find an artist" className="w-full min-w-0 border-0 bg-transparent p-0 py-1 text-[16px] md:py-0 md:text-[15px] outline-none placeholder:text-ink-2" />
           </label>
         </form>
+        <UrlSort storageKey="browse.artists" options={ARTIST_SORTS} fallback="popular" className="w-full md:w-auto" />
+        </div>
       </PageHead>
 
       {cities.length > 1 && (

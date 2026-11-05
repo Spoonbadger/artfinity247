@@ -9,7 +9,7 @@ export default function MonthPicker({ months, value, allowAll = true }: { months
   const pathname = usePathname();
   const opts = allowAll ? ["all", ...months] : months;
   return (
-    <label className="af-field min-w-[180px] py-1.5">
+    <label className="af-field min-w-[170px] border-[1.5px] py-1">
       <small>Month</small>
       <select
         value={value}

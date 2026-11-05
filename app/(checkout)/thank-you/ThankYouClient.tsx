@@ -156,12 +156,12 @@ export default function ThankYouClient({ sessionId, collector = { signedIn: fals
           </li>
         </ul>
 
-        <dl className="grid gap-1 text-[14.5px]">
+        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-[14.5px]">
           {order.email && (
-            <div className="flex gap-2"><dt className="text-ink-2">Receipt</dt><dd className="min-w-0 break-words font-semibold">{order.email}</dd></div>
+            <><dt className="whitespace-nowrap text-ink-2">Receipt to</dt><dd className="break-words font-semibold">{order.email}</dd></>
           )}
           {order.shippingAddress && (
-            <div className="flex gap-2"><dt className="text-ink-2">Ships to</dt><dd className="min-w-0 break-words">{[order.shippingName, order.shippingAddress].filter(Boolean).join(", ")}</dd></div>
+            <><dt className="whitespace-nowrap text-ink-2">Ships to</dt><dd className="break-words">{[order.shippingName, order.shippingAddress].filter(Boolean).join(", ")}</dd></>
           )}
         </dl>
 
@@ -169,27 +169,23 @@ export default function ThankYouClient({ sessionId, collector = { signedIn: fals
           {artist?.slug && <Link href={`/@${artist.slug}`} className="btn btn-blue">More by {artist.name?.split(" ")[0] || "the artist"}</Link>}
           <Link href="/art" className="btn btn-ghost">Browse art</Link>
         </div>
-        {artist?.name && <p className="text-[13.5px] text-ink-2">{artist.name} gets 60% of the profit from this sale.</p>}
-        {order.helpPath && (
-          <p className="text-[14px] text-ink-2">
-            Arrived damaged or not quite right? <Link href={order.helpPath} className="font-semibold text-ink underline underline-offset-4">Tell us and we&apos;ll fix it</Link>
-          </p>
-        )}
-        {/* Optional collection (lib/collector.ts): a soft offer, never needed to buy */}
-        {collector.signedIn ? (
-          <p className="text-[14px] text-ink-2">
-            <Link href="/collector" className="font-semibold text-ink underline underline-offset-4">See your orders any time</Link> in your collection.
-          </p>
-        ) : (
-          <div className="grid gap-2 rounded-2xl border border-dashed border-line bg-wall/60 p-4">
-            <p className="text-[14.5px] text-ink">
-              <b>Save this to a free collection:</b> track orders, keep a wishlist{collector.rewards ? ", earn rewards" : ""}. No password.
-            </p>
-            <Link href={`/collector/sign-in${order.email ? `?email=${encodeURIComponent(order.email)}` : ""}`} className="btn btn-ghost btn-sm w-fit min-h-[44px] px-4">
-              See your orders any time
-            </Link>
-          </div>
-        )}
+        {/* Small print, one line each. The collection is a soft offer, never needed to buy (lib/collector.ts). */}
+        <ul className="grid gap-1.5 border-t border-line pt-4 text-[14px] text-ink-2">
+          {artist?.name && <li>{artist.name.split(" ")[0]} gets 60% of the profit.</li>}
+          {order.helpPath && (
+            <li>Something wrong when it arrives? <Link href={order.helpPath} className="font-semibold text-ink underline underline-offset-4">Tell us</Link></li>
+          )}
+          <li>
+            {collector.signedIn ? (
+              <Link href="/collector" className="font-semibold text-ink underline underline-offset-4">Your orders</Link>
+            ) : (
+              <>
+                <Link href={`/collector/sign-in${order.email ? `?email=${encodeURIComponent(order.email)}` : ""}`} className="font-semibold text-ink underline underline-offset-4">Track your orders</Link>
+                {` in a free collection${collector.rewards ? " and earn rewards" : ""}. No password.`}
+              </>
+            )}
+          </li>
+        </ul>
       </div>
     </div>
   );

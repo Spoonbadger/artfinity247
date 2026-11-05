@@ -21,6 +21,7 @@ export default async function VerifyPage({ searchParams }: { searchParams: { n?:
         <div>
           <p className="eyebrow">Certificate of authenticity</p>
           <h1 className="display mt-1 text-[40px] leading-none sm:text-[48px]">Verify a print</h1>
+          <p className="mt-2 text-[15px] text-ink-2">The number is at the bottom right of the certificate.</p>
         </div>
 
         {n && c && (

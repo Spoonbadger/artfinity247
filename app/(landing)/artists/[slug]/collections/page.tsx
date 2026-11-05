@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { previewImage, sharePreview } from "@/lib/og";
+import { collectionsPath, SITE_URL } from "@/lib/urls";
 import { notFound } from "next/navigation";
 import SiteHeader from "@/components/site/SiteHeader";
 import { prisma } from "@/lib/prisma";
@@ -17,7 +19,19 @@ async function artistOf(slug: string) {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const a = await artistOf(params.slug).catch(() => null);
-  return { title: a ? `Collections by ${a.artist_name || a.name}` : "Collections" };
+  if (!a) return { title: "Collections" };
+  const name = a.artist_name || a.name;
+  const cols = await getPublicCollections(a.slug).catch(() => []);
+  const title = `Collections by ${name}`;
+  const description = cols.length ? `${cols.map((c) => c.title).slice(0, 3).join(", ")}. Prints by ${name}, free US shipping.` : `Prints by ${name}, free US shipping.`;
+  const image = previewImage(...cols.flatMap((c) => [c.cover, ...c.peek]).map((w) => w && { url: w.imageUrl, alt: `${w.title}, by ${name}`, sensitive: w.sensitive }), { url: a.profileImage, alt: name });
+  return {
+    metadataBase: new URL(SITE_URL),
+    title,
+    description,
+    alternates: { canonical: collectionsPath(a.slug) },
+    ...sharePreview({ title, description, url: collectionsPath(a.slug), image }),
+  };
 }
 
 /** All of an artist's collections: /artists/<handle>/collections (and /@handle/collections once rewritten). */

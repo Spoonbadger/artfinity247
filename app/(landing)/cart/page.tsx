@@ -9,6 +9,7 @@ import { CartItemCard, CartPricingInfo } from "@/components/cards";
 import { usd } from "@/components/art/pricing";
 import { cartArtistNames, lineSavings, startCheckout } from "@/components/art/checkout";
 import { deliveryRange } from "@/lib/delivery";
+import { EmptyState } from "@/components/studio/EmptyState";
 
 export default function CartPage() {
   const { cartItems, calculateTotalPrice } = useCart();
@@ -67,12 +68,12 @@ export default function CartPage() {
             </CartPricingInfo>
           </div>
         ) : (
-          <div className="grid justify-items-center gap-4 rounded-2xl bg-gallery px-6 py-16 text-center">
-            <div className="h-24 w-20 rounded-[3px] border-[8px] border-ink bg-white shadow-[0_12px_24px_-10px_rgba(21,22,27,.45)]" aria-hidden />
-            <p className="display text-[32px]">Nothing here yet</p>
-            <p className="text-ink-2">Scan a code or browse to find a print.</p>
-            <Link href="/art" className="btn btn-blue">Browse art</Link>
-          </div>
+          <EmptyState
+            title="Nothing here yet"
+            body="Scan a code next to a painting, or browse."
+            action={{ label: "Browse art", href: "/art" }}
+            className="justify-items-center py-12 text-center sm:py-16"
+          />
         )}
       </div>
     </>

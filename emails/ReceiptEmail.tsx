@@ -47,9 +47,9 @@ export default function ReceiptEmail({
   return (
     <div style={{ fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif", color: INK, maxWidth: 560 }}>
       <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: INK2 }}>Order {code}</p>
-      <h1 style={{ margin: "6px 0 4px", fontSize: 28, lineHeight: 1.1 }}>It&apos;s yours. Thank you!</h1>
+      <h1 style={{ margin: "6px 0 4px", fontSize: 28, lineHeight: 1.1 }}>It&apos;s yours</h1>
       <p style={{ margin: "0 0 20px", fontSize: 16, color: INK2 }}>
-        We&apos;re printing it now{arrives ? <>. It should arrive <strong style={{ color: INK }}>{arrives}</strong></> : null}.
+        We&apos;re printing it now.{arrives ? <> Arrives <strong style={{ color: INK }}>{arrives}</strong>.</> : null}
         {artists.length ? <> Your order supports {artists.join(" and ")}.</> : null}
       </p>
 
@@ -81,12 +81,11 @@ export default function ReceiptEmail({
       ) : null}
 
       <p style={{ margin: "16px 0 0", fontSize: 14, color: INK2 }}>
-        Free US shipping. If it arrives damaged, we reprint it free.{" "}
+        Arrives damaged? We reprint it free.{" "}
         <a href={`${SITE_URL}/help/buyers`} style={{ color: BLUE, fontWeight: 600 }}>Shipping and returns</a>
       </p>
       <p style={{ margin: "12px 0 0", fontSize: 14, color: INK2 }}>
-        Save this to a free collection: track orders, keep a wishlist{rewards ? ", earn rewards" : ""}.{" "}
-        <a href={`${SITE_URL}/collector`} style={{ color: BLUE, fontWeight: 600 }}>See your orders any time</a>
+        <a href={`${SITE_URL}/collector`} style={{ color: BLUE, fontWeight: 600 }}>Track your orders</a> in a free collection{rewards ? " and earn rewards" : ""}. No password.
       </p>
       <p style={{ margin: "20px 0 0", fontSize: 14 }}>— Artfinity</p>
     </div>

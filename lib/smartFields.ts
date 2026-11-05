@@ -168,12 +168,14 @@ export function parseSocialHandle(platform: SocialPlatform, input: string): { ha
   let s = (input || "").trim();
   if (!s) return null;
   let path: string | null = null;
-  const looksUrl = /^(https?:\/\/)?([a-z0-9-]+\.)+[a-z]{2,}(\/|$)/i.test(s);
+  // Handles can have dots ("maya.paints"), so it's a link only with a scheme, a slash, or a social site's domain.
+  const bare = s.replace(/^https?:\/\//i, "").split(/[/?#]/)[0].toLowerCase().replace(/^(www|m|vm)\./, "");
+  const looksUrl = /^https?:\/\//i.test(s) || (/^([a-z0-9-]+\.)+[a-z]{2,}\//i.test(s)) || Object.values(HOSTS).some((re) => re.test(bare));
   if (looksUrl) {
     try {
       const u = new URL(/^https?:\/\//i.test(s) ? s : "https://" + s);
       const host = u.hostname.toLowerCase().replace(/^(www|m|vm)\./, "");
-      if (!HOSTS[platform].test(host)) return { error: `That's not a ${PLATFORM_LABEL[platform]} link. Paste your profile link or just @yourname.` };
+      if (!HOSTS[platform].test(host)) return { error: `That link isn't ${PLATFORM_LABEL[platform]}. Paste your profile link or just @yourname.` };
       const parts = u.pathname.split("/").filter(Boolean);
       if (!parts.length) return { error: `That's the ${PLATFORM_LABEL[platform]} home page. Add your name after the slash.` };
       if (NOT_PROFILES.has(parts[0].toLowerCase())) return { error: `That's a post link, not your profile. Tap your name on ${PLATFORM_LABEL[platform]} and copy that link.` };

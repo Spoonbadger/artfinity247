@@ -4,7 +4,7 @@ import { FormEvent, PointerEvent as ReactPointerEvent, ReactNode, useEffect, use
 import { failed, problemFrom, saved, undoable } from "@/lib/feedback";
 import HandleInput, { resolveHandle, type HandlePlatform } from "@/components/forms/HandleInput";
 import { EmptyState } from "@/components/studio/EmptyState";
-import { ArrowDown, ArrowUp, Check, Copy, Download, Eye, GripVertical, Pencil, Plus, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ChevronDown, Copy, Download, Eye, GripVertical, Pencil, Plus, Trash2, X } from "lucide-react";
 import QRCode from "@/components/af/QRCode";
 import { qrSVG } from "@/lib/qr/render";
 import { cn } from "@/lib/utils";
@@ -221,34 +221,28 @@ function Row({
         <span className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-full", link.active ? "bg-wall text-ink" : "bg-white text-ink-2")}>
           <SocialIcon kind={kind} />
         </span>
-        <div className="grid min-w-0 flex-1 leading-tight">
-          <b className={cn("truncate text-[15px]", !link.active && "text-ink-2")}>{title}</b>
-          <span className="truncate text-[13px] text-ink-2">{prettyUrl(link.url)}</span>
-        </div>
-        <span className="hidden shrink-0 text-right text-[12.5px] leading-tight text-ink-2 sm:grid">
+        {/* The row itself opens the editor; moving and deleting live in there. */}
+        <button
+          type="button"
+          onClick={() => setEditing((v) => !v)}
+          aria-expanded={editing}
+          aria-label={`Edit ${title}`}
+          title={`Edit ${title}`}
+          className="grid min-h-[44px] min-w-0 flex-1 rounded-lg px-1 text-left leading-tight hover:bg-wall/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-scan"
+        >
+          <b className={cn("flex items-center gap-1.5 truncate text-[15px]", !link.active && "text-ink-2")}>
+            <span className="truncate">{title}</span>
+            <Pencil className="h-3.5 w-3.5 shrink-0 text-ink-2" aria-hidden="true" />
+          </b>
+          <span className="truncate text-[13px] text-ink-2">
+            {link.active ? prettyUrl(link.url) : `Hidden · ${prettyUrl(link.url)}`}
+          </span>
+        </button>
+        <span className="grid shrink-0 text-right text-[12px] leading-tight text-ink-2">
           <b className="num text-[15px] text-ink">{num(link.clicks)}</b>
           {link.clicks === 1 ? "click" : "clicks"}
         </span>
         <Switch checked={link.active} onChange={onToggle} label={`Show ${title}`} />
-      </div>
-      <div className="flex flex-wrap items-center gap-1 border-t border-dashed border-line px-2 py-1.5">
-        <span className="num mr-auto pl-1.5 text-[12.5px] text-ink-2 sm:hidden">
-          {num(link.clicks)} {link.clicks === 1 ? "click" : "clicks"}
-        </span>
-        <span className="mr-auto hidden pl-1.5 text-[12.5px] text-ink-2 sm:inline">{link.active ? (social ? "Icon up top" : "Button") : "Hidden"}</span>
-        <button type="button" onClick={() => onMove(-1)} disabled={index === 0} aria-label={`Move ${title} up`} className="grid h-9 w-9 place-items-center rounded-full text-ink hover:bg-wall disabled:opacity-30">
-          <ArrowUp className="h-4 w-4" aria-hidden="true" />
-        </button>
-        <button type="button" onClick={() => onMove(1)} disabled={index === count - 1} aria-label={`Move ${title} down`} className="grid h-9 w-9 place-items-center rounded-full text-ink hover:bg-wall disabled:opacity-30">
-          <ArrowDown className="h-4 w-4" aria-hidden="true" />
-        </button>
-        <button type="button" onClick={() => setEditing((v) => !v)} aria-expanded={editing} aria-label={`Edit ${title}`} className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[13.5px] font-semibold text-ink hover:bg-wall">
-          <Pencil className="h-4 w-4" aria-hidden="true" /> Edit
-        </button>
-        {/* No "are you sure": it goes right away with an Undo toast (lib/feedback undoable). */}
-        <button type="button" onClick={() => void onDelete()} aria-label={`Delete ${title}`} className="grid h-9 w-9 place-items-center rounded-full text-ink-2 hover:bg-wall hover:text-coral">
-          <Trash2 className="h-4 w-4" aria-hidden="true" />
-        </button>
       </div>
       {editing && (
         <form onSubmit={save} className="grid gap-3 border-t border-line p-3">
@@ -272,13 +266,25 @@ function Row({
               </label>
             ))}
           </div>
-          <div className="flex gap-2">
-            <button type="submit" disabled={busy} className="btn btn-blue btn-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="submit" disabled={busy} className="btn btn-sm">
               {busy ? "Saving" : "Save"}
             </button>
             <button type="button" onClick={() => setEditing(false)} className="btn btn-ghost btn-sm">
               Cancel
             </button>
+            <span className="ml-auto flex items-center gap-1">
+              <button type="button" onClick={() => onMove(-1)} disabled={index === 0} aria-label={`Move ${title} up`} title="Move up" className="grid h-10 w-10 place-items-center rounded-full text-ink hover:bg-wall disabled:opacity-30">
+                <ArrowUp className="h-4 w-4" aria-hidden="true" />
+              </button>
+              <button type="button" onClick={() => onMove(1)} disabled={index === count - 1} aria-label={`Move ${title} down`} title="Move down" className="grid h-10 w-10 place-items-center rounded-full text-ink hover:bg-wall disabled:opacity-30">
+                <ArrowDown className="h-4 w-4" aria-hidden="true" />
+              </button>
+              {/* No "are you sure": it goes right away with an Undo toast (lib/feedback undoable). */}
+              <button type="button" onClick={() => void onDelete()} aria-label={`Delete ${title}`} title="Delete" className="grid h-10 w-10 place-items-center rounded-full text-ink-2 hover:bg-wall hover:text-coral">
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </span>
           </div>
         </form>
       )}
@@ -393,7 +399,7 @@ function AddSocial({ onAdd, have }: { onAdd: (p: { url: string; display: "icon";
           {empty && <p className="text-[13px] font-semibold text-coral">{kind === "email" ? "Type your email address first." : `Type your ${KIND_LABEL[kind]} ${kind === "website" ? "address" : "handle"} first.`}</p>}
           {mismatch && <p className="text-[13px] text-ink-2">That looks like {KIND_LABEL[detected!]}. It will show that icon.</p>}
           <div className="flex gap-2">
-            <button type="submit" disabled={busy} className="btn btn-blue btn-sm gap-1.5">
+            <button type="submit" disabled={busy} className="btn btn-sm gap-1.5">
               <Plus className="h-4 w-4" aria-hidden="true" /> {busy ? "Adding" : `Add ${KIND_LABEL[kind]}`}
             </button>
             <button type="button" onClick={() => setKind(null)} className="btn btn-ghost btn-sm">Cancel</button>
@@ -432,7 +438,7 @@ function AddButton({ onAdd }: { onAdd: (p: { url: string; label: string; display
 
   if (!open)
     return (
-      <button type="button" onClick={() => setOpen(true)} className="btn btn-blue w-full justify-center gap-2 sm:w-auto">
+      <button type="button" onClick={() => setOpen(true)} className="btn btn-ghost w-full justify-center gap-2 sm:w-auto">
         <Plus className="h-5 w-5" aria-hidden="true" /> Add a link
       </button>
     );
@@ -453,7 +459,7 @@ function AddButton({ onAdd }: { onAdd: (p: { url: string; label: string; display
         <input value={label} onChange={(e) => setLabel(e.target.value)} maxLength={60} placeholder={detected ? KIND_LABEL[detected] : "Studio newsletter"} className="bg-transparent text-[15px] outline-none" />
       </label>
       <div className="flex gap-2">
-        <button type="submit" disabled={busy} className="btn btn-blue btn-sm gap-1.5">
+        <button type="submit" disabled={busy} className="btn btn-sm gap-1.5">
           <Plus className="h-4 w-4" aria-hidden="true" /> {busy ? "Adding" : "Add link"}
         </button>
         <button type="button" onClick={() => setOpen(false)} className="btn btn-ghost btn-sm">Cancel</button>
@@ -689,7 +695,7 @@ export default function LinksEditor({
               theartfinity.com/<wbr />@{page.slug}/<wbr />links
             </a>
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={copy} className="btn btn-sticker btn-sm gap-1.5">
+              <button type="button" onClick={copy} className="btn btn-blue btn-sm gap-1.5">
                 {copied ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
                 {copied ? "Copied" : "Copy link"}
               </button>
@@ -699,7 +705,7 @@ export default function LinksEditor({
             </div>
             <p className="num text-[13px] text-ink-2">
               <b className="text-ink">{num(totalClicks)}</b> {totalClicks === 1 ? "click" : "clicks"} so far
-              {totalClicks === 0 && <span>. Put this link in your Instagram or TikTok bio and every tap shows up here.</span>}
+              {totalClicks === 0 && <span>. Put it in your Instagram or TikTok bio.</span>}
             </p>
           </div>
           <div className="w-[104px] rounded-xl border-[1.5px] border-line bg-white p-2 sm:w-[120px]" title={`QR code for ${shareUrl}`}>
@@ -712,7 +718,7 @@ export default function LinksEditor({
           {socials.length > 0 ? (
             renderRows("social", socials)
           ) : (
-            <EmptyState compact title="No socials yet" body="Tap Instagram, TikTok or any of the buttons above and add your handle. They show as icons at the top of your links page and your artist page." />
+            <EmptyState compact title="No socials yet" body="Tap one above and add your handle. It shows as an icon up top." />
           )}
         </Panel>
 
@@ -720,7 +726,7 @@ export default function LinksEditor({
           {buttons.length > 0 ? (
             renderRows("button", buttons)
           ) : (
-            <EmptyState compact title="No links yet" body="Add big buttons for anything: your website, a market you're at this weekend, a commission form. They sit above Shop my prints." />
+            <EmptyState compact title="No links yet" body="Big buttons for anything, like this weekend's market or a commission form." />
           )}
           <AddButton onAdd={add} />
           <p className="flex items-center gap-2 rounded-lg bg-wall px-3 py-2.5 text-[13px] text-ink-2">
@@ -729,18 +735,27 @@ export default function LinksEditor({
           </p>
         </Panel>
 
-        <Panel
-          id="look-h"
-          title="Look"
-          dab="#e8743b"
-          aside={
-            <span aria-live="polite" className={cn("text-[13px] font-semibold", saveState === "error" ? "text-coral" : "text-ink-2")}>
-              {saveState === "saving" ? "Saving" : saveState === "saved" ? "Saved" : saveState === "error" ? "Not saved" : ""}
+        {/* Look: set once, so it starts folded. */}
+        <details className="af-panel group p-4 sm:p-5">
+          <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+            <span className="grid">
+              <span className="flex items-center gap-2.5 font-display text-[24px] font-extrabold [font-variation-settings:'wdth'_80]">
+                <i className="paint-dab h-4 w-5" style={{ ["--dab" as string]: "#e8743b" }} />
+                Look
+              </span>
+              <span className="text-[13px] text-ink-2">Background, buttons, colors and fonts</span>
             </span>
-          }
-        >
-          <ThemeControls theme={theme} set={setThemeKey} art={art} />
-        </Panel>
+            <span className="flex items-center gap-3">
+              <span aria-live="polite" className={cn("text-[13px] font-semibold", saveState === "error" ? "text-coral" : "text-ink-2")}>
+                {saveState === "saving" ? "Saving" : saveState === "saved" ? "Saved" : saveState === "error" ? "Not saved" : ""}
+              </span>
+              <ChevronDown className="h-5 w-5 transition group-open:rotate-180" aria-hidden="true" />
+            </span>
+          </summary>
+          <div className="mt-4">
+            <ThemeControls theme={theme} set={setThemeKey} art={art} />
+          </div>
+        </details>
       </div>
 
       {/* Desktop: live phone */}
@@ -757,7 +772,7 @@ export default function LinksEditor({
       <button
         type="button"
         onClick={() => setPreview(true)}
-        className="btn btn-blue fixed bottom-4 right-4 z-40 gap-2 shadow-[4px_4px_0_#15161b] lg:hidden"
+        className="btn fixed bottom-4 right-4 z-40 gap-2 shadow-[4px_4px_0_#ffd43b] lg:hidden"
         aria-haspopup="dialog"
       >
         <Eye className="h-5 w-5" aria-hidden="true" /> Preview

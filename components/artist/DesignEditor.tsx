@@ -99,6 +99,7 @@ export default function DesignEditor({ slug, initial, works, hasMedal }: { slug:
                     role="radio"
                     aria-checked={on}
                     aria-label={`Banner: ${w.title}`}
+                    title={w.title}
                     onClick={() => set("banner", { kind: "art", artworkId: w.id })}
                     className={cn("relative h-[68px] w-[92px] shrink-0 overflow-hidden rounded-lg border-2", on ? "border-ink ring-2 ring-ink ring-offset-2" : "border-transparent hover:border-ink")}
                   >
@@ -178,6 +179,7 @@ export default function DesignEditor({ slug, initial, works, hasMedal }: { slug:
                     type="button"
                     aria-pressed={on}
                     aria-label={on ? `Unpin ${w.title}` : `Pin ${w.title}`}
+                    title={on ? `Unpin ${w.title}` : `Pin ${w.title}`}
                     onClick={() => togglePin(w.id)}
                     className={cn("relative aspect-[4/5] overflow-hidden rounded-[4px] border-2 transition", on ? "border-ink" : "border-transparent opacity-80 hover:opacity-100")}
                   >

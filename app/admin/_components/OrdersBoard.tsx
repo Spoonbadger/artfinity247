@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { failed, saved } from "@/lib/feedback";
+import { passes, sortRows, SortSelect, TableToolbar, useTable, type SortDir } from "./table";
 import { cn } from "@/lib/utils";
 import { artPath } from "@/lib/urls";
 import { SIZE_LABEL, usd } from "./util";
@@ -74,11 +76,20 @@ function downloadUrl(item: AdminOrderItem) {
   return url.replace("/upload/", "/upload/fl_attachment/");
 }
 
-const when = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+const when = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
+const SORTS: { key: string; dir: SortDir; label: string }[] = [
+  { key: "date", dir: "desc", label: "Newest" },
+  { key: "date", dir: "asc", label: "Oldest" },
+  { key: "buyer", dir: "asc", label: "Buyer A–Z" },
+  { key: "total", dir: "desc", label: "Total, high to low" },
+  { key: "total", dir: "asc", label: "Total, low to high" },
+];
 
-export default function OrdersBoard({ orders: initial, printerAuto = false, initialFilter = "all" }: { orders: AdminOrder[]; printerAuto?: boolean; initialFilter?: Filter }) {
+export default function OrdersBoard({ orders: initial, printerAuto = false, initialFilter }: { orders: AdminOrder[]; printerAuto?: boolean; initialFilter?: Filter }) {
   const [orders, setOrders] = useState(initial);
-  const [filter, setFilter] = useState<Filter>(initialFilter);
+  // No filter in the URL: start on "To print" when something is waiting, else everything.
+  const [filter, setFilter] = useState<Filter>(initialFilter ?? (initial.some(FILTERS[1].test) ? "print" : "all"));
+  const t = useTable("orders", { sort: { key: "date", dir: "desc" } });
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
@@ -86,7 +97,20 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
   const [shipping, setShippingForm] = useState<string | null>(null);
 
   const counts = useMemo(() => Object.fromEntries(FILTERS.map((f) => [f.id, orders.filter(f.test).length])), [orders]);
-  const shown = orders.filter(FILTERS.find((f) => f.id === filter)!.test);
+  const inTab = orders.filter(FILTERS.find((f) => f.id === filter)!.test);
+  const shown = sortRows(
+    inTab.filter((o) => passes(t.filters, { search: `${o.shippingName ?? ""} ${o.email} ${o.id} ${o.items.map((i) => `${i.title} ${i.artistName}`).join(" ")}`, date: o.createdAt })),
+    t.sort,
+    (o, k) => (k === "date" ? o.createdAt : k === "buyer" ? (o.shippingName || o.email).toLowerCase() : o.amountTotal),
+  );
+  const sortHead = (k: string, label: string, firstDir: SortDir, right?: boolean) => {
+    const on = t.sort?.key === k ? t.sort.dir : null;
+    return (
+      <button type="button" onClick={() => t.toggleSort(k, firstDir)} aria-label={`Sort by ${label}${on ? (on === "asc" ? ", ascending" : ", descending") : ""}`} className={cn("inline-flex items-center gap-1 uppercase tracking-[0.06em] hover:text-ink", right && "justify-self-end", on && "text-ink")}>
+        {label}<span aria-hidden="true">{on === "asc" ? "↑" : on === "desc" ? "↓" : "↕"}</span>
+      </button>
+    );
+  };
 
   const patch = (id: string, p: Partial<AdminOrder>) => setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, ...p } : o)));
   const shownSelected = shown.filter((o) => selected.has(o.id));
@@ -110,9 +134,9 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
       if (!r.ok) throw new Error(d.error || "");
       const done = new Set<string>(d.updated || []);
       setOrders((prev) => prev.map((o) => (done.has(o.id) ? { ...o, sentToPrinter: true } : o)));
-      toast.success(`${done.size} marked as sent to the printer`);
+      saved(`${done.size} marked as sent to the printer`);
     } catch (e: any) {
-      toast.error(e?.message || "Couldn't update. Try again.");
+      failed(e?.message || "Couldn't update.", { retry: bulkSent });
     } finally {
       setBusy(null);
     }
@@ -126,10 +150,10 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
     try {
       const r = await fetch(`/api/orders/${o.id}/sent`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sent: next }) });
       if (!r.ok) throw new Error();
-      toast.success(next ? "Marked as sent to printer" : "Unmarked");
+      saved(next ? "Marked as sent to printer" : "Unmarked");
     } catch {
       patch(o.id, { sentToPrinter: !next });
-      toast.error("Couldn't update. Try again.");
+      failed("Couldn't update the printer status.", { retry: () => toggleSent({ ...o, sentToPrinter: !next }) });
     } finally {
       setBusy(null);
     }
@@ -145,10 +169,10 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
       const d = await r.json().catch(() => ({}));
       if (d.printer) { fresh = true; patch(o.id, { printer: d.printer, sentToPrinter: !!d.sentToPrinter }); }
       if (!r.ok) throw new Error(d.error || "");
-      toast.success("Work order sent to the printer");
+      saved("Work order sent to the printer");
     } catch (e: any) {
       if (!fresh) patch(o.id, { printer: o.printer });
-      toast.error(e?.message || "Couldn't send the work order.");
+      failed(e?.message || "Couldn't send the work order.", { fix: { label: "Check print lab setup", href: "/admin#integrations" } });
     } finally {
       setBusy(null);
     }
@@ -170,10 +194,10 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
       if (d.tracking) patch(o.id, { tracking: d.tracking });
       setShippingForm(null);
       const emailed = (prev === "pending" && status === "shipped") || (prev === "shipped" && status === "delivered");
-      toast.success(status === "pending" ? "Back to pending" : `Marked ${status}.${emailed ? " Buyer emailed." : ""}`);
+      saved(status === "pending" ? "Back to pending" : `Marked ${status}`, emailed ? { description: "Buyer emailed." } : undefined);
     } catch (e: any) {
       patch(o.id, { shippingStatus: prev });
-      toast.error(e?.message || "Couldn't update shipping. Try again.");
+      failed(e?.message || "Couldn't update shipping.", { retry: () => setShipping(o, status, tracking) });
     } finally {
       setBusy(null);
     }
@@ -190,18 +214,21 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
             aria-selected={filter === f.id}
             onClick={() => setFilter(f.id)}
             className={cn(
-              "rounded-full border-[1.5px] px-3.5 py-1.5 text-[14px] font-semibold transition",
+              "min-h-[40px] rounded-full border-[1.5px] px-3.5 text-[14px] font-semibold transition",
               filter === f.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"
             )}
           >
             {f.label} <span className="num ml-1 opacity-70">{counts[f.id]}</span>
           </button>
         ))}
-        <label className="ml-auto inline-flex min-h-[36px] cursor-pointer items-center gap-2 text-[13.5px] font-semibold text-ink-2">
-          <input type="checkbox" checked={allShownSelected} onChange={selectAllShown} className="h-4 w-4 accent-[var(--af-ink)]" />
-          Select all shown
-        </label>
       </div>
+      <TableToolbar filters={t.filters} setFilter={t.setFilter} clear={t.clear} active={t.active} search="Buyer, email or print" dates count={shown.length} total={inTab.length}>
+        <SortSelect options={SORTS} sort={t.sort} onChange={t.setSort} className="lg:hidden" />
+        <label className="inline-flex min-h-[40px] cursor-pointer items-center gap-2 text-[13.5px] font-semibold text-ink-2">
+          <input type="checkbox" checked={allShownSelected} onChange={selectAllShown} className="h-4 w-4 accent-[var(--af-ink)]" />
+          Select all
+        </label>
+      </TableToolbar>
 
       {shownSelected.length > 0 && (
         <div className="sticky top-[64px] z-10 flex flex-wrap items-center gap-2 rounded-xl border-[1.5px] border-ink bg-white px-3 py-2 shadow-sm" role="region" aria-label="Bulk actions">
@@ -214,20 +241,19 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
 
       <div className="overflow-hidden rounded-2xl border border-line bg-white">
         <div className="hidden grid-cols-[120px_minmax(0,1.3fr)_minmax(0,1fr)_100px_150px_150px] gap-4 border-b border-line bg-wall/60 px-4 py-2.5 text-[12px] font-bold uppercase tracking-[0.06em] text-ink-2 lg:grid">
-          <span>Prints</span><span>Buyer</span><span>Items</span><span className="text-right">Total</span><span>Printer</span><span>Shipping</span>
+          <span>Prints</span>{sortHead("date", "Date", "desc")}<span>Items</span>{sortHead("total", "Total", "desc", true)}<span>Printer</span><span>Shipping</span>
         </div>
 
         {shown.length === 0 && (
           <div className="grid justify-items-center gap-2 px-4 py-14 text-center">
             <span className="paint-dab h-6 w-6" style={{ ["--dab" as string]: "var(--af-sticker)" }} />
-            <p className="font-semibold">Nothing here.</p>
-            <p className="text-[14px] text-ink-2">Try another month or filter.</p>
+            <p className="font-semibold">{filter === "print" && !t.active ? "Nothing to print" : "Nothing here"}</p>
+            <p className="text-[14px] text-ink-2">{t.active ? <button type="button" onClick={t.clear} className="font-semibold text-scan underline">Clear filters</button> : "Try another month or filter."}</p>
           </div>
         )}
 
         <ul className="divide-y divide-line">
           {shown.map((o) => {
-            const date = new Date(o.createdAt);
             const artistShare = o.items.reduce((n, i) => n + i.artistShare, 0);
             return (
               <li key={o.id} className="px-4 py-4">
@@ -261,7 +287,7 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
                       )}
                     </div>
                     <div className="truncate text-[13px] text-ink-2">
-                      {date.toLocaleDateString("en-US", { month: "short", day: "numeric" })} · {date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })} · {o.email}
+                      <span className="num">{when(o.createdAt)}</span> · {o.email}
                     </div>
                     <button
                       type="button"
@@ -272,7 +298,6 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
                     >
                       {open === o.id ? "Hide details" : "Details"}
                     </button>
-                    <Link href={`/admin/orders/${o.id}`} className="ml-3 text-[14px] font-semibold text-scan hover:underline md:text-[13px]">Open order</Link>
                   </div>
 
                   {/* items */}
@@ -412,7 +437,7 @@ function PrinterLine({ o, busy, onRetry }: { o: AdminOrder; busy: boolean; onRet
       </button>
     );
   }
-  return <p className="mt-1 text-[12px] leading-snug text-ink-2">Sent to printer automatically · {p.at ? when(p.at) : ""}</p>;
+  return <p className="mt-1 text-[12px] leading-snug text-ink-2" title={p.at ? `Sent automatically ${when(p.at)}` : undefined}>Auto-sent{p.at ? ` ${new Date(p.at).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" })}` : ""}</p>;
 }
 
 function ShipForm({ busy, onSubmit, onCancel }: { busy: boolean; onSubmit: (t: { carrier: Carrier; trackingNumber: string; trackingUrl?: string }) => void; onCancel: () => void }) {
@@ -452,7 +477,7 @@ function ShipForm({ busy, onSubmit, onCancel }: { busy: boolean; onSubmit: (t: {
         <button type="button" onClick={onCancel} className="btn btn-ghost btn-sm">Cancel</button>
       </div>
       {err && <p role="alert" className="text-[13px] font-semibold text-coral sm:col-span-3">{err}</p>}
-      <p className="text-[12.5px] text-ink-2 sm:col-span-3">The buyer gets the shipped email with this tracking link.</p>
+      <p className="text-[12.5px] text-ink-2 sm:col-span-3">The buyer gets an email with this link.</p>
     </form>
   );
 }

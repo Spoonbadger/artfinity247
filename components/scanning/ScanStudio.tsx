@@ -126,7 +126,7 @@ function BookingForm({ arts, preselect, settings, onClose }: { arts: ScanArt[]; 
   const sorted = useMemo(() => [...arts].sort((a, b) => Number(b.limited) - Number(a.limited)), [arts]);
   const byId = useMemo(() => new Map(arts.map((a) => [a.id, a])), [arts]);
   const items = [
-    ...Array.from(picked.values()).map((band) => ({ band: band ?? "small" })),
+    ...Array.from(picked.values()).filter((band): band is ItemBand => !!band).map((band) => ({ band })),
     ...groups.flatMap((g) => Array.from({ length: g.count }, () => ({ band: g.band }))),
   ];
   const pieces = picked.size + groups.reduce((n, g) => n + g.count, 0);
@@ -334,6 +334,7 @@ function BookingForm({ arts, preselect, settings, onClose }: { arts: ScanArt[]; 
                 </div>
               );
             })}
+            {unsized.length > 0 && <div className="flex justify-between gap-3"><dt className="text-ink-2">{unsized.length} without a size yet</dt><dd className="text-coral">Pick a size</dd></div>}
             {handoff === "pickup" && <div className="flex justify-between gap-3"><dt className="text-ink-2">NYC pickup</dt><dd>{settings.pickupFeeCents != null ? usd(settings.pickupFeeCents) : "Quote"}</dd></div>}
             <div className="mt-1 flex items-baseline justify-between gap-3 border-t border-line pt-2.5">
               <dt className="font-bold">{est.complete ? "Total" : "So far"}</dt>

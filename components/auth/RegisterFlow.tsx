@@ -15,6 +15,8 @@ import type { ProviderId } from "@/lib/oauth/meta";
 import LocationInput from "@/components/forms/LocationInput";
 import { PasswordStrength } from "@/components/forms/PasswordInput";
 import { checks } from "@/lib/smartFields";
+import ImageEditor, { type EditResult } from "@/components/media/ImageEditor";
+import type { StoredEdits } from "@/lib/imageEdits";
 
 const HANDLE_RE = /^[a-z0-9_.]{3,30}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -30,7 +32,7 @@ type Step = 1 | 2 | 3 | 4;
 type HandleState = { status: "idle" | "checking" | "ok" | "bad"; message?: string; suggestions?: string[] };
 /** A provider sign-in waiting to become a page (from the signed cookie, via /api/auth/oauth/pending). */
 type PendingOAuth = { provider: ProviderId; providerLabel: string; email: string | null; emailVerified: boolean; name: string | null; avatar: string | null; instagram: string | null };
-type Upload = { preview: string; url?: string; width?: number; height?: number; printable?: string[]; printableSig?: string; uploading: boolean; error?: string };
+type Upload = { preview: string; url?: string; width?: number; height?: number; printable?: string[]; printableSig?: string; uploading: boolean; error?: string; edits?: StoredEdits | null };
 
 const cleanHandle = (v: string) => v.toLowerCase().replace(/^@/, "").replace(/[^a-z0-9_.]/g, "").slice(0, 30);
 
@@ -88,6 +90,8 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
   const [created, setCreated] = useState(false);
   // step 3
   const [upload, setUpload] = useState<Upload | null>(null);
+  // The photo editor (crop, rotate, fix angle): opens by itself after the upload, and from "Edit photo".
+  const [photoEditor, setPhotoEditor] = useState<"auto" | "manual" | null>(null);
   const [title, setTitle] = useState("");
   const [isSensitive, setIsSensitive] = useState(false);
   const [labels, setLabels] = useState<string[]>([]);
@@ -272,6 +276,7 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.error || "Upload failed. Try again.");
       setUpload({ preview, uploading: false, url: d.url, width: d.width, height: d.height, printable: d.printable || [], printableSig: d.printableSig || "" });
+      setPhotoEditor("auto");
     } catch (err: any) {
       setUpload({ preview, uploading: false, error: err.message || "Upload failed. Try again." });
     }
@@ -301,6 +306,7 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
       fd.append("sensitive", isSensitive ? labels.join(",") : "");
       fd.append("printable", (upload.printable || []).join(","));
       fd.append("printableSig", upload.printableSig || "");
+      if (upload.edits) fd.append("imageEdits", JSON.stringify(upload.edits));
       fd.append("ownership", "yes");
       const res = await fetch("/api/artworks/upload", { method: "POST", body: fd });
       if (!res.ok) throw new Error(res.status === 429 ? "Too many uploads right now. Wait a minute." : res.status === 400 ? ((await res.json().catch(() => null))?.error as string) || "Couldn't publish it. Try again." : "Couldn't publish it. Try again.");
@@ -496,9 +502,27 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
                       </span>
                     )}
                   </div>
-                  <button type="button" onClick={() => fileRef.current?.click()} className="min-h-[44px] text-[14px] font-semibold text-ink-2 underline underline-offset-4 hover:text-scan">
-                    Use a different photo
-                  </button>
+                  <div className="flex flex-wrap justify-center gap-x-4">
+                    {upload.url && !upload.uploading && (
+                      <button type="button" onClick={() => setPhotoEditor("manual")} className="min-h-[44px] text-[14px] font-semibold text-ink-2 underline underline-offset-4 hover:text-scan">
+                        Edit photo
+                      </button>
+                    )}
+                    <button type="button" onClick={() => fileRef.current?.click()} className="min-h-[44px] text-[14px] font-semibold text-ink-2 underline underline-offset-4 hover:text-scan">
+                      Use a different photo
+                    </button>
+                  </div>
+                  {photoEditor && upload.url && (
+                    <ImageEditor
+                      source={upload.edits?.source ?? upload.url}
+                      sourceSize={upload.edits ? null : upload.width ? { w: upload.width, h: upload.height || 0 } : null}
+                      initial={upload.edits} previous={upload.edits ? upload.url : null} auto={photoEditor === "auto"}
+                      onDone={(r: EditResult | null) => {
+                        setPhotoEditor(null);
+                        if (r) setUpload((u) => (u ? { ...u, preview: r.url, url: r.url, width: r.width, height: r.height, printable: r.printable, printableSig: r.printableSig, edits: r.edits } : u));
+                      }}
+                    />
+                  )}
                 </div>
                 <div className="grid content-start gap-4">
                   {upload.error && <FormAlert>{upload.error}</FormAlert>}

@@ -90,7 +90,7 @@ export default function MerchPreview({ imageUrl, title, artistFirstName }: Props
         <div>
           <h2 id={`${id}-h`} className="display text-[30px] md:text-[40px]">More ways to keep it</h2>
           <p className="mt-1 text-[15px] text-ink-2">
-            <i>{title}</i> on everyday things, with {artistFirstName} paid the same way as prints.
+            <i>{title}</i> on everyday things. {artistFirstName} earns on these too.
           </p>
         </div>
         <span className="sticker-badge">Coming soon</span>

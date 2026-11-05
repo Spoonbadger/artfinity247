@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { previewImage, sharePreview } from "@/lib/og";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -6,22 +7,25 @@ import ArtFilters from "@/components/browse/ArtFilters";
 import { ArtGrid } from "@/components/browse/ArtCard";
 import { Avatar } from "@/components/browse/ArtistCard";
 import PageHead, { EmptyCanvas, Pager } from "@/components/browse/PageHead";
-import { getArt, getArtists, getCities, type ArtSort } from "@/components/browse/data";
+import { artSort, getArt, getArtists, getCities } from "@/components/browse/data";
 
 export const dynamic = "force-dynamic";
 
-const SORTS: ArtSort[] = ["newest", "price-asc", "price-desc"];
 const humanize = (s: string) => s.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const name = humanize(decodeURIComponent(params.slug));
-  return { title: `Art from ${name}`, description: `Prints by independent artists in ${name}.` };
+  const title = `Art from ${name}`;
+  const description = `Prints by independent artists in ${name}.`;
+  const { art } = await getArt({ city: decodeURIComponent(params.slug), perPage: 6 }).catch(() => ({ art: [] as Awaited<ReturnType<typeof getArt>>["art"] }));
+  const image = previewImage(...art.map((a) => ({ url: a.imageUrl, alt: `${a.title}, by ${a.artist.name}`, sensitive: a.sensitive })));
+  return { title, description, ...sharePreview({ title, description, url: `/scenes/${params.slug}`, image }) };
 }
 
 export default async function ScenePage({ params, searchParams }: { params: { slug: string }; searchParams: Record<string, string | undefined> }) {
   const slug = decodeURIComponent(params.slug).toLowerCase();
   const q = (searchParams.q || "").trim().slice(0, 80) || undefined;
-  const sort = SORTS.includes(searchParams.sort as ArtSort) ? (searchParams.sort as ArtSort) : "newest";
+  const sort = artSort(searchParams.sort);
   const page = Math.max(1, parseInt(searchParams.page || "1", 10) || 1);
 
   const [cities, { art, total, pages }, artists] = await Promise.all([
@@ -53,7 +57,7 @@ export default async function ScenePage({ params, searchParams }: { params: { sl
         sub={<><span className="num">{city?.pieces ?? total}</span> pieces by <span className="num">{artists.length}</span> local {artists.length === 1 ? "artist" : "artists"}.</>}
         stroke="var(--af-scan)"
       >
-        <ArtFilters action={`/scenes/${slug}`} q={q} sort={sort} cities={[]} showCity={false} placeholder={`Search ${name}`} />
+        <ArtFilters action={`/scenes/${slug}`} q={q} placeholder={`Search ${name}`} storageKey="browse.neighborhood" />
       </PageHead>
 
       {artists.length > 0 && (

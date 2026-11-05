@@ -94,7 +94,7 @@ export default function ConnectedAccounts({ available, initial }: { available: P
   if (!rows.length && hasPassword) return null;
 
   return (
-    <section id="connected" aria-labelledby="signin-h" className="mt-8 grid scroll-mt-24 gap-3 border-t border-dashed border-line pt-5">
+    <section id="connected" aria-labelledby="signin-h" className="grid scroll-mt-24 gap-3">
       <div className="grid gap-1">
         <h2 id="signin-h" className="text-[18px] font-bold">Sign-in methods</h2>
         <p className="text-[13.5px] text-ink-2">Log in with any of these. Keep at least one.</p>
@@ -122,7 +122,7 @@ export default function ConnectedAccounts({ available, initial }: { available: P
                 <span className="label">New password · 8 or more characters</span>
                 <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" minLength={8} autoFocus />
               </label>
-              <button type="submit" className="btn btn-blue" disabled={busy === "password"}>
+              <button type="submit" className="btn" disabled={busy === "password"}>
                 {busy === "password" && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}Save password
               </button>
             </form>

@@ -89,7 +89,7 @@ export default function CheckoutClient({ testMode, collectorEmail = null, reward
           <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border-[1.5px] border-ink bg-sticker/40 px-3 py-2.5 text-left text-[14px] leading-snug text-ink">
             <input type="checkbox" checked={useReward} onChange={(e) => setUseReward(e.target.checked)} className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[rgb(var(--af-scan-rgb))]" />
             <span>
-              <b>Use your reward: up to {reward.pct}% off</b> (code {reward.code}). Artfinity covers it, so the artist&apos;s share stays the same. The new prices show when you pay.
+              <b>Use your reward: up to {reward.pct}% off</b> (code {reward.code}). Artfinity pays for it, not the artist.
             </span>
           </label>
         )}
@@ -107,7 +107,7 @@ export default function CheckoutClient({ testMode, collectorEmail = null, reward
             <b>Test mode.</b> No card needed: the order is saved as paid.
           </p>
         ) : (
-          <p className="text-center text-[12.5px] text-ink-2">Address and payment on the next screen, by Stripe.</p>
+          <p className="text-center text-[12.5px] text-ink-2">Address, tax and payment on the next screen.</p>
         )}
       </CartPricingInfo>
 

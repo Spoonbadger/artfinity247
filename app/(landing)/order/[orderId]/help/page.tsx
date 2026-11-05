@@ -123,7 +123,7 @@ export default async function HelpPage({ params, searchParams }: Props) {
             </span>
           </h1>
           <p className="text-[16.5px] text-ink-2">
-            Damaged, misprinted or wrong? Send a photo and we reprint it free. The artist still gets paid. Open until {fmt(helpDeadline(order, shippedAt))}.
+            Send a photo and we&apos;ll reprint it free. Open until {fmt(helpDeadline(order, shippedAt))}.
           </p>
         </header>
         <HelpForm orderId={order.id} token={String(searchParams.t)} items={items} />

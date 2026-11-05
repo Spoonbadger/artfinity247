@@ -2,6 +2,13 @@ import type { AdjustmentLine, LedgerLine, PayoutRow } from "@/lib/balance";
 import { payoutDateFor } from "@/lib/balance";
 import { PAYOUT_LABEL, SIZE_LABEL, dayUTC, usd } from "./format";
 import { EmptyState } from "@/components/studio/EmptyState";
+import { SortedRows } from "./SortSelect";
+
+const SORTS = [
+  { value: "newest", label: "Newest", dir: "desc" as const },
+  { value: "oldest", label: "Oldest", dir: "asc" as const },
+  { value: "amount", label: "Amount", dir: "desc" as const },
+];
 
 export function PayoutChip({ row, late = false }: { row: PayoutRow; late?: boolean }) {
   if (late) {
@@ -29,28 +36,39 @@ function when(row: PayoutRow, late: boolean) {
 export default function PayoutsList({ payouts, ledger, adjustments = [], lateMonths = [] }: { payouts: PayoutRow[]; ledger: LedgerLine[]; adjustments?: AdjustmentLine[]; lateMonths?: string[] }) {
   return (
     <section aria-labelledby="payouts-h" className="af-card grid min-w-0 gap-2 p-4 sm:p-5">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="payouts-h" className="text-[20px] font-bold">Payouts</h2>
-        <span className="text-[12.5px] text-ink-2">One a month. Tap one to see its sales.</span>
-      </div>
       {payouts.length === 0 ? (
+        <>
+        <div className="grid gap-0.5">
+          <h2 id="payouts-h" className="text-[20px] font-bold">Payouts</h2>
+          <span className="text-[12.5px] text-ink-2">One a month. Tap one to see its sales.</span>
+        </div>
         <EmptyState
           compact
           title="No payouts yet"
           body="Each month's sales are paid together, by the 5th of the next month."
           help={{ label: "When you get paid", href: "/help/getting-paid/when-paid" }}
         />
+              </>
       ) : (
-        <div className="grid">
+        <SortedRows
+          storageKey="af:money:payouts-sort"
+          options={SORTS}
+          className="grid"
+          toolbar={<div className="grid gap-0.5">
+          <h2 id="payouts-h" className="text-[20px] font-bold">Payouts</h2>
+          <span className="text-[12.5px] text-ink-2">One a month. Tap one to see its sales.</span>
+        </div>}
+          head={
           <div className="hidden grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_20px] gap-3 border-b border-line pb-2 text-[12px] font-semibold text-ink-2 md:grid">
             <span>Month</span><span className="text-right">Amount</span><span>Status</span><span>Date</span><span />
           </div>
-          {payouts.map((p) => {
+          }
+          rows={payouts.map((p) => {
             const lines = ledger.filter((l) => l.payoutMonth === p.month);
             const adj = adjustments.filter((a) => a.payoutMonth === p.month);
             const late = lateMonths.includes(p.month);
-            return (
-              <details key={p.month} className="group border-b border-line last:border-b-0">
+            return { id: p.month, keys: { newest: p.month, oldest: p.month, amount: p.amountCents }, node: (
+              <details className="group border-b border-line last:border-b-0">
                 <summary className="grid cursor-pointer list-none grid-cols-[minmax(0,1fr)_auto_20px] items-center gap-x-3 gap-y-1 py-3 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_20px] [&::-webkit-details-marker]:hidden">
                   <span className="whitespace-nowrap font-semibold">{p.label}</span>
                   <b className="num text-right text-[16px] text-earned md:order-none">{usd(p.amountCents)}</b>
@@ -89,9 +107,9 @@ export default function PayoutsList({ payouts, ledger, adjustments = [], lateMon
                   </ul>
                 </div>
               </details>
-            );
+            ) };
           })}
-        </div>
+        />
       )}
     </section>
   );

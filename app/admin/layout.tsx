@@ -19,7 +19,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   // Invite links are opened by people who aren't admins yet: no gate, no admin chrome (middleware sets x-af-path).
   if ((headers().get("x-af-path") || "").startsWith("/admin/invite/")) return <div className="min-h-[100svh] bg-wall">{children}</div>;
   const admin = await adminRoleOrRedirect();
-  const [openReports, heldReviews, openReprints, toModerate, toVerify, openAlerts, codeOrdersToPrint, scanRequests] = await Promise.all([
+  const [openReports, heldReviews, openReprints, toModerate, toVerify, openAlerts, codeOrdersToPrint, scanRequests, toPrint] = await Promise.all([
     prisma.artReport.count({ where: { status: "open" } }).catch(() => 0),
     prisma.review.count({ where: { status: "flagged" } }).catch(() => 0),
     openRequestCount().catch(() => 0),
@@ -28,6 +28,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     openAlertCount(),
     prisma.codePrintOrder.count({ where: { status: "paid" } }).catch(() => 0),
     prisma.scanBooking.count({ where: { status: "requested" } }).catch(() => 0),
+    prisma.order.count({ where: { OR: [{ paymentStatus: "paid" }, { kind: "reprint" }], shippingStatus: "pending", sentToPrinter: false, printerSentAt: null } }).catch(() => 0),
   ]);
   const counts = {
     "/admin/reports": openReports,
@@ -38,6 +39,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     "/admin/alerts": openAlerts,
     "/admin/code-orders": codeOrdersToPrint,
     "/admin/scanning": scanRequests,
+    "/admin/orders": toPrint,
   };
 
   return (
@@ -62,13 +64,13 @@ export default async function AdminLayout({ children }: { children: ReactNode })
               {openAlerts > 0 && <span className="num absolute -right-1 -top-1 min-w-[20px] rounded-full bg-coral px-1 text-center text-[11.5px] font-bold leading-[20px] text-white">{openAlerts > 99 ? "99+" : openAlerts}</span>}
             </Link>
             <span className="hidden text-ink-2 xl:inline">{admin.email} · {ROLE_LABEL[admin.adminRole]}</span>
-            <Link href="/" className="btn btn-ghost btn-sm">View site</Link>
+            <Link href="/" className="btn btn-ghost btn-sm hidden sm:inline-flex">View site</Link>
           </div>
         </div>
       </header>
       <div className="mx-auto grid max-w-[1400px] gap-x-8 px-4 pb-20 pt-4 sm:px-6 lg:grid-cols-[200px_minmax(0,1fr)] lg:pt-8">
         <AdminNav counts={counts} role={admin.adminRole} />
-        <main className="min-w-0 pt-4 lg:pt-0"><AdminRoleProvider role={admin.adminRole}>{children}</AdminRoleProvider></main>
+        <main className="min-w-0 pt-4 lg:pt-0 [&>div]:grid-cols-[minmax(0,1fr)]"><AdminRoleProvider role={admin.adminRole}>{children}</AdminRoleProvider></main>
       </div>
     </div>
   );

@@ -25,7 +25,7 @@ export default function ArtistTabs({ tabs }: { tabs: Tab[] }) {
 
   const pick = (id: string) => {
     setActive(id);
-    try { history.replaceState(null, "", id === tabs[0]?.id ? window.location.pathname : `#${id}`); } catch {}
+    try { history.replaceState(null, "", id === tabs[0]?.id ? window.location.pathname + window.location.search : `${window.location.search}#${id}`); } catch {}
   };
 
   // Tabs pattern: one tab stop; arrow keys, Home and End move between tabs.

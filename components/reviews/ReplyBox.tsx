@@ -62,7 +62,7 @@ export default function ReplyBox({ reviewId, initial, buyerFirst }: { reviewId: 
         />
       </label>
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" disabled={busy || !draft.trim()} onClick={() => save(draft)} className="btn btn-blue btn-sm">{reply ? "Save reply" : "Post reply"}</button>
+        <button type="button" disabled={busy || !draft.trim()} onClick={() => save(draft)} className="btn btn-sm">{reply ? "Save reply" : "Post reply"}</button>
         <button type="button" disabled={busy} onClick={() => { setDraft(reply); setOpen(false); }} className="btn btn-ghost btn-sm">Cancel</button>
         {reply && (
           <button type="button" disabled={busy} onClick={() => confirm("Remove your reply?") && save("")} className="ml-auto text-[13px] font-semibold text-ink-2 underline-offset-2 hover:text-coral hover:underline">Remove</button>

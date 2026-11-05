@@ -4,7 +4,7 @@
 // Three presets are free; six more, brand colors, a logo outro and music are Infinity (shown locked, never dead).
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Copy, Download, Lock, Share2, Square, Volume2 } from "lucide-react";
+import { ChevronDown, Copy, Download, Lock, Share2, Square, Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { failed, problemFrom, saved } from "@/lib/feedback";
 import { EmptyState } from "@/components/studio/EmptyState";
@@ -42,8 +42,23 @@ async function copy(text: string) {
   }
 }
 
-function Unlock({ className }: { className?: string }) {
-  return <Link href="/studio/infinity" className={cn("btn btn-sm btn-blue", className)}><Lock size={14} aria-hidden="true" /> Unlock with Infinity</Link>;
+function Unlock({ className, primary }: { className?: string; primary?: boolean }) {
+  return <Link href="/studio/infinity" className={cn("btn btn-sm", primary && "btn-blue", className)}><Lock size={14} aria-hidden="true" /> Unlock with Infinity</Link>;
+}
+
+function Fold({ title, sub, open, children }: { title: string; sub: string; open?: boolean; children: React.ReactNode }) {
+  return (
+    <details open={open} className="group rounded-2xl border border-line">
+      <summary className="flex min-h-[48px] cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 [&::-webkit-details-marker]:hidden">
+        <span className="grid leading-tight">
+          <b className="text-[15px]">{title}</b>
+          <span className="text-[13px] text-ink-2">{sub}</span>
+        </span>
+        <ChevronDown size={18} className="shrink-0 transition group-open:rotate-180" aria-hidden="true" />
+      </summary>
+      <div className="grid gap-3 px-4 pb-4">{children}</div>
+    </details>
+  );
 }
 
 export default function VideoStudio({ art, arts, base, pro }: { art: ShareArt; arts: ShareArt[]; base: string; pro: boolean }) {
@@ -180,7 +195,7 @@ export default function VideoStudio({ art, arts, base, pro }: { art: ShareArt; a
             <div className="absolute inset-0 grid place-content-center justify-items-center gap-3 p-6 text-center text-white">
               <Lock size={28} aria-hidden="true" />
               <p className="text-[15px] font-bold">{def.name} is an Infinity preset</p>
-              <Unlock />
+              <Unlock primary />
             </div>
           </div>
         ) : needsMore ? (
@@ -208,31 +223,17 @@ export default function VideoStudio({ art, arts, base, pro }: { art: ShareArt; a
                 </span>
               </button>
             ))}
-          </div>
-          <p className="mb-2 mt-4 flex flex-wrap items-center gap-2 text-[14px] font-bold">
-            More with Infinity {!pro && <span className="rounded-full bg-ink px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-[0.06em] text-white">Infinity</span>}
-          </p>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {extra.map((p) => (
+            {pro && extra.map((p) => (
               <button key={p.id} type="button" aria-pressed={preset === p.id} disabled={busy} onClick={() => setPreset(p.id)}
-                className={cn("flex items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left transition sm:block", preset === p.id ? "border-ink bg-ink text-white" : "border-line bg-white hover:border-ink", !pro && preset !== p.id && "bg-wall")}>
-                <span className="flex items-center gap-2 sm:mb-2">
-                  <span className="paint-dab" style={{ ["--dab" as string]: p.dab }} aria-hidden="true" />
-                  {!pro && <Lock size={13} aria-hidden="true" />}
-                </span>
+                className={cn("flex items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left transition sm:block", preset === p.id ? "border-ink bg-ink text-white" : "border-line bg-white hover:border-ink")}>
+                <span className="paint-dab sm:mb-2" style={{ ["--dab" as string]: p.dab }} aria-hidden="true" />
                 <span className="grid">
-                  <b className="text-[15px] leading-tight">{p.name}{!pro && <span className="sr-only"> (Infinity)</span>}</b>
+                  <b className="text-[15px] leading-tight">{p.name}</b>
                   <span className={cn("text-[12.5px]", preset === p.id ? "text-white/75" : "text-ink-2")}>{p.sub}</span>
                 </span>
               </button>
             ))}
           </div>
-          {!pro && (
-            <div className="mt-3 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-wall px-4 py-3">
-              <p className="min-w-0 flex-1 text-[13.5px] text-ink-2">Six more presets, your brand colors, a logo at the end and music. Free presets stay free.</p>
-              <Unlock />
-            </div>
-          )}
         </fieldset>
 
         <div role="radiogroup" aria-label="Format" className="flex w-max gap-1 rounded-full border-2 border-ink p-1">
@@ -286,65 +287,10 @@ export default function VideoStudio({ art, arts, base, pro }: { art: ShareArt; a
           </label>
         )}
 
-        {/* Infinity look: brand colors, logo outro, music */}
-        <fieldset className={cn("grid gap-3 rounded-2xl border border-line p-4", !pro && "bg-wall")}>
-          <legend className="px-1 text-[15px] font-bold">Your look {!pro && <span className="font-normal text-ink-2">(Infinity)</span>}</legend>
-          {pro ? (
-            <>
-              <div className="flex flex-wrap gap-3">
-                {([["bg", "Background"], ["accent", "Accent"], ["ink", "Text"]] as const).map(([k, l]) => (
-                  <label key={k} className="flex items-center gap-2 text-[13.5px] font-semibold">
-                    <input type="color" value={brand[k]} disabled={busy} onChange={(e) => setBrand((b) => ({ ...b, [k]: e.target.value }))} className="h-9 w-12 cursor-pointer rounded border border-line" />
-                    {l}
-                  </label>
-                ))}
-                <button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => setBrand(DEFAULT_BRAND)}>Reset colors</button>
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <label className="af-field min-w-[220px]">
-                  <small>Logo at the end</small>
-                  <select value={logo} disabled={busy} onChange={(e) => setLogo(e.target.value as typeof logo)}>
-                    <option value="none">No logo outro</option>
-                    {extras?.profileImage && <option value="profile">My profile photo</option>}
-                    <option value="file">Upload a logo…</option>
-                  </select>
-                </label>
-                {logo === "file" && (
-                  <label className="btn btn-ghost btn-sm cursor-pointer">
-                    {logoFile ? "Change logo" : "Choose image"}
-                    <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="sr-only" onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (!f) return;
-                      if (f.size > 5 * 1024 * 1024) return failed("That logo is over 5 MB", { description: "Use a smaller PNG or JPG." });
-                      setLogoFile(URL.createObjectURL(f));
-                      saved("Logo added", { description: "It shows for the last 1.5 seconds." });
-                    }} />
-                  </label>
-                )}
-              </div>
-              <div className="flex flex-wrap items-end gap-3">
-                <label className="af-field min-w-[220px]">
-                  <small>Music</small>
-                  <select value={music} disabled={busy} onChange={(e) => setMusic(e.target.value as MusicId)}>
-                    {(Object.keys(MUSIC) as MusicId[]).map((m) => <option key={m} value={m}>{MUSIC[m].label}</option>)}
-                  </select>
-                </label>
-                {music !== "none" && <button type="button" className="btn btn-ghost btn-sm" onClick={listen}><Volume2 size={14} aria-hidden="true" /> Listen</button>}
-              </div>
-              <p className="text-[12.5px] text-ink-2">{music === "none" ? "No sound, on purpose: add licensed trending audio in Instagram or TikTok when you post." : "Made right here in your browser, so it's royalty-free with no copyright claims. With music, recording takes the video's full length."}</p>
-            </>
-          ) : (
-            <div className="flex flex-wrap items-center gap-3">
-              <p className="min-w-0 flex-1 text-[13.5px] text-ink-2">Brand colors, your logo at the end and royalty-free music. Videos are silent by default: add trending audio when you post.</p>
-              <Unlock />
-            </div>
-          )}
-        </fieldset>
-
         {/* make / progress / result */}
         {v.type === null ? (
           <Problem tone="warning" title="This browser can't record video" fix={{ label: "Use the images instead", href: "#images" }}>
-            Open this page in Chrome, Edge or Safari to make videos. Story and post images below work everywhere.
+            Open this page in Chrome, Edge or Safari to make videos. Images work everywhere.
           </Problem>
         ) : locked ? null : (
           <div className="grid gap-3">
@@ -387,16 +333,85 @@ export default function VideoStudio({ art, arts, base, pro }: { art: ShareArt; a
           }}><Copy size={14} aria-hidden="true" /> Copy caption</button>
         </div>
 
+        {/* Extras: Infinity presets and your look, folded so the main path stays short */}
+        {pro ? (
+          <Fold title="Your look" sub="Brand colors, a logo at the end, music">
+
+              <div className="flex flex-wrap gap-3">
+                {([["bg", "Background"], ["accent", "Accent"], ["ink", "Text"]] as const).map(([k, l]) => (
+                  <label key={k} className="flex items-center gap-2 text-[13.5px] font-semibold">
+                    <input type="color" value={brand[k]} disabled={busy} onChange={(e) => setBrand((b) => ({ ...b, [k]: e.target.value }))} className="h-9 w-12 cursor-pointer rounded border border-line" />
+                    {l}
+                  </label>
+                ))}
+                <button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => setBrand(DEFAULT_BRAND)}>Reset colors</button>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="af-field min-w-[220px]">
+                  <small>Logo at the end</small>
+                  <select value={logo} disabled={busy} onChange={(e) => setLogo(e.target.value as typeof logo)}>
+                    <option value="none">No logo outro</option>
+                    {extras?.profileImage && <option value="profile">My profile photo</option>}
+                    <option value="file">Upload a logo…</option>
+                  </select>
+                </label>
+                {logo === "file" && (
+                  <label className="btn btn-ghost btn-sm cursor-pointer">
+                    {logoFile ? "Change logo" : "Choose image"}
+                    <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="sr-only" onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      if (f.size > 5 * 1024 * 1024) return failed("That logo is over 5 MB", { description: "Use a smaller PNG or JPG." });
+                      setLogoFile(URL.createObjectURL(f));
+                      saved("Logo added", { description: "It shows for the last 1.5 seconds." });
+                    }} />
+                  </label>
+                )}
+              </div>
+              <div className="flex flex-wrap items-end gap-3">
+                <label className="af-field min-w-[220px]">
+                  <small>Music</small>
+                  <select value={music} disabled={busy} onChange={(e) => setMusic(e.target.value as MusicId)}>
+                    {(Object.keys(MUSIC) as MusicId[]).map((m) => <option key={m} value={m}>{MUSIC[m].label}</option>)}
+                  </select>
+                </label>
+                {music !== "none" && <button type="button" className="btn btn-ghost btn-sm" onClick={listen}><Volume2 size={14} aria-hidden="true" /> Listen</button>}
+              </div>
+              <p className="text-[12.5px] text-ink-2">{music === "none" ? "No sound, on purpose: add licensed trending audio in Instagram or TikTok when you post." : "Made right here in your browser, so it's royalty-free with no copyright claims. With music, recording takes the video's full length."}</p>
+          </Fold>
+        ) : (
+          <Fold title="More with Infinity" sub="6 more presets, brand colors, logo and music" open={locked}>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {extra.map((p) => (
+              <button key={p.id} type="button" aria-pressed={preset === p.id} disabled={busy} onClick={() => setPreset(p.id)}
+                className={cn("flex items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left transition sm:block", preset === p.id ? "border-ink bg-ink text-white" : "border-line bg-white hover:border-ink", !pro && preset !== p.id && "bg-wall")}>
+                <span className="flex items-center gap-2 sm:mb-2">
+                  <span className="paint-dab" style={{ ["--dab" as string]: p.dab }} aria-hidden="true" />
+                  {!pro && <Lock size={13} aria-hidden="true" />}
+                </span>
+                <span className="grid">
+                  <b className="text-[15px] leading-tight">{p.name}{!pro && <span className="sr-only"> (Infinity)</span>}</b>
+                  <span className={cn("text-[12.5px]", preset === p.id ? "text-white/75" : "text-ink-2")}>{p.sub}</span>
+                </span>
+              </button>
+            ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="min-w-0 flex-1 text-[13.5px] text-ink-2">Free presets stay free. Videos are silent: add trending audio when you post.</p>
+              <Unlock />
+            </div>
+          </Fold>
+        )}
+
         {/* consent for Artfinity's own accounts */}
-        <div className="flex flex-wrap items-start gap-3 rounded-2xl border border-line bg-white p-4" id="feature-my-work">
+        <div className="flex flex-wrap items-start gap-3 px-1" id="feature-my-work">
           <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-3">
             <input type="checkbox" className="mt-1 h-5 w-5 shrink-0" checked={extras?.socialFeature ?? true} disabled={!extras} onChange={(e) => setConsent(e.target.checked)} />
             <span className="grid gap-0.5">
-              <b className="text-[15px]">Let Artfinity feature my work on its social accounts</b>
-              <span className="text-[13.5px] text-ink-2">We sometimes post approved pieces as videos on Artfinity&apos;s Instagram, always crediting your @handle and linking to your print. Turn it off any time; posts waiting in our queue are dropped.</span>
+              <b className="text-[15px]">Artfinity can feature my work on its Instagram</b>
+              <span className="text-[13.5px] text-ink-2">Always with your @handle and a link to your print. Turning it off drops anything queued.</span>
             </span>
           </label>
-          {extras?.socialFeature && <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-earned"><Check size={14} aria-hidden="true" /> On</span>}
         </div>
       </div>
     </div>

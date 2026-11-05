@@ -49,7 +49,7 @@ function DabPicker({ value, onChange, name }: { value: number; onChange: (n: num
           </button>
         ))}
       </div>
-      <p className="h-5 pl-1 text-[14px] font-semibold text-ink-2" aria-live="polite">{shown ? RATING_WORDS[shown] : "Tap a dab"}</p>
+      <p className="h-5 pl-1 text-[14px] font-semibold text-ink-2" aria-live="polite">{shown ? RATING_WORDS[shown] : "Tap to rate"}</p>
     </div>
   );
 }
@@ -89,7 +89,7 @@ function ItemCard({ item, orderId, token, name, city, onSaved }: {
   };
 
   const save = async () => {
-    if (!rating) { setError("Tap a dab to rate it first."); return; }
+    if (!rating) { setError("Pick a rating first."); return; }
     setSaving(true); setError("");
     try {
       const r = await fetch("/api/reviews", {

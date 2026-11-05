@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, Mail, MapPin } from "lucide-react";
+import { ArrowLeft, ChevronDown, Mail, MapPin } from "lucide-react";
 import { StudioPage } from "@/components/studio/StudioPage";
 import Conversation, { type ThreadMessage, type ComposerOrder } from "@/components/crm/Conversation";
 import OrderCard from "@/components/crm/OrderCard";
@@ -12,6 +12,9 @@ import { certPathsFor } from "@/lib/certificates";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Customer" };
+
+// The newest few orders show; older ones fold away.
+const SHOW_ORDERS = 3;
 
 // The [email] segment holds an opaque customer id (customerHref); old links with the email redirect to it.
 export default async function CustomerPage({ params }: { params: { email: string } }) {
@@ -41,6 +44,20 @@ export default async function CustomerPage({ params }: { params: { email: string
     stage: o.stage,
   }));
 
+  const card = (o: (typeof customer.orders)[number]) => (
+    <OrderCard
+      key={o.id}
+      order={{
+        id: o.id,
+        date: o.date.toISOString(),
+        stage: o.stage,
+        spentCents: o.spentCents,
+        items: o.items.map((i) => ({ id: i.id, title: i.title, imageUrl: i.imageUrl, size: i.size, framed: i.framed, quantity: i.quantity, priceCents: i.priceCents, certPath: certs.get(i.id) ?? null })),
+        reprint: o.reprint,
+      }}
+    />
+  );
+
   return (
     <StudioPage
       title={customer.name}
@@ -56,7 +73,7 @@ export default async function CustomerPage({ params }: { params: { email: string
         </span>
       }
       actions={
-        <Link href="/studio/customers" className="btn btn-ghost btn-sm">
+        <Link href="/studio/customers" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />Customers
         </Link>
       }
@@ -79,19 +96,16 @@ export default async function CustomerPage({ params }: { params: { email: string
           <h2 id="orders-h" className="text-[20px] font-bold">
             Orders <span className="num text-[14px] font-semibold text-ink-2">since {shortDate(customer.first, true)}</span>
           </h2>
-          {customer.orders.map((o) => (
-            <OrderCard
-              key={o.id}
-              order={{
-                id: o.id,
-                date: o.date.toISOString(),
-                stage: o.stage,
-                spentCents: o.spentCents,
-                items: o.items.map((i) => ({ id: i.id, title: i.title, imageUrl: i.imageUrl, size: i.size, framed: i.framed, quantity: i.quantity, priceCents: i.priceCents, certPath: certs.get(i.id) ?? null })),
-                reprint: o.reprint,
-              }}
-            />
-          ))}
+          {customer.orders.slice(0, SHOW_ORDERS).map(card)}
+          {customer.orders.length > SHOW_ORDERS && (
+            <details className="group grid gap-3">
+              <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-2 text-[14px] font-semibold text-ink-2 hover:text-ink [&::-webkit-details-marker]:hidden">
+                <ChevronDown className="h-4 w-4 transition group-open:rotate-180" aria-hidden="true" />
+                {customer.orders.length - SHOW_ORDERS} earlier {customer.orders.length - SHOW_ORDERS === 1 ? "order" : "orders"}
+              </summary>
+              <div className="mt-3 grid gap-3">{customer.orders.slice(SHOW_ORDERS).map(card)}</div>
+            </details>
+          )}
         </section>
 
         <Conversation

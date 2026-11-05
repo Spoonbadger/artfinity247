@@ -4,7 +4,8 @@ import { Search } from "lucide-react";
 import { ArtGrid } from "@/components/browse/ArtCard";
 import { Avatar } from "@/components/browse/ArtistCard";
 import PageHead, { EmptyCanvas, Pager } from "@/components/browse/PageHead";
-import { getArt, getArtists, getCities } from "@/components/browse/data";
+import { ART_SORTS, artSort, getArt, getArtists, getCities } from "@/components/browse/data";
+import { UrlSort } from "@/components/browse/UrlSort";
 import SearchTypeahead from "@/components/forms/SearchTypeahead";
 
 export const dynamic = "force-dynamic";
@@ -13,8 +14,9 @@ export const metadata: Metadata = { title: "Search" };
 export default async function SearchPage({ searchParams }: { searchParams: Record<string, string | undefined> }) {
   const q = (searchParams.q || "").trim().slice(0, 80);
   const page = Math.max(1, parseInt(searchParams.page || "1", 10) || 1);
+  const sort = artSort(searchParams.sort);
   const [{ art, total, pages }, artists, cities] = q
-    ? await Promise.all([getArt({ q, page }), page === 1 ? getArtists({ q, pieces: 0, take: 12 }) : Promise.resolve([]), getCities()])
+    ? await Promise.all([getArt({ q, page, sort }), page === 1 ? getArtists({ q, pieces: 0, take: 12 }) : Promise.resolve([]), getCities()])
     : [{ art: [], total: 0, pages: 1 }, [], await getCities()];
   const matchCities = q ? cities.filter((c) => c.name.toLowerCase().includes(q.toLowerCase())) : [];
 
@@ -70,9 +72,12 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
           <section className="mt-12" aria-label="Artworks">
             {art.length ? (
               <>
-                <h2 className="display mb-6 text-[30px]">Art</h2>
+                <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="display text-[30px]">Art</h2>
+                  {total > 1 && <UrlSort storageKey="search.art" options={ART_SORTS} fallback="newest" />}
+                </div>
                 <ArtGrid art={art} />
-                <Pager page={page} pages={pages} href={(p) => `/search?q=${encodeURIComponent(q)}${p > 1 ? `&page=${p}` : ""}`} />
+                <Pager page={page} pages={pages} href={(p) => `/search?q=${encodeURIComponent(q)}${sort !== "newest" ? `&sort=${sort}` : ""}${p > 1 ? `&page=${p}` : ""}`} />
               </>
             ) : (
               <EmptyCanvas title="Nothing on this wall">

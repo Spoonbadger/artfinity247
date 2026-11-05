@@ -146,7 +146,7 @@ export async function sendReviewRequest(orderId: string) {
   const text =
     `Hi ${firstNameOf(order.shippingName)},\n\n` +
     `${what[0].toUpperCase() + what.slice(1)} should be with you now. How does it look on your wall?\n\n` +
-    `A few words or a quick photo helps the artist more than you'd think. It takes a minute.\n\n` +
+    `A few words or a photo helps the artist more than you'd think.\n\n` +
     `${url}`;
   const html = withButton(emailHtml(text.replace(`\n\n${url}`, "")), url, "Leave a review");
   await resend.emails.send({ from: FROM, to: order.email, subject: "How does it look on your wall?", html, text });

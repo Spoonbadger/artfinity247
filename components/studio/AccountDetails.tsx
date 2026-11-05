@@ -85,12 +85,12 @@ export default function AccountDetails({ initial }: { initial: Account }) {
   );
 
   return (
-    <section id="account-details" aria-labelledby="acct-details-h" className="mt-8 grid scroll-mt-24 gap-4 border-t border-dashed border-line pt-5">
+    <section id="account-details" aria-labelledby="acct-details-h" className="grid scroll-mt-24 gap-4">
       <div className="grid gap-1">
         <h2 id="acct-details-h" className="text-[18px] font-bold">Account details</h2>
         <p className="flex items-center gap-1.5 text-[13.5px] text-ink-2">
           <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          Private. Only used for payouts and tax, never shown on your page.
+          Private. For payouts and tax only.
         </p>
       </div>
       <form onSubmit={save} className="grid gap-3" noValidate>
@@ -109,7 +109,7 @@ export default function AccountDetails({ initial }: { initial: Account }) {
           </p>
         )}
         <div className="flex flex-wrap items-center gap-3">
-          <button type="submit" className="btn btn-blue" disabled={saving || !dirty}>
+          <button type="submit" className="btn" disabled={saving || !dirty}>
             {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}Save details
           </button>
           {!dirty && !saving && (

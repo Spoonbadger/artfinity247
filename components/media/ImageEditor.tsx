@@ -531,8 +531,8 @@ export default function ImageEditor({ source, sourceSize, initial, previous, ori
         <div className="grid gap-2.5 border-t border-line px-4 py-3">
           {showSlantHint && (
             <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13.5px]" role="status">
-              <b>Shot at an angle?</b>
-              <button type="button" onClick={enterAngle} className="font-bold text-scan underline-offset-2 hover:underline">Fix angle</button>
+              <b>Wall in the shot?</b>
+              <button type="button" onClick={enterAngle} className="min-h-[40px] font-bold text-scan underline-offset-2 hover:underline">Crop to the painting</button>
             </p>
           )}
           {mode === "crop" ? (

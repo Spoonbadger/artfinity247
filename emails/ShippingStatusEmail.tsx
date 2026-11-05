@@ -36,7 +36,6 @@ export default function ShippingStatusEmail({
   /** Limited-edition prints: signed links to their certificates of authenticity (lib/certificates.ts). */
   certificates?: { title: string; url: string }[];
 }) {
-  const artists = Array.from(new Set(items.map((i) => i.artist).filter(Boolean))) as string[];
   return (
     <div style={{ fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif", color: INK, maxWidth: 560 }}>
       <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: INK2 }}>Order {code}</p>
@@ -57,7 +56,7 @@ export default function ShippingStatusEmail({
 
       {status === "shipped" ? (
         <>
-          <p style={{ margin: "16px 0 0" }}>It&apos;s packed and with the carrier, and should arrive in a few days.</p>
+          <p style={{ margin: "16px 0 0" }}>It&apos;s with the carrier. Expect it in a few days.</p>
           {tracking && (
             <p style={{ margin: "12px 0 0" }}>
               <strong>{tracking.carrier} tracking:</strong> {tracking.number}
@@ -78,23 +77,22 @@ export default function ShippingStatusEmail({
 
       {certificates.map((c) => (
         <p key={c.url} style={{ margin: "12px 0 0" }}>
-          <strong>{c.title}</strong> is a numbered limited edition.{" "}
-          <a href={c.url} style={{ color: BLUE, fontWeight: 600 }}>Print its certificate of authenticity</a>
+          <strong>{c.title}</strong> is a numbered edition.{" "}
+          <a href={c.url} style={{ color: BLUE, fontWeight: 600 }}>Print the certificate</a>
         </p>
       ))}
 
       {helpUrl && (
         <p style={{ margin: "16px 0 0", fontSize: 14, color: INK2 }}>
-          Arrived damaged or not quite right?{" "}
-          <a href={helpUrl} style={{ color: BLUE, fontWeight: 600 }}>Send us a photo</a> within 14 days and we reprint it free.
+          Something wrong?{" "}
+          <a href={helpUrl} style={{ color: BLUE, fontWeight: 600 }}>Send us a photo</a> within 14 days of delivery and we&apos;ll reprint it free.
         </p>
       )}
 
       <p style={{ margin: "16px 0 0", fontSize: 14, color: INK2 }}>
-        <a href={`${SITE_URL}/collector`} style={{ color: BLUE, fontWeight: 600 }}>See your orders any time</a> in your free collection.
+        <a href={`${SITE_URL}/collector`} style={{ color: BLUE, fontWeight: 600 }}>Your orders</a>, any time.
       </p>
 
-      <p style={{ margin: "16px 0 0" }}>Thank you for supporting {artists.length ? artists.join(" and ") : "independent artists"}.</p>
       <p style={{ margin: "16px 0 0", fontSize: 14 }}>— Artfinity</p>
     </div>
   );

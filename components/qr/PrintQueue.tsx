@@ -360,7 +360,7 @@ export default function PrintQueue({ groups, pricing, infinity, orders, address,
           })}
         </div>
 
-        <aside className="grid gap-4 lg:sticky lg:top-6">
+        <aside aria-label="Have us print them" className="grid gap-4 lg:sticky lg:top-6">
           <MailOrder quote={quote} infinity={infinity} pricing={pricing} address={address} onOrdered={(url) => window.location.assign(url)} onPriceChange={() => router.refresh()} />
         </aside>
       </div>

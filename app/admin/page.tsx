@@ -14,11 +14,15 @@ import { connectStatus } from "@/lib/stripeConnect";
 import { integrationsHealth, type Health } from "@/lib/integrations";
 import { TEST_DAYS, TEST_TARGET, testStart } from "@/lib/adminSettings";
 import TestStartForm from "./_components/TestStartForm";
+import { PageHead, Panel, Pill } from "./_components/ui";
+import { EmptyState } from "@/components/studio/EmptyState";
+import { openAlerts } from "@/lib/alerts";
+import { kindMeta } from "@/lib/alertKinds";
 import { billingOverview } from "@/lib/billing";
 import { PRO } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Dashboard" };
+export const metadata: Metadata = { title: "Home" };
 
 const DAY = 86_400_000;
 const SHIPPED_STALE_DAYS = 10;
@@ -67,20 +71,35 @@ export default async function AdminDashboard() {
     if (b.pendingCents + b.availableCents > 0) stripeWithBalance++;
   }
 
-  const attention = [
-    { n: pendingArt, label: "artworks waiting for review", href: "/admin/moderation" },
-    { n: duplicates, label: "possible duplicates to compare", href: "/admin/moderation" },
-    { n: openReports, label: "open reports (DMCA, AI, content)", href: "/admin/reports" },
-    { n: flaggedReviews, label: "reviews held for a look", href: "/admin/reviews" },
-    { n: reprints, label: "reprint requests", href: "/admin/reprints" },
-    { n: notSent, label: "orders not sent to the printer", href: "/admin/orders?month=all&filter=print" },
-    { n: failedWo, label: "work orders that failed to send", href: "/admin/orders?month=all&filter=print" },
-    { n: staleShipped, label: `orders shipped ${SHIPPED_STALE_DAYS}+ days ago, not marked delivered`, href: "/admin/orders?month=all&filter=shipped" },
-    { n: lateArtists, label: "artists with a late payout", href: "/admin/payouts" },
-    { n: toVerify, label: "verification requests", href: "/admin/verification" },
-    { n: stripeWithBalance, label: "artists with a balance who haven't finished Stripe setup", href: "/admin/artists?stripe=pending&balance=1" },
-  ];
-  const open = attention.filter((a) => a.n > 0);
+  // Open alerts not snoozed. Urgent ones are listed one by one; the rest only when no queue below covers them.
+  const alerts = await openAlerts().catch(() => []);
+  const [codeOrders, scanBookings] = await Promise.all([
+    prisma.codePrintOrder.count({ where: { status: "paid" } }).catch(() => 0),
+    prisma.scanBooking.count({ where: { status: "requested" } }).catch(() => 0),
+  ]);
+  const COVERED = new Set(["report", "reprint", "duplicate", "moderation", "review_flagged", "verification", "work_order_failed", "order_stuck", "order_undelivered", "payout_late", "code_print_order", "scan_booking"]);
+  const urgent = alerts.filter((a) => a.severity === "urgent");
+  const otherAlerts = alerts.filter((a) => a.severity !== "urgent" && !COVERED.has(a.kind)).length;
+
+  // Most urgent first: money and buyers waiting, then the review queues.
+  const queue = ([
+    ...urgent.map((a) => ({ key: a.id, n: 0, label: a.title, sub: kindMeta(a.kind).label, href: a.link || kindMeta(a.kind).queue, action: "Open", urgent: true })),
+    { key: "wo", n: failedWo, label: "Work orders failed to send", href: "/admin/orders?month=all&filter=print", action: "Retry" },
+    { key: "print", n: notSent, label: "Orders not sent to the printer", href: "/admin/orders?month=all&filter=print", action: "Send" },
+    { key: "late", n: lateArtists, label: "Artists with a late payout", href: "/admin/payouts", action: "Pay" },
+    { key: "reports", n: openReports, label: "Reports (DMCA, AI, content)", href: "/admin/reports", action: "Review" },
+    { key: "reprints", n: reprints, label: "Reprint requests", href: "/admin/reprints", action: "Review" },
+    { key: "codes", n: codeOrders, label: "Code orders to print", href: "/admin/code-orders?status=paid", action: "Print" },
+    { key: "scans", n: scanBookings, label: "Scan bookings to confirm", href: "/admin/scanning", action: "Confirm" },
+    { key: "mod", n: pendingArt, label: "Artworks to review", href: "/admin/moderation", action: "Review" },
+    { key: "dupes", n: duplicates, label: "Possible duplicates", href: "/admin/moderation", action: "Compare" },
+    { key: "verify", n: toVerify, label: "Verification requests", href: "/admin/verification", action: "Review" },
+    { key: "reviews", n: flaggedReviews, label: "Reviews held", href: "/admin/reviews", action: "Check" },
+    { key: "shipped", n: staleShipped, label: `Shipped ${SHIPPED_STALE_DAYS}+ days ago, not delivered`, href: "/admin/orders?month=all&filter=shipped", action: "Check" },
+    { key: "stripe", n: stripeWithBalance, label: "Owed money, Stripe not finished", href: "/admin/artists?stripe=pending&balance=1", action: "See" },
+    { key: "alerts", n: otherAlerts, label: "Other open alerts", href: "/admin/alerts", action: "See" },
+  ] as Todo[]).filter((t) => t.urgent || t.n > 0);
+  const total = queue.reduce((n, t) => n + (t.urgent ? 1 : t.n), 0);
 
   // ---------- Business numbers ----------
   const [items, scans, newArtists] = await Promise.all([
@@ -136,11 +155,11 @@ export default async function AdminDashboard() {
 
   const infinity = await billingOverview().catch(() => null);
   const health = integrationsHealth();
-  const dateLabel = now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "America/New_York" });
+  const dateLabel = now.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "America/New_York" });
 
   const rows: { label: string; fmt: (s: (typeof stats)[number]) => string; hint?: string }[] = [
     { label: "Sales", fmt: (s) => usd(s.sales), hint: "Print prices, before tax and shipping" },
-    { label: "Artfinity profit", fmt: (s) => usd(s.profit), hint: "After printing, fees and the artist's share" },
+    { label: "Profit", fmt: (s) => usd(s.profit), hint: "After printing, fees and the artist's share" },
     { label: "Orders", fmt: (s) => String(s.orders) },
     { label: "Prints", fmt: (s) => String(s.prints) },
     { label: "Average order", fmt: (s) => (s.orders ? usd(s.aov) : "—") },
@@ -149,129 +168,138 @@ export default async function AdminDashboard() {
     { label: "Scans → orders", fmt: (s) => (s.conversion == null ? "—" : `${(s.conversion * 100).toFixed(1)}%`), hint: "Orders from a scanned code ÷ scans" },
   ];
 
+  const issues = health.filter((h) => h.status !== "green");
+  const day = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" });
+
   return (
     <div className="grid gap-6">
-      <div>
-        <p className="eyebrow">{dateLabel}</p>
-        <h1 className="display text-[44px] sm:text-[56px]">What needs you today</h1>
-      </div>
+      <PageHead title="Needs you now" sub={`${dateLabel} · ${total ? `${total} to do` : "all clear"}`} />
 
-      <section aria-labelledby="attn-h" className="af-card grid gap-3 p-4 sm:p-5">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="attn-h" className="text-[20px] font-bold">Needs attention</h2>
-          <span className="text-[13px] text-ink-2">{open.length ? `${open.reduce((n, a) => n + a.n, 0)} things in ${open.length} queues` : "All clear"}</span>
-        </div>
-        {open.length === 0 ? (
-          <p className="flex items-center gap-2 py-4 text-[15px]"><span className="paint-dab h-5 w-5" style={{ ["--dab" as string]: "var(--af-earned)" }} />Nothing waiting. Go paint something.</p>
+      <section aria-label="To do, most urgent first" className="af-panel overflow-hidden">
+        {queue.length === 0 ? (
+          <div className="p-4"><EmptyState compact title="Nothing waiting" body="Every queue is clear." dab="var(--af-earned)" /></div>
         ) : (
-          <ul className="grid gap-2 sm:grid-cols-2">
-            {open.map((a) => (
-              <li key={a.label}>
-                <Link href={a.href} className="flex items-center gap-3 rounded-xl border border-line bg-white px-3 py-2.5 text-ink no-underline transition hover:border-ink">
-                  <b className="num grid h-9 min-w-[36px] place-items-center rounded-full bg-coral/15 px-2 text-[16px] text-coral">{a.n}</b>
-                  <span className="text-[14.5px] font-semibold">{a.label}</span>
-                  <span aria-hidden="true" className="ml-auto text-ink-2">→</span>
-                </Link>
+          <ol className="divide-y divide-line">
+            {queue.map((t, i) => (
+              <li key={t.key} className="flex items-center gap-3 px-3 py-2.5 sm:px-4">
+                {t.urgent ? (
+                  <Pill tone="red" className="min-w-[44px] justify-center">Urgent</Pill>
+                ) : (
+                  <b className="num grid h-8 min-w-[44px] place-items-center rounded-full bg-coral/15 px-2 text-[15px] text-coral">{t.n}</b>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="break-words text-[15px] font-semibold leading-snug">{t.label}</p>
+                  {t.sub && <p className="text-[12.5px] text-ink-2">{t.sub}</p>}
+                </div>
+                <Link href={t.href} className={cn("btn btn-sm shrink-0 min-w-[84px]", i === 0 ? "btn-blue" : "btn-ghost")}>{t.action}</Link>
               </li>
             ))}
-          </ul>
-        )}
-        {open.length > 0 && open.length < attention.length && (
-          <p className="text-[12.5px] text-ink-2">Clear: {attention.filter((a) => a.n === 0).map((a) => a.label).join(" · ")}</p>
+          </ol>
         )}
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-        <section aria-labelledby="biz-h" className="af-card grid content-start gap-3 p-4 sm:p-5">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 id="biz-h" className="text-[20px] font-bold">Business numbers</h2>
-            <span className="text-[13px] text-ink-2"><b className="num text-ink">{activeArtists}</b> active artists (sold in 30 days)</span>
-          </div>
+        <Panel title="Numbers" action={<span className="text-[13px] text-ink-2"><b className="num text-ink">{activeArtists}</b> artists sold in 30 days</span>}>
           <div className="-mx-1 overflow-x-auto px-1">
             <table className="num w-full text-[13px] sm:text-[14px]">
               <thead>
                 <tr className="border-b border-line text-left text-[12px] uppercase tracking-[0.06em] text-ink-2">
                   <th scope="col" className="py-2 pr-2 font-bold"><span className="sr-only">Metric</span></th>
-                  {stats.map((s) => <th key={s.id} className="py-2 pl-2 text-right font-bold">{s.label}</th>)}
+                  {stats.map((s) => <th key={s.id} scope="col" className="py-2 pl-2 text-right font-bold">{s.label}</th>)}
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.label} className="border-b border-line last:border-b-0">
-                    <th scope="row" className="py-2 pr-2 text-left font-semibold">
-                      {r.label}
-                      {r.hint && <span className="hidden text-[11.5px] font-normal text-ink-2 sm:block">{r.hint}</span>}
-                    </th>
-                    {stats.map((s) => <td key={s.id} className={cn("whitespace-nowrap py-2 pl-2 text-right", r.label === "Artfinity profit" && "font-semibold text-earned")}>{r.fmt(s)}</td>)}
+                    <th scope="row" className="py-2 pr-2 text-left font-semibold" title={r.hint}>{r.label}</th>
+                    {stats.map((s) => <td key={s.id} className={cn("whitespace-nowrap py-2 pl-2 text-right", r.label === "Profit" && "font-semibold text-earned")}>{r.fmt(s)}</td>)}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <p className="text-[12px] text-ink-2">Paid buyer orders only (bulk and free reprints excluded); refunded lines are left out. Today starts at midnight New York time.</p>
+          <details className="text-[13px] text-ink-2">
+            <summary className="cursor-pointer font-semibold text-ink">How these are counted</summary>
+            <ul className="mt-2 grid list-disc gap-1 pl-5">
+              <li>Paid buyer orders only. Bulk, free reprints and refunded lines are left out.</li>
+              <li>Sales = print prices before tax and shipping.</li>
+              <li>Profit = after printing, fees and the artist&apos;s share.</li>
+              <li>Scans → orders = orders from a scanned code ÷ scans.</li>
+              <li>Today starts at midnight New York time.</li>
+            </ul>
+          </details>
           {infinity && (
-            <div className="grid gap-2 border-t border-line pt-3">
-              <dl className="grid grid-cols-2 gap-3 text-[14px] sm:grid-cols-4">
-                <div><dt className="text-[12px] text-ink-2">{PRO.name} MRR</dt><dd className="num text-[20px] font-bold text-earned">{usd(infinity.mrrCents)}</dd></div>
-                <div><dt className="text-[12px] text-ink-2">Paying subscribers</dt><dd className="num text-[20px] font-bold">{infinity.paying}{infinity.yearly ? <span className="text-[12px] font-normal text-ink-2"> ({infinity.yearly} yearly)</span> : null}</dd></div>
-                <div><dt className="text-[12px] text-ink-2">Free months first</dt><dd className="num text-[20px] font-bold">{infinity.trialing}</dd></div>
-                <div><dt className="text-[12px] text-ink-2">On {PRO.name} (any way)</dt><dd className="num text-[20px] font-bold">{infinity.infinityNow}</dd></div>
+            <details className="border-t border-line pt-3">
+              <summary className="flex cursor-pointer flex-wrap items-baseline gap-x-2 text-[14px] font-semibold">
+                {PRO.name} <span className="num text-earned">{usd(infinity.mrrCents)} MRR</span><span className="num font-normal text-ink-2">· {infinity.paying} paying</span>
+                {infinity.failing ? <Pill tone="red">{infinity.failing} failed payment{infinity.failing === 1 ? "" : "s"}</Pill> : null}
+              </summary>
+              <dl className="mt-3 grid grid-cols-2 gap-3 text-[14px] sm:grid-cols-4">
+                <div><dt className="text-[12px] text-ink-2">Paying</dt><dd className="num text-[18px] font-bold">{infinity.paying}{infinity.yearly ? <span className="text-[12px] font-normal text-ink-2"> ({infinity.yearly} yearly)</span> : null}</dd></div>
+                <div><dt className="text-[12px] text-ink-2">Free months first</dt><dd className="num text-[18px] font-bold">{infinity.trialing}</dd></div>
+                <div><dt className="text-[12px] text-ink-2">On {PRO.name} (any way)</dt><dd className="num text-[18px] font-bold">{infinity.infinityNow}</dd></div>
+                <div><dt className="text-[12px] text-ink-2">Cancelling</dt><dd className="num text-[18px] font-bold">{infinity.cancelling}</dd></div>
               </dl>
-              <p className="text-[12px] text-ink-2">
-                MRR = paying subscribers × {usd(PRO.priceCents)} ({usd(PRO.yearlyMonthlyCents)} a month for yearly). Subscribers still in referral months aren&apos;t counted.
-                {infinity.failing ? ` ${infinity.failing} with a failed payment.` : ""}{infinity.cancelling ? ` ${infinity.cancelling} cancelling at period end.` : ""}{infinity.simulated ? " Test mode: simulated subscriptions." : ""}
+              <p className="mt-2 text-[12px] text-ink-2">
+                MRR = paying × {usd(PRO.priceCents)} ({usd(PRO.yearlyMonthlyCents)}/mo yearly). Referral months not counted.{infinity.simulated ? " Test mode." : ""}
               </p>
-            </div>
+            </details>
           )}
-        </section>
+        </Panel>
 
-        <section aria-labelledby="test-h" className="af-card grid content-start gap-3 p-4 sm:p-5">
-          <h2 id="test-h" className="text-[20px] font-bold">The 90-day test</h2>
+        <Panel title="90-day test">
           <div className="flex items-baseline gap-2">
-            <b className="display num text-[52px] leading-none">{sold}</b>
-            <span className="text-[16px] text-ink-2">of {TEST_TARGET} prints sold</span>
+            <b className="display num text-[44px] leading-none">{sold}</b>
+            <span className="text-[15px] text-ink-2">of {TEST_TARGET} prints</span>
+            <Pill tone={onTrack ? "green" : "amber"} className="ml-auto">{onTrack ? "On track" : "Behind"}</Pill>
           </div>
-          <div className="h-4 overflow-hidden rounded-full bg-wall ring-1 ring-line" role="progressbar" aria-valuemin={0} aria-valuemax={TEST_TARGET} aria-valuenow={Math.min(sold, TEST_TARGET)} aria-label="Prints sold toward the target">
-            <div className={cn("h-full rounded-full", onTrack ? "bg-earned" : "bg-sticker")} style={{ width: `${Math.min(100, (sold / TEST_TARGET) * 100)}%` }} />
+          <div className="relative">
+            <div className="h-3 overflow-hidden rounded-full bg-wall ring-1 ring-line" role="progressbar" aria-valuemin={0} aria-valuemax={TEST_TARGET} aria-valuenow={Math.min(sold, TEST_TARGET)} aria-label="Prints sold toward the target">
+              <div className={cn("h-full rounded-full", onTrack ? "bg-earned" : "bg-sticker")} style={{ width: `${Math.min(100, (sold / TEST_TARGET) * 100)}%` }} />
+            </div>
+            <span aria-hidden="true" className="absolute -top-1 h-5 w-0.5 bg-ink/50" style={{ left: `${(elapsed / TEST_DAYS) * 100}%` }} title="Even pace" />
           </div>
-          <div className="relative h-0">
-            {/* where you'd be at an even pace */}
-            <span aria-hidden="true" className="absolute -top-5 h-4 w-0.5 bg-ink/50" style={{ left: `${(elapsed / TEST_DAYS) * 100}%` }} title="Even pace" />
-          </div>
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[14px]">
-            <div><dt className="text-ink-2">Day</dt><dd className="num font-semibold">{Math.min(elapsed + 1, TEST_DAYS)} of {TEST_DAYS}</dd></div>
-            <div><dt className="text-ink-2">Days left</dt><dd className="num font-semibold">{daysLeft}</dd></div>
-            <div><dt className="text-ink-2">Needed per week</dt><dd className="num font-semibold">{remaining === 0 ? "Target hit 🎉" : pace == null ? `Ended ${remaining} short` : `${pace} prints`}</dd></div>
-            <div><dt className="text-ink-2">Current pace</dt><dd className="num font-semibold">{currentPace == null ? "—" : `${currentPace} / week`}</dd></div>
+          <dl className="num grid grid-cols-2 gap-x-4 gap-y-2 text-[14px]">
+            <div><dt className="text-[12px] text-ink-2">Day</dt><dd className="font-semibold">{Math.min(elapsed + 1, TEST_DAYS)} of {TEST_DAYS}</dd></div>
+            <div><dt className="text-[12px] text-ink-2">Need per week</dt><dd className="font-semibold">{remaining === 0 ? "Target hit" : pace == null ? `Ended ${remaining} short` : `${pace} prints`}</dd></div>
+            <div><dt className="text-[12px] text-ink-2">Pace</dt><dd className="font-semibold">{currentPace == null ? "—" : `${currentPace} / week`}</dd></div>
+            <div><dt className="text-[12px] text-ink-2">Started</dt><dd className="font-semibold">{day(startAt)}</dd></div>
           </dl>
-          <p className="text-[12.5px] text-ink-2">
-            {onTrack ? "On track." : "Behind an even pace."} Started {startAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" })}
-            {start.source === "env" ? " (TEST_START_DATE)" : start.source === "file" ? " (saved setting)" : " (first order)"}. The tick marks an even pace.
-          </p>
-          {start.source !== "env" && <TestStartForm value={start.date ?? ""} />}
-        </section>
+          <details className="text-[13px] text-ink-2">
+            <summary className="cursor-pointer font-semibold text-ink">Start date</summary>
+            <p className="mt-2">
+              From {start.source === "env" ? "TEST_START_DATE" : start.source === "file" ? "a saved setting" : "the first order"}. The tick marks an even pace.
+            </p>
+            {start.source !== "env" && <TestStartForm value={start.date ?? ""} />}
+          </details>
+        </Panel>
       </div>
 
-      <section aria-labelledby="int-h" className="af-card grid gap-3 p-4 sm:p-5">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="int-h" className="text-[20px] font-bold">Integrations</h2>
-          <span className="text-[13px] text-ink-2">From the server&apos;s settings. Values are never shown.</span>
-        </div>
-        <ul className="grid gap-x-6 gap-y-1 md:grid-cols-2">
-          {health.map((h) => (
-            <li key={h.id} className="grid grid-cols-[14px_minmax(0,1fr)] gap-x-3 border-b border-line py-2.5 last:border-b-0 md:[&:nth-last-child(2)]:border-b-0">
+      <details id="integrations" className="af-panel group p-4 sm:p-5">
+        <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 [&::-webkit-details-marker]:hidden">
+          <h2 className="text-[18px] font-bold">Integrations</h2>
+          {issues.length ? <Pill tone="amber">{issues.length} need a look</Pill> : <Pill tone="green">All OK</Pill>}
+          <span className="ml-auto text-[13px] font-semibold text-ink-2 group-open:hidden">Show</span>
+          <span className="ml-auto hidden text-[13px] font-semibold text-ink-2 group-open:inline">Hide</span>
+        </summary>
+        <ul className="mt-3 grid gap-x-6 md:grid-cols-2">
+          {[...issues, ...health.filter((h) => h.status === "green")].map((h) => (
+            <li key={h.id} className="grid grid-cols-[14px_minmax(0,1fr)] gap-x-3 border-b border-line py-2.5">
               <Dot s={h.status} />
               <div className="min-w-0">
                 <p className="flex flex-wrap items-baseline gap-x-2"><b className="text-[14.5px]">{h.name}</b><span className="text-[13px] text-ink-2">{h.state}</span></p>
-                {h.fix && <p className="mt-0.5 text-[12.5px] leading-snug text-ink-2">{h.fix}</p>}
+                {h.fix && <p className="mt-0.5 break-words text-[12.5px] leading-snug text-ink-2">{h.fix}</p>}
               </div>
             </li>
           ))}
         </ul>
-      </section>
+        <p className="mt-2 text-[12px] text-ink-2">From the server&apos;s settings. Values are never shown.</p>
+      </details>
     </div>
   );
 }
+
+type Todo = { key: string; n: number; label: string; sub?: string; href: string; action: string; urgent?: boolean };
 
 const DOT: Record<Health, { c: string; label: string }> = {
   green: { c: "var(--af-earned)", label: "OK" },

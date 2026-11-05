@@ -2,6 +2,7 @@ import { scanDiscount } from "@/lib/scanSign";
 import { cookies } from "next/headers";
 import { codeForArt, CODE_COOKIE } from "@/lib/shortlinks";
 import type { Metadata, Viewport } from "next";
+import { previewImage, sharePreview } from "@/lib/og";
 import { notFound, permanentRedirect } from "next/navigation";
 import { artPath, SITE_URL, withQuery } from "@/lib/urls";
 import { prisma } from "@/lib/prisma";
@@ -55,12 +56,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!art || art.status !== "APPROVED" || art.artist.closedAt || art.artist.suspendedAt) return { title: "Artwork" };
   const name = art.artist.artist_name || art.artist.name;
   const url = artPath(art.artist.slug, art.slug!);
+  const description = `Buy a print of ${art.title} by ${name}. Free US shipping, made to order.`;
+  // The painting itself; a sensitive piece shows the artist's photo instead (chat apps don't blur).
+  const image = previewImage({ url: art.imageUrl, alt: `${art.title}, by ${name}`, sensitive: art.sensitive }, { url: art.artist.profileImage, alt: name });
   return {
     metadataBase: new URL(SITE_URL),
     title: `${art.title} by ${name}`,
-    description: `Buy a print of ${art.title} by ${name}. Free US shipping, made to order.`,
+    description,
     alternates: { canonical: url },
-    openGraph: { title: `${art.title} by ${name}`, url, images: art.imageUrl ? [{ url: art.imageUrl }] : undefined },
+    ...sharePreview({ type: "article", title: `${art.title} by ${name}`, description, url, image }),
   };
 }
 
