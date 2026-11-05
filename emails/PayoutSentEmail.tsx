@@ -4,10 +4,13 @@ export default function PayoutSentEmail({
   artistName,
   month,
   amountCents,
+  via,
 }: {
   artistName: string;
   month: string;
   amountCents: number;
+  /** "stripe": sent to their bank through Stripe. Left out: paid by hand (Venmo). */
+  via?: "stripe" | "venmo";
 }) {
   const fmt = (cents: number) =>
     (cents / 100).toLocaleString("en-US", {
@@ -32,6 +35,12 @@ export default function PayoutSentEmail({
       <p>
         <strong>Amount sent:</strong> {fmt(amountCents)}
       </p>
+
+      {via === "stripe" && (
+        <p>
+          It&apos;s on its way to your bank through Stripe and usually lands in 2 business days.
+        </p>
+      )}
 
       <hr style={{ margin: "16px 0" }} />
 

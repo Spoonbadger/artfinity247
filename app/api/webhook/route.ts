@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { artistSplitsForOrder, calcItemProfitCents } from "@/lib/revenue"
 import { normalizeSize } from "@/lib/sales"
 import { sendOrderNotifications } from "@/lib/orderNotifications"
+import { sendWorkOrder } from "@/lib/printer"
 import { claimEditionNumbers } from "@/lib/editions"
 import { artistIdsForOrder, followFromCheckout } from "@/lib/followers"
 
@@ -197,6 +198,13 @@ export async function POST(req: NextRequest) {
       } else {
         const sent = await sendOrderNotifications(order.id)
         console.log("Order notifications", order.id, sent)
+      }
+
+      // 4) Work order to the print lab (lib/printer.ts). Sent once per order; never throws, so a lab
+      //    problem never fails the webhook. Failures show in /admin/orders with a Retry button.
+      if (session.payment_status === "paid") {
+        const wo = await sendWorkOrder(order.id)
+        if (wo.status === "failed") console.error("Work order not sent", order.id, wo.error)
       }
     } catch (err) {
       console.error('❌ Error persisting order:', err)

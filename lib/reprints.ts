@@ -10,6 +10,7 @@ import { emailHtml, firstNameOf, joinTitles } from "@/lib/artistEmails";
 import { calcItemProfitCents } from "@/lib/revenue";
 import { normalizeSize } from "@/lib/sales";
 import { TRACKING_SUBJECT } from "@/lib/tracking";
+import { sendWorkOrder } from "@/lib/printer";
 import {
   MAX_NOTE, MAX_PHOTOS, REPRINT_DIRECTION, REPRINT_KIND, REPRINT_PAYMENT, helpState, isReprintReason, parseReprintBody,
   reasonLabel, statusOf, statusSubject, type ReprintBody, type ReprintStatus,
@@ -231,6 +232,12 @@ export async function decideRequest(id: string, action: Decision, note: string) 
     }
     await tx.message.update({ where: { id }, data: { body: JSON.stringify({ ...row.body, decision }) } });
   });
+
+  // The reprint goes to the print lab like any order (lib/printer.ts; never throws).
+  if (decision.reprintOrderId) {
+    const wo = await sendWorkOrder(decision.reprintOrderId);
+    if (wo.status === "failed") console.error("Reprint work order not sent", decision.reprintOrderId, wo.error);
+  }
 
   const first = firstNameOf(orig.shippingName);
   const titles = joinTitles(row.body.items.map((i) => orig.items.find((x) => x.id === i.id)?.title || ""));

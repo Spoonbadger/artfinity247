@@ -46,6 +46,8 @@ function PaintedBar({ pending, available, paid }: { pending: number; available: 
 export default function BalanceCard({ b }: { b: Balance }) {
   const np = b.nextPayout;
   const handle = b.venmoHandle ? `@${b.venmoHandle.replace(/^@/, "")}` : null;
+  const stripe = b.payoutVia === "stripe";
+  const sentTo = stripe ? "your bank via Stripe" : "your Venmo";
   const months = np.months.map((m) => monthName(m).split(" ")[0]);
   const monthsText = months.length > 2 ? `${months.slice(0, -1).join(", ")} and ${months[months.length - 1]}` : months.join(" and ");
   const clearing = b.ledger.filter((l) => np.months.includes(l.payoutMonth) && l.status === "pending");
@@ -73,10 +75,10 @@ export default function BalanceCard({ b }: { b: Balance }) {
       label: readyCents > 0 ? <>Ready for next payout <span className="whitespace-nowrap">— {when}</span></> : <>Ready for next payout</>,
       value: readyCents,
       note: readyCents > 0
-        ? `${monthsText} sales, sent to your Venmo automatically.${clearing.length ? ` Includes ${usd(np.clearingCents)} still in the return window.` : ""}`
+        ? `${monthsText} sales, sent to ${sentTo}.${clearing.length ? ` Includes ${usd(np.clearingCents)} still in the return window.` : ""}`
         : `Nothing waiting. ${thisMonth}'s sales move here when the month ends.`,
     },
-    { k: "paid" as const, label: <>Paid out</>, value: b.paidTotalCents, note: "Sent to your Venmo, all time." },
+    { k: "paid" as const, label: <>Paid out</>, value: b.paidTotalCents, note: "Sent to you, all time." },
   ];
 
   return (
@@ -112,8 +114,11 @@ export default function BalanceCard({ b }: { b: Balance }) {
             <b>Next payout: {late ? "overdue" : dayUTC(np.date)}</b>
             <span className="text-ink-2"> · </span>
             <b className="num text-earned">{usd(np.amountCents)}</b>
-            <span className="text-ink-2"> to </span>
-            {handle ? <b>Venmo {handle}</b> : <Link href="/studio/page" className="font-bold text-coral underline">add Venmo</Link>}
+            {stripe ? (
+              <><span className="text-ink-2"> to </span><b>your bank via Stripe</b></>
+            ) : (
+              <><span className="text-ink-2"> by Venmo to </span>{handle ? <b>{handle}</b> : <Link href="/studio/page" className="font-bold text-coral underline">add Venmo</Link>}</>
+            )}
           </p>
           <p className="mt-0.5 text-[12.5px] text-ink-2">
             {np.projected

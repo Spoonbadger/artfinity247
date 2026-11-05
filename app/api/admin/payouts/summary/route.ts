@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAdmin } from "@/lib/admin"
 import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
 import { isPayoutLate } from "@/lib/balance"
+import { connectMode, connectStatus } from "@/lib/stripeConnect"
 
 export const dynamic = "force-dynamic"
 
@@ -110,7 +111,7 @@ export async function GET(req: NextRequest) {
     // Fetch artist info in one go
     const artists = await prisma.artist.findMany({
       where: { id: { in: artistIds } },
-      select: { id: true, artist_name: true, name: true, email: true, venmoHandle: true, closedAt: true },
+      select: { id: true, artist_name: true, name: true, email: true, venmoHandle: true, closedAt: true, stripeAccountId: true, stripePayoutsEnabled: true },
     });
     const artistMap = new Map<string, (typeof artists)[number]>(
       artists.map((a: any) => [a.id, a])
@@ -119,7 +120,7 @@ export async function GET(req: NextRequest) {
     // Fetch payout statuses for the month in one go
     const payouts = await prisma.payout.findMany({
       where: { artistId: { in: artistIds }, month },
-      select: { artistId: true, paidAt: true, amountCents: true },
+      select: { artistId: true, paidAt: true, amountCents: true, method: true, stripeTransferId: true, failureReason: true },
     });
     const payoutMap = new Map<string, (typeof payouts)[number]>(
       payouts.map((p: any) => [p.artistId, p])
@@ -128,6 +129,7 @@ export async function GET(req: NextRequest) {
 
     // Late: unpaid more than a few days after this month's payout day (lib/balance.ts).
     const monthLate = isPayoutLate(month)
+    const mode = connectMode()
 
     const rows = artistIds.map(artistId => {
       const agg = byArtist.get(artistId)!;
@@ -139,6 +141,8 @@ export async function GET(req: NextRequest) {
         artistName: a?.artist_name || a?.name || "(unknown)",
         artistEmail: a?.email || "",
         venmoHandle: a?.venmoHandle || "",
+        // How they get paid: Stripe (connected and ready), setting up Stripe, or Venmo by hand.
+        stripe: a ? connectStatus(a, mode) : "not_connected",
         itemsCount: agg.itemsCount,
         gross: agg.gross,
         expenses: agg.expenses,
@@ -151,6 +155,9 @@ export async function GET(req: NextRequest) {
           status: p?.paidAt ? "PAID" : "UNPAID",
           paidAt: p?.paidAt || null,
           amountCents: p?.amountCents ?? agg.artistShare,
+          method: p?.method ?? null,
+          stripeTransferId: p?.stripeTransferId ?? null,
+          failureReason: p?.paidAt ? null : p?.failureReason ?? null,
         },
       };
     });

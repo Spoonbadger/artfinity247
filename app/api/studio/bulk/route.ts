@@ -5,6 +5,7 @@
 import Stripe from "stripe";
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
+import { sendWorkOrder } from "@/lib/printer";
 import { checkoutUnavailable, testCheckoutAllowed } from "@/lib/testCheckout";
 import { getUserFromCookie } from "@/lib/auth";
 import { calcItemProfitCents } from "@/lib/revenue";
@@ -179,6 +180,8 @@ export async function POST(req: Request) {
         return created;
       });
       console.log(`[bulk:dev] order ${order.id} ${sessionId} ${quote.prints} prints $${(quote.total / 100).toFixed(2)}`);
+      // Same as the webhook: the print lab gets its work order (never throws).
+      await sendWorkOrder(order.id);
       return json({ url: `/studio/bulk?placed=${order.id}`, dev: true });
     } catch (err) {
       if (err instanceof EditionSoldOutError) return json({ error: err.message, soldOut: err.shortfalls }, 409);

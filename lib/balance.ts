@@ -12,6 +12,7 @@ import { prisma } from "@/lib/prisma";
 import { calcItemProfitCents } from "@/lib/revenue";
 import { normalizeSize } from "@/lib/sales";
 import type { PrintSize } from "@/lib/revenue";
+import { connectStatus, type ConnectStatus } from "@/lib/stripeConnect";
 
 /**
  * BUSINESS DECISION: the return window. A sale stays "pending" (incoming) for this many days
@@ -23,7 +24,8 @@ export const RETURN_WINDOW_DAYS = 14;
 /**
  * BUSINESS DECISION: payout day. Artfinity sends each month's earnings by this day of the
  * following month (Sell with us and the artist terms both say "by the 5th of the following month").
- * Payouts are sent by Artfinity (admin marks a month paid in /admin/payouts); artists never start one.
+ * Payouts are sent by Artfinity ("Pay all" in /admin/payouts sends Stripe transfers to connected artists; Venmo
+ * months are paid by hand and marked paid); artists never start one.
  *
  * Note: with a 14-day window, orders from the last ~9 days of a month are still in the window on
  * the 5th. The admin pays whole months, so those sales ARE in that payout; they show as pending
@@ -110,6 +112,9 @@ export type Balance = {
   /** Closed months still unpaid more than LATE_AFTER_DAYS after their payout day, oldest first. */
   lateMonths: string[];
   venmoHandle: string | null;
+  /** How the next payout goes out: to their bank through Stripe (connected and ready), else by Venmo. */
+  payoutVia: "stripe" | "venmo";
+  stripeStatus: ConnectStatus;
   method: string;
   ledger: LedgerLine[];
   payouts: PayoutRow[];
@@ -139,6 +144,15 @@ export function venmoLabel(handle: string | null | undefined) {
   return h ? `Venmo @${h}` : "Venmo (add your handle)";
 }
 
+export const STRIPE_LABEL = "Bank via Stripe";
+
+/** A paid month's method, from Payout.method ("stripe" | "venmo" | "manual"; older rows have none and were Venmo). */
+function paidMethodLabel(method: string | null | undefined, handle: string | null | undefined) {
+  if (method === "stripe") return STRIPE_LABEL;
+  if (method === "manual") return "Paid by Artfinity";
+  return venmoLabel(handle);
+}
+
 function cityOnly(address: string | null | undefined) {
   // "1 Main St, Asheville, NC 28801, US" -> "Asheville". Never the street.
   let p = String(address || "").split(",").map((x) => x.trim()).filter(Boolean);
@@ -165,7 +179,7 @@ export async function monthTotals(artistId: string) {
 
 export async function getBalance(artistId: string, now: Date = new Date()): Promise<Balance> {
   const [artist, items, payoutRows] = await Promise.all([
-    prisma.artist.findUnique({ where: { id: artistId }, select: { venmoHandle: true } }),
+    prisma.artist.findUnique({ where: { id: artistId }, select: { venmoHandle: true, stripeAccountId: true, stripePayoutsEnabled: true } }),
     prisma.orderItem.findMany({
       where: { artwork: { artistId }, order: { paymentStatus: "paid", kind: { not: "bulk" } } },
       select: {
@@ -176,7 +190,7 @@ export async function getBalance(artistId: string, now: Date = new Date()): Prom
       },
       orderBy: { order: { createdAt: "desc" } },
     }),
-    prisma.payout.findMany({ where: { artistId }, select: { month: true, amountCents: true, paidAt: true } }),
+    prisma.payout.findMany({ where: { artistId }, select: { month: true, amountCents: true, paidAt: true, method: true } }),
   ]);
 
   // Scan attribution: name each code by the artist's label, else its venue, else its short code.
@@ -189,7 +203,9 @@ export async function getBalance(artistId: string, now: Date = new Date()): Prom
   const currentMonth = utcMonth(now);
   const paid = new Map(payoutRows.filter((p) => p.paidAt).map((p) => [p.month, p]));
   const paidMonths = new Set(paid.keys());
-  const method = venmoLabel(artist?.venmoHandle);
+  const stripeStatus: ConnectStatus = artist ? connectStatus(artist) : "not_connected";
+  const payoutVia = stripeStatus === "ready" ? "stripe" : "venmo";
+  const method = payoutVia === "stripe" ? STRIPE_LABEL : venmoLabel(artist?.venmoHandle);
 
   const ledger: LedgerLine[] = items.map((it) => {
     const date = it.order.createdAt;
@@ -288,7 +304,7 @@ export async function getBalance(artistId: string, now: Date = new Date()): Prom
       paidAt: p?.paidAt ? p.paidAt.toISOString() : null,
       // Every closed, unpaid month is in the next payout run.
       dueDate: status === "scheduled" ? nextPayout.date : payoutDateFor(m).toISOString(),
-      method,
+      method: p ? paidMethodLabel(p.method, artist?.venmoHandle) : method,
       sales: agg.sales,
       prints: agg.prints,
     };
@@ -306,6 +322,8 @@ export async function getBalance(artistId: string, now: Date = new Date()): Prom
     nextPayout,
     lateMonths,
     venmoHandle: artist?.venmoHandle?.trim() || null,
+    payoutVia,
+    stripeStatus,
     method,
     ledger,
     payouts,

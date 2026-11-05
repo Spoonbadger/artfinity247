@@ -6,23 +6,25 @@ const prisma = new PrismaClient();
 const PASSWORD = "artfinity123";
 
 const ARTISTS = [
-  { slug: "mayaokafor", verified: "VERIFIED", artist_name: "Maya Okafor", first: "Maya", last: "Okafor", city: "Asheville", state: "NC", bio: "Painting the mountains the way they look at 6pm in October. Every print is made to order.", avatar: 1 },
-  { slug: "junopark", verified: "PENDING", artist_name: "Juno Park", first: "Juno", last: "Park", city: "Austin", state: "TX", bio: "Big flat color, small moments. Mostly gouache, mostly Texas.", avatar: 2 },
-  { slug: "inesduarte", verified: "VERIFIED", artist_name: "Ines Duarte", first: "Ines", last: "Duarte", city: "Santa Fe", state: "NM", bio: "Desert light and the colors that only show up after rain.", avatar: 3 },
-  { slug: "calebmoreno", artist_name: "Caleb Moreno", first: "Caleb", last: "Moreno", city: "Portland", state: "OR", bio: "Coastlines and fog. Oil on panel.", avatar: 4 },
-  { slug: "priyanair", artist_name: "Priya Nair", first: "Priya", last: "Nair", city: "Asheville", state: "NC", bio: "Figures, rivers and the space between them.", avatar: 5 },
+  { slug: "mayaokafor", verified: "VERIFIED", artist_name: "Maya Okafor", first: "Maya", last: "Okafor", city: "Brooklyn", state: "NY", bio: "Painting New York the way it looks at 6pm in October, from a studio in Bed-Stuy. Every print is made to order.", avatar: 1 },
+  { slug: "junopark", verified: "PENDING", artist_name: "Juno Park", first: "Juno", last: "Park", city: "Queens", state: "NY", bio: "Big flat color, small moments. Mostly gouache, mostly Astoria and the Rockaways.", avatar: 2 },
+  { slug: "inesduarte", verified: "VERIFIED", artist_name: "Ines Duarte", first: "Ines", last: "Duarte", city: "Manhattan", state: "NY", bio: "City light and the colors that only show up after rain. Painted in a fifth-floor walk-up on the Lower East Side.", avatar: 3 },
+  { slug: "calebmoreno", artist_name: "Caleb Moreno", first: "Caleb", last: "Moreno", city: "Bronx", state: "NY", bio: "Coastlines and fog from the Bronx side. Oil on panel, out of a shared studio in Mott Haven.", avatar: 4 },
+  { slug: "priyanair", artist_name: "Priya Nair", first: "Priya", last: "Nair", city: "Staten Island", state: "NY", bio: "Figures, the harbor and the space between them. St. George, ferry side.", avatar: 5 },
 ];
+// Titles become slugs (title + first 3 letters of the handle), e.g. "East River, Late" -> east-river-late-may.
 const WORKS = {
-  mayaokafor: ["Blue Ridge, Late", "Cold Mountain Road", "French Broad, 6pm", "Bather, Sliding Rock", "Hawksbill", "Second Frost", "Craggy Pinnacle"],
-  junopark: ["Lady Bird Lake", "South Congress Noon", "Barton Springs", "Hill Country Drive", "Pecan Season"],
-  inesduarte: ["After the Monsoon", "Canyon Road", "Sangre de Cristo", "Turquoise Trail", "Galisteo Basin", "Abiquiu Morning"],
-  calebmoreno: ["Cannon Beach Fog", "Willamette Grey", "Haystack Rock", "Hood at Dusk", "Columbia Gorge"],
-  priyanair: ["River Figure I", "Swimmers"],
+  mayaokafor: ["East River, Late", "Bear Mountain Road", "Gowanus, 6pm", "Bather, Brighton Beach", "Inwood Hill", "Second Frost", "Fort Tryon Dusk"],
+  junopark: ["Hell Gate, Noon", "Ditmars, 7pm", "Rockaway, 6pm", "Jamaica Bay", "Fig Season"],
+  inesduarte: ["After the Storm", "Delancey, Dusk", "Williamsburg Bridge", "Coney Island in November", "Newtown Creek", "Seward Park Morning"],
+  calebmoreno: ["Pelham Bay Fog", "Harlem River Grey", "City Island", "Orchard Beach Dusk", "Spuyten Duyvil"],
+  priyanair: ["Harbor Figure I", "Swimmers"],
 };
-const SENSITIVE = { "Bather, Sliding Rock": ["Nudity"] };
+const EDITION = "Inwood Hill"; // Maya's limited edition (25 prints)
+const SENSITIVE = { "Bather, Brighton Beach": ["Nudity"] };
 // Print sizes each file is sharp enough for. These two are smaller files, so XL is hidden from buyers.
 const ALL_SIZES = ["small", "medium", "large", "xl"];
-const PRINTABLE = { "Second Frost": ["small", "medium", "large"], "Haystack Rock": ["small", "medium", "large"] };
+const PRINTABLE = { "Second Frost": ["small", "medium", "large"], "City Island": ["small", "medium", "large"] };
 
 // mirrors lib/artwork_price.ts and lib/revenue.ts
 const BASE = { small: 3499, medium: 4499, large: 6499, xl: 7999 };
@@ -33,20 +35,21 @@ function rng(seed) { let a = seed >>> 0; return () => { a = a + 0x6D2B79F5 | 0; 
 const slugify = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
 
-// Made-up buyers with real-looking names and cities. Some buy again, so the Customers page shows repeat buyers.
+// Made-up buyers with real-looking names and addresses: mostly New York City and nearby, some elsewhere in the US
+// (prints ship nationwide). The first 8 buy again, so the Customers page shows repeat buyers.
 const BUYERS = [
-  ["Ava Thompson", "Asheville, NC 28801"], ["Marcus Lee", "Charlotte, NC 28202"], ["Sofia Ramirez", "Austin, TX 78704"],
-  ["Ethan Brooks", "Durham, NC 27701"], ["Lena Fischer", "Portland, OR 97214"], ["Noah Patel", "Atlanta, GA 30307"],
-  ["Grace Kim", "Brooklyn, NY 11211"], ["Oliver Grant", "Denver, CO 80205"], ["Maya Chen", "Seattle, WA 98122"],
-  ["Jonah Reed", "Nashville, TN 37206"], ["Isabel Cruz", "Santa Fe, NM 87501"], ["Theo Walsh", "Boston, MA 02118"],
-  ["Hannah Price", "Raleigh, NC 27601"], ["Luca Moretti", "Chicago, IL 60622"], ["Zoe Adams", "Asheville, NC 28806"],
-  ["Caleb Ortiz", "San Diego, CA 92104"], ["Nora Quinn", "Savannah, GA 31401"], ["Felix Wright", "Austin, TX 78702"],
-  ["Ruby Hayes", "Greenville, SC 29601"], ["Sam Okoro", "Philadelphia, PA 19123"], ["Iris Novak", "Minneapolis, MN 55408"],
-  ["Diego Alvarez", "Phoenix, AZ 85004"], ["June Park", "Richmond, VA 23220"], ["Owen Murphy", "Knoxville, TN 37902"],
-  ["Clara Dunn", "Portland, ME 04101"], ["Ari Cohen", "Los Angeles, CA 90026"], ["Mila Ivanova", "Boulder, CO 80302"],
-  ["Ben Carter", "Asheville, NC 28803"], ["Elena Rossi", "Charleston, SC 29401"], ["Kai Nakamura", "Oakland, CA 94612"],
+  ["Ava Thompson", "Brooklyn, NY 11216"], ["Marcus Lee", "New York, NY 10009"], ["Sofia Ramirez", "Astoria, NY 11105"],
+  ["Ethan Brooks", "Brooklyn, NY 11238"], ["Lena Fischer", "Jersey City, NJ 07302"], ["Noah Patel", "Long Island City, NY 11101"],
+  ["Grace Kim", "Brooklyn, NY 11211"], ["Oliver Grant", "New York, NY 10027"], ["Maya Chen", "Seattle, WA 98122"],
+  ["Jonah Reed", "Brooklyn, NY 11222"], ["Isabel Cruz", "Bronx, NY 10454"], ["Theo Walsh", "Boston, MA 02118"],
+  ["Hannah Price", "Hoboken, NJ 07030"], ["Luca Moretti", "Chicago, IL 60622"], ["Zoe Adams", "Brooklyn, NY 11215"],
+  ["Caleb Ortiz", "Staten Island, NY 10301"], ["Nora Quinn", "Yonkers, NY 10701"], ["Felix Wright", "New York, NY 10002"],
+  ["Ruby Hayes", "Montclair, NJ 07042"], ["Sam Okoro", "Philadelphia, PA 19123"], ["Iris Novak", "Brooklyn, NY 11237"],
+  ["Diego Alvarez", "Jackson Heights, NY 11372"], ["June Park", "Flushing, NY 11354"], ["Owen Murphy", "Beacon, NY 12508"],
+  ["Clara Dunn", "New Haven, CT 06511"], ["Ari Cohen", "Los Angeles, CA 90026"], ["Mila Ivanova", "Brooklyn, NY 11235"],
+  ["Ben Carter", "Brooklyn, NY 11205"], ["Elena Rossi", "New York, NY 10014"], ["Kai Nakamura", "Oakland, CA 94612"],
 ];
-const STREETS = ["Oak St", "Maple Ave", "River Rd", "Pine St", "Lark Ln", "Elm Ct", "Cedar Ave", "Hill St"];
+const STREETS = ["Halsey St", "Bedford Ave", "Ditmars Blvd", "Orchard St", "Franklin Ave", "Vernon Blvd", "Court St", "Nostrand Ave"];
 
 async function main() {
   await prisma.collectionItem.deleteMany(); await prisma.collection.deleteMany();
@@ -55,7 +58,7 @@ async function main() {
   await prisma.passwordResetToken.deleteMany(); await prisma.artwork.deleteMany(); await prisma.artist.deleteMany();
   const hash = await bcrypt.hash(PASSWORD, 10);
 
-  await prisma.artist.create({ data: { name: "Artfinity Admin", artist_name: "Artfinity Admin", email: "admin@artfinity.local", password: hash, phone: "", city: "Asheville", citySlug: "asheville", state: "NC", country: "US", slug: "artfinity-admin", role: "ADMIN" } });
+  await prisma.artist.create({ data: { name: "Artfinity Admin", artist_name: "Artfinity Admin", email: "admin@artfinity.local", password: hash, phone: "", city: "Brooklyn", citySlug: "brooklyn", state: "NY", country: "US", slug: "artfinity-admin", role: "ADMIN" } });
 
   let img = 1; const r = rng(2026); const arts = [];
   for (const a of ARTISTS) {
@@ -87,26 +90,41 @@ async function main() {
     }
   }
 
-  // Maya: two collections and one limited edition (Hawksbill, edition of 25)
+  // Maya: two collections and one limited edition (Inwood Hill, edition of 25)
   const mayaArts = arts.filter((x) => x.artist.slug === "mayaokafor");
   const mayaId = mayaArts[0].artistId;
   const pick = (titles) => titles.map((t) => mayaArts.find((a) => a.title === t)).filter(Boolean);
   const cols = [
-    { title: "Blue Ridge series", slug: "blue-ridge-series", description: "Six o'clock light on the ridgelines.", works: pick(["Blue Ridge, Late", "Craggy Pinnacle", "Hawksbill", "Cold Mountain Road"]) },
-    { title: "Rivers", slug: "rivers", description: "The French Broad, mostly.", works: pick(["French Broad, 6pm", "Second Frost"]) },
+    { title: "East River series", slug: "east-river-series", description: "Six o'clock light on the water and the skyline.", works: pick(["East River, Late", "Fort Tryon Dusk", EDITION, "Bear Mountain Road"]) },
+    { title: "Waterways", slug: "waterways", description: "The Gowanus and the Hudson, mostly.", works: pick(["Gowanus, 6pm", "Second Frost"]) },
   ];
   for (const [ci, c] of cols.entries()) {
     await prisma.collection.create({ data: { artistId: mayaId, title: c.title, slug: c.slug, description: c.description, position: ci, coverArtworkId: c.works[0]?.id,
       items: { create: c.works.map((w, i) => ({ artworkId: w.id, position: i })) } } });
   }
-  const hawk = mayaArts.find((a) => a.title === "Hawksbill");
+  const hawk = mayaArts.find((a) => a.title === EDITION);
   if (hawk) await prisma.artwork.update({ where: { id: hawk.id }, data: { editionSize: 25 } });
+
+  // Upcoming markets and open studios (Studio → Events, and the artist page). Dates are relative to today.
+  const ymd = (days) => new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
+  const nextSat = (6 - new Date().getUTCDay() + 7) % 7 || 7;
+  const ids = Object.fromEntries((await prisma.artist.findMany({ select: { id: true, slug: true } })).map((x) => [x.slug, x.id]));
+  const EVENTS = [
+    ["mayaokafor", "Brooklyn Flea", "Williamsburg, Brooklyn", nextSat, nextSat],
+    ["mayaokafor", "Union Square Holiday Market", "Union Square, Manhattan", 14, 49],
+    ["mayaokafor", "Bushwick Open Studios", "Bushwick, Brooklyn", nextSat + 21, nextSat + 22],
+    ["junopark", "Industry City Holiday Market", "Sunset Park, Brooklyn", nextSat + 14, nextSat + 15],
+    ["inesduarte", "Open studio night", "Lower East Side, Manhattan", 9, 9],
+  ];
+  for (const [slug, name, venue, s0, s1] of EVENTS) {
+    if (ids[slug]) await prisma.studioEvent.create({ data: { artistId: ids[slug], name, venue, start: ymd(s0), end: ymd(s1) } });
+  }
 
   // 100 paid orders over the last 60 days, spread so every medal level shows:
   // Maya 55 (gold), Juno 27 (silver), Ines 12 (bronze), Caleb 6, Priya 0.
   const by = (slug) => arts.filter((x) => x.artist.slug === slug);
   const plan = [...Array(55).fill("mayaokafor"), ...Array(27).fill("junopark"), ...Array(12).fill("inesduarte"), ...Array(6).fill("calebmoreno")];
-  let hawkSold = 0; // Hawksbill edition numbers, so certificates have something to show
+  let hawkSold = 0; // Inwood Hill edition numbers, so certificates have something to show
   for (let n = 0; n < plan.length; n++) {
     const pool = by(plan[n]);
     const hawkTurn = plan[n] === "mayaokafor" && n % 8 === 5 && hawk;

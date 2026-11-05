@@ -9,6 +9,7 @@ import { claimEditionNumbers, EditionSoldOutError, editionMessage, editionShortf
 import { applyDiscount, isPrintSize, parseDiscount, parseVenue, priceFor, SIZE_LABEL, sizeInches, type PrintSize } from "@/components/art/pricing";
 import { sizeAllowed } from "@/lib/printSizes";
 import { followFromCheckout } from "@/lib/followers";
+import { sendWorkOrder } from "@/lib/printer";
 import { SHIPPING_TAX_CODE, TAX_CODE, TAX_ENABLED } from "@/lib/tax";
 
 export const dynamic = "force-dynamic";
@@ -235,6 +236,9 @@ async function devCheckout(lines: Line[], email: string | undefined, buyer: { na
         lines.map((l) => `${l.art.slug}/${l.size}${l.frameChosen ? "+frame" : ""}×${l.quantity}${l.discountPct ? ` -${l.discountPct}%${l.venue ? ` @${l.venue}` : ""}` : ""}`).join(", "),
     );
     if (follow && email) await followFromCheckout(email, lines.map((l) => l.art.artistId), buyer?.name).catch((e) => console.error("[checkout:dev] follow failed", e));
+    // Same as the webhook: send the print lab its work order (never throws; failures show in admin orders).
+    const wo = await sendWorkOrder(order.id);
+    if (wo.status === "failed") console.error("[checkout:dev] work order not sent", order.id, wo.error);
     return json({ url: `/thank-you?session_id=${sessionId}`, dev: true });
   } catch (err) {
     if (err instanceof EditionSoldOutError) return json({ error: err.message, soldOut: err.shortfalls }, 409);

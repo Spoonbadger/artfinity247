@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { adminOrRedirect } from "../_components/gate";
 import MonthPicker from "../_components/MonthPicker";
 import PayoutsTable from "../_components/PayoutsTable";
+import PayAllPanel from "../_components/PayAllPanel";
 import { currentMonth, monthLabel, monthRange } from "../_components/util";
 import { latePayouts } from "@/lib/balance";
 
@@ -43,6 +44,7 @@ export default async function AdminPayoutsPage({ searchParams }: { searchParams:
           ))}
         </div>
       )}
+      <PayAllPanel />
       <PayoutsTable key={month} month={month} />
     </div>
   );

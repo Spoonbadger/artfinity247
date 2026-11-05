@@ -4,6 +4,9 @@ import BalanceCard from "@/components/money/BalanceCard";
 import MoneyInsights from "@/components/money/MoneyInsights";
 import PayoutsList from "@/components/money/PayoutsList";
 import Ledger from "@/components/money/Ledger";
+import GetPaidCard from "@/components/money/GetPaidCard";
+import { dayUTC } from "@/components/money/format";
+import { connectMode } from "@/lib/stripeConnect";
 import { getBalance, monthLabel, PAYOUT_DAY_OF_MONTH, RETURN_WINDOW_DAYS } from "@/lib/balance";
 import { FREE_SPLIT, PRO, isProActive } from "@/lib/plans";
 import { prisma } from "@/lib/prisma";
@@ -23,7 +26,16 @@ const VENMO_NOTICE: Record<string, { ok: boolean; text: string }> = {
   taken: { ok: false, text: "That Venmo handle is already on another Artfinity account, so we didn't switch. Message us if it's yours." },
 };
 
-export default async function MoneyPage({ searchParams }: { searchParams: { venmo?: string } }) {
+const STRIPE_NOTICE: Record<string, { ok: boolean; text: string }> = {
+  ready: { ok: true, text: "Stripe is connected. Your payouts now go to your bank." },
+  pending: { ok: false, text: "Almost there. Stripe needs a few more details. Press Finish setup when you're ready." },
+  simulated: { ok: true, text: "Connected a test Stripe account. Stripe isn't set up here, so no money moves." },
+  "simulated-dashboard": { ok: false, text: "This is a test account, so there's no Stripe dashboard to open." },
+  off: { ok: false, text: "Stripe isn't set up here yet. We'll keep paying you by Venmo." },
+  error: { ok: false, text: "Stripe didn't open. Try again in a minute." },
+};
+
+export default async function MoneyPage({ searchParams }: { searchParams: { venmo?: string; stripe?: string } }) {
   const artist = await requireArtist("/studio/money");
   const [b, acct] = await Promise.all([
     getBalance(artist.id),
@@ -32,7 +44,8 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
   const pro = isProActive(acct);
   const pendingLive = acct?.venmoPendingAt && Date.now() - acct.venmoPendingAt.getTime() < VENMO_CONFIRM_HOURS * 3_600_000;
   const venmoPending = pendingLive ? acct?.venmoPending ?? null : null;
-  const venmoNotice = searchParams.venmo ? VENMO_NOTICE[searchParams.venmo] : undefined;
+  const venmoNotice = searchParams.venmo ? VENMO_NOTICE[searchParams.venmo] : searchParams.stripe ? STRIPE_NOTICE[searchParams.stripe] : undefined;
+  const viaStripe = b.payoutVia === "stripe";
   const lateNames = b.lateMonths.map((m) => monthLabel(m).split(" ")[0]);
   const lateText = lateNames.length > 1 ? `${lateNames.slice(0, -1).join(", ")} and ${lateNames[lateNames.length - 1]} payouts are` : `${lateNames[0]} payout is`;
 
@@ -44,7 +57,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
         : <>You keep <b>{pct(FREE_SPLIT)}</b> of each sale&apos;s profit. <b>{pct(PRO.split)}</b> on the {PRO.name} plan.</>,
     },
     { dab: "#a9d8c1", text: <>Sales clear after a <b>{RETURN_WINDOW_DAYS}-day</b> return window.</> },
-    { dab: "#3d9f76", text: <>Each month is paid by the <b>{ordinal(PAYOUT_DAY_OF_MONTH)}</b> of the next, to your Venmo.</> },
+    { dab: "#3d9f76", text: <>Each month is paid by the <b>{ordinal(PAYOUT_DAY_OF_MONTH)}</b> of the next, {viaStripe ? "to your bank via Stripe" : "to your Venmo"}.</> },
     { dab: "#15161b", text: <>Bulk orders of your own prints don&apos;t count.</> },
   ];
 
@@ -75,10 +88,10 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
         </div>
       )}
 
-      {!b.venmoHandle && (
+      {!b.venmoHandle && !viaStripe && (
         <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[4px] border-2 border-ink bg-sticker/70 px-4 py-3 text-[14.5px]">
           <span className="sticker-badge text-[11px]">Heads up</span>
-          <b className="min-w-0 flex-1">Add your Venmo so we can pay you.</b>
+          <b className="min-w-0 flex-1">Connect Stripe or add your Venmo so we can pay you.</b>
           <Link href="/studio/page" className="btn btn-sm bg-ink text-white">Add Venmo</Link>
         </div>
       )}
@@ -97,6 +110,8 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <PayoutsList payouts={b.payouts} ledger={b.ledger} lateMonths={b.lateMonths} />
+        <div className="grid content-start gap-4">
+        <GetPaidCard status={b.stripeStatus} mode={connectMode()} venmoHandle={b.venmoHandle} nextDate={dayUTC(b.nextPayout.date)} />
         <section aria-labelledby="how-h" className="af-card grid content-start gap-3 p-4 sm:p-5">
           <h2 id="how-h" className="text-[20px] font-bold">How payouts work</h2>
           <ul className="grid gap-2.5 text-[14.5px]">
@@ -108,6 +123,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
             ))}
           </ul>
         </section>
+        </div>
       </div>
 
       {b.ledger.length > 0 && <Ledger ledger={b.ledger} currentMonth={b.currentMonth} />}

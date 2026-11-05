@@ -11,6 +11,7 @@ type Row = {
   artistName: string;
   artistEmail: string;
   venmoHandle: string;
+  stripe?: "not_connected" | "pending" | "ready";
   itemsCount: number;
   gross: number;
   expenses: number;
@@ -18,8 +19,11 @@ type Row = {
   artistShare: number;
   closed?: boolean;
   late?: boolean;
-  payout: { status: "PAID" | "UNPAID"; paidAt: string | null; amountCents: number };
+  payout: { status: "PAID" | "UNPAID"; paidAt: string | null; amountCents: number; method?: string | null; stripeTransferId?: string | null; failureReason?: string | null };
 };
+
+/** PayAllPanel fires this after a run so the month's table reloads. */
+export const PAYOUTS_CHANGED = "af:payouts-changed";
 
 export default function PayoutsTable({ month }: { month: string }) {
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -40,6 +44,11 @@ export default function PayoutsTable({ month }: { month: string }) {
   }, [month]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const on = () => { load(); };
+    window.addEventListener(PAYOUTS_CHANGED, on);
+    return () => window.removeEventListener(PAYOUTS_CHANGED, on);
+  }, [load]);
 
   const toggle = async (r: Row) => {
     const paid = r.payout.status === "PAID";
@@ -51,11 +60,12 @@ export default function PayoutsTable({ month }: { month: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ artistId: r.artistId, month, unmark: paid }),
       });
-      if (!res.ok) throw new Error();
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || "");
       toast.success(paid ? `${r.artistName} marked unpaid` : `${r.artistName} marked paid. Email sent.`);
       await load();
-    } catch {
-      toast.error("Couldn't update the payout.");
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't update the payout.");
     } finally {
       setBusy(null);
     }
@@ -93,7 +103,7 @@ export default function PayoutsTable({ month }: { month: string }) {
               <thead className="border-b border-line bg-wall/60 text-[12px] uppercase tracking-[0.06em] text-ink-2">
                 <tr>
                   <th className="px-4 py-2.5 font-bold">Artist</th>
-                  <th className="px-3 py-2.5 font-bold">Venmo</th>
+                  <th className="px-3 py-2.5 font-bold">Paid to</th>
                   <th className="px-3 py-2.5 text-right font-bold">Prints</th>
                   <th className="px-3 py-2.5 text-right font-bold">Sales</th>
                   <th className="px-3 py-2.5 text-right font-bold">Costs</th>
@@ -109,7 +119,7 @@ export default function PayoutsTable({ month }: { month: string }) {
                       <b className="flex flex-wrap items-center gap-1.5">{r.artistName}<Badges r={r} /></b>
                       <span className="text-[12.5px] text-ink-2">{r.artistEmail}</span>
                     </td>
-                    <td className="px-3 py-3">{r.venmoHandle ? `@${r.venmoHandle.replace(/^@/, "")}` : <span className="text-coral">Missing</span>}</td>
+                    <td className="px-3 py-3"><PaidTo r={r} /></td>
                     <td className="px-3 py-3 text-right">{r.itemsCount}</td>
                     <td className="px-3 py-3 text-right">{usd(r.gross)}</td>
                     <td className="px-3 py-3 text-right text-ink-2">{usd(r.expenses)}</td>
@@ -128,7 +138,7 @@ export default function PayoutsTable({ month }: { month: string }) {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <b className="flex flex-wrap items-center gap-1.5"><span className="truncate">{r.artistName}</span><Badges r={r} /></b>
-                      <span className="text-[13px] text-ink-2">{r.venmoHandle ? `Venmo @${r.venmoHandle.replace(/^@/, "")}` : "No Venmo"} · {r.itemsCount} {r.itemsCount === 1 ? "print" : "prints"}</span>
+                      <span className="text-[13px] text-ink-2"><PaidTo r={r} /> · {r.itemsCount} {r.itemsCount === 1 ? "print" : "prints"}</span>
                     </div>
                     <b className="num shrink-0 text-[18px] text-earned">{usd(r.artistShare)}</b>
                   </div>
@@ -144,18 +154,38 @@ export default function PayoutsTable({ month }: { month: string }) {
   );
 }
 
+/** Where the money goes: Stripe when connected and ready, else Venmo by hand. */
+function PaidTo({ r }: { r: Row }) {
+  const venmo = r.venmoHandle ? `Venmo @${r.venmoHandle.replace(/^@/, "")}` : null;
+  if (r.stripe === "ready") return <span className="font-semibold text-earned" title={venmo ? `Fallback: ${venmo}` : undefined}>Stripe</span>;
+  return (
+    <span>
+      {venmo ?? <span className="text-coral">No Venmo</span>}
+      {r.stripe === "pending" && <span className="block text-[12px] text-ink-2">Stripe setup unfinished</span>}
+    </span>
+  );
+}
+
 function PayButton({ r, busy, onClick }: { r: Row; busy: boolean; onClick: () => void }) {
   const paid = r.payout.status === "PAID";
+  const viaStripe = paid && r.payout.method === "stripe";
+  const realTransfer = viaStripe && !!r.payout.stripeTransferId && !r.payout.stripeTransferId.startsWith("tr_sim_");
   return (
     <div className="inline-flex flex-wrap items-center justify-end gap-2">
       {paid && (
-        <span className="rounded-full bg-earned-soft px-2.5 py-1 text-[12.5px] font-bold text-earned">
+        <span className="rounded-full bg-earned-soft px-2.5 py-1 text-[12.5px] font-bold text-earned" title={r.payout.stripeTransferId || undefined}>
           Paid {r.payout.paidAt ? new Date(r.payout.paidAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}
+          {viaStripe ? " · Stripe" : r.payout.method === "venmo" ? " · Venmo" : ""}
         </span>
       )}
-      <button type="button" disabled={busy} onClick={onClick} className={cn("btn btn-sm", paid ? "btn-ghost" : "btn-blue")}>
-        {paid ? "Undo" : "Mark paid"}
-      </button>
+      {!paid && r.payout.failureReason && (
+        <span className="max-w-[260px] text-left text-[12px] font-semibold text-coral" title={r.payout.failureReason}>Stripe failed: {r.payout.failureReason}</span>
+      )}
+      {!realTransfer && (
+        <button type="button" disabled={busy} onClick={onClick} className={cn("btn btn-sm", paid ? "btn-ghost" : "btn-blue")}>
+          {paid ? "Undo" : "Mark paid"}
+        </button>
+      )}
     </div>
   );
 }

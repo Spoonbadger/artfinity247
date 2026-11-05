@@ -23,8 +23,12 @@ export async function POST(req: NextRequest) {
   // fetch existing payout FIRST so we can know "previously unpaid?"
   const existing = await prisma.payout.findUnique({
     where: { artistId_month: { artistId, month } },
-    select: { paidAt: true },
+    select: { paidAt: true, stripeTransferId: true },
   })
+  // A real Stripe transfer can't be undone here: reverse it in Stripe first, then clear it.
+  if (unmark && existing?.paidAt && existing.stripeTransferId && !existing.stripeTransferId.startsWith("tr_sim_")) {
+    return NextResponse.json({ error: `Paid by Stripe transfer ${existing.stripeTransferId}. Reverse it in Stripe first.` }, { status: 409 })
+  }
 
   // get month date range (UTC-safe, same logic as payouts export)
   const [y, m] = month.split("-").map(Number)
@@ -84,7 +88,7 @@ export async function POST(req: NextRequest) {
   if (unmark) {
     const payout = await prisma.payout.upsert({
       where: { artistId_month: { artistId, month } },
-      update: { paidAt: null, amountCents },
+      update: { paidAt: null, amountCents, method: null, stripeTransferId: null, failureReason: null },
       create: { artistId, month, amountCents, paidAt: null },
     })
 
@@ -95,11 +99,16 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  // MARK AS PAID
+  // MARK AS PAID (by hand: Venmo, or another way when they have no handle)
+  if (existing?.paidAt) {
+    return NextResponse.json({ payout: existing, wasPaidBefore: true, markedPaid: true })
+  }
+  const who = await prisma.artist.findUnique({ where: { id: artistId }, select: { venmoHandle: true } })
+  const method = who?.venmoHandle ? "venmo" : "manual"
   const payout = await prisma.payout.upsert({
     where: { artistId_month: { artistId, month } },
-    update: { paidAt: new Date(), amountCents },
-    create: { artistId, month, amountCents, paidAt: new Date() },
+    update: { paidAt: new Date(), amountCents, method, stripeTransferId: null, failureReason: null },
+    create: { artistId, month, amountCents, paidAt: new Date(), method },
   })
 
   // send email ONLY when transitioning unpaid → paid
