@@ -15,6 +15,7 @@
     "setup:local": "node -e \"require('fs').existsSync('.env')||require('fs').copyFileSync('.env.example','.env')\" && prisma migrate deploy && node --env-file=.env prisma/seed.mjs",
     "local": "node scripts/local.mjs",
     "scenes:fetch": "node scripts/scenes/fetch-pexels.mjs",
+    "scenes:fetch-pixabay": "node scripts/scenes/fetch-pixabay.mjs",
     "scenes:build": "node scripts/scenes/build.mjs",
     "scenes:render": "node scripts/scenes/render.mjs",
     "scenes:fixtures": "node scripts/scenes/make-fixtures.mjs",
