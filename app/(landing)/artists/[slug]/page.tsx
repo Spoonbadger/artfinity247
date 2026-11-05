@@ -88,7 +88,7 @@ export default async function ArtistPage({ params, searchParams }: Props) {
   const trust = { ...artist.trust, medal: theme.showStats ? artist.trust.earned : null };
   const venues = await venuesFor(artist.id);
   const tagline = artist.bio ? firstSentence(artist.bio) : "";
-  const cityShort = artist.city.split(",")[0];
+  const [cityShort, stateShort] = artist.city.split(",").map((s) => s.trim());
   const since = artist.memberSince.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
   const about = (
@@ -121,15 +121,19 @@ export default async function ArtistPage({ params, searchParams }: Props) {
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
         {/* Head: avatar overlapping the banner, name, actions */}
         <header className="relative -mt-12 flex flex-wrap items-end gap-x-6 gap-y-4 sm:-mt-16">
-          <ArtistAvatar src={artist.avatar} name={artist.name} className="h-24 w-24 sm:h-36 sm:w-36" />
-          <div className="grid min-w-0 flex-1 basis-[260px] gap-1.5 pb-1">
-            <h1 className="display flex flex-wrap items-center gap-x-3 gap-y-1 text-[44px] sm:text-[64px]">
+          {/* Avatar with the verified badge and medal pinned to its bottom-right */}
+          <div className="relative shrink-0">
+            <ArtistAvatar src={artist.avatar} name={artist.name} className="h-24 w-24 sm:h-36 sm:w-36" />
+            {(trust.verified || trust.medal) && (
+              <span className="absolute -bottom-1 -right-2 rounded-full bg-white px-1.5 py-1 shadow-[0_4px_12px_-4px_rgba(21,22,27,.35)] sm:bottom-0 sm:right-0">
+                <NameBadges trust={trust} size={26} />
+              </span>
+            )}
+          </div>
+          <div className="grid min-w-0 flex-1 basis-[260px] gap-1.5 self-end sm:min-h-[96px] sm:content-center">
+            <h1 className="display text-[44px] sm:text-[64px]">
               <span className="min-w-0 [overflow-wrap:anywhere]">{artist.name}</span>
-              <NameBadges trust={trust} size={30} />
             </h1>
-            <p className="truncate text-[15px] text-ink-2 sm:text-base">
-              {[artist.city, tagline].filter(Boolean).join(" · ")}
-            </p>
             <ReviewStars average={rating.average} count={rating.count} href="#reviews" className="w-fit" />
           </div>
           <div className="flex flex-wrap items-center gap-3 pb-2 sm:ml-auto">
@@ -145,13 +149,12 @@ export default async function ArtistPage({ params, searchParams }: Props) {
             <div className="grid grid-cols-[auto_auto_minmax(0,1fr)] gap-x-7 gap-y-4">
               <Stat value={artist.works.length} label={artist.works.length === 1 ? "work" : "works"} dab="#f7c8a8" />
               {theme.showStats && artist.sales > 0 ? <Stat value={artist.sales} label={artist.sales === 1 ? "print sold" : "prints sold"} dab="var(--accent)" /> : null}
-              {cityShort ? <Stat value={cityShort} label="city" dab="#b8c4ff" /> : null}
+              {cityShort ? <Stat value={cityShort} label={stateShort || "city"} dab="#b8c4ff" /> : null}
             </div>
 
             <TrustBlock trust={trust} />
 
-            {/* The header already shows the first sentence; repeat the bio here only when there is more to it. */}
-            {artist.bio && artist.bio.replace(/[.!?]\s*$/, "").trim() !== tagline && <p className="text-[15px] leading-relaxed text-ink-2">{artist.bio}</p>}
+            {artist.bio && <p className="text-[15px] leading-relaxed text-ink-2">{artist.bio}</p>}
 
             {venues.length > 0 && (
               <section aria-labelledby="in-person" className="grid gap-2.5">
