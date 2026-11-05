@@ -1,0 +1,75 @@
+{
+  "id": "pixabay-2882718",
+  "version": 1,
+  "image": {
+    "w": 853,
+    "h": 1280
+  },
+  "status": "ok",
+  "quad": [
+    [
+      17.06,
+      25.6
+    ],
+    [
+      835.9399999999999,
+      25.6
+    ],
+    [
+      835.9399999999999,
+      992
+    ],
+    [
+      17.06,
+      992
+    ]
+  ],
+  "anchors": [
+    [
+      187.66,
+      332.8
+    ],
+    [
+      716.52,
+      320
+    ]
+  ],
+  "ref": {
+    "a": [
+      102.36,
+      992
+    ],
+    "b": [
+      102.36,
+      636.16
+    ],
+    "kind": "sofa",
+    "inches": 32
+  },
+  "ref2": null,
+  "lens": null,
+  "tint": "#b1b8b8",
+  "shadow": {
+    "angle": 70,
+    "strength": 0.5
+  },
+  "tags": [
+    "living"
+  ],
+  "softness": 0.4,
+  "updatedAt": "2026-11-05T22:05:18.006Z",
+  "computed": {
+    "ppi": 11.12,
+    "wallIn": {
+      "w": 73.6,
+      "h": 86.9
+    },
+    "focal": 995,
+    "focalSource": "frontal",
+    "usableSizes": [
+      "small",
+      "medium",
+      "large"
+    ]
+  }
+}

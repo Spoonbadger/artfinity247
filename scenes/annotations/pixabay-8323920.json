@@ -1,0 +1,76 @@
+{
+  "id": "pixabay-8323920",
+  "version": 1,
+  "image": {
+    "w": 1280,
+    "h": 853
+  },
+  "status": "ok",
+  "quad": [
+    [
+      128,
+      51.18
+    ],
+    [
+      1049.6,
+      51.18
+    ],
+    [
+      1049.6,
+      699.4599999999999
+    ],
+    [
+      128,
+      699.4599999999999
+    ]
+  ],
+  "anchors": [
+    [
+      384,
+      341.20000000000005
+    ],
+    [
+      934.4,
+      324.14
+    ]
+  ],
+  "ref": {
+    "a": [
+      153.6,
+      699.4599999999999
+    ],
+    "b": [
+      153.6,
+      51.18
+    ],
+    "kind": "custom",
+    "inches": 96
+  },
+  "ref2": null,
+  "lens": null,
+  "tint": "#cac5c2",
+  "shadow": {
+    "angle": 70,
+    "strength": 0.5
+  },
+  "tags": [
+    "bedroom"
+  ],
+  "softness": 0.4,
+  "updatedAt": "2026-11-05T22:05:18.047Z",
+  "computed": {
+    "ppi": 6.753,
+    "wallIn": {
+      "w": 136.5,
+      "h": 96
+    },
+    "focal": 995,
+    "focalSource": "frontal",
+    "usableSizes": [
+      "small",
+      "medium",
+      "large",
+      "xl"
+    ]
+  }
+}

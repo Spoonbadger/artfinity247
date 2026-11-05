@@ -1,0 +1,71 @@
+{
+  "id": "pixabay-5517744",
+  "version": 1,
+  "image": {
+    "w": 1280,
+    "h": 853
+  },
+  "status": "ok",
+  "quad": [
+    [
+      25.6,
+      42.650000000000006
+    ],
+    [
+      793.6,
+      102.36
+    ],
+    [
+      793.6,
+      605.63
+    ],
+    [
+      25.6,
+      699.4599999999999
+    ]
+  ],
+  "anchors": [
+    [
+      332.8,
+      213.25
+    ]
+  ],
+  "ref": {
+    "a": [
+      236.8,
+      729.3149999999999
+    ],
+    "b": [
+      236.8,
+      400.90999999999997
+    ],
+    "kind": "table",
+    "inches": 30
+  },
+  "ref2": null,
+  "lens": null,
+  "tint": "#cdcbca",
+  "shadow": {
+    "angle": 70,
+    "strength": 0.5
+  },
+  "tags": [
+    "office"
+  ],
+  "softness": 0.4,
+  "updatedAt": "2026-11-05T22:05:18.028Z",
+  "computed": {
+    "ppi": 10.837,
+    "wallIn": {
+      "w": 74.4,
+      "h": 56.1
+    },
+    "focal": 995,
+    "focalSource": "assumed",
+    "usableSizes": [
+      "small",
+      "medium",
+      "large"
+    ]
+  }
+}
