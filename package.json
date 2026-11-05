@@ -73,6 +73,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@prisma/client": "5.22.0",
     "@prisma/config": "^7.4.2",
     "@types/busboy": "^1.5.4",
@@ -86,6 +87,7 @@
     "embedded-postgres": "16.14.0-beta.17",
     "eslint": "^8",
     "eslint-config-next": "14.2.3",
+    "playwright": "^1.63.0",
     "postcss": "^8",
     "prettier": "^3.2.5",
     "prettier-plugin-tailwindcss": "^0.5.14",
