@@ -44,7 +44,7 @@ const toCents = (s: string) => {
   return Number.isFinite(n) ? Math.min(200000, Math.max(0, Math.round(n * 100))) : 0;
 };
 
-export default function ArtworkForm({ artwork }: { artwork?: ArtworkInput }) {
+export default function ArtworkForm({ artwork, split }: { artwork?: ArtworkInput; split?: number }) {
   const router = useRouter();
   const editing = !!artwork;
   const fileRef = useRef<HTMLInputElement>(null);
@@ -292,7 +292,7 @@ export default function ArtworkForm({ artwork }: { artwork?: ArtworkInput }) {
             {SIZES.map((s) => {
               const cents = toCents(prices[s]);
               const tooLow = cents < basePrices[s];
-              const b = breakdown(s, Math.max(0, cents - basePrices[s]));
+              const b = breakdown(s, Math.max(0, cents - basePrices[s]), 0, false, new Date(), split);
               return (
                 <li key={s} className={cn("grid grid-cols-[minmax(0,1fr)_118px] items-center gap-x-3 gap-y-1 rounded-xl border bg-white p-3 sm:grid-cols-[minmax(0,1fr)_130px_minmax(0,1fr)]", tooLow ? "border-coral" : "border-line", !ready(s) && "opacity-60")}>
                   <div className="min-w-0">

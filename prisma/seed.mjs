@@ -143,5 +143,8 @@ async function main() {
   // Buyer reviews on delivered orders, with some artist replies (prisma/seed-reviews.mjs)
   const { seedReviews } = await import("./seed-reviews.mjs");
   await seedReviews(prisma);
+
+  const { seedPayouts } = await import("./seed-payouts.mjs");
+  await seedPayouts(prisma);
 }
 main().finally(() => prisma.$disconnect());

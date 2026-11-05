@@ -33,6 +33,10 @@ export async function getUserFromRequestAuthHeader(req: Request): Promise<JwtUse
 export async function requireUser(): Promise<JwtUser> {
   const u = await getUserFromCookie();
   if (!u?.id) throw Object.assign(new Error("Unauthorized"), { status: 401 });
+  // A closed (or removed) account's old login stops working everywhere.
+  const { prisma } = await import("@/lib/prisma");
+  const a = await prisma.artist.findUnique({ where: { id: u.id }, select: { closedAt: true } });
+  if (!a || a.closedAt) throw Object.assign(new Error("Unauthorized"), { status: 401 });
   return u;
 }
 

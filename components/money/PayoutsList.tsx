@@ -1,7 +1,11 @@
 import type { LedgerLine, PayoutRow } from "@/lib/balance";
+import { payoutDateFor } from "@/lib/balance";
 import { PAYOUT_LABEL, SIZE_LABEL, dayUTC, usd } from "./format";
 
-export function PayoutChip({ row }: { row: PayoutRow }) {
+export function PayoutChip({ row, late = false }: { row: PayoutRow; late?: boolean }) {
+  if (late) {
+    return <span className="inline-flex items-center whitespace-nowrap rounded-full bg-coral px-2.5 py-0.5 text-[12.5px] font-bold text-white">Late</span>;
+  }
   const cls =
     row.status === "paid" ? "bg-earned-soft text-earned" : row.status === "scheduled" ? "bg-sticker/60 text-ink" : "bg-wall text-ink-2";
   return (
@@ -14,13 +18,14 @@ export function PayoutChip({ row }: { row: PayoutRow }) {
   );
 }
 
-function when(row: PayoutRow) {
+function when(row: PayoutRow, late: boolean) {
   if (row.status === "paid") return row.paidAt ? dayUTC(row.paidAt, true) : "Paid";
+  if (late) return `Was due ${dayUTC(payoutDateFor(row.month).toISOString())}`;
   return `Goes out ${dayUTC(row.dueDate)}`;
 }
 
 /** Payouts by month: month · amount · status · paid date · method, each expandable to its sales. */
-export default function PayoutsList({ payouts, ledger }: { payouts: PayoutRow[]; ledger: LedgerLine[] }) {
+export default function PayoutsList({ payouts, ledger, lateMonths = [] }: { payouts: PayoutRow[]; ledger: LedgerLine[]; lateMonths?: string[] }) {
   return (
     <section aria-labelledby="payouts-h" className="af-card grid min-w-0 gap-2 p-4 sm:p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -36,6 +41,7 @@ export default function PayoutsList({ payouts, ledger }: { payouts: PayoutRow[];
           </div>
           {payouts.map((p) => {
             const lines = ledger.filter((l) => l.payoutMonth === p.month);
+            const late = lateMonths.includes(p.month);
             return (
               <details key={p.month} className="group border-b border-line last:border-b-0">
                 <summary className="grid cursor-pointer list-none grid-cols-[minmax(0,1fr)_auto_20px] items-center gap-x-3 gap-y-1 py-3 md:grid-cols-[minmax(0,1.3fr)_minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1.5fr)_20px] [&::-webkit-details-marker]:hidden">
@@ -43,8 +49,8 @@ export default function PayoutsList({ payouts, ledger }: { payouts: PayoutRow[];
                   <b className="num text-right text-[16px] text-earned md:order-none">{usd(p.amountCents)}</b>
                   <svg viewBox="0 0 12 12" className="h-3.5 w-3.5 text-ink-2 transition group-open:rotate-180 md:order-last" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   <span className="col-span-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[12.5px] text-ink-2 md:contents">
-                    <span className="md:block"><PayoutChip row={p} /></span>
-                    <span className="num whitespace-nowrap md:text-[14px] md:text-ink">{when(p)}</span>
+                    <span className="md:block"><PayoutChip row={p} late={late} /></span>
+                    <span className="num whitespace-nowrap md:text-[14px] md:text-ink">{when(p, late)}</span>
                     <span className="whitespace-nowrap md:truncate md:text-[14px] md:text-ink" title={p.method}>{p.method}</span>
                   </span>
                 </summary>

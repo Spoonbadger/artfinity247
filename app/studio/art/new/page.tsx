@@ -1,15 +1,16 @@
 import ArtworkForm from "@/components/studio/ArtworkForm";
 import { StudioPage } from "@/components/studio/StudioPage";
-import { requireArtist } from "../../_lib/data";
+import { artistSplitNow, requireArtist } from "../../_lib/data";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Upload art" };
 
 export default async function NewArtPage() {
-  await requireArtist("/studio/art/new");
+  const artist = await requireArtist("/studio/art/new");
+  const split = await artistSplitNow(artist.id);
   return (
     <StudioPage title="Upload art" sub="One piece, a few prices, done.">
-      <ArtworkForm />
+      <ArtworkForm split={split} />
     </StudioPage>
   );
 }

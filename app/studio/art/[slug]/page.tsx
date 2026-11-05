@@ -3,7 +3,7 @@ import Link from "next/link";
 import ArtworkForm from "@/components/studio/ArtworkForm";
 import { StudioPage } from "@/components/studio/StudioPage";
 import { prisma } from "@/lib/prisma";
-import { requireArtist } from "../../_lib/data";
+import { artistSplitNow, requireArtist } from "../../_lib/data";
 import { soldCount } from "@/lib/editions";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +19,7 @@ export default async function EditArtPage({ params }: { params: { slug: string }
   // Only the owner can edit; anyone else gets a 404 rather than a hint that it exists.
   if (!art || !art.slug || art.artistId !== artist.id) notFound();
   const { artistId, id, ...rest } = art;
-  const sold = await soldCount(id);
+  const [sold, split] = await Promise.all([soldCount(id), artistSplitNow(artist.id)]);
   return (
     <StudioPage
       title="Edit art"
@@ -31,7 +31,7 @@ export default async function EditArtPage({ params }: { params: { slug: string }
         </>
       }
     >
-      <ArtworkForm artwork={{ ...rest, slug: art.slug, sold }} />
+      <ArtworkForm artwork={{ ...rest, slug: art.slug, sold }} split={split} />
     </StudioPage>
   );
 }

@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getUserFromCookie } from "@/lib/auth";
 import { calcItemProfitCents, type PrintSize } from "@/lib/revenue";
+import { getArtistSplitFor } from "@/lib/revenue";
 
 export const SIZE_LABEL: Record<PrintSize, string> = { S: "Small", M: "Medium", L: "Large", XL: "XL" };
 
@@ -40,6 +41,12 @@ export async function requireArtist(nextPath?: string) {
   // A closed account's old cookie no longer opens the Studio.
   if (artist.closedAt) redirect("/login?closed=1");
   return artist;
+}
+
+/** The artist's share of profit on a sale today (70% while Infinity is active). */
+export async function artistSplitNow(artistId: string) {
+  const a = await prisma.artist.findUnique({ where: { id: artistId }, select: { plan: true, proUntil: true } });
+  return getArtistSplitFor({ orderDate: new Date(), plan: a?.plan, proUntil: a?.proUntil });
 }
 
 export type StudioArtist = Awaited<ReturnType<typeof requireArtist>>;

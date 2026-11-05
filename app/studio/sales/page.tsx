@@ -4,7 +4,7 @@ import { PaintChip } from "@/components/af/Brush";
 import { StudioPage } from "@/components/studio/StudioPage";
 import { prisma } from "@/lib/prisma";
 import { itemBreakdown } from "@/lib/sales";
-import { requireArtist, getSales, SIZE_LABEL, STUDIO_TZ, usd } from "../_lib/data";
+import { artistSplitNow, requireArtist, getSales, SIZE_LABEL, STUDIO_TZ, usd } from "../_lib/data";
 import { cityOf, customerHref } from "../customers/_lib";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +41,7 @@ async function getExtras(artistId: string) {
 
 export default async function SalesPage({ searchParams }: { searchParams: { month?: string } }) {
   const artist = await requireArtist("/studio/sales");
+  const splitNow = await artistSplitNow(artist.id);
   const [allSales, { extras }] = await Promise.all([getSales(artist.id), getExtras(artist.id)]);
   const month = /^\d{4}-\d{2}$/.test(searchParams.month || "") ? searchParams.month! : null;
   const sales = month ? allSales.filter((s) => monthKey(s.date) === month) : allSales;
@@ -63,7 +64,7 @@ export default async function SalesPage({ searchParams }: { searchParams: { mont
   return (
     <StudioPage
       title="Sales"
-      sub="You get 60% of profit on orders from Oct 21, 2026. 50% before that."
+      sub={`You get ${Math.round(splitNow * 100)}% of profit on new orders${splitNow > 0.6 ? " with Infinity" : ""}. Orders before Oct 21, 2026 paid 50%.`}
       actions={
         <>
         <Link href="/studio/money" className="btn btn-ghost">Money</Link>

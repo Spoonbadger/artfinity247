@@ -96,7 +96,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
       )}
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <PayoutsList payouts={b.payouts} ledger={b.ledger} />
+        <PayoutsList payouts={b.payouts} ledger={b.ledger} lateMonths={b.lateMonths} />
         <section aria-labelledby="how-h" className="af-card grid content-start gap-3 p-4 sm:p-5">
           <h2 id="how-h" className="text-[20px] font-bold">How payouts work</h2>
           <ul className="grid gap-2.5 text-[14.5px]">
