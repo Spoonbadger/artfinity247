@@ -1,0 +1,74 @@
+{
+  "id": "pixabay-2604260",
+  "version": 1,
+  "image": {
+    "w": 852,
+    "h": 1280
+  },
+  "status": "ok",
+  "quad": [
+    [
+      17.04,
+      25.6
+    ],
+    [
+      834.96,
+      25.6
+    ],
+    [
+      834.96,
+      908.8
+    ],
+    [
+      17.04,
+      908.8
+    ]
+  ],
+  "anchors": [
+    [
+      170.4,
+      486.4
+    ],
+    [
+      681.6,
+      358.40000000000003
+    ]
+  ],
+  "ref": {
+    "a": [
+      724.1999999999999,
+      633.6
+    ],
+    "b": [
+      724.1999999999999,
+      584.96
+    ],
+    "kind": "custom",
+    "inches": 3.15
+  },
+  "ref2": null,
+  "lens": null,
+  "tint": "#dccec1",
+  "shadow": {
+    "angle": 70,
+    "strength": 0.5
+  },
+  "tags": [
+    "office"
+  ],
+  "softness": 0.4,
+  "updatedAt": "2026-11-05T22:05:17.988Z",
+  "computed": {
+    "ppi": 15.441,
+    "wallIn": {
+      "w": 53,
+      "h": 57.2
+    },
+    "focal": 995,
+    "focalSource": "frontal",
+    "usableSizes": [
+      "small",
+      "medium"
+    ]
+  }
+}

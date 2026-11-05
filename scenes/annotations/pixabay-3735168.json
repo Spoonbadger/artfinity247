@@ -1,0 +1,23 @@
+{
+  "id": "pixabay-3735168",
+  "version": 1,
+  "image": {
+    "w": 853,
+    "h": 1280
+  },
+  "status": "rejected",
+  "quad": [],
+  "anchors": [],
+  "ref": null,
+  "ref2": null,
+  "lens": null,
+  "tint": "#e9e6e0",
+  "shadow": {
+    "angle": 70,
+    "strength": 0.5
+  },
+  "tags": [
+    "living"
+  ],
+  "updatedAt": "2026-11-05T22:05:18.007Z"
+}
