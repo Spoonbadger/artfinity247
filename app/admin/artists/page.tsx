@@ -20,7 +20,7 @@ export default async function AdminArtistsPage({ searchParams }: { searchParams:
   const qs = new URLSearchParams(Object.entries(f).filter(([, v]) => !!v) as [string, string][]);
   const filtered = qs.toString().length > 0;
   const totalBalance = rows.reduce((n, r) => n + r.balanceCents, 0);
-  const field = "min-h-[40px] rounded-lg border-[1.5px] border-line bg-white px-2.5 text-[14px] text-ink";
+  const field = "w-full min-w-0 min-h-[40px] rounded-lg border-[1.5px] border-line bg-white px-2.5 text-[14px] text-ink";
 
   return (
     <div className="grid gap-6">
@@ -32,7 +32,7 @@ export default async function AdminArtistsPage({ searchParams }: { searchParams:
         <a href={`/api/admin/artists/export?${qs}`} className="btn btn-ghost btn-sm" download>Export CSV</a>
       </div>
 
-      <form method="get" className="af-card grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-[1.6fr_repeat(5,1fr)_auto] lg:items-end">
+      <form method="get" className="af-card grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-[1.6fr_repeat(5,minmax(0,1fr))_auto] xl:items-end [&>label]:min-w-0">
         <label className="grid gap-1 text-[12.5px] font-semibold">Search
           <input name="q" defaultValue={f.q || ""} placeholder="Name, @handle, email, city" className={field} />
         </label>

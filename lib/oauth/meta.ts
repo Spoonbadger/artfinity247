@@ -8,7 +8,7 @@ export const PROVIDER_LABEL: Record<ProviderId, string> = {
   apple: "Apple",
   facebook: "Facebook",
   instagram: "Instagram",
-  mock: "Test provider",
+  mock: "Mock (dev)",
 };
 
 export function isProviderId(v: unknown): v is ProviderId {

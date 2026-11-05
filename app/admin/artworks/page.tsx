@@ -29,7 +29,7 @@ export default async function AdminArtworksPage({ searchParams }: { searchParams
     }),
     prisma.artwork.count({ where }),
   ]);
-  const field = "min-h-[40px] rounded-lg border-[1.5px] border-line bg-white px-2.5 text-[14px] text-ink";
+  const field = "w-full min-w-0 min-h-[40px] rounded-lg border-[1.5px] border-line bg-white px-2.5 text-[14px] text-ink";
 
   return (
     <div className="grid gap-6">

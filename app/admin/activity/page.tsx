@@ -49,7 +49,7 @@ export default async function ActivityPage({ searchParams }: { searchParams: SP 
   const nextHref = more ? `?${new URLSearchParams({ ...Object.fromEntries(Object.entries(sp).filter(([, v]) => !!v)), before: shown[shown.length - 1].createdAt.toISOString() })}` : null;
   const filtered = Object.entries(sp).some(([k, v]) => k !== "before" && !!v);
 
-  const field = "min-h-[40px] rounded-lg border-[1.5px] border-line bg-white px-2.5 text-[14px] text-ink";
+  const field = "w-full min-w-0 min-h-[40px] rounded-lg border-[1.5px] border-line bg-white px-2.5 text-[14px] text-ink";
   return (
     <div className="grid gap-6">
       <div>
@@ -58,7 +58,7 @@ export default async function ActivityPage({ searchParams }: { searchParams: SP 
         <p className="mt-2 max-w-[640px] text-[15px] text-ink-2">Every admin action, who did it and when. Filter by action, admin, what it was done to, or date.</p>
       </div>
 
-      <form className="af-card grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1.2fr_auto_auto_auto] lg:items-end" method="get">
+      <form className="af-card grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-[1.2fr_1fr_0.8fr_1.2fr_auto_auto_auto] xl:items-end [&>label]:min-w-0" method="get">
         <label className="grid gap-1 text-[12.5px] font-semibold">Action
           <select name="action" defaultValue={sp.action || ""} className={field}>
             <option value="">All actions</option>

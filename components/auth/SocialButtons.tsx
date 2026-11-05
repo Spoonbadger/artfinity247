@@ -104,7 +104,7 @@ export default function SocialButtons({
             key={p}
             href={oauthStartHref(p, { next, handle, ref: referral })}
             className={cn(
-              "btn w-full min-h-[52px] bg-white text-ink hover:bg-wall hover:[filter:none]",
+              "btn w-full min-w-0 min-h-[52px] whitespace-normal bg-white text-center text-ink hover:bg-wall hover:[filter:none]",
               p === "apple" && "font-semibold",
               p === "mock" && "border-dashed",
             )}
@@ -112,7 +112,8 @@ export default function SocialButtons({
             style={p === "apple" ? { fontFamily: "-apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', sans-serif" } : undefined}
           >
             <Mark className={cn("h-[20px] w-[20px] shrink-0", p === "apple" && "-mt-[3px] h-[20px] w-[17px]")} />
-            <span>Continue with {PROVIDER_LABEL[p]}{p === "mock" ? " (dev only)" : ""}</span>
+            <span>Continue with {PROVIDER_LABEL[p]}</span>
+            
           </a>
         );
       })}

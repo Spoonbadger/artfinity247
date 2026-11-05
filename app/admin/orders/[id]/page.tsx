@@ -94,7 +94,14 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
     ]),
     ...Array.from(refunds.values()).map((r) => ({ at: r.at, title: `Refund recorded ${usd(r.amountCents)}`, detail: `${r.reversed ? `Artist share ${usd(r.shareCents)} reversed` : "Already paid out: artist keeps their share"} · ${r.adminEmail}`, tone: "warn" as const })),
   ];
-  events.sort((a, b) => (a.at?.getTime() ?? Number.MAX_SAFE_INTEGER) - (b.at?.getTime() ?? Number.MAX_SAFE_INTEGER));
+  // Steps with no recorded time sit right after the step before them (events are built in order).
+  let last = o.createdAt.getTime();
+  const keyed = events.map((e, i) => {
+    last = e.at ? e.at.getTime() : last;
+    return { e, key: last, i };
+  });
+  keyed.sort((x, y) => x.key - y.key || x.i - y.i);
+  const timeline = keyed.map((k) => k.e);
 
   const url = `/api/admin/orders/${o.id}`;
   const statusUrl = `/api/orders/${o.id}/status`;
@@ -208,7 +215,7 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
           <section className="af-card grid gap-2 p-4">
             <h2 className="text-[17px] font-bold">Timeline</h2>
             <ol className="relative grid gap-3 border-l-2 border-line pl-5">
-              {events.map((e, i) => (
+              {timeline.map((e, i) => (
                 <li key={i} className="relative">
                   <span aria-hidden="true" className={cn("absolute -left-[27px] top-1 h-3 w-3 rounded-full ring-4 ring-white", e.tone === "done" ? "bg-earned" : e.tone === "warn" ? "bg-coral" : "bg-scan")} />
                   <p className="text-[14.5px] font-semibold">{e.title}</p>
