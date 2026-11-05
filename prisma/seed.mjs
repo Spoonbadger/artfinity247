@@ -106,9 +106,12 @@ async function main() {
   // Maya 55 (gold), Juno 27 (silver), Ines 12 (bronze), Caleb 6, Priya 0.
   const by = (slug) => arts.filter((x) => x.artist.slug === slug);
   const plan = [...Array(55).fill("mayaokafor"), ...Array(27).fill("junopark"), ...Array(12).fill("inesduarte"), ...Array(6).fill("calebmoreno")];
+  let hawkSold = 0; // Hawksbill edition numbers, so certificates have something to show
   for (let n = 0; n < plan.length; n++) {
     const pool = by(plan[n]);
-    const art = pool[Math.floor(r() * (plan[n] === "mayaokafor" ? 3 : pool.length))];
+    const hawkTurn = plan[n] === "mayaokafor" && n % 8 === 5 && hawk;
+    const art = hawkTurn ? arts.find((x) => x.id === hawk.id) : pool[Math.floor(r() * (plan[n] === "mayaokafor" ? 3 : pool.length))];
+    const editionNumber = hawkTurn ? ++hawkSold : null;
     const rolled = ["small", "medium", "medium", "large", "xl"][Math.floor(r() * 5)];
     const size = art.printableSizes.includes(rolled) ? rolled : "large";
     const markup = size === "large" ? art.markupLarge : size === "xl" ? art.markupXl : art.markupSmall;
@@ -130,7 +133,7 @@ async function main() {
         };
       })(),
       items: { create: [{ artworkId: art.id, slug: art.slug, size: SIZE_KEY[size], unitPrice: unit, quantity: 1, lineTotal,
-        title: art.title, artistName: art.artist.artist_name, imageUrl: art.imageUrl,
+        title: art.title, artistName: art.artist.artist_name, imageUrl: art.imageUrl, editionNumber,
         printCost: COST[SIZE_KEY[size]], shippingCost: 0, laborCost: 0, websiteCost: fee + 100 }] },
     } });
   }
