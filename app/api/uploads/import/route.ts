@@ -34,7 +34,7 @@ const REQUEST_BUDGET_MS = 50_000;
 type FileResult = ({ ok: true; name: string } & UploadResult) | { ok: false; name: string; error: string; retry: boolean };
 type Picked = { name: string; url: URL | null; declaredType?: string; declaredBytes?: number };
 
-const SOURCE_NAME: Record<ImportSource, string> = { drive: "Google Drive", dropbox: "Dropbox", mock: "the sample folder" };
+const SOURCE_NAME: Record<ImportSource, string> = { drive: "Google Drive", dropbox: "Dropbox", mock: "The sample folder" };
 
 const cleanName = (raw: unknown) => (typeof raw === "string" ? raw.replace(/[\u0000-\u001f]/g, "").trim().slice(0, 200) : "") || "image";
 
