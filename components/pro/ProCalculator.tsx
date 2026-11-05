@@ -3,7 +3,7 @@
 import { useId, useMemo, useState } from "react";
 import { basePrices } from "@/lib/artwork_price";
 import { breakdown, money, moneyRound } from "@/lib/earnings";
-import { FREE_SPLIT, PRO, pct } from "@/lib/plans";
+import { FREE_SPLIT, PRO, pct, proPrice } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 
 const MIN_PRICE = Math.ceil(basePrices.medium / 100); // $45
@@ -67,7 +67,7 @@ export default function ProCalculator({ initialPrints = 8, initialPrice = 60 }: 
       <div className="grid content-start gap-4" aria-live="polite">
         {[
           { key: "free", name: `Free · ${pct(FREE_SPLIT)}`, value: m.free, color: "var(--af-ink-2)" },
-          { key: "pro", name: `Infinity · ${pct(PRO.split)}, after $${PRO.priceCents / 100}`, value: m.pro, color: "var(--af-earned)" },
+          { key: "pro", name: `Infinity · ${pct(PRO.split)}, after ${proPrice()}`, value: m.pro, color: "var(--af-earned)" },
         ].map((r) => (
           <div key={r.key} className="grid gap-1.5">
             <div className="flex items-baseline justify-between gap-3">

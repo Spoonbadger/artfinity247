@@ -84,7 +84,7 @@ export default function CustomerList({ rows }: { rows: CustomerRow[] }) {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Name, city or piece"
-            className="w-full min-w-0 border-0 bg-transparent py-2 text-[16px] text-ink outline-none placeholder:text-ink-2/70"
+            className="w-full min-w-0 border-0 bg-transparent py-2 text-[16px] text-ink outline-none placeholder:text-ink-2"
           />
         </label>
         <div role="radiogroup" aria-label="Sort customers" className="flex gap-1 rounded-full border border-line bg-white p-1">

@@ -98,6 +98,11 @@ const config = {
           "900": "#2c1b1b",
         },
       },
+      // Words in coral (errors, warnings) use a deeper coral: the bright paint is 3.1:1 on white,
+      // this is 5.5:1 (WCAG AA). bg-coral, border-coral and dots keep the bright paint.
+      textColor: {
+        coral: "rgb(var(--af-coral-text-rgb) / <alpha-value>)",
+      },
       spacing: {
         header:
           "calc(var(--header-top-height, 35px) + var(--header-middle-height, 100px))",

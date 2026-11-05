@@ -101,6 +101,10 @@ export default function ArtistTermsPage() {
           <p>
             Your split is set when the order is placed: if Infinity is active that day, the sale gets the Infinity split. Infinity months earned through referrals count the same way.
           </p>
+          <p>
+            Infinity is billed by Stripe in advance each month (or year), plus any sales tax, and renews until you cancel; if you cancel, it stays on until the end of the period you paid for, with no partial refunds.
+            Months earned through referrals are used before you&apos;re charged, and if a payment fails, Infinity stays on for a few days while we retry and then your plan goes back to Free.
+          </p>
           <p>Costs can change with supplier prices and payment fees. You can see each sale&apos;s costs and your share in the Studio.</p>
         </div>
 

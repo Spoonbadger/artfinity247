@@ -19,6 +19,8 @@ import { prisma } from "@/lib/prisma";
 import { logAdminAction } from "@/lib/audit";
 import { closeArtistAccount, reopenArtistAccount } from "@/lib/account";
 import { addMonths, formatPlanDate, isProActive } from "@/lib/plans";
+import { extendForProUntil, getBillingState } from "@/lib/billing";
+import { hasLiveSubscription } from "@/lib/billingStatus";
 import { monthLabel } from "@/lib/balance";
 import { resend } from "@/lib/resend";
 import { currentAdmin, roleCan, type AdminUser } from "@/lib/adminRoles";
@@ -117,11 +119,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         const from = isProActive(artist, now) ? artist.proUntil! : now;
         const proUntil = addMonths(from, months);
         await prisma.artist.update({ where: { id: artist.id }, data: { proUntil } });
-        await logAdminAction(admin, "artist.grant_infinity", target, `Granted ${months} month${months === 1 ? "" : "s"} of Infinity (until ${formatPlanDate(proUntil)})`, { months, from: artist.proUntil, to: proUntil });
-        return NextResponse.json({ ok: true, proUntil, message: `Infinity until ${formatPlanDate(proUntil)}` });
+        // Granted months stack on a paid subscription: its next charge moves past them (lib/billing.ts).
+        const { pushedTo } = await extendForProUntil(artist.id);
+        await logAdminAction(admin, "artist.grant_infinity", target, `Granted ${months} month${months === 1 ? "" : "s"} of Infinity (until ${formatPlanDate(proUntil)})`, { months, from: artist.proUntil, to: proUntil, nextChargeMovedTo: pushedTo });
+        return NextResponse.json({ ok: true, proUntil, message: `Infinity until ${formatPlanDate(proUntil)}${pushedTo ? `. Next charge moved to ${formatPlanDate(pushedTo)}` : ""}` });
       }
       case "revoke_infinity": {
         if (!isProActive(artist)) return fail("They don't have Infinity right now.", 409);
+        // A paying subscriber would be charged with no Infinity: cancel the subscription first (money role).
+        if (hasLiveSubscription(await getBillingState(artist.id))) return fail("They have a paid Infinity subscription. Cancel it under Billing first.", 409);
         await prisma.artist.update({ where: { id: artist.id }, data: { proUntil: new Date() } });
         await logAdminAction(admin, "artist.revoke_infinity", target, `Ended Infinity (was until ${formatPlanDate(artist.proUntil!)})`, { was: artist.proUntil });
         return NextResponse.json({ ok: true, message: "Infinity ended" });

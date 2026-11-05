@@ -28,6 +28,13 @@ export function integrationsHealth(): Integration[] {
     ? { id: "connect-webhook", name: "Connect webhook secret", status: "green", state: "Set", fix: null }
     : { id: "connect-webhook", name: "Connect webhook secret", status: "amber", state: "Missing", fix: "Add a Connect webhook (account.updated) in Stripe and set STRIPE_CONNECT_WEBHOOK_SECRET, so artists' Stripe setup status updates by itself." });
 
+  // Infinity billing (lib/billing.ts, BILLING_SETUP.md). Without a Price id the monthly price comes from lib/plans.ts.
+  const billingHook = set("STRIPE_BILLING_WEBHOOK_SECRET");
+  const priceId = set("STRIPE_INFINITY_PRICE_ID");
+  out.push(billingHook && priceId
+    ? { id: "billing", name: "Infinity billing", status: "green", state: `Set${set("STRIPE_INFINITY_YEARLY_PRICE_ID") ? " (monthly and yearly)" : " (monthly)"}`, fix: null }
+    : { id: "billing", name: "Infinity billing", status: billingHook ? "green" : "amber", state: billingHook ? "Set (inline monthly price)" : "Webhook secret missing", fix: billingHook ? "Optional: create the Infinity Price in Stripe and set STRIPE_INFINITY_PRICE_ID (BILLING_SETUP.md)." : "Add a webhook for /api/webhook/billing (subscription and invoice events) and set STRIPE_BILLING_WEBHOOK_SECRET. Without it, paid subscriptions don't turn Infinity on. See BILLING_SETUP.md." });
+
   out.push(TAX_ENABLED
     ? { id: "tax", name: "Stripe Tax", status: "green", state: "On in the app", fix: "Also make sure Tax is switched on in Stripe → Settings → Tax, with a head office address." }
     : { id: "tax", name: "Stripe Tax", status: "amber", state: "Off (STRIPE_TAX=off)", fix: "Remove STRIPE_TAX=off once Stripe Tax is set up, so sales tax is collected." });

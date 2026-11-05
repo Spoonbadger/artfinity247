@@ -9,7 +9,11 @@ const nextConfig = {
   },
   // TDMRep (W3C): reserve text-and-data-mining rights on every page and image.
   async headers() {
-    return [{ source: "/:path*", headers: [{ key: "tdm-reservation", value: "1" }] }];
+    return [
+      { source: "/:path*", headers: [{ key: "tdm-reservation", value: "1" }] },
+      // Service worker (public/sw.js): always revalidate, so a VERSION bump reaches people quickly.
+      { source: "/sw.js", headers: [{ key: "Cache-Control", value: "no-cache, max-age=0, must-revalidate" }] },
+    ];
   },
   async rewrites() {
     return [

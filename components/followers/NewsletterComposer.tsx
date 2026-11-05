@@ -145,7 +145,7 @@ export default function NewsletterComposer({
             </ul>
           )}
           {artworks.length > 10 && (
-            <button type="button" onClick={() => setShowAll((v) => !v)} className="justify-self-start text-[13.5px] font-semibold text-ink-2 underline hover:text-ink">
+            <button type="button" onClick={() => setShowAll((v) => !v)} aria-expanded={showAll} className="justify-self-start text-[13.5px] font-semibold text-ink-2 underline hover:text-ink">
               {showAll ? "Show fewer" : `Show all ${artworks.length}`}
             </button>
           )}

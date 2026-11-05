@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { X, ZoomIn, ZoomOut } from "lucide-react";
+import { useFocusTrap } from "@/lib/a11y/useFocusTrap";
 
 const MAX = 5;
 
@@ -15,6 +16,8 @@ export default function ArtZoom({ open, onClose, src, alt }: { open: boolean; on
   const pinch = useRef<{ d: number; s: number } | null>(null);
   const lastTap = useRef(0);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, open, { restoreFocus: false }); // the effect below returns focus to the opener
 
   const zoomTo = useCallback((s: number) => setT((o) => {
     const ns = Math.max(1, Math.min(MAX, s));
@@ -32,6 +35,12 @@ export default function ArtZoom({ open, onClose, src, alt }: { open: boolean; on
       if (e.key === "Escape") onClose();
       if (e.key === "+" || e.key === "=") setT((o) => ({ ...o, s: Math.min(MAX, o.s * 1.4) }));
       if (e.key === "-") zoomTo(0);
+      // Arrow keys pan a zoomed painting (keyboard version of dragging).
+      const pan = { ArrowLeft: [60, 0], ArrowRight: [-60, 0], ArrowUp: [0, 60], ArrowDown: [0, -60] }[e.key];
+      if (pan) {
+        e.preventDefault();
+        setT((o) => (o.s > 1 ? { ...o, x: o.x + pan[0], y: o.y + pan[1] } : o));
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); opener?.focus?.(); };
@@ -46,6 +55,7 @@ export default function ArtZoom({ open, onClose, src, alt }: { open: boolean; on
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label={`${alt}, zoomed`}
@@ -100,7 +110,7 @@ export default function ArtZoom({ open, onClose, src, alt }: { open: boolean; on
           <X className="h-5 w-5" aria-hidden />
         </button>
       </div>
-      <p className="pointer-events-none absolute inset-x-0 bottom-4 text-center text-[13px] text-white/70">Pinch or scroll to zoom · Esc to close</p>
+      <p className="pointer-events-none absolute inset-x-0 bottom-4 text-center text-[13px] text-white/70">Pinch or scroll to zoom · arrow keys move · Esc to close</p>
     </div>
   );
 }

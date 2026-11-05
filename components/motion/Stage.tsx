@@ -1,6 +1,7 @@
 "use client";
 
 import { ElementType, HTMLAttributes, ReactNode, useEffect, useRef, useState } from "react";
+import { MOTION_EVENT, isMotionPaused } from "@/lib/a11y/motion";
 
 const REDUCED = "(prefers-reduced-motion: reduce)";
 
@@ -23,17 +24,19 @@ export function usePlay<T extends HTMLElement>({ once = false, rootMargin = "0px
     let done = false;
     const update = () => {
       if (done) return;
-      const on = inView && !document.hidden && !mq.matches;
+      const on = inView && !document.hidden && !mq.matches && !isMotionPaused();
       setPlay(on);
       if (on && once) done = true;
     };
     const io = new IntersectionObserver(([e]) => { inView = e.isIntersecting; update(); }, { rootMargin, threshold });
     io.observe(el);
     document.addEventListener("visibilitychange", update);
+    window.addEventListener(MOTION_EVENT, update);
     mq.addEventListener?.("change", update);
     return () => {
       io.disconnect();
       document.removeEventListener("visibilitychange", update);
+      window.removeEventListener(MOTION_EVENT, update);
       mq.removeEventListener?.("change", update);
     };
   }, [once, rootMargin, threshold]);

@@ -65,9 +65,9 @@ export default function AdminSearch() {
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild>
-        <button type="button" className="flex min-h-[40px] w-full items-center gap-2 rounded-full border-[1.5px] border-line bg-white px-3 text-left text-[14px] text-ink-2 hover:border-ink sm:w-[260px]" aria-label="Search the admin">
+        <button type="button" className="flex min-h-[40px] w-full items-center gap-2 rounded-full border-[1.5px] border-line bg-white px-3 text-left text-[14px] text-ink-2 hover:border-ink sm:w-[260px]">
           <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span className="flex-1 truncate">Artists, orders, art, codes</span>
+          <span className="flex-1 truncate"><span className="sr-only">Search the admin: </span>Artists, orders, art, codes</span>
           <kbd className="hidden rounded border border-line px-1.5 text-[11px] font-semibold sm:inline">⌘K</kbd>
         </button>
       </Dialog.Trigger>
@@ -82,6 +82,7 @@ export default function AdminSearch() {
               autoFocus value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKeyDown}
               placeholder="Name, @handle, email, order number, title, code…"
               aria-label="Search" role="combobox" aria-expanded={hits.length > 0} aria-controls="admin-search-results"
+              aria-autocomplete="list" aria-activedescendant={hits[sel] ? `admin-hit-${sel}` : undefined}
               className="h-14 min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none"
             />
             {busy && <span className="text-[12px] text-ink-2">…</span>}
@@ -90,7 +91,7 @@ export default function AdminSearch() {
             {q.trim().length >= 2 && !busy && hits.length === 0 && <li className="px-4 py-6 text-center text-[14px] text-ink-2">Nothing found.</li>}
             {q.trim().length < 2 && <li className="px-4 py-5 text-[13.5px] text-ink-2">Type at least 2 characters. ↑ ↓ to move, Enter to open.</li>}
             {hits.map((h, i) => (
-              <li key={`${h.kind}-${h.id}`} role="option" aria-selected={i === sel}>
+              <li key={`${h.kind}-${h.id}`} id={`admin-hit-${i}`} role="option" aria-selected={i === sel}>
                 <button
                   type="button" onMouseEnter={() => setSel(i)} onClick={() => go(h)}
                   className={cn("grid w-full grid-cols-[72px_minmax(0,1fr)] items-baseline gap-3 px-4 py-2.5 text-left", i === sel && "bg-wall")}

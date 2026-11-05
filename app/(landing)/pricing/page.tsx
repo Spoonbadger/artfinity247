@@ -47,10 +47,12 @@ function FeatureList({ which, dark = false }: { which: "free" | "pro"; dark?: bo
 }
 
 const FAQ: [string, string][] = [
-  ["Can I cancel?", "Anytime. Infinity runs to the end of the month you paid for, then you’re on Free."],
+  ["How am I billed?", `${proPrice()} a month by card, through Stripe, plus sales tax where it applies. Change your card or download invoices anytime from Manage billing in your Studio.`],
+  ["Can I cancel?", "Anytime, from Manage billing. Infinity runs to the end of the period you paid for, then you’re on Free. No partial refunds."],
   ["What happens to my split if I go back to Free?", `New orders pay ${pct(FREE_SPLIT)}. Your art, page, codes and links all stay.`],
   ["Do old orders change?", "No. Every order keeps the split from the moment it was placed."],
   ["How do I get Infinity free?", `Share your link. Each artist who joins, gets a piece live and prints a code or makes a sale gives you ${REFERRALS.rewardMonths} months, up to ${REFERRALS.maxBankedMonths} banked.`],
+  ["Do free months stack with a subscription?", "Yes. Subscribe while you have free months and the first charge waits until they run out. Months earned later push your next charge back."],
 ];
 
 export default async function PricingPage() {
@@ -106,7 +108,8 @@ export default async function PricingPage() {
             <p className="text-[15px] text-white/75">{pct(PRO.split)} of profit, and the tools that sell more.</p>
           </div>
           <div className="relative grid gap-2">
-            <Link href="/studio/infinity" className="btn btn-sticker btn-lg w-full">Go Infinity</Link>
+            <Link href="/studio/infinity#billing" className="btn btn-sticker btn-lg w-full">Get {PRO.name} — {proPrice()}/month</Link>
+            <span className="text-center text-[12.5px] text-white/70">Billed monthly by Stripe. Cancel anytime.</span>
             <Link href="/studio/infinity#referrals" className="text-center text-[14px] font-bold text-white underline-offset-2 hover:underline">Or share Artfinity, get 2 months free</Link>
           </div>
           <div className="relative"><FeatureList which="pro" dark /></div>

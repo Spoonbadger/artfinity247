@@ -114,7 +114,7 @@ export default function HelpSearch({ docs, autoFocus = false }: { docs: SearchDo
   }, []);
 
   return (
-    <div className="relative" role="search">
+    <div className="relative" role="search" aria-label="Search help">
       <label className="flex min-h-[56px] items-center gap-3 rounded-2xl border-2 border-ink bg-white px-4 shadow-[0_6px_0_rgba(21,22,27,.9)] transition focus-within:border-scan">
         <Search className="h-5 w-5 shrink-0 text-ink-2" aria-hidden="true" />
         <span className="sr-only">Search the help center</span>
@@ -127,7 +127,7 @@ export default function HelpSearch({ docs, autoFocus = false }: { docs: SearchDo
           placeholder="Payouts, file size, damaged print…"
           autoFocus={autoFocus}
           autoComplete="off"
-          className="min-w-0 flex-1 bg-transparent py-3 text-[17px] outline-none placeholder:text-ink-2/70 [&::-webkit-search-cancel-button]:hidden"
+          className="min-w-0 flex-1 bg-transparent py-3 text-[17px] outline-none placeholder:text-ink-2 [&::-webkit-search-cancel-button]:hidden"
           aria-controls="help-results"
         />
         {q && (

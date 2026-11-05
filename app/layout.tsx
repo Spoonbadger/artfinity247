@@ -5,6 +5,8 @@ import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 import Provider from "@/components/contexts";
 import BrushDefs from "@/components/af/BrushDefs";
+import PwaSetup from "@/components/pwa/PwaSetup";
+import SkipLink from "@/components/a11y/SkipLink";
 import "./globals.css";
 
 const display = Bricolage_Grotesque({
@@ -34,6 +36,8 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: "/brand/apple-touch-icon.png", sizes: "180x180" }],
   },
+  // Installable Studio app (app/manifest.ts): iOS home-screen name and full-screen launch.
+  appleWebApp: { capable: true, title: "Artfinity", statusBarStyle: "default" },
   openGraph: {
     siteName: "Artfinity",
     images: [{ url: "/brand/og-image.png", width: 1200, height: 630, alt: "Artfinity. Every wall is a shop." }],
@@ -51,9 +55,11 @@ const RootLayout = ({ children }: Readonly<{ children: ReactNode }>) => {
   return (
     <html lang="en">
       <body className={cn("font-body", display.variable, body.variable)}>
+        <SkipLink />
         <BrushDefs />
         <Provider>{children}</Provider>
         <Toaster position="top-center" richColors />
+        <PwaSetup />
       </body>
     </html>
   );

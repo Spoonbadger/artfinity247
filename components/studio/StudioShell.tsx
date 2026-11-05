@@ -8,6 +8,8 @@ import Logo from "@/components/af/Logo";
 import { useUser } from "@/components/contexts";
 import { cn } from "@/lib/utils";
 import ProChip from "@/components/pro/ProChip";
+import InstallPrompt from "@/components/pwa/InstallPrompt";
+import { useFocusTrap } from "@/lib/a11y/useFocusTrap";
 
 import StudioNav, { STUDIO_SECTIONS, activeItem } from "./StudioNav";
 
@@ -40,6 +42,8 @@ export default function StudioShell({ artist, children }: { artist: ShellArtist;
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+  useFocusTrap(menu, menuOpen, { restoreFocus: false }); // the effect below hands focus back to the Menu button
   const here = activeItem(path);
   const hereSection = STUDIO_SECTIONS.find((s) => here && s.items.includes(here));
 
@@ -111,7 +115,7 @@ export default function StudioShell({ artist, children }: { artist: ShellArtist;
       </aside>
 
       {/* Phones: the logo row scrolls away; only the menu bar stays pinned. */}
-      <div className="border-b border-line bg-wall lg:hidden" style={canvasTexture}>
+      <header className="border-b border-line bg-wall lg:hidden" style={canvasTexture}>
         <div className="flex items-center justify-between gap-3 px-4 py-0.5">
           <span className="flex min-w-0 items-center gap-2">
             {brand("text-[20px]")}
@@ -121,7 +125,7 @@ export default function StudioShell({ artist, children }: { artist: ShellArtist;
             My page <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
           </Link>
         </div>
-      </div>
+      </header>
       <div className="sticky top-0 z-30 border-b border-line bg-wall px-2 py-1.5 lg:hidden" style={canvasTexture}>
         <button
           ref={menuButton}
@@ -141,7 +145,7 @@ export default function StudioShell({ artist, children }: { artist: ShellArtist;
       </div>
 
       {menuOpen && (
-        <div id="studio-menu" role="dialog" aria-modal="true" aria-label="Studio menu" className="fixed inset-0 z-50 flex flex-col bg-wall lg:hidden" style={canvasTexture}>
+        <div ref={menu} id="studio-menu" role="dialog" aria-modal="true" aria-label="Studio menu" className="fixed inset-0 z-50 flex flex-col bg-wall lg:hidden" style={canvasTexture}>
           <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-0.5">
             {brand("text-[20px]")}
             <button ref={closeButton} type="button" onClick={() => setMenuOpen(false)} className="-mr-1.5 grid h-11 w-11 place-items-center rounded-full text-ink-2 hover:bg-white hover:text-ink" aria-label="Close menu">
@@ -160,7 +164,10 @@ export default function StudioShell({ artist, children }: { artist: ShellArtist;
         </div>
       )}
 
-      <main id="studio-main" className="min-w-0">{children}</main>
+      <main id="studio-main" className="min-w-0">
+        <InstallPrompt />
+        {children}
+      </main>
     </div>
   );
 }

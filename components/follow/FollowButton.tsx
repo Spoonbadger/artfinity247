@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { useUser } from "@/components/contexts";
 import { cn } from "@/lib/utils";
+import { useFocusTrap } from "@/lib/a11y/useFocusTrap";
 
 // This browser only remembers the button state; the real list lives in the database (Follower).
 export type FollowState = "none" | "pending" | "on";
@@ -56,6 +57,8 @@ export function FollowSheet({ handle, firstName, source = "page", open, onClose 
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const sheet = useRef<HTMLDivElement>(null);
+  useFocusTrap(sheet, open); // Tab stays in the sheet; focus returns to the Follow button on close
 
   useEffect(() => {
     if (currentUser?.email) setEmail((e) => e || currentUser.email);
@@ -107,6 +110,7 @@ export function FollowSheet({ handle, firstName, source = "page", open, onClose 
   return createPortal(
     <div className="fixed inset-0 z-[80] flex items-end justify-center bg-ink/40 sm:items-center sm:p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div
+        ref={sheet}
         role="dialog"
         aria-modal="true"
         aria-labelledby="follow-title"

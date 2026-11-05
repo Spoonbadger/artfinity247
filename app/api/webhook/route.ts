@@ -60,6 +60,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Infinity subscriptions are not print orders: /api/webhook/billing handles them (lib/billing.ts).
+    if (session.mode === 'subscription') return new Response(null, { status: 200 })
+
     const buyerEmail = (
       session.metadata?.buyerEmail ||
       session.customer_details?.email ||

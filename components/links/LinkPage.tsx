@@ -224,6 +224,7 @@ export default function LinkPage({ data, theme: themeOverride, mode = "page" }: 
     }
   }
 
+  const Inner = mode === "page" ? "main" : "div";
   return (
     <div
       className={cn(linkFontVars, "relative isolate w-full", mode === "page" ? "min-h-[100svh]" : "min-h-full")}
@@ -232,7 +233,8 @@ export default function LinkPage({ data, theme: themeOverride, mode = "page" }: 
     >
       <Background data={data} theme={theme} mode={mode} />
 
-      <div className={cn("relative z-10 mx-auto flex w-full max-w-[480px] flex-col items-center px-5 pb-6 pt-10", mode === "page" ? "min-h-[100svh]" : "min-h-full")}>
+      {/* The live page is the whole document, so its content is the main landmark; the Studio preview isn't. */}
+      <Inner className={cn("relative z-10 mx-auto flex w-full max-w-[480px] flex-col items-center px-5 pb-6 pt-10", mode === "page" ? "min-h-[100svh]" : "min-h-full")}>
         <button
           type="button"
           onClick={share}
@@ -328,7 +330,7 @@ export default function LinkPage({ data, theme: themeOverride, mode = "page" }: 
           <LogoMark className="h-4 w-4" inner={darkText ? "var(--af-scan)" : "#ffd43b"} />
           Made with Artfinity
         </a>
-      </div>
+      </Inner>
     </div>
   );
 }

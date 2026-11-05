@@ -53,6 +53,7 @@ export default function ReviewStars({
     <>
       <Dabs value={average} size={size} />
       <b className="num font-bold text-ink">{ratingLabel(average)}</b>
+      <span className="sr-only"> out of 5</span>
       <span className="text-ink-2">· {count} {count === 1 ? "review" : "reviews"}</span>
     </>
   );
@@ -60,7 +61,7 @@ export default function ReviewStars({
   const linkCls = cn(cls, "no-underline hover:[&>span:last-child]:text-ink");
   // A plain <a> for "#reviews" so the browser fires hashchange (tabs listen for it); next/link pushes state silently.
   return href ? (
-    href.startsWith("#") ? <a href={href} aria-label={label} className={linkCls}>{inner}</a> : <Link href={href} aria-label={label} className={linkCls}>{inner}</Link>
+    href.startsWith("#") ? <a href={href} className={linkCls}>{inner}</a> : <Link href={href} className={linkCls}>{inner}</Link>
   ) : (
     <span role="img" aria-label={label} className={cls}>{inner}</span>
   );

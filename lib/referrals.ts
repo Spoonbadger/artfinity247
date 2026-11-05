@@ -27,6 +27,7 @@
 import { createHmac, randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { REFERRALS, addDays, addMonths, isProActive } from "@/lib/plans";
+import { extendForProUntil } from "@/lib/billing";
 
 export const REFERRAL_DIRECTION = "referral";
 const ledgerEmail = (referredId: string) => `ref:${referredId}`;
@@ -231,7 +232,7 @@ export async function settleReferrals(referrerId: string, now = new Date()): Pro
   });
   const signals = new Map(signalRows.map((r) => [r.artistId, parseSignals(r.body)]));
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     // Lock the referrer row so two settles at once can't both create or grant.
     const locked = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM "Artist" WHERE id = ${referrerId} FOR UPDATE`;
     if (!locked.length) return { granted: 0 };
@@ -290,6 +291,9 @@ export async function settleReferrals(referrerId: string, now = new Date()): Pro
     }
     return { granted };
   });
+  // Months stack on a paid subscription: its next charge moves past them (lib/billing.ts). Never throws.
+  if (result.granted) await extendForProUntil(referrerId);
+  return result;
 }
 
 /** After a referred artist's piece goes live: settle their referrer. Safe to call more than once. */

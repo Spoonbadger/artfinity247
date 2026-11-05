@@ -15,6 +15,7 @@ import SalonStrip from "@/components/home/SalonStrip";
 import CityRow from "@/components/home/CityRow";
 import BrushWipe from "@/components/motion/BrushWipe";
 import Splat from "@/components/motion/Splat";
+import MotionToggle from "@/components/motion/MotionToggle";
 import HowItWorks from "@/components/home/HowItWorks";
 import EarningsCalculator from "@/components/home/EarningsCalculator";
 import { DabRow } from "@/components/browse/PageHead";
@@ -93,6 +94,8 @@ export default async function Home({ searchParams }: { searchParams?: Record<str
           </div>
           {heroArt && <HeroStory art={heroArt} perPrint={perPrint} price={price} monthBefore={monthBefore} />}
         </div>
+        {/* The hero, How it works, the drifting wall and the split bar loop while on screen (WCAG 2.2.2). */}
+        <MotionToggle className="absolute bottom-3 right-4 sm:right-6" />
       </section>
 
       {/* HOW IT WORKS */}

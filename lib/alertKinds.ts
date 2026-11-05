@@ -18,7 +18,8 @@ export type AlertKind =
   | "order_stuck" // paid 24h+ ago, not sent to the printer
   | "order_undelivered" // shipped 10+ days ago, not delivered
   | "job_failed" // a background job (JobRun) failed
-  | "payout_insufficient_funds"; // Stripe balance too low for the payout run (urgent, lib/jobs/monthly.ts)
+  | "payout_insufficient_funds" // Stripe balance too low for the payout run (urgent, lib/jobs/monthly.ts)
+  | "billing_failed"; // an artist's Infinity subscription payment failed (low, lib/billing.ts)
 
 /** urgent: "always" = every alert of this kind is urgent; "sometimes" = some are (DMCA among reports). */
 type KindMeta = { kind: AlertKind; label: string; plural: string; queue: string; money?: boolean; urgent?: "always" | "sometimes"; defaultPref: NotifyPref };
@@ -37,6 +38,7 @@ export const ALERT_KINDS: KindMeta[] = [
   { kind: "payout_insufficient_funds", label: "Stripe balance too low for payouts", plural: "payout runs short of funds", queue: "/admin/payouts", money: true, urgent: "always", defaultPref: "instant" },
   { kind: "payout_late", label: "Late payouts", plural: "late payouts", queue: "/admin/payouts", money: true, defaultPref: "digest" },
   { kind: "job_failed", label: "Background job failures", plural: "failed jobs", queue: "/admin/alerts", urgent: "sometimes", defaultPref: "digest" },
+  { kind: "billing_failed", label: "Infinity subscription payments that failed", plural: "failed Infinity payments", queue: "/admin/artists?plan=infinity", money: true, defaultPref: "digest" },
 ];
 
 const META = new Map(ALERT_KINDS.map((k) => [k.kind as string, k]));

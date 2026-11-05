@@ -95,14 +95,17 @@ export default function BalanceCard({ b }: { b: Balance }) {
         <PaintedBar pending={holdCents} available={readyCents} paid={b.paidTotalCents} />
         <dl className="grid gap-3 sm:grid-cols-3 sm:gap-5">
           {segs.map((s) => (
-            <div key={s.k} className="grid grid-cols-[14px_minmax(0,1fr)_auto] items-baseline gap-x-2.5 sm:grid-cols-[14px_minmax(0,1fr)] sm:gap-y-0.5" title={s.note}>
-              <i
-                className="paint-dab h-3 w-3 self-center sm:self-baseline"
-                style={{ ["--dab" as string]: STATUS_COLOR[s.k], ...(s.k === "pending" ? { backgroundImage: "repeating-linear-gradient(45deg, transparent 0 3px, rgba(15,122,85,.45) 3px 4.5px)" } : {}) }}
-              />
-              <dt className="text-[14px] font-semibold">{s.label}</dt>
-              <dd className="num text-right text-[18px] font-bold sm:col-start-2 sm:text-left sm:text-[24px]">{usd(s.value)}</dd>
-              <dd className="col-start-2 col-end-4 text-[12.5px] text-ink-2 sm:col-end-3">{s.note}</dd>
+            <div key={s.k} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-2.5 sm:grid-cols-1 sm:gap-y-0.5" title={s.note}>
+              <dt className="flex items-center gap-2.5 text-[14px] font-semibold">
+                <i
+                  aria-hidden="true"
+                  className="paint-dab h-3 w-3 shrink-0"
+                  style={{ ["--dab" as string]: STATUS_COLOR[s.k], ...(s.k === "pending" ? { backgroundImage: "repeating-linear-gradient(45deg, transparent 0 3px, rgba(15,122,85,.45) 3px 4.5px)" } : {}) }}
+                />
+                {s.label}
+              </dt>
+              <dd className="num text-right text-[18px] font-bold sm:pl-[22px] sm:text-left sm:text-[24px]">{usd(s.value)}</dd>
+              <dd className="col-span-2 pl-[22px] text-[12.5px] text-ink-2 sm:col-span-1">{s.note}</dd>
             </div>
           ))}
         </dl>

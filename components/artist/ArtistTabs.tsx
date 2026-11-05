@@ -28,9 +28,20 @@ export default function ArtistTabs({ tabs }: { tabs: Tab[] }) {
     try { history.replaceState(null, "", id === tabs[0]?.id ? window.location.pathname : `#${id}`); } catch {}
   };
 
+  // Tabs pattern: one tab stop; arrow keys, Home and End move between tabs.
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    const i = tabs.findIndex((t) => t.id === active);
+    const next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key];
+    if (next == null) return;
+    e.preventDefault();
+    const t = tabs[(next + tabs.length) % tabs.length];
+    pick(t.id);
+    document.getElementById(`tab-${t.id}`)?.focus();
+  };
+
   return (
     <div>
-      <div role="tablist" aria-label="Artist page" className="mb-6 flex gap-7 border-b border-line">
+      <div role="tablist" aria-label="Artist page" onKeyDown={onKeyDown} className="mb-6 flex gap-7 border-b border-line">
         {tabs.map((t) => {
           const on = t.id === active;
           return (
@@ -41,6 +52,7 @@ export default function ArtistTabs({ tabs }: { tabs: Tab[] }) {
               id={`tab-${t.id}`}
               aria-selected={on}
               aria-controls={`panel-${t.id}`}
+              tabIndex={on ? 0 : -1}
               onClick={() => pick(t.id)}
               className={cn(
                 "relative -mb-px min-h-[44px] scroll-mt-24 pb-3 pt-2 text-[15px] font-bold transition-colors",

@@ -92,7 +92,7 @@ export default function ClaimHandle({ className, dark = false, autoFocus = false
             spellCheck={false}
             inputMode="text"
             aria-describedby={`${id}-s`}
-            className="w-full min-w-0 border-0 bg-transparent py-2.5 pl-0.5 pr-2 text-[16px] font-semibold text-ink outline-none placeholder:font-normal placeholder:text-ink-2/60"
+            className="w-full min-w-0 border-0 bg-transparent py-2.5 pl-0.5 pr-2 text-[16px] font-semibold text-ink outline-none placeholder:font-normal placeholder:text-ink-2"
           />
         </label>
         <button type="submit" className="btn btn-blue shrink-0 px-4 py-3 text-[16px] min-[400px]:px-6" disabled={going || (!!res && res.handle === value && !res.available)}>

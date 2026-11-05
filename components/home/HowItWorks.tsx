@@ -89,7 +89,7 @@ export default function HowItWorks({ art, perPrint, smallPerPrint, monthBefore }
                 <span className="min-w-0 text-[13px] leading-tight">Medium print<br /><span className="block truncate text-ink-2">{art.title}</span></span>
                 <b className="num font-display text-[22px] text-earned [font-variation-settings:'wdth'_80]">+{money(perPrint)}</b>
               </div>
-              <div className="ml-5 flex items-center justify-between gap-4 rounded-xl border-[1.5px] border-line bg-white px-3.5 py-1.5 opacity-80">
+              <div className="ml-5 flex items-center justify-between gap-4 rounded-xl border-[1.5px] border-line bg-white px-3.5 py-1.5">
                 <span className="text-[13px]">Small print</span>
                 <b className="num font-display text-[17px] text-earned [font-variation-settings:'wdth'_80]">+{money(smallPerPrint)}</b>
               </div>

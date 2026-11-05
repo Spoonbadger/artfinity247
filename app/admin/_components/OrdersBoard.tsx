@@ -355,7 +355,7 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
                     <div className="overflow-x-auto">
                       <table className="num w-full min-w-[460px] text-left">
                         <thead className="text-[11.5px] uppercase tracking-[0.06em] text-ink-2">
-                          <tr><th className="pb-1.5 font-bold">Print</th><th className="pb-1.5 text-right font-bold">Paid</th><th className="pb-1.5 text-right font-bold">Costs</th><th className="pb-1.5 text-right font-bold">Profit</th><th className="pb-1.5 text-right font-bold">Artist</th><th className="pb-1.5 text-right font-bold">Artfinity</th><th /></tr>
+                          <tr><th className="pb-1.5 font-bold">Print</th><th className="pb-1.5 text-right font-bold">Paid</th><th className="pb-1.5 text-right font-bold">Costs</th><th className="pb-1.5 text-right font-bold">Profit</th><th className="pb-1.5 text-right font-bold">Artist</th><th className="pb-1.5 text-right font-bold">Artfinity</th><th><span className="sr-only">Actions</span></th></tr>
                         </thead>
                         <tbody>
                           {o.items.map((i) => (

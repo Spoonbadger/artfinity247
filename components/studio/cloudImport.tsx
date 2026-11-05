@@ -235,7 +235,7 @@ export function CloudImportButtons({ onPick, mock, max = QUEUE_MAX, disabled, si
           <button
             key={s} type="button" onClick={() => open(s)} disabled={disabled || !!busy}
             className={size === "link" ? "inline-flex min-h-[32px] items-center gap-1.5 font-semibold text-scan hover:underline disabled:opacity-50" : "btn btn-ghost btn-sm"}
-            aria-label={s === "mock" ? "Import sample files (dev only)" : `Import from ${SOURCE_LABEL[s]}`}
+            aria-label={s === "mock" ? undefined : `Import from ${SOURCE_LABEL[s]}`}
           >
             {busy === s ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <SourceIcon source={s} />}
             {s === "mock" ? "Sample files (dev)" : SOURCE_LABEL[s]}

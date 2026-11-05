@@ -96,8 +96,9 @@ export default async function StudioHome() {
         <PaintChip color="#e8743b" value={prints.toLocaleString("en-US")} label="prints sold" note={`Cadmium · ${sales.length} ${sales.length === 1 ? "order" : "orders"}`} />
         <PaintChip color="#0f7a55" value={usd(earned)} label="you earned" note="Viridian · your share of profit" earned />
         <PaintChip color="#ffd43b" value={best ? best.title : "None yet"} label="best seller" note={best ? `Naples Yellow · ${best.prints} sold` : "Naples Yellow · hang a code"} />
-        <Link href="/studio/codes" className="rounded-[3px] text-ink no-underline hover:opacity-90" aria-label={`${scans.toLocaleString("en-US")} scans in 30 days. See my codes`}>
+        <Link href="/studio/codes" className="rounded-[3px] text-ink no-underline hover:opacity-90">
           <PaintChip color="#2b37f0" value={scans.toLocaleString("en-US")} label="scans" note={`Ultramarine · ${scanDelta}`} />
+          <span className="sr-only">See my codes</span>
         </Link>
       </section>
 
@@ -184,7 +185,7 @@ export default async function StudioHome() {
             <Link key={a.id} href={`/studio/art/${a.slug}`} className="group grid content-start gap-1.5 text-[12.5px] text-ink no-underline">
               <span className="relative block aspect-[4/5] overflow-hidden rounded-[3px] bg-gallery shadow-[0_2px_0_var(--af-line)]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={a.imageUrl} alt={a.title} className="h-full w-full object-cover transition group-hover:scale-[1.03]" />
+                <img src={a.imageUrl} alt="" className="h-full w-full object-cover transition group-hover:scale-[1.03]" />
                 {a.status === "PENDING" && (
                   <span className="absolute left-1.5 top-1.5 rounded-full border-[1.5px] border-ink bg-sticker px-2 py-0.5 text-[11px] font-bold" title="Usually within a day">In review</span>
                 )}

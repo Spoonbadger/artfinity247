@@ -66,7 +66,6 @@ export const PasswordField = forwardRef<HTMLInputElement, Omit<FieldProps, "type
           onClick={() => setShow((s) => !s)}
           className="-my-3 -mr-2 ml-1 min-h-[44px] min-w-[44px] shrink-0 rounded-md px-2 text-[14px] font-semibold text-ink-2 hover:text-ink"
           aria-label={show ? "Hide password" : "Show password"}
-          aria-pressed={show}
         >
           {show ? "Hide" : "Show"}
         </button>

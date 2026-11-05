@@ -19,6 +19,7 @@
     --af-scan-soft: #e6e8ff;
     --af-sticker: #ffd43b;
     --af-coral: #ff5a36;
+    --af-coral-text: #c4321a; /* coral for words and for white text on coral: 5.5:1 on white */
     --af-earned: #0f7a55;
     --af-earned-soft: #e1f2ea;
     --af-gallery: #e9e6df;
@@ -33,6 +34,7 @@
     --af-scan-soft-rgb: 230 232 255;
     --af-sticker-rgb: 255 212 59;
     --af-coral-rgb: 255 90 54;
+    --af-coral-text-rgb: 196 50 26;
     --af-earned-rgb: 15 122 85;
     --af-earned-soft-rgb: 225 242 234;
     --af-gallery-rgb: 233 230 223;
@@ -74,7 +76,10 @@
     letter-spacing: -0.01em;
   }
   ::selection { background: var(--af-sticker); color: var(--af-ink); }
+  /* Placeholders: Tailwind's default grey is 2.5:1; quiet ink is 6.5:1 and still reads as a hint. */
+  input::placeholder, textarea::placeholder { color: var(--af-ink-2); opacity: 1; }
   :focus-visible { outline: 3px solid var(--af-scan); outline-offset: 2px; }
+  main[tabindex="-1"]:focus { outline: none; } /* the skip link's target; the link itself shows focus */
   input.arrow-hide[type="number"]::-webkit-inner-spin-button,
   input.arrow-hide[type="number"]::-webkit-outer-spin-button { appearance: none; margin: 0; }
   input.arrow-hide[type="number"] { -moz-appearance: textfield; }
@@ -89,6 +94,8 @@
   .btn:disabled, .btn[aria-disabled="true"] { @apply cursor-not-allowed opacity-40; }
   .btn-blue { @apply border-scan bg-scan text-white; }
   .btn-sticker { @apply border-sticker bg-sticker text-ink; }
+  /* White text on coral (danger buttons, "Late" chips) needs the deeper coral for 4.5:1. */
+  .btn.bg-coral, .bg-coral.text-white { background-color: var(--af-coral-text); border-color: var(--af-coral-text); }
   .btn-ghost { @apply bg-transparent text-ink; }
   .btn-ghost:hover { @apply bg-ink text-white; filter: none; }
   .btn-sm { @apply px-3.5 py-1.5 text-[13.5px]; }
@@ -127,5 +134,5 @@ html body[data-scroll-locked] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }

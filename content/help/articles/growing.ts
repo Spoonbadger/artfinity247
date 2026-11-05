@@ -153,7 +153,7 @@ Months you earn work exactly like paid Infinity: sales made while it's active pa
     section,
     audience: "artist",
     title: "The Infinity plan",
-    summary: `Infinity is ${PRO_PRICE} a month. You get ${PRO_PCT} of the profit instead of ${FREE_PCT}, plus auto videos. Paid billing is coming soon; today you get Infinity through referrals.`,
+    summary: `Infinity is ${PRO_PRICE} a month, billed by card through Stripe. You get ${PRO_PCT} of the profit instead of ${FREE_PCT}, plus auto videos. Referral months are free and stack.`,
     link: { href: "/studio/infinity", label: "Open Infinity" },
     related: ["referrals", "videos", "what-you-earn"],
     body: `
@@ -168,11 +168,21 @@ Everything else, including your page, QR codes, unlimited art, collections, edit
 ## Is it worth it?
 At ${PRO_PRICE} a month, it pays for itself after a handful of sales a month. The calculator on [Pricing](/pricing) and in [Infinity plan](/studio/infinity) shows where your break-even is.
 
+The "Does it pay for itself?" box in [Infinity plan](/studio/infinity) runs the same math on your own last 30 days of sales: the extra share Infinity would have paid you, against ${PRO_PRICE}.
+
 ## Getting it
-Paying for Infinity by card is **coming soon**. Today, Infinity comes from [referrals](/help/growing/referrals).
+- **Pay by card:** in [Infinity plan](/studio/infinity), tap **Get Infinity**. Checkout is run by Stripe; sales tax may be added depending on where you are. Infinity turns on as soon as the payment goes through.
+- **Free, through referrals:** see [Referrals](/help/growing/referrals).
+
+Referral months stack with a subscription. If you subscribe while you still have free months, the first charge waits until they run out. Months you earn while subscribed push your next charge back, so you're never charged for time you already have.
+
+## Managing billing
+In [Infinity plan](/studio/infinity), **Manage billing** opens Stripe's billing page. Change your card, see and download invoices, or cancel there.
+- **Cancel:** no more charges. Infinity stays on until the end of the period you paid for, then you're on Free. There are no partial refunds.
+- **Payment failed:** you'll get an email and see a banner in Studio. Infinity stays on for a few days while the payment is retried. Update your card to keep it; otherwise your plan goes back to Free.
 
 ## Good to know
-- Your split is set when each order is placed. Sales made while Infinity is active pay ${PRO_PCT}. Earlier sales keep their split.
+- Your split is set when each order is placed. Sales made while Infinity is active pay ${PRO_PCT}. Earlier sales keep their split, even after you subscribe or cancel.
 - If Infinity ends, new orders pay ${FREE_PCT}. Your art, page, codes and links all stay.
 `,
   },

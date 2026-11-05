@@ -14,6 +14,8 @@ import { connectStatus } from "@/lib/stripeConnect";
 import { integrationsHealth, type Health } from "@/lib/integrations";
 import { TEST_DAYS, TEST_TARGET, testStart } from "@/lib/adminSettings";
 import TestStartForm from "./_components/TestStartForm";
+import { billingOverview } from "@/lib/billing";
+import { PRO } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Dashboard" };
@@ -132,6 +134,7 @@ export default async function AdminDashboard() {
   const currentPace = elapsed >= 7 ? Math.round((sold / elapsed) * 7 * 10) / 10 : null;
   const onTrack = sold >= TEST_TARGET || (elapsed > 0 && sold / elapsed >= TEST_TARGET / TEST_DAYS);
 
+  const infinity = await billingOverview().catch(() => null);
   const health = integrationsHealth();
   const dateLabel = now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "America/New_York" });
 
@@ -188,7 +191,7 @@ export default async function AdminDashboard() {
             <table className="num w-full text-[13px] sm:text-[14px]">
               <thead>
                 <tr className="border-b border-line text-left text-[12px] uppercase tracking-[0.06em] text-ink-2">
-                  <th className="py-2 pr-2 font-bold" />
+                  <th scope="col" className="py-2 pr-2 font-bold"><span className="sr-only">Metric</span></th>
                   {stats.map((s) => <th key={s.id} className="py-2 pl-2 text-right font-bold">{s.label}</th>)}
                 </tr>
               </thead>
@@ -206,6 +209,20 @@ export default async function AdminDashboard() {
             </table>
           </div>
           <p className="text-[12px] text-ink-2">Paid buyer orders only (bulk and free reprints excluded); refunded lines are left out. Today starts at midnight New York time.</p>
+          {infinity && (
+            <div className="grid gap-2 border-t border-line pt-3">
+              <dl className="grid grid-cols-2 gap-3 text-[14px] sm:grid-cols-4">
+                <div><dt className="text-[12px] text-ink-2">{PRO.name} MRR</dt><dd className="num text-[20px] font-bold text-earned">{usd(infinity.mrrCents)}</dd></div>
+                <div><dt className="text-[12px] text-ink-2">Paying subscribers</dt><dd className="num text-[20px] font-bold">{infinity.paying}{infinity.yearly ? <span className="text-[12px] font-normal text-ink-2"> ({infinity.yearly} yearly)</span> : null}</dd></div>
+                <div><dt className="text-[12px] text-ink-2">Free months first</dt><dd className="num text-[20px] font-bold">{infinity.trialing}</dd></div>
+                <div><dt className="text-[12px] text-ink-2">On {PRO.name} (any way)</dt><dd className="num text-[20px] font-bold">{infinity.infinityNow}</dd></div>
+              </dl>
+              <p className="text-[12px] text-ink-2">
+                MRR = paying subscribers × {usd(PRO.priceCents)} ({usd(PRO.yearlyMonthlyCents)} a month for yearly). Subscribers still in referral months aren&apos;t counted.
+                {infinity.failing ? ` ${infinity.failing} with a failed payment.` : ""}{infinity.cancelling ? ` ${infinity.cancelling} cancelling at period end.` : ""}{infinity.simulated ? " Test mode: simulated subscriptions." : ""}
+              </p>
+            </div>
+          )}
         </section>
 
         <section aria-labelledby="test-h" className="af-card grid content-start gap-3 p-4 sm:p-5">

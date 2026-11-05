@@ -1,12 +1,27 @@
 // lib/plans.ts
 // Free and Infinity, in one place. Pure module (no DB, no server imports): safe on server and client.
 //
-// Infinity is active while Artist.proUntil is in the future, whether it was paid for or earned
-// through referrals. Artist.plan says what the artist signed up for (FREE | PRO); proUntil
-// decides what they get. When Stripe Billing arrives, a paid subscription keeps proUntil
-// at the end of the current billing period.
+// Infinity is active while Artist.proUntil is in the future, whether it was paid for (Stripe Billing,
+// lib/billing.ts), earned through referrals, or granted by an admin. Artist.plan says what the artist signed up for
+// (FREE | PRO); proUntil decides what they get. isProActive() below is the ONE check that every Infinity-only feature
+// and the order-time split (lib/revenue.ts) use. A paid subscription keeps proUntil at the end of the current billing
+// period plus BILLING.graceDays.
 
 export type PlanId = "FREE" | "PRO";
+
+/** Free plan's split today. lib/revenue.ts getArtistSplit(date) is the source of truth (it was 50% before 2026-10-21). */
+export const FREE_SPLIT = 0.6;
+
+// Optional overrides at build time (NEXT_PUBLIC_ so the browser sees the same numbers as the server). Out-of-range
+// values are ignored. A Stripe Price set in STRIPE_INFINITY_PRICE_ID must charge the same amount (BILLING_SETUP.md).
+function envNumber(raw: string | undefined, min: number, max: number): number | null {
+  if (raw == null || raw === "") return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= min && n <= max ? n : null;
+}
+const ENV_PRICE_CENTS = envNumber(process.env.NEXT_PUBLIC_INFINITY_PRICE_CENTS, 100, 100_000);
+const ENV_YEARLY_CENTS = envNumber(process.env.NEXT_PUBLIC_INFINITY_YEARLY_MONTHLY_CENTS, 100, 100_000);
+const ENV_SPLIT = envNumber(process.env.NEXT_PUBLIC_INFINITY_SPLIT, FREE_SPLIT, 0.9);
 
 /**
  * THE PRO SPLIT DECISION LIVES HERE. The user asked for 70%, $20 a month.
@@ -14,24 +29,33 @@ export type PlanId = "FREE" | "PRO";
  * Research ("What Artists Need", Infinity analysis): at $20/mo and 70%, Infinity pays for itself at about
  * 6 Medium prints a month; past that point Artfinity earns less per Infinity artist than per Free one.
  * It suggested either 65% (split: 0.65), or 70% capped at 50 prints a month (monthlyPrintCap: 50).
- * Not decided yet, so this defaults to what the user said: 70%, no cap.
+ * Not decided yet, so this defaults to what the user said: 70%, no cap. Change it here (or with the env vars
+ * above); nothing else in the app hard-codes the price or the split.
  */
 export const PRO = {
   name: "Infinity",
-  priceCents: 2000,
+  /** Monthly price: the button, the copy, the calculators, MRR, and inline Stripe price_data. */
+  priceCents: ENV_PRICE_CENTS ?? 2000,
+  /** Per-month price when billed yearly. Only offered when STRIPE_INFINITY_YEARLY_PRICE_ID is set. */
+  yearlyMonthlyCents: ENV_YEARLY_CENTS ?? 1600,
   /** Artist's share of profit while Infinity is active. */
-  split: 0.7,
+  split: ENV_SPLIT ?? 0.7,
   /**
    * Prints per calendar month (per artist) paid at the Infinity split. Prints past it are paid at the
    * Free split. null = no cap.
    */
   monthlyPrintCap: null as number | null,
-  /** Dev-only trial length (no billing yet). */
+  /** Length of the old dev-only trial (/api/studio/pro/trial). */
   trialDays: 14,
 } as const;
 
-/** Free plan's split today. lib/revenue.ts getArtistSplit(date) is the source of truth (it was 50% before 2026-10-21). */
-export const FREE_SPLIT = 0.6;
+/** Stripe Billing rules for Infinity (lib/billing.ts). */
+export const BILLING = {
+  /** A paid subscription keeps proUntil this many days past the paid period, so a late renewal doesn't drop the split. */
+  graceDays: 3,
+  /** Stripe Checkout needs a trial to end at least 48 hours out. Less referral time than this left: billing starts now. */
+  minTrialHours: 49,
+} as const;
 
 /** "Share Artfinity, get 2 months of Infinity." */
 export const REFERRALS = {
@@ -45,7 +69,9 @@ export const REFERRALS = {
 } as const;
 
 export const pct = (split: number) => `${Math.round(split * 100)}%`;
-export const proPrice = () => `$${(PRO.priceCents / 100).toFixed(0)}`;
+/** "$20", or "$19.50" when the amount isn't whole dollars. */
+export const dollars = (cents: number) => `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
+export const proPrice = () => dollars(PRO.priceCents);
 
 /** Is Infinity active at `at` (defaults to now)? Only proUntil decides. */
 export function isProActive(a: { proUntil?: Date | string | null } | null | undefined, at: Date = new Date()): boolean {

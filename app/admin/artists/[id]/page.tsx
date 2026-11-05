@@ -13,6 +13,8 @@ import AuditList from "../../_components/AuditList";
 import { getBalance, monthLabel } from "@/lib/balance";
 import { activeFollowerCount } from "@/lib/followers";
 import { formatPlanDate, isProActive } from "@/lib/plans";
+import { getBillingSummary, stripeDashboardUrl } from "@/lib/billing";
+import { hasLiveSubscription, type BillingView } from "@/lib/billingStatus";
 import { orderNumber } from "@/lib/printer";
 import { artPath, artistPath } from "@/lib/urls";
 import { cn } from "@/lib/utils";
@@ -23,6 +25,9 @@ export const metadata: Metadata = { title: "Artist" };
 const day = (d: Date | string | null | undefined) => (d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—");
 const ART_STATUS: Record<string, string> = { PENDING: "bg-sticker text-ink", APPROVED: "bg-scan-soft text-scan", REJECTED: "bg-coral/15 text-coral" };
 const STRIPE_LABEL: Record<string, string> = { ready: "Connected, payouts on", pending: "Started, not finished", not_connected: "Not connected" };
+const BILLING_LABEL: Record<BillingView["kind"], string> = {
+  free: "No subscription", earned: "Free months (no subscription)", renews: "Paying, renews", trial: "Subscribed, free months first", cancels: "Subscribed, cancels at period end", payment_failed: "Infinity payment failed",
+};
 
 export default async function AdminArtistPage({ params }: { params: { id: string } }) {
   const me = await adminRoleOrRedirect(`/admin/artists/${params.id}`);
@@ -64,6 +69,10 @@ export default async function AdminArtistPage({ params }: { params: { id: string
   ]);
   const evidence = (a.verificationEvidence && typeof a.verificationEvidence === "object" ? a.verificationEvidence : {}) as Record<string, unknown>;
   const infinity = isProActive(a);
+  const billing = await getBillingSummary(a.id, a.proUntil);
+  const sub = billing.state;
+  const subLive = hasLiveSubscription(sub);
+  const billingTarget = `/api/admin/artists/${a.id}/billing`;
   const prints = balance.ledger.filter((l) => !l.refunded).reduce((n, l) => n + l.quantity, 0);
   const gross = balance.ledger.filter((l) => !l.refunded).reduce((n, l) => n + l.grossCents, 0);
   const lastPaid = balance.payouts.find((p) => p.status === "paid");
@@ -96,6 +105,9 @@ export default async function AdminArtistPage({ params }: { params: { id: string
             {a.verification === "VERIFIED" ? `Verified ${day(a.verifiedAt)}` : a.verification === "PENDING" ? "Verification requested" : a.verification === "REJECTED" ? "Verification declined" : "Not verified"}
           </Chip>
           <Chip c={infinity ? "bg-[#e6dcff] text-ink" : "bg-wall text-ink-2"}>{infinity ? `Infinity until ${formatPlanDate(a.proUntil!)}` : "Free plan"}</Chip>
+          {billing.view.kind !== "free" && billing.view.kind !== "earned" && (
+            <Chip c={billing.view.kind === "payment_failed" ? "bg-coral/15 text-coral" : "bg-[#e6dcff] text-ink"}>{BILLING_LABEL[billing.view.kind]}</Chip>
+          )}
           <Chip c="bg-wall text-ink-2">{followers} followers</Chip>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -297,6 +309,39 @@ export default async function AdminArtistPage({ params }: { params: { id: string
               <Row k="Terms accepted">{day(a.termsAcceptedAt)}</Row>
             </dl>
             {a.verification === "PENDING" && <Link href="/admin/verification" className="btn btn-ghost btn-sm mt-2">Review in Verification</Link>}
+          </Card>
+
+          <Card title="Infinity billing" sub={billing.mode === "simulated" ? "Test mode (no Stripe keys)" : billing.mode === "off" ? "Billing not set up" : "Stripe Billing"}>
+            <dl className="grid gap-1.5 text-[13.5px]">
+              <Row k="Plan">{infinity ? `Infinity until ${formatPlanDate(a.proUntil!)}` : "Free"}</Row>
+              <Row k="Billing">{BILLING_LABEL[billing.view.kind]}</Row>
+              {sub.subscriptionId && (
+                <Row k="Subscription">
+                  {billing.mode === "live" ? <a href={stripeDashboardUrl("subscriptions", sub.subscriptionId)} target="_blank" rel="noopener" className="break-all text-scan">{sub.subscriptionId}</a> : <span className="break-all">{sub.subscriptionId}</span>}
+                  <span className="text-ink-2"> · {sub.status}{sub.interval ? ` · ${sub.interval === "year" ? "yearly" : "monthly"}` : ""}{sub.simulated ? " · simulated" : ""}</span>
+                </Row>
+              )}
+              {sub.periodEnd && <Row k={sub.status === "trialing" ? "First charge" : sub.cancelAtPeriodEnd ? "Ends" : "Period ends"}>{day(sub.periodEnd)}</Row>}
+              {sub.paymentFailedAt && <Row k="Payment failed"><span className="font-semibold text-coral">{day(sub.paymentFailedAt)}</span></Row>}
+              {sub.endedAt && <Row k="Ended">{day(sub.endedAt)}</Row>}
+              {sub.customerId && (
+                <Row k="Customer">{billing.mode === "live" && !sub.simulated ? <a href={stripeDashboardUrl("customers", sub.customerId)} target="_blank" rel="noopener" className="break-all text-scan">{sub.customerId}</a> : <span className="break-all">{sub.customerId}</span>}</Row>
+              )}
+            </dl>
+            {subLive && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {sub.cancelAtPeriodEnd ? (
+                  <ActionButton url={billingTarget} body={{ action: "resume" }} need="money" label="Undo cancel" title="Keep their subscription going?" confirm="It renews again at the end of the period." confirmLabel="Undo cancel" done="Cancellation undone" />
+                ) : (
+                  <ActionButton url={billingTarget} body={{ action: "cancel_at_period_end" }} need="money" label="Cancel at period end" title={`Stop ${name}'s renewal?`}
+                    confirm={`No more charges. They keep Infinity until ${sub.periodEnd ? day(sub.periodEnd) : "the period ends"}, then go to Free.`} confirmLabel="Cancel renewal" done="Cancels at period end" />
+                )}
+                <ActionButton url={billingTarget} body={{ action: "cancel_now" }} need="money" tone="danger" label="Cancel now" title={`End ${name}'s subscription now?`}
+                  confirm="The subscription and Infinity end today, with no refund (refund in Stripe if one is owed). New sales use the free plan's split; past orders keep theirs." confirmLabel="Cancel now" done="Cancelled" />
+                {billing.mode === "live" && <ActionButton url={billingTarget} body={{ action: "sync" }} need="money" label="Sync from Stripe" title="Re-read the subscription from Stripe?" confirm="Updates the status, period and Infinity date from Stripe." confirmLabel="Sync" done="Synced" />}
+              </div>
+            )}
+            {subLive && infinity && <p className="mt-2 text-[12.5px] text-ink-2">To take Infinity away from a paying artist, cancel the subscription here first; End Infinity is blocked while it&apos;s live.</p>}
           </Card>
 
           <Card title="Referrals">
