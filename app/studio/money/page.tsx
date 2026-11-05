@@ -6,6 +6,7 @@ import MoneyInsights from "@/components/money/MoneyInsights";
 import PayoutsList from "@/components/money/PayoutsList";
 import Ledger from "@/components/money/Ledger";
 import GetPaidCard from "@/components/money/GetPaidCard";
+import Disclosure from "@/components/money/Disclosure";
 import { EmptyState } from "@/components/studio/EmptyState";
 import { Problem } from "@/components/studio/Problem";
 import { ConfirmEmailProblem } from "@/components/studio/ResendConfirmButton";
@@ -128,23 +129,13 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
       {(b.ledger.length > 0 || b.adjustments.length > 0) && <Ledger ledger={b.ledger} adjustments={b.adjustments} currentMonth={b.currentMonth} />}
 
       {b.ledger.length > 0 && (
-        <details className="af-card group p-4 sm:p-5">
-          <summary className="flex min-h-[40px] cursor-pointer list-none items-center justify-between gap-3 text-[18px] font-bold [&::-webkit-details-marker]:hidden">
-            Earnings
-            <span className="text-[13.5px] font-semibold text-ink-2 group-open:hidden">Charts, best pieces, sources</span>
-          </summary>
-          <div className="mt-4">
-            <MoneyInsights ledger={b.ledger} nowIso={b.now} />
-          </div>
-        </details>
+        <Disclosure title="Earnings" hint="Charts, best pieces, sources">
+          <MoneyInsights ledger={b.ledger} nowIso={b.now} />
+        </Disclosure>
       )}
 
-      <details className="af-card group p-4 sm:p-5">
-        <summary className="flex min-h-[40px] cursor-pointer list-none items-center justify-between gap-3 text-[18px] font-bold [&::-webkit-details-marker]:hidden">
-          How payouts work
-          <span className="text-[13.5px] font-semibold text-ink-2 group-open:hidden">{pct(pro ? PRO.split : FREE_SPLIT)} of profit · paid by the {ordinal(PAYOUT_DAY_OF_MONTH)}</span>
-        </summary>
-        <ul className="mt-3 grid gap-2.5 text-[14.5px]">
+      <Disclosure title="How payouts work" hint={<>{pct(pro ? PRO.split : FREE_SPLIT)} of profit · paid by the {ordinal(PAYOUT_DAY_OF_MONTH)}</>}>
+        <ul className="grid gap-2.5 text-[14.5px]">
           {how.map((h, i) => (
             <li key={i} className="grid grid-cols-[14px_minmax(0,1fr)] items-start gap-2.5">
               <i className="paint-dab mt-1 h-3 w-3" style={{ ["--dab" as string]: h.dab }} />
@@ -152,7 +143,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
             </li>
           ))}
         </ul>
-      </details>
+      </Disclosure>
     </StudioPage>
   );
 }

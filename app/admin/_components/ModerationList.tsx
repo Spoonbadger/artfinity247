@@ -3,7 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { failed, saved } from "@/lib/feedback";
+import MoreMenu from "./MoreMenu";
+import { passes, sortRows, SortSelect, TableToolbar, useTable, type SortDir } from "./table";
+import { EmptyState } from "@/components/studio/EmptyState";
 import { cn } from "@/lib/utils";
 import { autoReasonOf, reasonText, THRESHOLDS } from "@/lib/moderation/policy";
 import type { AutoCheckRecord, ScoreKey } from "@/lib/moderation/types";
@@ -45,7 +48,7 @@ export type DuplicateOf = {
   distance: number | null;
 };
 
-const day = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+const day = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" });
 
 /** Both images and both artists next to each other, so the reviewer can tell who made it. */
 function Comparison({ a, d }: { a: ModArtwork; d: DuplicateOf }) {
@@ -100,11 +103,11 @@ function AutoCheck({ c }: { c: AutoCheckRecord }) {
     : "Clean";
   const rows = SCORE_ROWS.filter((r) => typeof c.scores[r.key] === "number");
   return (
-    <div className="grid gap-1.5 rounded-lg border border-line bg-wall px-2.5 py-2 text-[12px]" aria-label="Automatic image check">
-      <p className="flex flex-wrap items-baseline justify-between gap-x-2">
+    <details open={c.outcome === "review"} className="grid gap-1.5 rounded-lg border border-line bg-wall px-2.5 py-2 text-[12px]" aria-label="Automatic image check">
+      <summary className="flex cursor-pointer flex-wrap items-baseline justify-between gap-x-2">
         <b className={cn(c.outcome === "review" && "text-coral")}>Image check: {verdict}</b>
         <span className="text-ink-2">{c.provider}</span>
-      </p>
+      </summary>
       {rows.length > 0 && (
         <dl className="grid grid-cols-[auto_minmax(0,1fr)_2.2em] items-center gap-x-2 gap-y-0.5">
           {rows.map((r) => {
@@ -127,7 +130,7 @@ function AutoCheck({ c }: { c: AutoCheckRecord }) {
           Artist chose: {c.artistLabels.length ? c.artistLabels.join(", ") : "no labels"}. The check added {c.addedLabels.join(", ")}.
         </p>
       )}
-    </div>
+    </details>
   );
 }
 
@@ -135,10 +138,10 @@ function AutoCheck({ c }: { c: AutoCheckRecord }) {
 function ApproveButtons({ a, busy, act }: { a: ModArtwork; busy: boolean; act: (a: ModArtwork, action: "approve" | "reject", labels?: "keep" | "artist") => void }) {
   if (!(a.status !== "APPROVED" || a.flaggedReason)) return null;
   const added = a.autoCheck?.addedLabels.filter((l) => a.sensitive.includes(l)) ?? [];
-  if (!added.length) return <button type="button" disabled={busy} onClick={() => act(a, "approve")} className="btn btn-blue btn-sm">Approve</button>;
+  if (!added.length) return <button type="button" disabled={busy} onClick={() => act(a, "approve")} className="btn btn-sm">Approve</button>;
   return (
     <>
-      <button type="button" disabled={busy} onClick={() => act(a, "approve", "keep")} className="btn btn-blue btn-sm">Approve + keep labels</button>
+      <button type="button" disabled={busy} onClick={() => act(a, "approve", "keep")} className="btn btn-sm">Approve + labels</button>
       <button type="button" disabled={busy} onClick={() => act(a, "approve", "artist")} className="btn btn-ghost btn-sm" title={`Approve and remove ${added.join(", ")} (added by the image check)`}>
         Approve
       </button>
@@ -153,11 +156,17 @@ const STATUS: Record<ModArtwork["status"], { label: string; cls: string }> = {
 };
 
 const EMPTY: Record<string, string> = {
-  queue: "Nothing to review. New uploads land here.",
-  sensitive: "No pieces carry sensitive labels.",
-  rejected: "Nothing rejected.",
-  live: "No live art yet.",
+  queue: "Nothing to review",
+  sensitive: "No sensitive labels",
+  rejected: "Nothing rejected",
+  live: "No live art yet",
 };
+const SORTS: { key: string; dir: SortDir; label: string }[] = [
+  { key: "date", dir: "asc", label: "Oldest first" },
+  { key: "date", dir: "desc", label: "Newest first" },
+  { key: "artist", dir: "asc", label: "Artist A–Z" },
+  { key: "title", dir: "asc", label: "Title A–Z" },
+];
 
 export default function ModerationList({ artworks: initial, tab }: { artworks: ModArtwork[]; tab: string }) {
   const router = useRouter();
@@ -169,7 +178,13 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
     if (next.has(id)) next.delete(id); else next.add(id);
     return next;
   });
-  const picked = items.filter((x) => selected.has(x.id));
+  const t = useTable(`moderation-${tab}`, { sort: { key: "date", dir: tab === "queue" ? "asc" : "desc" } });
+  const shown = sortRows(
+    items.filter((a) => passes(t.filters, { search: `${a.title} ${a.artistName} ${a.artistEmail} ${a.sensitive.join(" ")}`, date: a.createdAt })),
+    t.sort,
+    (a, k) => (k === "date" ? a.createdAt : k === "artist" ? a.artistName : a.title),
+  );
+  const picked = shown.filter((x) => selected.has(x.id));
 
   const bulk = async (action: "approve" | "reject") => {
     if (!picked.length) return;
@@ -187,10 +202,11 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
           : prev.map((x) => (done.has(x.id) ? { ...x, status, flaggedReason: action === "approve" ? null : "rejected_by_admin" } : x))
       );
       setSelected(new Set());
-      toast.success(`${done.size} ${action === "approve" ? "approved" : "rejected"}${d.failed?.length ? `, ${d.failed.length} failed` : ""}`);
+      saved(`${done.size} ${action === "approve" ? "approved" : "rejected"}`);
+      if (d.failed?.length) failed(`${d.failed.length} didn't go through`, { retry: () => bulk(action) });
       router.refresh();
     } catch (e: any) {
-      toast.error(`Couldn't ${action}. ${e?.message || ""}`.trim());
+      failed(`Couldn't ${action}. ${e?.message || ""}`.trim(), { retry: () => bulk(action) });
     } finally {
       setBusy(null);
     }
@@ -215,10 +231,10 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
           ? prev.filter((x) => x.id !== a.id)
           : prev.map((x) => (x.id === a.id ? { ...x, status, flaggedReason: action === "approve" ? null : "rejected_by_admin", sensitive: labels === "artist" && a.autoCheck ? a.autoCheck.artistLabels : x.sensitive } : x))
       );
-      toast.success(action === "approve" ? `"${a.title}" is live${labels === "keep" ? ` with ${a.sensitive.join(", ")}` : labels === "artist" ? " without the added labels" : ""}` : `"${a.title}" rejected`);
+      saved(action === "approve" ? `"${a.title}" is live${labels === "keep" ? ` with ${a.sensitive.join(", ")}` : labels === "artist" ? " without the added labels" : ""}` : `"${a.title}" rejected`);
       router.refresh();
     } catch (e: any) {
-      toast.error(`Couldn't ${action}. ${e?.message || ""}`.trim());
+      failed(`Couldn't ${action}. ${e?.message || ""}`.trim(), { retry: () => act(a, action, labels) });
     } finally {
       setBusy(null);
     }
@@ -231,43 +247,42 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
       const r = await fetch(`/api/admin/moderation/artworks/${a.id}`, { method: "DELETE" });
       if (!r.ok && r.status !== 204) throw new Error(await r.text());
       setItems((prev) => prev.filter((x) => x.id !== a.id));
-      toast.success("Deleted");
+      saved("Deleted");
       router.refresh();
     } catch {
-      toast.error("Couldn't delete.");
+      failed("Couldn't delete.", { retry: () => remove(a) });
     } finally {
       setBusy(null);
     }
   };
 
   if (items.length === 0) {
-    return (
-      <div className="grid justify-items-center gap-2 rounded-2xl border border-line bg-white px-4 py-16 text-center">
-        <span className="paint-dab h-7 w-7" style={{ ["--dab" as string]: "var(--af-earned)" }} />
-        <p className="text-[17px] font-semibold">{EMPTY[tab] ?? "Nothing here."}</p>
-      </div>
-    );
+    return <EmptyState title={EMPTY[tab] ?? "Nothing here"} body={tab === "queue" ? "New uploads land here." : undefined} dab="var(--af-earned)" />;
   }
 
-  const allPicked = picked.length === items.length;
+  const allPicked = shown.length > 0 && picked.length === shown.length;
   return (
-    <div className="grid gap-3">
-    <div className="flex flex-wrap items-center gap-2">
-      <label className="inline-flex min-h-[36px] cursor-pointer items-center gap-2 text-[13.5px] font-semibold text-ink-2">
-        <input type="checkbox" checked={allPicked} onChange={() => setSelected(allPicked ? new Set() : new Set(items.map((x) => x.id)))} className="h-4 w-4 accent-[var(--af-ink)]" />
+    <div className="grid min-w-0 gap-3">
+    <TableToolbar filters={t.filters} setFilter={t.setFilter} clear={t.clear} active={t.active} search="Title, artist or label" dates count={shown.length} total={items.length}>
+      <SortSelect options={SORTS} sort={t.sort} onChange={t.setSort} />
+      <label className="inline-flex min-h-[40px] cursor-pointer items-center gap-2 text-[13.5px] font-semibold text-ink-2">
+        <input type="checkbox" checked={allPicked} onChange={() => setSelected(allPicked ? new Set() : new Set(shown.map((x) => x.id)))} className="h-4 w-4 accent-[var(--af-ink)]" />
         Select all
       </label>
+    </TableToolbar>
+    <div className="contents">
       {picked.length > 0 && (
         <div role="region" aria-label="Bulk actions" className="sticky top-[64px] z-10 flex flex-1 flex-wrap items-center gap-2 rounded-xl border-[1.5px] border-ink bg-white px-3 py-2 shadow-sm">
           <b className="num text-[14px]">{picked.length} selected</b>
-          <button type="button" disabled={busy === "bulk"} onClick={() => bulk("approve")} className="btn btn-blue btn-sm">Approve selected</button>
-          <button type="button" disabled={busy === "bulk"} onClick={() => bulk("reject")} className="btn btn-ghost btn-sm">Reject selected</button>
+          <button type="button" disabled={busy === "bulk"} onClick={() => bulk("approve")} className="btn btn-blue btn-sm">Approve</button>
+          <button type="button" disabled={busy === "bulk"} onClick={() => bulk("reject")} className="btn btn-ghost btn-sm">Reject</button>
           <button type="button" onClick={() => setSelected(new Set())} className="ml-auto text-[13px] font-semibold text-ink-2 underline">Clear</button>
         </div>
       )}
     </div>
     <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {items.map((a) => {
+      {shown.length === 0 && <li className="col-span-full"><EmptyState compact title="Nothing matches" action={{ label: "Clear filters", onClick: t.clear }} /></li>}
+      {shown.map((a) => {
         const st = STATUS[a.status];
         const dup = a.duplicateOf && !("missing" in a.duplicateOf) ? a.duplicateOf : null;
         const flagged = a.duplicateOf
@@ -285,11 +300,11 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
                 {a.status !== "REJECTED" && (
                   <button type="button" disabled={busy === a.id} onClick={() => act(a, "reject")} className="btn btn-ghost btn-sm">Reject</button>
                 )}
-                <Link href={`/admin/artworks/${a.id}/edit`} className="btn btn-ghost btn-sm" aria-label={`Edit ${a.title}`}>Edit</Link>
-                <a href={`/api/admin/originals/${a.id}`} className="btn btn-ghost btn-sm" aria-label={`Download the original of ${a.title}`}>Original</a>
-                <button type="button" disabled={busy === a.id} onClick={() => remove(a)} className="ml-auto text-[13px] font-semibold text-ink-2 underline-offset-2 hover:text-coral hover:underline">
-                  Delete
-                </button>
+                <MoreMenu label={<><span className="sr-only">More for {a.title}</span><span aria-hidden="true">More</span></>}>
+                  <Link href={`/admin/artworks/${a.id}/edit`} className="btn btn-ghost btn-sm">Edit</Link>
+                  <a href={`/api/admin/originals/${a.id}`} className="btn btn-ghost btn-sm">Download original</a>
+                  <button type="button" disabled={busy === a.id} onClick={() => remove(a)} className="btn btn-ghost btn-sm text-coral">Delete</button>
+                </MoreMenu>
               </div>
             </li>
           );
@@ -310,7 +325,7 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
                 <div className="truncate text-[13px] text-ink-2">
                   <Link href={`/@${a.artistSlug}`} className="font-semibold text-ink hover:text-scan">{a.artistName}</Link>
                   {" · "}
-                  {new Date(a.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  {day(a.createdAt)}
                 </div>
               </div>
 
@@ -334,11 +349,11 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
                     {a.status === "APPROVED" ? "Take down" : "Reject"}
                   </button>
                 )}
-                <Link href={`/admin/artworks/${a.id}/edit`} className="btn btn-ghost btn-sm" aria-label={`Edit ${a.title}`}>Edit</Link>
-                <a href={`/api/admin/originals/${a.id}`} className="btn btn-ghost btn-sm" aria-label={`Download the original of ${a.title}`}>Original</a>
-                <button type="button" disabled={busy === a.id} onClick={() => remove(a)} className="ml-auto text-[13px] font-semibold text-ink-2 underline-offset-2 hover:text-coral hover:underline">
-                  Delete
-                </button>
+                <MoreMenu label={<><span className="sr-only">More for {a.title}</span><span aria-hidden="true">More</span></>}>
+                  <Link href={`/admin/artworks/${a.id}/edit`} className="btn btn-ghost btn-sm">Edit</Link>
+                  <a href={`/api/admin/originals/${a.id}`} className="btn btn-ghost btn-sm">Download original</a>
+                  <button type="button" disabled={busy === a.id} onClick={() => remove(a)} className="btn btn-ghost btn-sm text-coral">Delete</button>
+                </MoreMenu>
               </div>
             </div>
           </li>

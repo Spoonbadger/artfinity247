@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { StudioPage } from "@/components/studio/StudioPage";
 import AutomationsPanel from "@/components/pro/AutomationsPanel";
-import ProChip from "@/components/pro/ProChip";
 import { getArtistPlan } from "@/components/pro/plan.server";
 import { requireArtist } from "../_lib/data";
 import { autoNewsletterOn } from "@/lib/newsletterAuto";
@@ -28,9 +27,9 @@ export default async function AutomationsPage() {
 
   return (
     <StudioPage
-      title={<span className="inline-flex flex-wrap items-center gap-3">Automations <ProChip className="text-[13px]" /></span>}
-      sub="Post once. Artfinity does the rest."
-      actions={<Link href="/studio/infinity" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">Plan</Link>}
+      title="Automations"
+      sub="Set it once. It runs every time you upload."
+      actions={plan.active ? <Link href="/studio/infinity" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">Plan</Link> : undefined}
     >
       <AutomationsPanel
         pro={plan.active}

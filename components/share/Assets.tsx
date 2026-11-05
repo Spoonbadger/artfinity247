@@ -90,7 +90,7 @@ export function ImageAssets({ art }: { art: ShareArt }) {
     a.download = `${art.slug}-${format}-${l}.png`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    saved("Image downloaded", { description: "It's in your downloads. Post it with one of the captions below." });
+    saved("Image downloaded", { description: "It's in your downloads. Grab a caption from the Captions tab." });
   };
 
   const shareFile = async (l: ImageLayout) => {
@@ -126,8 +126,8 @@ export function ImageAssets({ art }: { art: ShareArt }) {
               <span className="text-[12.5px] text-ink-2">{IMAGE_LAYOUTS[l].sub}</span>
             </figcaption>
             <div className="grid grid-cols-[1fr_auto] gap-2">
-              <button type="button" onClick={() => download(l)} disabled={busy === l} className="btn btn-blue py-3 sm:py-2.5"><Download size={16} /> {busy === l ? "Making it…" : "Download"}</button>
-              {canShareFiles && <button type="button" onClick={() => shareFile(l)} className="btn btn-ghost" aria-label={`Share ${IMAGE_LAYOUTS[l].name} image`}><Share2 size={16} /></button>}
+              <button type="button" onClick={() => download(l)} disabled={busy === l} className="btn py-3 sm:py-2.5"><Download size={16} aria-hidden="true" /> {busy === l ? "Making it…" : "Download"}</button>
+              {canShareFiles && <button type="button" onClick={() => shareFile(l)} className="btn btn-ghost" aria-label={`Share ${IMAGE_LAYOUTS[l].name} image`} title="Share"><Share2 size={16} aria-hidden="true" /></button>}
             </div>
           </figure>
         ))}

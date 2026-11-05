@@ -144,12 +144,12 @@ An artist who signs up with your link earns you ${REFERRALS.rewardMonths} months
 2. Print or download a QR code, or make a sale.
 
 ## The rules
-- **${REFERRALS.holdDays}-day wait:** the months unlock ${REFERRALS.holdDays} days after they qualify, if they still qualify.
+- **${REFERRALS.holdDays}-day wait:** the months count ${REFERRALS.holdDays} days after they qualify, if they still qualify.
 - **Up to ${REFERRALS.maxPerMonth} rewards a month.** More than that wait for next month.
 - **Up to ${REFERRALS.maxBankedMonths} months banked** ahead of today. Extra rewards wait until there's room.
 - **No second accounts.** If the new account looks like the same person as you, it doesn't count.
 
-Nothing is lost by waiting. Rewards that are held unlock later. The Infinity page lists each artist you brought and where their referral stands.
+Nothing is lost by waiting. Held rewards count later. The Infinity page lists each artist you brought and where their referral stands.
 
 Months you earn work exactly like paid Infinity: sales made while it's active pay ${PRO_PCT}.
 `,

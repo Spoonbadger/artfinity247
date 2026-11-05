@@ -101,7 +101,7 @@ export default function ThankYouClient({ sessionId, collector = { signedIn: fals
   const count = order.items.reduce((n, it) => n + (it.quantity || 1), 0);
 
   return (
-    <div className="mx-auto grid max-w-[880px] gap-5 px-4 py-6 sm:px-6 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)] md:gap-x-12 md:gap-y-5 md:py-14">
+    <div className="mx-auto grid max-w-[1040px] gap-5 px-4 py-6 sm:px-6 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)] md:gap-x-12 md:gap-y-5 md:py-14">
       <title>Thank you · Artfinity</title>
       {firstImg && (
         <div className="rounded-[22px] bg-gallery bg-[radial-gradient(ellipse_at_50%_0%,#f7f5f0_0%,#e9e6df_70%)] px-[14%] py-[8%] md:col-start-1 md:row-span-2 md:row-start-1 md:self-center md:py-[10%]">

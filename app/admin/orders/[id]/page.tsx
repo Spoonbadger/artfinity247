@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { adminOrRedirect } from "../../_components/gate";
 import { SIZE_LABEL, usd } from "../../_components/util";
 import ActionButton from "../../_components/ActionButton";
+import MoreMenu from "../../_components/MoreMenu";
+import { PageHead, Pill, StatusPill } from "../../_components/ui";
 import NotesPanel from "../../_components/NotesPanel";
 import AuditList from "../../_components/AuditList";
 import { itemBreakdown, normalizeSize } from "@/lib/sales";
@@ -119,68 +121,67 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
 
   return (
     <div className="grid gap-6">
-      <div className="grid gap-2">
-        <Link href="/admin/orders" className="text-[13.5px] font-semibold text-ink-2 no-underline hover:text-ink">← Orders</Link>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="eyebrow">{at(o.createdAt)} ET</p>
-            <h1 className="display text-[40px] sm:text-[52px]">Order {orderNumber(o.id)}</h1>
-          </div>
-          <b className="num text-[28px] text-earned">{usd(o.amountTotal)}</b>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          <Chip c={paid ? "bg-earned-soft text-earned" : "bg-coral/15 text-coral"}>{o.paymentStatus}</Chip>
-          {o.kind !== "retail" && <Chip c="bg-[#f3dcc8] text-ink">{o.kind === "reprint" ? "Free reprint" : o.kind === "bulk" ? "Bulk (artist at cost)" : o.kind}</Chip>}
-          <Chip c="bg-scan-soft text-scan">{o.shippingStatus}</Chip>
-          {refunds.size > 0 && <Chip c="bg-coral/15 text-coral">{refunds.size === o.items.length ? "Refunded" : `${refunds.size} line${refunds.size === 1 ? "" : "s"} refunded`}</Chip>}
+      <PageHead
+        back={{ href: "/admin/orders", label: "Orders" }}
+        title={<>Order {orderNumber(o.id)} <span className="num text-earned">{usd(o.amountTotal)}</span></>}
+        sub={`${at(o.createdAt)} · ${o.shippingName || o.email}`}
+        action={
+          <>
+            {o.shippingStatus === "pending" && (
+              <ActionButton url={statusUrl} body={{ shippingStatus: "shipped" }} label="Mark shipped" tone="blue" title="Mark shipped"
+                confirm="The buyer gets an email with this tracking link."
+                fields={[
+                  { name: "carrier", label: "Carrier", type: "select", defaultValue: "USPS", options: CARRIERS.map((c) => ({ value: c, label: c })) },
+                  { name: "trackingNumber", label: "Tracking number", required: true, placeholder: "9400 1000 0000 0000 0000 00" },
+                  { name: "trackingUrl", label: "Tracking link (only for Other)", placeholder: "https://" },
+                ]} confirmLabel="Mark shipped" done="Marked shipped. Buyer emailed." />
+            )}
+            {o.shippingStatus === "shipped" && (
+              <ActionButton url={statusUrl} body={{ shippingStatus: "delivered" }} label="Mark delivered" tone="blue" title="Mark delivered?"
+                confirm="The buyer gets the delivered email, then a review request." confirmLabel="Mark delivered" done="Marked delivered" />
+            )}
+            <a href={`/admin/orders/${o.id}/slip`} target="_blank" rel="noopener" className="btn btn-ghost btn-sm">Packing slip</a>
+            <MoreMenu>
+              {(paid || o.kind === "reprint") && printerAuto() && (
+                <ActionButton url={`/api/admin/orders/${o.id}/work-order`} label={printer.status === "sent" ? "Resend work order" : "Send work order"} title="Send the work order to the print lab?"
+                  confirm={printer.status === "sent" ? `It went out ${at(o.printerSentAt)}. Make sure the lab doesn't print it twice.` : "The lab gets links to the original files and the packing slip."}
+                  confirmLabel="Send" done="Work order sent" />
+              )}
+              {paid && o.kind !== "bulk" && (
+                <ActionButton url={url} body={{ action: "reprint" }} label="Create reprint" title="Create a free reprint"
+                  confirm="A zero-charge order goes to the lab and the buyer is emailed. No sale, no payout."
+                  fields={[
+                    { name: "itemId", label: "What to reprint", type: "select", defaultValue: "all", options: itemOptions },
+                    { name: "reason", label: "Why", type: "select", defaultValue: "damaged", options: REPRINT_REASONS.map((r) => ({ value: r.id, label: r.label })) },
+                    { name: "note", label: "Note for the buyer", type: "textarea", placeholder: "Optional" },
+                  ]} confirmLabel="Create reprint" done="Reprint created and sent to the lab" />
+              )}
+              {paid && (
+                <ActionButton url={url} body={{ action: "resend_receipt" }} label="Resend receipt" title="Resend the receipt?" confirm={`Sends the receipt to ${o.email} again.`} confirmLabel="Send"
+                  done="Receipt sent" />
+              )}
+              {o.shippingStatus !== "pending" && (
+                <ActionButton url={url} body={{ action: "resend_shipped" }} label={`Resend ${o.shippingStatus} email`} title={`Resend the ${o.shippingStatus} email?`}
+                  confirm={`Sends the ${o.shippingStatus} email${o.shippingStatus === "shipped" && latestTracking ? ` with ${latestTracking.carrier} ${latestTracking.number}` : ""} to ${o.email} again.`} confirmLabel="Send" done="Email sent" />
+              )}
+            </MoreMenu>
+          </>
+        }
+      >
+        <div className="flex flex-wrap items-center gap-1.5">
+          <StatusPill status={o.paymentStatus} />
+          {o.kind !== "retail" && <Pill tone="amber">{o.kind === "reprint" ? "Free reprint" : o.kind === "bulk" ? "Bulk (artist at cost)" : o.kind}</Pill>}
+          <StatusPill status={o.shippingStatus} />
+          {refunds.size > 0 && <Pill tone="red">{refunds.size === o.items.length ? "Refunded" : `${refunds.size} line${refunds.size === 1 ? "" : "s"} refunded`}</Pill>}
           {originalId && <Link href={`/admin/orders/${originalId}`} className="text-[13px] font-semibold text-scan">Original order {orderNumber(originalId)}</Link>}
           {reprintOrders.map((r) => <Link key={r.id} href={`/admin/orders/${r.id}`} className="text-[13px] font-semibold text-scan">Reprint {orderNumber(r.id)}</Link>)}
         </div>
-      </div>
-
-      <section aria-label="Actions" className="af-card flex flex-wrap gap-2 p-4">
-        {o.shippingStatus === "pending" && (
-          <ActionButton url={statusUrl} body={{ shippingStatus: "shipped" }} label="Mark shipped" tone="blue" title="Mark shipped"
-            confirm="The buyer gets the shipped email with this tracking link (the artist's own wording if they wrote one)."
-            fields={[
-              { name: "carrier", label: "Carrier", type: "select", defaultValue: "USPS", options: CARRIERS.map((c) => ({ value: c, label: c })) },
-              { name: "trackingNumber", label: "Tracking number", required: true, placeholder: "9400 1000 0000 0000 0000 00" },
-              { name: "trackingUrl", label: "Tracking link (only for Other)", placeholder: "https://" },
-            ]} confirmLabel="Mark shipped" done="Marked shipped. Buyer emailed." />
-        )}
-        {o.shippingStatus === "shipped" && (
-          <ActionButton url={statusUrl} body={{ shippingStatus: "delivered" }} label="Mark delivered" tone="blue" title="Mark delivered?"
-            confirm="The buyer gets the delivered email and, a little later, a request to review their print." confirmLabel="Mark delivered" done="Marked delivered" />
-        )}
-        {(paid || o.kind === "reprint") && printerAuto() && (
-          <ActionButton url={`/api/admin/orders/${o.id}/work-order`} label={printer.status === "sent" ? "Resend work order" : "Send work order"} title="Send the work order to the print lab?"
-            confirm={printer.status === "sent" ? `It went out ${at(o.printerSentAt)}. The lab gets it again: make sure they don't print it twice.` : "The lab gets the order with links to the original files and the packing slip."}
-            confirmLabel="Send" done="Work order sent" />
-        )}
-        <a href={`/admin/orders/${o.id}/slip`} target="_blank" rel="noopener" className="btn btn-ghost btn-sm">Packing slip</a>
-        {paid && o.kind !== "bulk" && (
-          <ActionButton url={url} body={{ action: "reprint" }} label="Create reprint" title="Create a free reprint"
-            confirm="Makes a zero-charge reprint order, sends it to the lab and emails the buyer. No sale, no payout."
-            fields={[
-              { name: "itemId", label: "What to reprint", type: "select", defaultValue: "all", options: itemOptions },
-              { name: "reason", label: "Why", type: "select", defaultValue: "damaged", options: REPRINT_REASONS.map((r) => ({ value: r.id, label: r.label })) },
-              { name: "note", label: "Note for the buyer", type: "textarea", placeholder: "Optional" },
-            ]} confirmLabel="Create reprint" done="Reprint created and sent to the lab" />
-        )}
-        {paid && (
-          <ActionButton url={url} body={{ action: "resend_receipt" }} label="Resend receipt" title="Resend the receipt?" confirm={`Sends the receipt to ${o.email} again.`} confirmLabel="Send"
-            done="Receipt sent" />
-        )}
-        {o.shippingStatus !== "pending" && (
-          <ActionButton url={url} body={{ action: "resend_shipped" }} label={`Resend ${o.shippingStatus} email`} title={`Resend the ${o.shippingStatus} email?`}
-            confirm={`Sends the ${o.shippingStatus} email${o.shippingStatus === "shipped" && latestTracking ? ` with ${latestTracking.carrier} ${latestTracking.number}` : ""} to ${o.email} again.`} confirmLabel="Send" done="Email sent" />
-        )}
-      </section>
+      </PageHead>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <div className="grid content-start gap-6">
-          <section className="af-card grid gap-3 p-4">
-            <h2 className="text-[17px] font-bold">Prints</h2>
+          <section className="af-panel grid gap-3 p-4">
+            <h2 className="text-[16px] font-bold">Prints</h2>
             <ul className="divide-y divide-line">
               {items.map(({ it, b, refund, artistShare, edition, cert, artist }) => (
                 <li key={it.id} className="grid grid-cols-[56px_minmax(0,1fr)] gap-3 py-3 sm:grid-cols-[56px_minmax(0,1fr)_auto]">
@@ -232,22 +233,22 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
             </ul>
           </section>
 
-          <section className="af-card grid gap-2 p-4">
-            <h2 className="text-[17px] font-bold">Timeline</h2>
+          <section className="af-panel grid gap-2 p-4">
+            <h2 className="text-[16px] font-bold">Timeline</h2>
             <ol className="relative grid gap-3 border-l-2 border-line pl-5">
               {timeline.map((e, i) => (
                 <li key={i} className="relative">
                   <span aria-hidden="true" className={cn("absolute -left-[27px] top-1 h-3 w-3 rounded-full ring-4 ring-white", e.tone === "done" ? "bg-earned" : e.tone === "warn" ? "bg-coral" : "bg-scan")} />
                   <p className="text-[14.5px] font-semibold">{e.title}</p>
-                  <p className="text-[12.5px] text-ink-2">{e.at ? `${at(e.at)} ET` : "—"}{e.detail ? <> · {e.detail}</> : null}</p>
+                  <p className="text-[12.5px] text-ink-2">{e.at ? at(e.at) : "—"}{e.detail ? <> · {e.detail}</> : null}</p>
                 </li>
               ))}
             </ol>
           </section>
 
           {parcel.length > 0 && (
-            <section className="af-card grid gap-2 p-4">
-              <h2 className="text-[17px] font-bold">Print this note in the parcel</h2>
+            <section className="af-panel grid gap-2 p-4">
+              <h2 className="text-[16px] font-bold">Print this note in the parcel</h2>
               {parcel.map((n) => (
                 <figure key={n.id} className="grid gap-1.5 rounded-lg border-[1.5px] border-dashed border-ink/30 bg-white p-3">
                   <blockquote className="whitespace-pre-wrap text-[14px] leading-relaxed">{n.body}</blockquote>
@@ -259,8 +260,8 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
         </div>
 
         <div className="grid content-start gap-6">
-          <section className="af-card grid gap-2 p-4 text-[14px]">
-            <h2 className="text-[17px] font-bold">Buyer</h2>
+          <section className="af-panel grid gap-2 p-4 text-[14px]">
+            <h2 className="text-[16px] font-bold">Buyer</h2>
             <p><b>{o.shippingName || "No name"}</b><br /><a href={`mailto:${o.email}`} className="text-scan">{o.email}</a></p>
             <p className="eyebrow mt-1">Ship to</p>
             <p className="whitespace-pre-line text-ink-2">{o.shippingAddress?.split(", ").join("\n") || "No address"}</p>
@@ -275,16 +276,14 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
 
           <NotesPanel targetType="order" targetId={o.id} notes={notes.map((n) => ({ id: n.id, adminEmail: n.adminEmail, body: n.body, createdAt: n.createdAt.toISOString() }))} />
 
-          <section className="af-card grid gap-2 p-4">
-            <h2 className="text-[17px] font-bold">Audit trail</h2>
-            <AuditList rows={audit} compact empty="No admin actions on this order yet." />
-          </section>
+          <details className="af-panel p-4">
+            <summary className="cursor-pointer text-[16px] font-bold">Audit trail <span className="num text-[13px] font-normal text-ink-2">{audit.length}</span></summary>
+            <div className="mt-2"><AuditList rows={audit} compact empty="No admin actions on this order yet." /></div>
+          </details>
         </div>
       </div>
     </div>
   );
 }
 
-function Chip({ c, children }: { c: string; children: React.ReactNode }) {
-  return <span className={cn("inline-block rounded-full px-2 py-px text-[12px] font-bold", c)}>{children}</span>;
-}
+

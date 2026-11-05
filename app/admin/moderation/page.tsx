@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { adminOrRedirect } from "../_components/gate";
 import { cn } from "@/lib/utils";
+import { PageHead } from "../_components/ui";
 import ModerationList, { type ModArtwork } from "../_components/ModerationList";
 import { duplicateOfId, hamming } from "@/lib/imageHash";
 import { autoChecksFor } from "@/lib/moderation";
@@ -102,11 +103,8 @@ export default async function ModerationPage({ searchParams }: { searchParams: {
   }));
 
   return (
-    <div className="grid gap-6">
-      <div>
-        <p className="eyebrow">{queue === 0 ? "All clear" : `${queue} waiting`}</p>
-        <h1 className="display text-[44px] sm:text-[56px]">Moderation</h1>
-      </div>
+    <div className="grid gap-5">
+      <PageHead title="Moderation" sub={queue === 0 ? "All clear" : `${queue} waiting · approve to put it live`} />
 
       <nav aria-label="Moderation views" className="flex flex-wrap gap-2">
         {TABS.map((t) => (
@@ -115,7 +113,7 @@ export default async function ModerationPage({ searchParams }: { searchParams: {
             href={t.id === "queue" ? "/admin/moderation" : `/admin/moderation?tab=${t.id}`}
             aria-current={tab === t.id ? "page" : undefined}
             className={cn(
-              "rounded-full border-[1.5px] px-3.5 py-1.5 text-[14px] font-semibold no-underline transition",
+              "flex min-h-[40px] items-center rounded-full border-[1.5px] px-3.5 text-[14px] font-semibold no-underline transition",
               tab === t.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"
             )}
           >

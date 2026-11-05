@@ -25,7 +25,7 @@ export default async function ConfirmFollowPage({ searchParams }: { searchParams
     <FollowNote avatar={f.artist.profileImage} name={name} title={searchParams.re ? "Welcome back" : "You're in"} dab="#ffd43b">
       {slug && <RememberFollow handle={slug} state="on" />}
       <p className="text-[17px] text-ink-2">
-        When {first} posts new work, you&apos;ll be among the first to see it. Straight to <b className="text-ink">{f.email}</b>.
+        We&apos;ll email <b className="text-ink">{f.email}</b> when {first} posts new work.
       </p>
       {slug && <Link href={artistPath(slug)} className="btn btn-blue">See {first}&apos;s work</Link>}
       <p className="text-[13px] text-ink-2">Every email has a one-tap unsubscribe.</p>

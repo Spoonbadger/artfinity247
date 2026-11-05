@@ -150,7 +150,7 @@ The check doesn't care which way round the image is. Portrait and landscape both
     section,
     audience: "artist",
     title: "Why are some print sizes hidden?",
-    summary: "If your file doesn't have enough pixels for a size, buyers don't see that size. Upload a bigger file to unlock it.",
+    summary: "If your file doesn't have enough pixels for a size, buyers don't see that size. Upload a bigger file to offer it.",
     related: ["file-sizes-print-sharp", "upload-art"],
     link: { href: "/studio/art", label: "My art" },
     body: `
@@ -158,7 +158,7 @@ We check every upload against the pixels each size needs. A size the file can't 
 
 This protects you. A soft, blurry print is the fastest way to a disappointed buyer.
 
-## To unlock a size
+## To offer a bigger size
 1. Open the piece in [My art](/studio/art).
 2. Replace the image with a bigger version of the same piece (see [Which file sizes print sharp](/help/getting-started/file-sizes-print-sharp)).
 3. Save. The preview shows which sizes are now sharp.
@@ -203,7 +203,7 @@ The code is saved when you download or save it. You'll find it later in [My code
     related: ["first-qr-code", "qr-templates", "scan-tracking", "bulk-prints"],
     link: { href: "/studio/qr", label: "Open QR codes" },
     body: `
-A code only sells if people notice it and their phone can read it, whether it hangs in a Williamsburg café, at the Brooklyn Flea or in your studio during Bushwick Open Studios.
+A code only sells if people notice it and their phone can read it. That's true in a Williamsburg café, at the Brooklyn Flea or at Bushwick Open Studios.
 
 ## Where to put it
 - **Beside the piece, not across the room.** People scan what they're looking at. Put the label on the wall just to the right of the frame, like a gallery label.

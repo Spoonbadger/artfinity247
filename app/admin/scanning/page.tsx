@@ -77,7 +77,7 @@ export default async function AdminScanningPage({ searchParams }: { searchParams
             <span className="flex items-center gap-1.5"><i className="h-3 w-3 rounded-sm border border-dashed border-ink-2" aria-hidden="true" />Asked for (not confirmed)</span>
           </span>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Calendar, scrolls sideways">
           <div className="grid min-w-[760px] grid-cols-7 gap-1.5">
             {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => <span key={d} className="px-1 text-[12px] font-semibold text-ink-2">{d}</span>)}
             {days.map((d) => {
@@ -110,7 +110,7 @@ export default async function AdminScanningPage({ searchParams }: { searchParams
         ))}
       </nav>
 
-      <section aria-labelledby="list-h" className="af-card overflow-x-auto">
+      <section aria-labelledby="list-h" className="af-card overflow-x-auto" tabIndex={rows.length ? 0 : undefined}>
         <h2 id="list-h" className="sr-only">Bookings</h2>
         {rows.length ? (
           <table className="w-full min-w-[820px] text-left text-[14px]">

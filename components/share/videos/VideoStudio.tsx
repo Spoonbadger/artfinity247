@@ -176,7 +176,7 @@ export default function VideoStudio({ art, arts, base, pro }: { art: ShareArt; a
   };
 
   if (!arts.length) {
-    return <EmptyState title="Videos need a piece first" body="Upload a painting and once it's approved, it gets room tours, close-ups and price cards made for you, right here." action={{ label: "Upload art", href: "/studio/art/new" }} help={{ label: "What's in the Share kit", href: "/help/growing/share-kit" }} />;
+    return <EmptyState title="Videos need a piece first" body="Once a painting is approved, you can make videos of it here." action={{ label: "Upload art", href: "/studio/art/new" }} help={{ label: "What's in the Share kit", href: "/help/growing/share-kit" }} />;
   }
 
   const busy = v.busy;

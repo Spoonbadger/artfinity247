@@ -4,6 +4,7 @@ import { EmptyState } from "@/components/studio/EmptyState";
 import HelpLink from "@/components/help/HelpLink";
 import ExportCsvButton from "@/components/money/ExportCsvButton";
 import { UrlPicker } from "@/components/money/SortSelect";
+import Disclosure from "@/components/money/Disclosure";
 import { BUCKET_LABEL, bucketOf, type MoneyBucket } from "@/components/money/format";
 import { getBalance } from "@/lib/balance";
 import { prisma } from "@/lib/prisma";
@@ -131,7 +132,7 @@ export default async function SalesPage({ searchParams }: { searchParams: { when
                 {latestX && <> · <Link href={customerHref(latestX.email)} className="font-semibold text-scan">{[latestX.first, latestX.city].filter(Boolean).join(", ")}</Link></>}
               </p>
             </div>
-            <div className="grid justify-items-end self-start text-right">
+            <div className="grid justify-items-end self-center text-right">
               <b className="display num text-[28px] leading-none text-earned sm:text-[34px]">+{usd(latest.shareCents)}</b>
               <span className="mt-1 text-[12px] text-ink-2">your share</span>
             </div>
@@ -235,12 +236,8 @@ export default async function SalesPage({ searchParams }: { searchParams: { when
             </div>
           </section>
 
-          <details className="af-card group p-4 sm:p-5">
-            <summary className="flex min-h-[40px] cursor-pointer list-none items-center justify-between gap-3 text-[18px] font-bold [&::-webkit-details-marker]:hidden">
-              By month
-              <span className="text-[13.5px] font-semibold text-ink-2 group-open:hidden">{months.length} {months.length === 1 ? "month" : "months"}</span>
-            </summary>
-            <ul className="mt-3 grid gap-4 md:grid-cols-2 md:gap-x-8">
+          <Disclosure title="By month" hint={`${months.length} ${months.length === 1 ? "month" : "months"}`}>
+            <ul className="grid gap-4 md:grid-cols-2 md:gap-x-8">
               {months.map((m) => (
                 <li key={m.key} className={`grid gap-1.5 ${month && month !== m.key ? "opacity-50" : ""}`}>
                   <div className="flex items-baseline justify-between gap-3">
@@ -254,7 +251,7 @@ export default async function SalesPage({ searchParams }: { searchParams: { when
                 </li>
               ))}
             </ul>
-          </details>
+          </Disclosure>
         </>
       )}
     </StudioPage>

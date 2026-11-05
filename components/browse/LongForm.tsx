@@ -3,6 +3,9 @@ import Link from "next/link";
 import { BrushStroke, Splotch } from "@/components/af/Brush";
 import { DabRow } from "./PageHead";
 import { cn } from "@/lib/utils";
+import AppConfigs from "@/db/json/AppConfigs.json";
+
+const SUPPORT = AppConfigs.support_email;
 
 const POLICIES: [string, string][] = [
   ["Sell with us", "/sell-with-us"],
@@ -29,8 +32,23 @@ export const PROSE = cn(
   "[&_strong]:font-bold",
 );
 
+/** The short version at the top of a long page. Plain-language pointers only; the full text below is what applies. */
+function Summary({ items }: { items: ReactNode[] }) {
+  return (
+    <aside aria-labelledby="in-short-h" className="mb-10 max-w-[68ch] rounded-2xl border-[1.5px] border-ink bg-white p-5 sm:p-6">
+      <h2 id="in-short-h" className="font-display text-[24px] font-extrabold leading-none [font-variation-settings:'wdth'_80]">In short</h2>
+      <ul className="mt-3 grid gap-2 text-[16px] leading-snug text-ink">
+        {items.map((it, i) => (
+          <li key={i} className="relative pl-6 before:absolute before:left-0 before:top-[0.45em] before:h-2.5 before:w-2.5 before:rotate-[-14deg] before:rounded-[52%_44%_58%_40%] before:bg-sticker before:content-['']">{it}</li>
+        ))}
+      </ul>
+      <p className="mt-3 text-[13.5px] text-ink-2">A summary to help you read. The full text below is what applies.</p>
+    </aside>
+  );
+}
+
 /** Shell for legal and info pages: title block, a side list of the other policies, readable column. */
-export default function LongForm({ eyebrow, title, sub, children, current }: { eyebrow?: string; title: string; sub?: ReactNode; children: ReactNode; current?: string }) {
+export default function LongForm({ eyebrow, title, sub, children, current, summary }: { eyebrow?: string; title: string; sub?: ReactNode; children: ReactNode; current?: string; summary?: ReactNode[] }) {
   return (
     <div className="pb-24">
       <header className="relative overflow-hidden border-b border-line bg-wall">
@@ -53,10 +71,13 @@ export default function LongForm({ eyebrow, title, sub, children, current }: { e
                 {label}
               </Link>
             ))}
-            <span className="mt-4 text-[14px] text-ink-2">Questions? <a href="mailto:support@theartfinity.com" className="font-semibold text-ink">support@theartfinity.com</a></span>
+            <span className="mt-4 text-[14px] text-ink-2">Questions? <a href={`mailto:${SUPPORT}`} className="font-semibold text-ink [overflow-wrap:anywhere]">{SUPPORT}</a></span>
           </div>
         </nav>
-        <article className={PROSE}>{children}</article>
+        <div className="min-w-0">
+          {summary?.length ? <Summary items={summary} /> : null}
+          <article className={PROSE}>{children}</article>
+        </div>
       </div>
     </div>
   );

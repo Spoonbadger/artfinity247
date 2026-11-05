@@ -15,7 +15,11 @@ const AGENT = {
 
 export default function Page() {
   return (
-    <LongForm eyebrow="Policy" title="Copyright and DMCA" sub="Artists should only sell their own work. Here’s how we handle copied art." current="/dmca">
+    <LongForm eyebrow="Policy" title="Copyright and DMCA" sub="How we handle copied art." current="/dmca" summary={[
+      <>Someone selling your work? <Link href="/report">Use the report form</Link>.</>,
+      "A person reviews every notice, usually within 2 business days.",
+      "Taken down by mistake? File a counter-notice from your takedown email.",
+    ]}>
       <h2>Report copied art</h2>
       <p>
         If someone is selling your work on Artfinity, <Link href="/report">fill in the report form</Link> and choose “It’s my work / copied.” It asks for

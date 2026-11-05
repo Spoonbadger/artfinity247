@@ -8,7 +8,7 @@
 // Touch: drag handles, pinch to zoom, two fingers to pan. Mouse: drag, scroll wheel to zoom.
 // Keyboard: Tab to a handle, arrow keys nudge it (Shift = more), + / − zoom, 0 fits, Esc cancels.
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { Loader2, Minus, Plus, RotateCw, ScanSearch, Undo2 } from "lucide-react";
+import { Loader2, Minus, Plus, RotateCw, Undo2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { errorText, failed, problemFrom, saved } from "@/lib/feedback";
 import { Problem } from "@/components/studio/Problem";
@@ -17,7 +17,6 @@ import {
   type ImageEdits, type Pt, type Quad, type Rect, type StoredEdits,
 } from "@/lib/imageEdits";
 import { homography, type P } from "@/lib/scenes/geometry";
-import { detectCorners } from "./detectCorners";
 import { EditorDialog } from "./EditorDialog";
 import { loadImage, useGestures, useSize, type XY } from "./gestures";
 
@@ -112,8 +111,6 @@ export default function ImageEditor({ source, sourceSize, initial, previous, ori
   const [view, setView] = useState({ z: 1, x: 0, y: 0 });
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [drag, setDrag] = useState<string | null>(null);
-  const [suggested, setSuggested] = useState<Quad | null | undefined>(undefined);
-  const [note, setNote] = useState<string | null>(null);
   const [lockOriginal, setLockOriginal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<{ message: string; fix?: { label: string; href?: string } } | null>(null);
@@ -147,11 +144,6 @@ export default function ImageEditor({ source, sourceSize, initial, previous, ori
   }, [source, full]);
 
   const A = useMemo(() => (img ? turnedCanvas(img, edits.rotate) : null), [img, edits.rotate]);
-  // A guess at the painting's corners, once per turn.
-  useEffect(() => {
-    if (!A) return;
-    setSuggested(detectCorners(A, A.width, A.height));
-  }, [A]);
   const flat = useMemo(() => {
     if (!A || mode !== "crop" || !edits.corners) return { B: A, blocked: false };
     const f = flattenedCanvas(A, edits.corners, edits.aspect);
@@ -343,9 +335,6 @@ export default function ImageEditor({ source, sourceSize, initial, previous, ori
   function enterAngle() {
     if (mode === "angle") return;
     cornersAtEnter.current = edits.corners;
-    const q = edits.corners ?? suggested ?? null;
-    setEdits((e) => ({ ...e, corners: q }));
-    setNote(edits.corners ? null : q ? "We found the edges. Drag the dots to adjust." : "Drag the dots onto the painting's corners.");
     setMode("angle");
     setView({ z: 1, x: 0, y: 0 });
   }
@@ -357,15 +346,9 @@ export default function ImageEditor({ source, sourceSize, initial, previous, ori
       const changed = JSON.stringify(q) !== JSON.stringify(cornersAtEnter.current);
       return { ...e, corners: q, aspect: q && origRatio ? origRatio : null, crop: changed ? null : e.crop };
     });
-    setNote(null);
     setLockOriginal(false);
     setMode("crop");
     setView({ z: 1, x: 0, y: 0 });
-  }
-
-  function findEdges() {
-    if (suggested) { setEdits((e) => ({ ...e, corners: suggested })); setNote("We found the edges. Drag the dots to adjust."); }
-    else setNote("Couldn't find the edges. Drag the dots onto the corners.");
   }
 
   function lockToOriginal(on: boolean) {
@@ -377,7 +360,6 @@ export default function ImageEditor({ source, sourceSize, initial, previous, ori
     setEdits(NO_EDITS);
     setMode("crop");
     setLockOriginal(false);
-    setNote(null);
     setView({ z: 1, x: 0, y: 0 });
   }
 
@@ -443,7 +425,6 @@ export default function ImageEditor({ source, sourceSize, initial, previous, ori
   const cropBox = { x: hs[0].x, y: hs[0].y, w: hs[2].x - hs[0].x, h: hs[2].y - hs[0].y };
   const poly = hs.map((p) => `${p.x},${p.y}`).join(" ");
   const loupeLeft = loupeAt ? toScreen(loupeAt).x > size.w / 2 : true;
-  const showSlantHint = auto && mode === "crop" && !edits.corners && suggested && !near(suggested, FULL_QUAD) && !changed;
 
   return (
     <EditorDialog label="Edit photo" onClose={cancel}>
@@ -529,12 +510,6 @@ export default function ImageEditor({ source, sourceSize, initial, previous, ori
 
         {/* Tool controls */}
         <div className="grid gap-2.5 border-t border-line px-4 py-3">
-          {showSlantHint && (
-            <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13.5px]" role="status">
-              <b>Wall in the shot?</b>
-              <button type="button" onClick={enterAngle} className="min-h-[40px] font-bold text-scan underline-offset-2 hover:underline">Crop to the painting</button>
-            </p>
-          )}
           {mode === "crop" ? (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
               <button type="button" onClick={rotate} className="btn btn-ghost btn-sm min-h-[40px]"><RotateCw className="h-4 w-4" aria-hidden="true" />Rotate</button>
@@ -563,10 +538,9 @@ export default function ImageEditor({ source, sourceSize, initial, previous, ori
             </div>
           ) : (
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <p className="min-w-0 flex-1 text-[13.5px] font-semibold" role="status">{note || "Drag the dots onto the painting's corners."}{origRatio ? <span className="font-normal text-ink-2"> Shaped to {originalSize!.w} × {originalSize!.h} in.</span> : null}</p>
-              <button type="button" onClick={findEdges} className="btn btn-ghost btn-sm min-h-[40px]"><ScanSearch className="h-4 w-4" aria-hidden="true" />Find edges</button>
+              <p className="min-w-0 flex-1 text-[13.5px] font-semibold" role="status">Drag the dots onto the painting&apos;s corners.{origRatio ? <span className="font-normal text-ink-2"> Shaped to {originalSize!.w} × {originalSize!.h} in.</span> : null}</p>
               {edits.corners && !near(edits.corners, FULL_QUAD) && (
-                <button type="button" onClick={() => { setEdits((e) => ({ ...e, corners: FULL_QUAD })); setNote(null); }} className="btn btn-ghost btn-sm min-h-[40px]"><Undo2 className="h-4 w-4" aria-hidden="true" />Undo fix</button>
+                <button type="button" onClick={() => { setEdits((e) => ({ ...e, corners: FULL_QUAD })); }} className="btn btn-ghost btn-sm min-h-[40px]"><Undo2 className="h-4 w-4" aria-hidden="true" />Undo fix</button>
               )}
             </div>
           )}

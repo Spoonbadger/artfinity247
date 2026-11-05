@@ -90,7 +90,7 @@ export default async function DevelopersPage() {
             <h1 className="display text-[54px] sm:text-[76px] lg:text-[88px]">
               Your art, on <span className="relative z-0 whitespace-nowrap">any site.<BrushStroke className="absolute -bottom-1 -left-2 -z-10 h-[0.42em] w-[calc(100%+16px)]" color="var(--af-sticker)" /></span>
             </h1>
-            <p className="mt-5 max-w-[34ch] text-[19px] leading-snug text-ink-2">One script tag. Live prices. Checkout and shipping stay on us.</p>
+            <p className="mt-5 max-w-[34ch] text-[19px] leading-snug text-ink-2">Add one script tag. We handle checkout and shipping.</p>
             <div className="mt-7 flex flex-wrap gap-2.5">
               <Link href="/studio/developers" className="btn btn-blue">Get my snippets <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
               <a href="#api" className="btn btn-ghost">API reference</a>
@@ -116,17 +116,30 @@ export default async function DevelopersPage() {
       <section className="mx-auto max-w-[1240px] px-4 py-16 sm:px-6 md:py-20">
         <H2 id="embed" eyebrow="Embeds">What you can embed</H2>
         {ex ? (
-          <div className="grid gap-16">
-            {EMBEDS.map((e) => (
-              <div key={e.kind} className="grid min-w-0 gap-5">
-                <div className="flex items-baseline gap-3">
+          <div className="grid gap-8">
+            {/* The gallery is open; the other embeds fold away until someone wants them. */}
+            {EMBEDS.map((e, i) => {
+              const head = (
+                <span className="flex items-baseline gap-3">
                   <span className="paint-dab translate-y-0.5" style={{ ["--dab" as string]: e.dab }} aria-hidden="true" />
-                  <h3 className="font-display text-[26px] font-extrabold [font-variation-settings:'wdth'_80]">{e.title}</h3>
+                  <span role="heading" aria-level={3} className="font-display text-[26px] font-extrabold [font-variation-settings:'wdth'_80]">{e.title}</span>
                   <span className="hidden text-[15px] text-ink-2 sm:inline">{e.line}</span>
-                </div>
-                <EmbedBuilder handle={ex.handle} artworks={picks} kinds={[e.kind]} initialSlug={ex.artworkSlug} />
-              </div>
-            ))}
+                </span>
+              );
+              const builder = <EmbedBuilder handle={ex.handle} artworks={picks} kinds={[e.kind]} initialSlug={ex.artworkSlug} />;
+              return i === 0 ? (
+                <div key={e.kind} className="grid min-w-0 gap-5">{head}{builder}</div>
+              ) : (
+                <details key={e.kind} className="group min-w-0 border-t border-line pt-5">
+                  <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-4 [&::-webkit-details-marker]:hidden">
+                    {head}
+                    <span className="shrink-0 text-[14px] font-semibold text-scan group-open:hidden">Show</span>
+                    <span className="hidden shrink-0 text-[14px] font-semibold text-scan group-open:inline">Hide</span>
+                  </summary>
+                  <div className="mt-5">{builder}</div>
+                </details>
+              );
+            })}
 
             <div className="grid gap-5 lg:grid-cols-2">
               <div className="af-panel p-5">

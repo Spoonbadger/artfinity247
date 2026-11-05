@@ -2,12 +2,21 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import LongForm from "@/components/browse/LongForm";
 import { PRINT_BUSINESS_DAYS, SHIP_BUSINESS_DAYS } from "@/lib/delivery";
+import { HELP_DAYS_AFTER_DELIVERY } from "@/lib/reprintFormat";
+
+const SUMMARY = [
+  "You must be 18 or older to use the site or buy.",
+  "Prints are made to order and ship free, to US addresses only.",
+  `Damaged, misprinted or wrong? Tell us within ${HELP_DAYS_AFTER_DELIVERY} days of delivery and we reprint it free. No change-of-mind returns.`,
+  "Buying a print doesn’t give you the copyright.",
+  "Disputes go to binding arbitration in New York.",
+];
 
 export const metadata: Metadata = { title: "Terms and conditions" };
 
 export default function Page() {
   return (
-    <LongForm eyebrow="Policy" title="Terms and conditions" sub="Website and online sales terms" current="/terms-and-conditions">
+    <LongForm eyebrow="Policy" title="Terms and conditions" sub="Using the site and buying prints." current="/terms-and-conditions" summary={SUMMARY}>
       <section>
         <p className="!mt-0 !text-[14px] text-ink-2">Last updated: November 5, 2026</p>
 

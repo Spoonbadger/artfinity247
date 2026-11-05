@@ -178,11 +178,11 @@ When there's enough data, the upload form shows what similar work sells for at e
     section,
     audience: "artist",
     title: "Getting your paintings scanned",
-    summary: `Phone photo too small for big prints? We scan your original paintings in NYC, high-res and colour-accurate, and put the files straight onto your artworks so buyers can order every size up to ${LARGEST}.`,
+    summary: `We scan your originals in NYC and add the files to your artworks. Buyers can then order every size up to ${LARGEST}.`,
     link: { href: "/studio/scanning", label: "Book a scan" },
     related: ["file-sizes-print-sharp", "why-sizes-hidden", "set-prices", "bulk-prints"],
     body: `
-Every print size needs enough pixels to stay sharp (see [Which file sizes print sharp?](/help/getting-started/file-sizes-print-sharp)). Many phone photos are too small, or badly lit, for the bigger sizes, so those sizes are hidden from buyers. A scan of the original fixes both: every size unlocks, and buyers see your real colours.
+Every print size needs enough pixels to stay sharp (see [Which file sizes print sharp?](/help/getting-started/file-sizes-print-sharp)). Many phone photos are too small, or badly lit, for the bigger sizes, so those sizes are hidden from buyers. A scan of the original fixes both: every size becomes available, and buyers see your real colors.
 
 Scanning is done in New York City only.
 

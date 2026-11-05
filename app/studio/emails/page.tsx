@@ -8,7 +8,7 @@ import { DEFAULT_TEMPLATES, EMAIL_KINDS, type EmailKind } from "@/lib/artistEmai
 import { displayName, requireArtist } from "../_lib/data";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Automated emails" };
+export const metadata = { title: "Buyer emails" };
 
 export default async function EmailsPage() {
   const artist = await requireArtist("/studio/emails");
@@ -33,10 +33,10 @@ export default async function EmailsPage() {
 
   return (
     <StudioPage
-      title={<>Automated <Brushed>emails</Brushed></>}
+      title={<>Buyer <Brushed>emails</Brushed></>}
       sub="What buyers get, in your words."
       actions={
-        <Link href="/studio/customers" className="btn btn-ghost btn-sm">
+        <Link href="/studio/customers" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />Customers
         </Link>
       }

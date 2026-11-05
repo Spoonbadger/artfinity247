@@ -86,7 +86,7 @@ export default async function Home({ searchParams }: { searchParams?: Record<str
             <h1 className="display mt-5 text-[58px] sm:text-[84px] lg:text-[96px]">
               Turn every wall into <Brushed color="var(--af-sticker)"><span className="text-scan">your shop.</span></Brushed>
             </h1>
-            <p className="mt-5 text-[19px] leading-snug text-ink-2 sm:text-[21px]">They scan. We print. You get paid.</p>
+            <p className="mt-5 text-[19px] leading-snug text-ink-2 sm:text-[21px]">Hang a code by your painting. Sell prints to anyone who scans.</p>
             <ClaimHandle className="mt-7" />
             <p className="mt-3 pl-4 text-[14px] text-ink-2">
               Just here for art? <Link href="/art" className="font-semibold text-ink underline-offset-2 hover:underline">Browse prints <ArrowRight className="inline h-3.5 w-3.5" aria-hidden="true" /></Link>

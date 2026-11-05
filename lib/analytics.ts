@@ -14,7 +14,7 @@ const dayKey = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: TZ });
 
 export type Day = { key: string; label: string; views: number; visitors: number; scans: number; sales: number };
 export type SourceRow = { source: string; views: number; visitors: number; sales: number | null };
-export type ArtRow = { id: string; title: string; slug: string | null; imageUrl: string | null; views: number; visitors: number; sales: number };
+export type ArtRow = { id: string; title: string; slug: string | null; imageUrl: string | null; views: number; visitors: number; scans: number; sales: number };
 export type Analytics = {
   range: Range;
   from: Date;
@@ -40,7 +40,7 @@ export async function getArtistAnalytics(artistId: string, range: Range, now = n
   const group = (col: Prisma.Sql) =>
     prisma.$queryRaw<Count[]>`SELECT ${col} AS k, count(*)::int AS views, count(DISTINCT "visitorId")::int AS visitors FROM "PageView" WHERE ${win} GROUP BY 1`;
 
-  const [totals, byDay, bySource, byDevice, byArt, scanDays, scans, items, ever] = await Promise.all([
+  const [totals, byDay, bySource, byDevice, byArt, scanDays, scans, items, ever, scansByArtRows] = await Promise.all([
     prisma.$queryRaw<{ views: number; visitors: number }[]>`SELECT count(*)::int AS views, count(DISTINCT "visitorId")::int AS visitors FROM "PageView" WHERE ${win}`,
     group(localDay(`"createdAt"`)),
     group(Prisma.raw(`"source"`)),
@@ -55,6 +55,9 @@ export async function getArtistAnalytics(artistId: string, range: Range, now = n
       select: { artworkId: true, qrCodeId: true, order: { select: { createdAt: true } } },
     }),
     prisma.pageView.findFirst({ where: { artistId }, select: { id: true } }),
+    prisma.$queryRaw<{ k: string; n: number }[]>`
+      SELECT q."artworkId" AS k, count(*)::int AS n FROM "ScanEvent" s JOIN "QrCode" q ON q."id" = s."qrCodeId"
+      WHERE q."artistId" = ${artistId} AND q."artworkId" IS NOT NULL AND s."createdAt" >= ${from} AND s."createdAt" < ${now} GROUP BY 1`,
   ]);
 
   // Days, oldest first, in Studio's time zone.
@@ -75,16 +78,17 @@ export async function getArtistAnalytics(artistId: string, range: Range, now = n
     .sort((a, b) => b.views - a.views);
   if (qrSales && !sources.some((s) => s.source === "qr")) sources.push({ source: "qr", views: 0, visitors: 0, sales: qrSales });
 
-  // Top artworks: anything viewed or sold in the window.
+  // Top artworks: anything viewed, scanned or sold in the window.
   const salesByArt = new Map<string, number>();
   for (const it of items) if (it.artworkId) salesByArt.set(it.artworkId, (salesByArt.get(it.artworkId) || 0) + 1);
-  const ids = Array.from(new Set([...byArt.map((r) => r.k!), ...Array.from(salesByArt.keys())]));
+  const scansByArt = new Map(scansByArtRows.map((r) => [r.k, r.n]));
+  const ids = Array.from(new Set([...byArt.map((r) => r.k!), ...Array.from(salesByArt.keys()), ...Array.from(scansByArt.keys())]));
   const arts = ids.length
     ? await prisma.artwork.findMany({ where: { id: { in: ids }, artistId }, select: { id: true, title: true, slug: true, imageUrl: true } })
     : [];
   const viewsByArt = new Map(byArt.map((r) => [r.k!, r]));
   const artworks: ArtRow[] = arts
-    .map((a) => ({ ...a, views: viewsByArt.get(a.id)?.views || 0, visitors: viewsByArt.get(a.id)?.visitors || 0, sales: salesByArt.get(a.id) || 0 }))
+    .map((a) => ({ ...a, views: viewsByArt.get(a.id)?.views || 0, visitors: viewsByArt.get(a.id)?.visitors || 0, scans: scansByArt.get(a.id) || 0, sales: salesByArt.get(a.id) || 0 }))
     .sort((a, b) => b.views - a.views || b.sales - a.sales);
 
   const order = ["mobile", "desktop", "tablet", "unknown"];

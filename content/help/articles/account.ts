@@ -110,7 +110,7 @@ Getting paid through Stripe instead? See [How payouts reach you](/help/getting-p
     section,
     audience: "artist",
     title: "Confirming your email",
-    summary: "We email you a link when you sign up or change your email. Click it to unlock payouts (Venmo and Stripe) and newsletters. The link works for 7 days; you can send a fresh one from the top of your Studio.",
+    summary: "We email you a link when you sign up or change your email. Click it to turn on payouts (Venmo and Stripe) and newsletters. The link works for 7 days; you can send a fresh one from the top of your Studio.",
     link: { href: "/studio#confirm-email", label: "Resend the link" },
     related: ["account-details", "change-venmo", "login-reset-password"],
     body: `

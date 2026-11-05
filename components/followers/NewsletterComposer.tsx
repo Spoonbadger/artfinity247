@@ -304,7 +304,7 @@ export default function NewsletterComposer({
           <span className="truncate text-[12.5px] text-ink-2">From {artist.name} via Artfinity</span>
         </div>
         <div className="overflow-hidden rounded-2xl border-[1.5px] border-ink bg-wall shadow-[6px_6px_0_#15161b]">
-          <iframe title="Newsletter preview" srcDoc={html} sandbox="allow-popups allow-popups-to-escape-sandbox" className="block h-[600px] w-full bg-white lg:h-[calc(100vh-120px)]" />
+          <iframe title="Newsletter preview" srcDoc={html} sandbox="allow-popups allow-popups-to-escape-sandbox" className="block h-[520px] w-full bg-white lg:h-[calc(100vh-120px)]" />
         </div>
       </aside>
     </div>

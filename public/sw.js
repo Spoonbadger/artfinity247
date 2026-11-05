@@ -12,7 +12,7 @@
  * Changing this file or the /offline page? Bump VERSION: the new worker installs, deletes the
  * old caches on activate, and takes over open tabs.
  */
-const VERSION = "2026-11-05.1";
+const VERSION = "2026-11-05.2";
 const PREFIX = "af-";
 const STATIC_CACHE = `${PREFIX}static-${VERSION}`;
 const OFFLINE_CACHE = `${PREFIX}offline-${VERSION}`;

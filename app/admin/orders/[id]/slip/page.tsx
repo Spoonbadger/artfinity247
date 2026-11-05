@@ -2,10 +2,11 @@
 // thank-you note for the parcel (Messages tagged [parcel], written on the Studio customer page), one note per card.
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { adminOrRedirect } from "../../../_components/gate";
-import { SIZE_LABEL } from "../../../_components/util";
+import { SIZE_LABEL, day } from "../../../_components/util";
+import { PageHead } from "../../../_components/ui";
+import { orderNumber } from "@/lib/printer";
 import { normalizeSize } from "@/lib/sales";
 import { PARCEL_TAG } from "@/lib/artistEmails";
 import PrintSlipButton from "./PrintSlipButton";
@@ -35,20 +36,13 @@ export default async function PackingSlipPage({ params }: { params: { id: string
         @page { size: letter; margin: 0.6in; }
         @media print {
           html, body, body > div { background: #fff !important; min-height: 0 !important; }
-          header { display: none !important; }
+          header, nav[aria-label="Admin"] { display: none !important; }
           main { padding: 0 !important; max-width: none !important; }
           .slip-note { break-inside: avoid; }
         }
       ` }} />
-      <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <div>
-          <p className="eyebrow">Packing slip</p>
-          <h1 className="display text-[36px]">{order.shippingName || order.email}</h1>
-        </div>
-        <div className="flex gap-2">
-          <Link href="/admin/orders" className="btn btn-ghost btn-sm">Orders</Link>
-          <PrintSlipButton />
-        </div>
+      <div className="print:hidden">
+        <PageHead back={{ href: `/admin/orders/${order.id}`, label: `Order ${orderNumber(order.id)}` }} title="Packing slip" sub={order.shippingName || order.email} action={<PrintSlipButton />} />
       </div>
 
       <section className="grid max-w-[7.3in] gap-5 rounded-2xl border border-line bg-white p-6 text-[14px] print:max-w-none print:border-0 print:p-0">
@@ -60,8 +54,8 @@ export default async function PackingSlipPage({ params }: { params: { id: string
           </div>
           <div className="grid gap-0.5 text-right">
             <span className="eyebrow">Order</span>
-            <span className="num">{order.id}</span>
-            <span className="text-ink-2">{order.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+            <span className="num">{orderNumber(order.id)}</span>
+            <span className="text-ink-2">{day(order.createdAt)}</span>
           </div>
         </div>
 

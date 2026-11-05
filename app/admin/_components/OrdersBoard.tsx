@@ -241,7 +241,7 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
 
       <div className="overflow-hidden rounded-2xl border border-line bg-white">
         <div className="hidden grid-cols-[120px_minmax(0,1.3fr)_minmax(0,1fr)_100px_150px_150px] gap-4 border-b border-line bg-wall/60 px-4 py-2.5 text-[12px] font-bold uppercase tracking-[0.06em] text-ink-2 lg:grid">
-          <span>Prints</span>{sortHead("date", "Date", "desc")}<span>Items</span>{sortHead("total", "Total", "desc", true)}<span>Printer</span><span>Shipping</span>
+          <span>Prints</span>{sortHead("date", "Order date", "desc")}<span>Items</span>{sortHead("total", "Total", "desc", true)}<span>Printer</span><span>Shipping</span>
         </div>
 
         {shown.length === 0 && (

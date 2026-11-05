@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 import LongForm from "@/components/browse/LongForm";
+import { HELP_DAYS_AFTER_DELIVERY } from "@/lib/reprintFormat";
 
 export const metadata: Metadata = { title: "Return policy" };
 
 export default function Page() {
   return (
-    <LongForm eyebrow="Policy" title="Return policy" sub="Arrives damaged? We reprint it free." current="/return-policy">
+    <LongForm eyebrow="Policy" title="Return policy" sub="Arrives damaged? We reprint it free." current="/return-policy" summary={[
+      `Damaged, misprinted or wrong: send a photo within ${HELP_DAYS_AFTER_DELIVERY} days of delivery. We reprint it free, no need to send it back.`,
+      "No returns for a change of mind or the wrong size. Every print is made to order.",
+    ]}>
       <section>
         <p className="!mt-0 !text-[14px] text-ink-2">Last updated: November 5, 2026</p>
 

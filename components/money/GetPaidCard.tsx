@@ -50,7 +50,7 @@ export default function GetPaidCard({ status, mode, venmoHandle, nextDate, verif
             </form>
           ) : (
             <form method="post" action="/api/studio/stripe/connect">
-              <button type="submit" className={status === "pending" ? "btn btn-blue" : "btn"}>{status === "pending" ? "Finish setup" : "Connect with Stripe"}</button>
+              <button type="submit" className={status === "pending" ? "btn btn-blue" : "btn btn-ghost"}>{status === "pending" ? "Finish setup" : "Connect with Stripe"}</button>
             </form>
           )}
           {mode === "simulated" && (

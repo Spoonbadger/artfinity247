@@ -16,7 +16,7 @@ const jsonLd = (data: unknown) => JSON.stringify(data).replace(/</g, "\\u003c");
 
 export default function HelpIndex() {
   const docs = searchDocs();
-  const popular = popularArticles(10);
+  const popular = popularArticles(6);
   const faq = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -30,7 +30,7 @@ export default function HelpIndex() {
   return (
     <div className="pb-24">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(faq) }} />
-      <HelpHeader title="How can we help?" sub="Short answers for artists and buyers. Search, or pick a topic.">
+      <HelpHeader title="How can we help?" sub="Short answers for artists and buyers.">
         <div className="mt-7 max-w-[680px]">
           <HelpSearch docs={docs} />
         </div>
@@ -39,17 +39,17 @@ export default function HelpIndex() {
       <div className="mx-auto grid max-w-[1240px] gap-12 px-4 pt-10 sm:px-6 md:pt-14 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-14">
         <section aria-labelledby="topics-h" className="min-w-0">
           <h2 id="topics-h" className="display mb-5 text-[32px] sm:text-[40px]">Topics</h2>
-          <ul className="grid gap-4 sm:grid-cols-2">
+          <ul className="grid grid-cols-2 gap-3 sm:gap-4">
             {HELP_SECTIONS.map((s) => {
               const items = articlesIn(s.id);
               return (
                 <li key={s.id}>
-                  <Link href={`/help/${s.id}`} className="af-card group grid h-full content-start gap-2 p-5 no-underline transition hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(21,22,27,.9)]">
+                  <Link href={`/help/${s.id}`} className="af-card group grid h-full content-start gap-2 p-4 no-underline sm:p-5 transition hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(21,22,27,.9)]">
                     <span className="flex items-center gap-2.5">
                       <i className="paint-dab h-5 w-5" style={{ ["--dab" as string]: s.dab }} aria-hidden="true" />
-                      <b className="font-display text-[24px] leading-none text-ink [font-variation-settings:'wdth'_80]">{s.title}</b>
+                      <b className="font-display text-[20px] leading-none text-ink [font-variation-settings:'wdth'_80] sm:text-[24px]">{s.title}</b>
                     </span>
-                    <span className="text-[15px] text-ink-2">{s.blurb}</span>
+                    <span className="hidden text-[15px] text-ink-2 sm:block">{s.blurb}</span>
                     <span className="mt-1 flex items-center gap-1 text-[13.5px] font-semibold text-scan">
                       {items.length} articles <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" aria-hidden="true" />
                     </span>

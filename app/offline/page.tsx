@@ -30,11 +30,11 @@ export default function OfflinePage() {
         <div className="grid justify-items-center gap-3">
           <h1 className="display text-[44px] sm:text-[60px]">You&rsquo;re offline.</h1>
           <p className="max-w-[34ch] text-[17px] text-ink-2">
-            This page needs a connection. Your art, sales and payouts are safe. Reconnect and try again.
+            This page needs a connection. Nothing you saved is lost.
           </p>
           <div className="mt-3 flex flex-wrap justify-center gap-2">
-            <Link href="/studio" className="btn btn-ghost">Open the Studio</Link>
             <RetryButton />
+            <Link href="/studio" className="btn btn-ghost">Open the Studio</Link>
           </div>
         </div>
       </main>

@@ -29,10 +29,11 @@ export default async function UnsubscribePage({ searchParams }: { searchParams: 
       <p className="text-[17px] text-ink-2">
         No more emails from {name} to <b className="text-ink">{f.email}</b>.
       </p>
-      <div className="flex flex-wrap justify-center gap-2">
-        <Link href={`/follow/confirm?t=${encodeURIComponent(t)}&re=1`} prefetch={false} className="btn btn-blue">Resubscribe</Link>
-        {slug && <Link href={artistPath(slug)} className="btn btn-ghost">{first}&apos;s page</Link>}
-      </div>
+      {slug && <Link href={artistPath(slug)} className="btn btn-ghost">{first}&apos;s page</Link>}
+      <p className="text-[14px] text-ink-2">
+        Clicked by mistake?{" "}
+        <Link href={`/follow/confirm?t=${encodeURIComponent(t)}&re=1`} prefetch={false} className="inline-flex min-h-[40px] items-center font-semibold text-ink underline underline-offset-4">Resubscribe</Link>
+      </p>
     </FollowNote>
   );
 }

@@ -52,7 +52,7 @@ export default async function ReportPage({ searchParams }: { searchParams: { art
         <p className="mt-4 max-w-[48ch] text-[18px] text-ink-2">
           {counter
             ? "If your work was removed after a copyright notice and it’s yours, you can file a counter-notice."
-            : "Artists should get paid for their own work. Tell us what you saw and we’ll look into it."}
+            : "Tell us what you saw. A person reviews every report."}
         </p>
       </section>
       <section className="mx-auto grid max-w-[1240px] items-start gap-8 px-4 sm:px-6 lg:grid-cols-[1fr_1.3fr] lg:gap-12">

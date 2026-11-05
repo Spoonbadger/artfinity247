@@ -199,7 +199,7 @@ export default function EmailEditor({
             <p className="-mt-2 text-[13px] text-ink-2">Buyers get Artfinity&apos;s standard email until you save.</p>
           ) : null}
           {kind === "thank_you" && (
-            <p className="-mt-2 rounded-lg bg-wall px-3 py-2 text-[12.5px] text-ink-2">Saved now. Automatic sending arrives with the next backend update.</p>
+            <p className="-mt-2 rounded-lg bg-wall px-3 py-2 text-[12.5px] text-ink-2">Your note saves now. Automatic sending is coming soon.</p>
           )}
 
           <label className="af-field">
@@ -245,7 +245,7 @@ export default function EmailEditor({
 
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-dashed border-line pt-3">
             {!saved[kind].custom && isDefaultText && draft.enabled ? (
-              <span className="text-[13px] text-ink-2">Using Artfinity&apos;s standard wording. Edit it above to make it yours.</span>
+              <span className="text-[13px] text-ink-2">Artfinity&apos;s standard wording. Edit it to make it yours.</span>
             ) : (
               <button type="button" className="btn btn-ghost btn-sm" onClick={reset} disabled={busy}>
                 <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />Reset to default
