@@ -51,9 +51,11 @@ export type AdminOrder = {
   tracking?: Tracking | null;
   /** The artist's thank-you note to print and put in the parcel ("Also print this note in the parcel"). */
   parcelNotes?: { id: string; artistName: string; subject: string; body: string; createdAt: string }[];
+  /** Lines with a recorded refund (lib/refunds.ts). */
+  refundedItems?: number;
 };
 
-type Filter = "all" | "print" | "ship" | "done";
+export type Filter = "all" | "print" | "ship" | "done";
 const FILTERS: { id: Filter; label: string; test: (o: AdminOrder) => boolean }[] = [
   { id: "all", label: "All", test: () => true },
   { id: "print", label: "To print", test: (o) => !o.sentToPrinter && o.shippingStatus === "pending" },
@@ -74,9 +76,10 @@ function downloadUrl(item: AdminOrderItem) {
 
 const when = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
-export default function OrdersBoard({ orders: initial, printerAuto = false }: { orders: AdminOrder[]; printerAuto?: boolean }) {
+export default function OrdersBoard({ orders: initial, printerAuto = false, initialFilter = "all" }: { orders: AdminOrder[]; printerAuto?: boolean; initialFilter?: Filter }) {
   const [orders, setOrders] = useState(initial);
-  const [filter, setFilter] = useState<Filter>("all");
+  const [filter, setFilter] = useState<Filter>(initialFilter);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   // The order being marked shipped: its tracking form is open.
@@ -86,6 +89,35 @@ export default function OrdersBoard({ orders: initial, printerAuto = false }: { 
   const shown = orders.filter(FILTERS.find((f) => f.id === filter)!.test);
 
   const patch = (id: string, p: Partial<AdminOrder>) => setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, ...p } : o)));
+  const shownSelected = shown.filter((o) => selected.has(o.id));
+  const allShownSelected = shown.length > 0 && shownSelected.length === shown.length;
+  const toggleSelect = (id: string) => setSelected((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  const selectAllShown = () => setSelected(allShownSelected ? new Set() : new Set(shown.map((o) => o.id)));
+
+  // Bulk: mark the selected orders as sent to the printer.
+  const bulkSent = async () => {
+    const ids = shownSelected.filter((o) => !o.sentToPrinter).map((o) => o.id);
+    if (!ids.length) return toast.message("Those are already marked as at the printer.");
+    if (!confirm(`Mark ${ids.length} order${ids.length === 1 ? "" : "s"} as sent to the printer?`)) return;
+    setBusy("bulk");
+    try {
+      const r = await fetch("/api/admin/orders/bulk", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids, action: "sent" }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || "");
+      const done = new Set<string>(d.updated || []);
+      setOrders((prev) => prev.map((o) => (done.has(o.id) ? { ...o, sentToPrinter: true } : o)));
+      toast.success(`${done.size} marked as sent to the printer`);
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't update. Try again.");
+    } finally {
+      setBusy(null);
+    }
+  };
+  const exportHref = `/api/admin/orders/export?ids=${shownSelected.map((o) => o.id).join(",")}`;
 
   const toggleSent = async (o: AdminOrder) => {
     const next = !o.sentToPrinter;
@@ -149,7 +181,7 @@ export default function OrdersBoard({ orders: initial, printerAuto = false }: { 
 
   return (
     <section className="grid gap-4" aria-label="Orders">
-      <div role="tablist" aria-label="Filter orders" className="flex flex-wrap gap-2">
+      <div role="tablist" aria-label="Filter orders" className="flex flex-wrap items-center gap-2">
         {FILTERS.map((f) => (
           <button
             key={f.id}
@@ -165,7 +197,20 @@ export default function OrdersBoard({ orders: initial, printerAuto = false }: { 
             {f.label} <span className="num ml-1 opacity-70">{counts[f.id]}</span>
           </button>
         ))}
+        <label className="ml-auto inline-flex min-h-[36px] cursor-pointer items-center gap-2 text-[13.5px] font-semibold text-ink-2">
+          <input type="checkbox" checked={allShownSelected} onChange={selectAllShown} className="h-4 w-4 accent-[var(--af-ink)]" />
+          Select all shown
+        </label>
       </div>
+
+      {shownSelected.length > 0 && (
+        <div className="sticky top-[64px] z-10 flex flex-wrap items-center gap-2 rounded-xl border-[1.5px] border-ink bg-white px-3 py-2 shadow-sm" role="region" aria-label="Bulk actions">
+          <b className="num text-[14px]">{shownSelected.length} selected</b>
+          <button type="button" disabled={busy === "bulk"} onClick={bulkSent} className="btn btn-blue btn-sm">Mark sent to printer</button>
+          <a href={exportHref} className="btn btn-ghost btn-sm" download>Export CSV for the lab</a>
+          <button type="button" onClick={() => setSelected(new Set())} className="ml-auto text-[13px] font-semibold text-ink-2 underline">Clear</button>
+        </div>
+      )}
 
       <div className="overflow-hidden rounded-2xl border border-line bg-white">
         <div className="hidden grid-cols-[120px_minmax(0,1.3fr)_minmax(0,1fr)_100px_150px_150px] gap-4 border-b border-line bg-wall/60 px-4 py-2.5 text-[12px] font-bold uppercase tracking-[0.06em] text-ink-2 lg:grid">
@@ -204,7 +249,9 @@ export default function OrdersBoard({ orders: initial, printerAuto = false }: { 
                   {/* buyer */}
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-baseline gap-x-2">
-                      <b className="truncate text-[15px]">{o.shippingName || o.email}</b>
+                      <input type="checkbox" checked={selected.has(o.id)} onChange={() => toggleSelect(o.id)} aria-label={`Select order from ${o.shippingName || o.email}`} className="h-4 w-4 self-center accent-[var(--af-ink)]" />
+                      <Link href={`/admin/orders/${o.id}`} className="truncate text-[15px] font-bold text-ink hover:text-scan">{o.shippingName || o.email}</Link>
+                      {!!o.refundedItems && <span className="rounded-full bg-coral/15 px-2 text-[11.5px] font-bold text-coral">{o.refundedItems === o.items.length ? "Refunded" : "Part refunded"}</span>}
                       {o.kind === "reprint" ? (
                         <span className="rounded-full bg-[#f3dcc8] px-2 text-[11.5px] font-bold text-ink" title="Free reprint for a damaged or wrong print. Artfinity pays. Not a sale, no payout.">Free reprint</span>
                       ) : o.paymentStatus !== "paid" && <span className="rounded-full bg-coral/15 px-2 text-[11.5px] font-bold text-coral">{o.paymentStatus}</span>}
@@ -225,6 +272,7 @@ export default function OrdersBoard({ orders: initial, printerAuto = false }: { 
                     >
                       {open === o.id ? "Hide details" : "Details"}
                     </button>
+                    <Link href={`/admin/orders/${o.id}`} className="ml-3 text-[14px] font-semibold text-scan hover:underline md:text-[13px]">Open order</Link>
                   </div>
 
                   {/* items */}

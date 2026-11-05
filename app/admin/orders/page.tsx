@@ -4,7 +4,8 @@ import { adminOrRedirect } from "../_components/gate";
 import { itemBreakdown, normalizeSize } from "@/lib/sales";
 import { PaintChip } from "@/components/af/Brush";
 import MonthPicker from "../_components/MonthPicker";
-import OrdersBoard, { type AdminOrder } from "../_components/OrdersBoard";
+import OrdersBoard, { type AdminOrder, type Filter } from "../_components/OrdersBoard";
+import { activeRefunds } from "@/lib/refunds";
 import { currentMonth, monthLabel, monthRange, usd } from "../_components/util";
 import { TRACKING_SUBJECT, parseTrackingMessage, type Tracking } from "@/lib/tracking";
 import { PARCEL_TAG, splitParcelTag } from "@/lib/artistEmails";
@@ -14,7 +15,9 @@ import { printerAuto, printerState } from "@/lib/printer";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Orders" };
 
-export default async function AdminOrdersPage({ searchParams }: { searchParams: { month?: string } }) {
+const FILTERS: Record<string, Filter> = { print: "print", ship: "ship", shipped: "done", done: "done" };
+
+export default async function AdminOrdersPage({ searchParams }: { searchParams: { month?: string; filter?: string } }) {
   await adminOrRedirect("/admin/orders");
   const monthRows = await prisma.$queryRaw<{ m: string }[]>`
     SELECT DISTINCT to_char("createdAt" AT TIME ZONE 'UTC', 'YYYY-MM') AS m FROM "Order" ORDER BY m DESC`;
@@ -64,12 +67,16 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
     parcelByOrder.set(m.orderId, list);
   }
 
+  const refunds = await activeRefunds(orders.map((o) => o.id));
+
   const shaped: AdminOrder[] = orders.map((o) => {
     const items = o.items.map((it) => {
       // Authoritative money math (60/40 or 50/50 by order date) lives in lib/sales.ts.
       const b0 = itemBreakdown({ lineTotal: it.lineTotal, unitPrice: it.unitPrice, quantity: it.quantity, size: it.size, frameChosen: it.frameChosen, orderDate: o.createdAt, artistSplit: it.artistSplit });
       // Bulk = an artist buying their own prints at cost: no artist share.
-      const b = o.kind === "bulk" ? { ...b0, companyShare: b0.companyShare + b0.artistShare, artistShare: 0 } : b0;
+      const b1 = o.kind === "bulk" ? { ...b0, companyShare: b0.companyShare + b0.artistShare, artistShare: 0 } : b0;
+      // A refund that reversed the artist's share leaves them nothing on the line.
+      const b = refunds.get(it.id)?.reversed ? { ...b1, artistShare: 0 } : b1;
       const size = normalizeSize(it.size);
       return {
         id: it.id,
@@ -109,6 +116,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
       items,
       tracking: trackingByOrder.get(o.id) ?? null,
       parcelNotes: parcelByOrder.get(o.id) ?? [],
+      refundedItems: o.items.filter((it) => refunds.has(it.id)).length,
     };
   });
 
@@ -140,7 +148,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
         <PaintChip color="var(--af-sticker)" value={usd(companyTotal)} label="Artfinity share" earned />
       </div>
 
-      <OrdersBoard key={month} orders={shaped} printerAuto={printerAuto()} />
+      <OrdersBoard key={month} orders={shaped} printerAuto={printerAuto()} initialFilter={FILTERS[searchParams.filter || ""] ?? "all"} />
     </div>
   );
 }

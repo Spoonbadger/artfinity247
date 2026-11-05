@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { Brushed } from "@/components/af/Brush";
 import { useUser } from "@/components/contexts";
@@ -12,6 +12,7 @@ const MESSAGES: Record<string, string> = {
   missing_fields: "Fill in both passwords.",
   not_logged_in: "Log in first, then change your password.",
   rate_limited: "Too many tries. Wait a minute and try again.",
+  has_password: "You already have a password. Refresh and change it instead.",
 };
 
 export default function ChangePasswordForm() {
@@ -21,22 +22,33 @@ export default function ChangePasswordForm() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Accounts made with Google/Apple/... have no password yet: they set one (no "current" to type).
+  const [hasPassword, setHasPassword] = useState(true);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    fetch("/api/auth/oauth/accounts", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setHasPassword(d.hasPassword !== false))
+      .catch(() => {});
+  }, [currentUser]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!current || !next) return setError(MESSAGES.missing_fields);
+    if ((hasPassword && !current) || !next) return setError(MESSAGES.missing_fields);
     if (next.length < 8) return setError(MESSAGES.weak_password);
     setBusy(true);
     try {
-      const res = await fetch("/api/auth/change-password", {
+      const res = await fetch(hasPassword ? "/api/auth/change-password" : "/api/auth/set-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ current, next }),
+        body: JSON.stringify(hasPassword ? { current, next } : { next }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(MESSAGES[data?.code] || "Couldn't change it. Try again.");
       setDone(true);
+      setHasPassword(true);
       setCurrent("");
       setNext("");
     } catch (err: any) {
@@ -63,11 +75,12 @@ export default function ChangePasswordForm() {
     <AuthCard className="mx-auto w-full max-w-[460px]">
       <form onSubmit={onSubmit} className="grid gap-5" noValidate>
         <h1 className="display text-[clamp(40px,9vw,54px)]">
-          Change your <Brushed>password</Brushed>
+          {hasPassword ? <>Change your <Brushed>password</Brushed></> : <>Set a <Brushed>password</Brushed></>}
         </h1>
+        {!hasPassword && !done && <p className="text-[15px] text-ink-2">You log in with a connected account. Add a password to log in with your email too.</p>}
         <FormAlert tone="ok">{done ? "Saved. Use the new password next time." : null}</FormAlert>
         <FormAlert>{error}</FormAlert>
-        <PasswordField label="Current password" name="current" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} required />
+        {hasPassword && <PasswordField label="Current password" name="current" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} required />}
         <PasswordField label="New password" name="next" autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} hint="8 or more characters" required minLength={8} />
         <button type="submit" className="btn btn-blue btn-lg w-full" disabled={busy}>
           {busy && <Spinner />}

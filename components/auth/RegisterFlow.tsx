@@ -10,6 +10,8 @@ import { scanUrl } from "@/lib/qr/render";
 import { cn } from "@/lib/utils";
 import { AuthCard, Field, FormAlert, PasswordField, Spinner } from "./ui";
 import { safeNext, withNext } from "./next";
+import SocialButtons, { OrDivider, PROVIDER_MARK } from "./SocialButtons";
+import type { ProviderId } from "@/lib/oauth/meta";
 
 const HANDLE_RE = /^[a-z0-9_.]{3,30}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -23,6 +25,8 @@ const SENSITIVE = ["Nudity", "Violence or gore", "Disturbing imagery", "Drug use
 
 type Step = 1 | 2 | 3 | 4;
 type HandleState = { status: "idle" | "checking" | "ok" | "bad"; message?: string; suggestions?: string[] };
+/** A provider sign-in waiting to become a page (from the signed cookie, via /api/auth/oauth/pending). */
+type PendingOAuth = { provider: ProviderId; providerLabel: string; email: string | null; emailVerified: boolean; name: string | null; avatar: string | null; instagram: string | null };
 type Upload = { preview: string; url?: string; width?: number; height?: number; printable?: string[]; printableSig?: string; uploading: boolean; error?: string };
 
 const cleanHandle = (v: string) => v.toLowerCase().replace(/^@/, "").replace(/[^a-z0-9_.]/g, "").slice(0, 30);
@@ -54,7 +58,7 @@ function handleMessage(reason?: string) {
   return "That name is taken.";
 }
 
-export default function RegisterFlow() {
+export default function RegisterFlow({ providers = [] }: { providers?: ProviderId[] }) {
   const params = useSearchParams();
   const { currentUser, refreshUser } = useUser();
   const next = safeNext(params.get("next"));
@@ -70,6 +74,9 @@ export default function RegisterFlow() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string | null>>({});
+  // Signed up with Google/Apple/...: no password step; email comes from the provider when it vouches for it.
+  const [oauth, setOauth] = useState<PendingOAuth | null>(null);
+  const [oauthChecking, setOauthChecking] = useState(() => !!params.get("oauth"));
   // step 2
   const [artistName, setArtistName] = useState("");
   const [city, setCity] = useState("");
@@ -89,6 +96,37 @@ export default function RegisterFlow() {
 
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Back from a provider as a new person: pick up the pending profile (never from the URL itself).
+  useEffect(() => {
+    if (!params.get("oauth")) return;
+    let live = true;
+    fetch("/api/auth/oauth/pending", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (!live) return;
+        const p: PendingOAuth | null = d?.pending ?? null;
+        if (!p) {
+          setFormError("That sign-in expired. Try again, or sign up with your email.");
+          return;
+        }
+        setOauth(p);
+        if (p.email) setEmail(p.email);
+        if (p.name) setArtistName((n) => n || p.name || "");
+      })
+      .catch(() => {})
+      .finally(() => live && setOauthChecking(false));
+    return () => {
+      live = false;
+    };
+  }, [params]);
+
+  async function dropOauth() {
+    await fetch("/api/auth/oauth/pending", { method: "DELETE" }).catch(() => {});
+    setOauth(null);
+    setEmail("");
+    setFormError(null);
+  }
 
   // Live handle check, debounced.
   useEffect(() => {
@@ -128,7 +166,7 @@ export default function RegisterFlow() {
     const errs: Record<string, string | null> = {};
     if (!HANDLE_RE.test(handle)) errs.handle = handle ? handleMessage("invalid") : "Pick the name people will find you by.";
     if (!EMAIL_RE.test(email.trim())) errs.email = "Enter a real email. We send sales there.";
-    if (password.length < 8) errs.password = "Use at least 8 characters.";
+    if (!oauth && password.length < 8) errs.password = "Use at least 8 characters.";
     setErrors(errs);
     if (Object.values(errs).some(Boolean)) return;
     setBusy(true);
@@ -166,7 +204,16 @@ export default function RegisterFlow() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ handle, email: email.trim().toLowerCase(), password, artist_name: artistName.trim(), city: city.trim(), state: region.trim(), acceptedTerms: agreed, ref }),
+        body: JSON.stringify({
+          handle,
+          email: email.trim().toLowerCase(),
+          ...(oauth ? { oauth: true } : { password }),
+          artist_name: artistName.trim(),
+          city: city.trim(),
+          state: region.trim(),
+          acceptedTerms: agreed,
+          ref,
+        }),
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -180,6 +227,13 @@ export default function RegisterFlow() {
         } else if (d.code === "weak_password") {
           go(1);
           setErrors({ password: "Use at least 8 characters." });
+        } else if (d.code === "oauth_expired") {
+          setOauth(null);
+          go(1);
+          setFormError("That sign-in expired. Continue with it again, or sign up with your email.");
+        } else if (d.code === "oauth_in_use") {
+          go(1);
+          setFormError(`That ${oauth?.providerLabel || ""} account already has a page. Log in instead.`);
         } else if (d.code === "terms_required") {
           setErrors({ terms: "Please accept the Artist Terms and the Terms & Conditions." });
         } else {
@@ -293,6 +347,8 @@ export default function RegisterFlow() {
             <StepHead n={1} refEl={headingRef}>
               Claim your <Brushed>page</Brushed>
             </StepHead>
+            <FormAlert>{formError}</FormAlert>
+            {oauth && <OAuthBanner p={oauth} onReset={dropOauth} />}
             <div className="grid gap-1.5">
               <Field
                 label="Your link"
@@ -315,13 +371,36 @@ export default function RegisterFlow() {
               />
               <HandleStatus hs={hs} onPick={(s) => setHandle(s)} />
             </div>
-            <Field label="Email" type="email" name="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => { setEmail(e.target.value); setErrors((x) => ({ ...x, email: null })); }} error={errors.email} autoFocus={!!handle} />
+            {!oauth && !oauthChecking && providers.length > 0 && (
+              <>
+                <SocialButtons providers={providers} next={next} handle={HANDLE_RE.test(handle) ? handle : undefined} referral={ref} />
+                <OrDivider />
+              </>
+            )}
+            {oauth?.emailVerified ? (
+              <Field label="Email" type="email" name="email" value={email} readOnly hint={`From ${oauth.providerLabel}. We send sales here.`} className="[&_.af-field]:bg-wall" />
+            ) : (
+              <Field
+                label="Email"
+                type="email"
+                name="email"
+                inputMode="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setErrors((x) => ({ ...x, email: null })); }}
+                error={errors.email}
+                autoFocus={!!handle && !providers.length}
+                hint={oauth ? (oauth.provider === "instagram" ? "Instagram doesn't share your email. We send sales here." : "Check it's right. We send sales here.") : undefined}
+              />
+            )}
             {errors.email === "That email already has a page." && (
               <p className="-mt-3 px-1 text-[14px]">
                 <Link href={withNext("/login", next, { email: email.trim() })} className="font-bold text-scan underline underline-offset-4">Log in instead</Link>
               </p>
             )}
-            <PasswordField label="Password" name="password" autoComplete="new-password" value={password} onChange={(e) => { setPassword(e.target.value); setErrors((x) => ({ ...x, password: null })); }} error={errors.password} hint="8 or more characters" />
+            {!oauth && (
+              <PasswordField label="Password" name="password" autoComplete="new-password" value={password} onChange={(e) => { setPassword(e.target.value); setErrors((x) => ({ ...x, password: null })); }} error={errors.password} hint="8 or more characters" />
+            )}
             <button type="submit" className="btn btn-blue btn-lg w-full" disabled={busy}>
               {busy && <Spinner />}
               Continue
@@ -526,6 +605,24 @@ export default function RegisterFlow() {
       </AuthCard>
 
       <PagePreview name={shownName} city={shownCity} handle={handle} image={upload?.preview || null} imageAlt={title} />
+    </div>
+  );
+}
+
+function OAuthBanner({ p, onReset }: { p: PendingOAuth; onReset: () => void }) {
+  const Mark = PROVIDER_MARK[p.provider];
+  return (
+    <div className="flex items-center gap-3 rounded-xl border-[1.5px] border-line bg-wall px-3.5 py-2.5 text-[14.5px]" role="status">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border-[1.5px] border-line bg-white">
+        <Mark className="h-[18px] w-[18px]" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <b className="block">Signed in with {p.providerLabel}</b>
+        <span className="block truncate text-ink-2">{p.instagram ? `@${p.instagram}` : p.email || p.name || "Pick your link to finish"}</span>
+      </span>
+      <button type="button" onClick={onReset} className="min-h-[44px] shrink-0 px-1 text-[13.5px] font-semibold text-ink-2 underline underline-offset-4 hover:text-scan">
+        Not you?
+      </button>
     </div>
   );
 }

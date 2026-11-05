@@ -18,9 +18,11 @@ import { DISCOUNTS, FORMATS, PRESETS } from "@/components/qr/card";
 import { LAYOUTS, MAX_PINNED, PAINTS } from "@/components/artist/theme";
 import { EDIT_WINDOW_DAYS } from "@/lib/reviews";
 import { SOURCE_LABEL } from "@/lib/pageviews";
+import { DAILY_UPLOAD_LIMIT, QUEUE_CONCURRENCY, QUEUE_MAX } from "@/lib/uploadLimits";
 
 export { money, pct, proPrice, FREE_SPLIT, PRO, REFERRALS, RETURN_WINDOW_DAYS, PAYOUT_DAY_OF_MONTH, LATE_AFTER_DAYS };
 export { PRINT_BUSINESS_DAYS, SHIP_BUSINESS_DAYS, EDITION_MIN, EDITION_MAX, LAST_FEW, MEDALS, AUTO_APPROVE_AFTER, VENMO_CONFIRM_HOURS };
+export { DAILY_UPLOAD_LIMIT, QUEUE_CONCURRENCY, QUEUE_MAX };
 export { NEWSLETTER_MAX_ART, HELP_DAYS_AFTER_DELIVERY, MAX_PHOTOS, REPRINT_REASONS, EDIT_WINDOW_DAYS, PRINT_DPI, LEGACY_MAX_PCT };
 
 export const ordinal = (n: number) => `${n}${n % 10 === 1 && n !== 11 ? "st" : n % 10 === 2 && n !== 12 ? "nd" : n % 10 === 3 && n !== 13 ? "rd" : "th"}`;

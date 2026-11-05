@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { resend, emailEnabled } from "@/lib/resend";
 import { rateLimit } from "@/lib/rateLimit"
 import PasswordResetEmail from "@/emails/PasswordResetEmail"
+import SocialSignInReminderEmail from "@/emails/SocialSignInReminderEmail"
+import { PROVIDER_LABEL, isProviderId } from "@/lib/oauth/meta"
 
 export const dynamic = "force-dynamic"
 
@@ -25,7 +27,7 @@ export async function POST(req: Request) {
 
     const artist = await prisma.artist.findUnique({
       where: { email: email.toLowerCase() },
-      select: { id: true, email: true },
+      select: { id: true, email: true, password: true, oauthAccounts: { select: { provider: true }, orderBy: { createdAt: "asc" } } },
     });
 
     // Always return 200 (anti-enumeration)
@@ -49,6 +51,24 @@ export async function POST(req: Request) {
     }
 
 
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (!appUrl) throw new Error("Missing NEXT_PUBLIC_APP_URL");
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "Artfinity <no-reply@theartfinity.com>";
+
+    // Signed up with Google/Apple/...: no password to reset, so remind them how they sign in instead.
+    const providers = Array.from(new Set(artist.oauthAccounts.map((a) => a.provider))).filter(isProviderId).map((p) => PROVIDER_LABEL[p]);
+    if (!artist.password && providers.length) {
+      if (!rateLimit(`social-reminder:${artist.id}`, 3, 60 * 60 * 1000)) return NextResponse.json({ ok: true }, { status: 200 })
+      if (!emailEnabled) console.log(`[email:dev] social sign-in reminder for ${artist.email}: ${providers.join(", ")}`);
+      await resend.emails.send({
+        from: fromEmail,
+        to: artist.email,
+        subject: `Log in to Artfinity with ${providers[0]}`,
+        react: SocialSignInReminderEmail({ providers, loginLink: `${appUrl}/login` }),
+      })
+      return NextResponse.json({ ok: true }, { status: 200 });
+    }
+
     const rawToken = crypto.randomBytes(32).toString("hex");
     const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
     const expiresAt = new Date(Date.now() + 1000 * 60 * 30); // 30 mins
@@ -69,12 +89,8 @@ export async function POST(req: Request) {
       },
     });
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-    if (!appUrl) throw new Error("Missing NEXT_PUBLIC_APP_URL");
-
     const resetLink = `${appUrl}/reset-password?token=${rawToken}`;
 
-    const fromEmail = process.env.RESEND_FROM_EMAIL || "Artfinity <no-reply@theartfinity.com>";
     if (!emailEnabled) console.log(`[email:dev] password reset link for ${artist.email}: ${resetLink}`);
 
     await resend.emails.send({

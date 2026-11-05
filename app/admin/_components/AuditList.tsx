@@ -21,8 +21,8 @@ export default function AuditList({ rows, compact = false, empty = "Nothing logg
       {rows.map((r) => {
         const href = auditTargetHref(r.targetType, r.targetId, r.details);
         return (
-          <li key={r.id} className="grid gap-x-4 gap-y-1 py-2.5 sm:grid-cols-[130px_minmax(0,1fr)_auto] sm:items-baseline">
-            <span className="num text-[12.5px] text-ink-2">{when(r.createdAt)} ET</span>
+          <li key={r.id} className={compact ? "grid gap-1 py-2.5" : "grid gap-x-4 gap-y-1 py-2.5 sm:grid-cols-[130px_minmax(0,1fr)_auto] sm:items-baseline"}>
+            <span className="num text-[12.5px] text-ink-2">{when(r.createdAt)} ET{compact ? ` · ${r.adminEmail}` : ""}</span>
             <div className="min-w-0">
               <span className={`mr-2 inline-block rounded-full px-2 py-px text-[11.5px] font-bold ${tone(r.action)}`}>{r.action}</span>
               <span className="text-[14px]">{r.summary || "—"}</span>
@@ -32,7 +32,7 @@ export default function AuditList({ rows, compact = false, empty = "Nothing logg
                 </Link>
               )}
             </div>
-            <span className="truncate text-[12.5px] text-ink-2 sm:text-right">{r.adminEmail}</span>
+            {compact ? null : <span className="truncate text-[12.5px] text-ink-2 sm:text-right">{r.adminEmail}</span>}
           </li>
         );
       })}

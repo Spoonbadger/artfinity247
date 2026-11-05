@@ -1,7 +1,7 @@
 // POST /api/admin/orders/:id  Admin actions on one order (shipping and delivery go through /api/orders/:id/status).
 //   { action: "refund", itemId, note? }      record a line refund (money goes back in Stripe); reverses the artist share if unpaid
 //   { action: "refund_undo", itemId }        cancel a recorded refund
-//   { action: "reprint", items: [{ id, qty }], reason, note? }  free reprint (same flow as a buyer's request)
+//   { action: "reprint", items: [{ id, qty }] | itemId: id | "all", reason, note? }  free reprint (same flow as a buyer's request)
 //   { action: "resend_receipt" } | { action: "resend_shipped" }
 import { NextRequest, NextResponse } from "next/server";
 import { getAdmin } from "@/lib/admin";
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       await logAdminAction(admin, REFUND_ACTION, { type: "order", id: order.id },
         `Refunded “${item.title || "print"}” (${money(b.lineTotal)})${reversed ? `, artist share ${money(b.artistShare)} reversed` : artistId ? `, ${month} already paid out: artist keeps ${money(b.artistShare)}` : ""}`,
         { orderItemId: item.id, artistId, amountCents: b.lineTotal, shareCents: b.artistShare, reversed, month, note });
-      return NextResponse.json({ ok: true, reversed, shareCents: b.artistShare });
+      return NextResponse.json({ ok: true, reversed, shareCents: b.artistShare, message: reversed ? `Refund recorded. ${money(b.artistShare)} taken off the artist's balance.` : "Refund recorded. Already paid out, so the artist keeps their share." });
     }
     case "refund_undo": {
       const item = order.items.find((i) => i.id === input.itemId);
@@ -66,7 +66,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       const reason = isReprintReason(input.reason) ? input.reason : null;
       if (!reason) return fail("Pick what went wrong.");
       const byId = new Map(order.items.map((i) => [i.id, i]));
-      const items = (Array.isArray(input.items) ? input.items : [])
+      // items: [{ id, qty }], or itemId: one line id or "all" (whole lines).
+      const picked = Array.isArray(input.items) ? input.items
+        : input.itemId === "all" ? order.items.map((i) => ({ id: i.id, qty: i.quantity ?? 1 }))
+        : typeof input.itemId === "string" ? [{ id: input.itemId, qty: byId.get(input.itemId)?.quantity ?? 1 }] : [];
+      const items = picked
         .map((x: any) => {
           const it = byId.get(String(x?.id ?? ""));
           return it ? { id: it.id, qty: Math.min(it.quantity ?? 1, Math.max(1, Math.round(Number(x?.qty) || 1))) } : null;
@@ -95,7 +99,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       if (order.paymentStatus !== "paid") return fail("Only paid orders have a receipt.");
       const r = await resendReceipt(order.id);
       await logAdminAction(admin, "order.resend_receipt", { type: "order", id: order.id }, r === "sent" ? `Resent the receipt to ${order.email}` : "Receipt resend skipped (email not configured)");
-      return NextResponse.json({ ok: true, status: r });
+      return NextResponse.json({ ok: true, status: r, message: r === "sent" ? "Receipt sent" : "Skipped: email isn't configured on this server" });
     }
     case "resend_shipped": {
       if (order.shippingStatus === "pending") return fail("This order hasn't shipped yet.");

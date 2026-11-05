@@ -32,10 +32,16 @@ export type ArtworkInput = {
   printableSizes?: string[];
 };
 
-export default function ArtworkForm({ artwork, split, handle }: { artwork?: ArtworkInput; split?: number; handle: string }) {
+/**
+ * The upload / edit form. `onManyFiles` (new uploads by an artist who already has work) lets the picker and the
+ * drop zone take several files or a whole folder; more than one image hands them to the upload queue.
+ */
+export default function ArtworkForm({ artwork, split, handle, onManyFiles }: { artwork?: ArtworkInput; split?: number; handle: string; onManyFiles?: (files: File[]) => void }) {
   const router = useRouter();
   const editing = !!artwork;
   const fileRef = useRef<HTMLInputElement>(null);
+  const folderRef = useRef<HTMLInputElement>(null);
+  const many = !editing && !!onManyFiles;
 
   const [imageUrl, setImageUrl] = useState(artwork?.imageUrl || "");
   // A fresh upload's measured sizes and their signature from /api/uploads.
@@ -49,21 +55,23 @@ export default function ArtworkForm({ artwork, split, handle }: { artwork?: Artw
   const needsOwnership = !editing || !!fresh;
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [title, setTitle] = useState(artwork?.title || "");
   // The original's size is saved as the description's first line ("Original: 24 × 30 in", lib/originalSize.ts).
   const [parsed] = useState(() => splitOriginal(artwork?.description));
-  const [description, setDescription] = useState(parsed.body);
-  const [origW, setOrigW] = useState(parsed.original ? String(parsed.original.w) : "");
-  const [origH, setOrigH] = useState(parsed.original ? String(parsed.original.h) : "");
-  // "Similar work sells at $X–$Y" per size (other artists' approved work; null = too few to say).
-  const [guide, setGuide] = useState<PriceGuide | null>(null);
-  const [prices, setPrices] = useState<Record<SizeKey, string>>({
-    small: priceFor("small", artwork?.markupSmall), medium: priceFor("medium", artwork?.markupMedium),
-    large: priceFor("large", artwork?.markupLarge), xl: priceFor("xl", artwork?.markupXl),
-  });
-  const [sensitive, setSensitive] = useState<string[]>(artwork?.sensitive || []);
-  const [limited, setLimited] = useState(!!artwork?.editionSize);
-  const [edition, setEdition] = useState(String(artwork?.editionSize || 25));
+  const [v, setV] = useState<ArtworkValues>(() => ({
+    title: artwork?.title || "",
+    description: parsed.body,
+    origW: parsed.original ? String(parsed.original.w) : "",
+    origH: parsed.original ? String(parsed.original.h) : "",
+    prices: pricesFrom(artwork),
+    sensitive: artwork?.sensitive || [],
+    limited: !!artwork?.editionSize,
+    edition: String(artwork?.editionSize || 25),
+  }));
+  const set = (patch: Partial<ArtworkValues>) => setV((cur) => ({ ...cur, ...patch }));
+  const setPrices = (fn: (p: Prices) => Prices) => setV((cur) => ({ ...cur, prices: fn(cur.prices) }));
+  const guide = usePriceGuide();
+  // New pieces start from the artist's last prices.
+  useLastPrices(!editing, (prices) => set({ prices }));
   const sold = artwork?.sold ?? 0;
   // Once a print sells, the edition is a promise to buyers: no resizing, no open/limited switch (server enforces it too).
   const editionLocked = editing && sold > 0;
@@ -72,28 +80,12 @@ export default function ArtworkForm({ artwork, split, handle }: { artwork?: Artw
   // notice: set when the image looks like one already on Artfinity (lib/imageHash.ts); duplicate "review" = a person checks it.
   const [done, setDone] = useState<{ slug: string; title: string; imageUrl: string; pending: boolean; notice?: string | null; duplicate?: string | null } | null>(null);
 
-  // New pieces start from the artist's last prices.
-  useEffect(() => {
-    if (editing) return;
-    fetch("/api/artworks/last-prices", { credentials: "include" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((p) => {
-        if (!p) return;
-        setPrices({ small: priceFor("small", p.markupSmall), medium: priceFor("medium", p.markupMedium), large: priceFor("large", p.markupLarge), xl: priceFor("xl", p.markupXl) });
-      })
-      .catch(() => {});
-  }, [editing]);
-
-  useEffect(() => {
-    fetch("/api/artworks/price-guide", { credentials: "include" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((g) => g && setGuide(g))
-      .catch(() => {});
-  }, []);
+  // React has no prop for folder picking.
+  useEffect(() => { folderRef.current?.setAttribute("webkitdirectory", ""); }, [many]);
 
   async function upload(file: File) {
     setError(null);
-    if (!file.type.startsWith("image/")) { setError("Pick an image file: JPG, PNG, WEBP or HEIC."); return; }
+    if (!isImageFile(file)) { setError("Pick an image file: JPG, PNG, WEBP or HEIC."); return; }
     setUploading(true);
     try {
       const fd = new FormData();
@@ -105,7 +97,7 @@ export default function ArtworkForm({ artwork, split, handle }: { artwork?: Artw
       setShape(null);
       setFresh({ printable: data.printable || [], sig: data.printableSig || "" });
       setDims(data.width ? { w: data.width, h: data.height } : null);
-      if (!title) setTitle(file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()).slice(0, 80));
+      setV((cur) => (cur.title ? cur : { ...cur, title: titleFromFile(file.name) }));
     } catch (e: any) {
       setError(e.message || "Upload failed. Try again.");
     } finally {
@@ -113,43 +105,35 @@ export default function ArtworkForm({ artwork, split, handle }: { artwork?: Artw
     }
   }
 
-  function onDrop(e: DragEvent) {
+  /** One image: the usual form. Several (and no image here yet): the upload queue. */
+  function take(files: File[]) {
+    const images = files.filter(isImageFile);
+    if (!images.length) { if (files.length) setError(files.length > 1 ? "No images in there. Pick JPG, PNG, WEBP or HEIC files." : "Pick an image file: JPG, PNG, WEBP or HEIC."); return; }
+    if (many && images.length > 1 && onManyFiles) onManyFiles(images);
+    else upload(images[0]);
+  }
+
+  async function onDrop(e: DragEvent) {
     e.preventDefault();
     setDragging(false);
-    const f = e.dataTransfer.files?.[0];
-    if (f) upload(f);
+    if (many) take(await filesFromDrop(e.dataTransfer));
+    else { const f = e.dataTransfer.files?.[0]; if (f) upload(f); }
   }
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!imageUrl) { setError("Add an image first."); return; }
-    if (!title.trim()) { setError("Give it a title."); return; }
-    if (printable && !printable.length) { setError("This file is too small to print well. Try the original photo or a bigger scan."); return; }
-    const low = SIZES.find((s) => toCents(prices[s]) < basePrices[s]);
-    if (low) { setError(`${SIZE_NAME[low]} prints start at ${money(basePrices[low])}.`); return; }
-    const n = parseInt(edition, 10);
-    if (!editionLocked && limited && (!Number.isFinite(n) || n < EDITION_MIN || n > EDITION_MAX)) {
-      setError(`An edition is ${EDITION_MIN} to ${EDITION_MAX} prints.`);
+    const problem = checkArtwork(v, { imageUrl, printable, editionLocked, needsOwnership, owned });
+    if (problem) {
+      setError(problem.message);
+      if (problem.focus) document.getElementById(problem.focus)?.focus();
       return;
     }
-    const ow = parseFloat(origW), oh = parseFloat(origH);
-    const hasOrig = origW.trim() !== "" || origH.trim() !== "";
-    if (hasOrig && !(ow >= 1 && oh >= 1 && ow <= 600 && oh <= 600)) { setError("Original size: both sides in inches, or leave it empty."); return; }
-    if (needsOwnership && !owned) { setError("Tick the box to confirm it's your original work."); return; }
     setSaving(true);
     try {
-      const fd = new FormData();
-      fd.append("title", title.trim());
-      fd.append("description", joinOriginal(hasOrig ? { w: ow, h: oh } : null, description));
-      fd.append("imageUrl", imageUrl);
-      for (const s of SIZES) fd.append(FIELD[s], String(Math.max(0, toCents(prices[s]) - basePrices[s])));
-      fd.append("sensitive", sensitive.join(","));
-      if (!editionLocked) fd.append("editionSize", limited ? String(n) : "");
-      if (fresh) { fd.append("printable", fresh.printable.join(",")); fd.append("printableSig", fresh.sig); }
-      if (needsOwnership && owned) fd.append("ownership", "yes");
+      const fd = artworkFormData(v, { imageUrl, fresh, editionLocked, ownership: needsOwnership && owned });
       const res = await fetch(editing ? `/api/artworks/update/${artwork!.slug}` : "/api/artworks/upload", { method: "POST", body: fd, credentials: "include" });
-      if (!res.ok) throw new Error((await res.text()) || "Could not save. Try again.");
+      if (!res.ok) throw new Error(await saveError(res));
       const saved = await res.json();
       if (editing) {
         if (saved.duplicate === "review") toast.message(saved.notice, { duration: 9000 });
@@ -188,7 +172,7 @@ export default function ArtworkForm({ artwork, split, handle }: { artwork?: Artw
         <div className="flex flex-wrap justify-center gap-2">
           <Link href={`/studio/qr?art=${done.slug}`} className="btn btn-blue">Print its code</Link>
           <Link href={artPath(handle, done.slug)} className="btn btn-ghost">View</Link>
-          <button type="button" className="btn btn-ghost" onClick={() => { setDone(null); setImageUrl(""); setFresh(null); setShape(null); setOwned(false); setDims(null); setTitle(""); setDescription(""); setOrigW(""); setOrigH(""); setSensitive([]); setLimited(false); }}>
+          <button type="button" className="btn btn-ghost" onClick={() => { setDone(null); setImageUrl(""); setFresh(null); setShape(null); setOwned(false); setDims(null); set({ title: "", description: "", origW: "", origH: "", sensitive: [], limited: false }); }}>
             Upload another
           </button>
         </div>
@@ -211,11 +195,15 @@ export default function ArtworkForm({ artwork, split, handle }: { artwork?: Artw
             dragging ? "border-scan bg-scan-soft" : imageUrl ? "border-transparent bg-gallery" : "border-ink/30 hover:border-ink"
           )}
         >
-          <input ref={fileRef} type="file" accept="image/*" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ""; }} aria-label={imageUrl ? "Replace image" : "Choose an image"} />
+          <input
+            ref={fileRef} type="file" accept="image/*" className="sr-only" multiple={many && !imageUrl}
+            onChange={(e) => { const fs = Array.from(e.target.files || []); e.target.value = ""; if (fs.length) take(fs); }}
+            aria-label={imageUrl ? "Replace image" : many ? "Choose images" : "Choose an image"}
+          />
           {imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={imageUrl} alt={title || "Your artwork"}
+              src={imageUrl} alt={v.title || "Your artwork"}
               onLoad={(e) => setShape({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
               className="max-h-[520px] w-auto max-w-full rounded-[2px] shadow-[0_12px_30px_rgba(21,22,27,.22)]"
             />
@@ -226,7 +214,8 @@ export default function ArtworkForm({ artwork, split, handle }: { artwork?: Artw
                 <ImagePlus className="relative h-7 w-7" aria-hidden="true" />
               </span>
               <b className="font-display text-[22px] [font-variation-settings:'wdth'_80]">Drop your art here</b>
-              <span className="text-[13.5px] text-ink-2">or tap to pick a file · JPG, PNG, HEIC · up to 25 MB</span>
+              <span className="text-[13.5px] text-ink-2">or tap to pick {many ? "files" : "a file"} · JPG, PNG, HEIC · up to 25 MB</span>
+              {many && <span className="max-w-[300px] text-[13px] font-semibold text-ink">Got a lot? Pick several paintings or drop a whole folder, then fill them in one by one.</span>}
             </span>
           )}
           {uploading && (
@@ -235,181 +224,31 @@ export default function ArtworkForm({ artwork, split, handle }: { artwork?: Artw
             </span>
           )}
         </label>
+        {many && !imageUrl && (
+          <div className="flex flex-wrap items-center gap-2">
+            <input ref={folderRef} type="file" accept="image/*" multiple className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => { const fs = Array.from(e.target.files || []); e.target.value = ""; if (fs.length) take(fs); }} />
+            <button type="button" onClick={() => folderRef.current?.click()} className="btn btn-ghost btn-sm"><FolderOpen className="h-4 w-4" aria-hidden="true" />Choose a folder</button>
+            <Link href="/help/getting-started/upload-several" target="_blank" className="text-[13px] text-scan underline-offset-2 hover:underline">How uploading several works</Link>
+          </div>
+        )}
         {imageUrl && (
           <button type="button" onClick={() => fileRef.current?.click()} className="btn btn-ghost btn-sm justify-self-start">Replace image</button>
         )}
-        {printable && imageUrl && (
-          <div className="grid gap-2" aria-live="polite">
-            <p className="flex flex-wrap items-baseline justify-between gap-x-3 text-[13px] font-semibold">
-              <span>How it prints{dims ? <span className="num font-normal text-ink-2"> · {dims.w} × {dims.h} px</span> : null}</span>
-              <Link href="/help/getting-started/file-sizes-print-sharp" target="_blank" className="text-[12.5px] text-scan underline-offset-2 hover:underline">Which files print sharp?</Link>
-            </p>
-            <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">
-              {SIZES.map((s) => {
-                const ok = ready(s);
-                const [short, long] = SIZE_IN[s];
-                const portrait = !shape || shape.h >= shape.w;
-                return (
-                  <li key={s} className={cn("grid content-start gap-2 rounded-xl border bg-white p-2", ok ? "border-line" : "border-coral/50")}>
-                    <div className="grid h-[104px] place-items-center rounded-lg bg-wall">
-                      <div
-                        className="overflow-hidden rounded-[2px] bg-gallery shadow-[0_4px_12px_rgba(21,22,27,.18)]"
-                        style={portrait ? { width: Math.round((88 * short) / long), height: 88 } : { width: 88, height: Math.round((88 * short) / long) }}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={imageUrl} alt="" className={cn("h-full w-full object-cover", !ok && "opacity-40 grayscale")} />
-                      </div>
-                    </div>
-                    <div className="px-0.5 leading-tight">
-                      <b className="block text-[13.5px]">{SIZE_NAME[s]} <span className="num font-normal text-ink-2">{SIZE_INCHES[s]}</span></b>
-                      {ok ? (
-                        <span className="mt-0.5 flex items-center gap-1 text-[12.5px] font-semibold text-earned"><Check className="h-3.5 w-3.5" aria-hidden="true" />Sharp</span>
-                      ) : (
-                        <span className="mt-0.5 block text-[12px] font-semibold text-coral">Too small for this size — hidden from buyers</span>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-            {printable.length === 0
-              ? <p className="text-[12.5px] font-semibold text-coral">Too small to print. Try the original photo or a bigger scan.</p>
-              : <p className="text-[12.5px] text-ink-2">{printable.length < SIZES.length && "Bigger file, bigger prints. "}Each crop shows how that size trims the edges.</p>}
-          </div>
-        )}
+        {printable && imageUrl && <PrintSizes imageUrl={imageUrl} printable={printable} dims={dims} shape={shape} />}
       </div>
 
       {/* Details */}
       <div className="grid gap-6">
-        <div className="grid gap-3">
-          <label className="af-field">
-            <span className="label">Title</span>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} required placeholder="Name of the piece" />
-          </label>
-          <label className="af-field">
-            <span className="label">A line about it <span className="text-ink-2">(optional)</span></span>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} maxLength={1200} placeholder="Medium, place, a story. Short is fine." className="resize-y" />
-          </label>
-          <div className="af-field">
-            <span className="label" id="orig-label">Original size <span className="text-ink-2">(optional)</span></span>
-            <div className="flex items-center gap-2" role="group" aria-labelledby="orig-label">
-              <input inputMode="decimal" value={origW} onChange={(e) => setOrigW(e.target.value.replace(/[^0-9.]/g, "").slice(0, 5))} placeholder="24" aria-label="Original width in inches" className="num !w-[64px] !border-b-2 !border-line text-center focus:!border-scan" />
-              <span aria-hidden="true" className="text-ink-2">×</span>
-              <input inputMode="decimal" value={origH} onChange={(e) => setOrigH(e.target.value.replace(/[^0-9.]/g, "").slice(0, 5))} placeholder="30" aria-label="Original height in inches" className="num !w-[64px] !border-b-2 !border-line text-center focus:!border-scan" />
-              <span className="text-[14px] text-ink-2">in</span>
-            </div>
-            <span className="text-[12.5px] text-ink-2">Buyers see which print size is closest to the real thing.</span>
-          </div>
-        </div>
-
-        <fieldset className="grid gap-3">
-          <legend className="mb-1 flex w-full items-baseline justify-between gap-2">
-            <span className="font-display text-[22px] font-bold [font-variation-settings:'wdth'_80]">Prices</span>
-            <span className="text-[12.5px] text-ink-2">Set your price. We print and ship.</span>
-          </legend>
-          <ul className="grid gap-2">
-            {SIZES.map((s) => {
-              const cents = toCents(prices[s]);
-              const tooLow = cents < basePrices[s];
-              const b = breakdown(s, Math.max(0, cents - basePrices[s]), 0, false, new Date(), split);
-              return (
-                <li key={s} className={cn("grid grid-cols-[minmax(0,1fr)_118px] items-center gap-x-3 gap-y-1 rounded-xl border bg-white p-3 sm:grid-cols-[minmax(0,1fr)_130px_minmax(0,1fr)]", tooLow ? "border-coral" : "border-line", !ready(s) && "opacity-60")}>
-                  <div className="min-w-0">
-                    <b className="block text-[15px]">{SIZE_NAME[s]} <span className="font-normal text-ink-2">{SIZE_INCHES[s]}</span></b>
-                    <span className="num text-[13px] text-ink-2">Min {money(basePrices[s])}</span>
-                  </div>
-                  <label className="flex items-center gap-1 rounded-lg border-2 border-ink px-2 py-1 focus-within:border-scan">
-                    <span className="text-[14px] text-ink-2">$</span>
-                    <input
-                      inputMode="decimal" value={prices[s]} aria-label={`${SIZE_NAME[s]} print price in dollars`} aria-invalid={tooLow || undefined}
-                      onChange={(e) => setPrices((m) => ({ ...m, [s]: e.target.value.replace(/[^0-9.]/g, "").slice(0, 7) }))}
-                      onBlur={() => setPrices((m) => ({ ...m, [s]: (toCents(m[s]) / 100).toFixed(2) }))}
-                      className="num w-full min-w-0 bg-transparent text-[16px] font-semibold outline-none"
-                    />
-                  </label>
-                  <p className="col-span-2 text-[13.5px] sm:col-span-1 sm:text-right" aria-live="polite">
-                    {tooLow
-                      ? <span className="font-semibold text-coral">At least {money(basePrices[s])}</span>
-                      : <>you earn <b className="num text-[16px] text-earned">{money(b.artist)}</b> per print</>}
-                  </p>
-                  {guide?.[s] && (
-                    <p className="col-span-2 flex items-center gap-1.5 text-[12.5px] text-ink-2 sm:col-span-3">
-                      <i className="paint-dab !h-2.5 !w-2.5" style={{ ["--dab" as string]: "#ffd43b" }} aria-hidden="true" />
-                      Similar work on Artfinity sells at <b className="num font-semibold text-ink">${guide[s]!.lo / 100}–${guide[s]!.hi / 100}</b>
-                    </p>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </fieldset>
-
-        <fieldset className="grid gap-2">
-          <legend className="mb-1">
-            <span className="font-display text-[22px] font-bold [font-variation-settings:'wdth'_80]">Print run</span>
-          </legend>
-          {editionLocked ? (
-            <div className="flex items-start gap-3 rounded-xl border-2 border-line bg-wall/60 p-3" aria-readonly="true">
-              <Lock className="mt-0.5 h-4 w-4 shrink-0 text-ink-2" aria-hidden="true" />
-              <p className="text-[14px] leading-snug text-ink-2">
-                <b className="block text-[15px] text-ink">{artwork?.editionSize ? `Limited edition of ${artwork.editionSize}` : "Open edition"}</b>
-                Locked: <span className="num">{artwork?.editionSize ? `${sold} of ${artwork.editionSize}` : sold}</span> sold. Editions can&apos;t change once a print sells.
-              </p>
-            </div>
-          ) : (<>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <label className={cn("flex cursor-pointer items-center gap-3 rounded-xl border-2 bg-white p-3 transition has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-scan", !limited ? "border-ink" : "border-line hover:border-ink-2")}>
-              <input type="radio" name="edition" className="sr-only" checked={!limited} onChange={() => setLimited(false)} />
-              <span aria-hidden="true" className={cn("grid h-5 w-5 shrink-0 place-items-center rounded-full border-2", !limited ? "border-ink" : "border-ink/40")}>{!limited && <span className="h-2.5 w-2.5 rounded-full bg-ink" />}</span>
-              <span className="leading-tight"><b className="block text-[15px]">Open edition</b><span className="text-[13px] text-ink-2">Print forever</span></span>
-            </label>
-            <div className={cn("flex items-center gap-3 rounded-xl border-2 bg-white p-3 transition has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-scan", limited ? "border-ink bg-[#fffbe8]" : "border-line hover:border-ink-2")}>
-              <label className="flex cursor-pointer items-center gap-3">
-                <input type="radio" name="edition" className="sr-only" checked={limited} onChange={() => setLimited(true)} />
-                <span aria-hidden="true" className={cn("grid h-5 w-5 shrink-0 place-items-center rounded-full border-2", limited ? "border-ink" : "border-ink/40")}>{limited && <span className="h-2.5 w-2.5 rounded-full bg-ink" />}</span>
-                <b className="text-[15px] leading-tight">Limited edition of</b>
-              </label>
-              <input
-                type="number" inputMode="numeric" min={EDITION_MIN} max={EDITION_MAX} step={1}
-                value={edition} aria-label="Number of prints in the edition"
-                onFocus={() => setLimited(true)}
-                onChange={(e) => { setLimited(true); setEdition(e.target.value.replace(/[^0-9]/g, "").slice(0, 3)); }}
-                className="num w-[76px] rounded-lg border-2 border-ink px-2 py-1 text-[16px] font-semibold outline-none focus:border-scan"
-              />
-            </div>
-          </div>
-          {limited && <p className="text-[12.5px] text-ink-2">Numbered 1 to {parseInt(edition, 10) || "N"}, all sizes. Then sold out. Locked once the first print sells.</p>}
-          </>)}
-        </fieldset>
-
-        <fieldset className="grid gap-2">
-          <legend className="mb-1">
-            <span className="font-display text-[22px] font-bold [font-variation-settings:'wdth'_80]">Sensitive?</span>
-            <span className="ml-2 text-[12.5px] text-ink-2">Buyers see it blurred until they tap.</span>
-          </legend>
-          <div className="flex flex-wrap gap-2">
-            {SENSITIVE_LABELS.map((l) => {
-              const on = sensitive.includes(l);
-              return (
-                <label key={l} className={cn("flex cursor-pointer items-center gap-2 rounded-full border-2 px-3.5 py-2 text-[14px] font-semibold transition focus-within:ring-[3px] focus-within:ring-scan/40", on ? "border-ink bg-ink text-white" : "border-line bg-white hover:border-ink")}>
-                  <input type="checkbox" className="sr-only" checked={on} onChange={() => setSensitive((cur) => (on ? cur.filter((x) => x !== l) : [...cur, l]))} />
-                  <span aria-hidden="true" className={cn("grid h-4 w-4 place-items-center rounded-[4px] border-2", on ? "border-sticker bg-sticker text-ink" : "border-ink/40")}>{on && <Check className="h-3 w-3" />}</span>
-                  {l}
-                </label>
-              );
-            })}
-          </div>
-        </fieldset>
+        <DetailsFields v={v} set={set} />
+        <PriceFields prices={v.prices} setPrices={setPrices} ready={ready} split={split} guide={guide} />
+        <EditionField
+          limited={v.limited} edition={v.edition} setLimited={(limited) => set({ limited })} setEdition={(edition) => set({ edition })}
+          locked={editionLocked ? { editionSize: artwork?.editionSize ?? null, sold } : undefined}
+        />
+        <SensitiveField sensitive={v.sensitive} setSensitive={(sensitive) => set({ sensitive })} />
 
         {needsOwnership && (
-          <label className={cn("flex cursor-pointer items-start gap-3 rounded-xl border-2 bg-white p-3 transition has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-scan", owned ? "border-ink" : "border-line hover:border-ink-2")}>
-            <input type="checkbox" className="sr-only" checked={owned} onChange={(e) => setOwned(e.target.checked)} required />
-            <span aria-hidden="true" className={cn("mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-[5px] border-2", owned ? "border-ink bg-sticker" : "border-ink/40")}>{owned && <Check className="h-3.5 w-3.5" />}</span>
-            <span className="text-[14.5px] leading-snug">
-              <b>This is my original work and I hold the rights to sell prints of it.</b>
-              {!editing && <span className="block text-[12.5px] text-ink-2">New artists&apos; first few pieces get a quick look before they go live.</span>}
-            </span>
-          </label>
+          <OwnershipField owned={owned} setOwned={setOwned} note={!editing ? <>New artists&apos; first few pieces get a quick look before they go live.</> : undefined} />
         )}
 
         {error && <p role="alert" className="rounded-xl border-2 border-coral bg-[#fff1ed] px-3.5 py-2.5 text-[14px] font-semibold">{error}</p>}

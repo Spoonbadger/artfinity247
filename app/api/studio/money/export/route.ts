@@ -28,13 +28,13 @@ export async function GET(req: NextRequest) {
     (!q || [l.title, l.buyerFirst, l.buyerCity, l.size].join(" ").toLowerCase().includes(q))
   );
 
-  const header = ["date", "artwork", "size", "framed", "qty", "buyer", "city", "gross_usd", "printing_usd", "fees_usd", "profit_usd", "split_pct", "your_share_usd", "status", "payout_month", "clears_on", "source"];
+  const header = ["date", "artwork", "size", "framed", "qty", "buyer", "city", "gross_usd", "printing_usd", "fees_usd", "profit_usd", "split_pct", "your_share_usd", "status", "payout_month", "clears_on", "source", "refunded"];
   const lines = [header.join(",")];
   for (const l of rows) {
     lines.push([
       l.date.slice(0, 10), csv(l.title), l.size, l.framed ? "yes" : "no", l.quantity, csv(l.buyerFirst), csv(l.buyerCity),
       dollars(l.grossCents), dollars(l.printingCents), dollars(l.feesCents), dollars(l.profitCents),
-      Math.round(l.split * 100), dollars(l.shareCents), l.status, l.payoutMonth, l.clearsAt.slice(0, 10), csv(l.source || ""),
+      Math.round(l.split * 100), dollars(l.shareCents), l.status, l.payoutMonth, l.clearsAt.slice(0, 10), csv(l.source || ""), l.refunded ?? "",
     ].join(","));
   }
   return new NextResponse(lines.join("\n"), {

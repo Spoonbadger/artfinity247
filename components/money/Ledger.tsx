@@ -30,6 +30,16 @@ function StatusTag({ l, currentMonth, compact = false }: { l: LedgerLine; curren
   );
 }
 
+/** A refunded sale: share reversed (0), or refunded after it was already paid out. */
+function RefundTag({ l }: { l: LedgerLine }) {
+  if (!l.refunded) return null;
+  return (
+    <span className="ml-1.5 rounded-full bg-coral/15 px-1.5 text-[11px] font-bold text-coral" title={l.refunded === "reversed" ? "The buyer was refunded, so this sale doesn't count toward your payout." : "The buyer was refunded after this was paid out. You keep it."}>
+      Refunded
+    </span>
+  );
+}
+
 /** Every sale line: search, status filter, CSV export. */
 export default function Ledger({ ledger, currentMonth }: { ledger: LedgerLine[]; currentMonth: string }) {
   const [q, setQ] = useState("");
@@ -107,7 +117,7 @@ export default function Ledger({ ledger, currentMonth }: { ledger: LedgerLine[];
                     <td className="grid grid-cols-[40px_minmax(0,1fr)_auto] gap-x-3 lg:hidden">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       {l.imageUrl ? <img src={l.imageUrl} alt="" className="row-span-3 h-10 w-10 rounded-[3px] object-cover" /> : <span className="row-span-3 block h-10 w-10 rounded-[3px] bg-gallery" />}
-                      <b className="min-w-0 truncate font-semibold">{l.title}</b>
+                      <b className="min-w-0 truncate font-semibold">{l.title}<RefundTag l={l} /></b>
                       <b className="text-right text-earned">+{usd(l.shareCents)}</b>
                       <span className="min-w-0 truncate text-[12px] text-ink-2">{SIZE_LABEL[l.size]}{l.quantity > 1 ? ` ×${l.quantity}` : ""} · {dayUTC(l.date)} · {buyer}</span>
                       <span className="text-right"><StatusTag l={l} currentMonth={currentMonth} compact /></span>
@@ -119,7 +129,7 @@ export default function Ledger({ ledger, currentMonth }: { ledger: LedgerLine[];
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         {l.imageUrl && <img src={l.imageUrl} alt="" className="h-8 w-8 shrink-0 rounded-[3px] object-cover" />}
                         <span className="min-w-0">
-                          <b className="block truncate font-semibold">{l.title}</b>
+                          <b className="block truncate font-semibold">{l.title}<RefundTag l={l} /></b>
                           <span className="block text-[12px] text-ink-2">{SIZE_LABEL[l.size]}{l.framed ? ", framed" : ""}{l.quantity > 1 ? ` ×${l.quantity}` : ""}</span>
                         </span>
                       </span>

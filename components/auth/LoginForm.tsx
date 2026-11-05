@@ -7,6 +7,8 @@ import { Brushed } from "@/components/af/Brush";
 import { useUser } from "@/components/contexts";
 import { AuthCard, Field, FormAlert, PasswordField, Spinner } from "./ui";
 import { safeNext, withNext } from "./next";
+import SocialButtons, { OrDivider } from "./SocialButtons";
+import { OAUTH_ERROR_MESSAGES, type ProviderId } from "@/lib/oauth/meta";
 
 const MESSAGES: Record<string, string> = {
   user_not_found: "No account with that email.",
@@ -16,7 +18,7 @@ const MESSAGES: Record<string, string> = {
 };
 
 
-export default function LoginForm() {
+export default function LoginForm({ providers = [] }: { providers?: ProviderId[] }) {
   const router = useRouter();
   const params = useSearchParams();
   const { refreshUser } = useUser();
@@ -24,7 +26,8 @@ export default function LoginForm() {
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const oauthError = params.get("oauth_error");
+  const [error, setError] = useState<string | null>(oauthError ? OAUTH_ERROR_MESSAGES[oauthError] || OAUTH_ERROR_MESSAGES.provider_error : null);
   const next = safeNext(params.get("next"));
   const notice = params.get("reset")
     ? "Password updated. Log in with the new one."
@@ -67,7 +70,13 @@ export default function LoginForm() {
         </h1>
         <FormAlert tone="ok">{notice}</FormAlert>
         <FormAlert>{error}</FormAlert>
-        <Field label="Email" type="email" name="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus required />
+        {providers.length > 0 && (
+          <>
+            <SocialButtons providers={providers} next={next} />
+            <OrDivider />
+          </>
+        )}
+        <Field label="Email" type="email" name="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus={!providers.length} required />
         <PasswordField label="Password" name="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         <div className="flex flex-wrap items-center justify-between gap-3 text-[14.5px]">
           <label className="flex cursor-pointer select-none items-center gap-2 font-semibold">

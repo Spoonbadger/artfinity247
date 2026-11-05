@@ -94,6 +94,38 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
   const router = useRouter();
   const [items, setItems] = useState(initial);
   const [busy, setBusy] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const toggle = (id: string) => setSelected((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  const picked = items.filter((x) => selected.has(x.id));
+
+  const bulk = async (action: "approve" | "reject") => {
+    if (!picked.length) return;
+    if (!confirm(`${action === "approve" ? "Approve" : "Reject"} ${picked.length} piece${picked.length === 1 ? "" : "s"}?${action === "reject" ? " They come off the artists' pages." : " They go live and the artists are emailed."}`)) return;
+    setBusy("bulk");
+    try {
+      const r = await fetch("/api/admin/moderation/bulk", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: picked.map((x) => x.id), action }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || "");
+      const done = new Set<string>(d.done || []);
+      const status = action === "approve" ? "APPROVED" : "REJECTED";
+      setItems((prev) =>
+        leavesTab(status)
+          ? prev.filter((x) => !done.has(x.id))
+          : prev.map((x) => (done.has(x.id) ? { ...x, status, flaggedReason: action === "approve" ? null : "rejected_by_admin" } : x))
+      );
+      setSelected(new Set());
+      toast.success(`${done.size} ${action === "approve" ? "approved" : "rejected"}${d.failed?.length ? `, ${d.failed.length} failed` : ""}`);
+      router.refresh();
+    } catch (e: any) {
+      toast.error(`Couldn't ${action}. ${e?.message || ""}`.trim());
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const leavesTab = (status: ModArtwork["status"]) =>
     (tab === "queue") || (tab === "rejected" && status !== "REJECTED") || (tab === "live" && status !== "APPROVED");
@@ -148,7 +180,23 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
     );
   }
 
+  const allPicked = picked.length === items.length;
   return (
+    <div className="grid gap-3">
+    <div className="flex flex-wrap items-center gap-2">
+      <label className="inline-flex min-h-[36px] cursor-pointer items-center gap-2 text-[13.5px] font-semibold text-ink-2">
+        <input type="checkbox" checked={allPicked} onChange={() => setSelected(allPicked ? new Set() : new Set(items.map((x) => x.id)))} className="h-4 w-4 accent-[var(--af-ink)]" />
+        Select all
+      </label>
+      {picked.length > 0 && (
+        <div role="region" aria-label="Bulk actions" className="sticky top-[64px] z-10 flex flex-1 flex-wrap items-center gap-2 rounded-xl border-[1.5px] border-ink bg-white px-3 py-2 shadow-sm">
+          <b className="num text-[14px]">{picked.length} selected</b>
+          <button type="button" disabled={busy === "bulk"} onClick={() => bulk("approve")} className="btn btn-blue btn-sm">Approve selected</button>
+          <button type="button" disabled={busy === "bulk"} onClick={() => bulk("reject")} className="btn btn-ghost btn-sm">Reject selected</button>
+          <button type="button" onClick={() => setSelected(new Set())} className="ml-auto text-[13px] font-semibold text-ink-2 underline">Clear</button>
+        </div>
+      )}
+    </div>
     <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {items.map((a) => {
         const st = STATUS[a.status];
@@ -161,6 +209,7 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
             <li key={a.id} className="grid content-start gap-3 rounded-2xl border border-line bg-white p-3 sm:col-span-2">
               <Comparison a={a} d={dup} />
               <div className="flex flex-wrap items-center gap-2">
+                <input type="checkbox" checked={selected.has(a.id)} onChange={() => toggle(a.id)} aria-label={`Select ${a.title}`} className="h-4 w-4 accent-[var(--af-ink)]" />
                 <span className={cn("rounded-full px-2 py-0.5 text-[11.5px] font-bold", st.cls)}>{st.label}</span>
                 {(a.status !== "APPROVED" || a.flaggedReason) && (
                   <button type="button" disabled={busy === a.id} onClick={() => act(a, "approve")} className="btn btn-blue btn-sm">Approve</button>
@@ -183,6 +232,9 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={a.imageUrl} alt={a.title} loading="lazy" className="h-full w-full object-cover" />
               <span className={cn("absolute left-2 top-2 rounded-full px-2 py-0.5 text-[11.5px] font-bold", st.cls)}>{st.label}</span>
+              <label className="absolute right-1 top-1 grid h-9 w-9 cursor-pointer place-items-center rounded-full bg-white/90">
+                <input type="checkbox" checked={selected.has(a.id)} onChange={() => toggle(a.id)} aria-label={`Select ${a.title}`} className="h-4 w-4 accent-[var(--af-ink)]" />
+              </label>
             </div>
             <div className="grid min-w-0 content-start gap-2">
               <div className="min-w-0">
@@ -226,5 +278,6 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
         );
       })}
     </ul>
+    </div>
   );
 }

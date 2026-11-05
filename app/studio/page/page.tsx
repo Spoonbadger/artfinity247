@@ -1,6 +1,9 @@
 import Link from "next/link";
 import ProfileEditor from "@/components/studio/ProfileEditor";
 import AccountDetails from "@/components/studio/AccountDetails";
+import ConnectedAccounts from "@/components/studio/ConnectedAccounts";
+import { signInMethods } from "@/lib/oauth/account";
+import { enabledProviders } from "@/lib/oauth/providers";
 import { StudioPage } from "@/components/studio/StudioPage";
 import { prisma } from "@/lib/prisma";
 import { VENMO_CONFIRM_HOURS } from "@/lib/venmo";
@@ -18,6 +21,11 @@ export default async function MyPageEditor() {
   // An unconfirmed Venmo change only counts while its emailed link still works.
   const pendingLive = acct?.venmoPendingAt && Date.now() - acct.venmoPendingAt.getTime() < VENMO_CONFIRM_HOURS * 3_600_000;
   const venmoPending = pendingLive ? acct?.venmoPending ?? null : null;
+  const m = await signInMethods(artist.id);
+  const methods = {
+    hasPassword: m?.hasPassword ?? true,
+    accounts: (m?.accounts ?? []).map((a) => ({ provider: a.provider, email: a.email, createdAt: a.createdAt.toISOString(), lastUsedAt: a.lastUsedAt?.toISOString() ?? null })),
+  };
   const art = await prisma.artwork.findMany({
     where: { artistId: artist.id, status: { not: "REJECTED" } },
     orderBy: { createdAt: "desc" },
@@ -42,15 +50,18 @@ export default async function MyPageEditor() {
         slug={artist.slug}
         art={art}
         account={
-          <AccountDetails
-            initial={{
-              first_name: acct?.first_name || "",
-              last_name: acct?.last_name || "",
-              email: acct?.email || artist.email,
-              phone: acct?.phone || "",
-              state: acct?.state || "",
-            }}
-          />
+          <>
+            <AccountDetails
+              initial={{
+                first_name: acct?.first_name || "",
+                last_name: acct?.last_name || "",
+                email: acct?.email || artist.email,
+                phone: acct?.phone || "",
+                state: acct?.state || "",
+              }}
+            />
+            <ConnectedAccounts available={enabledProviders()} initial={methods} />
+          </>
         }
       />
     </StudioPage>

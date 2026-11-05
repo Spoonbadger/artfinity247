@@ -1,5 +1,5 @@
 import type { HelpArticle } from "../types";
-import { AUTO_APPROVE_AFTER, FREE_PCT, LARGEST, LAYOUT_NAMES, MAX_PINNED, PAINT_COUNT, PIXEL_TABLE, PRINT_DPI, SIZE_NAMES, SMALLEST } from "../facts";
+import { AUTO_APPROVE_AFTER, DAILY_UPLOAD_LIMIT, FREE_PCT, LARGEST, LAYOUT_NAMES, MAX_PINNED, PAINT_COUNT, PIXEL_TABLE, PRINT_DPI, QUEUE_MAX, SIZE_NAMES, SMALLEST } from "../facts";
 
 const section = "getting-started" as const;
 
@@ -42,7 +42,7 @@ Handles use 3 to 30 letters, numbers, dots or underscores. Pick the name people 
     summary: `Drop in a JPG, PNG or HEIC up to 25 MB, give it a title and set your prices. Your first ${AUTO_APPROVE_AFTER} pieces get a quick look from a person before they go live.`,
     popular: 3,
     link: { href: "/studio/art/new", label: "Upload a piece" },
-    related: ["file-sizes-print-sharp", "why-sizes-hidden", "set-prices"],
+    related: ["upload-several", "file-sizes-print-sharp", "why-sizes-hidden", "set-prices"],
     body: `
 ## The basics
 - **Files:** JPG, PNG or HEIC, up to 25 MB.
@@ -63,6 +63,55 @@ If a piece shows nudity, violence or gore, disturbing imagery, drug use or stron
 
 ## Limited editions
 You can make a piece a limited edition when you upload it. See [Limited editions and certificates](/help/selling/limited-editions).
+
+## Got a lot?
+Once your first piece is up, you can pick several paintings or a whole folder at once. See [Uploading several paintings at once](/help/getting-started/upload-several).
+`,
+  },
+  {
+    slug: "upload-several",
+    section,
+    audience: "artist",
+    title: "Uploading several paintings at once",
+    summary: `Pick up to ${QUEUE_MAX} images or a whole folder in the upload form. They upload in the background while you fill in each painting, one by one, in the same form.`,
+    link: { href: "/studio/art/new", label: "Upload art" },
+    related: ["upload-art", "file-sizes-print-sharp", "printing-sheets", "collections"],
+    body: `
+Have a stack of paintings to get online? You don't need a separate tool. The normal upload form takes several at once, as soon as your first piece is on your page.
+
+## Steps
+1. Open [Upload art](/studio/art/new).
+2. Pick several images, choose a folder, or drag them in. Up to ${QUEUE_MAX} at a time: JPG, PNG, WEBP or HEIC, each up to 25 MB.
+3. They start uploading right away, a few at a time. You don't have to wait.
+4. Fill in the first painting: the title is already filled in from the file name ("east_river-late.jpg" becomes "East River Late"), so check it and set your prices.
+5. Press **Publish and next**. You see straight away whether it's live or in review, and the next painting opens.
+
+## Same as last one
+Each new painting starts with the prices, print run (open or limited edition) and sensitive labels of the one before it, so a batch priced the same way takes a few clicks. Change anything on a painting and it only changes that one.
+
+You tick the box confirming the work is yours and you hold the rights to sell prints of it once for the whole batch.
+
+## Moving around
+- The strip of thumbnails at the top shows every painting. Click one to jump to it.
+- A green dot means it's published. A red dot means it needs something: a title, a bigger file, or a price that's too low.
+- **Back** and **Next** move without publishing. **Skip and remove** takes a painting out of the batch.
+- Each painting shows which print sizes it's sharp enough for, like a single upload. Sizes a file is too small for are hidden from buyers (see [Why are some print sizes hidden?](/help/getting-started/why-sizes-hidden)).
+
+## Review
+The same rules as a single upload apply. New artists' first ${AUTO_APPROVE_AFTER} pieces get a quick look from a person before they go live, and so does anything that looks like a piece already on Artfinity. Everything else goes live the moment you publish it.
+
+## When you're done
+You get a short summary of what's live and what's in review, with two shortcuts:
+- **Print all their QR codes**: one PDF with a code for every new live piece. See [Printing sheets of codes](/help/qr-codes/printing-sheets).
+- **Add them to a collection**: put the whole batch in a new or existing [collection](/help/selling/collections).
+
+We send one email for the batch, not one per painting.
+
+## Good to know
+- If the page reloads, the paintings that finished uploading are still there, titles and all. Images that were still uploading need adding again.
+- Your browser warns you if you try to leave while images are still uploading.
+- You can publish up to ${DAILY_UPLOAD_LIMIT} new pieces a day.
+- Your very first upload is always a single piece, so you can see how it works first.
 `,
   },
   {

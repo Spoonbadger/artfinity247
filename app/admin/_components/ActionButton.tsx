@@ -23,8 +23,8 @@ export default function ActionButton({
   fields?: Field[];
   confirmLabel?: string;
   tone?: "ghost" | "blue" | "danger";
-  /** Toast text on success (or a function of the JSON response). */
-  done?: string | ((d: any) => string);
+  /** Toast text on success; a `message` in the JSON response wins. */
+  done?: string;
   className?: string;
   disabled?: boolean;
   method?: "POST" | "PATCH";
@@ -49,7 +49,7 @@ export default function ActionButton({
       const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, ...values }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || "Something went wrong.");
-      toast.success(typeof done === "function" ? done(d) : done || "Done");
+      toast.success(typeof d.message === "string" ? d.message : done || "Done");
       setOpen(false);
       router.refresh();
     } catch (e: any) {

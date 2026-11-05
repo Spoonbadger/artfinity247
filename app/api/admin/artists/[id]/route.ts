@@ -75,7 +75,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       await logAdminAction(admin, "artist.grant_infinity", target, `Granted ${months} month${months === 1 ? "" : "s"} of Infinity (until ${formatPlanDate(proUntil)})`, {
         months, from: artist.proUntil, to: proUntil,
       });
-      return NextResponse.json({ ok: true, proUntil });
+      return NextResponse.json({ ok: true, proUntil, message: `Infinity until ${formatPlanDate(proUntil)}` });
     }
     case "resend_payout_email": {
       const month = typeof input.month === "string" && /^\d{4}-\d{2}$/.test(input.month) ? input.month : null;
