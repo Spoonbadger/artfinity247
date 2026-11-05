@@ -49,6 +49,7 @@ model OrderItem {
   editionNumber Int?     // e.g. 12 of 50 for limited editions
   qrCodeId      String?  // the printed code that led to this sale (scan attribution)
   artistSplit   Float?   // the artist's share of profit locked in when the order was placed (0.6 free, higher on Pro)
+  review        Review?
   artwork      Artwork? @relation(fields: [artworkId], references: [id])
   order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
@@ -124,6 +125,7 @@ model Artist {
   // Account closing: the page goes offline right away; unpaid earnings are still paid out before the data is removed
   closedAt           DateTime?
   events             StudioEvent[]
+  reviews            Review[]
 
   @@index([citySlug])
 }
@@ -157,6 +159,7 @@ model Artwork {
   // Rights: when the artist confirmed "this is my original work and I hold the rights"
   ownershipConfirmedAt DateTime?
   reports         ArtReport[]
+  reviews         Review[]
 }
 
 enum ArtworkStatus {
@@ -341,4 +344,27 @@ model ArtReport {
   resolvedAt  DateTime?
 
   @@index([status, createdAt])
+}
+
+// Buyer reviews: one per purchased print, left after delivery (verified purchase only)
+model Review {
+  id          String    @id @default(cuid())
+  orderItemId String    @unique
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  artworkId   String?
+  artwork     Artwork?  @relation(fields: [artworkId], references: [id], onDelete: SetNull)
+  artistId    String
+  artist      Artist    @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  rating      Int       // 1-5
+  body        String    @default("")
+  buyerName   String    // shown as first name + last initial
+  buyerCity   String?
+  photoUrl    String?   // optional photo of the print on their wall
+  status      String    @default("published") // published | hidden (admin) | flagged
+  artistReply String?
+  artistReplyAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([artworkId, status])
+  @@index([artistId, status])
 }
