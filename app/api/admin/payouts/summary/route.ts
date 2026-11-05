@@ -4,6 +4,7 @@ import { getAdmin } from "@/lib/admin"
 import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
 import { isPayoutLate } from "@/lib/balance"
 import { connectMode, connectStatus } from "@/lib/stripeConnect"
+import { activeRefunds, shareAfterRefund } from "@/lib/refunds"
 
 export const dynamic = "force-dynamic"
 
@@ -64,6 +65,8 @@ export async function GET(req: NextRequest) {
     };
 
     const byArtist = new Map<string, RowAgg>();
+    // Refunded lines whose share was reversed pay the artist nothing (lib/refunds.ts).
+    const refunds = await activeRefunds(orders.map((o) => o.id));
 
     for (const order of orders) {
       for (const item of order.items) {
@@ -97,7 +100,7 @@ export async function GET(req: NextRequest) {
         row.gross += lineTotal;
         row.expenses += expenses;
         row.profit += b.profit;
-        row.artistShare += b.artistShare;
+        row.artistShare += shareAfterRefund(b.artistShare, refunds.get(item.id));
 
         byArtist.set(artistId, row);
       }

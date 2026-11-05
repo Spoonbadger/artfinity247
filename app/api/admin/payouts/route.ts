@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from "@/lib/prisma";
 import { getAdmin } from "@/lib/admin"
 import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
+import { activeRefunds, shareAfterRefund } from "@/lib/refunds"
 
 export const dynamic = "force-dynamic"
 export const runtime = 'nodejs'
@@ -65,6 +66,8 @@ export async function GET(req: NextRequest) {
       },
     },
     select: {
+      id: true,
+      orderId: true,
       lineTotal: true,
       size: true,
       quantity: true,
@@ -88,6 +91,7 @@ export async function GET(req: NextRequest) {
     companyShare: number
   }
   const byArtist = new Map<string, Tot>()
+  const refunds = await activeRefunds(Array.from(new Set(items.map((i) => i.orderId))))
 
   const payouts = await prisma.payout.findMany({
     where: { month },
@@ -110,7 +114,7 @@ export async function GET(req: NextRequest) {
     })
     const expenses = b.printCost + b.shippingCost + b.laborCost + b.websiteCost
     const profit = b.profit
-    const artistShare = b.artistShare
+    const artistShare = shareAfterRefund(b.artistShare, refunds.get(it.id))
     const companyShare = b.companyShare
 
     const current = byArtist.get(key) ?? {

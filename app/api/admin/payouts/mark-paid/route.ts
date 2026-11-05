@@ -4,6 +4,8 @@ import { getAdmin } from "@/lib/admin"
 import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
 import { resend } from "@/lib/resend"
 import PayoutSentEmail from "@/emails/PayoutSentEmail"
+import { activeRefunds, shareAfterRefund } from "@/lib/refunds"
+import { logAdminAction } from "@/lib/audit"
 
 export const dynamic = "force-dynamic"
 
@@ -48,6 +50,8 @@ export async function POST(req: NextRequest) {
       },
     },
     select: {
+      id: true,
+      orderId: true,
       lineTotal: true,
       unitPrice: true,
       size: true,
@@ -70,6 +74,7 @@ export async function POST(req: NextRequest) {
     return "M"
   }
 
+  const refunds = await activeRefunds(Array.from(new Set(items.map((i) => i.orderId))))
   const amountCents = items.reduce((sum: any, item: any) => {
     const sizeNorm = normalizeSize(item.size)
     const b = calcItemProfitCents({
@@ -81,7 +86,7 @@ export async function POST(req: NextRequest) {
       orderDate: item.order.createdAt,
       artistSplit: item.artistSplit,
     })
-    return sum + b.artistShare
+    return sum + shareAfterRefund(b.artistShare, refunds.get(item.id))
   }, 0)
 
 

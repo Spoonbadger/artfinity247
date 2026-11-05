@@ -13,6 +13,7 @@ import { calcItemProfitCents } from "@/lib/revenue";
 import { normalizeSize } from "@/lib/sales";
 import type { PrintSize } from "@/lib/revenue";
 import { connectStatus, type ConnectStatus } from "@/lib/stripeConnect";
+import { activeRefunds, shareAfterRefund } from "@/lib/refunds";
 
 /**
  * BUSINESS DECISION: the return window. A sale stays "pending" (incoming) for this many days
@@ -70,6 +71,8 @@ export type LedgerLine = {
   status: LedgerStatus;
   /** UTC month the sale is booked to, "YYYY-MM" (the Payout.month it's paid under). */
   payoutMonth: string;
+  /** Refunded to the buyer (lib/refunds.ts): "reversed" = share taken back (shareCents is 0), "kept" = refunded after it was paid out. */
+  refunded?: "reversed" | "kept" | null;
 };
 
 export type PayoutRow = {
@@ -199,6 +202,7 @@ export async function getBalance(artistId: string, now: Date = new Date()): Prom
     ? await prisma.qrCode.findMany({ where: { id: { in: codeIds } }, select: { id: true, code: true, label: true, venue: true } })
     : [];
   const codeName = new Map(codes.map((c) => [c.id, c.label?.trim() || c.venue?.trim() || `Code ${c.code}`]));
+  const refunds = await activeRefunds(Array.from(new Set(items.map((i) => i.order.id))));
 
   const currentMonth = utcMonth(now);
   const paid = new Map(payoutRows.filter((p) => p.paidAt).map((p) => [p.month, p]));
@@ -215,6 +219,7 @@ export async function getBalance(artistId: string, now: Date = new Date()): Prom
     const b = calcItemProfitCents({ lineTotal: grossCents, size, frameChosen: it.frameChosen, quantity, orderDate: date, artistSplit: it.artistSplit });
     const month = utcMonth(date);
     const name = (it.order.shippingName || "").trim();
+    const refund = refunds.get(it.id);
     return {
       id: it.id,
       orderId: it.order.id,
@@ -235,9 +240,10 @@ export async function getBalance(artistId: string, now: Date = new Date()): Prom
       feesCents: b.websiteCost + b.laborCost,
       profitCents: b.profit,
       split: b.split,
-      shareCents: b.artistShare,
+      shareCents: shareAfterRefund(b.artistShare, refund),
       status: lineStatus({ date, month, paidMonths, currentMonth, now }),
       payoutMonth: month,
+      refunded: refund ? (refund.reversed ? "reversed" : "kept") : null,
     };
   });
 
