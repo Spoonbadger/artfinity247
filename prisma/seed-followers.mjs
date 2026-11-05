@@ -70,13 +70,13 @@ export async function seedFollowers(prisma) {
   // One newsletter Maya sent a couple of weeks ago, with two of her pieces.
   const maya = artists.find((a) => a.slug === "mayaokafor");
   if (maya) {
-    const pieces = await prisma.artwork.findMany({ where: { artistId: maya.id, title: { in: ["Second Frost", "Craggy Pinnacle"] } }, select: { id: true } });
+    const pieces = await prisma.artwork.findMany({ where: { artistId: maya.id, title: { in: ["Second Frost", "Fort Tryon Dusk"] } }, select: { id: true } });
     const sentAt = new Date(Date.now() - 12 * DAY);
     const recipients = await prisma.follower.count({ where: { artistId: maya.id, confirmedAt: { not: null, lt: sentAt } } });
     await prisma.newsletter.create({ data: {
       artistId: maya.id,
-      subject: "Two new ones from the ridge",
-      body: "Hi,\n\nOctober finally showed up. I spent three cold mornings up on Craggy with a thermos and too many brushes, and came home with two paintings I'm really happy with.\n\n**Second Frost** is the river the morning after the first hard frost. **Craggy Pinnacle** is the view at 6pm, the way it looks for about four minutes.\n\nPrints are made to order and ship free in the US.\n\nThanks for following,\nMaya",
+      subject: "Two new ones from uptown",
+      body: "Hi,\n\nOctober finally showed up. I spent three cold mornings in Fort Tryon Park with a thermos and too many brushes, and came home with two paintings I'm really happy with.\n\n**Second Frost** is the Hudson the morning after the first hard frost. **Fort Tryon Dusk** is the view across to the Palisades at 6pm, the way it looks for about four minutes.\n\nPrints are made to order and ship free in the US.\n\nThanks for following,\nMaya",
       artworkIds: pieces.map((p) => p.id),
       sentAt,
       recipients,

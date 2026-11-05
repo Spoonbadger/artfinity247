@@ -15,10 +15,10 @@ export function stageOf(o: { shippingStatus: string; sentToPrinter: boolean }): 
   return o.sentToPrinter ? "printing" : "paid";
 }
 
-/** City and state only from "1 Main St, Asheville, NC 28801, US". Never the street. */
+/** City and state only from "1 Main St, Brooklyn, NY 11216, US". Never the street. */
 export function cityOf(address: string | null | undefined) {
   let p = String(address || "").split(",").map((x) => x.trim()).filter(Boolean);
-  // Drop a trailing country after "NC 28801".
+  // Drop a trailing country after "NY 11216".
   if (p.length >= 3 && !/\d/.test(p[p.length - 1]) && /\d/.test(p[p.length - 2])) p = p.slice(0, -1);
   if (p.length < 2) return "";
   const state = p[p.length - 1].replace(/\s*\d[\d\s-]*$/, "").trim();

@@ -117,7 +117,7 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
         <form onSubmit={create} className="flex gap-2">
           <label className="af-field flex-1 py-2">
             <span className="label">New collection</span>
-            <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} maxLength={80} placeholder="Blue Ridge series" />
+            <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} maxLength={80} placeholder="East River series" />
           </label>
           <button type="submit" className="btn btn-blue shrink-0 self-stretch px-4" disabled={!newTitle.trim() || creating} aria-label="Create collection">
             <Plus className="h-5 w-5" aria-hidden /><span className="hidden sm:inline">Add</span>

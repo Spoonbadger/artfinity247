@@ -256,7 +256,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
               <small>Only you see this, in My codes.</small>
             </label>
             <label className={s.field}>Event or venue
-              <input type="text" maxLength={32} value={d.ev} placeholder="River Arts Market" onChange={(e) => set({ ev: e.target.value })} />
+              <input type="text" maxLength={32} value={d.ev} placeholder="Brooklyn Flea" onChange={(e) => set({ ev: e.target.value })} />
               <small>Shows in your stats and on the buyer&rsquo;s page.</small>
             </label>
             <Toggle checked={d.evPrint} disabled={!d.ev.trim()} onChange={(v) => set({ evPrint: v })}>Print it on the card too</Toggle>

@@ -4,7 +4,7 @@
 
 const ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"; // same as lib/shortcode.ts: no 0/O/1/I/L
 const DAY = 86400000;
-const TZ_OFFSET_H = 5; // the demo artists' evenings, roughly US Eastern
+const TZ_OFFSET_H = 5; // the demo artists' evenings, New York time (roughly)
 
 function rng(seed) { let a = seed >>> 0; return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 const r = rng(4247);
@@ -30,8 +30,9 @@ const design = (look, extra = {}) => ({
   disc: 0, coupon: "", ev: "", evPrint: false, size: "medium", end: "never", ...extra,
 });
 
-const ASHEVILLE = [["Asheville", "NC", 60], ["Black Mountain", "NC", 6], ["Weaverville", "NC", 5], ["Hendersonville", "NC", 5], ["Charlotte", "NC", 4], ["Knoxville", "TN", 3], ["Greenville", "SC", 3], ["Atlanta", "GA", 2]];
-const FAR = [["Asheville", "NC", 14], ["Brooklyn", "NY", 6], ["Austin", "TX", 4], ["Chicago", "IL", 4], ["Los Angeles", "CA", 4], ["Atlanta", "GA", 3], ["Durham", "NC", 3], ["Seattle", "WA", 3], ["Denver", "CO", 2], ["Toronto", "ON", 2, "CA"]];
+// Scan locations as the geo lookup reports them (Manhattan comes back as "New York").
+const BROOKLYN = [["Brooklyn", "NY", 58], ["New York", "NY", 15], ["Long Island City", "NY", 5], ["Astoria", "NY", 4], ["Jersey City", "NJ", 4], ["Hoboken", "NJ", 3], ["Bronx", "NY", 2], ["Yonkers", "NY", 2]];
+const FAR = [["Brooklyn", "NY", 12], ["New York", "NY", 9], ["Jersey City", "NJ", 3], ["Philadelphia", "PA", 4], ["Chicago", "IL", 4], ["Los Angeles", "CA", 4], ["Boston", "MA", 3], ["Atlanta", "GA", 3], ["Seattle", "WA", 3], ["Denver", "CO", 2], ["Toronto", "ON", 2, "CA"]];
 const near = (city, state) => [[city, state, 70], ["Nearby", state, 0]];
 
 /** A scan time on day d (0 = today, counting back), local hours weighted to the afternoon. */
@@ -88,34 +89,35 @@ export async function seedScans(prisma) {
   if (maya) {
     const w = (t) => maya.artworks.find((a) => a.title === t)?.id ?? maya.artworks[0]?.id;
     const weekend = (d, wd) => (wd === 0 || wd === 6 ? 2.2 : wd === 5 ? 1.3 : 0.8);
-    await make(maya, { label: "Lumen Café wall", venue: "Lumen Café", artworkId: w("Blue Ridge, Late"), design: design("gallery", { ev: "Lumen Café" }), createdAt: daysAgo(64) },
-      { rate: 5.8, dayWeight: (d, wd) => weekend(d, wd) * (wd === 0 ? 1.15 : 1), places: ASHEVILLE, hours: [8, 18] });
-    // River Arts Market runs Saturdays (and a holiday-season Sunday): big days, quiet weekdays.
-    await make(maya, { label: "River Arts Market tags", venue: "River Arts Market", discountPct: 10, artworkId: w("Cold Mountain Road"), design: design("market", { disc: 10, coupon: "SCAN10", ev: "River Arts Market", evPrint: true }), createdAt: daysAgo(62) },
-      { rate: 1, dayWeight: (d, wd) => (wd === 6 ? 46 : wd === 0 ? (d < 21 ? 14 : 3) : 0.6), places: ASHEVILLE, hours: [9, 16], devices: [["phone", 93], ["tablet", 4], ["desktop", 3]] });
+    await make(maya, { label: "Lumen Café wall", venue: "Lumen Café", artworkId: w("East River, Late"), design: design("gallery", { ev: "Lumen Café" }), createdAt: daysAgo(64) },
+      { rate: 5.8, dayWeight: (d, wd) => weekend(d, wd) * (wd === 0 ? 1.15 : 1), places: BROOKLYN, hours: [8, 18] });
+    // Brooklyn Flea runs Saturdays (and holiday-season Sundays): big days, quiet weekdays.
+    await make(maya, { label: "Brooklyn Flea tags", venue: "Brooklyn Flea", discountPct: 10, artworkId: w("Bear Mountain Road"), design: design("market", { disc: 10, coupon: "SCAN10", ev: "Brooklyn Flea", evPrint: true }), createdAt: daysAgo(62) },
+      { rate: 1, dayWeight: (d, wd) => (wd === 6 ? 46 : wd === 0 ? (d < 21 ? 14 : 3) : 0.6), places: BROOKLYN, hours: [9, 16], devices: [["phone", 93], ["tablet", 4], ["desktop", 3]] });
     await make(maya, { label: "Instagram bio", design: design("sticker"), createdAt: daysAgo(66) },
       { rate: 2.8, dayWeight: (d, wd) => (wd === 0 || wd === 6 ? 1.3 : 1), places: FAR, hours: [7, 23], devices: [["phone", 72], ["tablet", 6], ["desktop", 22]], unknownCity: 0.08 });
-    await make(maya, { label: "Studio door poster", venue: "Studio door", artworkId: w("French Broad, 6pm"), design: design("poster", { ev: "Open studio" }), createdAt: daysAgo(40) },
-      { rate: 1.6, startDay: 40, dayWeight: weekend, places: ASHEVILLE, hours: [10, 19] });
+    await make(maya, { label: "Studio door poster", venue: "Studio door", artworkId: w("Gowanus, 6pm"), design: design("poster", { ev: "Open studio" }), createdAt: daysAgo(40) },
+      { rate: 1.6, startDay: 40, dayWeight: weekend, places: BROOKLYN, hours: [10, 19] });
   }
 
   // ---- Others: 1-2 codes, fewer scans ----
   const few = (d, wd) => (wd === 0 || wd === 6 ? 1.8 : 0.8);
   const juno = bySlug.junopark;
   if (juno) {
-    await make(juno, { label: "Juniper Coffee", venue: "Juniper Coffee", artworkId: juno.artworks[0]?.id, design: design("gallery", { ev: "Juniper Coffee" }), createdAt: daysAgo(58) }, { rate: 2.1, dayWeight: few, places: near("Austin", "TX") });
-    await make(juno, { label: "East Austin Studio Tour", venue: "East Austin Studio Tour", discountPct: 15, artworkId: juno.artworks[1]?.id, design: design("market", { disc: 15, ev: "East Austin Studio Tour", evPrint: true }), createdAt: daysAgo(30) }, { rate: 1.2, startDay: 30, dayWeight: few, places: near("Austin", "TX") });
+    await make(juno, { label: "Kalimera Coffee, Ditmars", venue: "Kalimera Coffee", artworkId: juno.artworks[0]?.id, design: design("gallery", { ev: "Kalimera Coffee" }), createdAt: daysAgo(58) }, { rate: 2.1, dayWeight: few, places: near("Astoria", "NY") });
+    await make(juno, { label: "Industry City market", venue: "Industry City", discountPct: 15, artworkId: juno.artworks[1]?.id, design: design("market", { disc: 15, ev: "Industry City", evPrint: true }), createdAt: daysAgo(30) }, { rate: 1.2, startDay: 30, dayWeight: few, places: near("Brooklyn", "NY") });
   }
   const ines = bySlug.inesduarte;
-  if (ines) await make(ines, { label: "Canyon Road gallery", venue: "Canyon Road", artworkId: ines.artworks[0]?.id, design: design("gallery", { ev: "Canyon Road" }), createdAt: daysAgo(55) }, { rate: 1.5, dayWeight: few, places: near("Santa Fe", "NM") });
+  if (ines) await make(ines, { label: "Ludlow Room bar", venue: "Ludlow Room", artworkId: ines.artworks[0]?.id, design: design("gallery", { ev: "Ludlow Room" }), createdAt: daysAgo(55) }, { rate: 1.5, dayWeight: few, places: near("New York", "NY") });
   const caleb = bySlug.calebmoreno;
   if (caleb) {
-    await make(caleb, { label: "Saturday Market pop-up", venue: "Portland Saturday Market", artworkId: caleb.artworks[0]?.id, design: design("market", { ev: "Portland Saturday Market", evPrint: true }), createdAt: daysAgo(50), expiresAt: daysAgo(15) },
-      { rate: 1, startDay: 50, dayWeight: (d, wd) => (d < 15 ? 0 : wd === 6 ? 9 : 0.3), places: near("Portland", "OR") });
-    await make(caleb, { label: "Instagram bio", design: design("sticker"), createdAt: daysAgo(45) }, { rate: 0.6, startDay: 45, places: near("Portland", "OR"), devices: [["phone", 75], ["desktop", 25]] });
+    // Smorgasburg's outdoor season ended a couple of weeks ago, so this code has expired.
+    await make(caleb, { label: "Smorgasburg pop-up", venue: "Smorgasburg", artworkId: caleb.artworks[0]?.id, design: design("market", { ev: "Smorgasburg", evPrint: true }), createdAt: daysAgo(50), expiresAt: daysAgo(15) },
+      { rate: 1, startDay: 50, dayWeight: (d, wd) => (d < 15 ? 0 : wd === 6 ? 9 : 0.3), places: near("Brooklyn", "NY") });
+    await make(caleb, { label: "Instagram bio", design: design("sticker"), createdAt: daysAgo(45) }, { rate: 0.6, startDay: 45, places: near("Bronx", "NY"), devices: [["phone", 75], ["desktop", 25]] });
   }
   const priya = bySlug.priyanair;
-  if (priya) await make(priya, { label: "Studio wall", artworkId: priya.artworks[0]?.id, design: design("gallery"), createdAt: daysAgo(20) }, { rate: 0.5, startDay: 20, places: near("Asheville", "NC") });
+  if (priya) await make(priya, { label: "Studio wall", artworkId: priya.artworks[0]?.id, design: design("gallery"), createdAt: daysAgo(20) }, { rate: 0.5, startDay: 20, places: near("Staten Island", "NY") });
 
   // ---- Credit orders to codes: ~70% of Maya's, ~45% of everyone else's ----
   // Each credited sale also gets the scan that led to it, a few minutes before the order.
@@ -134,7 +136,7 @@ export async function seedScans(prisma) {
       const c = same.length && (r() < 0.8 || !page.length) ? pick(same) : page.length ? pick(page) : live.length ? pick(live) : null;
       if (!c) continue;
       await prisma.orderItem.update({ where: { id: it.id }, data: { qrCodeId: c.id } });
-      allScans.push({ qrCodeId: c.id, createdAt: new Date(it.order.createdAt.getTime() - (3 + r() * 37) * 60000), device: "phone", city: a.slug === "mayaokafor" ? "Asheville" : null, region: a.slug === "mayaokafor" ? "NC" : null, country: "US", visitorId: vid() });
+      allScans.push({ qrCodeId: c.id, createdAt: new Date(it.order.createdAt.getTime() - (3 + r() * 37) * 60000), device: "phone", city: a.slug === "mayaokafor" ? "Brooklyn" : null, region: a.slug === "mayaokafor" ? "NY" : null, country: "US", visitorId: vid() });
       credited++;
     }
   }

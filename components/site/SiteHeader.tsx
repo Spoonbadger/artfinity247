@@ -102,7 +102,7 @@ export default function SiteHeader({ brand = null, inPage = false }: { brand?: H
         <form onSubmit={search} role="search" className="hidden lg:block">
           <label className="flex h-10 w-44 items-center gap-2 rounded-full border-[1.5px] border-line bg-white pl-3 pr-1 transition-[width,border-color] focus-within:w-60 focus-within:border-ink">
             <Search className="h-4 w-4 shrink-0 text-ink-2" aria-hidden="true" />
-            <span className="sr-only">Search art, artists and cities</span>
+            <span className="sr-only">Search art, artists and neighborhoods</span>
             <input type="search" name="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" maxLength={80} className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-2" />
           </label>
         </form>
@@ -129,8 +129,8 @@ export default function SiteHeader({ brand = null, inPage = false }: { brand?: H
           <form onSubmit={search} role="search" className="mb-1">
             <label className="flex h-12 items-center gap-2 rounded-full border-2 border-ink bg-white pl-4 pr-1.5 focus-within:border-scan">
               <Search className="h-5 w-5 shrink-0 text-ink-2" aria-hidden="true" />
-              <span className="sr-only">Search art, artists and cities</span>
-              <input type="search" name="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search art, artists, cities" maxLength={80} enterKeyHint="search" className="min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-ink-2" />
+              <span className="sr-only">Search art, artists and neighborhoods</span>
+              <input type="search" name="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search art, artists, neighborhoods" maxLength={80} enterKeyHint="search" className="min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-ink-2" />
               <button type="submit" className="btn btn-blue btn-sm min-h-[38px]">Go</button>
             </label>
           </form>

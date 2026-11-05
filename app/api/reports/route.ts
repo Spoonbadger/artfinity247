@@ -38,7 +38,7 @@ const Body = z.object({
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 const fmtDay = (d: Date) => d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
 
-// Pull a slug out of a pasted artfinity link like https://theartfinity.com/@maya/art/blue-ridge (or the old /art/blue-ridge)
+// Pull a slug out of a pasted artfinity link like https://theartfinity.com/@maya/art/east-river (or the old /art/east-river)
 function slugFromUrl(u: string) {
   const m = u.match(/\/art\/([^/?#\s]+)/i);
   return m ? decodeURIComponent(m[1]) : "";

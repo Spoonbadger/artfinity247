@@ -336,10 +336,10 @@ export default function RegisterFlow() {
             <FormAlert>{formError}</FormAlert>
             <Field label="Artist name" name="artist_name" autoComplete="name" maxLength={60} value={artistName} onChange={(e) => { setArtistName(e.target.value); setErrors((x) => ({ ...x, artistName: null })); }} error={errors.artistName} autoFocus placeholder="Maya Okafor" />
             <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_140px]">
-              <Field label="City" name="city" autoComplete="address-level2" maxLength={60} value={city} onChange={(e) => { setCity(e.target.value); setErrors((x) => ({ ...x, city: null })); }} error={errors.city} placeholder="Asheville" />
-              <Field label="State (optional)" name="state" autoComplete="address-level1" maxLength={40} value={region} onChange={(e) => setRegion(e.target.value)} placeholder="NC" />
+              <Field label="City" name="city" autoComplete="address-level2" maxLength={60} value={city} onChange={(e) => { setCity(e.target.value); setErrors((x) => ({ ...x, city: null })); }} error={errors.city} placeholder="Brooklyn" />
+              <Field label="State (optional)" name="state" autoComplete="address-level1" maxLength={40} value={region} onChange={(e) => setRegion(e.target.value)} placeholder="NY" />
             </div>
-            <p className="-mt-1 text-[14px] text-ink-2">Your city puts you on the local map.</p>
+            <p className="-mt-1 text-[14px] text-ink-2">Your borough or neighborhood puts you on the local map.</p>
             <div className="grid gap-1.5">
               <label htmlFor="accept-terms" className="flex cursor-pointer items-start gap-3 text-[15px] leading-snug">
                 <input
@@ -417,7 +417,7 @@ export default function RegisterFlow() {
                 </div>
                 <div className="grid content-start gap-4">
                   {upload.error && <FormAlert>{upload.error}</FormAlert>}
-                  <Field label="Title" name="title" maxLength={80} value={title} onChange={(e) => { setTitle(e.target.value); setErrors((x) => ({ ...x, title: null })); }} error={errors.title} placeholder="Blue Ridge, Late" />
+                  <Field label="Title" name="title" maxLength={80} value={title} onChange={(e) => { setTitle(e.target.value); setErrors((x) => ({ ...x, title: null })); }} error={errors.title} placeholder="East River, Late" />
                   <div className="grid gap-2" aria-live="polite">
                     <span className="text-[13px] font-semibold text-ink-2">{upload.url ? "Prints sharp at" : "Checking print sizes"}</span>
                     <div className="flex flex-wrap gap-1.5">

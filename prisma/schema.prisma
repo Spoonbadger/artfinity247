@@ -256,7 +256,7 @@ model EmailTemplate {
 }
 
 
-// An artist's own groupings of their work, sorted by hand (e.g. "Blue Ridge series", "Small works").
+// An artist's own groupings of their work, sorted by hand (e.g. "East River series", "Small works").
 model Collection {
   id          String           @id @default(cuid())
   artistId    String

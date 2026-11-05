@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { artPath } from "@/lib/urls";
 import { SIZE_LABEL, usd } from "./util";
 import { CARRIERS, type Carrier, type Tracking } from "@/lib/tracking";
+import type { PrinterState } from "@/lib/printer";
 
 export type AdminOrderItem = {
   id: string;
@@ -41,6 +42,8 @@ export type AdminOrder = {
   shippingAddress: string | null;
   shippingStatus: string;
   sentToPrinter: boolean;
+  /** The automatic work order to the print lab (lib/printer.ts). */
+  printer?: PrinterState;
   /** "bulk" = an artist's own at-cost order (no artist share). "reprint" = free replacement (lib/reprintFormat.ts). */
   kind?: string;
   items: AdminOrderItem[];
@@ -69,7 +72,9 @@ function downloadUrl(item: AdminOrderItem) {
   return url.replace("/upload/", "/upload/fl_attachment/");
 }
 
-export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] }) {
+const when = (iso: string) => new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+
+export default function OrdersBoard({ orders: initial, printerAuto = false }: { orders: AdminOrder[]; printerAuto?: boolean }) {
   const [orders, setOrders] = useState(initial);
   const [filter, setFilter] = useState<Filter>("all");
   const [busy, setBusy] = useState<string | null>(null);
@@ -93,6 +98,25 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
     } catch {
       patch(o.id, { sentToPrinter: !next });
       toast.error("Couldn't update. Try again.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // "Resend work order" / "Retry": send the lab the work order again (lib/printer.ts).
+  const resend = async (o: AdminOrder) => {
+    setBusy(o.id);
+    patch(o.id, { printer: { status: "sending", at: o.printer?.at ?? null, error: null } });
+    let fresh = false;
+    try {
+      const r = await fetch(`/api/admin/orders/${o.id}/work-order`, { method: "POST" });
+      const d = await r.json().catch(() => ({}));
+      if (d.printer) { fresh = true; patch(o.id, { printer: d.printer, sentToPrinter: !!d.sentToPrinter }); }
+      if (!r.ok) throw new Error(d.error || "");
+      toast.success("Work order sent to the printer");
+    } catch (e: any) {
+      if (!fresh) patch(o.id, { printer: o.printer });
+      toast.error(e?.message || "Couldn't send the work order.");
     } finally {
       setBusy(null);
     }
@@ -232,6 +256,7 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
                       </span>
                       {o.sentToPrinter ? "At printer" : "Sent to printer"}
                     </label>
+                    <PrinterLine o={o} busy={busy === o.id} onRetry={() => resend(o)} />
                   </div>
 
                   <div>
@@ -273,6 +298,11 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
                       <span className="mt-2 eyebrow">Stripe</span>
                       <span className="break-all text-ink-2">{o.stripeSessionId}</span>
                       <a href={`/admin/orders/${o.id}/slip`} target="_blank" rel="noopener" className="mt-2 font-semibold text-scan">Packing slip</a>
+                      {printerAuto && (o.paymentStatus === "paid" || o.kind === "reprint") && (
+                        <button type="button" disabled={busy === o.id} onClick={() => resend(o)} className="btn btn-ghost btn-sm mt-2 justify-self-start">
+                          {o.printer?.status === "sent" ? "Resend work order" : "Send work order"}
+                        </button>
+                      )}
                     </div>
                     <div className="overflow-x-auto">
                       <table className="num w-full min-w-[460px] text-left">
@@ -320,6 +350,21 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
       </div>
     </section>
   );
+}
+
+/** Under the printer toggle: when the work order went out automatically, or a Retry when it didn't. */
+function PrinterLine({ o, busy, onRetry }: { o: AdminOrder; busy: boolean; onRetry: () => void }) {
+  const p = o.printer;
+  if (!p || p.status === "none") return null;
+  if (p.status === "sending") return <p className="mt-1 text-[12px] text-ink-2">Sending to printer…</p>;
+  if (p.status === "failed") {
+    return (
+      <button type="button" disabled={busy} onClick={onRetry} title={p.error || undefined} className="mt-1 block text-left text-[12px] font-semibold text-coral hover:underline">
+        Couldn&apos;t send to printer — Retry
+      </button>
+    );
+  }
+  return <p className="mt-1 text-[12px] leading-snug text-ink-2">Sent to printer automatically · {p.at ? when(p.at) : ""}</p>;
 }
 
 function ShipForm({ busy, onSubmit, onCancel }: { busy: boolean; onSubmit: (t: { carrier: Carrier; trackingNumber: string; trackingUrl?: string }) => void; onCancel: () => void }) {

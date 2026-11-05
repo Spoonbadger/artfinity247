@@ -154,7 +154,7 @@ function paidMethodLabel(method: string | null | undefined, handle: string | nul
 }
 
 function cityOnly(address: string | null | undefined) {
-  // "1 Main St, Asheville, NC 28801, US" -> "Asheville". Never the street.
+  // "1 Main St, Brooklyn, NY 11216, US" -> "Brooklyn". Never the street.
   let p = String(address || "").split(",").map((x) => x.trim()).filter(Boolean);
   if (p.length >= 3 && !/\d/.test(p[p.length - 1]) && /\d/.test(p[p.length - 2])) p = p.slice(0, -1);
   if (p.length < 2) return "";

@@ -107,7 +107,7 @@ export default function CodeEditor({ initial, arts, look, base }: { initial: Edi
 
         <label className="af-field">
           <span className="label">Venue</span>
-          <input type="text" maxLength={60} value={f.venue} onChange={(e) => set({ venue: e.target.value })} placeholder="River Arts Market" />
+          <input type="text" maxLength={60} value={f.venue} onChange={(e) => set({ venue: e.target.value })} placeholder="Brooklyn Flea" />
         </label>
         {venueWarn && <p className="-mt-2 text-[12.5px] text-ink-2">The card itself still says {look.printedVenue}.</p>}
 

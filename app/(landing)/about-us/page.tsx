@@ -65,7 +65,7 @@ export default async function AboutPage() {
 
   const numbers: [string, string][] = [
     [stats.artists.toLocaleString("en-US"), stats.artists === 1 ? "artist" : "artists"],
-    [stats.cities.toLocaleString("en-US"), stats.cities === 1 ? "city" : "cities"],
+    [stats.cities.toLocaleString("en-US"), stats.cities === 1 ? "neighborhood" : "neighborhoods"],
     [stats.prints.toLocaleString("en-US"), "prints sold"],
     [moneyRound(stats.earned), "earned by artists"],
   ];

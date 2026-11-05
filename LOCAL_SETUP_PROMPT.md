@@ -26,7 +26,7 @@ The code is on GitHub: https://github.com/thomasdemuth/artfinity247, branch `red
 
 6. Once the site loads, tell me:
    - The logins (password `artfinity123` for both): `maya@artfinity.local` is an artist, `admin@artfinity.local` is the admin.
-   - Pages to try first: the homepage; `/art/blue-ridge-late-may` (the page a buyer sees after scanning a QR code; try it at phone size); `/@mayaokafor` and `/@mayaokafor/links`; and, logged in as Maya, `/studio`, `/studio/qr` and `/studio/share`.
+   - Pages to try first: the homepage; `/art/east-river-late-may` (the page a buyer sees after scanning a QR code; try it at phone size); `/@mayaokafor` and `/@mayaokafor/links`; and, logged in as Maya, `/studio`, `/studio/qr` and `/studio/share`.
    - How to stop it (Ctrl+C in the terminal) and how to start it again next time (`npx -y pnpm@10.13.1 local` in the same folder).
    `LOCAL_DEV.md` in the project has the full list of pages.
 

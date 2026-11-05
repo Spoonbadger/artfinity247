@@ -44,7 +44,7 @@ export default function GetPaidCard({ status, mode, venmoHandle, nextDate }: { s
             </form>
           )}
           {mode === "simulated" && (
-            <p className="text-[12.5px] text-ink-2"><b className="text-ink">Stripe isn&apos;t set up here.</b> Connecting makes a test account. No money moves.</p>
+            <p className="text-[12.5px] text-ink-2"><b className="text-ink">Stripe isn&apos;t set up here.</b> {status === "ready" ? "This is a test account." : "Connecting makes a test account."} No money moves.</p>
           )}
         </>
       )}

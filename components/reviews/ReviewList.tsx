@@ -1,4 +1,4 @@
-// Review cards: dabs, words, wall photo, "Verified buyer · Asheville · Oct 2026", and the artist's reply.
+// Review cards: dabs, words, wall photo, "Verified buyer · Brooklyn · Oct 2026", and the artist's reply.
 // No hooks, so it renders in server or client components. Extra reviews fold into a <details>, no JS needed.
 import Link from "next/link";
 import { cn } from "@/lib/utils";

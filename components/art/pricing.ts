@@ -27,7 +27,7 @@ export function parseDiscount(raw: unknown): number {
   return n;
 }
 
-/** `?at=River%20Arts%20Market` → "River Arts Market" (trimmed, max 60 chars). */
+/** `?at=Brooklyn%20Flea` → "Brooklyn Flea" (trimmed, max 60 chars). */
 export function parseVenue(raw: unknown): string | null {
   const v = Array.isArray(raw) ? raw[0] : raw;
   if (typeof v !== "string") return null;

@@ -77,7 +77,7 @@ export function hashtags(a: Pick<ShareArt, "title" | "description" | "city">, ma
   const out: string[] = [];
   const add = (t: string) => { const v = tag(t); if (v.length > 2 && !out.includes(v)) out.push(v); };
   if (a.city) add(a.city);
-  // Two-word places read better joined: "Blue Ridge" -> #blueridge
+  // Two-word places read better joined: "East River" -> #eastriver
   const words = a.title.split(/[\s,.:;!?()"'/-]+/).filter((w) => w && !STOP.has(w.toLowerCase()) && !/^\d+$/.test(w));
   if (words.length >= 2 && words.slice(0, 2).every((w) => /^[A-Z]/.test(w))) add(words[0] + words[1]);
   else if (words[0]) add(words[0]);

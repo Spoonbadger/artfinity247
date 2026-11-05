@@ -99,7 +99,7 @@ export default function EventsBoard({ initial }: { initial: StudioEvent[] }) {
         <h2 className="text-[22px] font-bold">{editing ? "Edit event" : "New event"}</h2>
         <label className="af-field">
           <span className="label">Event name</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} placeholder="River Arts Market" required />
+          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} placeholder="Brooklyn Flea" required />
         </label>
         <label className="af-field">
           <span className="label">Venue</span>

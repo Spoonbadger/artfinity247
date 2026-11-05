@@ -9,6 +9,7 @@ import { currentMonth, monthLabel, monthRange, usd } from "../_components/util";
 import { TRACKING_SUBJECT, parseTrackingMessage, type Tracking } from "@/lib/tracking";
 import { PARCEL_TAG, splitParcelTag } from "@/lib/artistEmails";
 import { certPath } from "@/lib/certificates";
+import { printerAuto, printerState } from "@/lib/printer";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Orders" };
@@ -103,6 +104,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
       shippingAddress: o.shippingAddress,
       shippingStatus: o.shippingStatus,
       sentToPrinter: o.sentToPrinter,
+      printer: printerState(o),
       kind: o.kind,
       items,
       tracking: trackingByOrder.get(o.id) ?? null,
@@ -138,7 +140,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
         <PaintChip color="var(--af-sticker)" value={usd(companyTotal)} label="Artfinity share" earned />
       </div>
 
-      <OrdersBoard key={month} orders={shaped} />
+      <OrdersBoard key={month} orders={shaped} printerAuto={printerAuto()} />
     </div>
   );
 }

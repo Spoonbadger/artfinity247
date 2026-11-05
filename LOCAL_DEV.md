@@ -25,7 +25,7 @@ Open http://localhost:3000.
 
 **Buyers**
 - `/` homepage (the hero plays the whole scan → buy → ship → paid story)
-- `/art/blue-ridge-late-may` the page a buyer lands on after scanning: room previews, sizes, frames, zoom, quantity. Try it at phone size.
+- `/art/east-river-late-may` the page a buyer lands on after scanning: room previews, sizes, frames, zoom, quantity. Try it at phone size.
 - `/@mayaokafor` an artist page (medals, verified seal, socials, Collections tab) · `/@mayaokafor/links` link-in-bio page
 - `/art`, `/artists`, `/scenes`, `/search`, `/pricing`, `/developers`
 

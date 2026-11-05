@@ -6,7 +6,7 @@ import { Search } from "lucide-react";
 type City = { slug: string; label: string; pieces: number };
 
 /** Plain GET form so it works without JS; selects submit on change. */
-export default function ArtFilters({ action = "/art", q, city, sort, cities, showCity = true, placeholder = "Search art, artists, cities" }: { action?: string; q?: string; city?: string; sort?: string; cities: City[]; showCity?: boolean; placeholder?: string }) {
+export default function ArtFilters({ action = "/art", q, city, sort, cities, showCity = true, placeholder = "Search art, artists, neighborhoods" }: { action?: string; q?: string; city?: string; sort?: string; cities: City[]; showCity?: boolean; placeholder?: string }) {
   const form = useRef<HTMLFormElement>(null);
   const submit = () => form.current?.requestSubmit();
   const select = "w-full min-w-0 cursor-pointer appearance-none rounded-full border-2 border-ink bg-white bg-[length:12px] bg-[right_14px_center] bg-no-repeat py-2.5 pl-4 pr-9 text-[16px] font-semibold md:py-2 md:text-[15px] text-ink outline-none focus-visible:border-scan";
@@ -20,9 +20,9 @@ export default function ArtFilters({ action = "/art", q, city, sort, cities, sho
       </label>
       {showCity && (
         <label className="min-w-0">
-          <span className="sr-only">City</span>
+          <span className="sr-only">Neighborhood</span>
           <select name="city" defaultValue={city || ""} onChange={submit} className={select} style={chevron}>
-            <option value="">All cities</option>
+            <option value="">All neighborhoods</option>
             {cities.map((c) => <option key={c.slug} value={c.slug}>{c.label}</option>)}
           </select>
         </label>

@@ -55,7 +55,7 @@ export function reviewState(o: OrderGate, now = Date.now()): "open" | "waiting" 
 
 export const canEdit = (createdAt: Date, now = Date.now()) => now - createdAt.getTime() < EDIT_WINDOW_DAYS * DAY;
 
-/** "10 Oak St, Asheville, NC 28801, US" -> "Asheville". Empty when it can't tell (never returns the street). */
+/** "10 Halsey St, Brooklyn, NY 11216, US" -> "Brooklyn". Empty when it can't tell (never returns the street). */
 export function cityFromAddress(address: string | null | undefined) {
   let p = String(address || "").split(",").map((x) => x.trim()).filter(Boolean);
   if (p.length >= 3 && !/\d/.test(p[p.length - 1]) && /\d/.test(p[p.length - 2])) p = p.slice(0, -1);

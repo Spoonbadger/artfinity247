@@ -43,7 +43,7 @@ export default async function ArtPage({ searchParams }: { searchParams: Record<s
       {cities.length > 1 && (
         <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
-            <CityChip href={build({})} active={!city} label="Everywhere" />
+            <CityChip href={build({})} active={!city} label="All of NYC" />
             {cities.map((c) => <CityChip key={c.slug} href={build({ city: c.slug })} active={city === c.slug} label={c.name} count={c.pieces} />)}
           </div>
         </div>
@@ -54,7 +54,7 @@ export default async function ArtPage({ searchParams }: { searchParams: Record<s
           <ArtGrid art={art} />
         ) : (
           <EmptyCanvas title="Nothing on this wall yet">
-            <p className="text-ink-2">Try another city or a shorter search.</p>
+            <p className="text-ink-2">Try another neighborhood or a shorter search.</p>
             <Link href="/art" className="btn btn-ghost">See all art</Link>
           </EmptyCanvas>
         )}
