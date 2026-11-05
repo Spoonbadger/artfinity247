@@ -58,7 +58,9 @@ export function cropsFor(ann: SceneAnnotation, s: WallSolve, anchorIdx: number):
     const lo = Math.max(0, t.x1 - cw), hi = Math.min(W - cw, t.x0);
     const x = bias === 0.5 ? clamp(prefX, lo, hi) : clamp(lo + (hi - lo) * bias, lo, hi);
     const y = clamp(prefY, Math.max(0, t.y1 - ch), Math.min(H - ch, t.y0));
-    return { x: Math.round(clamp(x, 0, W - cw)), y: Math.round(clamp(y, 0, H - ch)), w: Math.round(cw), h: Math.round(ch) };
+    // Round the size first, then keep the corner inside so x + w never passes the edge by a rounding pixel.
+    const w = Math.min(Math.round(cw), Math.floor(W)), h = Math.min(Math.round(ch), Math.floor(H));
+    return { x: Math.round(clamp(x, 0, W - w)), y: Math.round(clamp(y, 0, H - h)), w, h };
   };
   const fits = (cw: number, ch: number, t: Box) => t.x1 - t.x0 <= cw * 0.96 && t.y1 - t.y0 <= ch * 0.96;
   for (const z of ZOOMS) {
