@@ -82,7 +82,7 @@ model Artist {
   last_name    String?
   artist_name  String?
   email        String    @unique
-  password     String
+  password     String?   // null for accounts created with Google/Apple/Instagram/etc.
   profileImage String?
   phone        String
   city         String
@@ -134,6 +134,7 @@ model Artist {
   // Account closing: the page goes offline right away; unpaid earnings are still paid out before the data is removed
   closedAt           DateTime?
   // Admin can pause an account (page offline, no new sales) without closing it
+  oauthAccounts      OAuthAccount[]
   suspendedAt        DateTime?
   suspendedReason    String?
   events             StudioEvent[]
@@ -460,4 +461,19 @@ model AdminNote {
   createdAt  DateTime @default(now())
 
   @@index([targetType, targetId])
+}
+
+// Social sign-in (Google, Apple, Instagram, Facebook...) linked to an artist account
+model OAuthAccount {
+  id                String   @id @default(cuid())
+  artistId          String
+  artist            Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  provider          String   // google | apple | instagram | facebook
+  providerAccountId String
+  email             String?
+  createdAt         DateTime @default(now())
+  lastUsedAt        DateTime?
+
+  @@unique([provider, providerAccountId])
+  @@index([artistId])
 }

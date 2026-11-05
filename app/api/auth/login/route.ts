@@ -33,7 +33,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ code: "user_not_found" }, { status: 401 });
     }
 
-    const isValid = await compare(password, artist.password);
+    const isValid = !!artist.password && (await compare(password, artist.password));
     if (!isValid) {
       return NextResponse.json({ code: "bad_password" }, { status: 401 });
     }

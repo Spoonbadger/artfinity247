@@ -32,7 +32,7 @@ export async function POST(req: Request) {
 
   const artist = await prisma.artist.findUnique({ where: { id: user.id }, select: { id: true, password: true } });
   if (!artist) return NextResponse.json({ code: "not_logged_in" }, { status: 401 });
-  if (!(await compare(current, artist.password))) return NextResponse.json({ code: "bad_password" }, { status: 400 });
+  if (!artist.password || !(await compare(current, artist.password))) return NextResponse.json({ code: "bad_password" }, { status: 400 });
 
   await prisma.artist.update({ where: { id: artist.id }, data: { password: await hash(next, 10) } });
   return NextResponse.json({ ok: true });
