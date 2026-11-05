@@ -133,7 +133,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <PaintChip color="#b8c4ff" value={paid.length} label="paid orders" note={`${prints} prints`} />
-        <PaintChip color="#a8dcc4" value={usd(gross)} label="sales" earned />
+        <PaintChip color="#a8dcc4" value={usd(gross)} label="sales (incl. tax)" earned />
         <PaintChip color="#f7c8a8" value={usd(artistTotal)} label="owed to artists" earned />
         <PaintChip color="var(--af-sticker)" value={usd(companyTotal)} label="Artfinity share" earned />
       </div>

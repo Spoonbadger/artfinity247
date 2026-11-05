@@ -9,6 +9,7 @@ import { claimEditionNumbers, EditionSoldOutError, editionMessage, editionShortf
 import { applyDiscount, isPrintSize, parseDiscount, parseVenue, priceFor, SIZE_LABEL, sizeInches, type PrintSize } from "@/components/art/pricing";
 import { sizeAllowed } from "@/lib/printSizes";
 import { followFromCheckout } from "@/lib/followers";
+import { SHIPPING_TAX_CODE, TAX_CODE, TAX_ENABLED } from "@/lib/tax";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -132,7 +133,9 @@ export async function POST(req: Request) {
       price_data: {
         currency: "usd",
         unit_amount: l.unit,
+        tax_behavior: "exclusive", // sales tax is added on top at checkout
         product_data: {
+          tax_code: TAX_CODE,
           name: l.discountPct ? `${l.art.title} (${l.discountPct}% scan discount)` : l.art.title,
           images: l.art.imageUrl ? [abs(base, l.art.imageUrl)!] : [],
           metadata: {
@@ -164,7 +167,8 @@ export async function POST(req: Request) {
       customer_email: buyerEmail,
       metadata: { userId: buyer?.id || "", buyerEmail: buyerEmail ?? "", ...(follow ? { follow: "1" } : {}) },
       shipping_address_collection: { allowed_countries: ["US"] },
-      shipping_options: [{ shipping_rate_data: { display_name: "Free US shipping", fixed_amount: { amount: 0, currency: "usd" }, type: "fixed_amount" } }],
+      shipping_options: [{ shipping_rate_data: { display_name: "Free US shipping", fixed_amount: { amount: 0, currency: "usd" }, type: "fixed_amount", tax_behavior: "exclusive", tax_code: SHIPPING_TAX_CODE } }],
+      automatic_tax: { enabled: TAX_ENABLED },
     });
     return json({ url: session.url });
   } catch (err) {

@@ -25,7 +25,7 @@ const FAQ: [string, React.ReactNode][] = [
   ["How do I get paid?", `After each order's printing, shipping and payment costs, the profit splits ${pct(FREE_SPLIT)} to you (${pct(PRO.split)} on Infinity). Each sale is held ${RETURN_WINDOW_DAYS} days for returns, then each month's earnings go out by Venmo by the ${PAYOUT_DAY_OF_MONTH}th of the following month.`],
   ["Who owns my art?", <>You do. You keep your copyright and give us a limited license to print, sell and promote the work while it&apos;s listed. We never use it to train AI. Details in the <Link href="/artist-terms-and-agreement">artist terms</Link>.</>],
   ["Can I set my own prices?", "Yes. You set the price of each size, from the base price up. Bigger sizes pay more."],
-  ["What about shipping?", "Buyers in the US get free shipping. It's part of the print cost, so nothing is added at checkout."],
+  ["What about shipping?", "Buyers in the US get free shipping. It's part of the print cost. Only sales tax is added at checkout, and it never comes out of your share."],
   ["What about taxes?", "Artists report and pay their own taxes. Artfinity doesn’t withhold taxes for you."],
 ];
 
@@ -79,7 +79,7 @@ export default function SellWithUsPage() {
             </details>
           ))}
         </div>
-        <p className="mt-4 text-[14px] text-ink-2">Last updated: November 4, 2026</p>
+        <p className="mt-4 text-[14px] text-ink-2">Last updated: November 5, 2026</p>
       </section>
 
       <section className="relative overflow-hidden bg-ink text-white">

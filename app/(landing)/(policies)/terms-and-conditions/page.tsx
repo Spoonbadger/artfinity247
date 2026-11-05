@@ -9,7 +9,7 @@ export default function Page() {
   return (
     <LongForm eyebrow="Policy" title="Terms and conditions" sub="Website and online sales terms" current="/terms-and-conditions">
       <section>
-        <p className="!mt-0 !text-[14px] text-ink-2">Last updated: November 4, 2026</p>
+        <p className="!mt-0 !text-[14px] text-ink-2">Last updated: November 5, 2026</p>
 
         <div>
           <h2>Introduction</h2>
@@ -34,7 +34,7 @@ export default function Page() {
           <h2>Prices and payment</h2>
           <ul>
             <li>Prices are in US dollars. The artist sets the price of each print size; frames are priced by Artfinity.</li>
-            <li>US shipping is free. The total you see at checkout is the price you pay.</li>
+            <li>US shipping is free. Sales tax is added at checkout where the law requires it, and the total you see there is the price you pay.</li>
             <li>You pay the price shown when you place the order. A scan discount applies only when it comes from a valid printed code.</li>
             <li>Payments are handled by Stripe. We never see or store your full card number.</li>
           </ul>

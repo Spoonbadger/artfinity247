@@ -11,6 +11,7 @@ import { calcItemProfitCents } from "@/lib/revenue";
 import { BULK_MAX_LINES, BULK_MAX_PER_LINE, BULK_SIZE_KEY, BULK_SIZE_LABEL, bulkQuote, isBulkSize } from "@/lib/bulk";
 import { claimEditionNumbers, EditionSoldOutError, editionMessage, editionShortfalls } from "@/lib/editions";
 import { sizeAllowed } from "@/lib/printSizes";
+import { TAX_CODE, TAX_ENABLED } from "@/lib/tax";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -99,7 +100,9 @@ export async function POST(req: Request) {
         price_data: {
           currency: "usd",
           unit_amount: quote.lines[i].unitAfter,
+          tax_behavior: "exclusive",
           product_data: {
+            tax_code: TAX_CODE,
             name: `${l.art.title}, ${BULK_SIZE_LABEL[l.size].name}${l.framed ? " framed" : ""} (at cost)`,
             metadata: {
               artworkId: l.art.id,
@@ -116,7 +119,8 @@ export async function POST(req: Request) {
         },
       })),
       // The handling fee rides as the shipping rate, so no extra line item reaches the webhook.
-      shipping_options: [{ shipping_rate_data: { display_name: "Handling, US shipping included", fixed_amount: { amount: quote.handling, currency: "usd" }, type: "fixed_amount" } }],
+      shipping_options: [{ shipping_rate_data: { display_name: "Handling, US shipping included", fixed_amount: { amount: quote.handling, currency: "usd" }, type: "fixed_amount", tax_behavior: "exclusive" } }],
+      automatic_tax: { enabled: TAX_ENABLED },
       metadata: { kind: "bulk", bulkArtistId: artist.id, buyerEmail: artist.email, shipName: ship.name, shipAddress, tags: body?.tags ? "yes" : "" },
       success_url: `${base}/studio/bulk?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${base}/studio/bulk`,

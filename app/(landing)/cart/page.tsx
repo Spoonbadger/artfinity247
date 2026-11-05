@@ -63,7 +63,7 @@ export default function CartPage() {
                 <Lock className="h-3.5 w-3.5" aria-hidden /> Apple Pay · Google Pay · Card
               </p>
               <ul className="mt-1 grid gap-1 border-t border-line pt-3 text-[13.5px] text-ink-2">
-                <li>Free US shipping</li>
+                <li>Free US shipping · sales tax added at checkout</li>
                 <li>Printed to order, arrives {deliveryRange()}</li>
                 <li>Artists get 60% of the profit</li>
               </ul>
