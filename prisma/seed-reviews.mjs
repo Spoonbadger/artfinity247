@@ -83,7 +83,7 @@ export async function seedReviews(prisma) {
     },
   });
 
-  // Pick per artist, spread across their delivered orders (every other one, so some stay open for testing).
+  // Pick per artist, spread across their delivered orders; the rest stay unreviewed for testing the flow.
   const chosen = [];
   for (const [slug, n] of Object.entries(QUOTA)) {
     const mine = items.filter((i) => i.artwork.artist.slug === slug);
@@ -91,7 +91,7 @@ export async function seedReviews(prisma) {
     for (let k = 0; k < mine.length && chosen.filter((c) => c.artwork.artist.slug === slug).length < n; k += step) chosen.push(mine[k]);
   }
 
-  // Shuffle the ratings so 3s land on different artists; keep Maya's low one so her honest reply shows.
+  // Shuffle the ratings so the 3s land on different artists.
   const ratings = [...RATINGS].sort(() => r() - 0.5);
   const pools = { 5: [...FIVE], 4: [...FOUR], 3: [...THREE] };
   const take = (rating) => { const p = pools[rating]; if (!p.length) pools[rating] = [...{ 5: FIVE, 4: FOUR, 3: THREE }[rating]]; return pools[rating].splice(Math.floor(r() * pools[rating].length), 1)[0]; };

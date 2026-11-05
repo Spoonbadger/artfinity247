@@ -139,5 +139,9 @@ async function main() {
   // Short link codes and scans, with some orders credited to codes (prisma/seed-scans.mjs)
   const { seedScans } = await import("./seed-scans.mjs");
   await seedScans(prisma);
+
+  // Buyer reviews on delivered orders, with some artist replies (prisma/seed-reviews.mjs)
+  const { seedReviews } = await import("./seed-reviews.mjs");
+  await seedReviews(prisma);
 }
 main().finally(() => prisma.$disconnect());
