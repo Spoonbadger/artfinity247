@@ -5,8 +5,8 @@
 //   1. has a live (approved) piece, AND
 //   2. has printed a code (a QrCode row exists; codes are made when the artist prints or downloads one) or made a
 //      paid retail sale, AND
-//   3. isn't the referrer on a second account: same email domain plus the same network (hashed sign-up/login IP)
-//      or the same browser (first-party device cookie) as the referrer gets no reward ("blocked").
+//   3. isn't the referrer on a second account: the same browser (first-party device cookie), or the same
+//      private email domain plus the same network (hashed sign-up/login IP), gets no reward ("blocked").
 // Email verification would be a 4th rule, but Artfinity has no email verification yet, so it's skipped.
 // The reward is held REFERRALS.holdDays days after the artist qualifies (the later of their first live piece and
 // their first code or sale), then unlocks if they still qualify. At most REFERRALS.maxPerMonth rewards unlock per
@@ -145,14 +145,25 @@ export const deviceCookie = (value: string) => ({
 
 const domainOf = (email: string | null | undefined) => String(email || "").trim().toLowerCase().split("@")[1] || "";
 
-/** Same email domain AND (a shared hashed IP or the same browser). Unknown signals never block. */
+// Big free mail providers: sharing one says nothing about being the same person.
+const PUBLIC_MAIL = new Set([
+  "gmail.com", "googlemail.com", "yahoo.com", "ymail.com", "hotmail.com", "outlook.com", "live.com", "msn.com",
+  "icloud.com", "me.com", "mac.com", "aol.com", "proton.me", "protonmail.com", "gmx.com", "zoho.com", "fastmail.com",
+]);
+
+/**
+ * Same browser (device cookie) = same person. A shared network only counts together with the same
+ * private email domain (e.g. both @mystudio.com), so friends on Gmail and the same Wi-Fi still earn rewards.
+ * Unknown signals never block.
+ */
 function samePerson(a: { email: string; signals: Signals }, b: { email: string; signals: Signals }) {
-  const domain = domainOf(a.email);
-  if (!domain || domain !== domainOf(b.email)) return false;
   const list = (s: Signals) => [s.signup, ...s.seen].filter((x): x is Signal => !!x);
-  const aIps = new Set(list(a.signals).map((s) => s.ip).filter(Boolean));
   const aDevs = new Set(list(a.signals).map((s) => s.dev).filter(Boolean));
-  return list(b.signals).some((s) => (s.ip && aIps.has(s.ip)) || (s.dev && aDevs.has(s.dev)));
+  if (list(b.signals).some((s) => s.dev && aDevs.has(s.dev))) return true;
+  const domain = domainOf(a.email);
+  if (!domain || PUBLIC_MAIL.has(domain) || domain !== domainOf(b.email)) return false;
+  const aIps = new Set(list(a.signals).map((s) => s.ip).filter(Boolean));
+  return list(b.signals).some((s) => s.ip && aIps.has(s.ip));
 }
 
 // ---------- Qualifying and settling ----------
