@@ -15,9 +15,15 @@ export type TeamMember = {
 // TODO(Thomas): confirm names, roles and notes, and add photos.
 export const TEAM: TeamMember[] = [
   {
-    name: "Thomas Demuth",
+    name: "Craig Morley",
     role: "Founder",
-    note: "I started Artfinity so the art on café and market walls is as easy to buy as the coffee next to it.",
+    note: "Founded Artfinity and built the first version of the site.",
+    color: "var(--af-coral)",
+  },
+  {
+    name: "Thomas Demuth",
+    role: "Co-founder",
+    note: "Leading the new, artist-first Artfinity.",
     color: "var(--af-scan)",
   },
 ];
