@@ -4,6 +4,8 @@
 // painting in the familiar single form and publishes it through POST /api/artworks/upload, one by one.
 // Prices, print run and labels carry over from the previous painting; the ownership box is ticked once for the batch.
 // The queue is kept in sessionStorage so a refresh doesn't lose the titles typed so far.
+// Paintings picked in Google Drive or Dropbox (./cloudImport.tsx) join the same queue: they go through
+// POST /api/uploads/import instead, which runs the same pipeline and returns the same result as /api/uploads.
 import Link from "next/link";
 import { DragEvent, useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { AlertCircle, ArrowLeft, ArrowRight, Check, FolderOpen, Loader2, Plus, RotateCcw, Trash2 } from "lucide-react";
@@ -16,6 +18,7 @@ import {
   pricesFrom, PrintSizes, REVIEW_NOTE, SensitiveField, saveError, sortFiles, titleFromFile, useLastPrices, usePriceGuide,
   type ArtworkValues, type Prices,
 } from "./artworkFields";
+import { CloudImportButtons, ImportFailed, importCloudFile, importingLabel, isCloudImage, type CloudFile, type CloudSource } from "./cloudImport";
 
 type Result = {
   state: "live" | "review" | "failed";
@@ -41,6 +44,8 @@ export type QueueItem = {
   /** Prices, print run and labels follow the previous painting until the artist changes them here. */
   carry: boolean;
   result?: Result;
+  /** Picked in Google Drive / Dropbox: imported by the server rather than uploaded from this device. */
+  source?: CloudSource;
 };
 
 export type QueueDraft = { items: QueueItem[]; index: number; owned: boolean; announced: string[]; finished: boolean };
@@ -72,6 +77,9 @@ function writeDraft(handle: string, d: QueueDraft | null) {
   }
 }
 
+const TOO_BIG = `That file is over ${Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB.`;
+const SOURCE_FROM: Record<CloudSource, string> = { drive: "Google Drive", dropbox: "Dropbox", mock: "the sample folder" };
+
 const BLANK: Omit<ArtworkValues, "title" | "prices"> = { description: "", origW: "", origH: "", sensitive: [], limited: false, edition: "25" };
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -85,16 +93,22 @@ function missing(it: QueueItem, owned: boolean): string | null {
 
 const published = (it: QueueItem) => it.result?.state === "live" || it.result?.state === "review";
 
-export default function UploadQueue({ handle, split, files: initialFiles, restored, onExit }: {
+export default function UploadQueue({ handle, split, files: initialFiles, cloud: initialCloud, mock, restored, onExit }: {
   handle: string;
   split?: number;
   files?: File[];
+  /** Picked in Google Drive / Dropbox before the queue opened. */
+  cloud?: CloudFile[];
+  /** Dev-only sample import button (ALLOW_MOCK_IMPORT=1). */
+  mock?: boolean;
   restored?: { draft: QueueDraft; dropped: number };
   onExit: () => void;
 }) {
   const files = useRef(new Map<string, File>());
+  // Picked cloud files (with the short-lived Drive token): memory only, never in the saved draft.
+  const remotes = useRef(new Map<string, CloudFile>());
   const previews = useRef(new Map<string, string>());
-  const xhrs = useRef(new Map<string, XMLHttpRequest>());
+  const xhrs = useRef(new Map<string, { abort(): void }>());
   const active = useRef(new Set<string>());
   const headingRef = useRef<HTMLHeadingElement>(null);
   const errorRef = useRef<HTMLParagraphElement>(null);
@@ -124,9 +138,11 @@ export default function UploadQueue({ handle, split, files: initialFiles, restor
   const itemsRef = useRef(items);
   itemsRef.current = items;
 
-  /** Adds files to the queue: images only, up to QUEUE_MAX, in folder/name order. */
-  const add = useCallback((list: File[]) => {
-    const images = sortFiles(list.filter(isImageFile));
+  /** Adds files to the queue: images only, up to QUEUE_MAX, in folder/name order (device files) or picked order (cloud). */
+  const add = useCallback((list: (File | CloudFile)[]) => {
+    const local = list.filter((f): f is File => f instanceof File);
+    const remote = list.filter((f): f is CloudFile => !(f instanceof File));
+    const images: (File | CloudFile)[] = [...sortFiles(local.filter(isImageFile)), ...remote.filter(isCloudImage)];
     const cur = itemsRef.current;
     const take = images.slice(0, Math.max(0, QUEUE_MAX - cur.length));
     const skipped = list.length - images.length;
@@ -140,12 +156,17 @@ export default function UploadQueue({ handle, split, files: initialFiles, restor
     const last = cur[cur.length - 1]?.v;
     const added: QueueItem[] = take.map((f) => {
       const id = uid();
-      files.current.set(id, f);
-      previews.current.set(id, URL.createObjectURL(f));
-      const big = f.size > MAX_UPLOAD_BYTES;
+      const isFile = f instanceof File;
+      if (isFile) {
+        files.current.set(id, f);
+        previews.current.set(id, URL.createObjectURL(f));
+      } else {
+        remotes.current.set(id, f);
+      }
+      const big = (isFile ? f.size : f.bytes || 0) > MAX_UPLOAD_BYTES;
       return {
-        id, name: f.name, upload: big ? "error" : "waiting", progress: 0, uploadError: big ? "That file is over 25 MB." : undefined,
-        imageUrl: "", fresh: null, dims: null, carry: true,
+        id, name: f.name, upload: big ? "error" : "waiting", progress: 0, uploadError: big ? TOO_BIG : undefined,
+        imageUrl: "", fresh: null, dims: null, carry: true, source: isFile ? undefined : f.source,
         v: { ...BLANK, title: titleFromFile(f.name), prices: last?.prices ?? startPrices.current, sensitive: last?.sensitive ?? [], limited: last?.limited ?? false, edition: last?.edition ?? "25" },
       };
     });
@@ -157,8 +178,8 @@ export default function UploadQueue({ handle, split, files: initialFiles, restor
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    if (initialFiles?.length) add(initialFiles);
-  }, [initialFiles, add]);
+    if (initialFiles?.length || initialCloud?.length) add([...(initialFiles || []), ...(initialCloud || [])]);
+  }, [initialFiles, initialCloud, add]);
 
   // The artist's last prices, for paintings nobody has touched yet.
   useLastPrices(!restored, (prices) => {
@@ -171,24 +192,46 @@ export default function UploadQueue({ handle, split, files: initialFiles, restor
     for (const it of items) {
       if (active.current.size >= QUEUE_CONCURRENCY) break;
       if (it.upload !== "waiting" || active.current.has(it.id)) continue;
-      const file = files.current.get(it.id);
-      if (!file) { patch(it.id, { upload: "error", uploadError: "Add this image again." }); continue; }
-      active.current.add(it.id);
       const id = it.id;
-      const xhr = new XMLHttpRequest();
-      xhrs.current.set(id, xhr);
-      patch(id, { upload: "uploading", progress: 0, uploadError: undefined });
       const end = (p: Partial<QueueItem>) => {
         active.current.delete(id);
         xhrs.current.delete(id);
         patch(id, p);
       };
+      const done = (data: { url: string; width?: number; height?: number; printable?: SizeKey[]; printableSig?: string }) =>
+        end({ upload: "done", progress: 1, imageUrl: data.url, fresh: { printable: data.printable || [], sig: data.printableSig || "" }, dims: data.width ? { w: data.width, h: data.height || 0 } : null });
+
+      // Picked in Drive / Dropbox: the server downloads it (no byte progress to show, so the bar just pulses).
+      const remote = remotes.current.get(id);
+      if (remote) {
+        active.current.add(id);
+        const ctrl = new AbortController();
+        xhrs.current.set(id, ctrl);
+        patch(id, { upload: "uploading", progress: 0, uploadError: undefined });
+        importCloudFile(remote, ctrl.signal).then(
+          (data) => done({ ...data, printable: data.printable as SizeKey[] }),
+          (e) => {
+            if (ctrl.signal.aborted) { active.current.delete(id); xhrs.current.delete(id); return; }
+            // Some failures (expired Drive access or Dropbox link) need the file picked again, not a retry.
+            if (e instanceof ImportFailed && !e.retry) remotes.current.delete(id);
+            end({ upload: "error", uploadError: e?.message || "Import failed. Try again." });
+          },
+        );
+        continue;
+      }
+
+      const file = files.current.get(id);
+      if (!file) { patch(id, { upload: "error", uploadError: "Add this image again." }); continue; }
+      active.current.add(id);
+      const xhr = new XMLHttpRequest();
+      xhrs.current.set(id, xhr);
+      patch(id, { upload: "uploading", progress: 0, uploadError: undefined });
       xhr.upload.onprogress = (e) => { if (e.lengthComputable) patch(id, { progress: e.loaded / e.total }); };
       xhr.onload = () => {
         let data: any = {};
         try { data = JSON.parse(xhr.responseText); } catch {}
         if (xhr.status >= 200 && xhr.status < 300 && data.url) {
-          end({ upload: "done", progress: 1, imageUrl: data.url, fresh: { printable: data.printable || [], sig: data.printableSig || "" }, dims: data.width ? { w: data.width, h: data.height } : null });
+          done(data);
         } else {
           end({ upload: "error", uploadError: data.error || (xhr.status === 401 ? "You're logged out. Log in and add it again." : "Upload failed. Try again.") });
         }
@@ -285,6 +328,7 @@ export default function UploadQueue({ handle, split, files: initialFiles, restor
     xhrs.current.get(id)?.abort();
     active.current.delete(id);
     files.current.delete(id);
+    remotes.current.delete(id);
     const u = previews.current.get(id);
     if (u) URL.revokeObjectURL(u);
     previews.current.delete(id);
@@ -391,13 +435,13 @@ export default function UploadQueue({ handle, split, files: initialFiles, restor
           </h2>
           <p className="text-[13.5px] text-ink-2" aria-live="polite">
             <span className="num">{done.length}</span> published · <span className="num">{left.length}</span> to go
-            {uploadedCount < total && <> · uploading <span className="num">{uploadedCount}</span>/<span className="num">{total}</span></>}
+            {uploadedCount < total && <> · {items.some((i) => i.source && i.upload !== "done") ? "importing" : "uploading"} <span className="num">{uploadedCount}</span>/<span className="num">{total}</span></>}
           </p>
         </div>
         <ol className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 pt-0.5" aria-label="Paintings in this batch">
           {items.map((it, i) => {
             const m = missing(it, owned);
-            const state = it.result?.state === "live" ? "Live" : it.result?.state === "review" ? "In review" : it.upload === "uploading" || it.upload === "waiting" ? "Uploading" : m ? `Needs info: ${m}` : "Ready";
+            const state = it.result?.state === "live" ? "Live" : it.result?.state === "review" ? "In review" : it.upload === "uploading" || it.upload === "waiting" ? (it.source ? importingLabel(it.source) : "Uploading") : m ? `Needs info: ${m}` : "Ready";
             return (
               <li key={it.id} className="shrink-0">
                 <button
@@ -409,8 +453,11 @@ export default function UploadQueue({ handle, split, files: initialFiles, restor
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   {thumb(it) && <img src={thumb(it)} alt="" className={cn("h-full w-full object-cover", published(it) && "opacity-70")} />}
                   {(it.upload === "uploading" || it.upload === "waiting") && (
-                    <span className="absolute inset-x-0 bottom-0 h-1.5 bg-white/70"><span className="block h-full bg-scan transition-[width]" style={{ width: `${Math.round(it.progress * 100)}%` }} /></span>
+                    <span className="absolute inset-x-0 bottom-0 h-1.5 bg-white/70">
+                      {it.source ? <span className={cn("block h-full w-full bg-scan", it.upload === "uploading" ? "animate-pulse" : "opacity-30")} /> : <span className="block h-full bg-scan transition-[width]" style={{ width: `${Math.round(it.progress * 100)}%` }} />}
+                    </span>
                   )}
+                  {!thumb(it) && it.source && <span className="absolute inset-0 grid place-items-center text-[10px] font-bold text-ink-2">{it.source === "drive" ? "Drive" : it.source === "dropbox" ? "Dropbox" : "Sample"}</span>}
                   <Dot it={it} needs={!!m} />
                 </button>
               </li>
@@ -432,6 +479,7 @@ export default function UploadQueue({ handle, split, files: initialFiles, restor
             <span className="flex items-center gap-1"><i className="inline-block h-2.5 w-2.5 rounded-full bg-coral" />Needs info</span>
           </span>
           {total < QUEUE_MAX && <button type="button" onClick={() => folderRef.current?.click()} className="inline-flex min-h-[32px] items-center gap-1 font-semibold text-scan hover:underline"><FolderOpen className="h-4 w-4" aria-hidden="true" />Add a folder</button>}
+          {total < QUEUE_MAX && <CloudImportButtons onPick={add} mock={mock} max={QUEUE_MAX - total} size="link" />}
           {done.length > 0 && <button type="button" onClick={finishNow} className="inline-flex min-h-[32px] items-center font-semibold text-scan hover:underline">Finish{left.length ? " now" : ""}</button>}
           <Link href="/help/getting-started/upload-several" target="_blank" className="ml-auto text-scan underline-offset-2 hover:underline">How this works</Link>
         </div>
@@ -458,12 +506,18 @@ export default function UploadQueue({ handle, split, files: initialFiles, restor
           {/* Image */}
           <div className="grid gap-3 lg:sticky lg:top-6">
             <div className="relative grid min-h-[260px] place-items-center overflow-hidden rounded-[4px] bg-gallery p-4 sm:min-h-[360px]">
+              {!thumb(item) && item.source && <span className="text-[14px] font-semibold text-ink-2">From {SOURCE_FROM[item.source]}</span>}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {thumb(item) && <img src={thumb(item)} alt={item.v.title || "Your artwork"} className={cn("max-h-[480px] w-auto max-w-full rounded-[2px] shadow-[0_12px_30px_rgba(21,22,27,.22)]", item.upload !== "done" && "opacity-60")} />}
               {(item.upload === "uploading" || item.upload === "waiting") && (
                 <span className="absolute inset-x-6 bottom-5 grid gap-1.5 rounded-lg bg-white/90 px-3 py-2 text-left text-[13.5px] font-bold" role="status">
-                  <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />{item.upload === "waiting" ? "Waiting to upload" : `Uploading ${Math.round(item.progress * 100)}%`}</span>
-                  <span className="h-1.5 overflow-hidden rounded-full bg-line"><span className="block h-full bg-scan transition-[width]" style={{ width: `${Math.round(item.progress * 100)}%` }} /></span>
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    {item.source ? (item.upload === "waiting" ? "Waiting to import" : importingLabel(item.source)) : item.upload === "waiting" ? "Waiting to upload" : `Uploading ${Math.round(item.progress * 100)}%`}
+                  </span>
+                  <span className="h-1.5 overflow-hidden rounded-full bg-line">
+                    {item.source ? <span className={cn("block h-full w-full bg-scan", item.upload === "uploading" ? "animate-pulse" : "opacity-30")} /> : <span className="block h-full bg-scan transition-[width]" style={{ width: `${Math.round(item.progress * 100)}%` }} />}
+                  </span>
                 </span>
               )}
             </div>
@@ -472,8 +526,8 @@ export default function UploadQueue({ handle, split, files: initialFiles, restor
               <div className="grid gap-2 rounded-xl border-2 border-coral bg-[#fff1ed] p-3 text-[14px]" role="alert">
                 <b>{item.uploadError || "Upload failed."}</b>
                 <div className="flex flex-wrap gap-2">
-                  {files.current.has(item.id) && item.uploadError !== "That file is over 25 MB." && (
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => patch(item.id, { upload: "waiting", progress: 0, uploadError: undefined })}><RotateCcw className="h-4 w-4" aria-hidden="true" />Retry upload</button>
+                  {(files.current.has(item.id) || remotes.current.has(item.id)) && item.uploadError !== TOO_BIG && (
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => patch(item.id, { upload: "waiting", progress: 0, uploadError: undefined })}><RotateCcw className="h-4 w-4" aria-hidden="true" />{item.source ? "Retry import" : "Retry upload"}</button>
                   )}
                   <button type="button" className="btn btn-ghost btn-sm" onClick={() => remove(item.id)}><Trash2 className="h-4 w-4" aria-hidden="true" />Remove</button>
                 </div>
@@ -504,7 +558,7 @@ export default function UploadQueue({ handle, split, files: initialFiles, restor
                   {publishing === item.id && <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />}
                   {item.result?.state === "failed" ? "Try again" : left.length > 1 ? "Publish and next" : "Publish"}
                 </button>
-                {(item.upload === "waiting" || item.upload === "uploading") && <span className="text-[13px] text-ink-2">Publishes once it&apos;s uploaded</span>}
+                {(item.upload === "waiting" || item.upload === "uploading") && <span className="text-[13px] text-ink-2">Publishes once it&apos;s {item.source ? "imported" : "uploaded"}</span>}
                 {problem && item.upload === "done" && !error && <span className="text-[13px] font-semibold text-coral">Needs info: {problem}</span>}
               </div>
               <div className="flex flex-wrap items-center gap-2">
