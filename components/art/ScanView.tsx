@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import ReviewStars from "@/components/reviews/ReviewStars";
+import MerchPreview from "@/components/art/MerchPreview";
 import ReviewList from "@/components/reviews/ReviewList";
 import type { PublicReview, ReviewSummary } from "@/components/reviews/format";
 import Link from "next/link";
@@ -479,6 +480,8 @@ export default function ScanView({
       </div>
 
       {/* After the fold */}
+      {art.sensitive.length === 0 && <MerchPreview imageUrl={art.imageUrl} title={art.title} artistFirstName={firstName} />}
+
       {reviews && reviews.summary.count > 0 && (
         <section id="reviews" aria-label="Reviews" className="mx-auto mt-10 max-w-[1240px] scroll-mt-20 border-t border-line px-4 pt-8 sm:px-6 md:mt-16 md:pt-12">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
