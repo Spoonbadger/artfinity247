@@ -96,6 +96,7 @@ export async function POST(req: NextRequest) {
       update: { paidAt: null, amountCents, method: null, stripeTransferId: null, failureReason: null },
       create: { artistId, month, amountCents, paidAt: null },
     })
+    await logAdminAction(admin, "payout.unmark_paid", { type: "payout", id: payout.id }, `Unmarked ${month} payout as paid`, { artistId, month, amountCents, wasPaid: !!existing?.paidAt })
 
     return NextResponse.json({
       payout,
@@ -115,6 +116,7 @@ export async function POST(req: NextRequest) {
     update: { paidAt: new Date(), amountCents, method, stripeTransferId: null, failureReason: null },
     create: { artistId, month, amountCents, paidAt: new Date(), method },
   })
+  await logAdminAction(admin, "payout.mark_paid", { type: "payout", id: payout.id }, `Marked ${month} payout paid ($${(amountCents / 100).toFixed(2)}, ${method})`, { artistId, month, amountCents, method })
 
   // send email ONLY when transitioning unpaid → paid
   if (!existing?.paidAt) {
