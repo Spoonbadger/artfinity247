@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { applyTrackingEvent } from "@/lib/shipping";
 import { checkWebhook, isProduction, parseWebhook } from "@/lib/shipping/providers";
+import { reportError } from "@/lib/monitor";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,7 +26,14 @@ export async function POST(req: NextRequest) {
   }
   const ev = parseWebhook(body);
   if (!ev) return NextResponse.json({ ignored: true });
-  const r = await applyTrackingEvent(ev);
+  let r: Awaited<ReturnType<typeof applyTrackingEvent>>;
+  try {
+    r = await applyTrackingEvent(ev);
+  } catch (err) {
+    console.error("[shipping:webhook] failed", ev.provider, ev.trackingNumber, err);
+    await reportError(err, { area: "webhook", name: "shipping", extra: { provider: ev.provider, status: ev.status }, adminAlert: true });
+    return NextResponse.json({ error: "Tracking update failed" }, { status: 500 });
+  }
   console.log(`[shipping:webhook] ${ev.provider} ${ev.trackingNumber} ${ev.status}: ${r.action}${r.orderId ? ` (order ${r.orderId})` : ""}`);
   return NextResponse.json({ ok: true, ...r });
 }

@@ -9,6 +9,7 @@ import { PLACEHOLDER_CODE, normalizeCode } from "@/lib/shortcode";
 import { loadFonts } from "@/components/qr/text";
 import { requireArtist, displayName } from "../_lib/data";
 import { getArtistSplitFor } from "@/lib/revenue";
+import { venueOptions } from "@/lib/venues";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "QR codes" };
@@ -18,7 +19,7 @@ export default async function QrPage({ searchParams }: { searchParams: { art?: s
   // ?code=K7P2 (from My codes) reopens a saved code: its artwork, look, venue and deal.
   const wantCode = normalizeCode(searchParams.code);
   const saved = wantCode
-    ? await prisma.qrCode.findFirst({ where: { code: wantCode, artistId: artist.id }, select: { code: true, label: true, venue: true, discountPct: true, expiresAt: true, design: true, artwork: { select: { slug: true } } } })
+    ? await prisma.qrCode.findFirst({ where: { code: wantCode, artistId: artist.id }, select: { code: true, label: true, venue: true, venueId: true, discountPct: true, expiresAt: true, design: true, artwork: { select: { slug: true } } } })
     : null;
   const want = saved?.artwork?.slug || (typeof searchParams.art === "string" ? searchParams.art : "");
 
@@ -59,7 +60,7 @@ export default async function QrPage({ searchParams }: { searchParams: { art?: s
   const presetKey = typeof searchParams.preset === "string" && searchParams.preset in PRESETS ? (searchParams.preset as PresetKey) : null;
   let design: Design = presetKey ? { ...DEFAULT_DESIGN, ...presetLook(presetKey), preset: presetKey } : DEFAULT_DESIGN;
   const savedCode = saved && saved.artwork?.slug === slug
-    ? { code: saved.code, slug, label: saved.label || "", expiresAt: saved.expiresAt ? saved.expiresAt.toISOString() : null }
+    ? { code: saved.code, slug, label: saved.label || "", expiresAt: saved.expiresAt ? saved.expiresAt.toISOString() : null, venueId: saved.venueId }
     : null;
   if (savedCode && saved) {
     const d = saved.design ? sanitizeDesign(saved.design) : design;
@@ -81,7 +82,7 @@ export default async function QrPage({ searchParams }: { searchParams: { art?: s
 
   return (
     <StudioPage title="QR codes" sub="Pick a piece. Pick a look. Print. Every code here really scans." actions={<><HelpLink href="/help/qr-codes/qr-templates" /><Link href="/studio/codes" className="btn btn-ghost btn-sm">My codes</Link></>}>
-      <QrStudio arts={arts} initialSlug={slug} initialDesign={design} initialCard={initialCard} base={base} initialSaved={savedCode} split={split} handle={artist.slug} />
+      <QrStudio arts={arts} initialSlug={slug} initialDesign={design} initialCard={initialCard} base={base} initialSaved={savedCode} split={split} handle={artist.slug} venues={await venueOptions(savedCode?.venueId)} />
     </StudioPage>
   );
 }

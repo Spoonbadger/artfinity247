@@ -8,8 +8,10 @@ import { parseSensitive } from '@/components/studio/sensitive'
 import { EDITION_MAX, EDITION_MIN, soldCount } from '@/lib/editions'
 import { parsePrintable } from '@/lib/printSizes'
 import { verifyPrintable } from '@/lib/printSign'
-import { initialArtworkStatus } from '@/lib/artworkLive'
+import { alertArtworkNeedsReview, initialArtworkStatus } from '@/lib/artworkLive'
 import { checkUpload, duplicateOfId } from '@/lib/imageHash'
+import { saveAutoCheck, screenUpload, type Screened } from '@/lib/moderation'
+import { isAutoFlag } from '@/lib/moderation/policy'
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
@@ -60,8 +62,9 @@ export async function POST(
 
     // A new image: re-check print sizes and rights, like a new upload.
     const newImage = !!imageUrl && imageUrl !== artwork.imageUrl
-    let imageData: { printableSizes: string[]; ownershipConfirmedAt: Date; status?: "PENDING"; imageHash?: string | null; flaggedReason?: string | null; flaggedBy?: string | null } | undefined
+    let imageData: { printableSizes: string[]; ownershipConfirmedAt: Date; status?: "PENDING"; imageHash?: string | null; flaggedReason?: string | null; flaggedBy?: string | null; sensitive?: string[] } | undefined
     let dup: Awaited<ReturnType<typeof checkUpload>> | null = null
+    let check: Screened | null = null
     if (newImage) {
       const printable = parsePrintable(form.get("printable"))
       if (String(form.get("ownership") ?? "") !== "yes") {
@@ -75,11 +78,19 @@ export async function POST(
       // Artists whose uploads are reviewed get a new image reviewed too.
       if (artwork.status === "APPROVED" && (await initialArtworkStatus(artwork.artistId)) === "PENDING") imageData.status = "PENDING"
       // Fingerprint the new image; if it looks like another artist's piece, a person checks it (lib/imageHash.ts).
-      dup = await checkUpload(imageUrl!, artwork.artistId, artwork.id)
+      // The automatic image check (lib/moderation) runs on a new image too, like a new upload.
+      const labels = sensitiveRaw !== null ? parseSensitive(sensitiveRaw) : artwork.sensitive
+      ;[dup, check] = await Promise.all([
+        checkUpload(imageUrl!, artwork.artistId, artwork.id),
+        screenUpload({ imageUrl: imageUrl!, title: title ?? artwork.title, artistLabels: labels }),
+      ])
+      const mod = check.decision
       imageData.imageHash = dup.imageHash
+      if (mod.addedLabels.length) imageData.sensitive = mod.labels
       if (dup.flaggedReason && artwork.status !== "REJECTED") Object.assign(imageData, { status: "PENDING", flaggedReason: dup.flaggedReason, flaggedBy: "system" })
-      // The old image's duplicate flag doesn't describe the new one (it stays in review if it was).
-      else if (!dup.flaggedReason && duplicateOfId(artwork.flaggedReason)) Object.assign(imageData, { flaggedReason: null, flaggedBy: null })
+      else if (mod.flaggedReason && artwork.status !== "REJECTED") Object.assign(imageData, { status: "PENDING", flaggedReason: mod.flaggedReason, flaggedBy: "system" })
+      // The old image's duplicate or image-check flag doesn't describe the new one (it stays in review if it was).
+      else if (duplicateOfId(artwork.flaggedReason) || isAutoFlag(artwork.flaggedReason)) Object.assign(imageData, { flaggedReason: null, flaggedBy: null })
     }
 
     // Limited print run. Leave the field out to keep it; "" = open edition; else EDITION_MIN..EDITION_MAX.
@@ -148,6 +159,11 @@ export async function POST(
       }
     }
 
+    if (check) {
+      await saveAutoCheck(updated.id, check)
+      if (check.decision.outcome === "review" && updated.status === "PENDING") await alertArtworkNeedsReview(updated.id)
+    }
+
     const artist = await prisma.artist.findUnique({
       where: { id: updated.artistId },
       select: { slug: true },
@@ -157,7 +173,8 @@ export async function POST(
       ...updated,
       artistSlug: artist?.slug,
       duplicate: dup?.duplicate ?? null,
-      notice: dup?.notice ?? null,
+      moderation: check?.decision.outcome === "review" || check?.decision.outcome === "labeled" ? check.decision.outcome : null,
+      notice: dup?.duplicate === "review" ? dup.notice : [check?.decision.notice, dup?.notice].filter(Boolean).join(" ") || null,
     })
   } catch (err) {
     console.error('Editing error', err)

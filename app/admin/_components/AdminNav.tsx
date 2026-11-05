@@ -26,6 +26,7 @@ const SECTIONS: { title: string; links: NavLink[] }[] = [
     { href: "/admin/verification", label: "Verification", dab: "var(--af-sticker)" },
     { href: "/admin/reviews", label: "Reviews", dab: "#e3b23c" },
     { href: "/admin/reports", label: "Reports", dab: "var(--af-ink)" },
+    { href: "/admin/venues", label: "Venues", dab: "#e8743b" },
   ] },
   { title: "Money", links: [
     { href: "/admin/payouts", label: "Payouts", dab: "var(--af-earned)" },
@@ -33,7 +34,9 @@ const SECTIONS: { title: string; links: NavLink[] }[] = [
   { title: "Admin", links: [
     { href: "/admin/jobs", label: "Jobs", dab: "#5bc0be", minRole: "admin" },
     { href: "/admin/team", label: "Team", dab: "#7c8cff" },
+    { href: "/admin/settings", label: "Settings", dab: "var(--af-ink)", exact: true, owner: true },
     { href: "/admin/settings/notifications", label: "Alert emails", dab: "#9aa3b5" },
+    { href: "/admin/settings/rewards", label: "Collector rewards", dab: "#e3b23c" },
   ] },
 ];
 

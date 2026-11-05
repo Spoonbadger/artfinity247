@@ -8,7 +8,7 @@ export default function Page() {
   return (
     <LongForm eyebrow="Policy" title="Privacy policy" current="/privacy-policy">
       <section>
-        <p className="!mt-0 !text-[14px] text-ink-2">Last updated: November 4, 2026</p>
+        <p className="!mt-0 !text-[14px] text-ink-2">Last updated: November 5, 2026</p>
 
         <div>
           <h2>Introduction</h2>
@@ -23,6 +23,11 @@ export default function Page() {
             <li>For artists: your profile, the art you upload, and the Venmo handle or Stripe account we pay you with. Stripe collects the bank and tax details for its payouts.</li>
             <li>When someone scans a QR code: the device type and a rough location (city, region, country), plus a random visitor id so artists can count unique scans. No names.</li>
             <li>When you view an artist&apos;s page: an anonymous view count with the device type and the site you came from (like Instagram), never the full link. We skip this if your browser sends Do Not Track or Global Privacy Control.</li>
+            <li>
+              If you open a free collector account (optional, never needed to buy): your email, when you last signed in, and the pieces you save to your wishlist. It shows only orders placed
+              with the email you proved by opening our sign-in link. Delete it any time in your collection&apos;s settings: the account and wishlist go right away, and orders stay on record
+              for accounting.
+            </li>
             <li>Basic technical data such as IP address, browser and device.</li>
             <li>
               A few cookies and browser storage items (see our <Link href="/cookie-policy">cookie policy</Link>).

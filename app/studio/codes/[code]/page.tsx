@@ -9,6 +9,7 @@ import { DEFAULT_DESIGN, sanitizeDesign } from "@/components/qr/card";
 import { normalizeCode, shortLabel } from "@/lib/shortcode";
 import { requireArtist, usd, timeAgo } from "../../_lib/data";
 import { getCode, pct, status } from "../_lib";
+import { venueOptions } from "@/lib/venues";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Code" };
@@ -46,6 +47,7 @@ export default async function CodePage({ params }: { params: { code: string } })
     select: { id: true, title: true, imageUrl: true },
     orderBy: { createdAt: "desc" },
   });
+  const venues = await venueOptions(c.venueId);
   const base = process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com";
   const d = c.design ? sanitizeDesign(c.design) : { ...DEFAULT_DESIGN, disc: 0 };
   const look: CodeLook = {
@@ -131,10 +133,11 @@ export default async function CodePage({ params }: { params: { code: string } })
         </div>
 
         <CodeEditor
-          initial={{ code: c.code, label: c.label || "", venue: c.venue || "", discountPct: c.discountPct, active: c.active, expiresAt: c.expiresAt ? c.expiresAt.toISOString() : null, artworkId: c.artworkId }}
+          initial={{ code: c.code, label: c.label || "", venue: c.venue || "", venueId: c.venueId, discountPct: c.discountPct, active: c.active, expiresAt: c.expiresAt ? c.expiresAt.toISOString() : null, artworkId: c.artworkId }}
           arts={arts}
           look={look}
           base={base}
+          venues={venues}
         />
       </div>
     </StudioPage>

@@ -63,7 +63,7 @@ export async function sweepAdminAlerts(now = new Date()): Promise<SweepResult> {
     prisma.artReport.findMany({ where: { status: "open" }, select: { id: true, reason: true, artworkUrl: true, artwork: { select: { title: true } } } }),
     listRequests("open"),
     prisma.artwork.findMany({ where: { flaggedReason: { startsWith: DUPLICATE_PREFIX }, status: { not: "REJECTED" } }, select: { id: true, title: true, artist: { select: { artist_name: true, name: true } } } }),
-    prisma.artwork.findMany({ where: { status: "PENDING", NOT: { flaggedReason: { startsWith: DUPLICATE_PREFIX } } }, select: { id: true, title: true, artist: { select: { artist_name: true, name: true } } } }),
+    prisma.artwork.findMany({ where: { status: "PENDING", NOT: { flaggedReason: { startsWith: DUPLICATE_PREFIX } } }, select: { id: true, title: true, flaggedReason: true, artist: { select: { artist_name: true, name: true } } } }),
     prisma.review.findMany({ where: { status: "flagged" }, select: { id: true, rating: true, buyerName: true } }),
     prisma.artist.findMany({ where: { verification: "PENDING" }, select: { id: true, artist_name: true, name: true, verificationRequestedAt: true, createdAt: true } }),
     prisma.order.findMany({ where: { printerRef: { startsWith: "failed" }, shippingStatus: "pending" }, select: { id: true, printerRef: true } }),
@@ -72,7 +72,7 @@ export async function sweepAdminAlerts(now = new Date()): Promise<SweepResult> {
   for (const r of reports) want.push(reportAlert(r));
   for (const r of reprints) want.push(reprintAlert(r.id, r.orderId));
   for (const a of flaggedArt) want.push(duplicateAlert(a.id, a.title, nameOf(a.artist)));
-  for (const a of pendingArt) want.push(moderationAlert(a.id, a.title, nameOf(a.artist)));
+  for (const a of pendingArt) want.push(moderationAlert(a.id, a.title, nameOf(a.artist), a.flaggedReason));
   for (const r of reviews) want.push(reviewAlert(r.id, r.rating, r.buyerName));
   for (const a of verify) want.push(verificationAlert(a.id, nameOf(a), a.verificationRequestedAt ?? a.createdAt));
   for (const o of failedWo) want.push(workOrderAlert(o.id, (o.printerRef || "").replace(/^failed:\s*/, "")));

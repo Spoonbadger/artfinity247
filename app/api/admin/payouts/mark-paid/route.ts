@@ -7,6 +7,8 @@ import { resend } from "@/lib/resend"
 import PayoutSentEmail from "@/emails/PayoutSentEmail"
 import { activeRefunds, shareAfterRefund } from "@/lib/refunds"
 import { logAdminAction } from "@/lib/audit"
+import { carriedInto, getBalance } from "@/lib/balance"
+import { settleCarried, unsettleCarried } from "@/lib/payouts"
 
 export const dynamic = "force-dynamic"
 
@@ -77,7 +79,7 @@ export async function POST(req: NextRequest) {
   }
 
   const refunds = await activeRefunds(Array.from(new Set(items.map((i) => i.orderId))))
-  const amountCents = items.reduce((sum: any, item: any) => {
+  const salesCents = items.reduce((sum: any, item: any) => {
     const sizeNorm = normalizeSize(item.size)
     const b = calcItemProfitCents({
       // Same fallback as /api/admin/payouts/summary, so the recorded amount matches what the admin saw.
@@ -91,8 +93,15 @@ export async function POST(req: NextRequest) {
     return sum + shareAfterRefund(b.artistShare, refunds.get(item.id))
   }, 0)
 
+  // Refund adjustments and carry-forward (lib/balance.ts): pay exactly what the artist's Money page shows for the month.
+  const balance = await getBalance(artistId)
+  const row = balance.payouts.find((p) => p.month === month)
+  const amountCents: number = row && row.status !== "paid" ? row.payableCents : salesCents
+
 
   if (unmark) {
+    // $0 months settled along with this one (a refund adjustment used them up) go back to unpaid too.
+    if (existing?.paidAt) await unsettleCarried(artistId, existing.paidAt)
     const payout = await prisma.payout.upsert({
       where: { artistId_month: { artistId, month } },
       update: { paidAt: null, amountCents, method: null, stripeTransferId: null, failureReason: null },
@@ -111,15 +120,21 @@ export async function POST(req: NextRequest) {
   if (existing?.paidAt) {
     return NextResponse.json({ payout: existing, wasPaidBefore: true, markedPaid: true })
   }
+  if (row && row.carryOutCents < 0) {
+    return NextResponse.json({ error: `Refund adjustments are more than this month's earnings, so there's nothing to pay. The remaining $${(-row.carryOutCents / 100).toFixed(2)} comes off the next month.` }, { status: 409 })
+  }
   const who = await prisma.artist.findUnique({ where: { id: artistId }, select: { venmoHandle: true } })
   const method = who?.venmoHandle ? "venmo" : "manual"
+  const paidAt = new Date()
   const payout = await prisma.payout.upsert({
     where: { artistId_month: { artistId, month } },
-    update: { paidAt: new Date(), amountCents, method, stripeTransferId: null, failureReason: null },
-    create: { artistId, month, amountCents, paidAt: new Date(), method },
+    update: { paidAt, amountCents, method, stripeTransferId: null, failureReason: null },
+    create: { artistId, month, amountCents, paidAt, method },
   })
+  const settled = row ? carriedInto(balance, month) : []
+  await settleCarried(artistId, settled, paidAt)
   await resolveAlerts([alertKey.payoutFailed(artistId, month), alertKey.payoutLate(artistId, month)])
-  await logAdminAction(admin, "payout.mark_paid", { type: "payout", id: payout.id }, `Marked ${month} payout paid ($${(amountCents / 100).toFixed(2)}, ${method})`, { artistId, month, amountCents, method })
+  await logAdminAction(admin, "payout.mark_paid", { type: "payout", id: payout.id }, `Marked ${month} payout paid ($${(amountCents / 100).toFixed(2)}, ${method})${settled.length ? `, settling ${settled.join(", ")} at $0` : ""}`, { artistId, month, amountCents, method, ...(settled.length ? { settled } : {}) })
 
   // send email ONLY when transitioning unpaid → paid
   if (!existing?.paidAt) {

@@ -7,11 +7,13 @@ import { toast } from "sonner";
 import { Download, ImageIcon, Loader2, Pencil } from "lucide-react";
 import { qrSVG, type DotStyle, type EyeStyle } from "@/lib/qr/render";
 import { shortUrl } from "@/lib/shortcode";
+import VenuePicker, { type VenueChoice } from "./VenuePicker";
 
 export type EditableCode = {
   code: string;
   label: string;
   venue: string;
+  venueId: string | null;
   discountPct: number | null;
   active: boolean;
   expiresAt: string | null; // ISO
@@ -24,12 +26,12 @@ const STEPS = [5, 10, 15, 20, 25, 30];
 const dayOf = (iso: string | null) => (iso ? iso.slice(0, 10) : "");
 
 /** Edit what's behind a printed code, and download the code again. */
-export default function CodeEditor({ initial, arts, look, base }: { initial: EditableCode; arts: CodeArt[]; look: CodeLook; base: string }) {
+export default function CodeEditor({ initial, arts, look, base, venues = [] }: { initial: EditableCode; arts: CodeArt[]; look: CodeLook; base: string; venues?: VenueChoice[] }) {
   const router = useRouter();
   const [f, setF] = useState({ ...initial, expires: dayOf(initial.expiresAt) });
   const [busy, setBusy] = useState(false);
   const set = (p: Partial<typeof f>) => setF((o) => ({ ...o, ...p }));
-  const dirty = f.label !== initial.label || f.venue !== initial.venue || f.discountPct !== initial.discountPct || f.active !== initial.active || f.expires !== dayOf(initial.expiresAt) || f.artworkId !== initial.artworkId;
+  const dirty = f.label !== initial.label || f.venue !== initial.venue || f.venueId !== initial.venueId || f.discountPct !== initial.discountPct || f.active !== initial.active || f.expires !== dayOf(initial.expiresAt) || f.artworkId !== initial.artworkId;
   const art = arts.find((a) => a.id === f.artworkId) || null;
 
   async function save(e: React.FormEvent) {
@@ -40,7 +42,7 @@ export default function CodeEditor({ initial, arts, look, base }: { initial: Edi
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          label: f.label, venue: f.venue, discountPct: f.discountPct, active: f.active, artworkId: f.artworkId,
+          label: f.label, venue: f.venue, venueId: f.venueId, discountPct: f.discountPct, active: f.active, artworkId: f.artworkId,
           expiresAt: f.expires ? new Date(`${f.expires}T23:59:59`).toISOString() : null,
         }),
       });
@@ -105,10 +107,7 @@ export default function CodeEditor({ initial, arts, look, base }: { initial: Edi
           </div>
         )}
 
-        <label className="af-field">
-          <span className="label">Venue</span>
-          <input type="text" maxLength={60} value={f.venue} onChange={(e) => set({ venue: e.target.value })} placeholder="Brooklyn Flea" />
-        </label>
+        <VenuePicker venues={venues} value={{ venueId: f.venueId, venue: f.venue }} onChange={(v) => set(v)} />
         {venueWarn && <p className="-mt-2 text-[12.5px] text-ink-2">The card itself still says {look.printedVenue}.</p>}
 
         <label className="af-field">

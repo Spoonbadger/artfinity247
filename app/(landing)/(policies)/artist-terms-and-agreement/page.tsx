@@ -12,7 +12,7 @@ export default function ArtistTermsPage() {
   return (
     <LongForm eyebrow="For artists" title="Artist terms and agreement" sub="Artfinity artist platform agreement" current="/artist-terms-and-agreement">
       <section>
-        <p className="!mt-0 !text-[14px] text-ink-2">Last updated: November 4, 2026</p>
+        <p className="!mt-0 !text-[14px] text-ink-2">Last updated: November 5, 2026</p>
 
         <div>
           <h2>1. Eligibility</h2>
@@ -113,6 +113,11 @@ export default function ArtistTermsPage() {
           <ul>
             <li>
               Each sale stays pending for {RETURN_WINDOW_DAYS} days after the order, our return window, so a reprint or refund can be settled first.
+            </li>
+            <li>
+              If a sale you were already paid for is later refunded for a buyer return or a chargeback, we may take your share of it off your next payout (shown as a
+              &ldquo;Refund adjustment&rdquo; on your Money page; a payout never goes below $0, and any rest carries to the next one), but refunds for damaged,
+              misprinted or wrong prints never come out of money we&apos;ve paid you.
             </li>
             <li>
               Earnings are paid monthly: each month&apos;s sales are paid by the {ordinal(PAYOUT_DAY_OF_MONTH)} of the following month.

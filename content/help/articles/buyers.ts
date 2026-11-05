@@ -168,7 +168,41 @@ The order page shows what you bought, the estimated delivery dates and, for limi
 - Make sure you're looking at the inbox for the email you used at checkout.
 - Still nothing? Write to [${SUPPORT}](mailto:${SUPPORT}) or [message us](/contact) with your name and the artwork.
 
-Have an artist account? Prints you've bought are also listed in your Studio under **My purchases**.
+All your orders are also in your free collection: see [Your orders and wishlist](/help/buyers/orders-and-wishlist). Have an artist account? Prints you've bought are also listed in your Studio under **My purchases**.
+`,
+  },
+  {
+    slug: "orders-and-wishlist",
+    section,
+    audience: "buyer",
+    title: "Your orders and wishlist",
+    summary: "A free, optional collection shows every order placed with your email, the artists you follow and the paintings you've saved. Sign in with a link we email you. No password, and you never need it to buy.",
+    related: ["order-status", "follow-artist", "certificates"],
+    link: { href: "/collector", label: "Open your collection" },
+    body: `
+## You never need an account to buy
+Checkout works as a guest, and the links in your order emails (review, problem with your print, certificate) always work on their own. Your collection is an optional extra.
+
+## Signing in
+1. Go to [Your orders](/collector/sign-in) (it's in the menu and at the bottom of every page).
+2. Enter the email you used at checkout. We email you a link.
+3. Tap it within 15 minutes. Each link works once. You stay signed in on that device for 90 days, or until you sign out.
+
+We never say whether an email has orders, so the page answers the same way for any address.
+
+## What's in it
+- **Orders:** every order placed with your email, newest first, including ones you placed as a guest before you had a collection. Each shows what you bought, its size and frame, and where it is: paid, printing, shipped (with tracking) and delivered. From there you can leave a review, report a problem with the print, open certificates for limited editions, and see the receipt.
+- **Following:** the artists whose new work you get by email. Unfollow or resubscribe in one tap.
+- **Wishlist:** paintings you saved with the heart, with today's starting price. Limited editions show when they've sold out.
+
+## Saving paintings
+Tap the heart on any painting or artwork card. If you're not signed in, enter your email and we send you a link: tap it and the painting is saved, and you're signed in.
+
+## Rewards
+When Artfinity runs a rewards offer (for example a discount after a number of prints), your collection shows your progress and we email you a one-time code. It's filled in at checkout while you're signed in with that email. Rewards come out of Artfinity's share, never the artist's.
+
+## Privacy and deleting
+You only ever see orders placed with the email you proved by opening the link. To delete your collection, open **Settings** in your collection. Your account and wishlist are deleted right away. Orders stay on record because we need them for accounting, and your order emails keep working. See the [privacy policy](/privacy-policy).
 `,
   },
   {

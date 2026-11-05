@@ -93,7 +93,8 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // notice: set when the image looks like one already on Artfinity (lib/imageHash.ts); duplicate "review" = a person checks it.
-  const [done, setDone] = useState<{ slug: string; title: string; imageUrl: string; pending: boolean; notice?: string | null; duplicate?: string | null } | null>(null);
+  // moderation (automatic image check, lib/moderation): "review" = held for a person; "labeled" = a label was added (notice says which).
+  const [done, setDone] = useState<{ slug: string; title: string; imageUrl: string; pending: boolean; notice?: string | null; duplicate?: string | null; moderation?: string | null } | null>(null);
 
   // React has no prop for folder picking.
   useEffect(() => { folderRef.current?.setAttribute("webkitdirectory", ""); }, [many]);
@@ -187,7 +188,7 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
         router.push("/studio/art");
         router.refresh();
       } else {
-        setDone({ slug: saved.slug, title: saved.title, imageUrl: saved.imageUrl, pending: saved.status === "PENDING", notice: saved.notice, duplicate: saved.duplicate });
+        setDone({ slug: saved.slug, title: saved.title, imageUrl: saved.imageUrl, pending: saved.status === "PENDING", notice: saved.notice, duplicate: saved.duplicate, moderation: saved.moderation });
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     } catch (e: any) {
@@ -206,7 +207,7 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
           <div className="grid justify-items-center gap-3">
             <span className="sticker-badge">{REVIEW_NOTE}</span>
             <h2 className="display text-[40px]">Almost on the wall.</h2>
-            <p className="text-ink-2">{done.duplicate === "review" ? done.notice : <>We look over every new artist&apos;s first pieces.</>} We&apos;ll email you when {done.title} is live. You can print its code now.</p>
+            <p className="text-ink-2">{done.duplicate === "review" || done.moderation === "review" ? done.notice : <>We look over every new artist&apos;s first pieces.</>} We&apos;ll email you when {done.title} is live. You can print its code now.</p>
           </div>
         ) : (
           <div>

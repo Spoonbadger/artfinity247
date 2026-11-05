@@ -63,3 +63,9 @@ TODO.md
 /.cache
 /scenes/photos/.pexels-state.json
 /scenes/photos/.pixabay-state.json
+
+# database dumps (pnpm db:backup, scripts/backup-db.mjs)
+/backups
+
+# Sentry CLI config (holds an auth token)
+.sentryclirc

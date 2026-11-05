@@ -1,7 +1,8 @@
 // Titles, keys and severities for each admin alert, shared by the code that raises an alert as it happens and the
-// sweep (lib/alertSweep.ts) that backfills and resolves them. No imports beyond lib/alerts, so lib code
+// sweep (lib/alertSweep.ts) that backfills and resolves them. No imports beyond lib/alerts (and the pure lib/moderation/policy), so lib code
 // (printer, payouts, reprints...) can use it without import cycles.
 import { alertKey, type RaiseAlertInput } from "@/lib/alerts";
+import { autoReasonOf, reasonText } from "@/lib/moderation/policy"; // pure, no imports
 
 const orderNo = (orderId: string) => orderId.slice(-8).toUpperCase();
 const monthName = (month: string) => {
@@ -18,9 +19,13 @@ export function reportAlert(r: { id: string; reason: string; artworkUrl?: string
 export const duplicateAlert = (artworkId: string, title: string, artist: string): RaiseAlertInput => ({
   kind: "duplicate", key: alertKey.duplicate(artworkId), title: `Possible duplicate: “${title}” by ${artist}`, link: "/admin/moderation", severity: "normal",
 });
-export const moderationAlert = (artworkId: string, title: string, artist: string): RaiseAlertInput => ({
-  kind: "moderation", key: alertKey.moderation(artworkId), title: `To review: “${title}” by ${artist}`, link: "/admin/moderation", severity: "low",
-});
+/** Held by the automatic image check (flaggedReason "auto_moderation:<reason>", lib/moderation): normal, not low. */
+export const moderationAlert = (artworkId: string, title: string, artist: string, flaggedReason?: string | null): RaiseAlertInput => {
+  const auto = autoReasonOf(flaggedReason);
+  return auto
+    ? { kind: "moderation", key: alertKey.moderation(artworkId), title: `Image check found ${reasonText(auto)}: “${title}” by ${artist}`, link: "/admin/moderation", severity: "normal" }
+    : { kind: "moderation", key: alertKey.moderation(artworkId), title: `To review: “${title}” by ${artist}`, link: "/admin/moderation", severity: "low" };
+};
 export const reviewAlert = (reviewId: string, rating: number, buyer: string): RaiseAlertInput => ({
   kind: "review_flagged", key: alertKey.reviewFlagged(reviewId), title: `${rating}★ review by ${buyer} held for a look`, link: "/admin/reviews", severity: "low",
 });

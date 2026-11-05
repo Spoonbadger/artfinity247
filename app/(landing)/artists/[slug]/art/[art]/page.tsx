@@ -144,6 +144,7 @@ export default async function ArtPage({ params, searchParams }: Props) {
         fromCents: priceFor(m, PRINT_SIZES.find((sz) => m.printableSizes?.includes(sz)) ?? "small").list, // cheapest printable size
       }))}
       venue={venue}
+      venueHref={qr?.venuePartner?.active ? `/venues/${qr.venuePartner.slug}` : null}
       pct={pct}
       sig={!qr && scanPct && !scan.legacy ? String(searchParams.s) : null}
       discountEnded={!qr && scan.ended}

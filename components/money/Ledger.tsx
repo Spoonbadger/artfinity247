@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Download, Search } from "lucide-react";
-import type { LedgerLine } from "@/lib/balance";
+import type { AdjustmentLine, LedgerLine } from "@/lib/balance";
 import { BUCKET_COLOR, BUCKET_LABEL, SIZE_LABEL, bucketOf, dayUTC, monthName, usd, type MoneyBucket } from "./format";
 
 const FILTERS: { id: "" | MoneyBucket; label: string }[] = [
@@ -13,10 +13,10 @@ const FILTERS: { id: "" | MoneyBucket; label: string }[] = [
 ];
 const PAGE = 25;
 
-function StatusTag({ l, currentMonth, compact = false }: { l: LedgerLine; currentMonth: string; compact?: boolean }) {
+function StatusTag({ l, currentMonth, compact = false }: { l: Pick<LedgerLine, "status" | "payoutMonth"> & { clearsAt?: string }; currentMonth: string; compact?: boolean }) {
   const bucket = bucketOf(l, currentMonth);
   const month = monthName(l.payoutMonth).split(" ")[0];
-  const note = l.status === "pending" ? `Clears ${dayUTC(l.clearsAt)}` : bucket === "ready" ? "Next payout" : `${month} payout`;
+  const note = l.status === "pending" ? (l.clearsAt ? `Clears ${dayUTC(l.clearsAt)}` : "Off a coming payout") : bucket === "ready" ? "Next payout" : `${month} payout`;
   return (
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[12.5px]">
       <i
@@ -40,22 +40,65 @@ function RefundTag({ l }: { l: LedgerLine }) {
   );
 }
 
-/** Every sale line: search, status filter, CSV export. */
-export default function Ledger({ ledger, currentMonth }: { ledger: LedgerLine[]; currentMonth: string }) {
+type Row = { kind: "sale"; l: LedgerLine } | { kind: "adjustment"; a: AdjustmentLine };
+const REASON: Record<string, string> = { buyer_return: "Buyer return", chargeback: "Chargeback", damaged: "Damaged print", other: "Refund" };
+const rowDate = (r: Row) => (r.kind === "sale" ? r.l.date : r.a.date);
+const rowCents = (r: Row) => (r.kind === "sale" ? r.l.shareCents : r.a.amountCents);
+const rowText = (r: Row) =>
+  r.kind === "sale" ? [r.l.title, r.l.buyerFirst, r.l.buyerCity, SIZE_LABEL[r.l.size]].join(" ") : ["Refund adjustment", r.a.title, r.a.orderRef, `#${r.a.orderRef}`, REASON[r.a.reason]].join(" ");
+
+/** A paid-out sale refunded later, taken off a payout (lib/refundPolicy.ts): one row with the order reference. */
+function AdjustmentRow({ a, currentMonth }: { a: AdjustmentLine; currentMonth: string }) {
+  const title = "A sale you were already paid for was refunded, so your share comes off a payout. A payout never goes below $0; the rest carries to the next month.";
+  return (
+    <tr className="block border-b border-line py-2.5 last:border-b-0 lg:table-row lg:py-0">
+      <td className="grid grid-cols-[40px_minmax(0,1fr)_auto] gap-x-3 lg:hidden">
+        <span aria-hidden="true" className="row-span-2 grid h-10 w-10 place-items-center rounded-[3px] bg-coral/15 text-[18px] font-bold text-coral">↩</span>
+        <b className="min-w-0 truncate font-semibold" title={title}>Refund adjustment</b>
+        <b className="text-right text-coral">{usd(a.amountCents)}</b>
+        <span className="min-w-0 truncate text-[12px] text-ink-2">Order #{a.orderRef} · {a.title} · {dayUTC(a.date)}</span>
+        <span className="text-right"><StatusTag l={a} currentMonth={currentMonth} compact /></span>
+      </td>
+      <td className="hidden whitespace-nowrap py-2.5 pr-3 text-ink-2 lg:table-cell">{dayUTC(a.date)}</td>
+      <td className="hidden max-w-[240px] py-2.5 pr-3 lg:table-cell">
+        <span className="flex min-w-0 items-center gap-2.5">
+          <span aria-hidden="true" className="grid h-8 w-8 shrink-0 place-items-center rounded-[3px] bg-coral/15 font-bold text-coral">↩</span>
+          <span className="min-w-0">
+            <b className="block truncate font-semibold" title={title}>Refund adjustment</b>
+            <span className="block truncate text-[12px] text-ink-2">Order #{a.orderRef} · {a.title}</span>
+          </span>
+        </span>
+      </td>
+      <td className="hidden py-2.5 pr-3 text-ink-2 lg:table-cell">{REASON[a.reason] ?? "Refund"}</td>
+      <td className="hidden py-2.5 pr-3 text-right text-ink-2 lg:table-cell" colSpan={4}>Refunded after it was paid out</td>
+      <td className="hidden py-2.5 pr-3 text-right lg:table-cell"><b className="block text-coral">{usd(a.amountCents)}</b></td>
+      <td className="hidden whitespace-nowrap py-2.5 lg:table-cell"><StatusTag l={a} currentMonth={currentMonth} /></td>
+    </tr>
+  );
+}
+
+/** Every sale line, plus any refund adjustments: search, status filter, CSV export. */
+export default function Ledger({ ledger, adjustments = [], currentMonth }: { ledger: LedgerLine[]; adjustments?: AdjustmentLine[]; currentMonth: string }) {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<"" | MoneyBucket>("");
   const [shown, setShown] = useState(PAGE);
 
+  const all = useMemo<Row[]>(
+    () => [...ledger.map((l) => ({ kind: "sale" as const, l })), ...adjustments.map((a) => ({ kind: "adjustment" as const, a }))].sort((x, y) => rowDate(y).localeCompare(rowDate(x))),
+    [ledger, adjustments],
+  );
   const rows = useMemo(() => {
     const t = q.trim().toLowerCase();
-    return ledger.filter((l) => (!status || bucketOf(l, currentMonth) === status) && (!t || [l.title, l.buyerFirst, l.buyerCity, SIZE_LABEL[l.size]].join(" ").toLowerCase().includes(t)));
-  }, [ledger, q, status, currentMonth]);
-  const total = rows.reduce((n, l) => n + l.shareCents, 0);
+    return all.filter((r) => (!status || bucketOf(r.kind === "sale" ? r.l : r.a, currentMonth) === status) && (!t || rowText(r).toLowerCase().includes(t)));
+  }, [all, q, status, currentMonth]);
+  const total = rows.reduce((n, r) => n + rowCents(r), 0);
+  const sales = rows.filter((r) => r.kind === "sale").length;
+  const adjusted = rows.length - sales;
   const counts = useMemo(() => {
-    const c: Record<string, number> = { "": ledger.length, hold: 0, ready: 0, paid: 0 };
-    for (const l of ledger) c[bucketOf(l, currentMonth)]++;
+    const c: Record<string, number> = { "": all.length, hold: 0, ready: 0, paid: 0 };
+    for (const r of all) c[bucketOf(r.kind === "sale" ? r.l : r.a, currentMonth)]++;
     return c;
-  }, [ledger, currentMonth]);
+  }, [all, currentMonth]);
   const exportHref = `/api/studio/money/export?${new URLSearchParams({ ...(status ? { bucket: status } : {}), ...(q.trim() ? { q: q.trim() } : {}) })}`;
 
   return (
@@ -88,7 +131,9 @@ export default function Ledger({ ledger, currentMonth }: { ledger: LedgerLine[];
         </div>
       </div>
 
-      <p className="num text-[12.5px] text-ink-2" aria-live="polite">{rows.length} {rows.length === 1 ? "sale" : "sales"} · {usd(total)} your share</p>
+      <p className="num text-[12.5px] text-ink-2" aria-live="polite">
+        {sales} {sales === 1 ? "sale" : "sales"}{adjusted > 0 && <> · {adjusted} refund {adjusted === 1 ? "adjustment" : "adjustments"}</>} · {usd(total)} your share
+      </p>
 
       {rows.length === 0 ? (
         <p className="py-8 text-center text-[14px] text-ink-2">No matching sales.</p>
@@ -109,7 +154,9 @@ export default function Ledger({ ledger, currentMonth }: { ledger: LedgerLine[];
               </tr>
             </thead>
             <tbody>
-              {rows.slice(0, shown).map((l) => {
+              {rows.slice(0, shown).map((r) => {
+                if (r.kind === "adjustment") return <AdjustmentRow key={r.a.id} a={r.a} currentMonth={currentMonth} />;
+                const l = r.l;
                 const buyer = [l.buyerFirst, l.buyerCity].filter(Boolean).join(", ");
                 return (
                   <tr key={l.id} className="block border-b border-line py-2.5 last:border-b-0 lg:table-row lg:py-0">

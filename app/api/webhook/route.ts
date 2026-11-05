@@ -7,6 +7,9 @@ import { sendOrderNotifications } from "@/lib/orderNotifications"
 import { sendWorkOrder } from "@/lib/printer"
 import { claimEditionNumbers } from "@/lib/editions"
 import { artistIdsForOrder, followFromCheckout } from "@/lib/followers"
+import { onOrderPaid } from "@/lib/collector"
+import { markRewardUsed, preservedSplit } from "@/lib/collectorRewards"
+import { reportError } from "@/lib/monitor"
 
 export const dynamic = "force-dynamic"
 export const runtime = 'nodejs'
@@ -41,6 +44,8 @@ export async function POST(req: NextRequest) {
 
   } catch (err) {
     console.error('Webhook error:', err)
+    // A wrong STRIPE_WEBHOOK_SECRET after a deploy looks like this: worth a warning, not an alert.
+    await reportError(err, { area: "webhook", name: "stripe-signature", level: "warning" })
     return new Response(`Webhook error: ${(err as Error).message}`, { status: 400 })
   }
 
@@ -142,13 +147,18 @@ export async function POST(req: NextRequest) {
             frameChosen && ["black", "white", "natural"].includes(rawFrameColor)
               ? rawFrameColor
               : null
+          // Collector reward (lib/collectorRewards.ts): keep the artist's share at the pre-reward price.
+          const rewardFrom = Number(product?.metadata?.rewardFromUnit || 0)
+          const split = rewardFrom > unit && splits[idx] != null
+            ? preservedSplit({ preRewardLineTotal: rewardFrom * qty, lineTotal, size: sizeNorm, frameChosen, quantity: qty, orderDate: order.createdAt, split: splits[idx]! })
+            : splits[idx]
           const b = calcItemProfitCents({
             lineTotal,
             size: sizeNorm,
             frameChosen,
             quantity: qty,
             orderDate: order.createdAt,
-            artistSplit: splits[idx],
+            artistSplit: split,
           })
 
           return {
@@ -169,7 +179,7 @@ export async function POST(req: NextRequest) {
             shippingCost: b.shippingCost,
             laborCost: b.laborCost,
             websiteCost: b.websiteCost,
-            artistSplit: splits[idx],
+            artistSplit: split,
             // Short link code the sale came through (checked at checkout, carried in metadata)
             qrCodeId: product?.metadata?.qrCodeId || null,
           }
@@ -193,6 +203,13 @@ export async function POST(req: NextRequest) {
           .catch((e) => console.error("checkout follow failed", order.id, e))
       }
 
+      // Collector accounts (optional): a redeemed reward is used up, the collection is "seen", and a new reward may be emailed.
+      if (!isBulk && session.payment_status === "paid") {
+        const rewardN = Number(session.metadata?.rewardN || 0)
+        if (rewardN > 0 && buyerEmail) await markRewardUsed(buyerEmail, rewardN, order.id).catch((e) => console.error("reward not marked used", order.id, e))
+        await onOrderPaid(order.id)
+      }
+
       // 3) Emails: admin, each artist, buyer receipt. Each kind is sent at most
       //    once per order (tracked by adminNotificationSentAt /
       //    artistNotificationsSentAt / receiptSentAt), so Stripe retries are safe.
@@ -211,6 +228,7 @@ export async function POST(req: NextRequest) {
       }
     } catch (err) {
       console.error('❌ Error persisting order:', err)
+      await reportError(err, { area: "webhook", name: "stripe-checkout", extra: { eventId: event.id, sessionId: session.id }, adminAlert: true })
       return new Response('Order processing failed', { status: 500 })
     }
   }

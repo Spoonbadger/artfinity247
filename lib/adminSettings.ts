@@ -5,7 +5,7 @@ import fsp from "node:fs/promises";
 
 const FILE = path.join(process.cwd(), "data", "admin-settings.json");
 
-export type AdminSettings = { testStartDate?: string; testTarget?: number };
+export type AdminSettings = { testStartDate?: string; testTarget?: number; refundPaidOutPolicy?: string };
 
 export async function readAdminSettings(): Promise<AdminSettings> {
   try {

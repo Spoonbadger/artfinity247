@@ -9,6 +9,7 @@ import { getTracking } from "@/lib/shipping/store"
 import { helpLine, helpUrl } from "@/lib/reprints"
 import { certLines, certLinksFor } from "@/lib/certificates"
 import { friendlySize, orderCode } from "@/lib/orderText"
+import { SITE_URL } from "@/lib/urls"
 
 /** Latest tracking saved on the order (the tracking columns, else the older Message), or null. */
 export async function latestTracking(orderId: string): Promise<Tracking | null> {
@@ -29,7 +30,7 @@ export async function sendShippingEmail(orderId: string, status: "shipped" | "de
   })
   if (!order) throw new Error("Order not found")
   const certificates = status === "shipped" ? await certLinksFor(order.id).catch(() => []) : []
-  const append = [tracking ? trackingText(tracking) : "", certLines(certificates), helpLine(order.id)].filter(Boolean).join("\n\n")
+  const append = [tracking ? trackingText(tracking) : "", certLines(certificates), helpLine(order.id), `See your orders any time: ${SITE_URL}/collector`].filter(Boolean).join("\n\n")
   const sentByArtist = await sendArtistOrderEmail(order.id, status, { append }).catch((err) => {
     console.error("Artist shipping email failed, sending default", err)
     return false

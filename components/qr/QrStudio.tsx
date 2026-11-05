@@ -16,15 +16,18 @@ import {
 } from "./card";
 import { loadFonts, type Fonts } from "./text";
 import ArtPicker from "./ArtPicker";
+import VenuePicker, { type VenueChoice } from "@/components/codes/VenuePicker";
 import s from "./qr-studio.module.css";
 
 type View = "card" | "wall" | "sheet";
 /** A short link code already saved for one artwork (opened from My codes). */
-export type SavedCode = { code: string; slug: string; label: string; expiresAt: string | null };
+export type SavedCode = { code: string; slug: string; label: string; expiresAt: string | null; venueId?: string | null };
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
-export default function QrStudio({ arts, initialSlug, initialDesign, initialCard, base, initialSaved = null, split, handle }: {
+export default function QrStudio({ arts, initialSlug, initialDesign, initialCard, base, initialSaved = null, split, handle, venues = [] }: {
+  /** Partner venues for the venue picker (lib/venues.ts). */
+  venues?: VenueChoice[];
   /** The artist's handle, for the full artwork link. */
   handle?: string;
   /** The artist's current share of profit (Infinity pays more). */
@@ -46,9 +49,10 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
   const [codes, setCodes] = useState<Record<string, string>>(initialSaved ? { [initialSaved.slug]: initialSaved.code } : {});
   const [label, setLabel] = useState(initialSaved?.label || "");
   const [endDate, setEndDate] = useState(initialSaved?.expiresAt ? initialSaved.expiresAt.slice(0, 10) : "");
+  const [venueId, setVenueId] = useState<string | null>(initialSaved?.venueId ?? null);
   // What each saved code was last saved with, to tell "Saved" from "Save changes".
   const [snaps, setSnaps] = useState<Record<string, string>>(() =>
-    initialSaved ? { [initialSaved.slug]: JSON.stringify([initialSaved.label || "", initialDesign, initialSaved.expiresAt ? initialSaved.expiresAt.slice(0, 10) : ""]) } : {});
+    initialSaved ? { [initialSaved.slug]: JSON.stringify([initialSaved.label || "", initialDesign, initialSaved.expiresAt ? initialSaved.expiresAt.slice(0, 10) : "", initialSaved.venueId ?? null]) } : {});
   const customRef = useRef<HTMLInputElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -87,9 +91,9 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
     if (d.end === "event" && endDate) return new Date(`${endDate}T23:59:59`).toISOString();
     return null;
   }
-  const snapshot = JSON.stringify([label, d, endDate]);
+  const snapshot = JSON.stringify([label, d, endDate, venueId]);
   const dirty = !!code && snaps[art.slug] !== undefined && snaps[art.slug] !== snapshot;
-  const codeMeta = () => ({ label: label.trim() || defaultLabel, venue: d.ev.trim() || null, discountPct: d.disc || null, expiresAt: expiresAt(), design: d });
+  const codeMeta = () => ({ label: label.trim() || defaultLabel, venue: d.ev.trim() || null, venueId, discountPct: d.disc || null, expiresAt: expiresAt(), design: d });
   /** Save (or update) this piece's code with the current look, venue, deal and end date. */
   async function ensureCode(): Promise<string | null> {
     const existing = codes[art.slug];
@@ -136,7 +140,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
       let body: Record<string, unknown>;
       if (all) {
         const m = codeMeta();
-        body = { all: true, design: d, venue: m.venue, discountPct: m.discountPct, expiresAt: m.expiresAt };
+        body = { all: true, design: d, venue: m.venue, venueId: m.venueId, discountPct: m.discountPct, expiresAt: m.expiresAt };
       } else {
         const c = await ensureCode();
         if (!c) return;
@@ -255,10 +259,11 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
               <input type="text" maxLength={60} value={label} placeholder={defaultLabel} onChange={(e) => setLabel(e.target.value)} />
               <small>Only you see this, in My codes.</small>
             </label>
-            <label className={s.field}>Event or venue
-              <input type="text" maxLength={32} value={d.ev} placeholder="Brooklyn Flea" onChange={(e) => set({ ev: e.target.value })} />
-              <small>Shows in your stats and on the buyer&rsquo;s page.</small>
-            </label>
+            <VenuePicker
+              venues={venues} value={{ venueId, venue: d.ev }} maxLength={32} label="Event or venue" fieldClass={s.field} labelClass={null}
+              hint={<>Shows in your stats and on the buyer&rsquo;s page.</>}
+              onChange={(v) => { setVenueId(v.venueId); set({ ev: v.venue }); }}
+            />
             <Toggle checked={d.evPrint} disabled={!d.ev.trim()} onChange={(v) => set({ evPrint: v })}>Print it on the card too</Toggle>
             <label className={s.field}>Size shown first
               <select value={d.size} onChange={(e) => set({ size: e.target.value as SizeKey })}>

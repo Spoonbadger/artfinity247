@@ -47,7 +47,7 @@ const SIZE: Record<string, { key: string; label: string }> = {
 };
 const sizeOf = (s: string | null) => SIZE[(s || "").toUpperCase()] ?? Object.values(SIZE).find((v) => v.key === s) ?? { key: s || "", label: s || "" };
 
-export default function ThankYouClient({ sessionId }: { sessionId: string }) {
+export default function ThankYouClient({ sessionId, collector = { signedIn: false, rewards: false } }: { sessionId: string; collector?: { signedIn: boolean; rewards: boolean } }) {
   const { cartItems, removeFromCart } = useCart();
   const cleared = useRef(false);
   const [order, setOrder] = useState<Order | null>(null);
@@ -174,6 +174,21 @@ export default function ThankYouClient({ sessionId }: { sessionId: string }) {
           <p className="text-[14px] text-ink-2">
             Arrived damaged or not quite right? <Link href={order.helpPath} className="font-semibold text-ink underline underline-offset-4">Tell us and we&apos;ll fix it</Link>
           </p>
+        )}
+        {/* Optional collection (lib/collector.ts): a soft offer, never needed to buy */}
+        {collector.signedIn ? (
+          <p className="text-[14px] text-ink-2">
+            <Link href="/collector" className="font-semibold text-ink underline underline-offset-4">See your orders any time</Link> in your collection.
+          </p>
+        ) : (
+          <div className="grid gap-2 rounded-2xl border border-dashed border-line bg-wall/60 p-4">
+            <p className="text-[14.5px] text-ink">
+              <b>Save this to a free collection:</b> track orders, keep a wishlist{collector.rewards ? ", earn rewards" : ""}. No password.
+            </p>
+            <Link href={`/collector/sign-in${order.email ? `?email=${encodeURIComponent(order.email)}` : ""}`} className="btn btn-ghost btn-sm w-fit min-h-[44px] px-4">
+              See your orders any time
+            </Link>
+          </div>
         )}
       </div>
     </div>

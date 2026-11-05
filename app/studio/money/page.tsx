@@ -112,7 +112,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
       )}
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <PayoutsList payouts={b.payouts} ledger={b.ledger} lateMonths={b.lateMonths} />
+        <PayoutsList payouts={b.payouts} ledger={b.ledger} adjustments={b.adjustments} lateMonths={b.lateMonths} />
         <div className="grid content-start gap-4">
         <GetPaidCard status={b.stripeStatus} mode={connectMode()} venmoHandle={b.venmoHandle} nextDate={dayUTC(b.nextPayout.date)} />
         <section aria-labelledby="how-h" className="af-card grid content-start gap-3 p-4 sm:p-5">
@@ -129,7 +129,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
         </div>
       </div>
 
-      {b.ledger.length > 0 && <Ledger ledger={b.ledger} currentMonth={b.currentMonth} />}
+      {(b.ledger.length > 0 || b.adjustments.length > 0) && <Ledger ledger={b.ledger} adjustments={b.adjustments} currentMonth={b.currentMonth} />}
     </StudioPage>
   );
 }

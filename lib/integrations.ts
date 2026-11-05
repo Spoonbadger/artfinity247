@@ -3,6 +3,7 @@
 import { TAX_ENABLED } from "@/lib/tax";
 import { activeProvider } from "@/lib/printer";
 import { cloudinaryOn } from "@/lib/storage";
+import { activeProvider as imageCheckProvider, configuredProvider as imageCheckWanted, providerProblem as imageCheckProblem } from "@/lib/moderation/providers";
 
 export type Health = "green" | "amber" | "red";
 export type Integration = { id: string; name: string; status: Health; state: string; fix: string | null };
@@ -54,6 +55,18 @@ export function integrationsHealth(): Integration[] {
   out.push(cloudinaryOn()
     ? { id: "cloudinary", name: "Cloudinary", status: "green", state: "Set", fix: null }
     : { id: "cloudinary", name: "Cloudinary", status: missing, state: "Missing: uploads save to the server disk", fix: "Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET." });
+
+  // Automatic image check on upload (lib/moderation, MODERATION_SETUP.md). Off is fine: uploads go through as before.
+  const imgWanted = imageCheckWanted();
+  const imgRun = imageCheckProvider();
+  const imgProblem = imgRun === "none" ? null : imageCheckProblem(imgRun);
+  out.push(imgWanted === "mock" && imgRun === "none"
+    ? { id: "image-check", name: "Image check", status: "red", state: "Mock provider set in production: no check runs", fix: "Set IMAGE_MODERATION_PROVIDER to sightengine, google or aws (see MODERATION_SETUP.md)." }
+    : imgRun === "none"
+      ? { id: "image-check", name: "Image check", status: "amber", state: "Off: uploads aren't pre-screened", fix: "Set IMAGE_MODERATION_PROVIDER (sightengine, google or aws) and its keys. See MODERATION_SETUP.md." }
+      : imgProblem
+        ? { id: "image-check", name: "Image check", status: prod ? "red" : "amber", state: `${imgRun}: ${imgProblem} (uploads go through unchecked)`, fix: "Add the provider's keys (MODERATION_SETUP.md), or set IMAGE_MODERATION_PROVIDER=none." }
+        : { id: "image-check", name: "Image check", status: "green", state: imgRun === "mock" ? "Mock (dev only: reads hints from file names)" : `Provider: ${imgRun}`, fix: null });
 
   out.push(set("PEXELS_API_KEY")
     ? { id: "pexels", name: "Pexels", status: "green", state: "Set", fix: null }

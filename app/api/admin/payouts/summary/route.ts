@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdmin } from "@/lib/admin"
 import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
-import { isPayoutLate } from "@/lib/balance"
+import { getBalance, isPayoutLate, type PayoutRow } from "@/lib/balance"
 import { connectMode, connectStatus } from "@/lib/stripeConnect"
-import { activeRefunds, shareAfterRefund } from "@/lib/refunds"
+import { activeRefunds, adjustmentTotals, refundAdjustments, shareAfterRefund } from "@/lib/refunds"
 
 export const dynamic = "force-dynamic"
 
@@ -106,6 +106,20 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Refund adjustments (lib/refunds.ts) are booked to the month they were recorded, and a month can't pay below $0
+    // (lib/balance.ts carries the rest forward). Artists with any adjustment get their month from getBalance, so this
+    // page, Pay all and their Money page agree.
+    const [monthAdj, allAdj] = await Promise.all([adjustmentTotals({ month }), refundAdjustments()]);
+    for (const artistId of Array.from(monthAdj.keys())) {
+      if (!byArtist.has(artistId)) byArtist.set(artistId, { artistId, itemsCount: 0, gross: 0, expenses: 0, profit: 0, artistShare: 0, companyShare: 0 });
+    }
+    const withAdj = new Set(allAdj.map((a) => a.artistId));
+    const balanceRows = new Map<string, PayoutRow>();
+    for (const artistId of Array.from(byArtist.keys()).filter((id) => withAdj.has(id))) {
+      const row = (await getBalance(artistId)).payouts.find((p) => p.month === month);
+      if (row) balanceRows.set(artistId, row);
+    }
+
     const artistIds = Array.from(byArtist.keys());
     if (artistIds.length === 0) {
       return NextResponse.json({ rows: [] });
@@ -138,6 +152,10 @@ export async function GET(req: NextRequest) {
       const agg = byArtist.get(artistId)!;
       const a = artistMap.get(artistId);
       const p = payoutMap.get(artistId);
+      const refundAdjustmentsCents = monthAdj.get(artistId) ?? 0;
+      const br = balanceRows.get(artistId);
+      // Owed for the month: sales + refund adjustments (+ any carried in), never below $0 while unpaid.
+      const due = br && !p?.paidAt ? br.payableCents : agg.artistShare + refundAdjustmentsCents;
 
       return {
         artistId,
@@ -150,14 +168,17 @@ export async function GET(req: NextRequest) {
         gross: agg.gross,
         expenses: agg.expenses,
         profit: agg.profit,
-        artistShare: agg.artistShare,
+        artistShare: due,
+        salesShare: agg.artistShare,
+        refundAdjustments: refundAdjustmentsCents,
+        carriedIn: br && !p?.paidAt ? br.carryInCents : 0,
         // Closed accounts are still paid what they earned.
         closed: !!a?.closedAt,
-        late: monthLate && !p?.paidAt && agg.artistShare > 0 && artistId !== "__unknown__",
+        late: monthLate && !p?.paidAt && due > 0 && artistId !== "__unknown__",
         payout: {
           status: p?.paidAt ? "PAID" : "UNPAID",
           paidAt: p?.paidAt || null,
-          amountCents: p?.amountCents ?? agg.artistShare,
+          amountCents: p?.amountCents ?? due,
           method: p?.method ?? null,
           stripeTransferId: p?.stripeTransferId ?? null,
           failureReason: p?.paidAt ? null : p?.failureReason ?? null,

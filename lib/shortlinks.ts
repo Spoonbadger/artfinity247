@@ -36,6 +36,8 @@ export type CodeInput = {
   discountPct?: number | null;
   design?: unknown;
   expiresAt?: Date | null;
+  /** Partner venue it hangs at (lib/venues.ts). */
+  venueId?: string | null;
 };
 
 /** Create a QrCode row with a new code. Retries if two creates race for the same code. */
@@ -53,6 +55,7 @@ export async function createQrCode(input: CodeInput) {
           discountPct: input.discountPct ?? null,
           design: (input.design ?? undefined) as never,
           expiresAt: input.expiresAt ?? null,
+          venueId: input.venueId ?? null,
         },
       });
     } catch (e: unknown) {
@@ -80,6 +83,7 @@ const resolveSelect = {
   id: true, code: true, artistId: true, artworkId: true, venue: true, discountPct: true, active: true, expiresAt: true, label: true,
   artist: { select: { slug: true, closedAt: true, suspendedAt: true } },
   artwork: { select: { id: true, slug: true, status: true } },
+  venuePartner: { select: { slug: true, active: true } },
 } as const;
 
 /** Case-insensitive lookup. null for anything that isn't a known code. */

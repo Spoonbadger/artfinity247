@@ -27,6 +27,7 @@ export default function ReceiptEmail({
   shippingAddressLine,
   arrives,
   items,
+  rewards = false,
 }: {
   /** The short order code shown on the thank-you page (e.g. "XX1KP4"). */
   code: string;
@@ -37,6 +38,8 @@ export default function ReceiptEmail({
   /** Delivery estimate, e.g. "Nov 12–18". */
   arrives?: string | null;
   items: Item[];
+  /** Collector rewards are switched on (lib/collectorRewards.ts): mention them in the collection line. */
+  rewards?: boolean;
 }) {
   const fmt = (cents?: number | null) => ((cents ?? 0) / 100).toLocaleString("en-US", { style: "currency", currency: currency.toUpperCase() });
   const artists = Array.from(new Set(items.map((i) => i.artist).filter(Boolean))) as string[];
@@ -80,6 +83,10 @@ export default function ReceiptEmail({
       <p style={{ margin: "16px 0 0", fontSize: 14, color: INK2 }}>
         Free US shipping. If it arrives damaged, we reprint it free.{" "}
         <a href={`${SITE_URL}/help/buyers`} style={{ color: BLUE, fontWeight: 600 }}>Shipping and returns</a>
+      </p>
+      <p style={{ margin: "12px 0 0", fontSize: 14, color: INK2 }}>
+        Save this to a free collection: track orders, keep a wishlist{rewards ? ", earn rewards" : ""}.{" "}
+        <a href={`${SITE_URL}/collector`} style={{ color: BLUE, fontWeight: 600 }}>See your orders any time</a>
       </p>
       <p style={{ margin: "20px 0 0", fontSize: 14 }}>— Artfinity</p>
     </div>

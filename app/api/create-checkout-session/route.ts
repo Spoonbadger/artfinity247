@@ -11,6 +11,8 @@ import { sizeAllowed } from "@/lib/printSizes";
 import { followFromCheckout } from "@/lib/followers";
 import { sendWorkOrder } from "@/lib/printer";
 import { SHIPPING_TAX_CODE, TAX_CODE, TAX_ENABLED } from "@/lib/tax";
+import { getCollector, onOrderPaid } from "@/lib/collector";
+import { markRewardUsed, preservedSplit, rewardOffUnit, validateReward } from "@/lib/collectorRewards";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -40,6 +42,7 @@ type Line = {
   discountPct: number;
   venue: string | null;
   qrCodeId: string | null; // the short link code this sale came through (OrderItem.qrCodeId)
+  preRewardUnit?: number; // collector reward: the unit price before it (the artist's share is kept at this price)
 };
 
 /** A size the artwork's file is too small to print sharply. */
@@ -100,7 +103,9 @@ export async function POST(req: Request) {
 
   const items = Array.isArray(body?.items) ? body.items : [];
   const buyer: { id?: string | null; email?: string | null; name?: string | null } = body?.buyer || {};
-  const buyerEmail = (typeof buyer.email === "string" ? buyer.email : "").trim().toLowerCase() || undefined;
+  // A signed-in collector (optional, lib/collector.ts) gets their verified email filled in when none was typed.
+  const collector = await getCollector().catch(() => null);
+  const buyerEmail = (typeof buyer.email === "string" ? buyer.email : "").trim().toLowerCase() || collector?.email || undefined;
   // Ticked "Email me when … posts new work" (unchecked by default). Counts as consent, so no opt-in email.
   const follow = body?.follow === true;
 
@@ -118,9 +123,21 @@ export async function POST(req: Request) {
   const short = await editionShortfalls(lines.map((l) => ({ artworkId: l.art.id, title: l.art.title, editionSize: l.art.editionSize, quantity: l.quantity })));
   if (short.length) return json({ error: editionMessage(short), soldOut: short }, 409);
 
+  // Collector reward code (lib/collectorRewards.ts): only for the email it was issued to, while rewards are on.
+  // Comes out of Artfinity's share only: capped per print at Artfinity's share, and the artist's share is kept at the pre-reward price.
+  const reward = body?.rewardCode ? await validateReward(body.rewardCode, buyerEmail).catch(() => null) : null;
+  if (reward) {
+    const splits = await artistSplitsForOrder(prisma, lines.map((l) => ({ artistId: l.art.artistId, quantity: 1 })), new Date());
+    lines = lines.map((l, i) => {
+      const off = rewardOffUnit(l.unit, reward.pct, REV_SIZE[l.size], l.frameChosen, splits[i]);
+      return off > 0 ? { ...l, preRewardUnit: l.unit, unit: l.unit - off } : l;
+    });
+  }
+  const rewardMeta = reward && buyerEmail ? { rewardCode: String(body.rewardCode).trim().toUpperCase(), rewardN: String(reward.n) } : null;
+
   if (!process.env.STRIPE_SECRET_KEY) {
     if (!testCheckoutAllowed()) return checkoutUnavailable("checkout");
-    return devCheckout(lines, buyerEmail, buyer, follow);
+    return devCheckout(lines, buyerEmail, buyer, follow, rewardMeta ? { email: buyerEmail!, n: reward!.n } : null);
   }
 
   // ---- Real Stripe Checkout (Apple Pay / Google Pay / card are offered by Stripe) ----
@@ -137,7 +154,7 @@ export async function POST(req: Request) {
         tax_behavior: "exclusive", // sales tax is added on top at checkout
         product_data: {
           tax_code: TAX_CODE,
-          name: l.discountPct ? `${l.art.title} (${l.discountPct}% scan discount)` : l.art.title,
+          name: [l.art.title, l.discountPct ? `(${l.discountPct}% scan discount)` : "", l.preRewardUnit ? "(collector reward)" : ""].filter(Boolean).join(" "),
           images: l.art.imageUrl ? [abs(base, l.art.imageUrl)!] : [],
           metadata: {
             artworkId: l.art.id,
@@ -153,6 +170,7 @@ export async function POST(req: Request) {
             listPrice: String(l.list),
             venue: l.venue ?? "",
             qrCodeId: l.qrCodeId ?? "",
+            ...(l.preRewardUnit ? { rewardFromUnit: String(l.preRewardUnit) } : {}),
           },
         },
       },
@@ -166,7 +184,7 @@ export async function POST(req: Request) {
       locale: "en",
       customer_creation: "always",
       customer_email: buyerEmail,
-      metadata: { userId: buyer?.id || "", buyerEmail: buyerEmail ?? "", ...(follow ? { follow: "1" } : {}) },
+      metadata: { userId: buyer?.id || "", buyerEmail: buyerEmail ?? "", ...(follow ? { follow: "1" } : {}), ...(collector ? { collectorId: collector.id } : {}), ...(rewardMeta ?? {}) },
       shipping_address_collection: { allowed_countries: ["US"] },
       shipping_options: [{ shipping_rate_data: { display_name: "Free US shipping", fixed_amount: { amount: 0, currency: "usd" }, type: "fixed_amount", tax_behavior: "exclusive", tax_code: SHIPPING_TAX_CODE } }],
       automatic_tax: { enabled: TAX_ENABLED },
@@ -182,7 +200,7 @@ export async function POST(req: Request) {
  * No STRIPE_SECRET_KEY (localhost): record a paid order directly, with the same
  * fields and cost math as app/api/webhook/route.ts, then send the buyer to thank-you.
  */
-async function devCheckout(lines: Line[], email: string | undefined, buyer: { name?: string | null }, follow = false) {
+async function devCheckout(lines: Line[], email: string | undefined, buyer: { name?: string | null }, follow = false, reward: { email: string; n: number } | null = null) {
   const sessionId = `dev_${randomBytes(12).toString("hex")}`;
   try {
     const order = await prisma.$transaction(async (tx) => {
@@ -205,7 +223,11 @@ async function devCheckout(lines: Line[], email: string | undefined, buyer: { na
       await tx.orderItem.createMany({
         data: lines.map((l, i) => {
           const lineTotal = l.unit * l.quantity;
-          const b = calcItemProfitCents({ lineTotal, size: REV_SIZE[l.size], frameChosen: l.frameChosen, quantity: l.quantity, orderDate: created.createdAt, artistSplit: splits[i] });
+          // A collector reward keeps the artist's share at the pre-reward price (lib/collectorRewards.ts).
+          const split = l.preRewardUnit
+            ? preservedSplit({ preRewardLineTotal: l.preRewardUnit * l.quantity, lineTotal, size: REV_SIZE[l.size], frameChosen: l.frameChosen, quantity: l.quantity, orderDate: created.createdAt, split: splits[i] })
+            : splits[i];
+          const b = calcItemProfitCents({ lineTotal, size: REV_SIZE[l.size], frameChosen: l.frameChosen, quantity: l.quantity, orderDate: created.createdAt, artistSplit: split });
           return {
             orderId: created.id,
             artworkId: l.art.id,
@@ -224,7 +246,7 @@ async function devCheckout(lines: Line[], email: string | undefined, buyer: { na
             laborCost: b.laborCost,
             websiteCost: b.websiteCost,
             editionNumber: numbers[i],
-            artistSplit: splits[i],
+            artistSplit: split,
             qrCodeId: l.qrCodeId,
           };
         }),
@@ -235,6 +257,8 @@ async function devCheckout(lines: Line[], email: string | undefined, buyer: { na
       `[checkout:dev] order ${order.id} ${sessionId} $${(order.amountTotal / 100).toFixed(2)} ` +
         lines.map((l) => `${l.art.slug}/${l.size}${l.frameChosen ? "+frame" : ""}×${l.quantity}${l.discountPct ? ` -${l.discountPct}%${l.venue ? ` @${l.venue}` : ""}` : ""}`).join(", "),
     );
+    if (reward) await markRewardUsed(reward.email, reward.n, order.id).catch((e) => console.error("[checkout:dev] reward not marked used", e));
+    await onOrderPaid(order.id);
     if (follow && email) await followFromCheckout(email, lines.map((l) => l.art.artistId), buyer?.name).catch((e) => console.error("[checkout:dev] follow failed", e));
     // Same as the webhook: send the print lab its work order (never throws; failures show in admin orders).
     const wo = await sendWorkOrder(order.id);

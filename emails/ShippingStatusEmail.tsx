@@ -1,4 +1,5 @@
 import * as React from "react";
+import { SITE_URL } from "@/lib/urls";
 
 type Item = {
   title: string;
@@ -88,6 +89,10 @@ export default function ShippingStatusEmail({
           <a href={helpUrl} style={{ color: BLUE, fontWeight: 600 }}>Send us a photo</a> within 14 days and we reprint it free.
         </p>
       )}
+
+      <p style={{ margin: "16px 0 0", fontSize: 14, color: INK2 }}>
+        <a href={`${SITE_URL}/collector`} style={{ color: BLUE, fontWeight: 600 }}>See your orders any time</a> in your free collection.
+      </p>
 
       <p style={{ margin: "16px 0 0" }}>Thank you for supporting {artists.length ? artists.join(" and ") : "independent artists"}.</p>
       <p style={{ margin: "16px 0 0", fontSize: 14 }}>— Artfinity</p>

@@ -5,6 +5,7 @@ import { adminOrRedirect } from "../_components/gate";
 import { cn } from "@/lib/utils";
 import ModerationList, { type ModArtwork } from "../_components/ModerationList";
 import { duplicateOfId, hamming } from "@/lib/imageHash";
+import { autoChecksFor } from "@/lib/moderation";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Moderation" };
@@ -58,6 +59,8 @@ export default async function ModerationPage({ searchParams }: { searchParams: {
       })
     : [];
   const originalById = new Map(originals.map((o) => [o.id, o]));
+  // Automatic image check results (lib/moderation), for the scores on each card.
+  const checks = await autoChecksFor(rows.map((r) => r.id));
   const since = (d: Date) => d.toISOString();
 
   const artworks: ModArtwork[] = rows.map((r) => ({
@@ -75,6 +78,7 @@ export default async function ModerationPage({ searchParams }: { searchParams: {
     artistEmail: r.artist.email,
     artistSince: since(r.artist.createdAt),
     artistVerified: r.artist.verification === "VERIFIED",
+    autoCheck: checks.get(r.id) ?? null,
     duplicateOf: (() => {
       const id = duplicateOfId(r.flaggedReason);
       if (!id) return null;

@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Activity" };
 
 const PAGE = 100;
-const TARGETS = ["artist", "artwork", "order", "review", "report", "payout", "reprint", "scene", "setting", "alert", "invite"];
+const TARGETS = ["artist", "artwork", "order", "review", "report", "payout", "reprint", "scene", "setting", "alert", "invite", "venue"];
 
 type SP = { action?: string; admin?: string; target?: string; id?: string; from?: string; to?: string; before?: string };
 

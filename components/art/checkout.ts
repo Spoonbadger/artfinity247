@@ -4,12 +4,12 @@ import type { CartItemType } from "@/types";
 import { SIZE_LABEL, isPrintSize, sizeInches } from "@/components/art/pricing";
 
 /** Starts payment for these cart lines and returns the URL to go to (Stripe, or /thank-you in test mode). */
-/** `follow`: the buyer ticked "Email me when … posts new work". */
-export async function startCheckout(items: CartItemType[], buyer: { id?: string | null; email?: string | null; name?: string | null } = {}, opts: { follow?: boolean } = {}) {
+/** `follow`: the buyer ticked "Email me when … posts new work". `rewardCode`: a collector reward (lib/collectorRewards.ts). */
+export async function startCheckout(items: CartItemType[], buyer: { id?: string | null; email?: string | null; name?: string | null } = {}, opts: { follow?: boolean; rewardCode?: string | null } = {}) {
   const res = await fetch("/api/create-checkout-session", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ items: items.map((ci) => ({ product: ci.product, quantity: ci.quantity })), buyer, follow: !!opts.follow }),
+    body: JSON.stringify({ items: items.map((ci) => ({ product: ci.product, quantity: ci.quantity })), buyer, follow: !!opts.follow, ...(opts.rewardCode ? { rewardCode: opts.rewardCode } : {}) }),
   });
   if (!res.ok) throw new Error(await res.text());
   const { url } = await res.json();

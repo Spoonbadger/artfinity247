@@ -9,7 +9,8 @@
 //   npm run a11y -- --json=out.json   also write the full results
 //   npm run a11y -- --strict          exit 1 when anything serious or critical is found
 //
-// Logs in with the seeded local accounts (password artfinity123). Checkout runs in test mode
+// Logs in with the seeded local accounts (password artfinity123). Collector pages need a collector session:
+// A11Y_COLLECTOR_TOKEN=<collector-token cookie value> (sign in at /collector/sign-in; the dev log prints the link). Checkout runs in test mode
 // (no Stripe keys), so "Pay" saves a paid test order and lands on /thank-you.
 import { chromium } from "playwright";
 import { AxeBuilder } from "@axe-core/playwright";
@@ -46,6 +47,9 @@ const PAGES = [
   { id: "studio-analytics", path: "/studio/analytics", as: "artist" },
   { id: "studio-followers", path: "/studio/followers", as: "artist" },
   { id: "admin", path: "/admin", as: "admin" },
+  { id: "collector-sign-in", path: "/collector/sign-in" },
+  { id: "collector", path: "/collector", as: "collector" },
+  { id: "collector-settings", path: "/collector/settings", as: "collector" },
 ];
 
 async function settle(page) {
@@ -77,6 +81,12 @@ async function payTestOrder(page) {
 }
 
 async function login(context, who) {
+  if (who === "collector") {
+    const value = process.env.A11Y_COLLECTOR_TOKEN;
+    if (!value) throw new Error("set A11Y_COLLECTOR_TOKEN to a collector-token cookie value");
+    await context.addCookies([{ name: "collector-token", value, url: BASE }]);
+    return;
+  }
   const res = await context.request.post(BASE + "/api/auth/login", {
     data: { email: ACCOUNTS[who], password: PASSWORD, remember: true },
     timeout: TIMEOUT,

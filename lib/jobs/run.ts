@@ -10,6 +10,7 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { alertKey, raiseAlert, resolveAlert } from "@/lib/alerts";
+import { reportError } from "@/lib/monitor";
 
 export type JobSource = "cron" | "manual";
 export type JobContext = { now: Date; source: JobSource; by?: string | null };
@@ -46,6 +47,7 @@ export async function runJob(job: string, fn: (ctx: JobContext) => Promise<JobRe
     runId = await claim(job, ctx);
   } catch (err) {
     console.error(`[job:${job}] couldn't start`, err);
+    await reportError(err, { area: "job", name: job, extra: { stage: "claim" } });
     return { status: "skipped", reason: "Couldn't record the run (database error)." };
   }
   if (!runId) return { status: "skipped", reason: "Already running." };
@@ -60,7 +62,10 @@ export async function runJob(job: string, fn: (ctx: JobContext) => Promise<JobRe
     });
     console.log(`[job:${job}] ${ok ? "ok" : "failed"}: ${r.summary}`);
     if (ok) await resolveAlert(alertKey.jobFailed(job));
-    else await raiseAlert({ kind: "job_failed", key: alertKey.jobFailed(job), title: `Job "${job}" failed: ${r.summary}`.slice(0, 200), link: "/admin/jobs", severity: "urgent" });
+    else {
+      await raiseAlert({ kind: "job_failed", key: alertKey.jobFailed(job), title: `Job "${job}" failed: ${r.summary}`.slice(0, 200), link: "/admin/jobs", severity: "urgent" });
+      await reportError(new Error(`Job "${job}" failed: ${r.summary}`), { area: "job", name: job, extra: { runId, source: ctx.source } });
+    }
     return { status: ok ? "ok" : "failed", runId, summary: r.summary, details: r.details };
   } catch (err) {
     const message = ((err as Error)?.message || String(err)).replace(/\s+/g, " ").slice(0, 400);
@@ -69,6 +74,7 @@ export async function runJob(job: string, fn: (ctx: JobContext) => Promise<JobRe
       .update({ where: { id: runId }, data: { finishedAt: new Date(), ok: false, summary: `Error: ${message}`, details: json({ source: ctx.source, by: ctx.by ?? null, ms: Date.now() - started, error: message }) } })
       .catch((e) => console.error(`[job:${job}] couldn't record failure`, e));
     await raiseAlert({ kind: "job_failed", key: alertKey.jobFailed(job), title: `Job "${job}" failed: ${message}`.slice(0, 200), link: "/admin/jobs", severity: "urgent" });
+    await reportError(err, { area: "job", name: job, extra: { runId, source: ctx.source } });
     return { status: "failed", runId, summary: `Error: ${message}` };
   }
 }

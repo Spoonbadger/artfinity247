@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth"
 import { Prisma } from "@prisma/client";
 import { announceArtworkLive, resolveArtworkAlerts } from "@/lib/artworkLive";
 import { logAdminAction } from "@/lib/audit";
+import { autoChecksFor } from "@/lib/moderation";
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
@@ -22,6 +23,9 @@ export async function PATCH(
     const body = await req.json();
     const action = body.action as "approve" | "reject";
     const reason = (body.reason as string | undefined) || null;
+    // Approving a piece the automatic image check labeled: "keep" its labels (the default), or "artist" = back to
+    // the labels the artist chose (the check was wrong).
+    const labels = body.labels === "artist" ? "artist" : "keep";
 
     if (!action || !["approve", "reject"].includes(action)) {
       return new NextResponse("Invalid action", { status: 400 });
@@ -40,12 +44,18 @@ export async function PATCH(
             flaggedBy: admin.id,
           };
 
-    const before = await prisma.artwork.findUnique({ where: { id }, select: { status: true, title: true, artistId: true, flaggedReason: true } });
+    const before = await prisma.artwork.findUnique({ where: { id }, select: { status: true, title: true, artistId: true, flaggedReason: true, sensitive: true } });
     if (!before) return new NextResponse("Not found", { status: 404 });
+
+    let sensitive: string[] | undefined;
+    if (action === "approve" && labels === "artist") {
+      const check = (await autoChecksFor([id])).get(id);
+      if (check?.addedLabels.length) sensitive = before.sensitive.filter((l) => !check.addedLabels.includes(l) || check.artistLabels.includes(l));
+    }
 
     const artwork = await prisma.artwork.update({
       where: { id },
-      data: updateData,
+      data: { ...updateData, ...(sensitive ? { sensitive } : {}) },
       select: {
         id: true,
         status: true,
@@ -59,6 +69,7 @@ export async function PATCH(
     await resolveArtworkAlerts([artwork.id]);
     await logAdminAction(admin, `artwork.${action}`, { type: "artwork", id }, `${action === "approve" ? "Approved" : "Rejected"} “${before.title}”`, {
       artistId: before.artistId, from: before.status, flaggedReason: before.flaggedReason, reason: action === "reject" ? updateData.flaggedReason : undefined,
+      ...(sensitive ? { labelsBefore: before.sensitive, labelsAfter: sensitive } : {}),
     });
 
     return NextResponse.json(artwork, { status: 200 });

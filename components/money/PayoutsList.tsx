@@ -1,4 +1,4 @@
-import type { LedgerLine, PayoutRow } from "@/lib/balance";
+import type { AdjustmentLine, LedgerLine, PayoutRow } from "@/lib/balance";
 import { payoutDateFor } from "@/lib/balance";
 import { PAYOUT_LABEL, SIZE_LABEL, dayUTC, usd } from "./format";
 
@@ -25,7 +25,7 @@ function when(row: PayoutRow, late: boolean) {
 }
 
 /** Payouts by month: month · amount · status · paid date · method, each expandable to its sales. */
-export default function PayoutsList({ payouts, ledger, lateMonths = [] }: { payouts: PayoutRow[]; ledger: LedgerLine[]; lateMonths?: string[] }) {
+export default function PayoutsList({ payouts, ledger, adjustments = [], lateMonths = [] }: { payouts: PayoutRow[]; ledger: LedgerLine[]; adjustments?: AdjustmentLine[]; lateMonths?: string[] }) {
   return (
     <section aria-labelledby="payouts-h" className="af-card grid min-w-0 gap-2 p-4 sm:p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -41,6 +41,7 @@ export default function PayoutsList({ payouts, ledger, lateMonths = [] }: { payo
           </div>
           {payouts.map((p) => {
             const lines = ledger.filter((l) => l.payoutMonth === p.month);
+            const adj = adjustments.filter((a) => a.payoutMonth === p.month);
             const late = lateMonths.includes(p.month);
             return (
               <details key={p.month} className="group border-b border-line last:border-b-0">
@@ -58,6 +59,7 @@ export default function PayoutsList({ payouts, ledger, lateMonths = [] }: { payo
                   <p className="text-ink-2">
                     {p.prints} {p.prints === 1 ? "print" : "prints"} · {p.sales} {p.sales === 1 ? "sale" : "sales"}
                     {p.status === "paid" && p.amountCents !== p.computedCents && <> · Sales add up to {usd(p.computedCents)} today; {usd(p.amountCents)} was sent.</>}
+                    {p.carryOutCents < 0 && <> · <span className="font-semibold text-coral">{usd(p.carryOutCents)} in refund adjustments carries to next month</span> (a payout never goes below $0).</>}
                   </p>
                   <ul className="grid">
                     {lines.map((l) => (
@@ -66,7 +68,19 @@ export default function PayoutsList({ payouts, ledger, lateMonths = [] }: { payo
                         <b className="shrink-0 text-earned">{usd(l.shareCents)}</b>
                       </li>
                     ))}
-                    {lines.length === 0 && <li className="text-ink-2">No sales recorded for this month.</li>}
+                    {p.carryInCents < 0 && (
+                      <li className="num flex items-baseline justify-between gap-3 border-t border-line/70 py-1.5 first:border-t-0">
+                        <span className="min-w-0 truncate"><b className="font-semibold">Refund adjustments</b> <span className="text-ink-2">carried from an earlier month</span></span>
+                        <b className="shrink-0 text-coral">{usd(p.carryInCents)}</b>
+                      </li>
+                    )}
+                    {adj.map((a) => (
+                      <li key={a.id} className="num flex items-baseline justify-between gap-3 border-t border-line/70 py-1.5 first:border-t-0">
+                        <span className="min-w-0 truncate"><span className="text-ink-2">{dayUTC(a.date)}</span> · <b className="font-semibold">Refund adjustment</b> <span className="text-ink-2">Order #{a.orderRef} · {a.title}</span></span>
+                        <b className="shrink-0 text-coral">{usd(a.amountCents)}</b>
+                      </li>
+                    ))}
+                    {lines.length === 0 && adj.length === 0 && <li className="text-ink-2">No sales recorded for this month.</li>}
                   </ul>
                 </div>
               </details>

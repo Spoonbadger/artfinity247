@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { autoReasonOf, reasonText, THRESHOLDS } from "@/lib/moderation/policy";
+import type { AutoCheckRecord, ScoreKey } from "@/lib/moderation/types";
 
 export type ModArtwork = {
   id: string;
@@ -23,6 +25,8 @@ export type ModArtwork = {
   artistVerified?: boolean;
   /** Set when the image looks like another artist's piece (flaggedReason "possible_duplicate:<id>", lib/imageHash.ts). */
   duplicateOf?: DuplicateOf | { id: string; missing: true } | null;
+  /** Latest automatic image check (lib/moderation), if one ran. */
+  autoCheck?: AutoCheckRecord | null;
 };
 
 export type DuplicateOf = {
@@ -74,6 +78,71 @@ function Comparison({ a, d }: { a: ModArtwork; d: DuplicateOf }) {
         {side("Already on Artfinity", d, <span className="text-ink-2">{STATUS[d.status].label}{d.slug ? <> · <a href={`/api/admin/originals/${d.id}`} className="font-semibold text-scan">Original</a></> : null}</span>)}
       </div>
     </div>
+  );
+}
+
+const SCORE_ROWS: { key: ScoreKey; label: string; high: number }[] = [
+  { key: "sexual", label: "Explicit", high: THRESHOLDS.review.sexual },
+  { key: "nudity", label: "Nudity", high: THRESHOLDS.label.nudity },
+  { key: "gore", label: "Gore", high: THRESHOLDS.review.gore },
+  { key: "violence", label: "Violence", high: THRESHOLDS.label.violence },
+  { key: "hate", label: "Hate symbol", high: THRESHOLDS.review.hate },
+  { key: "isPhotoOfPerson", label: "Photo of person", high: THRESHOLDS.review.photoOfPerson },
+  { key: "hasText", label: "Overlaid text", high: THRESHOLDS.review.memeText },
+];
+
+/** The automatic image check's verdict and scores (0-100), the ones past a threshold in coral. */
+function AutoCheck({ c }: { c: AutoCheckRecord }) {
+  const verdict =
+    c.outcome === "review" ? `Held: ${c.reasons.map(reasonText).join(", ")}`
+    : c.outcome === "labeled" ? `Added ${c.addedLabels.join(", ")}`
+    : c.outcome === "error" ? `Didn't run (${c.error || "error"})`
+    : "Clean";
+  const rows = SCORE_ROWS.filter((r) => typeof c.scores[r.key] === "number");
+  return (
+    <div className="grid gap-1.5 rounded-lg border border-line bg-wall px-2.5 py-2 text-[12px]" aria-label="Automatic image check">
+      <p className="flex flex-wrap items-baseline justify-between gap-x-2">
+        <b className={cn(c.outcome === "review" && "text-coral")}>Image check: {verdict}</b>
+        <span className="text-ink-2">{c.provider}</span>
+      </p>
+      {rows.length > 0 && (
+        <dl className="grid grid-cols-[auto_minmax(0,1fr)_2.2em] items-center gap-x-2 gap-y-0.5">
+          {rows.map((r) => {
+            const v = c.scores[r.key]!;
+            const hot = v >= r.high;
+            return (
+              <div key={r.key} className="contents">
+                <dt className={cn("text-ink-2", hot && "font-semibold text-coral")}>{r.label}</dt>
+                <dd className="h-1.5 overflow-hidden rounded-full bg-line" aria-hidden="true">
+                  <span className={cn("block h-full rounded-full", hot ? "bg-coral" : "bg-ink-2/50")} style={{ width: `${Math.round(v * 100)}%` }} />
+                </dd>
+                <dd className={cn("num text-right", hot && "font-semibold text-coral")}>{Math.round(v * 100)}</dd>
+              </div>
+            );
+          })}
+        </dl>
+      )}
+      {c.addedLabels.length > 0 && (
+        <p className="text-ink-2">
+          Artist chose: {c.artistLabels.length ? c.artistLabels.join(", ") : "no labels"}. The check added {c.addedLabels.join(", ")}.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Approve buttons. When the check added labels: "Approve + keep labels", or "Approve" back to the artist's own labels. */
+function ApproveButtons({ a, busy, act }: { a: ModArtwork; busy: boolean; act: (a: ModArtwork, action: "approve" | "reject", labels?: "keep" | "artist") => void }) {
+  if (!(a.status !== "APPROVED" || a.flaggedReason)) return null;
+  const added = a.autoCheck?.addedLabels.filter((l) => a.sensitive.includes(l)) ?? [];
+  if (!added.length) return <button type="button" disabled={busy} onClick={() => act(a, "approve")} className="btn btn-blue btn-sm">Approve</button>;
+  return (
+    <>
+      <button type="button" disabled={busy} onClick={() => act(a, "approve", "keep")} className="btn btn-blue btn-sm">Approve + keep labels</button>
+      <button type="button" disabled={busy} onClick={() => act(a, "approve", "artist")} className="btn btn-ghost btn-sm" title={`Approve and remove ${added.join(", ")} (added by the image check)`}>
+        Approve
+      </button>
+    </>
   );
 }
 
@@ -130,23 +199,23 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
   const leavesTab = (status: ModArtwork["status"]) =>
     (tab === "queue") || (tab === "rejected" && status !== "REJECTED") || (tab === "live" && status !== "APPROVED");
 
-  const act = async (a: ModArtwork, action: "approve" | "reject") => {
+  const act = async (a: ModArtwork, action: "approve" | "reject", labels?: "keep" | "artist") => {
     if (action === "reject" && !confirm(`Reject "${a.title}"? It comes off ${a.artistName}'s page.`)) return;
     setBusy(a.id);
     try {
       const r = await fetch(`/api/admin/moderation/artworks/${a.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, reason: action === "reject" ? "rejected_by_admin" : undefined }),
+        body: JSON.stringify({ action, reason: action === "reject" ? "rejected_by_admin" : undefined, labels }),
       });
       if (!r.ok) throw new Error(await r.text());
       const status = action === "approve" ? "APPROVED" : "REJECTED";
       setItems((prev) =>
         leavesTab(status)
           ? prev.filter((x) => x.id !== a.id)
-          : prev.map((x) => (x.id === a.id ? { ...x, status, flaggedReason: action === "approve" ? null : "rejected_by_admin" } : x))
+          : prev.map((x) => (x.id === a.id ? { ...x, status, flaggedReason: action === "approve" ? null : "rejected_by_admin", sensitive: labels === "artist" && a.autoCheck ? a.autoCheck.artistLabels : x.sensitive } : x))
       );
-      toast.success(action === "approve" ? `"${a.title}" is live` : `"${a.title}" rejected`);
+      toast.success(action === "approve" ? `"${a.title}" is live${labels === "keep" ? ` with ${a.sensitive.join(", ")}` : labels === "artist" ? " without the added labels" : ""}` : `"${a.title}" rejected`);
       router.refresh();
     } catch (e: any) {
       toast.error(`Couldn't ${action}. ${e?.message || ""}`.trim());
@@ -203,17 +272,16 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
         const dup = a.duplicateOf && !("missing" in a.duplicateOf) ? a.duplicateOf : null;
         const flagged = a.duplicateOf
           ? (dup ? null : "possible duplicate of a piece that has since been deleted")
-          : a.flaggedReason && a.flaggedReason !== "rejected_by_admin" ? a.flaggedReason : null;
+          : a.flaggedReason && a.flaggedReason !== "rejected_by_admin" ? (autoReasonOf(a.flaggedReason) ? (a.autoCheck ? null : `image check found ${reasonText(autoReasonOf(a.flaggedReason))}`) : a.flaggedReason) : null;
         if (dup) {
           return (
             <li key={a.id} className="grid content-start gap-3 rounded-2xl border border-line bg-white p-3 sm:col-span-2">
               <Comparison a={a} d={dup} />
+              {a.autoCheck && <AutoCheck c={a.autoCheck} />}
               <div className="flex flex-wrap items-center gap-2">
                 <input type="checkbox" checked={selected.has(a.id)} onChange={() => toggle(a.id)} aria-label={`Select ${a.title}`} className="h-4 w-4 accent-[var(--af-ink)]" />
                 <span className={cn("rounded-full px-2 py-0.5 text-[11.5px] font-bold", st.cls)}>{st.label}</span>
-                {(a.status !== "APPROVED" || a.flaggedReason) && (
-                  <button type="button" disabled={busy === a.id} onClick={() => act(a, "approve")} className="btn btn-blue btn-sm">Approve</button>
-                )}
+                <ApproveButtons a={a} busy={busy === a.id} act={act} />
                 {a.status !== "REJECTED" && (
                   <button type="button" disabled={busy === a.id} onClick={() => act(a, "reject")} className="btn btn-ghost btn-sm">Reject</button>
                 )}
@@ -257,11 +325,10 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
               </div>
 
               {flagged && <p className="text-[12.5px] font-semibold text-coral">Flagged: {flagged}</p>}
+              {a.autoCheck && <AutoCheck c={a.autoCheck} />}
 
               <div className="mt-1 flex flex-wrap items-center gap-2">
-                {(a.status !== "APPROVED" || a.flaggedReason) && (
-                  <button type="button" disabled={busy === a.id} onClick={() => act(a, "approve")} className="btn btn-blue btn-sm">Approve</button>
-                )}
+                <ApproveButtons a={a} busy={busy === a.id} act={act} />
                 {a.status !== "REJECTED" && (
                   <button type="button" disabled={busy === a.id} onClick={() => act(a, "reject")} className="btn btn-ghost btn-sm">
                     {a.status === "APPROVED" ? "Take down" : "Reject"}

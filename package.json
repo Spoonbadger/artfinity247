@@ -21,6 +21,7 @@
     "scenes:build": "node scripts/scenes/build.mjs",
     "scenes:render": "node scripts/scenes/render.mjs",
     "scenes:fixtures": "node scripts/scenes/make-fixtures.mjs",
+    "db:backup": "node scripts/backup-db.mjs",
     "db:reset-local": "node -e \"require('fs').rmSync('.localdb',{recursive:true,force:true})\" && echo Local database removed. Run pnpm local to start fresh."
   },
   "dependencies": {
@@ -37,6 +38,7 @@
     "@radix-ui/react-toast": "^1.1.5",
     "@react-email/components": "^0.5.7",
     "@react-google-maps/api": "^2.19.3",
+    "@sentry/nextjs": "^11.11.0",
     "@stripe/react-stripe-js": "^3.7.0",
     "@stripe/stripe-js": "^7.5.0",
     "@types/react-inner-image-zoom": "^3.0.3",

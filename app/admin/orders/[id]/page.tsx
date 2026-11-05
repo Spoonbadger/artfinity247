@@ -8,7 +8,8 @@ import ActionButton from "../../_components/ActionButton";
 import NotesPanel from "../../_components/NotesPanel";
 import AuditList from "../../_components/AuditList";
 import { itemBreakdown, normalizeSize } from "@/lib/sales";
-import { activeRefunds } from "@/lib/refunds";
+import { activeRefunds, type RefundInfo } from "@/lib/refunds";
+import { REFUND_REASONS, REFUND_REASON_LABEL, refundPolicy } from "@/lib/refundPolicy";
 import { requestsForOrder } from "@/lib/reprints";
 import { REPRINT_REASONS, reasonLabel } from "@/lib/reprintFormat";
 import { CARRIERS, TRACKING_SUBJECT, parseTrackingMessage } from "@/lib/tracking";
@@ -24,6 +25,10 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   return { title: `Order ${orderNumber(params.id)}` };
 }
+
+/** What happened to the artist's share, in a few words (lib/refunds.ts). */
+const refundOutcome = (r: RefundInfo) =>
+  r.reversed ? "Artist share reversed." : r.deducted ? `Was already paid out: ${usd(r.shareCents)} comes off the artist's next payout (Refund adjustment).` : "Was already paid out: the artist keeps their share.";
 
 const at = (d: Date | string | null | undefined) =>
   d ? new Date(d).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York" }) : "";
@@ -45,13 +50,14 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
   });
   if (!o) notFound();
 
-  const [messages, refunds, reprints, notes, audit, reprintOrders] = await Promise.all([
+  const [messages, refunds, reprints, notes, audit, reprintOrders, policy] = await Promise.all([
     prisma.message.findMany({ where: { orderId: o.id, OR: [{ subject: { startsWith: TRACKING_SUBJECT } }, { subject: { startsWith: PARCEL_TAG } }] }, orderBy: { createdAt: "asc" }, select: { id: true, subject: true, body: true, createdAt: true, direction: true, artist: { select: { artist_name: true, name: true } } } }),
     activeRefunds([o.id]),
     requestsForOrder(o.id),
     prisma.adminNote.findMany({ where: { targetType: "order", targetId: o.id }, orderBy: { createdAt: "desc" } }),
     prisma.adminAction.findMany({ where: { OR: [{ targetType: "order", targetId: o.id }, { details: { path: ["orderId"], equals: o.id } }] }, orderBy: { createdAt: "desc" }, take: 50 }),
     prisma.order.findMany({ where: { stripeSessionId: { startsWith: `reprint:${o.id}:` } }, select: { id: true, createdAt: true, shippingStatus: true } }),
+    refundPolicy(),
   ]);
   // A reprint order points back at its original through its session id.
   const originalId = o.kind === "reprint" ? o.stripeSessionId.split(":")[1] : null;
@@ -96,7 +102,7 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
       { at: r.createdAt, title: `Reprint requested: ${reasonLabel(r.body.reason)}`, detail: r.body.note || undefined, tone: r.status === "open" ? ("warn" as const) : ("info" as const) },
       ...(r.decidedAt ? [{ at: r.decidedAt, title: `Reprint ${r.status}`, detail: r.body.decision?.reprintOrderId ? <Link href={`/admin/orders/${r.body.decision.reprintOrderId}`} className="text-scan">Reprint order {orderNumber(r.body.decision.reprintOrderId)}</Link> : r.body.decision?.note, tone: "info" as const }] : []),
     ]),
-    ...Array.from(refunds.values()).map((r) => ({ at: r.at, title: `Refund recorded ${usd(r.amountCents)}`, detail: `${r.reversed ? `Artist share ${usd(r.shareCents)} reversed` : "Already paid out: artist keeps their share"} · ${r.adminEmail}`, tone: "warn" as const })),
+    ...Array.from(refunds.values()).map((r) => ({ at: r.at, title: `Refund recorded ${usd(r.amountCents)}`, detail: `${REFUND_REASON_LABEL[r.reason]} · ${r.reversed ? `Artist share ${usd(r.shareCents)} reversed` : r.deducted ? `Already paid out: ${usd(r.shareCents)} off the artist's next payout` : "Already paid out: artist keeps their share"} · ${r.adminEmail}`, tone: "warn" as const })),
   ];
   // Steps with no recorded time sit right after the step before them (events are built in order).
   let last = o.createdAt.getTime();
@@ -192,7 +198,7 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
                     </span>
                     {refund && (
                       <span className="mt-1 block rounded-md bg-coral/10 px-2 py-1 text-[12.5px] font-semibold text-coral">
-                        Refunded {usd(refund.amountCents)} on {at(refund.at)}. {refund.reversed ? "Artist share reversed." : "Was already paid out: the artist keeps their share."}
+                        Refunded {usd(refund.amountCents)} on {at(refund.at)} ({REFUND_REASON_LABEL[refund.reason].toLowerCase()}). {refundOutcome(refund)}
                       </span>
                     )}
                   </div>
@@ -202,9 +208,19 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
                       <ActionButton url={url} body={{ action: "refund", itemId: it.id }} need="money" label="Mark refunded" tone="danger" title={`Record a refund for “${it.title || "this print"}”?`}
                         confirm={<>
                           <p>This only records it. Refund the buyer <b>{usd(b.lineTotal)}</b> (plus any tax) in the Stripe dashboard yourself.</p>
-                          <p className="mt-2">If the artist hasn&apos;t been paid for this month yet, their share of <b>{usd(b.artistShare)}</b> is taken off their balance. If it was already paid out, they keep it.</p>
+                          <p className="mt-2">If the artist hasn&apos;t been paid for this month yet, their share of <b>{usd(b.artistShare)}</b> is taken off their balance.</p>
+                          <p className="mt-2">
+                            If it was already paid out:{" "}
+                            {policy.policy === "deduct_next_payout"
+                              ? <>for a <b>buyer return</b> or <b>chargeback</b> it comes off their next payout as a Refund adjustment; a damaged print or other reason is absorbed by Artfinity.</>
+                              : <>Artfinity absorbs it and the artist keeps their share.</>}{" "}
+                            <Link href="/admin/settings" className="font-semibold text-scan">Refund setting</Link>
+                          </p>
                         </>}
-                        fields={[{ name: "note", label: "Why", type: "textarea", placeholder: "e.g. Arrived damaged, buyer didn't want a reprint" }]} confirmLabel="Record refund" done="Refund recorded" />
+                        fields={[
+                          { name: "reason", label: "Reason", type: "select", required: true, defaultValue: "", options: [{ value: "", label: "Pick one…" }, ...REFUND_REASONS.map((r) => ({ value: r, label: REFUND_REASON_LABEL[r] }))] },
+                          { name: "note", label: "Note", type: "textarea", placeholder: "e.g. Arrived damaged, buyer didn't want a reprint" },
+                        ]} confirmLabel="Record refund" done="Refund recorded" />
                     )}
                     {refund && (
                       <ActionButton url={url} body={{ action: "refund_undo", itemId: it.id }} need="money" label="Undo refund" title="Cancel this refund record?"

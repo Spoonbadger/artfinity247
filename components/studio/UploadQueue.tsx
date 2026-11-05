@@ -28,6 +28,8 @@ type Result = {
   imageUrl?: string;
   notice?: string | null;
   duplicate?: string | null;
+  /** Automatic image check: "review" = held for a person, "labeled" = a sensitive label was added (in notice). */
+  moderation?: string | null;
   error?: string;
 };
 
@@ -372,7 +374,7 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
       });
       if (!res.ok) throw new Error(await saveError(res));
       const saved = await res.json();
-      result = { state: saved.status === "PENDING" ? "review" : "live", id: saved.id, slug: saved.slug, title: saved.title, imageUrl: saved.imageUrl, notice: saved.notice, duplicate: saved.duplicate };
+      result = { state: saved.status === "PENDING" ? "review" : "live", id: saved.id, slug: saved.slug, title: saved.title, imageUrl: saved.imageUrl, notice: saved.notice, duplicate: saved.duplicate, moderation: saved.moderation };
     } catch (e: any) {
       result = { state: "failed", error: e?.message || "Could not save. Try again." };
     }
@@ -608,7 +610,7 @@ function ResultLine({ r, handle }: { r: Result; handle: string }) {
       <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border-2 border-sticker bg-[#fffbe8] px-3.5 py-2.5 text-[14px]">
         <span className="sticker-badge !text-[12px]">In review</span>
         <b>{r.title}</b>
-        <span className="text-ink-2">{r.duplicate === "review" ? r.notice : <>We look over every new artist&apos;s first pieces. {REVIEW_NOTE}.</>}</span>
+        <span className="text-ink-2">{r.duplicate === "review" || r.moderation === "review" ? r.notice : <>We look over every new artist&apos;s first pieces. {REVIEW_NOTE}.</>}</span>
       </p>
     );
   }

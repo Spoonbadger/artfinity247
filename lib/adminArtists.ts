@@ -2,8 +2,8 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { itemBreakdown } from "@/lib/sales";
-import { utcMonth } from "@/lib/balance";
-import { activeRefunds, shareAfterRefund } from "@/lib/refunds";
+import { getBalance, utcMonth } from "@/lib/balance";
+import { activeRefunds, refundAdjustments, shareAfterRefund } from "@/lib/refunds";
 import { isProActive } from "@/lib/plans";
 import { connectStatus, type ConnectStatus } from "@/lib/stripeConnect";
 
@@ -40,6 +40,15 @@ export async function unpaidBalances(artistIds?: string[]) {
     const refund = refunds.get(it.id);
     if (!refund) { r.prints += b.quantity; r.salesCents += b.lineTotal; }
     if (!paidSet.has(`${artistId}:${utcMonth(it.order.createdAt)}`)) r.balanceCents += shareAfterRefund(b.artistShare, refund);
+    out.set(artistId, r);
+  }
+  // Refund adjustments carry forward across months (lib/balance.ts): take those few artists' balance from getBalance.
+  const withAdj = new Set((await refundAdjustments()).map((a) => a.artistId));
+  for (const artistId of Array.from(withAdj)) {
+    if (artistIds && !artistIds.includes(artistId)) continue;
+    const bal = await getBalance(artistId);
+    const r = out.get(artistId) ?? { balanceCents: 0, prints: 0, salesCents: 0 };
+    r.balanceCents = bal.pendingCents + bal.availableCents;
     out.set(artistId, r);
   }
   return out;

@@ -161,6 +161,10 @@ async function main() {
   const { seedScans } = await import("./seed-scans.mjs");
   await seedScans(prisma);
 
+  // Partner venues (Lumen Café, Brooklyn Flea, Industry City, Kalimera Coffee, Ludlow Room) linked to those codes (prisma/seed-venues.mjs)
+  const { seedVenues } = await import("./seed-venues.mjs");
+  await seedVenues(prisma);
+
   // Buyer reviews on delivered orders, with some artist replies (prisma/seed-reviews.mjs)
   const { seedReviews } = await import("./seed-reviews.mjs");
   await seedReviews(prisma);

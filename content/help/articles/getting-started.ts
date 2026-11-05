@@ -61,6 +61,8 @@ You tick a box to confirm the work is yours and you hold the rights to sell prin
 ## Sensitive work
 If a piece shows nudity, violence or gore, disturbing imagery, drug use or strong language, tick the matching label. Buyers see it blurred until they tap to view it.
 
+New uploads also get an automatic image check: if it spots nudity or violence you didn't label, it adds the label for you (change it anytime). Anything that looks explicit, graphic or not like artwork waits for a quick look from a person before it goes live.
+
 ## Limited editions
 You can make a piece a limited edition when you upload it. See [Limited editions and certificates](/help/selling/limited-editions).
 

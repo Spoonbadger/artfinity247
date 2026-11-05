@@ -6,11 +6,13 @@
 //     recorded as a Payout row with method "stripe", the transfer id and paidAt. Errors land in failureReason.
 //   - not connected: left for the admin to pay by Venmo by hand and mark paid (the existing flow).
 // The platform's Stripe balance has to cover the transfers (see the insufficient-funds message below).
+// Refund adjustments (lib/refunds.ts) are already in each month's amount (PayoutRow.payableCents). A month they bring
+// to $0 isn't sent; it's recorded as paid at $0 (method "carried") together with the month it carried into.
 import { randomBytes } from "crypto";
 import type Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { resend } from "@/lib/resend";
-import { getBalance, monthLabel, utcMonth } from "@/lib/balance";
+import { CARRIED_METHOD, carriedInto, getBalance, monthLabel, utcMonth } from "@/lib/balance";
 import { SIM_TRANSFER, connectMode, connectStatus, stripeOrNull, type ConnectMode } from "@/lib/stripeConnect";
 import PayoutSentEmail from "@/emails/PayoutSentEmail";
 import { alertKey, raiseAlert, resolveAlerts } from "@/lib/alerts";
@@ -18,7 +20,15 @@ import { payoutFailedAlert } from "@/lib/alertBuilders";
 
 const FROM = "Artfinity <notifications@theartfinity.com>";
 
-export type ReadyMonth = { month: string; amountCents: number; failureReason: string | null };
+export type ReadyMonth = {
+  month: string;
+  amountCents: number;
+  failureReason: string | null;
+  /** Earlier $0 months settled along with this one (a refund adjustment carried through them). */
+  settles?: string[];
+  /** Refund adjustments in this payout (this month's plus what carried in), cents ≤ 0. */
+  adjustmentCents?: number;
+};
 export type ReadyArtist = {
   artistId: string;
   artistName: string;
@@ -65,8 +75,14 @@ export async function readyPayouts(now: Date = new Date()): Promise<ReadyArtist[
     if (b.nextPayout.projected) continue;
     const owed = new Set(b.nextPayout.months);
     const months = b.payouts
-      .filter((p) => owed.has(p.month) && p.status === "scheduled" && p.computedCents > 0)
-      .map((p) => ({ month: p.month, amountCents: p.computedCents, failureReason: failedBy.get(`${a.id}:${p.month}`) ?? null }))
+      .filter((p) => owed.has(p.month) && p.status === "scheduled" && p.payableCents > 0)
+      .map((p) => ({
+        month: p.month,
+        amountCents: p.payableCents,
+        failureReason: failedBy.get(`${a.id}:${p.month}`) ?? null,
+        settles: carriedInto(b, p.month),
+        adjustmentCents: p.adjustmentCents + p.carryInCents,
+      }))
       .sort((x, y) => x.month.localeCompare(y.month));
     if (!months.length) continue;
     out.push({
@@ -153,6 +169,7 @@ export async function payReadyPayouts(opts: { now?: Date; source: "admin" | "cro
           update: data,
           create: { artistId: a.artistId, month: m.month, ...data },
         });
+        await settleCarried(a.artistId, m.settles ?? [], data.paidAt);
         result.paid.push({ artistId: a.artistId, artistName: a.artistName, month: m.month, amountCents: m.amountCents, transferId, simulated: !stripe });
         await resolveAlerts([alertKey.payoutFailed(a.artistId, m.month), alertKey.payoutLate(a.artistId, m.month)]);
         if (!stripe) console.log(`[payouts:sim] ${a.artistName} ${m.month} $${(m.amountCents / 100).toFixed(2)} -> ${transferId}`);
@@ -179,6 +196,23 @@ export async function payReadyPayouts(opts: { now?: Date; source: "admin" | "cro
     }
   }
   return result;
+}
+
+/**
+ * Records the $0 months a refund adjustment used up as paid, with the same paidAt as the month they carried into
+ * (so unmarking that month can clear them too). See carriedInto in lib/balance.ts.
+ */
+export async function settleCarried(artistId: string, months: string[], paidAt: Date) {
+  for (const month of months) {
+    const data = { amountCents: 0, paidAt, method: CARRIED_METHOD, stripeTransferId: null, failureReason: null };
+    await prisma.payout.upsert({ where: { artistId_month: { artistId, month } }, update: data, create: { artistId, month, ...data } });
+    await resolveAlerts([alertKey.payoutFailed(artistId, month), alertKey.payoutLate(artistId, month)]);
+  }
+}
+
+/** Undo settleCarried when the month they were settled with is unmarked. */
+export async function unsettleCarried(artistId: string, paidAt: Date) {
+  return prisma.payout.deleteMany({ where: { artistId, method: CARRIED_METHOD, paidAt } });
 }
 
 /** Month the cron pays for on the 5th, for logs. */

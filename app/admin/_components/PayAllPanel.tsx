@@ -8,7 +8,7 @@ import { monthLabel, usd } from "./util";
 import { PAYOUTS_CHANGED } from "./PayoutsTable";
 import { useAdminCan } from "./AdminRole";
 
-type ReadyMonth = { month: string; amountCents: number; failureReason: string | null };
+type ReadyMonth = { month: string; amountCents: number; failureReason: string | null; adjustmentCents?: number };
 type Ready = { artistId: string; artistName: string; venmoHandle: string | null; route: "stripe" | "venmo"; months: ReadyMonth[]; totalCents: number };
 type Mode = "live" | "simulated" | "off";
 type RunResult = {
@@ -148,7 +148,14 @@ function Group({ title, dab, rows, empty, note, right }: { title: string; dab: s
                 <b className="font-semibold">{r.artistName}</b> <span className="text-[12.5px] text-ink-2">{monthsText(r.months)}</span>
                 <span className="block text-[12.5px]">{right(r)}</span>
               </span>
-              <b className="num shrink-0 text-earned">{usd(r.totalCents)}</b>
+              <span className="shrink-0 text-right">
+                <b className="num block text-earned">{usd(r.totalCents)}</b>
+                {r.months.some((m) => m.adjustmentCents) && (
+                  <span className="num block text-[11.5px] font-semibold text-coral" title="A paid-out refund comes off this payout (Settings → Refunds after a payout).">
+                    after {usd(r.months.reduce((n, m) => n + (m.adjustmentCents ?? 0), 0))} refund adj.
+                  </span>
+                )}
+              </span>
             </li>
           ))}
         </ul>

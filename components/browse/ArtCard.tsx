@@ -9,6 +9,7 @@ import { getTrustBySlug, type Trust } from "@/lib/artistTrust";
 import EditionBadge from "@/components/art/EditionBadge";
 import { editionsFor } from "@/lib/editions";
 import type { Edition } from "@/lib/editionFormat";
+import WishlistHeart from "@/components/collector/WishlistHeart";
 
 /** The art itself, hung on a patch of gallery wall. Fills its (positioned, sized) parent. */
 export function HungArt({ src, alt, sensitive, priority = false }: { src: string; alt: string; sensitive?: string[] | null; priority?: boolean }) {
@@ -31,11 +32,12 @@ export function HungArt({ src, alt, sensitive, priority = false }: { src: string
 /** A piece hung on a little patch of gallery wall. Card → /@handle/art/[slug], artist → /@handle. */
 export default function ArtCard({ art, className, priority = false, showPrice = true, trust, edition }: { art: CardArt; className?: string; priority?: boolean; showPrice?: boolean; trust?: Trust | null; edition?: Edition | null }) {
   return (
-    <article className={cn("group grid min-w-0 content-start gap-2.5", className)}>
+    <article className={cn("group relative grid min-w-0 content-start gap-2.5", className)}>
       <Link href={artPath(art.artist.slug, art.slug)} className="relative block aspect-[4/5] overflow-hidden rounded-md bg-wall" aria-label={`${art.title} by ${art.artist.name}`}>
         <HungArt src={art.imageUrl} alt={art.title} sensitive={art.sensitive} priority={priority} />
         <EditionBadge edition={edition} compact className="absolute left-2 top-2" />
       </Link>
+      <WishlistHeart artworkId={art.id} title={art.title} className="absolute right-2 top-2" />
       <div className="grid min-w-0 gap-0.5 px-0.5">
         <Link href={artPath(art.artist.slug, art.slug)} className="truncate text-[15px] font-semibold leading-snug text-ink no-underline hover:text-scan">{art.title}</Link>
         <div className="grid min-w-0 gap-x-2 text-[13.5px] sm:flex sm:items-baseline sm:justify-between">

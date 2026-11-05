@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { resend } from "@/lib/resend";
 import { deliveryRange } from "@/lib/delivery";
 import { frameText, friendlySize, orderCode } from "@/lib/orderText";
+import { rewardSettings } from "@/lib/collectorRewards";
 
 const from = process.env.EMAIL_FROM || "Artfinity <contact@theartfinity.com>";
 
@@ -45,6 +46,7 @@ export async function sendReceiptEmail(orderId: string) {
   if (order.receiptSentAt) return { alreadySent: true };
 
   const code = orderCode(order.id);
+  const rewards = (await rewardSettings().catch(() => null))?.enabled ?? false;
   const { data, error } = await resend.emails.send(
     {
       from,
@@ -57,6 +59,7 @@ export async function sendReceiptEmail(orderId: string) {
         shippingName: order.shippingName,
         shippingAddressLine: order.shippingAddress ?? undefined,
         arrives: deliveryRange(order.createdAt),
+        rewards,
         items: order.items.map((it) => ({
           title: it.title,
           imageUrl: it.imageUrl,

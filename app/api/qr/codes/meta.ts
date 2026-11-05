@@ -9,6 +9,7 @@ export type CodeMeta = {
   artworkId?: string | null;
   label?: string | null;
   venue?: string | null;
+  venueId?: string | null;
   discountPct?: number | null;
   expiresAt?: Date | null;
   active?: boolean;
@@ -34,6 +35,18 @@ export async function parseMeta(body: Record<string, unknown>, artistId: string)
   }
   if ("label" in body) out.label = clean(body.label, 60);
   if ("venue" in body) out.venue = clean(body.venue, 60);
+  // A partner venue (lib/venues.ts) sets both: venueId, and the venue text buyers see ("Scanned at ...").
+  // null / "" unlinks it and keeps whatever venue text was sent ("Other place").
+  if ("venueId" in body) {
+    const id = typeof body.venueId === "string" && body.venueId ? body.venueId : null;
+    if (!id) out.venueId = null;
+    else {
+      const v = await prisma.venue.findUnique({ where: { id }, select: { id: true, name: true } });
+      if (!v) return "That venue isn't on the list any more.";
+      out.venueId = v.id;
+      out.venue = v.name.slice(0, 60);
+    }
+  }
   if ("discountPct" in body) {
     const v = body.discountPct;
     if (v === null || v === 0 || v === "" || v === "0") out.discountPct = null;

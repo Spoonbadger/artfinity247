@@ -62,6 +62,8 @@ export default function BalanceCard({ b }: { b: Balance }) {
   const holdCents = b.pendingCents + b.availableCents - readyCents;
   const holdDate = dayUTC(payoutDateFor(b.currentMonth).toISOString());
   const thisMonth = monthName(b.currentMonth, "long").split(" ")[0];
+  // Paid-out refunds taken off this payout (lib/refundPolicy.ts), net of what carried in from earlier months.
+  const adjInNext = b.payouts.filter((p) => np.months.includes(p.month) && p.status !== "paid").reduce((n, p) => n + p.adjustmentCents + p.carryInCents, 0);
 
   const segs = [
     {
@@ -127,7 +129,13 @@ export default function BalanceCard({ b }: { b: Balance }) {
             {np.projected
               ? `${monthsText} so far. Grows with every sale this month.`
               : `${lateDue}${monthsText} sales${clearing.length ? ` · ${usd(np.clearingCents)} still clearing until ${dayUTC(lastClear)}, paid anyway` : ""}`}
+            {adjInNext < 0 && <> · after {usd(adjInNext)} in refund adjustments</>}
           </p>
+          {b.carryForwardCents > 0 && (
+            <p className="mt-0.5 text-[12.5px] font-semibold text-coral">
+              {usd(-b.carryForwardCents)} in refund adjustments comes off your next payouts. A payout never goes below $0, so the rest carries forward.
+            </p>
+          )}
         </div>
         <p className="flex items-center gap-2 text-[13px] font-semibold text-ink sm:max-w-[260px] sm:text-right">
           <i className="paint-dab h-3 w-3 sm:hidden" style={{ ["--dab" as string]: "#0f7a55" }} />

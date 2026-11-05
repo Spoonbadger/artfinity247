@@ -13,7 +13,8 @@ import { calcItemProfitCents } from "@/lib/revenue";
 import { normalizeSize } from "@/lib/sales";
 import type { PrintSize } from "@/lib/revenue";
 import { connectStatus, type ConnectStatus } from "@/lib/stripeConnect";
-import { activeRefunds, shareAfterRefund } from "@/lib/refunds";
+import { activeRefunds, refundAdjustments, shareAfterRefund, type RefundAdjustment } from "@/lib/refunds";
+import type { RefundReason } from "@/lib/refundPolicy";
 
 /**
  * BUSINESS DECISION: the return window. A sale stays "pending" (incoming) for this many days
@@ -75,13 +76,42 @@ export type LedgerLine = {
   refunded?: "reversed" | "kept" | null;
 };
 
+/**
+ * A refund on a sale that was already paid out, taken off a later payout (lib/refundPolicy.ts "deduct_next_payout").
+ * Booked to the UTC month the refund was recorded; amountCents is negative. Kept apart from `ledger` (sales), but
+ * counted in every month total, pending/available figure and payout below.
+ */
+export type AdjustmentLine = {
+  id: string;
+  kind: "refund_adjustment";
+  orderId: string;
+  /** Order number as shown on receipts and in the admin. */
+  orderRef: string;
+  orderItemId: string;
+  title: string;
+  /** ISO date the refund was recorded. */
+  date: string;
+  amountCents: number;
+  status: LedgerStatus;
+  payoutMonth: string;
+  reason: RefundReason;
+};
+
 export type PayoutRow = {
   month: string;
   label: string;
   /** Recorded Payout.amountCents for paid months, else today's total for the month. */
   amountCents: number;
-  /** Today's recompute from the sales (differs from amountCents only if a paid month changed later). */
+  /** Today's recompute from the sales and refund adjustments (differs from amountCents only if a paid month changed later, or a refund adjustment carried in or out). */
   computedCents: number;
+  /** Refund adjustments booked to this month (≤ 0). */
+  adjustmentCents: number;
+  /** Unpaid months only: what earlier months' refund adjustments carried into this one (≤ 0). */
+  carryInCents: number;
+  /** What this month pays: the recorded amount once paid, else max(0, computedCents + carryInCents). */
+  payableCents: number;
+  /** Unpaid months only: what's left to take off later months (≤ 0) because a payout can't go below $0. */
+  carryOutCents: number;
   status: PayoutStatus;
   paidAt: string | null;
   /** ISO date it goes out (scheduled / in progress) or was due (paid). */
@@ -120,6 +150,10 @@ export type Balance = {
   stripeStatus: ConnectStatus;
   method: string;
   ledger: LedgerLine[];
+  /** Refund adjustments (lib/refunds.ts), oldest first. */
+  adjustments: AdjustmentLine[];
+  /** Refund adjustments still to come off future payouts after every unpaid month is counted (≥ 0). */
+  carryForwardCents: number;
   payouts: PayoutRow[];
 };
 
@@ -149,10 +183,14 @@ export function venmoLabel(handle: string | null | undefined) {
 
 export const STRIPE_LABEL = "Bank via Stripe";
 
+/** Payout.method of a $0 month settled along with a later one, because a refund adjustment used it up (carriedInto). */
+export const CARRIED_METHOD = "carried";
+
 /** A paid month's method, from Payout.method ("stripe" | "venmo" | "manual"; older rows have none and were Venmo). */
 function paidMethodLabel(method: string | null | undefined, handle: string | null | undefined) {
   if (method === "stripe") return STRIPE_LABEL;
   if (method === "manual") return "Paid by Artfinity";
+  if (method === CARRIED_METHOD) return "Went to a refund adjustment";
   return venmoLabel(handle);
 }
 
@@ -172,12 +210,48 @@ export function lineStatus(args: { date: Date; month: string; paidMonths: Set<st
   return cleared && args.month < args.currentMonth ? "available" : "pending";
 }
 
-/** Each sale's share per UTC month, for comparing with /api/admin/payouts/summary. */
+/** Each month's total (sales' shares plus refund adjustments) per UTC month, for comparing with /api/admin/payouts/summary. */
 export async function monthTotals(artistId: string) {
   const b = await getBalance(artistId);
   const out = new Map<string, number>();
   for (const l of b.ledger) out.set(l.payoutMonth, (out.get(l.payoutMonth) || 0) + l.shareCents);
+  for (const a of b.adjustments) out.set(a.payoutMonth, (out.get(a.payoutMonth) || 0) + a.amountCents);
   return out;
+}
+
+/**
+ * Carry-forward across unpaid months, oldest first: a month pays max(0, its total + what carried in), and anything
+ * below $0 carries to the next unpaid month. Paid months are settled and never carry. Pure (exported for tests).
+ */
+export function carryForward(monthCents: Map<string, number>, paidMonths: Set<string>) {
+  const out = new Map<string, { carryIn: number; payable: number; carryOut: number }>();
+  let carry = 0;
+  for (const m of Array.from(monthCents.keys()).filter((x) => !paidMonths.has(x)).sort()) {
+    const net = (monthCents.get(m) || 0) + carry;
+    out.set(m, { carryIn: carry, payable: Math.max(0, net), carryOut: Math.min(0, net) });
+    carry = Math.min(0, net);
+  }
+  return { byMonth: out, remaining: carry };
+}
+
+/**
+ * Unpaid months that are settled together with `month` when it's paid: the run of unpaid months right before it
+ * that pay $0 (a refund adjustment carried through them into `month`). They're recorded as paid at $0
+ * (Payout.method "carried") so their adjustment isn't counted again.
+ */
+export function carriedInto(b: Pick<Balance, "payouts">, month: string): string[] {
+  const unpaid = b.payouts.filter((p) => p.status !== "paid").sort((x, y) => x.month.localeCompare(y.month));
+  const i = unpaid.findIndex((p) => p.month === month);
+  const out: string[] = [];
+  for (let j = i - 1; j >= 0 && unpaid[j].payableCents === 0 && unpaid[j + 1].carryInCents < 0; j--) out.push(unpaid[j].month);
+  return out.reverse();
+}
+
+function adjustmentLine(a: RefundAdjustment, status: LedgerStatus): AdjustmentLine {
+  return {
+    id: a.id, kind: "refund_adjustment", orderId: a.orderId, orderRef: a.orderRef, orderItemId: a.orderItemId, title: a.title,
+    date: a.at.toISOString(), amountCents: a.cents, status, payoutMonth: a.month, reason: a.reason,
+  };
 }
 
 export async function getBalance(artistId: string, now: Date = new Date()): Promise<Balance> {
@@ -202,7 +276,10 @@ export async function getBalance(artistId: string, now: Date = new Date()): Prom
     ? await prisma.qrCode.findMany({ where: { id: { in: codeIds } }, select: { id: true, code: true, label: true, venue: true } })
     : [];
   const codeName = new Map(codes.map((c) => [c.id, c.label?.trim() || c.venue?.trim() || `Code ${c.code}`]));
-  const refunds = await activeRefunds(Array.from(new Set(items.map((i) => i.order.id))));
+  const [refunds, adjustmentRows] = await Promise.all([
+    activeRefunds(Array.from(new Set(items.map((i) => i.order.id)))),
+    refundAdjustments({ artistId }),
+  ]);
 
   const currentMonth = utcMonth(now);
   const paid = new Map(payoutRows.filter((p) => p.paidAt).map((p) => [p.month, p]));
@@ -247,17 +324,34 @@ export async function getBalance(artistId: string, now: Date = new Date()): Prom
     };
   });
 
+  // Refund adjustments: no return window, so a closed month's is "available" right away.
+  const adjustments: AdjustmentLine[] = adjustmentRows.map((a) =>
+    adjustmentLine(a, paidMonths.has(a.month) ? "paid" : a.month < currentMonth ? "available" : "pending"),
+  );
+
   let pendingCents = 0, availableCents = 0, thisMonthCents = 0, paidComputed = 0;
-  const byMonth = new Map<string, { cents: number; sales: number; prints: number }>();
-  for (const l of ledger) {
-    if (l.status === "pending") pendingCents += l.shareCents;
-    else if (l.status === "available") availableCents += l.shareCents;
-    else paidComputed += l.shareCents;
-    if (l.payoutMonth === currentMonth) thisMonthCents += l.shareCents;
-    const m = byMonth.get(l.payoutMonth) || { cents: 0, sales: 0, prints: 0 };
-    m.cents += l.shareCents; m.sales += 1; m.prints += l.quantity;
-    byMonth.set(l.payoutMonth, m);
-  }
+  const byMonth = new Map<string, { cents: number; sales: number; prints: number; adjustments: number }>();
+  const add = (month: string, cents: number, status: LedgerStatus, sale?: { quantity: number }) => {
+    if (status === "pending") pendingCents += cents;
+    else if (status === "available") availableCents += cents;
+    else paidComputed += cents;
+    if (month === currentMonth) thisMonthCents += cents;
+    const m = byMonth.get(month) || { cents: 0, sales: 0, prints: 0, adjustments: 0 };
+    m.cents += cents;
+    if (sale) { m.sales += 1; m.prints += sale.quantity; } else m.adjustments += cents;
+    byMonth.set(month, m);
+  };
+  for (const l of ledger) add(l.payoutMonth, l.shareCents, l.status, l);
+  for (const a of adjustments) add(a.payoutMonth, a.amountCents, a.status);
+
+  // A payout can't go below $0: refund adjustments beyond a month's total carry to the next unpaid month.
+  const carry = carryForward(new Map(Array.from(byMonth.entries()).map(([m, v]) => [m, v.cents])), paidMonths);
+  const payableOf = (m: string) => carry.byMonth.get(m)?.payable ?? 0;
+  const carryForwardCents = -carry.remaining;
+  if (availableCents < 0) { pendingCents += availableCents; availableCents = 0; }
+  if (pendingCents < 0) pendingCents = 0;
+  if (thisMonthCents < 0) thisMonthCents = 0;
+
   // Paid months count at the amount actually recorded, even if today's recompute differs.
   const paidTotalCents = Array.from(paid.values()).reduce((n, p) => n + p.amountCents, 0);
   const adjustmentCents = paidTotalCents - paidComputed;
@@ -268,27 +362,28 @@ export async function getBalance(artistId: string, now: Date = new Date()): Prom
   const nextRun = now.getUTCDate() <= PAYOUT_DAY_OF_MONTH
     ? new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), PAYOUT_DAY_OF_MONTH))
     : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, PAYOUT_DAY_OF_MONTH));
-  const owedMonths = Array.from(byMonth.keys()).filter((m) => m < currentMonth && !paidMonths.has(m) && byMonth.get(m)!.cents > 0).sort();
+  const owedMonths = Array.from(byMonth.keys()).filter((m) => m < currentMonth && !paidMonths.has(m) && payableOf(m) > 0).sort();
   let nextPayout: Balance["nextPayout"];
   if (owedMonths.length) {
     const latestDue = payoutDateFor(owedMonths[owedMonths.length - 1]);
     const late = latestDue.getTime() < today;
     const owed = new Set(owedMonths);
-    const lines = ledger.filter((l) => owed.has(l.payoutMonth));
+    const amountCents = owedMonths.reduce((n, m) => n + payableOf(m), 0);
     nextPayout = {
       date: (late ? latestDue : nextRun).toISOString(),
-      amountCents: lines.reduce((n, l) => n + l.shareCents, 0),
+      amountCents,
       months: owedMonths,
-      clearingCents: lines.filter((l) => l.status === "pending").reduce((n, l) => n + l.shareCents, 0),
+      clearingCents: Math.min(amountCents, ledger.filter((l) => owed.has(l.payoutMonth) && l.status === "pending").reduce((n, l) => n + l.shareCents, 0)),
       projected: false,
       late,
     };
   } else {
+    const projected = paidMonths.has(currentMonth) ? 0 : payableOf(currentMonth);
     nextPayout = {
       date: payoutDateFor(currentMonth).toISOString(),
-      amountCents: paidMonths.has(currentMonth) ? 0 : thisMonthCents,
+      amountCents: projected,
       months: [currentMonth],
-      clearingCents: paidMonths.has(currentMonth) ? 0 : thisMonthCents,
+      clearingCents: projected,
       projected: true,
       late: false,
     };
@@ -298,14 +393,19 @@ export async function getBalance(artistId: string, now: Date = new Date()): Prom
 
   const months = Array.from(new Set([...Array.from(byMonth.keys()), ...Array.from(paid.keys())])).sort((a, b) => b.localeCompare(a));
   const payouts: PayoutRow[] = months.map((m) => {
-    const agg = byMonth.get(m) || { cents: 0, sales: 0, prints: 0 };
+    const agg = byMonth.get(m) || { cents: 0, sales: 0, prints: 0, adjustments: 0 };
     const p = paid.get(m);
+    const c = carry.byMonth.get(m);
     const status: PayoutStatus = p ? "paid" : m < currentMonth ? "scheduled" : "in_progress";
     return {
       month: m,
       label: monthLabel(m),
-      amountCents: p ? p.amountCents : agg.cents,
+      amountCents: p ? p.amountCents : payableOf(m),
       computedCents: agg.cents,
+      adjustmentCents: agg.adjustments,
+      carryInCents: p ? 0 : c?.carryIn ?? 0,
+      payableCents: p ? p.amountCents : payableOf(m),
+      carryOutCents: p ? 0 : c?.carryOut ?? 0,
       status,
       paidAt: p?.paidAt ? p.paidAt.toISOString() : null,
       // Every closed, unpaid month is in the next payout run.
@@ -332,6 +432,8 @@ export async function getBalance(artistId: string, now: Date = new Date()): Prom
     stripeStatus,
     method,
     ledger,
+    adjustments,
+    carryForwardCents,
     payouts,
   };
 }
@@ -355,5 +457,14 @@ export async function latePayouts(now: Date = new Date()): Promise<{ artistId: s
     select: { artistId: true, month: true },
   });
   const done = new Set(paid.map((p) => `${p.artistId}:${p.month}`));
-  return late.filter((r) => !done.has(`${r.artistId}:${r.month}`)).sort((a, b) => a.month.localeCompare(b.month));
+  let out = late.filter((r) => !done.has(`${r.artistId}:${r.month}`));
+  // A month a refund adjustment brought to $0 isn't owed, so it isn't late.
+  const withAdjustments = new Set((await refundAdjustments()).map((a) => a.artistId));
+  const check = Array.from(new Set(out.map((r) => r.artistId).filter((id) => withAdjustments.has(id))));
+  if (check.length) {
+    const zero = new Set<string>();
+    for (const id of check) for (const p of (await getBalance(id, now)).payouts) if (p.status !== "paid" && p.payableCents <= 0) zero.add(`${id}:${p.month}`);
+    out = out.filter((r) => !zero.has(`${r.artistId}:${r.month}`));
+  }
+  return out.sort((a, b) => a.month.localeCompare(b.month));
 }

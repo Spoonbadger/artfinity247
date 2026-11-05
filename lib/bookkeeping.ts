@@ -5,7 +5,8 @@
 // Same math as the admin dashboard (app/admin/page.tsx): paid buyer orders (bulk and free reprints excluded), money
 // per line from lib/sales.ts itemBreakdown, refunded lines left out of sales and profit. On top of that:
 //   tax collected    Stripe total minus print prices (shipping is free), per paid order, bulk included
-//   artist share     each line's artist share after refunds (lib/refunds.ts shareAfterRefund), what the month owes artists
+//   artist share     each line's artist share after refunds (lib/refunds.ts shareAfterRefund), what the month owes artists,
+//                    less refund adjustments recorded this month (paid-out refunds taken off a later payout)
 //   payouts sent     Payout rows paid during the month (any month's earnings)
 //   reprint costs    print + shipping + labor + site cost of free reprints made this month
 //   refunds          line totals refunded (recorded) during the month, ex-tax; refunds on older orders get their own line
@@ -141,6 +142,17 @@ export async function buildBooks(range: { start: Date; end: Date }, month: strin
       totals.refundsCents += cents;
       lines.push({ date: o.createdAt, orderId: o.id, kind: "refund", email: o.email, prints: 0, salesCents: 0, taxCents: 0, chargedCents: 0, costCents: 0, artistShareCents: 0, profitCents: 0, refundedCents: cents, note: "Refund recorded this month on an earlier order" });
     }
+  }
+  // Refund adjustments recorded this month (lib/refundPolicy.ts "deduct_next_payout") lower what artists are owed.
+  const deductByOrder = new Map<string, number>();
+  for (const r of refundsInRange) if (r.deducted) deductByOrder.set(r.orderId, (deductByOrder.get(r.orderId) ?? 0) + r.shareCents);
+  for (const line of lines) {
+    const d = deductByOrder.get(line.orderId);
+    if (!d) continue;
+    line.artistShareCents -= d;
+    totals.artistShareCents -= d;
+    line.note = [line.note, `Refund adjustment: artist share -${usd(d)} taken off their next payout`].filter(Boolean).join("; ");
+    deductByOrder.delete(line.orderId);
   }
   totals.payoutsSentCents = payouts.reduce((n, p) => n + p.amountCents, 0);
   return { month, start, end, totals, lines };

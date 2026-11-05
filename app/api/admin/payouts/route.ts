@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from "@/lib/prisma";
 import { getAdmin } from "@/lib/admin"
 import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
-import { activeRefunds, shareAfterRefund } from "@/lib/refunds"
+import { activeRefunds, adjustmentTotals, refundAdjustments, shareAfterRefund } from "@/lib/refunds"
+import { getBalance } from "@/lib/balance"
 
 export const dynamic = "force-dynamic"
 export const runtime = 'nodejs'
@@ -95,9 +96,10 @@ export async function GET(req: NextRequest) {
 
   const payouts = await prisma.payout.findMany({
     where: { month },
-    select: { artistId: true, paidAt: true },
+    select: { artistId: true, paidAt: true, amountCents: true },
   })
   const paidLookup = new Map(payouts.map((p: any) => [p.artistId, p.paidAt]))
+  const recordedLookup = new Map(payouts.filter((p) => p.paidAt).map((p) => [p.artistId, p.amountCents]))
 
   for (const it of items) {
     const artistId = it.artwork?.artistId ?? 'unknown'
@@ -141,6 +143,19 @@ export async function GET(req: NextRequest) {
     byArtist.set(key, current)
   }
 
+  // Refund adjustments (lib/refunds.ts): booked to the month they were recorded. payout_cents is what the month pays
+  // (recorded amount once paid; else sales + adjustments + anything carried in, never below 0), same as lib/balance.ts.
+  const [monthAdj, allAdj] = await Promise.all([adjustmentTotals({ month }), refundAdjustments()])
+  for (const artistId of Array.from(monthAdj.keys())) {
+    if (!byArtist.has(artistId)) byArtist.set(artistId, { artistId, artistName: '', itemsCount: 0, gross: 0, expenses: 0, profit: 0, artistShare: 0, companyShare: 0 })
+  }
+  const withAdj = new Set(allAdj.map((a) => a.artistId))
+  const carried = new Map<string, { carryIn: number; payable: number }>()
+  for (const artistId of Array.from(byArtist.keys()).filter((id) => withAdj.has(id))) {
+    const row = (await getBalance(artistId)).payouts.find((p) => p.month === month)
+    if (row) carried.set(artistId, { carryIn: row.carryInCents, payable: row.payableCents })
+  }
+
   // Build CSV (keep cents for accuracy + provide dollars view)
   const header = [
     'month',
@@ -158,12 +173,19 @@ export async function GET(req: NextRequest) {
     'artist_share_usd',
     'company_share_usd',
     'status',
+    'refund_adjustment_cents',
+    'carried_in_cents',
+    'payout_cents',
+    'payout_usd',
   ]
 
   const rows = [header.join(',')]
   for (const row of Array.from(byArtist.values())) {
     const dollars = (c: number) => (c / 100).toFixed(2)
     const status = paidLookup.get(row.artistId) ? 'PAID' : 'UNPAID'
+    const adj = monthAdj.get(row.artistId) ?? 0
+    const c = carried.get(row.artistId)
+    const payout = recordedLookup.get(row.artistId) ?? c?.payable ?? Math.max(0, row.artistShare + adj)
     rows.push(
       [
         month,
@@ -181,6 +203,10 @@ export async function GET(req: NextRequest) {
         dollars(row.artistShare),
         dollars(row.companyShare),
         status, // 👈
+        adj,
+        status === 'PAID' ? 0 : c?.carryIn ?? 0,
+        payout,
+        dollars(payout),
       ].join(',')
     )
   }

@@ -4,6 +4,7 @@ import SensitiveImage from "@/components/site/SensitiveImage";
 import { cn } from "@/lib/utils";
 import { money, type ArtistWork } from "./data";
 import type { Layout } from "./theme";
+import WishlistHeart from "@/components/collector/WishlistHeart";
 
 /** The artist's approved work: 2 columns on phones, 3 on desktop. Each piece links to its buy page. */
 export default function WorkGrid({ works, isOwner }: { works: ArtistWork[]; isOwner?: boolean }) {
@@ -17,7 +18,7 @@ export default function WorkGrid({ works, isOwner }: { works: ArtistWork[]; isOw
         const href = w.href;
         const best = topSold >= 3 && w.sold === topSold;
         return (
-          <li key={w.id} className="min-w-0">
+          <li key={w.id} className="relative min-w-0">
             <Link href={href} className="group grid gap-2.5 text-ink no-underline">
               <div className="relative aspect-[4/5] overflow-hidden rounded-[4px] bg-gallery shadow-[0_14px_28px_-16px_rgba(21,22,27,.45)]">
                 <SensitiveImage labels={w.sensitive}>
@@ -39,6 +40,7 @@ export default function WorkGrid({ works, isOwner }: { works: ArtistWork[]; isOw
                 <span className="num shrink-0 text-[13.5px] text-ink-2">from {money(w.fromCents)}</span>
               </div>
             </Link>
+            <WishlistHeart artworkId={w.id} title={w.title} className="absolute right-2 top-2 sm:right-3 sm:top-3" />
           </li>
         );
       })}

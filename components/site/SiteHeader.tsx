@@ -150,6 +150,7 @@ export default function SiteHeader({ brand = null, inPage = false }: { brand?: H
           {l.label}
         </Link>
       ))}
+      <Link href="/collector" aria-current={isActive("/collector") ? "page" : undefined} onClick={() => setOpen(false)} className="rounded-lg px-2 py-2.5 text-lg font-semibold text-ink no-underline hover:bg-wall">Your orders</Link>
       {currentUser ? (
         brand && <Link href="/studio" onClick={() => setOpen(false)} className="btn btn-blue mt-2">My Studio</Link>
       ) : (

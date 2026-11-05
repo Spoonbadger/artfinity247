@@ -5,6 +5,7 @@ import { NextRequest } from "next/server";
 import type Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { stripeOrNull, syncAccount } from "@/lib/stripeConnect";
+import { reportError } from "@/lib/monitor";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -21,6 +22,7 @@ export async function POST(req: NextRequest) {
     event = stripe.webhooks.constructEvent(raw, sig, secret);
   } catch (err) {
     console.error("Connect webhook signature failed:", err);
+    await reportError(err, { area: "webhook", name: "stripe-connect-signature", level: "warning" });
     return new Response(`Webhook error: ${(err as Error).message}`, { status: 400 });
   }
 
@@ -34,6 +36,7 @@ export async function POST(req: NextRequest) {
     }
   } catch (err) {
     console.error("Connect webhook failed:", err);
+    await reportError(err, { area: "webhook", name: "stripe-connect", extra: { eventId: event.id, type: event.type }, adminAlert: true });
     return new Response("Webhook handler failed", { status: 500 });
   }
   return new Response(null, { status: 200 });

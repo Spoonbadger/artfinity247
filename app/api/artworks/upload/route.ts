@@ -11,6 +11,7 @@ import { parsePrintable } from "@/lib/printSizes"
 import { verifyPrintable } from "@/lib/printSign"
 import { alertArtworkNeedsReview, announceArtworkLive, initialArtworkStatus } from "@/lib/artworkLive"
 import { checkUpload } from "@/lib/imageHash"
+import { saveAutoCheck, screenUpload } from "@/lib/moderation"
 import { DAILY_UPLOAD_LIMIT } from "@/lib/uploadLimits"
 
 export const dynamic = "force-dynamic"
@@ -92,8 +93,16 @@ export async function POST(req: NextRequest) {
 
     // First pieces from new, unverified artists wait for a quick review.
     // So does anything that looks like another artist's piece (lib/imageHash.ts): flagged, never auto-rejected.
-    const dup = await checkUpload(imageUrl, payload.id as string)
-    const status = dup.flaggedReason ? "PENDING" : await initialArtworkStatus(payload.id as string)
+    // The automatic image check (lib/moderation, off unless IMAGE_MODERATION_PROVIDER is set) runs alongside on the
+    // stored preview: it can add a sensitive label (stays live, blurred) or hold explicit content, gore or hate for a
+    // person. If the provider is down or slow, it changes nothing.
+    const [dup, check] = await Promise.all([
+      checkUpload(imageUrl, payload.id as string),
+      screenUpload({ imageUrl, title, artistLabels: sensitive }),
+    ])
+    const mod = check.decision
+    const flaggedReason = dup.flaggedReason || mod.flaggedReason
+    const status = flaggedReason ? "PENDING" : await initialArtworkStatus(payload.id as string)
 
     const artwork = await prisma.artwork.create({
       data: {
@@ -107,12 +116,12 @@ export async function POST(req: NextRequest) {
         imageUrl: imageUrl,
         artistId: payload.id as string,
         status,
-        sensitive,
+        sensitive: mod.labels,
         editionSize,
         printableSizes: printable,
         ownershipConfirmedAt: new Date(),
         imageHash: dup.imageHash,
-        ...(dup.flaggedReason ? { flaggedReason: dup.flaggedReason, flaggedBy: "system" } : {}),
+        ...(flaggedReason ? { flaggedReason, flaggedBy: "system" } : {}),
       },
       include: {
         artist: {
@@ -128,10 +137,12 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    await saveAutoCheck(artwork.id, check)
+
     // Live now: referral reward + the artist's "it's live" email. Pending pieces get these on approval.
     // In a batch the email waits for the batch summary; the referral reward doesn't.
     if (artwork.status === "APPROVED") await announceArtworkLive(artwork.id, { email: !batch })
-    else await alertArtworkNeedsReview(artwork.id) // admin alert: possible duplicate or first pieces to review
+    else await alertArtworkNeedsReview(artwork.id) // admin alert: possible duplicate, image check, or first pieces to review
 
     if (!batch) try {
       await resend.emails.send({
@@ -156,7 +167,10 @@ export async function POST(req: NextRequest) {
       artistSlug: artwork.artist?.slug,
       // "review": looks like another artist's piece, a person checks it. "own": the artist uploaded it before.
       duplicate: dup.duplicate,
-      notice: dup.notice,
+      // Image check: "review" = held for a person, "labeled" = we added addedLabels (the artist can change them).
+      moderation: mod.outcome === "review" || mod.outcome === "labeled" ? mod.outcome : null,
+      addedLabels: mod.addedLabels,
+      notice: dup.duplicate === "review" ? dup.notice : [mod.notice, dup.notice].filter(Boolean).join(" ") || null,
     })
   } catch (err) {
     console.error('Upload error:', err);

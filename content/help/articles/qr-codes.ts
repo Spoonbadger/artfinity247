@@ -167,4 +167,38 @@ Lots of QR codes break when a website changes. Ours hold only a short link like 
 Sold out of a limited edition, or took a piece down? Point its code at another piece or at your page in [My codes](/studio/codes). The label on the wall keeps selling.
 `,
   },
+  {
+    slug: "partner-venues",
+    section,
+    audience: "artist",
+    title: "Hanging codes at partner venues",
+    summary: "When your work hangs at an Artfinity partner venue (a café, bar, shop or market), pick the venue on the code. Buyers see where they scanned it, the venue lists your piece on its own page, and nothing changes in what you earn.",
+    link: { href: "/studio/codes", label: "Open My codes" },
+    related: ["hanging-codes", "change-after-printing", "scan-tracking"],
+    body: `
+Partner venues are places around New York that hang local art and work with Artfinity: cafés, bars, shops and markets. Each one has a public page at theartfinity.com/venues listing the pieces on its walls, its address and a map link.
+
+## Pick the venue on your code
+1. Open the code in [My codes](/studio/codes), or make a new one in [QR codes](/studio/qr).
+2. Under **Venue**, pick the place from the list of partner venues (it shows the name and neighborhood).
+3. Save. That's it: the printed code doesn't change.
+
+Not on the list? Choose **Other place** and type the name. It shows in your stats and on the buyer's page, just like before. If we later sign that place up as a partner, we link your code to it for you.
+
+## What picking a venue does
+- **Buyers see where they found it.** The buy page says "Scanned at" the venue, linked to the venue's page.
+- **The venue shows your work.** While the code is on, the piece appears on the venue's page with a link to buy it. Turn the code off or let it end and the piece comes off the page.
+- **Your stats show the venue** next to the code in My codes.
+
+> Moving a piece to another café? Change the venue on the same code in My codes. The code, its scans and its sales history stay with you.
+
+## Does it change what I earn?
+No. Your share of each sale is the same with or without a venue. Some venues get a small thank-you from Artfinity's own share of the profit on sales from their walls. It never comes out of yours.
+
+## Good to know
+- One code, one place. If the same piece hangs in two spots, make a second code so each venue's scans are counted on their own.
+- Ask before you hang. Partner venues have agreed to host art, but check with the staff where your piece should go.
+- Venues get a window sticker that says "Local art here — scan to buy", so people know to look for your code.
+`,
+  },
 ];

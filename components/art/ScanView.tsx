@@ -14,6 +14,7 @@ import { useCart, useUser } from "@/components/contexts";
 import SensitiveImage from "@/components/site/SensitiveImage";
 import { cn } from "@/lib/utils";
 import EditionBadge from "@/components/art/EditionBadge";
+import WishlistHeart from "@/components/collector/WishlistHeart";
 import ArtGallery, { type GalleryRequest } from "@/components/art/ArtGallery";
 import { InlineBadges } from "@/components/artist/TrustBlock";
 import type { Trust } from "@/lib/artistTrust";
@@ -33,7 +34,7 @@ export default function ScanView({
   art,
   artist,
   more,
-  venue,
+  venue, venueHref = null,
   pct,
   sig = null,
   code = null,
@@ -50,7 +51,7 @@ export default function ScanView({
   art: ScanArt;
   artist: ScanArtist;
   more: MoreArt[];
-  venue: string | null;
+  venue: string | null; venueHref?: string | null; // venueHref: the partner venue page (/venues/<slug>), when the code hangs at one
   pct: number;
   /** Signature that makes the discount valid at checkout. */
   sig?: string | null;
@@ -205,8 +206,9 @@ export default function ScanView({
               )}
               {discountTag && <span className="max-w-full truncate rounded-full bg-sticker px-2.5 py-1 text-[12.5px] font-bold leading-none text-ink">{discountTag}</span>}
               <EditionBadge edition={art.edition} compact />
+              <WishlistHeart artworkId={art.id} title={art.title} variant="inline" className="-my-1 ml-auto" />
             </div>
-            {venue && !pct && <p className="text-[13.5px] text-ink-2">Scanned at <b className="font-semibold text-ink">{venue}</b></p>}
+            {venue && (!pct || venueHref) && <p className="text-[13.5px] text-ink-2">Scanned at {venueHref ? <a href={venueHref} className="font-semibold text-ink underline decoration-line underline-offset-2 hover:decoration-ink">{venue}</a> : <b className="font-semibold text-ink">{venue}</b>}</p>}
             {discountEnded && <p className="text-[13.5px] text-ink-2">The discount on this card has ended. Prices shown are current.</p>}
           </div>
 

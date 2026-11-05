@@ -7,7 +7,7 @@ import { dayKey, STUDIO_TZ } from "../_lib/data";
 const DAY = 86400000;
 
 const codeSelect = {
-  id: true, code: true, label: true, venue: true, discountPct: true, active: true, expiresAt: true, createdAt: true, design: true, artworkId: true,
+  id: true, code: true, label: true, venue: true, venueId: true, discountPct: true, active: true, expiresAt: true, createdAt: true, design: true, artworkId: true,
   artwork: { select: { id: true, title: true, slug: true, imageUrl: true, status: true } },
 } as const;
 

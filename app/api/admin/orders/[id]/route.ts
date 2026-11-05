@@ -1,5 +1,7 @@
 // POST /api/admin/orders/:id  Admin actions on one order (shipping and delivery go through /api/orders/:id/status).
-//   { action: "refund", itemId, note? }      record a line refund (money goes back in Stripe); reverses the artist share if unpaid
+//   { action: "refund", itemId, reason, note? }  record a line refund (money goes back in Stripe); reverses the artist share if
+//                                            unpaid. Already paid out: absorbed, or a Refund adjustment off the next payout
+//                                            (reason buyer_return | chargeback with the deduct policy, lib/refundPolicy.ts)
 //   { action: "refund_undo", itemId }        cancel a recorded refund
 //   { action: "reprint", items: [{ id, qty }] | itemId: id | "all", reason, note? }  free reprint (same flow as a buyer's request)
 //   { action: "resend_receipt" } | { action: "resend_shipped" }
@@ -10,6 +12,7 @@ import { logAdminAction } from "@/lib/audit";
 import { itemBreakdown } from "@/lib/sales";
 import { activeRefunds, REFUND_ACTION, REFUND_UNDO_ACTION } from "@/lib/refunds";
 import { utcMonth } from "@/lib/balance";
+import { REFUND_REASON_LABEL, isRefundReason, refundEffect, refundPolicy } from "@/lib/refundPolicy";
 import { decideRequest, requestsForOrder, ReprintError } from "@/lib/reprints";
 import { REPRINT_DIRECTION, isReprintReason, statusSubject, type ReprintBody } from "@/lib/reprintFormat";
 import { latestTracking, resendReceipt, sendShippingEmail } from "@/lib/orderEmails";
@@ -49,22 +52,43 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       const item = order.items.find((i) => i.id === input.itemId);
       if (!item) return fail("Pick a line to refund.");
       if (order.paymentStatus !== "paid" || order.kind === "bulk") return fail("Only paid retail orders can be refunded here.");
+      const reason = isRefundReason(input.reason) ? input.reason : null;
+      if (!reason) return fail("Pick a reason for the refund.");
       if ((await activeRefunds([order.id])).has(item.id)) return fail("That line is already refunded.", 409);
       const b = itemBreakdown({ ...item, orderDate: order.createdAt });
       const artistId = item.artwork?.artistId ?? null;
       const month = utcMonth(order.createdAt);
       const paid = artistId ? await prisma.payout.findUnique({ where: { artistId_month: { artistId, month } }, select: { paidAt: true } }) : null;
-      // Reverse only what hasn't gone out yet; a paid month keeps its recorded amount.
-      const reversed = !!artistId && !paid?.paidAt;
+      // Reverse only what hasn't gone out yet; a paid month keeps its recorded amount. Once paid out, the owner's setting
+      // decides for buyer returns and chargebacks (lib/refundPolicy.ts); damaged prints are always absorbed.
+      const { policy } = await refundPolicy();
+      const effect = artistId ? refundEffect({ monthPaid: !!paid?.paidAt, reason, policy }) : "absorb";
+      const reversed = effect === "reverse";
+      const deducted = effect === "deduct" && b.artistShare > 0;
+      const adjustMonth = deducted ? utcMonth(new Date()) : null;
+      const title = item.title || "print";
+      const outcome = reversed ? `artist share ${money(b.artistShare)} reversed`
+        : deducted ? `${month} already paid out: ${money(b.artistShare)} comes off the artist's next payout (Refund adjustment)`
+        : artistId ? `${month} already paid out: artist keeps ${money(b.artistShare)}` : "";
       await logAdminAction(admin, REFUND_ACTION, { type: "order", id: order.id },
-        `Refunded “${item.title || "print"}” (${money(b.lineTotal)})${reversed ? `, artist share ${money(b.artistShare)} reversed` : artistId ? `, ${month} already paid out: artist keeps ${money(b.artistShare)}` : ""}`,
-        { orderItemId: item.id, artistId, amountCents: b.lineTotal, shareCents: b.artistShare, reversed, month, note });
-      return NextResponse.json({ ok: true, reversed, shareCents: b.artistShare, message: reversed ? `Refund recorded. ${money(b.artistShare)} taken off the artist's balance.` : "Refund recorded. Already paid out, so the artist keeps their share." });
+        `Refunded “${title}” (${money(b.lineTotal)}, ${REFUND_REASON_LABEL[reason].toLowerCase()})${outcome ? `, ${outcome}` : ""}`,
+        { orderItemId: item.id, artistId, amountCents: b.lineTotal, shareCents: b.artistShare, reversed, deducted, adjustMonth, reason, policy, title, month, note });
+      return NextResponse.json({
+        ok: true, reversed, deducted, shareCents: b.artistShare,
+        message: reversed ? `Refund recorded. ${money(b.artistShare)} taken off the artist's balance.`
+          : deducted ? `Refund recorded. ${money(b.artistShare)} comes off the artist's next payout.`
+          : "Refund recorded. Already paid out, so the artist keeps their share.",
+      });
     }
     case "refund_undo": {
       const item = order.items.find((i) => i.id === input.itemId);
       const r = item ? (await activeRefunds([order.id])).get(item.id) : undefined;
       if (!item || !r) return fail("That line isn't refunded.", 409);
+      // A Refund adjustment that already came off a payout can't silently come back.
+      if (r.deducted && r.adjustMonth && r.artistId) {
+        const p = await prisma.payout.findUnique({ where: { artistId_month: { artistId: r.artistId, month: r.adjustMonth } }, select: { paidAt: true } });
+        if (p?.paidAt) return fail(`The refund adjustment already came off the artist's ${r.adjustMonth} payout. Unmark that payout first, or settle it with the artist by hand.`, 409);
+      }
       await logAdminAction(admin, REFUND_UNDO_ACTION, { type: "order", id: order.id }, `Cancelled the refund on “${item.title || "print"}”`,
         { orderItemId: item.id, artistId: item.artwork?.artistId ?? null, refundActionId: r.actionId, note });
       return NextResponse.json({ ok: true });

@@ -11,6 +11,7 @@ const STATIC: [string, number][] = [
   ["/art", 0.9],
   ["/artists", 0.9],
   ["/scenes", 0.7],
+  ["/venues", 0.6],
   ["/pricing", 0.7],
   ["/sell-with-us", 0.7],
   ["/about-us", 0.6],
@@ -40,6 +41,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       take: 5_000,
     }),
   ]).catch(() => [[], []] as const);
+  // Partner venues (lib/venues.ts): public pages for the active ones.
+  const venues = await prisma.venue.findMany({ where: { active: true }, select: { slug: true, createdAt: true } }).catch(() => []);
 
   return [
     ...STATIC.map(([path, priority]) => ({ url: `${SITE_URL}${path === "/" ? "" : path}`, changeFrequency: "weekly" as const, priority })),
@@ -47,5 +50,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...HELP_ARTICLES.map((a) => ({ url: `${SITE_URL}${articleHref(a)}`, changeFrequency: "monthly" as const, priority: 0.4 })),
     ...artists.map((a) => ({ url: artistUrl(a.slug, SITE_URL), lastModified: a.createdAt, changeFrequency: "weekly" as const, priority: 0.7 })),
     ...artworks.map((a) => ({ url: artUrl(a.artist.slug, a.slug!, SITE_URL), lastModified: a.createdAt, changeFrequency: "monthly" as const, priority: 0.6 })),
+    ...venues.map((v) => ({ url: `${SITE_URL}/venues/${encodeURIComponent(v.slug)}`, lastModified: v.createdAt, changeFrequency: "weekly" as const, priority: 0.5 })),
   ];
 }

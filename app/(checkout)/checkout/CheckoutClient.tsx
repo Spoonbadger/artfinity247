@@ -9,10 +9,11 @@ import { CartItemCard, CartPricingInfo } from "@/components/cards";
 import { usd } from "@/components/art/pricing";
 import { cartArtistNames, lineSavings, startCheckout } from "@/components/art/checkout";
 
-export default function CheckoutClient({ testMode }: { testMode: boolean }) {
+export default function CheckoutClient({ testMode, collectorEmail = null, reward = null }: { testMode: boolean; collectorEmail?: string | null; reward?: { code: string; pct: number } | null }) {
   const { cartItems, calculateTotalPrice } = useCart();
   const { currentUser } = useUser();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(collectorEmail || "");
+  const [useReward, setUseReward] = useState(!!reward);
   const [busy, setBusy] = useState(false);
   const [follow, setFollow] = useState(false); // opt-in, never pre-ticked
   useEffect(() => { if (currentUser?.email) setEmail((e) => e || currentUser.email); }, [currentUser?.email]);
@@ -26,7 +27,8 @@ export default function CheckoutClient({ testMode }: { testMode: boolean }) {
     if (!cartItems.length || busy) return;
     setBusy(true);
     try {
-      window.location.href = await startCheckout(cartItems, { id: currentUser?.id, email: email.trim() || null }, { follow });
+      const rewardCode = reward && useReward && email.trim().toLowerCase() === (collectorEmail || "").toLowerCase() ? reward.code : null;
+      window.location.href = await startCheckout(cartItems, { id: currentUser?.id, email: email.trim() || null }, { follow, rewardCode });
     } catch (err) {
       console.error(err);
       toast.error("Payment didn't open. Try again in a moment.");
@@ -65,6 +67,14 @@ export default function CheckoutClient({ testMode }: { testMode: boolean }) {
           <input type="checkbox" checked={follow} onChange={(e) => setFollow(e.target.checked)} className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[rgb(var(--af-scan-rgb))]" />
           <span>Email me when {who} {who.includes(" and ") ? "post" : "posts"} new work</span>
         </label>
+        {reward && (
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border-[1.5px] border-ink bg-sticker/40 px-3 py-2.5 text-left text-[14px] leading-snug text-ink">
+            <input type="checkbox" checked={useReward} onChange={(e) => setUseReward(e.target.checked)} className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[rgb(var(--af-scan-rgb))]" />
+            <span>
+              <b>Use your reward: up to {reward.pct}% off</b> (code {reward.code}). Artfinity covers it, so the artist&apos;s share stays the same. The new prices show when you pay.
+            </span>
+          </label>
+        )}
       </div>
 
       <CartPricingInfo subtotal={total / 100} savings={savings / 100} shipping={0} total={total / 100} className="md:sticky md:top-6">

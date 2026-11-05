@@ -29,4 +29,29 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry (error alerts, DEPLOY.md → Sentry). Only wraps the config when a DSN is set, so local dev and a build
+// with no Sentry env are exactly the config above. Source maps are uploaded only when SENTRY_AUTH_TOKEN is set too.
+const sentryDsn = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
+
+async function withSentry(config) {
+  if (!sentryDsn) return config;
+  const { withSentryConfig } = await import("@sentry/nextjs");
+  const upload = !!process.env.SENTRY_AUTH_TOKEN;
+  return withSentryConfig(
+    // Next 14 needs the instrumentation hook for instrumentation.ts (Sentry's server and edge init).
+    { ...config, experimental: { ...config.experimental, instrumentationHook: true } },
+    {
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      silent: !process.env.CI,
+      telemetry: false,
+      sourcemaps: { disable: !upload, deleteSourcemapsAfterUpload: true },
+      release: { create: upload },
+      widenClientFileUpload: upload,
+      bundleSizeOptimizations: { excludeDebugStatements: true },
+    },
+  );
+}
+
+export default await withSentry(nextConfig);

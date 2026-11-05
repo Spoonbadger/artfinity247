@@ -6,6 +6,7 @@ import { NextRequest } from "next/server";
 import type Stripe from "stripe";
 import { stripeOrNull } from "@/lib/stripeConnect";
 import { BILLING_EVENTS, handleBillingEvent, liveDeps } from "@/lib/billing";
+import { reportError } from "@/lib/monitor";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -22,6 +23,7 @@ export async function POST(req: NextRequest) {
     event = stripe.webhooks.constructEvent(rawBody, sig, secret);
   } catch (err) {
     console.error("Billing webhook signature error:", (err as Error).message);
+    await reportError(err, { area: "webhook", name: "stripe-billing-signature", level: "warning" });
     return new Response(`Webhook error: ${(err as Error).message}`, { status: 400 });
   }
 
@@ -32,6 +34,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     // 500 makes Stripe retry; every handler is safe to run twice.
     console.error("Billing webhook failed:", event.type, event.id, err);
+    await reportError(err, { area: "webhook", name: "stripe-billing", extra: { eventId: event.id, type: event.type }, adminAlert: true });
     return new Response("Billing webhook failed", { status: 500 });
   }
   return new Response(null, { status: 200 });

@@ -37,6 +37,12 @@ export async function GET(req: NextRequest) {
       Math.round(l.split * 100), dollars(l.shareCents), l.status, l.payoutMonth, l.clearsAt.slice(0, 10), csv(l.source || ""), l.refunded ?? "",
     ].join(","));
   }
+  // Refund adjustments: a paid-out sale refunded later, taken off a payout (negative share).
+  for (const a of b.adjustments) {
+    const label = `Refund adjustment: ${a.title} (order #${a.orderRef})`;
+    if ((status && a.status !== status) || (bucket && bucketOf(a, b.currentMonth) !== bucket) || (q && !`${label} ${a.orderRef}`.toLowerCase().includes(q))) continue;
+    lines.push([a.date.slice(0, 10), csv(label), "", "", "", "", "", "", "", "", "", "", dollars(a.amountCents), a.status, a.payoutMonth, "", "", "adjustment"].join(","));
+  }
   return new NextResponse(lines.join("\n"), {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",

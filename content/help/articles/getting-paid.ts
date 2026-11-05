@@ -23,6 +23,9 @@ Earnings are paid monthly. All of a month's sales are paid by the ${PAYOUT_DAY} 
 
 Sales from the last days of a month may still be inside the ${RETURN_WINDOW_DAYS}-day window on the ${PAYOUT_DAY}. They're still in that month's payout.
 
+## Refunds after you're paid
+If a sale you were already paid for is refunded later for a buyer return or chargeback, your share of it may come off your next payout as a **Refund adjustment** (with the order number) on your Money page. A payout never goes below $0; anything left carries to the next one. Refunds for damaged, misprinted or wrong prints never come out of money you've been paid.
+
 ## Where to see it
 [Money](/studio/money) shows what's pending, what's coming in the next payout and when, every past payout, and each sale with its costs and your share. We email you when a payout is sent.
 

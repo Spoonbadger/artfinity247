@@ -14,7 +14,8 @@ import { alertKey, raiseAlert, resolveAlerts } from "@/lib/alerts";
 import { duplicateAlert, moderationAlert } from "@/lib/alertBuilders";
 
 /**
- * Admin alert for a new upload that waits for review: a possible duplicate, or a new artist's first pieces.
+ * Admin alert for a new upload that waits for review: a possible duplicate, a new artist's first pieces, or a piece
+ * the automatic image check held (lib/moderation).
  * Goes in the daily digest. Never throws.
  */
 export async function alertArtworkNeedsReview(artworkId: string) {
@@ -23,7 +24,7 @@ export async function alertArtworkNeedsReview(artworkId: string) {
     .catch(() => null);
   if (!a || a.status !== "PENDING") return;
   const artist = a.artist.artist_name || a.artist.name;
-  await raiseAlert(a.flaggedReason?.startsWith(DUPLICATE_PREFIX) ? duplicateAlert(a.id, a.title, artist) : moderationAlert(a.id, a.title, artist));
+  await raiseAlert(a.flaggedReason?.startsWith(DUPLICATE_PREFIX) ? duplicateAlert(a.id, a.title, artist) : moderationAlert(a.id, a.title, artist, a.flaggedReason));
 }
 
 /** An admin approved, rejected or deleted the piece: its review alerts are done. */

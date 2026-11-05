@@ -18,6 +18,9 @@ type Row = {
   expenses: number;
   profit: number;
   artistShare: number;
+  /** Refund adjustments booked to this month and carried in from earlier ones (≤ 0, lib/refunds.ts). */
+  refundAdjustments?: number;
+  carriedIn?: number;
   closed?: boolean;
   late?: boolean;
   payout: { status: "PAID" | "UNPAID"; paidAt: string | null; amountCents: number; method?: string | null; stripeTransferId?: string | null; failureReason?: string | null };
@@ -125,7 +128,7 @@ export default function PayoutsTable({ month }: { month: string }) {
                     <td className="px-3 py-3 text-right">{usd(r.gross)}</td>
                     <td className="px-3 py-3 text-right text-ink-2">{usd(r.expenses)}</td>
                     <td className="px-3 py-3 text-right">{usd(r.profit)}</td>
-                    <td className="px-3 py-3 text-right text-[16px] font-bold text-earned">{usd(r.artistShare)}</td>
+                    <td className="px-3 py-3 text-right text-[16px] font-bold text-earned">{usd(r.artistShare)}<AdjustNote r={r} /></td>
                     <td className="px-4 py-3 text-right"><PayButton r={r} busy={busy === r.artistId} onClick={() => toggle(r)} /></td>
                   </tr>
                 ))}
@@ -141,7 +144,7 @@ export default function PayoutsTable({ month }: { month: string }) {
                       <b className="flex flex-wrap items-center gap-1.5"><span className="truncate">{r.artistName}</span><Badges r={r} /></b>
                       <span className="text-[13px] text-ink-2"><PaidTo r={r} /> · {r.itemsCount} {r.itemsCount === 1 ? "print" : "prints"}</span>
                     </div>
-                    <b className="num shrink-0 text-[18px] text-earned">{usd(r.artistShare)}</b>
+                    <b className="num shrink-0 text-right text-[18px] text-earned">{usd(r.artistShare)}<AdjustNote r={r} /></b>
                   </div>
                   <div className="num text-[12.5px] text-ink-2">{usd(r.gross)} sales · {usd(r.expenses)} costs · {usd(r.profit)} profit</div>
                   <PayButton r={r} busy={busy === r.artistId} onClick={() => toggle(r)} />
@@ -153,6 +156,13 @@ export default function PayoutsTable({ month }: { month: string }) {
       </div>
     </div>
   );
+}
+
+/** "after −$12.00 refund adjustment": a paid-out refund taken off this month (lib/refunds.ts). */
+function AdjustNote({ r }: { r: Row }) {
+  const cents = (r.refundAdjustments ?? 0) + (r.carriedIn ?? 0);
+  if (!cents) return null;
+  return <span className="block text-[11.5px] font-semibold text-coral" title="A refund on a sale that was already paid out comes off this payout. It never goes below $0; the rest carries to next month.">after {usd(cents)} refund adj.</span>;
 }
 
 /** Where the money goes: Stripe when connected and ready, else Venmo by hand. */
