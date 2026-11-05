@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { Download } from "lucide-react";
 import { PaintChip } from "@/components/af/Brush";
 import { StudioPage } from "@/components/studio/StudioPage";
+import { EmptyState } from "@/components/studio/EmptyState";
+import ExportCsvButton from "@/components/money/ExportCsvButton";
+import { prisma } from "@/lib/prisma";
 import HelpLink from "@/components/help/HelpLink";
 import ViewsChart from "@/components/studio/ViewsChart";
 import { conversion, getArtistAnalytics, parseRange, RANGES } from "@/lib/analytics";
@@ -21,7 +23,8 @@ const DEVICE: Record<string, string> = { mobile: "Phone", desktop: "Computer", t
 export default async function AnalyticsPage({ searchParams }: { searchParams: { range?: string } }) {
   const artist = await requireArtist("/studio/analytics");
   const range = parseRange(searchParams.range);
-  const a = await getArtistAnalytics(artist.id, range);
+  const [a, artCount] = await Promise.all([getArtistAnalytics(artist.id, range), prisma.artwork.count({ where: { artistId: artist.id } })]);
+  const longer = range < 90 ? `/studio/analytics?range=90` : null;
   const win = `last ${range} days`;
   const maxSource = Math.max(1, ...a.sources.map((s) => s.views));
   const deviceTotal = a.devices.reduce((s, d) => s + d.views, 0) || 1;
@@ -34,12 +37,11 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
       actions={
         <>
           <HelpLink href="/help/growing/analytics" />
-          <a href={`/api/studio/analytics?range=${range}`} className="btn btn-ghost" download>
-            <Download className="h-4 w-4" aria-hidden="true" />Export CSV
-          </a>
+          {a.everViewed && <ExportCsvButton href={`/api/studio/analytics?range=${range}`} />}
         </>
       }
     >
+      {a.everViewed && (
       <nav aria-label="Time range" className="flex gap-1.5">
         {RANGES.map((r) => {
           const on = r === range;
@@ -51,7 +53,9 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
           );
         })}
       </nav>
+      )}
 
+      {a.everViewed && (
       <section aria-label={`Totals, ${win}`} className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
         <PaintChip color="#2b37f0" value={n(a.views)} label="page views" note={win} />
         <PaintChip color="#5bc0be" value={n(a.visitors)} label="visitors" note={win} />
@@ -61,18 +65,38 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
           <PaintChip color="#0f7a55" value={conversion(a.sales, a.visitors)} label="of visitors bought" note={win} earned />
         </div>
       </section>
+      )}
+      {a.everViewed && !a.views && !a.scans && (
+        <EmptyState
+          compact
+          title={`No visits in the ${win}`}
+          body="Your page has had visitors before, just not in this window. A longer range shows them, and a fresh share brings new ones."
+          action={longer ? { label: "See 90 days", href: longer } : { label: "Open Share kit", href: "/studio/share" }}
+          secondary={longer ? { label: "Open Share kit", href: "/studio/share" } : { label: "Print a QR code", href: "/studio/qr" }}
+        />
+      )}
 
       {!a.everViewed ? (
-        <div className="grid justify-items-center gap-4 rounded-[4px] border-2 border-dashed border-line bg-wall px-6 py-16 text-center">
-          <h2 className="display text-[34px]">No views yet.</h2>
-          <p className="text-ink-2">Share your page and views show up here.</p>
-          <div className="flex flex-wrap justify-center gap-2">
-            <Link href="/studio/share" className="btn btn-blue">Share kit</Link>
-            <Link href="/studio/qr" className="btn btn-ghost">Print codes</Link>
-          </div>
-        </div>
+        artCount === 0 ? (
+          <EmptyState
+            title="No views yet"
+            body="Once people visit your page, you'll see views by day, where visitors came from (QR codes, Instagram, links), their devices and your top pieces. Add a piece first so there's something to see."
+            action={{ label: "Add your first piece", href: "/studio/art/new" }}
+            secondary={{ label: "Share your page", href: "/studio/share" }}
+            help={{ label: "How analytics work", href: "/help/growing/analytics" }}
+          />
+        ) : (
+          <EmptyState
+            title="No views yet"
+            body="Share your page or hang a printed code and visits show up here within minutes: views by day, where visitors came from, their devices and your top pieces."
+            action={{ label: "Open Share kit", href: "/studio/share" }}
+            secondary={{ label: "Print a QR code", href: "/studio/qr" }}
+            help={{ label: "How analytics work", href: "/help/growing/analytics" }}
+          />
+        )
       ) : (
         <>
+          {a.views > 0 && (
           <section className="af-card grid content-start gap-3 p-4 sm:p-5" aria-labelledby="views-h">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h2 id="views-h" className="text-[20px] font-bold">Views by day</h2>
@@ -80,12 +104,13 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
             </div>
             <ViewsChart days={a.days} />
           </section>
+          )}
 
           <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
             <section className="af-card min-w-0 p-4 sm:p-5" aria-labelledby="sources-h">
               <h2 id="sources-h" className="mb-2 text-[20px] font-bold">Where visitors came from</h2>
               {a.sources.length === 0 ? (
-                <p className="text-[14px] text-ink-2">No visits in this range.</p>
+                <p className="text-[14px] text-ink-2">No visits in this range.{longer && <> <Link href={longer} className="font-semibold text-scan underline-offset-2 hover:underline">See 90 days</Link></>}</p>
               ) : (
                 <table className="num w-full border-collapse text-[14px]">
                   <thead>
@@ -126,7 +151,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
             <section className="af-card grid content-start gap-3 p-4 sm:p-5" aria-labelledby="devices-h">
               <h2 id="devices-h" className="text-[20px] font-bold">Devices</h2>
               {a.devices.length === 0 ? (
-                <p className="text-[14px] text-ink-2">No visits in this range.</p>
+                <p className="text-[14px] text-ink-2">No visits in this range.{longer && <> <Link href={longer} className="font-semibold text-scan underline-offset-2 hover:underline">See 90 days</Link></>}</p>
               ) : (
                 <ul className="grid gap-3.5">
                   {a.devices.map((d) => {
@@ -154,7 +179,10 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
               <span className="text-[12.5px] text-ink-2">{win}</span>
             </div>
             {a.artworks.length === 0 ? (
-              <p className="text-[14px] text-ink-2">Views of single pieces show up here.</p>
+              <p className="text-[14px] text-ink-2">
+                Views of single pieces show up here when someone opens one.{" "}
+                <Link href={artCount ? "/studio/qr" : "/studio/art/new"} className="font-semibold text-scan underline-offset-2 hover:underline">{artCount ? "Print a code for a piece" : "Add your first piece"}</Link>
+              </p>
             ) : (
               <table className="num w-full border-collapse text-[14px]">
                 <thead>

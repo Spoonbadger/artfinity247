@@ -20,7 +20,7 @@ export async function DELETE() {
       where: { id: user.id },
       select: { id: true, email: true, first_name: true, artist_name: true, name: true, closedAt: true, venmoHandle: true },
     });
-    if (!artist) return new NextResponse("Unauthorized", { status: 401 });
+    if (!artist) return NextResponse.json({ error: "Log in again to close your account.", code: "not_logged_in" }, { status: 401 });
 
     if (!artist.closedAt) {
       await closeArtistAccount(artist.id);
@@ -62,8 +62,8 @@ export async function DELETE() {
     });
     return res;
   } catch (err: any) {
-    if (err?.status === 401) return new NextResponse("Unauthorized", { status: 401 });
+    if (err?.status === 401) return NextResponse.json({ error: "Log in again to close your account.", code: "not_logged_in" }, { status: 401 });
     console.error("Close account failed:", err);
-    return new NextResponse("Server error", { status: 500 });
+    return NextResponse.json({ error: "We couldn't close your account just now. Try again, or message us and we'll do it for you." , code: "server_error" }, { status: 500 });
   }
 }

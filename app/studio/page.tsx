@@ -12,6 +12,7 @@ import { countArtistScans } from "@/lib/shortlinks";
 import { countArtistViews } from "@/lib/pageviews";
 import { getBalance } from "@/lib/balance";
 import BalanceChip from "@/components/money/BalanceChip";
+import { EmptyState } from "@/components/studio/EmptyState";
 import { requireArtist, firstName, getSales, getArtworks, dayKey, serverGreeting, timeAgo, SIZE_LABEL, STUDIO_TZ, usd } from "./_lib/data";
 
 export const dynamic = "force-dynamic";
@@ -76,6 +77,9 @@ export default async function StudioHome() {
   }
 
   const live = artworks.filter((a) => a.status !== "REJECTED");
+  const hasArt = artworks.length > 0;
+  // With no art the next step is always "upload"; with art and no sales it's "hang a code".
+  const firstStep = hasArt ? { label: "Print a code", href: "/studio/qr" } : { label: "Upload art", href: "/studio/art/new" };
 
   return (
     <div className="mx-auto grid max-w-[1320px] gap-6 px-4 pb-16 pt-6 sm:px-6 lg:px-10 lg:pt-9">
@@ -93,8 +97,8 @@ export default async function StudioHome() {
       </div>
 
       <section aria-label="Last 30 days" className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-        <PaintChip color="#e8743b" value={prints.toLocaleString("en-US")} label="prints sold" note={`Cadmium · ${sales.length} ${sales.length === 1 ? "order" : "orders"}`} />
-        <PaintChip color="#0f7a55" value={usd(earned)} label="you earned" note="Viridian · your share of profit" earned />
+        <PaintChip color="#e8743b" value={prints.toLocaleString("en-US")} label="prints sold" note={sales.length ? `Cadmium · ${sales.length} ${sales.length === 1 ? "order" : "orders"}` : hasArt ? "Cadmium · each sale lands here" : "Cadmium · upload art to start"} />
+        <PaintChip color="#0f7a55" value={usd(earned)} label="you earned" note={earned ? "Viridian · your share of profit" : "Viridian · you keep 60% of each sale's profit"} earned />
         <PaintChip color="#ffd43b" value={best ? best.title : "None yet"} label="best seller" note={best ? `Naples Yellow · ${best.prints} sold` : "Naples Yellow · hang a code"} />
         <Link href="/studio/codes" className="rounded-[3px] text-ink no-underline hover:opacity-90">
           <PaintChip color="#2b37f0" value={scans.toLocaleString("en-US")} label="scans" note={`Ultramarine · ${scanDelta}`} />
@@ -102,10 +106,17 @@ export default async function StudioHome() {
         </Link>
       </section>
 
-      <Link href="/studio/analytics" className="af-panel -mt-2 flex items-center justify-between gap-3 px-4 py-3 text-[14px] text-ink no-underline hover:border-ink">
-        <span className="flex items-baseline gap-2"><b className="num text-[18px]">{viewsWeek.toLocaleString("en-US")}</b> page views this week</span>
-        <span className="font-bold text-scan">Analytics →</span>
-      </Link>
+      {viewsWeek > 0 ? (
+        <Link href="/studio/analytics" className="af-panel -mt-2 flex items-center justify-between gap-3 px-4 py-3 text-[14px] text-ink no-underline hover:border-ink">
+          <span className="flex items-baseline gap-2"><b className="num text-[18px]">{viewsWeek.toLocaleString("en-US")}</b> page views this week</span>
+          <span className="font-bold text-scan">Analytics →</span>
+        </Link>
+      ) : (
+        <Link href={hasArt ? "/studio/share" : "/studio/art/new"} className="af-panel -mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 text-[14px] text-ink no-underline hover:border-ink">
+          <span className="min-w-0"><b>No page views this week yet.</b> <span className="text-ink-2">{hasArt ? "Share your page and visits show up here." : "Upload a piece, then share your page."}</span></span>
+          <span className="font-bold text-scan">{hasArt ? "Share kit →" : "Upload art →"}</span>
+        </Link>
+      )}
 
       <BalanceChip b={balance} />
 
@@ -119,7 +130,18 @@ export default async function StudioHome() {
             <h2 id="chart-h" className="text-[20px] font-bold">Prints sold, by day</h2>
             <span className="num text-[12.5px] text-ink-2">{prints} in 30 days</span>
           </div>
-          <SalesChart days={days} />
+          {prints > 0 ? (
+            <SalesChart days={days} />
+          ) : (
+            <EmptyState
+              compact
+              dab="#e8743b"
+              title={allSales.length ? "No sales in the last 30 days" : "No sales yet"}
+              body={hasArt ? "Hang a code where people linger. Each print sold shows up here, by day." : "Upload your first piece and print its code. Each print sold shows up here, by day."}
+              action={firstStep}
+              help={{ label: "Where to hang codes", href: "/help/getting-started/hanging-codes" }}
+            />
+          )}
         </section>
 
         <NextSteps hasProfile={!!artist.profileImage && !!artist.bio?.trim()} hasArt={artworks.length > 0} hasSold={allSales.length > 0} hasVenmo={!!artist.venmoHandle || balance.payoutVia === "stripe"} hasEvent={eventCount > 0} slug={artist.slug} />
@@ -132,7 +154,13 @@ export default async function StudioHome() {
             <Link href="/studio/sales" className="-my-3 inline-flex min-h-[44px] items-center text-[14px] font-bold text-scan">All sales</Link>
           </div>
           {allSales.length === 0 ? (
-            <p className="text-[14px] text-ink-2">No sales yet. Hang a code where people linger.</p>
+            <EmptyState
+              compact
+              dab="#0f7a55"
+              title="No sales yet"
+              body="Hang a code where people linger. Each sale shows up here with what you earned."
+              action={firstStep}
+            />
           ) : (
             <ul className="grid gap-3">
               {allSales.slice(0, 6).map((s) => (
@@ -155,7 +183,13 @@ export default async function StudioHome() {
             <span className="text-[12.5px] text-ink-2">30 days</span>
           </div>
           {top.length === 0 ? (
-            <p className="text-[14px] text-ink-2">Your best sellers show up here.</p>
+            <EmptyState
+              compact
+              dab="#ffd43b"
+              title="Your best sellers show up here"
+              body={hasArt ? "Once prints sell, your top four pieces of the month land here. Sharing your page brings buyers in." : "Upload a few pieces. Once prints sell, your top four land here."}
+              action={hasArt ? { label: "Share my page", href: "/studio/share" } : firstStep}
+            />
           ) : (
             <ol className="grid gap-2.5">
               {top.slice(0, 4).map((p, i) => (
@@ -180,6 +214,16 @@ export default async function StudioHome() {
           <h2 id="art-h" className="text-[20px] font-bold">My art</h2>
           <Link href="/studio/art" className="-my-3 inline-flex min-h-[44px] items-center text-[14px] font-bold text-scan">{live.length} {live.length === 1 ? "piece" : "pieces"}</Link>
         </div>
+        {!hasArt ? (
+          <EmptyState
+            compact
+            dab="#e8743b"
+            title="No paintings yet"
+            body="Upload your first and its QR code is ready to print."
+            action={{ label: "Upload art", href: "/studio/art/new" }}
+            help={{ label: "How uploading works", href: "/help/getting-started/upload-art" }}
+          />
+        ) : (
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
           {artworks.slice(0, 5).map((a) => (
             <Link key={a.id} href={`/studio/art/${a.slug}`} className="group grid content-start gap-1.5 text-[12.5px] text-ink no-underline">
@@ -198,6 +242,7 @@ export default async function StudioHome() {
             Add a piece
           </Link>
         </div>
+        )}
       </section>
     </div>
   );

@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { failed, problemFrom, saved as savedToast } from "@/lib/feedback";
+import { EmptyState } from "@/components/studio/EmptyState";
 import Medal from "@/components/af/Medal";
 import { cn } from "@/lib/utils";
 import { LAYOUTS, MAX_PINNED, PAINTS, paint, type Layout, type PageTheme, type PaintId } from "./theme";
@@ -38,13 +40,17 @@ export default function DesignEditor({ slug, initial, works, hasMedal }: { slug:
     setSaving(true);
     try {
       const res = await fetch("/api/studio/design", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ theme }) });
+      if (!res.ok) {
+        const p = await problemFrom(res, "Couldn't save your design.");
+        failed(p.message, { fix: p.fix, retry: p.fix || res.status < 500 ? undefined : save });
+        return;
+      }
       const j = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(j.error || "Couldn't save. Try again.");
       setTheme(j.theme);
       setSaved(JSON.stringify(j.theme));
-      toast.success("Saved. Your page is updated.");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't save. Try again.");
+      savedToast("Saved. Your page is updated.", { next: { label: "View page", href: `/@${slug}` } });
+    } catch {
+      failed("You seem to be offline", { description: "Your changes are still here. Check your connection and try again.", retry: save });
     } finally {
       setSaving(false);
     }
@@ -153,7 +159,12 @@ export default function DesignEditor({ slug, initial, works, hasMedal }: { slug:
         {/* Pinned */}
         <Section title="Pinned pieces" hint={`${theme.pinned.length} of ${MAX_PINNED}`}>
           {works.length === 0 ? (
-            <p className="text-[14px] text-ink-2">Approved pieces show up here.</p>
+            <EmptyState
+              compact
+              title="Nothing to pin yet"
+              body="Pin up to 3 favorite pieces to the top of your page. Your approved pieces show up here to pick from."
+              action={{ label: "Add your first piece", href: "/studio/art/new" }}
+            />
           ) : (
             <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
               {works.map((w) => {

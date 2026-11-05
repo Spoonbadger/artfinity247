@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic"
 export async function POST(req: NextRequest) {
   try {
     const token = req.cookies.get("auth-token")?.value;
-    if (!token) return new NextResponse("Not authenticated", { status: 401 });
+    if (!token) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
 
     const payload = await verifyAuthTokenOrThrow(token); // signature, expiry and session version
 
@@ -17,11 +17,11 @@ export async function POST(req: NextRequest) {
       (payload as any).artistId ||
       (payload as any).userId ||
       (payload as any).sub;
-    if (!artistId) return new NextResponse("Invalid token", { status: 401 });
+    if (!artistId) return NextResponse.json({ error: "Your session ended. Log in again.", code: "not_logged_in" }, { status: 401 });
 
     const { name } = await req.json();
     if (typeof name !== "string" || name.trim().length < 2 || name.trim().length > 80) {
-      return new NextResponse("Invalid name", { status: 400 });
+      return NextResponse.json({ error: "Your name needs at least 2 letters.", code: "invalid_input" }, { status: 400 });
     }
 
     const artist = await prisma.artist.update({
@@ -34,6 +34,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ artist }, { status: 200 });
   } catch (err) {
     console.error("POST /api/artists/update-name failed", err);
-    return new NextResponse("Server error", { status: 500 });
+    return NextResponse.json({ error: "Couldn't save. Try again in a moment.", code: "server_error" }, { status: 500 });
   }
 }

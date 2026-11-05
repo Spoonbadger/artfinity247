@@ -7,6 +7,7 @@ import { loadFonts } from "@/components/qr/text";
 import { cn } from "@/lib/utils";
 import { SIZE_IN } from "@/components/art/pricing";
 import { accentOf, artLink, dollars, editionLine, handleText, paletteFromPixels, priceLine, type ShareArt } from "./shareData";
+import { failed as toastFailed, saved as toastSaved } from "@/lib/feedback";
 import {
   TEMPLATES, VH, VW, drawFrame, findDetails, makeGrain, makeVideo, videoTypes,
   type TemplateId, type VideoAssets, type VideoInfo, type VideoType,
@@ -49,6 +50,7 @@ export default function VideoMaker({ art, base }: { art: ShareArt; base: string 
   const [lines, setLines] = useState<Record<TemplateId, string[]>>({ reveal: defaults("reveal"), wall: defaults("wall"), detail: defaults("detail") });
   const [assets, setAssets] = useState<VideoAssets | null>(null);
   const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [types, setTypes] = useState<VideoType[] | null>(null);
   const [typeIdx, setTypeIdx] = useState(0);
   const [playing, setPlaying] = useState(true);
@@ -81,7 +83,7 @@ export default function VideoMaker({ art, base }: { art: ShareArt; base: string 
     setAssets(null); setFailed(false); timeRef.current = 0;
     loadAssets(art, base).then((a) => live && setAssets(a)).catch((e) => { console.error(e); if (live) setFailed(true); });
     return () => { live = false; };
-  }, [art, base]);
+  }, [art, base, attempt]);
 
   // A finished video belongs to one artwork + template + captions; changing any of them clears it.
   const clearResult = useCallback(() => setResult((r) => { if (r) URL.revokeObjectURL(r.url); return null; }), []);
@@ -132,8 +134,12 @@ export default function VideoMaker({ art, base }: { art: ShareArt; base: string 
       let shown = 0;
       const blob = await makeVideo(tpl, assets, info, type, (k) => { if (k - shown >= 0.01 || k === 1) { shown = k; setProgress(k); } }, ac.signal);
       setResult({ url: URL.createObjectURL(blob), blob, type, id: tpl });
+      toastSaved("Your video is ready", { description: "Press Download, then post it with trending audio." });
     } catch (e) {
-      if ((e as Error).name !== "AbortError") { console.error(e); setFailed(true); }
+      if ((e as Error).name !== "AbortError") {
+        console.error(e);
+        toastFailed("The video didn't finish", { description: "Keep this tab open while it records. Closing or switching tabs can stop it.", retry: make });
+      }
     } finally {
       setProgress(null);
       busyRef.current = false;
@@ -161,7 +167,12 @@ export default function VideoMaker({ art, base }: { art: ShareArt; base: string 
             <>
               <canvas ref={canvasRef} width={540} height={960} className="absolute inset-0 h-full w-full" role="img" aria-label={`Preview: ${TEMPLATES[tpl].name} video of ${art.title}`} />
               {!assets && !failed && <span className="absolute inset-0 grid place-items-center text-[14px] text-ink-2">Mixing paint…</span>}
-              {failed && !assets && <span className="absolute inset-0 grid place-items-center p-6 text-center text-[14px] text-ink-2">Couldn&apos;t load this painting.</span>}
+              {failed && !assets && (
+                <span className="absolute inset-0 grid place-content-center justify-items-center gap-3 p-6 text-center text-[14px] text-ink-2">
+                  Couldn&apos;t load this painting.
+                  <button type="button" onClick={() => setAttempt((n) => n + 1)} className="btn btn-sm">Try again</button>
+                </span>
+              )}
               {assets && !busy && (
                 <button type="button" onClick={() => setPlaying((p) => !p)} className="absolute bottom-3 right-3 grid h-11 w-11 place-items-center rounded-full border-2 border-ink bg-white/90 text-ink" aria-label={playing ? "Pause preview" : "Play preview"}>
                   {playing ? <Pause size={18} /> : <Play size={18} />}
@@ -249,7 +260,7 @@ export default function VideoMaker({ art, base }: { art: ShareArt; base: string 
               </div>
             ) : result ? (
               <div className="grid gap-2 sm:flex sm:flex-wrap">
-                <a href={result.url} download={fileName} className="btn btn-blue btn-lg"><Download size={18} /> Download {result.type.label}</a>
+                <a href={result.url} download={fileName} onClick={() => toastSaved("Video downloaded", { description: "It's in your downloads, ready for Reels, TikTok or Shorts." })} className="btn btn-blue btn-lg"><Download size={18} /> Download {result.type.label}</a>
                 {canShareFiles && <button type="button" onClick={share} className="btn btn-ghost btn-lg"><Share2 size={18} /> Share…</button>}
                 <button type="button" onClick={clearResult} className="btn btn-ghost btn-lg">Back to preview</button>
               </div>

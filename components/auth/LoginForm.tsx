@@ -8,7 +8,7 @@ import { useUser } from "@/components/contexts";
 import { AuthCard, Field, FormAlert, PasswordField, Spinner } from "./ui";
 import { safeNext, withNext } from "./next";
 import SocialButtons, { OrDivider } from "./SocialButtons";
-import { OAUTH_ERROR_MESSAGES, type ProviderId } from "@/lib/oauth/meta";
+import { OAUTH_ERROR_MESSAGES, PROVIDER_LABEL, isProviderId, type ProviderId } from "@/lib/oauth/meta";
 
 const MESSAGES: Record<string, string> = {
   user_not_found: "No account with that email.",
@@ -17,6 +17,19 @@ const MESSAGES: Record<string, string> = {
   account_closed: "This account is closed — contact us to reopen.",
   account_suspended: "This account is paused — contact us.",
 };
+
+type LoginError = { text: string; link?: { label: string; href: string } };
+const CONTACT = { label: "Contact us", href: "/contact" };
+
+/** Social sign-in errors (?oauth_error=) that have a next step beyond "try the button again". */
+function oauthError(code: string, email: string): LoginError {
+  const text = OAUTH_ERROR_MESSAGES[code] || OAUTH_ERROR_MESSAGES.provider_error;
+  if (code === "account_closed") return { text: "This account is closed. We can reopen it for you.", link: CONTACT };
+  if (code === "account_suspended") return { text: "This account is paused. Message us and we'll sort it out.", link: CONTACT };
+  if (code === "email_in_use") return { text, link: { label: "Forgot your password?", href: withNext("/recover-password", null, { email }) } };
+  if (code === "already_linked") return { text, link: { label: "Help with social sign-in", href: "/help/account/social-sign-in" } };
+  return { text };
+}
 
 
 export default function LoginForm({ providers = [] }: { providers?: ProviderId[] }) {
@@ -27,19 +40,21 @@ export default function LoginForm({ providers = [] }: { providers?: ProviderId[]
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState(false);
-  const oauthError = params.get("oauth_error");
-  const [error, setError] = useState<string | null>(oauthError ? OAUTH_ERROR_MESSAGES[oauthError] || OAUTH_ERROR_MESSAGES.provider_error : null);
+  // ?oauth_error= from our social sign-in callback; ?error= in case a provider or an old link sends people back with it.
+  const oauthErrorCode = params.get("oauth_error") || params.get("error");
+  const [error, setError] = useState<LoginError | null>(oauthErrorCode ? oauthError(oauthErrorCode, params.get("email") || "") : null);
   const next = safeNext(params.get("next"));
+  const closed = !!params.get("closed");
   const notice = params.get("reset")
     ? "Password updated. Log in with the new one."
-    : params.get("closed")
-      ? "Your account is closed. You'll still be paid what you've earned."
+    : closed
+      ? <>Your account is closed. You&apos;ll still be paid what you&apos;ve earned. Want it back? <Link href="/contact" className="underline underline-offset-4">Contact us</Link> to reopen it.</>
       : null;
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!email.trim() || !password) return setError(MESSAGES.missing_fields);
+    if (!email.trim() || !password) return setError({ text: MESSAGES.missing_fields });
     setBusy(true);
     try {
       const res = await fetch("/api/auth/login", {
@@ -49,7 +64,21 @@ export default function LoginForm({ providers = [] }: { providers?: ProviderId[]
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        setError(res.status === 429 ? "Too many tries. Wait a minute and try again." : MESSAGES[data?.code] || "Couldn't log you in. Try again.");
+        const code = data?.code as string | undefined;
+        const typed = email.trim();
+        const reset = withNext("/recover-password", next, { email: typed });
+        if (res.status === 429) setError({ text: "Too many tries. Wait a minute and try again.", link: { label: "Reset your password instead", href: reset } });
+        else if (code === "bad_password") setError({ text: MESSAGES.bad_password, link: { label: "Forgot it? Reset your password", href: reset } });
+        else if (code === "user_not_found") setError({ text: `${MESSAGES.user_not_found} Check the spelling, or make a page with it.`, link: { label: "Claim your page", href: withNext("/register", next) } });
+        else if (code === "social_only") {
+          const names = ((data?.providers as string[]) || []).filter(isProviderId).map((p) => PROVIDER_LABEL[p]);
+          setError(
+            names.length
+              ? { text: `This account logs in with ${names.join(" or ")}, not a password${providers.length ? ": use the button above" : ""}. Once you're in, you can add a password in Studio → My page.`, link: { label: `Can't use ${names[0]}? Contact us`, href: "/contact" } }
+              : { text: "This account has no password yet. We can email you a link to set one.", link: { label: "Email me a link", href: reset } },
+          );
+        } else if (code === "account_closed" || code === "account_suspended") setError(oauthError(code, typed));
+        else setError({ text: data?.error || MESSAGES[code || ""] || "Couldn't log you in. Try again." });
         setBusy(false);
         return;
       }
@@ -58,7 +87,7 @@ export default function LoginForm({ providers = [] }: { providers?: ProviderId[]
       router.push(next || (admin ? "/admin/orders" : "/studio"));
       router.refresh();
     } catch {
-      setError("Couldn't reach Artfinity. Check your connection.");
+      setError({ text: "Couldn't reach Artfinity. Check your connection." });
       setBusy(false);
     }
   }
@@ -70,7 +99,19 @@ export default function LoginForm({ providers = [] }: { providers?: ProviderId[]
           Welcome <Brushed>back</Brushed>
         </h1>
         <FormAlert tone="ok">{notice}</FormAlert>
-        <FormAlert>{error}</FormAlert>
+        <FormAlert>
+          {error && (
+            <>
+              {error.text}
+              {error.link && (
+                <>
+                  {" "}
+                  <Link href={error.link.href} className="whitespace-nowrap underline underline-offset-4 hover:text-scan">{error.link.label}</Link>
+                </>
+              )}
+            </>
+          )}
+        </FormAlert>
         {providers.length > 0 && (
           <>
             <SocialButtons providers={providers} next={next} />

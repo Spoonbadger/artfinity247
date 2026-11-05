@@ -19,13 +19,13 @@ export const dynamic = "force-dynamic"
 
 export async function POST(req: NextRequest) {
   const token = req.cookies.get('auth-token')?.value;
-  if (!token) return new NextResponse('Not authenticated', { status: 401 });
+  if (!token) return NextResponse.json({ error: "Log in to keep going.", code: "not_logged_in" }, { status: 401 });
 
   try {
     const rawIp = req.headers.get("x-forwarded-for");
     const ip = rawIp?.split(",")[0]?.trim() || "unknown";
     if (!rateLimit(ip)) {
-      return new NextResponse("Too many requests", { status: 429 });
+      return NextResponse.json({ error: "Too many uploads at once. Wait a minute and try again.", code: "rate_limited" }, { status: 429 });
     }
 
     const { payload } = await jwtVerify(
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (uploadCount >= DAILY_UPLOAD_LIMIT) {
-      return new NextResponse(`Daily upload limit reached (${DAILY_UPLOAD_LIMIT})`, { status: 429 });
+      return NextResponse.json({ error: `That's today's upload limit (${DAILY_UPLOAD_LIMIT}). Upload more tomorrow.`, code: "upload_limit" }, { status: 429 });
     }
 
     const form = await req.formData();
@@ -63,26 +63,26 @@ export async function POST(req: NextRequest) {
     // notification wait for one summary of the whole batch (POST /api/artworks/upload/summary).
     const batch = String(form.get("batch") ?? "") === "1";
 
-    if (!title) return new NextResponse("Title required", { status: 400 });
-    if (!imageUrl) return new NextResponse("Image required", { status: 400 });
-    if (!ownership) return new NextResponse("Confirm this is your original work and you hold the rights to sell prints of it.", { status: 400 });
+    if (!title) return NextResponse.json({ error: "Give it a title.", code: "title_required" }, { status: 400 });
+    if (!imageUrl) return NextResponse.json({ error: "Add an image first.", code: "image_required" }, { status: 400 });
+    if (!ownership) return NextResponse.json({ error: "Confirm this is your original work and you hold the rights to sell prints of it.", code: "ownership_required" }, { status: 400 });
     if (!printable || !verifyPrintable(imageUrl, printable, form.get("printableSig"))) {
-      return new NextResponse("Upload the image again so we can check its print sizes.", { status: 400 });
+      return NextResponse.json({ error: "Upload the image again so we can check its print sizes.", code: "reupload" }, { status: 400 });
     }
-    if (!printable.length) return new NextResponse("This file is too small to print well. Try the original photo or a bigger scan.", { status: 400 });
+    if (!printable.length) return NextResponse.json({ error: "This file is too small to print well. Try the original photo or a bigger scan.", code: "image_too_small" }, { status: 400 });
     const markupSmall = parseInt(form.get("markupSmall") as string) || 0;
     const markupMedium = parseInt(form.get("markupMedium") as string) || 0;
     const markupLarge = parseInt(form.get("markupLarge") as string) || 0;
     const markupXl = parseInt(form.get("markupXl") as string) || 0
     // A markup is what the artist adds on top of the base price, so it can't be negative.
     if ([markupSmall, markupMedium, markupLarge, markupXl].some((m) => m < 0)) {
-      return new NextResponse("Prices can't go below the starting price for each size.", { status: 400 })
+      return NextResponse.json({ error: "Prices can't go below the starting price for each size.", code: "price_too_low" }, { status: 400 })
     }
     // Limited print run: empty = open edition, otherwise EDITION_MIN..EDITION_MAX prints.
     const editionRaw = String(form.get("editionSize") ?? "").trim()
     const editionSize = editionRaw ? parseInt(editionRaw, 10) : null
     if (editionSize !== null && (!Number.isFinite(editionSize) || editionSize < EDITION_MIN || editionSize > EDITION_MAX)) {
-      return new NextResponse(`An edition is ${EDITION_MIN} to ${EDITION_MAX} prints.`, { status: 400 })
+      return NextResponse.json({ error: `An edition is ${EDITION_MIN} to ${EDITION_MAX} prints.`, code: "invalid_edition" }, { status: 400 })
     }
 
 
@@ -174,6 +174,8 @@ export async function POST(req: NextRequest) {
     })
   } catch (err) {
     console.error('Upload error:', err);
-    return new NextResponse('Server error', { status: 500 });
+    // An expired or tampered login cookie: ask them to log in again rather than calling it our fault.
+    if (String((err as { code?: unknown })?.code ?? "").startsWith("ERR_JW")) return NextResponse.json({ error: "Your login ran out. Log in again to keep going.", code: "not_logged_in" }, { status: 401 })
+    return NextResponse.json({ error: "Something went wrong on our side. Try again in a moment.", code: "server_error" }, { status: 500 });
   }
 }

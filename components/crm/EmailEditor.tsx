@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Clock, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { failed, problemFrom, saved as savedToast } from "@/lib/feedback";
 import {
   DEFAULT_TEMPLATES, EMAIL_KINDS, EMAIL_KIND_LABEL, EMAIL_KIND_WHEN, EMAIL_LIMITS, EMAIL_VARIABLES,
   renderArtistEmail, type EmailKind, type EmailVars,
@@ -77,14 +78,21 @@ export default function EmailEditor({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ kind, subject: draft.subject, body: draft.body, enabled: draft.enabled }),
       });
+      if (!res.ok) {
+        const p = await problemFrom(res, "Couldn't save this email.");
+        setStatus({ ok: false, text: p.message });
+        failed(p.message, { fix: p.fix, retry: p.fix || res.status < 500 ? undefined : save });
+        return;
+      }
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "Could not save.");
       const t: EditorTemplate = { subject: data.template.subject, body: data.template.body, enabled: data.template.enabled, custom: true };
       setSaved((s) => ({ ...s, [kind]: t }));
       setDrafts((d) => ({ ...d, [kind]: t }));
       setStatus({ ok: true, text: "Saved." });
-    } catch (err) {
-      setStatus({ ok: false, text: err instanceof Error ? err.message : "Could not save." });
+      savedToast(`${EMAIL_KIND_LABEL[kind]} email saved`, { description: t.enabled ? "Buyers get your wording from the next order." : kind === "thank_you" ? "It's off, so it won't be sent." : "It's off, so buyers get Artfinity's standard email." });
+    } catch {
+      setStatus({ ok: false, text: "You seem to be offline." });
+      failed("You seem to be offline", { description: "Your words are still here. Check your connection and try again.", retry: save });
     } finally {
       setBusy(false);
     }
@@ -97,14 +105,17 @@ export default function EmailEditor({
     try {
       if (saved[kind].custom) {
         const res = await fetch(`/api/studio/emails?kind=${kind}`, { method: "DELETE" });
-        if (!res.ok) throw new Error("Could not reset.");
+        if (!res.ok) throw new Error((await problemFrom(res, "Couldn't reset this email.")).message);
       }
       const t: EditorTemplate = { ...DEFAULT_TEMPLATES[kind], enabled: true, custom: false };
       setSaved((s) => ({ ...s, [kind]: t }));
       setDrafts((d) => ({ ...d, [kind]: t }));
       setStatus({ ok: true, text: "Back to default." });
+      savedToast("Back to Artfinity's wording");
     } catch (err) {
-      setStatus({ ok: false, text: err instanceof Error ? err.message : "Could not reset." });
+      const msg = err instanceof TypeError ? "You seem to be offline." : err instanceof Error ? err.message : "Couldn't reset this email.";
+      setStatus({ ok: false, text: msg });
+      failed(msg, { retry: reset });
     } finally {
       setBusy(false);
     }
@@ -224,11 +235,17 @@ export default function EmailEditor({
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-dashed border-line pt-3">
-            <button type="button" className="btn btn-ghost btn-sm" onClick={reset} disabled={busy || (!saved[kind].custom && isDefaultText && draft.enabled)}>
-              <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />Reset to default
-            </button>
+            {!saved[kind].custom && isDefaultText && draft.enabled ? (
+              <span className="text-[13px] text-ink-2">Using Artfinity&apos;s standard wording. Edit it above to make it yours.</span>
+            ) : (
+              <button type="button" className="btn btn-ghost btn-sm" onClick={reset} disabled={busy}>
+                <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />Reset to default
+              </button>
+            )}
             <span className="flex items-center gap-3">
-              <span aria-live="polite" className={cn("text-[13.5px] font-semibold", status?.ok ? "text-earned" : "text-coral")}>{status?.text}</span>
+              <span aria-live="polite" className={cn("text-[13.5px] font-semibold", status?.ok ? "text-earned" : status ? "text-coral" : "text-ink-2")}>
+                {status?.text ?? (!dirty(kind) && saved[kind].custom ? "All saved" : "")}
+              </span>
               <button type="button" className="btn btn-blue btn-sm" onClick={save} disabled={busy || (!dirty(kind) && saved[kind].custom)}>
                 {busy ? "Saving…" : "Save"}
               </button>

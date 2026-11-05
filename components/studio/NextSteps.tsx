@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { BrushStroke } from "@/components/af/Brush";
 import { cn } from "@/lib/utils";
 import { readLocalEvents } from "./events-store";
+import { failed, saved } from "@/lib/feedback";
 
 export const SHARED_KEY = "af-studio-shared";
 
@@ -23,7 +24,13 @@ export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true
 
   async function copyLink() {
     const url = `https://theartfinity.com/@${slug}`;
-    try { await navigator.clipboard.writeText(url); } catch {}
+    try {
+      await navigator.clipboard.writeText(url);
+      saved("Link copied", { description: url, next: { label: "Share kit", href: "/studio/share" } });
+    } catch {
+      failed("Couldn't copy the link", { description: url, fix: { label: "Open Share kit", href: "/studio/share" } });
+      return;
+    }
     try { localStorage.setItem(SHARED_KEY, "1"); } catch {}
     setShared(true);
     setCopied(true);
@@ -38,7 +45,7 @@ export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true
     { label: "Share your page", done: shared, act: copied ? "Copied" : "Copy link", onClick: copyLink },
   ];
   // Only shown while missing, so it reads as a warning rather than a chore.
-  if (!hasVenmo) steps.unshift({ label: "Add your Venmo to get paid", done: false, href: "/studio/page", act: "Add" });
+  if (!hasVenmo) steps.unshift({ label: "Add your Venmo to get paid", done: false, href: "/studio/page#venmo", act: "Add" });
   const done = steps.filter((s) => s.done).length;
 
   return (

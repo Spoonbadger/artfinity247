@@ -2,7 +2,7 @@
 
 // The artist's single public reply under a review, in the Studio. Write once, edit any time, or remove.
 import { useState } from "react";
-import { toast } from "sonner";
+import { failed, problemFrom, saved } from "@/lib/feedback";
 
 export default function ReplyBox({ reviewId, initial, buyerFirst }: { reviewId: string; initial: string | null; buyerFirst: string }) {
   const [reply, setReply] = useState(initial || "");
@@ -14,14 +14,18 @@ export default function ReplyBox({ reviewId, initial, buyerFirst }: { reviewId: 
     setBusy(true);
     try {
       const r = await fetch(`/api/studio/reviews/${reviewId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reply: text }) });
+      if (!r.ok) {
+        const p = await problemFrom(r, "Couldn't save your reply.");
+        failed(p.message, { fix: p.fix, retry: p.fix || r.status < 500 ? undefined : () => save(text) });
+        return;
+      }
       const j = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(j.error || "Couldn't save.");
       setReply(j.review?.artistReply || "");
       setDraft(j.review?.artistReply || "");
       setOpen(false);
-      toast.success(text ? (reply ? "Reply updated" : "Reply posted") : "Reply removed");
-    } catch (e: any) {
-      toast.error(e?.message || "Couldn't save.");
+      saved(text ? (reply ? "Reply updated" : "Reply posted") : "Reply removed", { description: text ? `It shows under ${buyerFirst}'s review on your page.` : undefined });
+    } catch {
+      failed("You seem to be offline", { description: "Your reply is still in the box. Check your connection and try again.", retry: () => save(text) });
     } finally {
       setBusy(false);
     }

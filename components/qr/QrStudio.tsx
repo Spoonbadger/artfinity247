@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Check, Download, FileText, ImageIcon, Layers, Loader2, Plus } from "lucide-react";
-import { toast } from "sonner";
+import { errorText, failed, problemFrom, saved as savedToast } from "@/lib/feedback";
 import { qrSVG } from "@/lib/qr/render";
 import { breakdown, money, SIZE_NAME, SIZE_INCHES, type SizeKey } from "@/lib/earnings";
 import { getArtistSplit } from "@/lib/revenue";
@@ -69,7 +69,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
     return () => { io.disconnect(); fo.disconnect(); };
   }, []);
 
-  useEffect(() => { loadFonts().then(setFonts).catch(() => toast.error("Could not load the card fonts. Refresh to try again.")); }, []);
+  useEffect(() => { loadFonts().then(setFonts).catch(() => failed("Could not load the card fonts", { description: "The PDF still works. Refresh to get SVG downloads back.", fix: { label: "Refresh", href: window.location.pathname + window.location.search } })); }, []);
 
   const art = arts.find((a) => a.slug === slug) || arts[0];
   // The code holds only a short link. Before it's saved, the preview uses a same-length placeholder.
@@ -104,14 +104,18 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
         headers: JSON_HEADERS,
         body: JSON.stringify(existing ? codeMeta() : { artworkSlug: art.slug, ...codeMeta() }),
       });
+      if (!r.ok) {
+        const p = await problemFrom(r, "Couldn't save the code. Try again.");
+        failed(p.message, { fix: p.fix, retry: p.fix ? undefined : () => { void saveCode(); } });
+        return null;
+      }
       const j = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(j?.error || "save failed");
       const c: string = existing || j.code;
       setCodes((o) => ({ ...o, [art.slug]: c }));
       setSnaps((o) => ({ ...o, [art.slug]: snap }));
       return c;
     } catch (e) {
-      toast.error(e instanceof Error && e.message !== "save failed" ? e.message : "Couldn't save the code. Try again.");
+      failed(errorText(e, "Couldn't save the code. Try again."), { retry: () => { void saveCode(); } });
       return null;
     }
   }
@@ -119,7 +123,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
     setBusy("save");
     const c = await ensureCode();
     setBusy("");
-    if (c) toast.success(`Saved as ${c}`, { description: "Change it any time in My codes." });
+    if (c) savedToast(`Saved as ${c}`, { description: "Change it any time in My codes.", next: { label: "My codes", href: `/studio/codes/${c}` } });
   }
   function newCode() {
     setCodes((o) => { const n = { ...o }; delete n[art.slug]; return n; });
@@ -147,11 +151,16 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
         body = { slug: art.slug, design: d, code: c };
       }
       const r = await fetch("/api/qr/print", { method: "POST", headers: JSON_HEADERS, body: JSON.stringify(body) });
-      if (!r.ok) throw new Error(await r.text());
+      if (!r.ok) {
+        const p = await problemFrom(r, "The PDF didn't download. Try again.");
+        failed(p.message, { fix: p.fix, retry: p.fix ? undefined : () => { void downloadPdf(all); } });
+        return;
+      }
       save(await r.blob(), all ? `artfinity-all-codes-${d.format}.pdf` : `${fileBase}-sheet.pdf`);
-      if (all) toast.success(`Made ${r.headers.get("X-Af-Codes") || arts.length} codes`, { description: "One per piece. See them in My codes.", action: { label: "My codes", onClick: () => { window.location.href = "/studio/codes"; } } });
-    } catch {
-      toast.error("The PDF didn't download. Try again.");
+      if (all) savedToast(`Made ${r.headers.get("X-Af-Codes") || arts.length} codes`, { description: "One per piece. See them in My codes.", next: { label: "My codes", href: "/studio/codes" } });
+      else savedToast("Print sheet downloaded", { description: "Its code is saved in My codes. Print at 100% scale.", next: { label: "My codes", href: "/studio/codes" } });
+    } catch (e) {
+      failed(errorText(e, "The PDF didn't download. Try again."), { retry: () => { void downloadPdf(all); } });
     } finally { setBusy(""); }
   }
   async function downloadSvg() {
@@ -162,6 +171,9 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
       if (!c) return;
       const out = renderCard(d, art, fonts, shortUrl(c, base));
       save(new Blob([`<?xml version="1.0" encoding="UTF-8"?>\n${cardSVG(out)}`], { type: "image/svg+xml" }), `${fileBase}.svg`);
+      savedToast("SVG downloaded", { description: `Code ${c} is saved in My codes.` });
+    } catch (e) {
+      failed(errorText(e, "The SVG didn't download. Try again."), { retry: () => { void downloadSvg(); } });
     } finally { setBusy(""); }
   }
   async function downloadPng() {
@@ -179,9 +191,11 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
       g.fillStyle = d.bg; g.fillRect(0, 0, 1200, 1200); g.drawImage(img, 0, 0, 1200, 1200);
       URL.revokeObjectURL(url);
       const blob = await new Promise<Blob | null>((res) => cv.toBlob(res, "image/png"));
-      if (blob) save(blob, `${art.slug}-${c}.png`);
-    } catch {
-      toast.error("The PNG didn't download. Try again.");
+      if (!blob) throw new Error("The PNG didn't download. Try again.");
+      save(blob, `${art.slug}-${c}.png`);
+      savedToast("Code PNG downloaded", { description: `Code ${c} is saved in My codes.` });
+    } catch (e) {
+      failed(errorText(e, "The PNG didn't download. Try again."), { retry: () => { void downloadPng(); } });
     } finally { setBusy(""); }
   }
 
@@ -265,6 +279,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
               onChange={(v) => { setVenueId(v.venueId); set({ ev: v.venue }); }}
             />
             <Toggle checked={d.evPrint} disabled={!d.ev.trim()} onChange={(v) => set({ evPrint: v })}>Print it on the card too</Toggle>
+            {!d.ev.trim() && <small className="-mt-1 block text-[12.5px] text-ink-2">Pick a venue or event above to print its name on the card.</small>}
             <label className={s.field}>Size shown first
               <select value={d.size} onChange={(e) => set({ size: e.target.value as SizeKey })}>
                 {(Object.keys(SIZE_NAME) as SizeKey[]).map((k) => <option key={k} value={k}>{SIZE_NAME[k]} · {SIZE_INCHES[k]}</option>)}

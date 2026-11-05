@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, DragEvent, FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { ChangeEvent, DragEvent, FormEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Brushed, BrushStroke } from "@/components/af/Brush";
@@ -95,7 +95,7 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
   const [artwork, setArtwork] = useState<{ slug: string; title: string; pending: boolean } | null>(null);
 
   const [busy, setBusy] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<ReactNode>(null);
 
   // Back from a provider as a new person: pick up the pending profile (never from the URL itself).
   useEffect(() => {
@@ -233,11 +233,11 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
           setFormError("That sign-in expired. Continue with it again, or sign up with your email.");
         } else if (d.code === "oauth_in_use") {
           go(1);
-          setFormError(`That ${oauth?.providerLabel || ""} account already has a page. Log in instead.`);
+          setFormError(<>That {oauth?.providerLabel || ""} account already has a page. <Link href={withNext("/login", next)} className="underline underline-offset-4">Log in instead</Link></>);
         } else if (d.code === "terms_required") {
           setErrors({ terms: "Please accept the Artist Terms and the Terms & Conditions." });
         } else {
-          setFormError("Couldn't create your page. Try again in a moment.");
+          setFormError(d.error || "Couldn't create your page. Try again in a moment.");
         }
         return;
       }
@@ -300,7 +300,7 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
       fd.append("printableSig", upload.printableSig || "");
       fd.append("ownership", "yes");
       const res = await fetch("/api/artworks/upload", { method: "POST", body: fd });
-      if (!res.ok) throw new Error(res.status === 429 ? "Too many uploads right now. Wait a minute." : res.status === 400 ? (await res.text()) || "Couldn't publish it. Try again." : "Couldn't publish it. Try again.");
+      if (!res.ok) throw new Error(res.status === 429 ? "Too many uploads right now. Wait a minute." : res.status === 400 ? ((await res.json().catch(() => null))?.error as string) || "Couldn't publish it. Try again." : "Couldn't publish it. Try again.");
       const d = await res.json();
       setArtwork({ slug: d.slug, title: d.title, pending: d.status === "PENDING" });
       go(4);
@@ -396,6 +396,8 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
             {errors.email === "That email already has a page." && (
               <p className="-mt-3 px-1 text-[14px]">
                 <Link href={withNext("/login", next, { email: email.trim() })} className="font-bold text-scan underline underline-offset-4">Log in instead</Link>
+                <span className="text-ink-2"> · </span>
+                <Link href={withNext("/recover-password", next, { email: email.trim() })} className="font-semibold text-ink-2 underline underline-offset-4 hover:text-scan">Forgot your password?</Link>
               </p>
             )}
             {!oauth && (
@@ -557,10 +559,17 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
               <button type="button" className="min-h-[44px] text-[15px] font-semibold text-ink-2 underline underline-offset-4 hover:text-scan" onClick={() => go(4)} disabled={busy}>
                 Skip for now
               </button>
-              <button type="submit" className="btn btn-blue btn-lg max-sm:w-full" disabled={busy || !upload?.url || upload.uploading}>
-                {busy && <Spinner />}
-                Publish and make my code
-              </button>
+              <span className="grid justify-items-end gap-1 max-sm:w-full max-sm:justify-items-stretch">
+                <button type="submit" className="btn btn-blue btn-lg max-sm:w-full" disabled={busy || !upload?.url || upload.uploading} aria-describedby={!upload?.url ? "publish-why" : undefined}>
+                  {busy && <Spinner />}
+                  Publish and make my code
+                </button>
+                {!upload?.url && (
+                  <span id="publish-why" className="text-[13px] text-ink-2 max-sm:text-center">
+                    {upload?.uploading ? "Uploading your photo…" : upload?.error ? "Try another photo to publish." : "Add a photo first."}
+                  </span>
+                )}
+              </span>
             </div>
           </form>
         )}
@@ -588,7 +597,7 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
                   </p>
                   <Link href={`/studio/qr?art=${encodeURIComponent(artwork.slug)}`} className="btn btn-blue btn-lg">Style and print it</Link>
                   <Link href={home} className="btn btn-ghost btn-lg">Go to my Studio</Link>
-                  <p className="text-[13.5px] text-ink-2">We’ll ask where to send your money after your first sale.</p>
+                  <p className="text-[13.5px] text-ink-2">We’ll ask where to send your money after your first sale.{!oauth?.emailVerified && <> First, click the link we sent to <b className="text-ink">{email.trim()}</b> to confirm your email.</>}</p>
                 </div>
               </div>
             ) : (
@@ -596,6 +605,9 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
                 <p className="text-[16px] text-ink-2">
                   You’re at <b className="text-ink">theartfinity.com/@{handle}</b>. Add a piece and its code is ready to print.
                 </p>
+                {!oauth?.emailVerified && (
+                  <p className="text-[14px] text-ink-2">We sent a link to <b className="text-ink">{email.trim()}</b>. Click it to confirm your email; payouts wait for it.</p>
+                )}
                 <Link href="/studio/art/new" className="btn btn-blue btn-lg">Add your first piece</Link>
                 <Link href={home} className="btn btn-ghost btn-lg">Go to my Studio</Link>
               </div>

@@ -7,6 +7,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
 import { PROVIDER_MARK, oauthStartHref } from "@/components/auth/SocialButtons";
 import { OAUTH_ERROR_MESSAGES, PROVIDER_LABEL, isProviderId, type ProviderId } from "@/lib/oauth/meta";
+import { Problem } from "@/components/studio/Problem";
+import { saved } from "@/lib/feedback";
 
 type Linked = { provider: string; email: string | null; createdAt: string | Date; lastUsedAt: string | Date | null };
 
@@ -22,7 +24,8 @@ export default function ConnectedAccounts({ available, initial }: { available: P
   const [hasPassword, setHasPassword] = useState(initial.hasPassword);
   const [accounts, setAccounts] = useState(initial.accounts);
   const [busy, setBusy] = useState<string | null>(null);
-  const [msg, setMsg] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
+  // An error can carry its fix: open the set-password form, or a page that sorts it out.
+  const [msg, setMsg] = useState<{ tone: "ok" | "error"; text: string; fix?: { label: string; href?: string; onClick?: () => void } } | null>(null);
   const [pwOpen, setPwOpen] = useState(false);
   const [pw, setPw] = useState("");
 
@@ -31,7 +34,7 @@ export default function ConnectedAccounts({ available, initial }: { available: P
     const c = params.get("connected");
     const e = params.get("oauth_error");
     if (c && isProviderId(c)) setMsg({ tone: "ok", text: `${PROVIDER_LABEL[c]} is connected. You can use it to log in.` });
-    else if (e) setMsg({ tone: "error", text: LINK_ERRORS[e] || OAUTH_ERROR_MESSAGES.provider_error });
+    else if (e) setMsg({ tone: "error", text: LINK_ERRORS[e] || OAUTH_ERROR_MESSAGES.provider_error, fix: e === "already_linked" || e === "email_in_use" ? { label: "Get help", href: "/help/account/social-sign-in" } : undefined });
   }, [params]);
 
   const linkedIds = accounts.map((a) => a.provider).filter(isProviderId);
@@ -45,12 +48,19 @@ export default function ConnectedAccounts({ available, initial }: { available: P
     try {
       const res = await fetch(`/api/auth/oauth/accounts?provider=${p}`, { method: "DELETE" });
       const d = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(LINK_ERRORS[d.code] || "Couldn't disconnect it. Try again.");
+      if (!res.ok) {
+        if (d.code === "last_method") {
+          setMsg({ tone: "error", text: d.error || LINK_ERRORS.last_method, fix: { label: "Set a password", onClick: () => setPwOpen(true) } });
+          return;
+        }
+        throw new Error(d.error || LINK_ERRORS[d.code] || "Couldn't disconnect it. Try again.");
+      }
       setAccounts((xs) => xs.filter((x) => x.provider !== p));
       setMsg({ tone: "ok", text: `${PROVIDER_LABEL[p]} is disconnected.` });
+      saved(`${PROVIDER_LABEL[p]} disconnected`);
       router.refresh();
     } catch (err: any) {
-      setMsg({ tone: "error", text: err.message });
+      setMsg({ tone: "error", text: err.message === "Failed to fetch" ? "Couldn't reach Artfinity. Check your connection." : err.message, fix: { label: "Try again", onClick: () => disconnect(p) } });
     } finally {
       setBusy(null);
     }
@@ -73,8 +83,9 @@ export default function ConnectedAccounts({ available, initial }: { available: P
       setPw("");
       setPwOpen(false);
       setMsg({ tone: "ok", text: "Password set. You can now log in with your email too." });
+      saved("Password set");
     } catch (err: any) {
-      setMsg({ tone: "error", text: err.message });
+      setMsg({ tone: "error", text: err.message, fix: /already have a password/.test(err.message) ? { label: "Change password", href: "/change-password" } : undefined });
     } finally {
       setBusy(null);
     }
@@ -89,11 +100,7 @@ export default function ConnectedAccounts({ available, initial }: { available: P
         <p className="text-[13.5px] text-ink-2">Log in with any of these. Keep at least one.</p>
       </div>
 
-      {msg && (
-        <p role={msg.tone === "error" ? "alert" : "status"} className={msg.tone === "error" ? "rounded-xl border-2 border-coral bg-[#fff1ed] px-3.5 py-2.5 text-[14px] font-semibold" : "rounded-xl border-[1.5px] border-earned bg-earned-soft px-3.5 py-2.5 text-[14px] font-semibold"}>
-          {msg.text}
-        </p>
-      )}
+      {msg && <Problem tone={msg.tone === "error" ? "error" : "success"} title={msg.text} fix={msg.fix} />}
 
       <ul className="grid divide-y divide-line overflow-hidden rounded-2xl border-[1.5px] border-line bg-white">
         <li className="flex min-h-[60px] flex-wrap items-center gap-3 px-4 py-2.5">
@@ -162,8 +169,10 @@ export default function ConnectedAccounts({ available, initial }: { available: P
           );
         })}
       </ul>
-      {methods <= 1 && accounts.length > 0 && !hasPassword && (
-        <p className="text-[13px] text-ink-2">To disconnect {PROVIDER_LABEL[linkedIds[0]] || "it"}, set a password or connect another account first.</p>
+      {methods <= 1 && accounts.length > 0 && !hasPassword && !pwOpen && (
+        <Problem tone="info" title={`${PROVIDER_LABEL[linkedIds[0]] || "This account"} is your only way to log in`} fix={{ label: "Set a password", onClick: () => setPwOpen(true) }}>
+          To disconnect it, set a password or connect another account first, so you can still get in.
+        </Problem>
       )}
     </section>
   );

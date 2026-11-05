@@ -15,7 +15,7 @@ const dollars = (c: number) => (c / 100).toFixed(2);
 /** CSV of the artist's transactions. Optional ?bucket=hold|ready|paid (the page's filter), ?status=pending|available|paid and ?q=. */
 export async function GET(req: NextRequest) {
   const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!user?.id) return NextResponse.json({ error: "Log in to export your transactions.", code: "not_logged_in" }, { status: 401 });
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status") as LedgerStatus | null;
   const bucket = searchParams.get("bucket") as MoneyBucket | null;
@@ -27,6 +27,14 @@ export async function GET(req: NextRequest) {
     (!bucket || bucketOf(l, b.currentMonth) === bucket) &&
     (!q || [l.title, l.buyerFirst, l.buyerCity, l.size].join(" ").toLowerCase().includes(q))
   );
+
+  const adjustments = b.adjustments.length;
+  if (b.ledger.length === 0 && adjustments === 0) {
+    return NextResponse.json({ error: "No transactions to export yet. Your first sale shows up here the moment it happens.", code: "no_sales" }, { status: 404 });
+  }
+  if (rows.length === 0 && (status || bucket || q)) {
+    return NextResponse.json({ error: "Nothing matches your search or filter, so there's nothing to export. Clear the filter and try again." , code: "no_match" }, { status: 404 });
+  }
 
   const header = ["date", "artwork", "size", "framed", "qty", "buyer", "city", "gross_usd", "printing_usd", "fees_usd", "profit_usd", "split_pct", "your_share_usd", "status", "payout_month", "clears_on", "source", "refunded"];
   const lines = [header.join(",")];

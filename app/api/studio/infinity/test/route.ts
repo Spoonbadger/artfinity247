@@ -11,12 +11,12 @@ export const runtime = "nodejs";
 const ACTIONS: SimAction[] = ["subscribe", "cancel", "resume", "payment_failed", "payment_fixed", "end"];
 
 export async function POST(req: Request) {
-  if (billingMode() !== "simulated") return fail("Test billing is off here.", 403);
+  if (billingMode() !== "simulated") return fail("Test billing is off here.", 403, "billing_off");
   const artist = await signedInArtist();
   if (!artist || artist.closedAt) return fail("Log in first.", 401);
   const body = (await req.json().catch(() => ({}))) as { action?: unknown };
   const action = ACTIONS.find((a) => a === body.action);
-  if (!action) return fail("Unknown action.");
+  if (!action) return fail("That test action isn't one we know. Refresh the page and try again.", 400, "bad_action");
   try {
     const res = await simulate(artist.id, action);
     return NextResponse.json({ ok: true, ...res });

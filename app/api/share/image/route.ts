@@ -19,12 +19,12 @@ export async function GET(req: NextRequest) {
   const format = isFormat(q.get("format")) ? (q.get("format") as keyof typeof IMAGE_FORMATS) : "story";
   const layoutQ = q.get("layout");
   const layout = isLayout(layoutQ) ? layoutQ : "wall";
-  if (!slug) return new NextResponse("Missing art", { status: 400 });
+  if (!slug) return NextResponse.json({ error: "Pick a piece first.", code: "invalid_input" }, { status: 400 });
 
   const row = await findShareArt(slug);
-  if (!row) return new NextResponse("Artwork not found", { status: 404 });
+  if (!row) return NextResponse.json({ error: "That piece isn't approved or was removed. Pick another.", code: "art_not_found" }, { status: 404 });
   const isPublic = row.status === "APPROVED";
-  if (!isPublic && !canSee(row, await getUserFromCookie())) return new NextResponse("Artwork not found", { status: 404 });
+  if (!isPublic && !canSee(row, await getUserFromCookie())) return NextResponse.json({ error: "That piece isn't approved or was removed. Pick another.", code: "art_not_found" }, { status: 404 });
 
   const base = baseUrl(req);
   const { art } = row;
@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
       rendered.set(key, png);
     } catch (err) {
       console.error("Share image error", err);
-      return new NextResponse("Could not make the image", { status: 500 });
+      return NextResponse.json({ error: "Couldn't make that image. Try again in a moment.", code: "server_error" }, { status: 500 });
     }
   }
 

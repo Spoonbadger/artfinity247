@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { PaintChip } from "@/components/af/Brush";
 import { StudioPage } from "@/components/studio/StudioPage";
+import { EmptyState } from "@/components/studio/EmptyState";
 import HelpLink from "@/components/help/HelpLink";
 import { requireArtist, usd } from "../_lib/data";
 import { getCodes, pct, status, windowTotals, WINDOW_DAYS, type CodeRow } from "./_lib";
@@ -57,11 +58,13 @@ export default async function CodesPage() {
       actions={<><HelpLink href="/help/qr-codes/change-after-printing" /><Link href="/studio/qr" className="btn btn-blue btn-sm"><Plus className="h-4 w-4" aria-hidden="true" />Make a code</Link></>}
     >
       {codes.length === 0 ? (
-        <div className="grid justify-items-center gap-4 rounded-[4px] border-2 border-dashed border-line bg-wall px-6 py-16 text-center">
-          <h2 className="display text-[34px]">No codes yet.</h2>
-          <p className="text-ink-2">Print one and hang it beside your work.</p>
-          <Link href="/studio/qr" className="btn btn-blue">Make a code</Link>
-        </div>
+        <EmptyState
+          dab="#2b37f0"
+          title="No codes yet"
+          body="Make a code, print it and hang it beside your work. Every code you print shows up here with its scans, sales and what you earned, and you can change where it points even after printing."
+          action={{ label: "Make a code", href: "/studio/qr" }}
+          help={{ label: "Where to hang codes", href: "/help/getting-started/hanging-codes" }}
+        />
       ) : (
         <>
           <section aria-labelledby="totals-h" className="grid gap-2">

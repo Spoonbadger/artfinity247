@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const user = await getUserFromCookie();
-  if (!user?.id) return new NextResponse("Not authenticated", { status: 401 });
+  if (!user?.id) return NextResponse.json({ error: "Log in to keep going.", code: "not_logged_in" }, { status: 401 });
 
   const url = new URL(req.url);
   const slugs = url.searchParams.get("slugs")?.split(",").map((s) => s.trim()).filter(Boolean);
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     select: { ...artSelect, id: true },
     orderBy: { createdAt: "desc" },
   });
-  if (!rows.length) return new NextResponse("No artworks found", { status: 404 });
+  if (!rows.length) return NextResponse.json({ error: "No live pieces yet. Codes print once your art is approved.", code: "no_approved_art" }, { status: 404 });
 
   try {
     const base = baseUrl(req);
@@ -40,6 +40,6 @@ export async function GET(req: NextRequest) {
     return new NextResponse(Buffer.from(pdf), { status: 200, headers: pdfHeaders(`artfinity-qr-cards-${stamp}.pdf`, mode) });
   } catch (err) {
     console.error("Bulk QR PDF error", err);
-    return new NextResponse("Server error", { status: 500 });
+    return NextResponse.json({ error: "Something went wrong on our side. Try again in a moment.", code: "server_error" }, { status: 500 });
   }
 }

@@ -8,6 +8,18 @@ export const DESC_MAX = 600;
 
 export const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
 
+/** Route handler wrapper: anything unexpected answers { error, code } JSON instead of an HTML 500. */
+export function safe<A extends unknown[]>(fn: (...a: A) => Promise<Response>) {
+  return async (...a: A) => {
+    try {
+      return await fn(...a);
+    } catch (e) {
+      console.error("[studio/collections]", e);
+      return json({ error: "Couldn't save just now. Try again in a moment.", code: "server_error" }, 500);
+    }
+  };
+}
+
 /** Signed-in artist id, or null. */
 export async function artistId() {
   const u = await getUserFromCookie();

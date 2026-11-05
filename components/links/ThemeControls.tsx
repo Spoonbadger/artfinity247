@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ReactNode, useId } from "react";
 import { Check } from "lucide-react";
 import { BrushStroke } from "@/components/af/Brush";
@@ -107,6 +108,12 @@ export default function ThemeControls({ theme, set, art }: { theme: LinksTheme; 
             </label>
           ))}
         </div>
+        {art.length === 0 && (
+          <p className="text-[13px] text-ink-2">
+            Your newest approved piece becomes the background. Until then it&apos;s a wash of color.{" "}
+            <Link href="/studio/art/new" className="font-semibold text-ink underline underline-offset-2">Add a piece</Link>
+          </p>
+        )}
         {art.some((a) => a.id === theme.bgArtworkId && a.sensitive.length > 0) && (
           <p className="text-[13px] text-ink-2">Marked sensitive: blurred until a viewer chooses to see it.</p>
         )}

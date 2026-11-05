@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STAGE_META, ago, pigmentFor, shortDate, usd, type Stage } from "./format";
+import { EmptyState } from "@/components/studio/EmptyState";
 
 export type CustomerRow = {
   email: string;
@@ -109,10 +110,12 @@ export default function CustomerList({ rows }: { rows: CustomerRow[] }) {
       <p className="sr-only" aria-live="polite">{shown.length} customers shown</p>
 
       {shown.length === 0 ? (
-        <div className="grid justify-items-center gap-2 rounded-[4px] border-2 border-dashed border-line bg-wall px-6 py-12 text-center">
-          <b className="text-[17px]">No match.</b>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setQ("")}>Clear search</button>
-        </div>
+        <EmptyState
+          compact
+          title={`No customers match "${q.trim()}"`}
+          body="Search looks at names, cities and the pieces they bought. Try fewer letters, or clear it to see everyone."
+          action={{ label: "Clear search", onClick: () => setQ("") }}
+        />
       ) : (
         <>
           {/* Phones: cards */}

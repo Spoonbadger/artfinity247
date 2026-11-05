@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { PaintChip } from "@/components/af/Brush";
 import { StudioPage } from "@/components/studio/StudioPage";
+import { EmptyState } from "@/components/studio/EmptyState";
+import { Problem } from "@/components/studio/Problem";
 import { Dabs } from "@/components/reviews/ReviewStars";
 import ReplyBox from "@/components/reviews/ReplyBox";
 import { RATING_WORDS, ratingLabel, reviewMonth } from "@/components/reviews/format";
@@ -47,10 +49,20 @@ export default async function StudioReviewsPage({ searchParams }: { searchParams
       actions={summary.count ? <Link href={`/@${artist.slug}#reviews`} className="btn btn-ghost btn-sm">See them on my page</Link> : undefined}
     >
       {summary.count === 0 ? (
-        <div className="grid justify-items-center gap-4 rounded-[4px] border-2 border-dashed border-line bg-wall px-6 py-16 text-center">
-          <h2 className="display text-[34px]">No reviews yet.</h2>
-          <p className="max-w-[44ch] text-ink-2">When a print is delivered, we email the buyer and ask how it looks on their wall. Reviews show up here and on your page.</p>
-        </div>
+        <>
+          <EmptyState
+            title="No reviews yet"
+            body={
+              <>
+                Buyers get a review link when their print arrives, and we ask how it looks on their wall.
+                Their words and wall photos show up here and on your page, and you can reply once to each.
+                {held > 0 && <> {held === 1 ? "One review is" : `${held} reviews are`} already in and waiting on a quick check by Artfinity.</>}
+              </>
+            }
+            action={{ label: "How reviews work", href: "/help/growing/reviews" }}
+            secondary={{ label: "Edit the delivery email", href: "/studio/emails" }}
+          />
+        </>
       ) : (
         <>
           <section aria-label="Totals" className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
@@ -61,10 +73,9 @@ export default async function StudioReviewsPage({ searchParams }: { searchParams
           </section>
 
           {held > 0 && (
-            <p className="flex items-center gap-2 text-[14px] text-ink-2">
-              <i className="paint-dab" style={{ ["--dab" as string]: "var(--af-coral)" }} aria-hidden="true" />
-              {held === 1 ? "1 review is" : `${held} reviews are`} waiting on a quick check by Artfinity (it had a link or rough language).
-            </p>
+            <Problem tone="info" title={`${held === 1 ? "1 review is" : `${held} reviews are`} waiting on a quick check by Artfinity`} fix={{ label: "How checks work", href: "/help/growing/reviews" }}>
+              It had a link or rough language. Nothing for you to do. It shows up here once it&apos;s cleared, usually within a day.
+            </Problem>
           )}
 
           <nav aria-label="Filter reviews" className="flex flex-wrap gap-2">
@@ -85,7 +96,23 @@ export default async function StudioReviewsPage({ searchParams }: { searchParams
           </nav>
 
           {reviews.length === 0 ? (
-            <p className="rounded-2xl border border-line bg-white px-4 py-10 text-center text-ink-2">{show === "reply" ? "You've replied to everyone." : "Nothing here yet."}</p>
+            show === "reply" ? (
+              <EmptyState
+                compact
+                title="You've replied to everyone"
+                body="Nice. New reviews that need a reply show up here."
+                action={{ label: "See all reviews", href: "/studio/reviews" }}
+                secondary={{ label: "See them on my page", href: `/@${artist.slug}#reviews` }}
+              />
+            ) : (
+              <EmptyState
+                compact
+                title="No wall photos yet"
+                body="Buyers can add a photo of the print on their wall when they review. The ones who do show up here."
+                action={{ label: "See all reviews", href: "/studio/reviews" }}
+                help={{ label: "How reviews work", href: "/help/growing/reviews" }}
+              />
+            )
           ) : (
             <ul className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
               {reviews.map((r) => (

@@ -16,7 +16,7 @@ const toDollars = (cents: number) => (cents / 100).toFixed(2);
 
 export async function GET(req: NextRequest) {
   const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  if (!user?.id) return NextResponse.json({ error: "Log in to export your sales.", code: "not_logged_in" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const year = searchParams.get("year"); // "2025" or null
@@ -56,6 +56,17 @@ export async function GET(req: NextRequest) {
     },
     orderBy: [{ order: { createdAt: "asc" } }],
   });
+
+  // Nothing sold (in that year): say so instead of sending a file with only a header.
+  if (items.length === 0) {
+    return NextResponse.json(
+      {
+        error: year ? `No sales in ${year} to export.` : "No sales to export yet. Your first sale shows up on Sales the moment it happens.",
+        code: "no_sales",
+      },
+      { status: 404 },
+    );
+  }
 
   // Authoritative per-item math from lib/revenue.ts (60/40 from 2026-10-21, 50/50 before)
   const breakdowns = items.map((it) =>

@@ -24,7 +24,7 @@ const statusOf = (f: { confirmedAt: Date | null; unsubscribedAt: Date | null }) 
 
 export async function GET() {
   const artist = await artistId();
-  if (!artist) return NextResponse.json({ error: "Log in first." }, { status: 401 });
+  if (!artist) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
   const rows = await prisma.follower.findMany({ where: { artistId: artist.id }, orderBy: { createdAt: "desc" } });
   const lines = [
     "email,name,status,source,followed_at,confirmed_at,unsubscribed_at",
@@ -59,14 +59,14 @@ function parseList(text: string) {
 
 export async function POST(req: Request) {
   const artist = await artistId();
-  if (!artist) return NextResponse.json({ error: "Log in first." }, { status: 401 });
-  if (!rateLimit(`import:${artist.id}`, 10, 60 * 60_000)) return NextResponse.json({ error: "Too many imports. Try again later." }, { status: 429 });
+  if (!artist) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
+  if (!rateLimit(`import:${artist.id}`, 10, 60 * 60_000)) return NextResponse.json({ error: "Too many imports this hour. Try again in an hour.", code: "rate_limited" }, { status: 429 });
 
   const parsed = Body.safeParse(await req.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "Tick the box to confirm these people agreed to hear from you." }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: "Tick the box to confirm these people agreed to hear from you.", code: "consent_required" }, { status: 400 });
   const list = parseList(parsed.data.text);
-  if (!list.size) return NextResponse.json({ error: "No email addresses found." }, { status: 400 });
-  if (list.size > MAX_IMPORT) return NextResponse.json({ error: `Up to ${MAX_IMPORT} at a time.` }, { status: 400 });
+  if (!list.size) return NextResponse.json({ error: "No email addresses found. Paste one per line, like ada@example.com.", code: "no_emails" }, { status: 400 });
+  if (list.size > MAX_IMPORT) return NextResponse.json({ error: `Up to ${MAX_IMPORT} at a time. Split the list and import the rest after.`, code: "too_many" }, { status: 400 });
 
   // Existing rows are left alone: an import never resubscribes someone who unsubscribed.
   const existing = await prisma.follower.findMany({ where: { artistId: artist.id, email: { in: Array.from(list.keys()) } }, select: { email: true } });

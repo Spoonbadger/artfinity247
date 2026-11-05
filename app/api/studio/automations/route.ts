@@ -15,13 +15,13 @@ async function state(artistId: string) {
 
 export async function GET() {
   const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Log in first." }, { status: 401 });
+  if (!user?.id) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
   return NextResponse.json(await state(user.id));
 }
 
 export async function PUT(req: NextRequest) {
   const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Log in first." }, { status: 401 });
+  if (!user?.id) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
   const body = await req.json().catch(() => ({}));
   if (typeof body?.newsletter === "boolean") await setAutoNewsletter(user.id, body.newsletter);
   if (typeof body?.digest === "boolean") await setPref(user.id, "digest", { off: !body.digest });

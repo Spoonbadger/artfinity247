@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { Download } from "lucide-react";
 import { PaintChip } from "@/components/af/Brush";
 import { StudioPage } from "@/components/studio/StudioPage";
+import { EmptyState } from "@/components/studio/EmptyState";
+import HelpLink from "@/components/help/HelpLink";
+import ExportCsvButton from "@/components/money/ExportCsvButton";
 import { prisma } from "@/lib/prisma";
 import { itemBreakdown } from "@/lib/sales";
 import { artistSplitNow, requireArtist, getSales, SIZE_LABEL, STUDIO_TZ, usd } from "../_lib/data";
@@ -42,7 +44,7 @@ async function getExtras(artistId: string) {
 export default async function SalesPage({ searchParams }: { searchParams: { month?: string } }) {
   const artist = await requireArtist("/studio/sales");
   const splitNow = await artistSplitNow(artist.id);
-  const [allSales, { extras }] = await Promise.all([getSales(artist.id), getExtras(artist.id)]);
+  const [allSales, { extras }, artCount] = await Promise.all([getSales(artist.id), getExtras(artist.id), prisma.artwork.count({ where: { artistId: artist.id } })]);
   const month = /^\d{4}-\d{2}$/.test(searchParams.month || "") ? searchParams.month! : null;
   const sales = month ? allSales.filter((s) => monthKey(s.date) === month) : allSales;
 
@@ -67,19 +69,20 @@ export default async function SalesPage({ searchParams }: { searchParams: { mont
       sub={`You get ${Math.round(splitNow * 100)}% of profit on new orders${splitNow > 0.6 ? " with Infinity" : ""}. Orders before Oct 21, 2026 paid 50%.`}
       actions={
         <>
+        <HelpLink href="/help/getting-paid/when-paid" label="How payouts work" />
         <Link href="/studio/money" className="btn btn-ghost">Money</Link>
-        <a href={`/api/my-sales/export${month ? `?year=${month.slice(0, 4)}` : ""}`} className="btn btn-ghost" download>
-          <Download className="h-4 w-4" aria-hidden="true" />Export CSV{month ? ` (${month.slice(0, 4)})` : ""}
-        </a>
+        {allSales.length > 0 && <ExportCsvButton href={`/api/my-sales/export${month ? `?year=${month.slice(0, 4)}` : ""}`} label={`Export CSV${month ? ` (${month.slice(0, 4)})` : ""}`} />}
         </>
       }
     >
+      {allSales.length > 0 && (
       <section aria-label="Totals" className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
         <PaintChip color="#0f7a55" value={usd(total)} label="earned, all time" note="Viridian" earned />
         <PaintChip color="#0f7a55" value={usd((picked || thisMonth)?.share || 0)} label={picked ? `earned in ${picked.name}` : "earned this month"} note={picked ? "Viridian" : new Date().toLocaleDateString("en-US", { month: "long", timeZone: STUDIO_TZ })} earned />
         <PaintChip color="#e8743b" value={prints.toLocaleString("en-US")} label={picked ? `prints sold in ${picked.name.split(" ")[0]}` : "prints sold"} note="Cadmium" />
         <PaintChip color="#15161b" value={usd(sales.reduce((n, s) => n + s.priceCents, 0))} label={picked ? `in sales, ${picked.name.split(" ")[0]}` : "in sales"} note="Ivory black" />
       </section>
+      )}
 
       {months.length > 0 && (
         <nav aria-label="Filter by month" className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
@@ -96,11 +99,22 @@ export default async function SalesPage({ searchParams }: { searchParams: { mont
       )}
 
       {allSales.length === 0 ? (
-        <div className="grid justify-items-center gap-4 rounded-[4px] border-2 border-dashed border-line bg-wall px-6 py-16 text-center">
-          <h2 className="display text-[34px]">No sales yet.</h2>
-          <p className="text-ink-2">Hang a code where people linger.</p>
-          <Link href="/studio/qr" className="btn btn-blue">Print codes</Link>
-        </div>
+        artCount === 0 ? (
+          <EmptyState
+            title="No sales yet"
+            body="Your first sale shows here the moment it happens: the piece, the size, who bought it and your share. Start by adding a piece; its QR code is ready to print right after."
+            action={{ label: "Add your first piece", href: "/studio/art/new" }}
+            help={{ label: "How to add art", href: "/help/getting-started/upload-art" }}
+          />
+        ) : (
+          <EmptyState
+            title="No sales yet"
+            body="Your first sale shows here the moment it happens. Hang a printed code where people linger (a café wall, your studio door, a market table) or share your page."
+            action={{ label: "Print a QR code", href: "/studio/qr" }}
+            secondary={{ label: "Share your page", href: "/studio/share" }}
+            help={{ label: "Where to hang codes", href: "/help/getting-started/hanging-codes" }}
+          />
+        )
       ) : (
         <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
           <div className="grid gap-4">

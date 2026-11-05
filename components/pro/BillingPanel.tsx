@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { PRO, dollars, proPrice } from "@/lib/plans";
+import { PRO, REFERRALS, dollars, proPrice } from "@/lib/plans";
 import type { BillingView } from "@/lib/billingStatus";
 import { cn } from "@/lib/utils";
+import { failed, problemFrom, saved } from "@/lib/feedback";
 
 type Mode = "live" | "simulated" | "off";
 type ViewKind = BillingView["kind"];
@@ -35,18 +36,27 @@ export default function BillingPanel({
     setBusy(key);
     setError(null);
     setNote(null);
+    const retry = () => post(key, url, body);
     try {
       const r = await fetch(url, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body ?? {}) });
+      if (!r.ok) {
+        const p = await problemFrom(r, "Billing didn't respond. Try again in a minute.");
+        setError(p.message);
+        failed(p.message, { fix: p.fix, retry: p.fix ? undefined : retry });
+        return;
+      }
       const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error || "Something went wrong.");
       if (d.url) {
         window.location.assign(d.url);
         return;
       }
       if (d.message) setNote(d.message);
+      saved(d.message || "Done");
       router.refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't reach Artfinity.");
+    } catch {
+      const msg = "Couldn't reach Artfinity. Check your connection.";
+      setError(msg);
+      failed(msg, { retry });
     } finally {
       setBusy(null);
     }
@@ -60,7 +70,18 @@ export default function BillingPanel({
   const muted = onDark ? "text-white/70" : "text-ink-2";
 
   if (mode === "off") {
-    return <span className={cn("btn btn-ghost cursor-default opacity-80", onDark && "!border-white !text-white")} aria-disabled="true">Billing coming soon</span>;
+    // Paid billing isn't switched on here yet: offer the free way in (referral months) instead of a dead button.
+    return (
+      <div className="grid justify-items-start gap-2">
+        <p className={cn("text-[14px]", muted)}>
+          Paying for {PRO.name} isn&apos;t open yet. You can still get it free: each artist who joins with your link and gets going earns you {REFERRALS.rewardMonths} months.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <a href="#referrals" className="btn btn-blue btn-sm min-h-[44px] md:min-h-0">Get {PRO.name} free</a>
+          <a href="/contact" className={ghost}>Tell me when it opens</a>
+        </div>
+      </div>
+    );
   }
 
   return (

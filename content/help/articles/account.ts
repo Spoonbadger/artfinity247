@@ -106,6 +106,34 @@ Getting paid through Stripe instead? See [How payouts reach you](/help/getting-p
 `,
   },
   {
+    slug: "confirm-email",
+    section,
+    audience: "artist",
+    title: "Confirming your email",
+    summary: "We email you a link when you sign up or change your email. Click it to unlock payouts (Venmo and Stripe) and newsletters. The link works for 7 days; you can send a fresh one from the top of your Studio.",
+    link: { href: "/studio#confirm-email", label: "Resend the link" },
+    related: ["account-details", "change-venmo", "login-reset-password"],
+    body: `
+## Why we ask
+Your email is where sales, payout notices and security emails go, so we check it's really yours before money moves. Until you confirm:
+- You can use the whole Studio: add art, print codes, sell.
+- Adding or changing your Venmo, connecting Stripe and sending newsletters wait.
+- Your earnings are safe. They're paid out once a payout method is set.
+
+## Confirm it
+1. Open the email "Confirm your email for Artfinity".
+2. Click the button. You'll see "Email confirmed".
+
+Signed up with Google or Apple? They confirm your email for you, so there's nothing to do.
+
+## No email, or the link expired?
+- Check spam and promotions.
+- At the top of any Studio page, press **Resend** in the "Confirm your email" bar. Each new link replaces the old one and works for 7 days.
+- Typo in your address? Fix it in [Account details](/studio/page#account-details). We send a new link to the new address.
+- Still nothing? [Contact us](/contact).
+`,
+  },
+  {
     slug: "account-details",
     section,
     audience: "artist",

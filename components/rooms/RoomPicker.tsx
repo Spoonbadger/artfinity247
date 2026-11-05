@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { errorText, failed, saved as savedToast } from "@/lib/feedback";
 import { useMemo, useState } from "react";
 import { ROOM_LABEL, ROOM_SIZE_IN, ROOM_TYPES, autoScenes, suggestScenes, type RoomFrame, type RoomSize, type RoomType } from "@/lib/rooms";
 import { autoPhotoScenes, photoRooms, photoSceneCount, photoScenesOn, photoSuggest, sceneLabel } from "@/lib/scenes/client";
@@ -89,12 +90,15 @@ export default function RoomPicker({ art, arts }: { art: Art; arts: { slug: stri
     try {
       const res = await fetch("/api/studio/rooms", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug: art.slug, scenes }) });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "Couldn't save.");
+      if (!res.ok) throw new Error(data.error || "Couldn't save your rooms. Try again.");
       setSaved(data.roomScenes);
       setPicks(data.roomScenes);
       setStatus({ kind: "saved", msg: data.roomScenes.length ? "Saved. Buyers see these now." : "Back to auto rooms." });
+      savedToast(data.roomScenes.length ? "Rooms saved" : "Back to auto rooms", { description: data.roomScenes.length ? "Buyers see these now." : "We pick 5 rooms for you." });
     } catch (e) {
-      setStatus({ kind: "error", msg: e instanceof Error ? e.message : "Couldn't save." });
+      const msg = errorText(e, "Couldn't save your rooms. Try again.");
+      setStatus({ kind: "error", msg });
+      failed(msg, { retry: () => save(scenes) });
     }
   }
 

@@ -9,7 +9,7 @@ const CHIP: Record<ConnectStatus, { label: string; cls: string }> = {
   ready: { label: "Ready", cls: "bg-earned-soft text-earned" },
 };
 
-export default function GetPaidCard({ status, mode, venmoHandle, nextDate }: { status: ConnectStatus; mode: ConnectMode; venmoHandle: string | null; nextDate: string }) {
+export default function GetPaidCard({ status, mode, venmoHandle, nextDate, verified = true, email }: { status: ConnectStatus; mode: ConnectMode; venmoHandle: string | null; nextDate: string; verified?: boolean; email?: string }) {
   const chip = CHIP[status];
   const handle = venmoHandle ? `@${venmoHandle.replace(/^@/, "")}` : null;
   return (
@@ -30,8 +30,18 @@ export default function GetPaidCard({ status, mode, venmoHandle, nextDate }: { s
             : <>Connect Stripe and each month&apos;s payout lands in your bank. Takes about 5 minutes: your name, bank and tax details.</>}
       </p>
 
+      {!verified && status !== "ready" && (
+        <p className="rounded-[4px] bg-sticker/30 px-3 py-2.5 text-[13.5px]">
+          <b>Confirm your email first.</b> Stripe and Venmo open once you click the link we sent{email ? <> to {email}</> : null}.{" "}
+          <a href="#confirm-email" className="font-semibold underline underline-offset-2">Resend it</a>
+        </p>
+      )}
+
       {mode === "off" ? (
-        <p className="rounded-[4px] bg-wall px-3 py-2 text-[13px] text-ink-2">Stripe isn&apos;t set up here yet. We&apos;ll keep paying you by Venmo.</p>
+        <p className="rounded-[4px] bg-wall px-3 py-2 text-[13px] text-ink-2">
+          Stripe isn&apos;t set up here yet. We&apos;ll keep paying you by Venmo.{" "}
+          {!handle && <Link href="/studio/page#venmo" className="font-semibold text-ink underline underline-offset-2">Add Venmo</Link>}
+        </p>
       ) : (
         <>
           {status === "ready" ? (
@@ -54,7 +64,7 @@ export default function GetPaidCard({ status, mode, venmoHandle, nextDate }: { s
           {status === "ready" ? "Backup" : "Or get paid by Venmo"}:{" "}
           {handle ? <b className="text-ink">{handle}</b> : <span className="font-semibold text-coral">no handle yet</span>}
         </span>
-        <Link href="/studio/page" className="font-semibold text-ink-2 underline underline-offset-2">{handle ? "Change" : "Add Venmo"}</Link>
+        <Link href="/studio/page#venmo" className="font-semibold text-ink-2 underline underline-offset-2">{handle ? "Change" : "Add Venmo"}</Link>
       </div>
     </section>
   );

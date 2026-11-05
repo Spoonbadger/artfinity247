@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 
 export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
   const { slug } = params;
-  if (!slug) return new NextResponse("Missing slug", { status: 400 });
+  if (!slug) return NextResponse.json({ error: "Pick a piece first.", code: "missing_art" }, { status: 400 });
 
   const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
   const url = new URL(req.url);
@@ -21,22 +21,22 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   let payload: Record<string, unknown>;
   try {
     const raw = token || req.cookies.get("auth-token")?.value;
-    if (!raw) return new NextResponse("Unauthorized", { status: 401 });
+    if (!raw) return NextResponse.json({ error: "Log in to keep going.", code: "not_logged_in" }, { status: 401 });
     // Emailed download links carry their own token; otherwise it's the session (version-checked).
     payload = token ? ((await jwtVerify(raw, secret)).payload as Record<string, unknown>) : ((await verifyAuthTokenOrThrow(raw)) as unknown as Record<string, unknown>);
   } catch {
-    return new NextResponse("Link expired or invalid", { status: 401 });
+    return NextResponse.json({ error: "That download link expired. Open the piece in Studio and download again.", code: "link_expired" }, { status: 401 });
   }
 
   const row = await findArt(slug);
-  if (!row?.slug) return new NextResponse("Artwork not found", { status: 404 });
+  if (!row?.slug) return NextResponse.json({ error: "We couldn't find that piece. It may have been deleted.", code: "art_not_found" }, { status: 404 });
 
   if (token) {
     // Email token: signed with { slug, artistId, role, type: "qr_download" } in app/api/artworks/upload.
-    if (payload.type !== "qr_download" || payload.slug !== slug) return new NextResponse("Invalid token", { status: 403 });
-    if (payload.role !== "ADMIN" && payload.artistId !== row.artistId) return new NextResponse("Forbidden", { status: 403 });
+    if (payload.type !== "qr_download" || payload.slug !== slug) return NextResponse.json({ error: "That download link expired. Open the piece in Studio and download again.", code: "link_expired" }, { status: 403 });
+    if (payload.role !== "ADMIN" && payload.artistId !== row.artistId) return NextResponse.json({ error: "That piece isn't yours.", code: "not_your_art" }, { status: 403 });
   } else if (payload.role !== "ADMIN" && payload.id !== row.artistId) {
-    return new NextResponse("Forbidden", { status: 403 });
+    return NextResponse.json({ error: "That piece isn't yours.", code: "not_your_art" }, { status: 403 });
   }
 
   try {
@@ -49,6 +49,6 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
     return new NextResponse(Buffer.from(pdf), { status: 200, headers: pdfHeaders(`${art.slug}-qr-cards.pdf`, mode) });
   } catch (err) {
     console.error("QR route error", err);
-    return new NextResponse("Server error", { status: 500 });
+    return NextResponse.json({ error: "Something went wrong on our side. Try again in a moment.", code: "server_error" }, { status: 500 });
   }
 }

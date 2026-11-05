@@ -9,7 +9,9 @@ import { useUser } from "@/components/contexts";
 import { BrushStroke } from "@/components/af/Brush";
 import { Avatar } from "./StudioShell";
 import { SHARED_KEY } from "./NextSteps";
+import ResendConfirmButton from "./ResendConfirmButton";
 import { cn } from "@/lib/utils";
+import { failed, saved as savedToast } from "@/lib/feedback";
 
 type Profile = { name: string; city: string; bio: string; profileImage: string | null; venmoHandle: string };
 type Art = { id: string; title: string; imageUrl: string; sensitive: string[] };
@@ -19,8 +21,9 @@ async function post(url: string, body: unknown) {
   if (!res.ok) {
     const t = await res.text();
     let msg = t;
-    try { msg = JSON.parse(t).error || t; } catch {}
-    throw new Error(msg || "Could not save.");
+    let code: string | undefined;
+    try { const j = JSON.parse(t); msg = j.error || t; code = j.code; } catch {}
+    throw Object.assign(new Error(msg || "Could not save."), { code });
   }
   return res.json();
 }
@@ -34,6 +37,8 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
   const [photoBusy, setPhotoBusy] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Venmo waits for a confirmed email: that error gets a [Resend confirmation] button.
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   // A Venmo change waiting for the artist to confirm by email ("" = removing it).
   const [pending, setPending] = useState<string | null>(venmoPending);
@@ -57,7 +62,9 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
       refreshUser();
       router.refresh();
     } catch (e: any) {
-      setError(e.message || "Upload failed.");
+      const msg = e?.message && e.message !== "Failed to fetch" ? e.message : "You seem to be offline.";
+      setError(msg);
+      failed(`Photo not updated: ${msg}`, { description: "A JPG or PNG under 25 MB works best.", retry: () => fileRef.current?.click() });
     } finally {
       setPhotoBusy(false);
     }
@@ -66,6 +73,7 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
   async function save(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    setErrorCode(null);
     if (p.name.trim().length < 2) return setError("Your name needs at least 2 letters.");
     if (!p.city.trim()) return setError("Add your city.");
     setSaving(true);
@@ -90,6 +98,7 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
       router.refresh();
     } catch (e: any) {
       setError(e.message || "Could not save.");
+      setErrorCode(e.code || null);
     } finally {
       setSaving(false);
     }
@@ -107,7 +116,13 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
   }
 
   async function copy() {
-    try { await navigator.clipboard.writeText("https://" + link); } catch {}
+    try {
+      await navigator.clipboard.writeText("https://" + link);
+      savedToast("Link copied", { description: "Paste it in your bio, a post or a message." });
+    } catch {
+      failed("Couldn't copy", { description: `Your browser blocked it. Select ${link} and copy it by hand.` });
+      return;
+    }
     try { localStorage.setItem(SHARED_KEY, "1"); } catch {}
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
@@ -145,7 +160,7 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
           <span className="label flex justify-between"><span>Bio</span><span className="num">{p.bio.length}/300</span></span>
           <textarea value={p.bio} onChange={(e) => setP({ ...p, bio: e.target.value.slice(0, 300) })} rows={4} placeholder="What you paint and where. Two lines is plenty." className="resize-y" />
         </label>
-        <div className="grid gap-2">
+        <div id="venmo" className="grid scroll-mt-24 gap-2">
           <label className="af-field">
             <span className="label">Venmo handle · where we send your payouts</span>
             <input value={p.venmoHandle} onChange={(e) => setP({ ...p, venmoHandle: e.target.value.replace(/\s/g, "") })} maxLength={30} placeholder="@yourname" />
@@ -166,7 +181,12 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
           )}
         </div>
 
-        {error && <p role="alert" className="rounded-xl border-2 border-coral bg-[#fff1ed] px-3.5 py-2.5 text-[14px] font-semibold">{error}</p>}
+        {error && (
+          <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border-2 border-coral bg-[#fff1ed] px-3.5 py-2.5 text-[14px] font-semibold">
+            <span className="min-w-0 flex-1">{error}</span>
+            {errorCode === "email_unverified" && <ResendConfirmButton />}
+          </div>
+        )}
         <div className="flex flex-wrap items-center gap-3">
           <button type="submit" className="btn btn-blue" disabled={saving || !dirty}>
             {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}Save
@@ -205,7 +225,12 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={a.imageUrl} alt={a.title} className={cn("h-full w-full object-cover", a.sensitive.length > 0 && "sensitive-blur")} />
               </span>
-            )) : <span className="col-span-3 py-6 text-center text-[13px] text-ink-2">Your art shows here.</span>}
+            )) : (
+              <span className="col-span-3 grid justify-items-center gap-2 py-6 text-center text-[13px] text-ink-2">
+                Your art shows here once a piece is approved.
+                <Link href="/studio/art/new" className="btn btn-sm">Add your first piece</Link>
+              </span>
+            )}
           </div>
         </div>
         <Link href={`/@${slug}`} className="justify-self-start text-[13.5px] font-bold text-scan">
@@ -229,11 +254,14 @@ function DeleteAccount() {
     setErr(null);
     try {
       const res = await fetch("/api/artists/delete-profile", { method: "DELETE", credentials: "include" });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || "We couldn't close your account just now. Try again, or message us and we'll do it for you.");
+      }
       setDone(true);
       await refreshUser();
-    } catch {
-      setErr("Could not close your account. Try again.");
+    } catch (e: any) {
+      setErr(e?.message && e.message !== "Failed to fetch" ? e.message : "Couldn't reach Artfinity. Check your connection and try again.");
     } finally {
       setBusy(false);
     }
@@ -245,7 +273,7 @@ function DeleteAccount() {
       {done ? (
         <div role="status" className="grid gap-2 rounded-2xl border-2 border-ink bg-wall p-4">
           <b className="font-display text-[22px] [font-variation-settings:'wdth'_80]">Your account is closed.</b>
-          <p className="text-[14px]">Your page is offline. You&apos;ll still be paid what you&apos;ve earned, on the normal schedule. We emailed you the details.</p>
+          <p className="text-[14px]">Your page is offline. You&apos;ll still be paid what you&apos;ve earned, on the normal schedule. We emailed you the details. Changed your mind? <a href="/contact" className="font-semibold underline underline-offset-2">Message us</a> and we&apos;ll reopen it.</p>
           <a href="/" className="btn btn-ghost justify-self-start">Go to the homepage</a>
         </div>
       ) : !open ? (
@@ -269,7 +297,11 @@ function DeleteAccount() {
             <span className="label">Type CLOSE to confirm</span>
             <input value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" autoFocus />
           </label>
-          {err && <p role="alert" className="text-[13.5px] font-semibold text-coral">{err}</p>}
+          {err && (
+            <p role="alert" className="text-[13.5px] font-semibold text-coral">
+              {err} <Link href="/contact" className="text-ink underline underline-offset-2">Message us</Link>
+            </p>
+          )}
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={close} disabled={typed.trim().toUpperCase() !== "CLOSE" || busy} className="btn border-coral bg-coral">
               {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}Close my account

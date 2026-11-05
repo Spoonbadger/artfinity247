@@ -24,12 +24,12 @@ export async function POST(req: Request) {
     });
 
     if (!record) {
-      return NextResponse.json({ ok: false }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "This link was already used or replaced by a newer one.", code: "reset_expired" }, { status: 400 });
     }
 
     if (record.expiresAt < new Date()) {
       await prisma.passwordResetToken.delete({ where: { tokenHash } });
-      return NextResponse.json({ ok: false }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "This link expired. Reset links work for 30 minutes.", code: "reset_expired" }, { status: 400 });
     }
 
     const hashedPw = await hash(password, 10);
@@ -51,6 +51,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (e) {
-    return NextResponse.json({ ok: false }, { status: 500 });
+    if (e instanceof z.ZodError) return NextResponse.json({ ok: false, error: "Use at least 8 characters.", code: "weak_password" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "Something went wrong on our side. Try again in a minute.", code: "server_error" }, { status: 500 });
   }
 }

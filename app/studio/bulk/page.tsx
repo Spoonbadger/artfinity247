@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { StudioPage } from "@/components/studio/StudioPage";
+import { EmptyState } from "@/components/studio/EmptyState";
 import HelpLink from "@/components/help/HelpLink";
 import BulkOrder, { type BulkArt, type PastBulk } from "@/components/bulk/BulkOrder";
 import { editionsFor } from "@/lib/editions";
@@ -63,10 +64,13 @@ export default async function BulkPage({ searchParams }: { searchParams: { place
       actions={<><HelpLink href="/help/selling/bulk-prints" /><Link href="/studio/art" className="btn btn-ghost">My art</Link></>}
     >
       {arts.length === 0 ? (
-        <div className="grid justify-items-center gap-4 rounded-[4px] border-2 border-dashed border-line bg-wall px-6 py-16 text-center">
-          <h2 className="display text-[34px]">Upload a piece first.</h2>
-          <Link href="/studio/art/new" className="btn btn-blue">Upload art</Link>
-        </div>
+        <EmptyState
+          dab="#ff5a36"
+          title="Bulk prints open once you have art"
+          body="Order your own prints at cost, 10+ get 5% off, and sell them at markets and shows. Upload a piece to start."
+          action={{ label: "Upload art", href: "/studio/art/new" }}
+          help={{ label: "How bulk prints work", href: "/help/selling/bulk-prints" }}
+        />
       ) : (
         <BulkOrder arts={arts} past={past} placedId={placedId ?? null} defaultName={displayName(artist)} />
       )}

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { artPath } from "@/lib/urls";
 import { StudioPage } from "@/components/studio/StudioPage";
+import { EmptyState } from "@/components/studio/EmptyState";
 import { requireArtist, STUDIO_TZ, usd } from "../_lib/data";
 
 export const dynamic = "force-dynamic";
@@ -25,10 +26,13 @@ export default async function PurchasesPage() {
   return (
     <StudioPage title="My purchases" sub="Prints you've bought on Artfinity.">
       {items.length === 0 ? (
-        <div className="af-panel grid justify-items-start gap-3 p-6">
-          <p className="text-[15px] text-ink-2">Nothing yet. Support another artist.</p>
-          <Link href="/art" className="btn btn-blue btn-sm">Browse art</Link>
-        </div>
+        <EmptyState
+          title="No purchases yet"
+          body={<>Prints you buy from other artists show here, with their shipping status. We match orders to <b>{artist.email}</b>, so check out with that email.</>}
+          action={{ label: "Browse art", href: "/art" }}
+          secondary={{ label: "Find artists", href: "/artists" }}
+          help={{ label: "Bought with another email?", href: "/help/buyers/orders-and-wishlist" }}
+        />
       ) : (
         <ul className="grid gap-3">
           {items.map((i) => (

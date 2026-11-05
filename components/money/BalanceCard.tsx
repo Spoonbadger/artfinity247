@@ -89,7 +89,14 @@ export default function BalanceCard({ b }: { b: Balance }) {
         <div className="min-w-0">
           <h2 id="balance-h" className="eyebrow">Your balance</h2>
           <p className="display num mt-1 text-[clamp(44px,9vw,72px)] leading-none text-earned">{usd(b.pendingCents + b.availableCents)}</p>
-          <p className="mt-1.5 text-[13.5px] text-ink-2">Earned, not paid out yet · {usd(b.lifetimeCents)} earned all time</p>
+          {b.lifetimeCents === 0 && b.paidTotalCents === 0 ? (
+            <p className="mt-1.5 text-[13.5px] text-ink-2">
+              $0 ready for payout · Sales clear after a {RETURN_WINDOW_DAYS}-day return window, then they&apos;re paid monthly.{" "}
+              <Link href="/help/getting-paid/when-paid" className="font-semibold text-ink underline underline-offset-2">How payouts work</Link>
+            </p>
+          ) : (
+            <p className="mt-1.5 text-[13.5px] text-ink-2">Earned, not paid out yet · {usd(b.lifetimeCents)} earned all time</p>
+          )}
         </div>
       </div>
 
@@ -122,7 +129,7 @@ export default function BalanceCard({ b }: { b: Balance }) {
             {stripe ? (
               <><span className="text-ink-2"> to </span><b>your bank via Stripe</b></>
             ) : (
-              <><span className="text-ink-2"> by Venmo to </span>{handle ? <b>{handle}</b> : <Link href="/studio/page" className="font-bold text-coral underline">add Venmo</Link>}</>
+              <><span className="text-ink-2"> by Venmo to </span>{handle ? <b>{handle}</b> : <Link href="/studio/page#venmo" className="font-bold text-coral underline">add Venmo</Link>}</>
             )}
           </p>
           <p className="mt-0.5 text-[12.5px] text-ink-2">

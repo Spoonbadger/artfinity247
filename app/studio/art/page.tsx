@@ -23,7 +23,7 @@ export default async function MyArtPage() {
   return (
     <StudioPage
       title="My art"
-      sub={`${live} on your page${inReview ? ` · ${inReview} in review` : ""}`}
+      sub={items.length ? `${live} on your page${inReview ? ` · ${inReview} in review (usually within a day)` : ""}` : "Every painting you upload lives here, with its code, rooms and sales."}
       actions={
         <>
           {live > 0 && (
@@ -31,8 +31,12 @@ export default async function MyArtPage() {
               Print all codes (PDF)
             </a>
           )}
-          <Link href="/studio/collections" className="btn btn-ghost">Collections</Link>
-          <Link href="/studio/bulk" className="btn btn-ghost">Order prints in bulk</Link>
+          {items.length > 0 && (
+            <>
+              <Link href="/studio/collections" className="btn btn-ghost">Collections</Link>
+              <Link href="/studio/bulk" className="btn btn-ghost">Order prints in bulk</Link>
+            </>
+          )}
           <Link href="/studio/art/new" className="btn btn-blue">Upload art</Link>
         </>
       }

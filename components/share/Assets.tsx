@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Check, Copy, Download, ExternalLink, Share2 } from "lucide-react";
-import { toast } from "sonner";
+import { failed, problemFrom, saved } from "@/lib/feedback";
 import { cn } from "@/lib/utils";
 import {
   CHANNELS, IMAGE_FORMATS, IMAGE_LAYOUTS, artLink, captions, dollars,
@@ -35,8 +35,8 @@ export function CopyButton({ text, html, label = "Copy", className, big }: { tex
       type="button"
       className={cn("btn btn-ghost", big ? "" : "btn-sm", className)}
       onClick={async () => {
-        if (await copyText(text, html)) { setDone(true); toast.success("Copied"); setTimeout(() => setDone(false), 1600); }
-        else toast.error("Couldn't copy. Select the text and copy it.");
+        if (await copyText(text, html)) { setDone(true); saved(label === "Copy" ? "Copied" : `${label.replace(/^Copy /, "")[0].toUpperCase()}${label.replace(/^Copy /, "").slice(1)} copied`, { description: "Paste it where you post." }); setTimeout(() => setDone(false), 1600); }
+        else failed("Couldn't copy", { description: "Your browser blocked it. Select the text and copy it by hand." });
       }}
     >
       {done ? <Check size={15} /> : <Copy size={15} />} {done ? "Copied" : label}
@@ -61,12 +61,47 @@ export function ImageAssets({ art }: { art: ShareArt }) {
   const canShareFiles = useCanShare(fileProbe);
   const F = IMAGE_FORMATS[format];
 
-  const shareFile = async (l: ImageLayout) => {
+  const [busy, setBusy] = useState<string | null>(null);
+
+  /** Fetch the image first so a failure says why instead of saving a broken file. */
+  const getImage = async (l: ImageLayout): Promise<Blob | null> => {
     try {
-      const blob = await (await fetch(imgUrl(art.slug, format, l))).blob();
+      const res = await fetch(imgUrl(art.slug, format, l));
+      if (!res.ok) {
+        const p = await problemFrom(res, "Couldn't make that image.");
+        failed(p.message, { fix: p.fix, retry: p.fix ? undefined : () => download(l) });
+        return null;
+      }
+      return await res.blob();
+    } catch {
+      failed("You seem to be offline", { description: "Check your connection and try again.", retry: () => download(l) });
+      return null;
+    }
+  };
+
+  const download = async (l: ImageLayout) => {
+    if (busy) return;
+    setBusy(l);
+    const blob = await getImage(l);
+    setBusy(null);
+    if (!blob) return;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${art.slug}-${format}-${l}.png`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    saved("Image downloaded", { description: "It's in your downloads. Post it with one of the captions below." });
+  };
+
+  const shareFile = async (l: ImageLayout) => {
+    const blob = await getImage(l);
+    if (!blob) return;
+    try {
       const file = new File([blob], `${art.slug}-${format}-${l}.png`, { type: "image/png" });
       await navigator.share({ files: [file], title: art.title });
-    } catch { /* cancelled */ }
+    } catch (e) {
+      if ((e as Error).name !== "AbortError") failed("Couldn't open sharing", { description: "Download the image instead and post it from your photos." });
+    }
   };
 
   return (
@@ -91,7 +126,7 @@ export function ImageAssets({ art }: { art: ShareArt }) {
               <span className="text-[12.5px] text-ink-2">{IMAGE_LAYOUTS[l].sub}</span>
             </figcaption>
             <div className="grid grid-cols-[1fr_auto] gap-2">
-              <a href={imgUrl(art.slug, format, l, true)} download className="btn btn-blue py-3 sm:py-2.5"><Download size={16} /> Download</a>
+              <button type="button" onClick={() => download(l)} disabled={busy === l} className="btn btn-blue py-3 sm:py-2.5"><Download size={16} /> {busy === l ? "Making it…" : "Download"}</button>
               {canShareFiles && <button type="button" onClick={() => shareFile(l)} className="btn btn-ghost" aria-label={`Share ${IMAGE_LAYOUTS[l].name} image`}><Share2 size={16} /></button>}
             </div>
           </figure>

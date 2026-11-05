@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import CrookedFrame from "@/components/browse/Crooked";
+import { useUser } from "@/components/contexts";
 
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  const { currentUser } = useUser();
   return (
     <main className="grid min-h-[70svh] place-content-center gap-8 px-4 py-14 text-center">
       <CrookedFrame stroke="var(--af-coral)">
@@ -15,12 +17,19 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
       </CrookedFrame>
       <div className="grid justify-items-center gap-3">
         <h1 className="display text-[44px] sm:text-[60px]">Paint spilled.</h1>
-        <p className="text-[17px] text-ink-2">Something broke on our side. Try again.</p>
+        <p className="max-w-[44ch] text-[17px] text-ink-2">Something broke on our side, not yours. Nothing you saved is lost. Try again, or carry on from somewhere else.</p>
         {error?.digest && <p className="text-[12.5px] text-ink-2">Ref {error.digest}</p>}
         <div className="mt-3 flex flex-wrap justify-center gap-2">
-          <Link href="/" className="btn btn-ghost">Go home</Link>
           <button type="button" onClick={() => reset()} className="btn btn-blue">Try again</button>
+          {currentUser ? <Link href="/studio" className="btn btn-ghost">Go to my Studio</Link> : <Link href="/" className="btn btn-ghost">Go home</Link>}
+          <Link href="/art" className="btn btn-ghost">Browse art</Link>
         </div>
+        <p className="mt-2 text-[14.5px] text-ink-2">
+          Keeps happening? <Link href="/contact" className="font-semibold text-ink underline underline-offset-4">Tell us</Link>
+          {error?.digest ? " and mention the ref above" : ""}
+          <span aria-hidden="true"> · </span>
+          <Link href="/help" className="font-semibold text-ink underline underline-offset-4">Help center</Link>
+        </p>
       </div>
     </main>
   );

@@ -5,6 +5,8 @@ import { Heart, Lock, Mail, Package, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { splitParcelTag } from "@/lib/artistEmails";
 import { shortDate, type Stage } from "./format";
+import { failed, problemFrom, saved } from "@/lib/feedback";
+import { EmptyState } from "@/components/studio/EmptyState";
 
 export type ThreadMessage = {
   id: string;
@@ -118,9 +120,14 @@ export default function Conversation({
     el.style.height = `${Math.min(el.scrollHeight + 4, 520)}px`;
   }, [text, mode]);
 
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    if (!text.trim() || busy) return;
+  async function submit(e?: FormEvent) {
+    e?.preventDefault();
+    if (busy) return;
+    if (!text.trim()) {
+      setStatus({ ok: false, text: mode === "thank_you" ? "Write a few words first." : "Write the note first." });
+      textRef.current?.focus();
+      return;
+    }
     setBusy(true);
     setStatus(null);
     try {
@@ -129,21 +136,29 @@ export default function Conversation({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, mode, body: text, orderId: order?.id, parcel: mode === "thank_you" && parcel }),
       });
+      if (!res.ok) {
+        const p = await problemFrom(res, mode === "thank_you" ? "The note didn't send." : "Couldn't save the note.");
+        setStatus({ ok: false, text: p.message });
+        failed(p.message, { fix: p.fix, retry: p.fix || res.status < 500 ? undefined : () => submit() });
+        return;
+      }
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "Something went wrong.");
       const m = data.message;
       setMessages((list) => [...list, { ...m, sentAt: m.sentAt ?? null, createdAt: m.createdAt }]);
       if (mode === "thank_you") {
         setThanks(template);
         setParcel(false);
         setStatus({ ok: true, text: `Sent to ${buyerFirstName}.` });
+        saved(`Thank-you sent to ${buyerFirstName}`, { description: parcel ? "It'll be printed in the parcel too. Replies go to your inbox." : "Replies go to your inbox." });
       } else {
         setNote("");
         setStatus({ ok: true, text: "Note saved." });
+        saved("Note saved", { description: "Only you can see it." });
       }
       requestAnimationFrame(() => listEnd.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }));
-    } catch (err) {
-      setStatus({ ok: false, text: err instanceof Error ? err.message : "Something went wrong." });
+    } catch {
+      setStatus({ ok: false, text: "You seem to be offline. Your note is still here." });
+      failed("You seem to be offline", { description: "Your note is still here. Check your connection and try again.", retry: () => submit() });
     } finally {
       setBusy(false);
     }
@@ -151,9 +166,18 @@ export default function Conversation({
 
   async function remove(id: string) {
     if (!window.confirm("Delete this note?")) return;
-    const res = await fetch(`/api/studio/messages/${id}`, { method: "DELETE" });
-    if (res.ok) setMessages((list) => list.filter((m) => m.id !== id));
-    else setStatus({ ok: false, text: "Could not delete that note." });
+    try {
+      const res = await fetch(`/api/studio/messages/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setMessages((list) => list.filter((m) => m.id !== id));
+        saved("Note deleted");
+      } else {
+        const p = await problemFrom(res, "Couldn't delete that note.");
+        failed(p.message, { fix: p.fix, retry: p.fix || res.status < 500 ? undefined : () => remove(id) });
+      }
+    } catch {
+      failed("You seem to be offline", { description: "Check your connection and try again.", retry: () => remove(id) });
+    }
   }
 
   return (
@@ -161,9 +185,12 @@ export default function Conversation({
       <h2 id="talk-h" className="text-[20px] font-bold">Notes &amp; messages</h2>
 
       {messages.length === 0 ? (
-        <p className="rounded-[4px] border-2 border-dashed border-line bg-wall px-4 py-5 text-center text-[14px] text-ink-2">
-          Nothing yet. A short thank-you goes a long way.
-        </p>
+        <EmptyState
+          compact
+          title="No notes yet"
+          body={<>A short thank-you goes a long way, and buyers who hear from you come back. Write one below, or keep a private note only you can see.</>}
+          action={{ label: "Write a thank-you", onClick: () => { setMode("thank_you"); setStatus(null); requestAnimationFrame(() => textRef.current?.focus()); } }}
+        />
       ) : (
         <ol className="grid max-h-[560px] gap-2.5 overflow-y-auto p-0.5" aria-label="Thread">
           {messages.map((m) => <MessageItem key={m.id} m={m} titleFor={titleFor} onDelete={remove} />)}
@@ -246,7 +273,7 @@ export default function Conversation({
             {mode === "thank_you" && thanks !== template && (
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => setThanks(template)}>Reset</button>
             )}
-            <button type="submit" className="btn btn-blue btn-sm" disabled={busy || !text.trim()}>
+            <button type="submit" className="btn btn-blue btn-sm" disabled={busy}>
               {busy ? "Sending…" : mode === "thank_you" ? "Send note" : "Save note"}
             </button>
           </div>

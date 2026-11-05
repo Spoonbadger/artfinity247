@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { failed, problemFrom, saved } from "@/lib/feedback";
+import { EmptyState } from "@/components/studio/EmptyState";
+import { Problem } from "@/components/studio/Problem";
 
 // No schema field yet: saved per browser in localStorage.
 // Needed: Artist.automations Json? holding the AutomationPrefs shape below.
@@ -49,29 +52,45 @@ function Switch({ on, disabled, label, onChange }: { on: boolean; disabled: bool
   );
 }
 
+/** In place of a switch on Free: says why it's off and links to the plan, so it's never a dead button. */
+function Unlock({ label }: { label: string }) {
+  return (
+    <Link href="/studio/infinity" aria-label={`${label}: unlock with Infinity`} className="btn btn-sm min-h-[44px] shrink-0 gap-1.5 md:min-h-0">
+      <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M7 11V8a5 5 0 0 1 9.6-2" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor" /></svg>
+      Unlock
+    </Link>
+  );
+}
+
 /** Saved on the server (app/api/studio/automations), on every plan. */
 export type ServerAutomations = { newsletter: boolean; digest: boolean };
 
 export default function AutomationsPanel({ pro, storageKey, recent, server: initialServer = { newsletter: false, digest: true } }: { pro: boolean; storageKey: string; recent: Recent[]; server?: ServerAutomations }) {
   const [prefs, setPrefs] = useState<AutomationPrefs>(DEFAULT_PREFS);
+  // Which network's "Connect" was tapped: auto-posting isn't live yet, so we offer the Share kit instead.
   const [note, setNote] = useState<string | null>(null);
   const [server, setServer] = useState<ServerAutomations>(initialServer);
   const [saving, setSaving] = useState<keyof ServerAutomations | null>(null);
-  const [serverNote, setServerNote] = useState<string | null>(null);
 
   async function saveServer(key: keyof ServerAutomations, v: boolean) {
     const prev = server;
     setServer({ ...server, [key]: v });
     setSaving(key);
-    setServerNote(null);
+    const retry = () => saveServer(key, v);
     try {
       const res = await fetch("/api/studio/automations", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ [key]: v }) });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        setServer(prev);
+        const p = await problemFrom(res, "Couldn't save that switch.");
+        failed(p.message, { fix: p.fix, retry: p.fix ? undefined : retry });
+        return;
+      }
       setServer(await res.json());
-      setServerNote(key === "newsletter" ? (v ? "On. Your next upload starts a newsletter draft." : "Off.") : v ? "On. See you Monday." : "Off. No more weekly email.");
+      if (key === "newsletter") saved(v ? "Newsletter drafts on" : "Newsletter drafts off", { description: v ? "Your next upload starts a draft. Nothing goes out until you press Send." : "Uploads won't start a draft." });
+      else saved(v ? "Weekly digest on" : "Weekly digest off", { description: v ? "See you Monday morning." : "No more Monday email." });
     } catch {
       setServer(prev);
-      setServerNote("Couldn't save. Try again.");
+      failed("You seem to be offline", { description: "That switch didn't save. Check your connection and try again.", retry });
     } finally {
       setSaving(null);
     }
@@ -87,7 +106,12 @@ export default function AutomationsPanel({ pro, storageKey, recent, server: init
   function set(key: keyof AutomationPrefs, v: boolean) {
     const next = { ...prefs, [key]: v };
     setPrefs(next);
-    try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { /* ignore */ }
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(next));
+      saved(v ? "Switched on" : "Switched off", { description: "Saved on this device. It runs once auto-posting goes live." });
+    } catch {
+      failed("Couldn't save that here", { description: "This browser blocks saving settings. Try another browser." });
+    }
   }
 
   const socialOn = SOCIAL.filter((s) => prefs[s.key]).map((s) => s.name);
@@ -120,14 +144,22 @@ export default function AutomationsPanel({ pro, storageKey, recent, server: init
             <li key={s.key} className="flex flex-wrap items-center gap-3 py-3">
               <i className="paint-dab" style={{ ["--dab" as string]: s.dab }} aria-hidden="true" />
               <span className="min-w-0 flex-1 text-[15.5px] font-semibold">{s.name}</span>
-              <button type="button" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0" onClick={() => setNote(`Posting to ${s.name} is coming soon.`)}>
+              <button type="button" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0" aria-expanded={note === s.name} onClick={() => setNote(note === s.name ? null : s.name)}>
                 Connect
               </button>
-              <Switch on={prefs[s.key]} disabled={!pro} label={`Post new paintings to ${s.name}`} onChange={(v) => set(s.key, v)} />
+              {pro ? (
+                <Switch on={prefs[s.key]} disabled={false} label={`Post new paintings to ${s.name}`} onChange={(v) => set(s.key, v)} />
+              ) : (
+                <Unlock label={`Post new paintings to ${s.name}`} />
+              )}
             </li>
           ))}
         </ul>
-        {note && <p role="status" className="mt-1 rounded-xl bg-wall px-3 py-2 text-[13.5px] font-semibold">{note}</p>}
+        {note && (
+          <Problem tone="info" title={`Posting straight to ${note} isn't ready yet`} fix={{ label: "Open Share kit", href: "/studio/share" }} className="mt-1">
+            For now, the Share kit has a ready-made post, caption and link for every piece. Download it and post it to {note} in a minute.
+          </Problem>
+        )}
       </section>
 
       <section aria-label="More automations" className="af-panel grid p-4 sm:p-5">
@@ -157,11 +189,10 @@ export default function AutomationsPanel({ pro, storageKey, recent, server: init
                 <span className="text-[15.5px] font-semibold">{o.name}</span>
                 <span className="text-[13px] text-ink-2">{o.note}</span>
               </span>
-              <Switch on={prefs[o.key]} disabled={!pro} label={o.name} onChange={(v) => set(o.key, v)} />
+              {pro ? <Switch on={prefs[o.key]} disabled={false} label={o.name} onChange={(v) => set(o.key, v)} /> : <Unlock label={o.name} />}
             </li>
           ))}
         </ul>
-        {serverNote && <p role="status" className="mt-1 rounded-xl bg-wall px-3 py-2 text-[13.5px] font-semibold">{serverNote}</p>}
       </section>
 
       <section aria-labelledby="activity-h" className="grid gap-3">
@@ -171,7 +202,12 @@ export default function AutomationsPanel({ pro, storageKey, recent, server: init
         </div>
         <p className="text-[13.5px] text-ink-2">What would have run for your latest uploads. Nothing is posted yet.</p>
         {recent.length === 0 ? (
-          <p className="af-panel p-4 text-[14px] text-ink-2">Upload a piece to see it here.</p>
+          <EmptyState
+            compact
+            title="Nothing has run yet"
+            body="Each piece you add shows up here with what your automations would do for it: a newsletter draft, posts and a video."
+            action={{ label: "Add your first piece", href: "/studio/art/new" }}
+          />
         ) : (
           <ul className="af-panel grid divide-y divide-line">
             {recent.map((r) => (

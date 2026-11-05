@@ -26,12 +26,12 @@ export async function POST(req: NextRequest) {
   // Same for a photo of a damaged print, from the signed "Problem with your print?" link (lib/reprints.ts).
   const helpOrder = !user?.id && !reviewer ? String(form.get("helpOrder") || "") : "";
   const helper = !!helpOrder && verifyHelp(helpOrder, form.get("helpToken")) && rateLimit(`help-upload:${helpOrder}`, 15, 10 * 60_000);
-  if (!user?.id && !reviewer && !helper) return NextResponse.json({ error: "Log in to upload." }, { status: 401 });
+  if (!user?.id && !reviewer && !helper) return NextResponse.json({ error: "Log in to upload.", code: "not_logged_in" }, { status: 401 });
 
   const file = form.get("file");
-  if (!(file instanceof File)) return NextResponse.json({ error: "No file received." }, { status: 400 });
+  if (!(file instanceof File)) return NextResponse.json({ error: "No file came through. Pick it again.", code: "no_file" }, { status: 400 });
   const problem = uploadProblem(file.size, file.type);
-  if (problem) return NextResponse.json({ error: problem.error }, { status: problem.status });
+  if (problem) return NextResponse.json({ error: problem.error, code: problem.status === 413 ? "file_too_big" : "not_image" }, { status: problem.status });
 
   const buf = Buffer.from(await file.arrayBuffer());
   const guestFolder = reviewer ? `reviews/${reviewOrder}` : `reprints/${helpOrder}`;
@@ -41,7 +41,8 @@ export async function POST(req: NextRequest) {
   try {
     return NextResponse.json(await processUpload(buf, file.name, target));
   } catch (err) {
-    if (err instanceof UnreadableImage) return NextResponse.json({ error: UPLOAD_ERRORS.unreadable }, { status: 415 });
-    throw err;
+    if (err instanceof UnreadableImage) return NextResponse.json({ error: UPLOAD_ERRORS.unreadable, code: "unreadable_image" }, { status: 415 });
+    console.error("[uploads] failed", err);
+    return NextResponse.json({ error: "Upload didn't go through on our side. Try again in a moment.", code: "server_error" }, { status: 500 });
   }
 }

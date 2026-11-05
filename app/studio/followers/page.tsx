@@ -7,6 +7,7 @@ import { StudioPage } from "@/components/studio/StudioPage";
 import HelpLink from "@/components/help/HelpLink";
 import FollowersTabs from "@/components/followers/FollowersTabs";
 import FollowerImport from "@/components/followers/FollowerImport";
+import { EmptyState } from "@/components/studio/EmptyState";
 import { followerCounts } from "@/lib/followers";
 import { artistPath } from "@/lib/urls";
 import { cn } from "@/lib/utils";
@@ -63,19 +64,28 @@ export default async function FollowersPage({ searchParams }: { searchParams: { 
     >
       <FollowersTabs active="/studio/followers" />
 
-      <section aria-label="Totals" className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-        <PaintChip color="#2b37f0" value={counts.confirmed} label="confirmed" note="Ultramarine" />
-        <PaintChip color="#ffd43b" value={counts.pending} label="waiting to confirm" note="Hansa yellow" />
-        <PaintChip color="#c98a5a" value={fromCheckout} label="joined at checkout" note="Raw sienna" />
-        <PaintChip color="#c9c4b8" value={counts.unsubscribed} label="unsubscribed" note="Paynes grey, thinned" />
-      </section>
+      {any && (
+        <section aria-label="Totals" className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+          <PaintChip color="#2b37f0" value={counts.confirmed} label="confirmed" note="Ultramarine" />
+          <PaintChip color="#ffd43b" value={counts.pending} label="waiting to confirm" note="Hansa yellow" />
+          <PaintChip color="#c98a5a" value={fromCheckout} label="joined at checkout" note="Raw sienna" />
+          <PaintChip color="#c9c4b8" value={counts.unsubscribed} label="unsubscribed" note="Paynes grey, thinned" />
+        </section>
+      )}
 
       {!any ? (
-        <div className="grid justify-items-center gap-3 rounded-[4px] border-2 border-dashed border-line bg-wall px-6 py-14 text-center">
-          <h2 className="display text-[34px]">No followers yet.</h2>
-          <p className="max-w-[46ch] text-ink-2">The Follow button on your page, every buy page and your links page now collects emails. Buyers can tick a box at checkout too.</p>
-          {artist.slug && <Link href={artistPath(artist.slug)} className="btn btn-blue">See your Follow button</Link>}
-        </div>
+        <EmptyState
+          title="No followers yet"
+          body={
+            <>
+              When someone taps <b>Follow</b> on your page, your links page or a buy page, they show up here, and buyers can tick a box at checkout.
+              Each one gets your newsletter when you post new work. Put your follow link in your bio to start, or add people who already signed up with you below.
+            </>
+          }
+          action={{ label: "Share your follow link", href: "/studio/links" }}
+          secondary={artist.slug ? { label: "See your Follow button", href: artistPath(artist.slug) } : undefined}
+          help={{ label: "How followers work", href: "/help/growing/followers-newsletter" }}
+        />
       ) : (
         <section aria-labelledby="list-h" className="grid gap-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -94,7 +104,18 @@ export default async function FollowersPage({ searchParams }: { searchParams: { 
             </nav>
           </div>
           {rows.length === 0 ? (
-            <p className="af-panel p-4 text-[14px] text-ink-2">Nobody here.</p>
+            <EmptyState
+              compact
+              title={show === "pending" ? "Nobody waiting to confirm" : show === "unsubscribed" ? "Nobody has unsubscribed" : "No confirmed followers yet"}
+              body={
+                show === "pending"
+                  ? "New followers confirm by clicking the link we email them. Anyone who hasn't yet shows up here."
+                  : show === "unsubscribed"
+                    ? "Good news. If someone leaves your list, they show up here and stop getting newsletters."
+                    : "Followers count as confirmed once they click the link in our welcome email. Pending ones are on the Pending tab."
+              }
+              action={{ label: "See everyone", href: "/studio/followers" }}
+            />
           ) : (
             <ul className="af-panel grid divide-y divide-line">
               {rows.map((f) => {
@@ -120,7 +141,7 @@ export default async function FollowersPage({ searchParams }: { searchParams: { 
         </section>
       )}
 
-      <FollowerImport />
+      <FollowerImport defaultOpen={!any} />
     </StudioPage>
   );
 }

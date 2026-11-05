@@ -10,7 +10,7 @@ export default function AuthTopLink() {
   const path = usePathname() || "";
   const { currentUser } = useUser();
   const next = useSearchParams().get("next");
-  if (currentUser && path.startsWith("/change-password")) {
+  if (currentUser && (path.startsWith("/change-password") || path.startsWith("/email-confirmed"))) {
     return <Link href="/studio" className="btn btn-ghost btn-sm">Studio</Link>;
   }
   if (path.startsWith("/register")) {

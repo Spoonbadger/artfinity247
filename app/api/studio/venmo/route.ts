@@ -30,14 +30,14 @@ async function me() {
 
 export async function POST(req: Request) {
   const artist = await me();
-  if (!artist) return NextResponse.json({ error: "Log in first." }, { status: 401 });
+  if (!artist) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
   // Payout details wait for a confirmed email (lib/emailVerify.ts).
   if (!artist.emailVerifiedAt) return NextResponse.json({ error: UNVERIFIED_MESSAGE, code: "email_unverified" }, { status: 403 });
 
   const body = await req.json().catch(() => ({}));
   const raw = typeof body.venmoHandle === "string" ? body.venmoHandle : "";
   const handle = normalizeVenmo(raw);
-  if (handle === undefined) return NextResponse.json({ error: "That Venmo handle looks off. Use letters, numbers, - or _." }, { status: 400 });
+  if (handle === undefined) return NextResponse.json({ error: "That Venmo handle looks off. Use letters, numbers, - or _.", code: "venmo_invalid" }, { status: 400 });
 
   // Same as now: nothing to change; drop any pending change.
   if (sameVenmo(handle, artist.venmoHandle)) {
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
 
   if (handle) {
     const clash = await prisma.artist.findFirst({ where: { venmoHandle: { equals: handle, mode: "insensitive" }, NOT: { id: artist.id } }, select: { id: true } });
-    if (clash) return NextResponse.json({ error: IN_USE }, { status: 400 });
+    if (clash) return NextResponse.json({ error: IN_USE, code: "venmo_taken" }, { status: 400 });
   }
 
   // First handle: apply directly.
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       });
       return NextResponse.json({ venmoHandle: a.venmoHandle, pending: null });
     } catch (err: any) {
-      if (err?.code === "P2002") return NextResponse.json({ error: IN_USE }, { status: 400 });
+      if (err?.code === "P2002") return NextResponse.json({ error: IN_USE, code: "venmo_taken" }, { status: 400 });
       throw err;
     }
   }
@@ -92,14 +92,14 @@ export async function POST(req: Request) {
     });
   } catch (err) {
     console.error("Venmo confirm email failed", err);
-    return NextResponse.json({ error: "We couldn't send the confirmation email. Try again in a minute." }, { status: 502 });
+    return NextResponse.json({ error: "We couldn't send the confirmation email. Try again in a minute.", code: "send_failed" }, { status: 502 });
   }
   return NextResponse.json({ venmoHandle: artist.venmoHandle, pending: handle ?? "" });
 }
 
 export async function DELETE() {
   const artist = await me();
-  if (!artist) return NextResponse.json({ error: "Log in first." }, { status: 401 });
+  if (!artist) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
   await prisma.artist.update({ where: { id: artist.id }, data: { venmoPending: null, venmoPendingToken: null, venmoPendingAt: null } });
   return NextResponse.json({ venmoHandle: artist.venmoHandle, pending: null });
 }

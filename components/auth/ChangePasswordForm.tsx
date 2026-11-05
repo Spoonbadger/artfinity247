@@ -79,7 +79,22 @@ export default function ChangePasswordForm() {
         </h1>
         {!hasPassword && !done && <p className="text-[15px] text-ink-2">You log in with a connected account. Add a password to log in with your email too.</p>}
         <FormAlert tone="ok">{done ? "Saved. Use the new password next time." : null}</FormAlert>
-        <FormAlert>{error}</FormAlert>
+        <FormAlert>
+          {error && (
+            <>
+              {error}
+              {error === MESSAGES.bad_password && (
+                <> <Link href="/recover-password" className="whitespace-nowrap underline underline-offset-4">Forgot it? Reset it by email</Link></>
+              )}
+              {error === MESSAGES.not_logged_in && (
+                <> <Link href="/login?next=/change-password" className="underline underline-offset-4">Log in</Link></>
+              )}
+              {error === MESSAGES.has_password && (
+                <> <button type="button" onClick={() => window.location.reload()} className="underline underline-offset-4">Refresh</button></>
+              )}
+            </>
+          )}
+        </FormAlert>
         {hasPassword && <PasswordField label="Current password" name="current" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} required />}
         <PasswordField label="New password" name="next" autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} hint="8 or more characters" required minLength={8} />
         <button type="submit" className="btn btn-blue btn-lg w-full" disabled={busy}>

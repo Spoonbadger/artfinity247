@@ -1,6 +1,7 @@
 import type { AdjustmentLine, LedgerLine, PayoutRow } from "@/lib/balance";
 import { payoutDateFor } from "@/lib/balance";
 import { PAYOUT_LABEL, SIZE_LABEL, dayUTC, usd } from "./format";
+import { EmptyState } from "@/components/studio/EmptyState";
 
 export function PayoutChip({ row, late = false }: { row: PayoutRow; late?: boolean }) {
   if (late) {
@@ -33,7 +34,12 @@ export default function PayoutsList({ payouts, ledger, adjustments = [], lateMon
         <span className="text-[12.5px] text-ink-2">One per month, sent by Artfinity</span>
       </div>
       {payouts.length === 0 ? (
-        <p className="py-6 text-center text-[14px] text-ink-2">Your first payout shows up after your first sale.</p>
+        <EmptyState
+          compact
+          title="No payouts yet"
+          body="Your first payout shows here after your first sale. Each month's sales are paid together, by the 5th of the next month."
+          help={{ label: "When you get paid", href: "/help/getting-paid/when-paid" }}
+        />
       ) : (
         <div className="grid">
           <div className="hidden grid-cols-[minmax(0,1.3fr)_minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1.5fr)_20px] gap-3 border-b border-line pb-2 text-[12px] font-semibold text-ink-2 md:grid">

@@ -13,10 +13,19 @@ export async function GET(req: NextRequest) {
   try {
     userId = (await requireUser()).id;
   } catch {
-    return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+    return NextResponse.json({ error: "Log in to export your analytics.", code: "not_logged_in" }, { status: 401 });
   }
   const range = parseRange(req.nextUrl.searchParams.get("range"));
   const a = await getArtistAnalytics(userId, range);
+  // No visits, scans or sales in the range: explain instead of a file of zeros.
+  if (!a.views && !a.scans && !a.sales) {
+    return NextResponse.json(
+      a.everViewed
+        ? { error: `No visits in the last ${range} days to export. Try a longer range.`, code: "no_views_range" }
+        : { error: "No views yet, so there's nothing to export. Share your page and visits show up within minutes.", code: "no_views" },
+      { status: 404 },
+    );
+  }
   const rows: (string | number)[][] = [
     ["date", "views", "visitors", "scans", "sales"],
     ...a.days.map((d) => [d.key, d.views, d.visitors, d.scans, d.sales]),

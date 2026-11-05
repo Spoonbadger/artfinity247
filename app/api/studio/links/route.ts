@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Log in first." }, { status: 401 });
+  if (!user?.id) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
   const [links, artist] = await Promise.all([
     prisma.artistLink.findMany({ where: { artistId: user.id }, orderBy: [{ position: "asc" }, { createdAt: "asc" }], select: LINK_SELECT }),
     prisma.artist.findUnique({ where: { id: user.id }, select: { linksTheme: true } }),
@@ -20,19 +20,19 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Log in first." }, { status: 401 });
+  if (!user?.id) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
 
   const parsed = linkInput.safeParse(await req.json().catch(() => ({})));
-  if (!parsed.success) return NextResponse.json({ error: "Check the link and label." }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: "Check the link and label.", code: "invalid_input" }, { status: 400 });
   const norm = normalizeUrl(parsed.data.url);
-  if ("error" in norm) return NextResponse.json({ error: norm.error }, { status: 400 });
+  if ("error" in norm) return NextResponse.json({ error: norm.error, code: "invalid_url" }, { status: 400 });
 
   const kind = resolveKind(norm.url, parsed.data.display, parsed.data.kind);
   const label = parsed.data.label?.trim() || null;
-  if (kind === "custom" && !label) return NextResponse.json({ error: "Give the button a label." }, { status: 400 });
+  if (kind === "custom" && !label) return NextResponse.json({ error: "Give the button a label.", code: "missing_label" }, { status: 400 });
 
   const count = await prisma.artistLink.count({ where: { artistId: user.id } });
-  if (count >= MAX_LINKS) return NextResponse.json({ error: `Up to ${MAX_LINKS} links.` }, { status: 400 });
+  if (count >= MAX_LINKS) return NextResponse.json({ error: `Up to ${MAX_LINKS} links. Delete one you don't use to add another.`, code: "link_limit" }, { status: 400 });
   const last = await prisma.artistLink.aggregate({ where: { artistId: user.id }, _max: { position: true } });
 
   const link = await prisma.artistLink.create({

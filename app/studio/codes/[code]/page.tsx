@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EmptyState } from "@/components/studio/EmptyState";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
@@ -86,6 +87,17 @@ export default async function CodePage({ params }: { params: { code: string } })
     >
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)] lg:items-start">
         <div className="grid min-w-0 gap-4">
+          {s.scans === 0 ? (
+            <EmptyState
+              dab="#2b37f0"
+              title="No scans yet"
+              body={<>Hang this code and scans show up here within seconds: where, on what, and whether they bought. Scan it with your phone to test it.</>}
+              action={c.artworkId ? { label: "Print this code", href: `/studio/qr?code=${c.code}` } : { label: "Download the code", href: "#dl-h" }}
+              secondary={{ label: "Open its link", href: `/q/${c.code}` }}
+              help={{ label: "Where to hang codes", href: "/help/getting-started/hanging-codes" }}
+            />
+          ) : (
+          <>
           <section aria-label="Totals" className="af-card grid grid-cols-3 gap-x-3 gap-y-4 p-4 sm:grid-cols-6 sm:p-5">
             {tiles.map(([v, l, money]) => (
               <div key={l} className="grid min-w-0 gap-0.5">
@@ -130,6 +142,8 @@ export default async function CodePage({ params }: { params: { code: string } })
               <p className="text-[14px] text-ink-2">Nobody has scanned it yet.</p>
             )}
           </section>
+          </>
+          )}
         </div>
 
         <CodeEditor

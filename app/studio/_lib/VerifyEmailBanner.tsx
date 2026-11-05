@@ -2,7 +2,7 @@
 
 // Slim "Confirm your email — resend" bar at the top of Studio while the artist's email is unconfirmed, and a
 // one-time "Email confirmed" after the link (?verified=1). Studio stays usable; payouts and newsletters wait.
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
@@ -10,6 +10,11 @@ export default function VerifyEmailBanner({ email, verified }: { email: string; 
   const flag = useSearchParams().get("verified");
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [error, setError] = useState("");
+  // Fix links elsewhere ("Resend confirmation", lib/feedback.ts) point at /studio#confirm-email: put focus on Resend.
+  const resendRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!verified && window.location.hash === "#confirm-email") resendRef.current?.focus();
+  }, [verified]);
 
   if (verified) {
     if (flag !== "1") return null;
@@ -28,7 +33,7 @@ export default function VerifyEmailBanner({ email, verified }: { email: string; 
       const r = await fetch("/api/auth/verify-email/resend", { method: "POST" });
       const d = await r.json().catch(() => ({}));
       if (r.ok) return setState("sent");
-      setError(d.code === "rate_limited" ? "Sent a few already. Check spam, or try again in an hour." : "Couldn't send it. Try again.");
+      setError(d.code === "rate_limited" ? "Sent a few already. Check spam, or try again in an hour." : d.error || "Couldn't send it. Try again.");
       setState("error");
     } catch {
       setError("Couldn't send it. Try again.");
@@ -38,13 +43,13 @@ export default function VerifyEmailBanner({ email, verified }: { email: string; 
 
   return (
     <Wrap>
-      <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[4px] border-[1.5px] border-ink bg-sticker/40 px-4 py-2 text-[14px]">
+      <div id="confirm-email" role="status" className="flex scroll-mt-4 flex-wrap items-center gap-x-3 gap-y-1 rounded-[4px] border-[1.5px] border-ink bg-sticker/40 px-4 py-2 text-[14px]">
         <b>{flag === "expired" ? "That link expired." : "Confirm your email"}</b>
-        <span className="min-w-0 flex-1 text-ink-2">
-          {state === "sent" ? `Sent. Check ${email}.` : state === "error" ? error : <>We sent a link to {email}. Payouts and newsletters unlock once you click it.</>}
+        <span className="min-w-0 flex-1 text-ink-2 max-sm:order-last max-sm:basis-full">
+          {state === "sent" ? `Sent. Check ${email} (and spam). The link works for 7 days.` : state === "error" ? error : <>We sent a link to {email}. Payouts and newsletters unlock once you click it. Wrong address? <a href="/studio/page#account-details" className="underline underline-offset-2">Change it</a>.</>}
         </span>
         {state !== "sent" && (
-          <button type="button" onClick={resend} disabled={state === "sending"} className="inline-flex min-h-[36px] items-center gap-1.5 font-semibold text-scan underline underline-offset-4">
+          <button ref={resendRef} type="button" onClick={resend} disabled={state === "sending"} className="inline-flex min-h-[36px] items-center gap-1.5 font-semibold text-scan underline underline-offset-4">
             {state === "sending" && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
             {flag === "expired" ? "Send a new link" : "Resend"}
           </button>

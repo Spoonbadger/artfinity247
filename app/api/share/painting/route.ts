@@ -12,9 +12,9 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const slug = req.nextUrl.searchParams.get("art") || "";
   const row = slug ? await findShareArt(slug) : null;
-  if (!row) return new NextResponse("Artwork not found", { status: 404 });
+  if (!row) return NextResponse.json({ error: "That piece isn't approved or was removed. Pick another.", code: "art_not_found" }, { status: 404 });
   const isPublic = row.status === "APPROVED";
-  if (!isPublic && !canSee(row, await getUserFromCookie())) return new NextResponse("Artwork not found", { status: 404 });
+  if (!isPublic && !canSee(row, await getUserFromCookie())) return NextResponse.json({ error: "That piece isn't approved or was removed. Pick another.", code: "art_not_found" }, { status: 404 });
   try {
     const src = await paintingSource(row.art.imageUrl);
     // Snap to a few sizes so the URL can't be used to make endless resizes.
@@ -27,6 +27,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (err) {
     console.error("Share painting error", err);
-    return new NextResponse("Could not load the painting", { status: 500 });
+    return NextResponse.json({ error: "Couldn't load the painting. Try again in a moment.", code: "server_error" }, { status: 500 });
   }
 }

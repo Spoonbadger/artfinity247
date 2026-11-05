@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download, Search } from "lucide-react";
+import { Search } from "lucide-react";
+import ExportCsvButton from "./ExportCsvButton";
 import type { AdjustmentLine, LedgerLine } from "@/lib/balance";
 import { BUCKET_COLOR, BUCKET_LABEL, SIZE_LABEL, bucketOf, dayUTC, monthName, usd, type MoneyBucket } from "./format";
 
@@ -105,9 +106,7 @@ export default function Ledger({ ledger, adjustments = [], currentMonth }: { led
     <section aria-labelledby="ledger-h" className="af-card grid min-w-0 gap-3 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="ledger-h" className="text-[20px] font-bold">Transactions</h2>
-        <a href={exportHref} className="btn btn-ghost btn-sm" download>
-          <Download className="h-4 w-4" aria-hidden="true" />CSV
-        </a>
+        <ExportCsvButton href={exportHref} label="CSV" className="btn-sm" />
       </div>
 
       <div className="grid gap-2 sm:flex sm:items-center sm:justify-between">
@@ -136,7 +135,10 @@ export default function Ledger({ ledger, adjustments = [], currentMonth }: { led
       </p>
 
       {rows.length === 0 ? (
-        <p className="py-8 text-center text-[14px] text-ink-2">No matching sales.</p>
+        <div className="grid justify-items-center gap-2 py-8 text-center text-[14px] text-ink-2">
+          <p>No sales match {q.trim() ? <>“{q.trim()}”</> : "this filter"}{status ? ` in ${FILTERS.find((f) => f.id === status)?.label ?? "this group"}` : ""}.</p>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setQ(""); setStatus(""); setShown(PAGE); }}>Show all {all.length}</button>
+        </div>
       ) : (
         <div className="min-w-0">
           <table className="num w-full border-collapse text-[13.5px]">

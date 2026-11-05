@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EmptyState } from "@/components/studio/EmptyState";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { StudioPage } from "@/components/studio/StudioPage";
@@ -24,11 +25,12 @@ export default async function RoomsPage({ searchParams }: { searchParams: { art?
   if (!arts.length) {
     return (
       <StudioPage title="Rooms" sub="Your art, on real walls.">
-        <div className="af-panel grid justify-items-start gap-3 p-6">
-          <h2 className="display text-[28px]">No art yet</h2>
-          <p className="text-[15px] text-ink-2">Upload a piece, then pick its rooms.</p>
-          <Link href="/studio/art/new" className="btn btn-blue">Add art</Link>
-        </div>
+        <EmptyState
+          dab="#5bc0be"
+          title="Rooms appear once you have art"
+          body="Buyers see each print hanging in a real room. Upload a piece, then pick the rooms it looks best in, or let us choose."
+          action={{ label: "Upload art", href: "/studio/art/new" }}
+        />
       </StudioPage>
     );
   }

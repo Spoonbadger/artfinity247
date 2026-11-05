@@ -30,7 +30,19 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const err = (code: string, status: number, extra: Record<string, unknown> = {}) => NextResponse.json({ code, ...extra }, { status });
+const MESSAGES: Record<string, string> = {
+  missing_fields: "Fill in your link, email, password, name and city.",
+  terms_required: "Please accept the Artist Terms and the Terms & Conditions.",
+  invalid_email: "That email doesn't look right. We send sales there, so check it.",
+  weak_password: "Use at least 8 characters for your password.",
+  invalid_handle: "Links use 3-30 letters, numbers, dots, dashes or underscores.",
+  handle_taken: "That link is taken. Try one of the suggestions.",
+  email_taken: "That email already has a page. Log in, or reset your password if you forgot it.",
+  oauth_expired: "That sign-in expired. Continue with it again, or sign up with your email.",
+  oauth_in_use: "That account already has a page. Log in instead.",
+  server_error: "Couldn't create your page. Try again in a moment.",
+};
+const err = (code: string, status: number, extra: Record<string, unknown> = {}) => NextResponse.json({ error: MESSAGES[code], code, ...extra }, { status });
 
 export async function POST(req: Request) {
   let body: any;

@@ -57,6 +57,7 @@ export default async function NewsletterPage({ searchParams }: { searchParams: {
         artworks={artworks.map((a) => ({ id: a.id, slug: a.slug as string, title: a.title, imageUrl: a.imageUrl }))}
         recipients={counts.confirmed}
         nextSendAt={next?.toISOString() ?? null}
+        verified={!!artist.emailVerifiedAt}
         base={BASE}
         drafts={drafts.map((d) => ({ id: d.id, subject: d.subject || "Untitled draft", createdAt: d.createdAt.toISOString() }))}
         sent={sent.map((n) => ({ id: n.id, subject: n.subject, sentAt: n.sentAt!.toISOString(), recipients: n.recipients, pieces: n.artworkIds.length }))}

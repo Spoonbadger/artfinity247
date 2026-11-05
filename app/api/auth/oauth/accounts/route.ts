@@ -21,17 +21,17 @@ async function me() {
 
 export async function GET() {
   const u = await me();
-  if (!u) return NextResponse.json({ code: "not_logged_in" }, { status: 401 });
+  if (!u) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
   const m = await signInMethods(u.id);
-  if (!m) return NextResponse.json({ code: "not_logged_in" }, { status: 401 });
+  if (!m) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
   return NextResponse.json({ ...m, available: enabledProviders() }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function DELETE(req: Request) {
   const u = await me();
-  if (!u) return NextResponse.json({ code: "not_logged_in" }, { status: 401 });
+  if (!u) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
   const provider = new URL(req.url).searchParams.get("provider");
-  if (!isProviderId(provider)) return NextResponse.json({ code: "bad_provider" }, { status: 400 });
+  if (!isProviderId(provider)) return NextResponse.json({ error: "We don't know that sign-in option. Refresh the page and try again.", code: "bad_provider" }, { status: 400 });
 
   // Checked and deleted in one transaction so two tabs can't each remove "the other" last method.
   const result = await prisma.$transaction(async (tx) => {
@@ -46,5 +46,10 @@ export async function DELETE(req: Request) {
 
   if (result === "ok") return NextResponse.json({ ok: true });
   const status = result === "not_logged_in" ? 401 : result === "not_connected" ? 404 : 409;
-  return NextResponse.json({ code: result }, { status });
+  const error = {
+    not_logged_in: "Log in first.",
+    not_connected: "That account isn't connected any more. Refresh the page to see what's connected.",
+    last_method: "That's your only way to log in, so we kept it. Set a password or connect another account first, then disconnect this one.",
+  }[result];
+  return NextResponse.json({ error, code: result }, { status });
 }

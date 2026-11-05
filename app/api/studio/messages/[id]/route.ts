@@ -7,8 +7,8 @@ export const dynamic = "force-dynamic";
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Log in first." }, { status: 401 });
+  if (!user?.id) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
   const { count } = await prisma.message.deleteMany({ where: { id: params.id, artistId: user.id, direction: "note" } });
-  if (!count) return NextResponse.json({ error: "Note not found." }, { status: 404 });
+  if (!count) return NextResponse.json({ error: "That note is already gone. Refresh the page.", code: "not_found" }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

@@ -117,6 +117,12 @@ Once a print has had time to arrive, we email the buyer: "How does it look on yo
 
 Buyers can edit their review for ${EDIT_WINDOW_DAYS} days after posting it.
 
+## Reviews waiting on a check
+A review with a link or rough language is held for a quick look by Artfinity before it goes public. You don't need to do anything. It shows up in Reviews once it's cleared, usually within a day. You can reply as soon as it's public.
+
+## No reviews yet?
+Reviews only come from delivered prints, so they start after your first sales arrive. To get there sooner, [print a QR code](/studio/qr) for your paintings, and make the [delivered email](/studio/emails) sound like you.
+
 > A problem with a print? Buyers get a free reprint through their order page, so a damaged parcel rarely turns into a bad review.
 `,
   },
@@ -184,6 +190,31 @@ In [Infinity plan](/studio/infinity), **Manage billing** opens Stripe's billing 
 ## Good to know
 - Your split is set when each order is placed. Sales made while Infinity is active pay ${PRO_PCT}. Earlier sales keep their split, even after you subscribe or cancel.
 - If Infinity ends, new orders pay ${FREE_PCT}. Your art, page, codes and links all stay.
+`,
+  },
+  {
+    slug: "customers",
+    section,
+    audience: "artist",
+    title: "Customers, notes and thank-you notes",
+    summary: "Everyone who buys a print shows up in Customers with their orders. Keep private notes and send a thank-you, even printed in the parcel.",
+    link: { href: "/studio/customers", label: "Open Customers" },
+    related: ["buyer-emails", "order-status", "followers-newsletter"],
+    body: `
+## Who shows up
+Every buyer of one of your prints appears in [Customers](/studio/customers) after their order is paid: name, city, what they bought, what they spent and where each print is (paid, at the printer, shipped, delivered). Emails are partly hidden in the list; open a customer to see theirs.
+
+No customers yet? They arrive with your first sale. Most first sales start with a [QR code](/studio/qr) next to the real painting, or your [links page](/studio/links) in your bio.
+
+## Notes and thank-you notes
+Open a customer to write to them:
+- **Thank-you note:** emailed from you via Artfinity. Replies go to your inbox. Until the print ships, you can also have it printed and put in the parcel.
+- **Private note:** only you see it. Good for "loves big florals" or "met at the Saturday market".
+
+You can send up to 40 notes a day.
+
+## Automatic emails
+Buyers also get a receipt, shipped, delivered and thank-you email. You can rewrite them in [Buyer emails](/studio/emails).
 `,
   },
   {

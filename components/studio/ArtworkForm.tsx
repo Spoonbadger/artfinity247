@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DragEvent, FormEvent, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { errorText, failed, saved as savedToast } from "@/lib/feedback";
+import { Problem } from "./Problem";
 import { FolderOpen, ImagePlus, Loader2, RotateCcw } from "lucide-react";
 import type { SizeKey } from "@/lib/earnings";
 import { BrushStroke } from "@/components/af/Brush";
@@ -12,9 +13,11 @@ import { artPath } from "@/lib/urls";
 import { splitOriginal } from "@/lib/originalSize";
 import {
   artworkFormData, checkArtwork, DetailsFields, EditionField, filesFromDrop, isImageFile, OwnershipField, PriceFields,
-  pricesFrom, PrintSizes, REVIEW_NOTE, SensitiveField, saveError, titleFromFile, useLastPrices, usePriceGuide, type ArtworkValues, type Prices,
+  pricesFrom, PrintSizes, REVIEW_NOTE, SensitiveField, saveProblem, titleFromFile, TOO_SMALL, useLastPrices, usePriceGuide, type ArtworkValues, type Prices,
 } from "./artworkFields";
 import { cloudImportAvailable, CloudImportButtons, ImportFailed, importCloudFile, importingLabel, isCloudImage, type CloudFile, type UploadedImage } from "./cloudImport";
+
+type ProblemFix = { label: string; href?: string; onClick?: () => void };
 
 export type ArtworkInput = {
   slug: string;
@@ -51,6 +54,7 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
   const router = useRouter();
   const editing = !!artwork;
   const fileRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const folderRef = useRef<HTMLInputElement>(null);
   const many = !editing && !!onManyFiles;
 
@@ -91,7 +95,10 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
   // Once a print sells, the edition is a promise to buyers: no resizing, no open/limited switch (server enforces it too).
   const editionLocked = editing && sold > 0;
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // The error under the form, with the button that fixes it (pick another file, try again, the page that fixes it).
+  const [error, setErrorState] = useState<{ message: string; fix?: ProblemFix } | null>(null);
+  const setError = (message: string | null, fix?: ProblemFix) => setErrorState(message ? { message, fix } : null);
+  const pickFile = (label = "Pick another file"): ProblemFix => ({ label, onClick: () => fileRef.current?.click() });
   // notice: set when the image looks like one already on Artfinity (lib/imageHash.ts); duplicate "review" = a person checks it.
   // moderation (automatic image check, lib/moderation): "review" = held for a person; "labeled" = a label was added (notice says which).
   const [done, setDone] = useState<{ slug: string; title: string; imageUrl: string; pending: boolean; notice?: string | null; duplicate?: string | null; moderation?: string | null } | null>(null);
@@ -112,7 +119,7 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
     setError(null);
     setRetryCloud(null);
     setCloudNote(null);
-    if (!isImageFile(file)) { setError("Pick an image file: JPG, PNG, WEBP or HEIC."); return; }
+    if (!isImageFile(file)) { setError("Pick an image file: JPG, PNG, WEBP or HEIC.", pickFile()); return; }
     setUploading("Uploading");
     try {
       const fd = new FormData();
@@ -121,8 +128,9 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Upload failed. Try again.");
       applyImage(data, file.name);
-    } catch (e: any) {
-      setError(e.message || "Upload failed. Try again.");
+    } catch (e) {
+      const offline = e instanceof TypeError;
+      setError(errorText(e, "Upload failed. Try again."), offline ? { label: "Try again", onClick: () => upload(file) } : pickFile());
     } finally {
       setUploading(null);
     }
@@ -135,7 +143,7 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
     try {
       applyImage(await importCloudFile(file), file.name);
     } catch (e: any) {
-      setError(e?.message || "Import failed. Try again.");
+      setError(errorText(e, "Import failed. Try again."));
       if (!(e instanceof ImportFailed) || e.retry) setRetryCloud(file);
     } finally {
       setUploading(null);
@@ -146,7 +154,7 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
   function takeCloud(files: CloudFile[]) {
     const images = files.filter(isCloudImage);
     setCloudNote(null);
-    if (!images.length) { setError("Pick an image file: JPG, PNG, WEBP or HEIC."); return; }
+    if (!images.length) { setError("Pick an image file: JPG, PNG, WEBP or HEIC.", pickFile()); return; }
     if (many && images.length > 1 && onCloudFiles) { onCloudFiles(images); return; }
     if (images.length > 1) setCloudNote(`We took the first one, ${images[0].name}. You can add more after your first piece is published.`);
     importOne(images[0]);
@@ -155,7 +163,7 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
   /** One image: the usual form. Several (and no image here yet): the upload queue. */
   function take(files: File[]) {
     const images = files.filter(isImageFile);
-    if (!images.length) { if (files.length) setError(files.length > 1 ? "No images in there. Pick JPG, PNG, WEBP or HEIC files." : "Pick an image file: JPG, PNG, WEBP or HEIC."); return; }
+    if (!images.length) { if (files.length) setError(files.length > 1 ? "No images in there. Pick JPG, PNG, WEBP or HEIC files." : "Pick an image file: JPG, PNG, WEBP or HEIC.", pickFile()); return; }
     if (many && images.length > 1 && onManyFiles) onManyFiles(images);
     else upload(images[0]);
   }
@@ -172,27 +180,38 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
     setError(null);
     const problem = checkArtwork(v, { imageUrl, printable, editionLocked, needsOwnership, owned });
     if (problem) {
-      setError(problem.message);
-      if (problem.focus) document.getElementById(problem.focus)?.focus();
+      const focus = problem.focus;
+      const fix: ProblemFix | undefined = !imageUrl ? pickFile("Choose an image") : problem.message === TOO_SMALL ? pickFile("Pick a bigger file")
+        : focus ? { label: "Show me", onClick: () => document.getElementById(focus)?.focus() } : undefined;
+      setError(problem.message, fix);
+      if (focus) document.getElementById(focus)?.focus();
       return;
     }
     setSaving(true);
     try {
       const fd = artworkFormData(v, { imageUrl, fresh, editionLocked, ownership: needsOwnership && owned });
       const res = await fetch(editing ? `/api/artworks/update/${artwork!.slug}` : "/api/artworks/upload", { method: "POST", body: fd, credentials: "include" });
-      if (!res.ok) throw new Error(await saveError(res));
+      if (!res.ok) {
+        const p = await saveProblem(res);
+        const retry: ProblemFix = { label: "Try again", onClick: () => formRef.current?.requestSubmit() };
+        const fix: ProblemFix | undefined = p.code === "image_too_small" ? pickFile("Pick a bigger file") : p.code === "reupload" ? pickFile("Upload it again") : p.fix ?? (res.status >= 500 || res.status === 429 ? retry : undefined);
+        setError(p.message, fix);
+        return;
+      }
       const saved = await res.json();
       if (editing) {
-        if (saved.duplicate === "review") toast.message(saved.notice, { duration: 9000 });
-        else toast.success(saved.status === "PENDING" && fresh ? `Saved. New image ${REVIEW_NOTE.toLowerCase()}.` : saved.notice ? `Saved. ${saved.notice}` : "Saved");
+        if (saved.duplicate === "review") savedToast(saved.notice);
+        else savedToast(saved.status === "PENDING" && fresh ? `Saved. New image ${REVIEW_NOTE.toLowerCase()}.` : saved.notice ? `Saved. ${saved.notice}` : "Saved", { next: { label: "Print code", href: `/studio/qr?art=${saved.slug || artwork!.slug}` } });
         router.push("/studio/art");
         router.refresh();
       } else {
         setDone({ slug: saved.slug, title: saved.title, imageUrl: saved.imageUrl, pending: saved.status === "PENDING", notice: saved.notice, duplicate: saved.duplicate, moderation: saved.moderation });
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
-    } catch (e: any) {
-      setError(e.message || "Could not save. Try again.");
+    } catch (e) {
+      const msg = errorText(e, "Could not save. Try again.");
+      setError(msg, { label: "Try again", onClick: () => formRef.current?.requestSubmit() });
+      failed(msg, { retry: () => formRef.current?.requestSubmit() });
     } finally {
       setSaving(false);
     }
@@ -230,7 +249,7 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
   const ready = (s: SizeKey) => !printable || printable.includes(s);
 
   return (
-    <form onSubmit={submit} className="grid items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-10" noValidate>
+    <form ref={formRef} onSubmit={submit} className="grid items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-10" noValidate>
       {/* Image */}
       <div className="grid gap-3 lg:sticky lg:top-6">
         <label
@@ -309,7 +328,7 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
           <OwnershipField owned={owned} setOwned={setOwned} note={!editing ? <>New artists&apos; first few pieces get a quick look before they go live.</> : undefined} />
         )}
 
-        {error && <p role="alert" className="rounded-xl border-2 border-coral bg-[#fff1ed] px-3.5 py-2.5 text-[14px] font-semibold">{error}</p>}
+        {error && <Problem tone="error" title={error.message} fix={error.fix} />}
 
         <div className="flex flex-wrap items-center gap-3">
           <button type="submit" className="btn btn-blue btn-lg relative z-0" disabled={saving || !!uploading}>

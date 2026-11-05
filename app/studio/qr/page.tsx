@@ -2,6 +2,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { StudioPage } from "@/components/studio/StudioPage";
+import { EmptyState } from "@/components/studio/EmptyState";
+import { Problem } from "@/components/studio/Problem";
 import HelpLink from "@/components/help/HelpLink";
 import QrStudio from "@/components/qr/QrStudio";
 import { DEFAULT_DESIGN, DISCOUNTS, PRESETS, cardSVG, presetLook, qrValue, renderCard, sanitizeDesign, sheetSVG, type ArtInfo, type Design, type PresetKey } from "@/components/qr/card";
@@ -24,8 +26,9 @@ export default async function QrPage({ searchParams }: { searchParams: { art?: s
   const want = saved?.artwork?.slug || (typeof searchParams.art === "string" ? searchParams.art : "");
 
   const rows = await prisma.artwork.findMany({
-    where: { artistId: artist.id, status: "APPROVED", slug: { not: null } },
-    select: { slug: true, title: true, imageUrl: true, markupSmall: true, markupMedium: true, markupLarge: true, markupXl: true, sensitive: true, editionSize: true },
+    // Pieces in review can get their code now (the upload screen offers it); it works once they're live.
+    where: { artistId: artist.id, status: { in: ["APPROVED", "PENDING"] }, slug: { not: null } },
+    select: { slug: true, title: true, imageUrl: true, markupSmall: true, markupMedium: true, markupLarge: true, markupXl: true, sensitive: true, editionSize: true, status: true },
     orderBy: { createdAt: "desc" },
   });
   const name = displayName(artist);
@@ -44,15 +47,18 @@ export default async function QrPage({ searchParams }: { searchParams: { art?: s
 
   if (!arts.length) {
     return (
-      <StudioPage title="QR codes" sub="A code to hang beside each piece.">
-        <div className="af-panel grid justify-items-start gap-3 p-6">
-          <h2 className="display text-[28px]">No approved art yet</h2>
-          <p className="text-[15px] text-ink-2">Codes appear here once a piece is approved.</p>
-          <Link href="/studio/art" className="btn btn-blue">Go to my art</Link>
-        </div>
+      <StudioPage title="QR codes" sub="A code to hang beside each piece." actions={<HelpLink href="/help/getting-started/first-qr-code" />}>
+        <EmptyState
+          dab="#ffd43b"
+          title="No paintings yet"
+          body="Upload your first and its QR code is ready to print: a gallery label, sticker, market tag or poster that opens the piece so people can buy a print."
+          action={{ label: "Upload art", href: "/studio/art/new" }}
+          help={{ label: "How QR codes work", href: "/help/getting-started/first-qr-code" }}
+        />
       </StudioPage>
     );
   }
+  const inReview = rows.filter((r) => r.status === "PENDING").map((r) => r.title);
 
   const slug = arts.some((a) => a.slug === want) ? want : arts[0].slug;
   const base = process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com";
@@ -82,6 +88,11 @@ export default async function QrPage({ searchParams }: { searchParams: { art?: s
 
   return (
     <StudioPage title="QR codes" sub="Pick a piece. Pick a look. Print. Every code here really scans." actions={<><HelpLink href="/help/qr-codes/qr-templates" /><Link href="/studio/codes" className="btn btn-ghost btn-sm">My codes</Link></>}>
+      {inReview.length > 0 && (
+        <Problem tone="info" title={inReview.length === 1 ? `${inReview[0]} is in review` : `${inReview.length} pieces are in review`} fix={{ label: "See my art", href: "/studio/art" }}>
+          You can print {inReview.length === 1 ? "its code" : "their codes"} now. Scans open the piece once it&apos;s live, usually within a day.
+        </Problem>
+      )}
       <QrStudio arts={arts} initialSlug={slug} initialDesign={design} initialCard={initialCard} base={base} initialSaved={savedCode} split={split} handle={artist.slug} venues={await venueOptions(savedCode?.venueId)} />
     </StudioPage>
   );

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Mail } from "lucide-react";
 import { PaintChip } from "@/components/af/Brush";
 import { StudioPage } from "@/components/studio/StudioPage";
+import { EmptyState } from "@/components/studio/EmptyState";
 import CustomerList, { type CustomerRow } from "@/components/crm/CustomerList";
 import { requireArtist } from "../_lib/data";
 import { customerHref, getCustomers, maskEmail } from "./_lib";
@@ -48,11 +49,18 @@ export default async function CustomersPage() {
       }
     >
       {customers.length === 0 ? (
-        <div className="grid justify-items-center gap-4 rounded-[4px] border-2 border-dashed border-line bg-wall px-6 py-16 text-center">
-          <h2 className="display text-[34px]">No buyers yet.</h2>
-          <p className="text-ink-2">They will show up here after the first sale.</p>
-          <Link href="/studio/qr" className="btn btn-blue">Print codes</Link>
-        </div>
+        <EmptyState
+          title="No customers yet"
+          body={
+            <>
+              When someone buys a print, they show up here with their order history, where it is on the way to them, and a place for notes.
+              You can send each buyer a thank-you note, and even have it printed in the parcel. Most first sales start with a QR code next to the real painting.
+            </>
+          }
+          action={{ label: "Print a QR code", href: "/studio/qr" }}
+          secondary={{ label: "Set up buyer emails", href: "/studio/emails" }}
+          help={{ label: "How customers work", href: "/help/growing/customers" }}
+        />
       ) : (
         <>
           <section aria-label="Totals" className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">

@@ -6,13 +6,15 @@ import MoneyInsights from "@/components/money/MoneyInsights";
 import PayoutsList from "@/components/money/PayoutsList";
 import Ledger from "@/components/money/Ledger";
 import GetPaidCard from "@/components/money/GetPaidCard";
+import { EmptyState } from "@/components/studio/EmptyState";
+import { Problem } from "@/components/studio/Problem";
+import { ConfirmEmailProblem } from "@/components/studio/ResendConfirmButton";
 import { dayUTC } from "@/components/money/format";
 import { connectMode } from "@/lib/stripeConnect";
 import { getBalance, monthLabel, PAYOUT_DAY_OF_MONTH, RETURN_WINDOW_DAYS } from "@/lib/balance";
 import { FREE_SPLIT, PRO, isProActive } from "@/lib/plans";
 import { prisma } from "@/lib/prisma";
 import { VENMO_CONFIRM_HOURS } from "@/lib/venmo";
-import { UNVERIFIED_MESSAGE } from "@/lib/emailVerify";
 import { requireArtist } from "../_lib/data";
 
 export const dynamic = "force-dynamic";
@@ -21,34 +23,39 @@ export const metadata = { title: "Money" };
 const pct = (n: number) => `${Math.round(n * 100)}%`;
 const ordinal = (n: number) => `${n}${n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th"}`;
 
-const VENMO_NOTICE: Record<string, { ok: boolean; text: string }> = {
+type Notice = { ok: boolean; text: string; fix?: { label: string; href: string } };
+const VENMO_FIX = { label: "Change Venmo", href: "/studio/page#venmo" };
+
+const VENMO_NOTICE: Record<string, Notice> = {
   confirmed: { ok: true, text: "Venmo updated. Payouts now go to your new handle." },
-  expired: { ok: false, text: `That confirm link expired (links last ${VENMO_CONFIRM_HOURS} hours). Change your Venmo again to get a new one.` },
-  invalid: { ok: false, text: "That confirm link didn't work. It may have been used already. Your Venmo hasn't changed." },
-  taken: { ok: false, text: "That Venmo handle is already on another Artfinity account, so we didn't switch. Message us if it's yours." },
+  expired: { ok: false, text: `That confirm link expired (links last ${VENMO_CONFIRM_HOURS} hours). Change your Venmo again to get a new one.`, fix: VENMO_FIX },
+  invalid: { ok: false, text: "That confirm link didn't work. It may have been used already. Your Venmo hasn't changed.", fix: VENMO_FIX },
+  taken: { ok: false, text: "That Venmo handle is already on another Artfinity account, so we didn't switch. Message us if it's yours.", fix: { label: "Message us", href: "/contact" } },
 };
 
-const STRIPE_NOTICE: Record<string, { ok: boolean; text: string }> = {
+const STRIPE_NOTICE: Record<string, Notice> = {
   ready: { ok: true, text: "Stripe is connected. Your payouts now go to your bank." },
-  pending: { ok: false, text: "Almost there. Stripe needs a few more details. Press Finish setup when you're ready." },
+  pending: { ok: false, text: "Almost there. Stripe needs a few more details. Press Finish setup when you're ready.", fix: { label: "Finish setup", href: "#getpaid-h" } },
   simulated: { ok: true, text: "Connected a test Stripe account. Stripe isn't set up here, so no money moves." },
-  "simulated-dashboard": { ok: false, text: "This is a test account, so there's no Stripe dashboard to open." },
-  off: { ok: false, text: "Stripe isn't set up here yet. We'll keep paying you by Venmo." },
-  error: { ok: false, text: "Stripe didn't open. Try again in a minute." },
-  unverified: { ok: false, text: UNVERIFIED_MESSAGE },
+  "simulated-dashboard": { ok: false, text: "This is a test account, so there's no Stripe dashboard to open.", fix: { label: "How payouts work", href: "/help/getting-paid/how-payouts-reach-you" } },
+  off: { ok: false, text: "Stripe isn't set up here yet. We'll keep paying you by Venmo.", fix: { label: "Add Venmo", href: "/studio/page#venmo" } },
+  error: { ok: false, text: "Stripe didn't open. Try again in a minute.", fix: { label: "Try again", href: "#getpaid-h" } },
 };
 
 export default async function MoneyPage({ searchParams }: { searchParams: { venmo?: string; stripe?: string } }) {
   const artist = await requireArtist("/studio/money");
   const [b, acct] = await Promise.all([
     getBalance(artist.id),
-    prisma.artist.findUnique({ where: { id: artist.id }, select: { proUntil: true, venmoPending: true, venmoPendingAt: true } }),
+    prisma.artist.findUnique({ where: { id: artist.id }, select: { proUntil: true, venmoPending: true, venmoPendingAt: true, emailVerifiedAt: true, _count: { select: { artworks: true } } } }),
   ]);
+  const verified = !!acct?.emailVerifiedAt;
+  const hasArt = (acct?._count.artworks ?? 0) > 0;
   const pro = isProActive(acct);
   const pendingLive = acct?.venmoPendingAt && Date.now() - acct.venmoPendingAt.getTime() < VENMO_CONFIRM_HOURS * 3_600_000;
   const venmoPending = pendingLive ? acct?.venmoPending ?? null : null;
-  const venmoNotice = searchParams.venmo ? VENMO_NOTICE[searchParams.venmo] : searchParams.stripe ? STRIPE_NOTICE[searchParams.stripe] : undefined;
+  const venmoNotice = searchParams.venmo ? VENMO_NOTICE[searchParams.venmo] : searchParams.stripe && searchParams.stripe !== "unverified" ? STRIPE_NOTICE[searchParams.stripe] : undefined;
   const viaStripe = b.payoutVia === "stripe";
+  const noPayoutMethod = !b.venmoHandle && !viaStripe;
   const lateNames = b.lateMonths.map((m) => monthLabel(m).split(" ")[0]);
   const lateText = lateNames.length > 1 ? `${lateNames.slice(0, -1).join(", ")} and ${lateNames[lateNames.length - 1]} payouts are` : `${lateNames[0]} payout is`;
 
@@ -74,39 +81,44 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
         <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[4px] border-2 border-coral bg-[#fff1ed] px-4 py-3 text-[14.5px]">
           <i className="paint-dab h-3.5 w-3.5" style={{ ["--dab" as string]: "var(--af-coral)" }} aria-hidden="true" />
           <b className="min-w-0 flex-1">Your {lateText} late. We&apos;re on it — or message us.</b>
+          <Link href="/help/getting-paid/payout-late" className="text-[13.5px] font-semibold text-ink-2 underline underline-offset-2">Why payouts run late</Link>
           <Link href="/contact" className="btn btn-sm border-coral bg-coral text-white">Message us</Link>
         </div>
       )}
 
-      {venmoNotice && (
-        <div role="status" className={`rounded-[4px] border-2 px-4 py-3 text-[14.5px] font-semibold ${venmoNotice.ok ? "border-earned bg-earned-soft" : "border-coral bg-[#fff1ed]"}`}>
-          {venmoNotice.text}
-        </div>
+      {venmoNotice && <Problem tone={venmoNotice.ok ? "success" : "error"} title={venmoNotice.text} fix={venmoNotice.fix} />}
+
+      {/* Payout details wait for a confirmed email (lib/emailVerify.ts): say so up front, with the fix. */}
+      {!verified && (noPayoutMethod || searchParams.stripe === "unverified") && (
+        <ConfirmEmailProblem email={artist.email} tone={searchParams.stripe === "unverified" ? "error" : "warning"}>
+          {searchParams.stripe === "unverified" ? "Stripe opens once your email is confirmed. " : "Before you add Venmo or connect Stripe, confirm your email. "}
+          We sent a link to <b>{artist.email}</b>. Click it, then come back here.
+        </ConfirmEmailProblem>
       )}
 
       {venmoPending !== null && (
         <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[4px] border-2 border-ink bg-sticker/40 px-4 py-3 text-[14.5px]">
           <b className="min-w-0 flex-1">Waiting for you to confirm by email: {venmoPending || "remove your Venmo"}</b>
-          <Link href="/studio/page" className="text-[13.5px] font-semibold text-ink-2 underline underline-offset-2">Change or cancel</Link>
+          <Link href="/studio/page#venmo" className="text-[13.5px] font-semibold text-ink-2 underline underline-offset-2">Change or cancel</Link>
         </div>
       )}
 
-      {!b.venmoHandle && !viaStripe && (
-        <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[4px] border-2 border-ink bg-sticker/70 px-4 py-3 text-[14.5px]">
-          <span className="sticker-badge text-[11px]">Heads up</span>
-          <b className="min-w-0 flex-1">Connect Stripe or add your Venmo so we can pay you.</b>
-          <Link href="/studio/page" className="btn btn-sm bg-ink text-white">Add Venmo</Link>
-        </div>
+      {noPayoutMethod && verified && (
+        <Problem title="Add a way to get paid" fix={{ label: "Add Venmo", href: "/studio/page#venmo" }}>
+          Add your Venmo, or connect Stripe below to get paid to your bank. Your earnings are safe until you do.
+        </Problem>
       )}
 
       <BalanceCard b={b} />
 
       {b.ledger.length === 0 ? (
-        <div className="grid justify-items-center gap-3 rounded-[4px] border-2 border-dashed border-line bg-wall px-6 py-14 text-center">
-          <h2 className="display text-[32px]">No sales yet.</h2>
-          <p className="text-ink-2">Your earnings and payouts land here.</p>
-          <Link href="/studio/qr" className="btn btn-blue">Print codes</Link>
-        </div>
+        <EmptyState
+          title="No sales yet"
+          body={<>Your first sale shows here the moment it happens. Each sale clears after the {RETURN_WINDOW_DAYS}-day return window, then it&apos;s paid by the {ordinal(PAYOUT_DAY_OF_MONTH)} of the next month.</>}
+          action={hasArt ? { label: "Print a QR code", href: "/studio/qr" } : { label: "Add your first piece", href: "/studio/art/new" }}
+          secondary={hasArt ? { label: "Share your page", href: "/studio/share" } : undefined}
+          help={{ label: "How payouts work", href: "/help/getting-paid/when-paid" }}
+        />
       ) : (
         <MoneyInsights ledger={b.ledger} nowIso={b.now} />
       )}
@@ -114,7 +126,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <PayoutsList payouts={b.payouts} ledger={b.ledger} adjustments={b.adjustments} lateMonths={b.lateMonths} />
         <div className="grid content-start gap-4">
-        <GetPaidCard status={b.stripeStatus} mode={connectMode()} venmoHandle={b.venmoHandle} nextDate={dayUTC(b.nextPayout.date)} />
+        <GetPaidCard status={b.stripeStatus} mode={connectMode()} venmoHandle={b.venmoHandle} nextDate={dayUTC(b.nextPayout.date)} verified={verified} email={artist.email} />
         <section aria-labelledby="how-h" className="af-card grid content-start gap-3 p-4 sm:p-5">
           <h2 id="how-h" className="text-[20px] font-bold">How payouts work</h2>
           <ul className="grid gap-2.5 text-[14.5px]">

@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   const user = await getUserFromCookie();
-  if (!user?.id) return new NextResponse("Log in to print codes", { status: 401 });
+  if (!user?.id) return NextResponse.json({ error: "Log in to print codes.", code: "not_logged_in" }, { status: 401 });
 
   const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
   const base = baseUrl(req);
@@ -28,9 +28,9 @@ export async function POST(req: NextRequest) {
       select: { ...artSelect, id: true },
       orderBy: { createdAt: "desc" },
     });
-    if (!rows.length) return new NextResponse("No approved artworks yet", { status: 404 });
+    if (!rows.length) return NextResponse.json({ error: "No live pieces yet. Codes for every piece print once your art is approved.", code: "no_approved_art" }, { status: 404 });
     const meta = await parseMeta({ venue: body.venue, venueId: body.venueId ?? null, discountPct: body.discountPct ?? null, expiresAt: body.expiresAt ?? null }, user.id);
-    if (typeof meta === "string") return new NextResponse(meta, { status: 400 });
+    if (typeof meta === "string") return NextResponse.json({ error: meta, code: "invalid_code_settings" }, { status: 400 });
     try {
       const design = sanitizeDesign(body.design);
       const jobs = [];
@@ -47,16 +47,16 @@ export async function POST(req: NextRequest) {
       return new NextResponse(Buffer.from(pdf), { status: 200, headers: { ...pdfHeaders(`artfinity-all-codes-${design.format}.pdf`), "X-Af-Codes": String(jobs.length) } });
     } catch (err) {
       console.error("QR print-all error", err);
-      return new NextResponse("Could not make the PDF", { status: 500 });
+      return NextResponse.json({ error: "Couldn't make the PDF. Try again.", code: "server_error" }, { status: 500 });
     }
   }
 
   const slug = typeof body?.slug === "string" ? body.slug : "";
-  if (!slug) return new NextResponse("Missing slug", { status: 400 });
+  if (!slug) return NextResponse.json({ error: "Pick a piece first.", code: "missing_art" }, { status: 400 });
 
   const row = await findArt(slug);
-  if (!row?.slug) return new NextResponse("Artwork not found", { status: 404 });
-  if (row.artistId !== user.id && user.role !== "ADMIN") return new NextResponse("Forbidden", { status: 403 });
+  if (!row?.slug) return NextResponse.json({ error: "We couldn't find that piece. It may have been deleted.", code: "art_not_found" }, { status: 404 });
+  if (row.artistId !== user.id && user.role !== "ADMIN") return NextResponse.json({ error: "That piece isn't yours.", code: "not_your_art" }, { status: 403 });
 
   try {
     const design = sanitizeDesign(body?.design);
@@ -64,10 +64,10 @@ export async function POST(req: NextRequest) {
     let code = normalizeCode(body?.code);
     if (code) {
       const own = await prisma.qrCode.findUnique({ where: { code }, select: { artistId: true } });
-      if (!own || (own.artistId !== user.id && user.role !== "ADMIN")) return new NextResponse("Code not found", { status: 404 });
+      if (!own || (own.artistId !== user.id && user.role !== "ADMIN")) return NextResponse.json({ error: "We couldn't find that code.", code: "code_not_found" }, { status: 404 });
     } else {
       const meta = await parseMeta({ label: body?.label, venue: body?.venue, venueId: body?.venueId ?? null, discountPct: body?.discountPct ?? null, expiresAt: body?.expiresAt ?? null, artworkSlug: row.slug }, row.artistId);
-      if (typeof meta === "string") return new NextResponse(meta, { status: 400 });
+      if (typeof meta === "string") return NextResponse.json({ error: meta, code: "invalid_code_settings" }, { status: 400 });
       const { active: _a, design: _d, ...fields } = meta;
       code = (await createQrCode({ artistId: row.artistId, ...fields, design })).code;
     }
@@ -75,6 +75,6 @@ export async function POST(req: NextRequest) {
     return new NextResponse(Buffer.from(pdf), { status: 200, headers: { ...pdfHeaders(`${art.slug}-${design.format}-sheet.pdf`), "X-Af-Code": code } });
   } catch (err) {
     console.error("QR print error", err);
-    return new NextResponse("Could not make the PDF", { status: 500 });
+    return NextResponse.json({ error: "Couldn't make the PDF. Try again.", code: "server_error" }, { status: 500 });
   }
 }

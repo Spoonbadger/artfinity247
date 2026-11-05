@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     const rawIp = req.headers.get("x-forwarded-for")
     const ip = rawIp?.split(",")[0]?.trim() || "unknown"
     if (!rateLimit(ip)) {
-      return new NextResponse("Too many requests", { status: 429 });
+      return NextResponse.json({ error: "Too many tries. Wait a minute and try again.", code: "rate_limited" }, { status: 429 });
     }
 
     const body = await req.json();
@@ -104,6 +104,6 @@ export async function POST(req: Request) {
   } catch (err) {
     // Still avoid leaking user existence; but return 200 only if you want silent failures.
     // I prefer 500 here so YOU notice problems during dev.
-    return NextResponse.json({ ok: false }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "We couldn't send the link just now. Try again in a minute.", code: "server_error" }, { status: 500 });
   }
 }

@@ -17,7 +17,8 @@ const PHONE_RE = /^[0-9+().\-\s]{7,25}$/;
 const NAME_RE = /^[\p{L}\p{M}' .\-]{1,60}$/u;
 const SELECT = { first_name: true, last_name: true, email: true, phone: true, state: true } as const;
 
-const fail = (error: string, status = 400, field?: string) => NextResponse.json({ error, field }, { status });
+const fail = (error: string, status = 400, field?: string, code?: string) =>
+  NextResponse.json({ error, field, code: code ?? (status === 401 ? "not_logged_in" : status === 409 ? "email_taken" : status >= 500 ? "server_error" : "invalid") }, { status });
 
 async function auth() {
   try {
@@ -60,7 +61,7 @@ export async function PATCH(req: Request) {
       where: { email: { equals: email, mode: "insensitive" }, NOT: { id: user.id } },
       select: { id: true },
     });
-    if (clash) return fail("That email is already in use.", 409, "email");
+    if (clash) return fail("That email is already on another Artfinity page. Use a different one, or message us if it's yours.", 409, "email");
     data.email = email;
     // A new address needs confirming again (payouts and newsletters wait for it).
     if (email !== user.email?.toLowerCase()) {

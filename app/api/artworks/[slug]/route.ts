@@ -64,7 +64,7 @@ export async function DELETE(
   { params }: { params: { slug: string } } // keeps same route file
 ) {
   const token = req.cookies.get("auth-token")?.value;
-  if (!token) return new NextResponse("Not authenticated", { status: 401 });
+  if (!token) return NextResponse.json({ error: "Log in to keep going.", code: "not_logged_in" }, { status: 401 });
 
   try {
     const payload = await verifyAuthTokenOrThrow(token); // signature, expiry and session version
@@ -80,7 +80,7 @@ export async function DELETE(
       select: { id: true, artistId: true },
     });
 
-    if (!artwork) return new NextResponse("Artwork not found", { status: 404 });
+    if (!artwork) return NextResponse.json({ error: "We couldn't find that piece. It may already be deleted.", code: "art_not_found" }, { status: 404 });
 
     // token was signed with { id, email, slug }
     const currentArtistId =
@@ -90,15 +90,16 @@ export async function DELETE(
       (payload as any).sub;
 
     if (String(artwork.artistId) !== String(currentArtistId)) {
-      return new NextResponse("Unauthorized", { status: 403 });
+      return NextResponse.json({ error: "Only the artist can delete this piece.", code: "not_your_art" }, { status: 403 });
     }
 
     await prisma.artwork.delete({ where: { id: artwork.id } });
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
+    if (String((err as { code?: unknown })?.code ?? "").startsWith("ERR_JW")) return NextResponse.json({ error: "Your login ran out. Log in again to keep going.", code: "not_logged_in" }, { status: 401 });
     console.error("Delete failed:", err);
-    return new NextResponse("Server error", { status: 500 });
+    return NextResponse.json({ error: "Couldn't delete it just now. Try again in a moment.", code: "server_error" }, { status: 500 });
   }
 }
 

@@ -28,12 +28,12 @@ function baseUrlFrom(req: Request) {
 
 export async function POST(req: Request) {
   const user = await getUserFromCookie();
-  if (!user?.id) return json({ error: "Log in first." }, 401);
+  if (!user?.id) return json({ error: "Log in to keep going.", code: "not_logged_in" }, 401);
   const artist = await prisma.artist.findUnique({ where: { id: user.id }, select: { id: true, email: true, name: true, artist_name: true } });
-  if (!artist) return json({ error: "Log in first." }, 401);
+  if (!artist) return json({ error: "Log in to keep going.", code: "not_logged_in" }, 401);
 
   let body: any;
-  try { body = await req.json(); } catch { return json({ error: "Bad request" }, 400); }
+  try { body = await req.json(); } catch { return json({ error: "Something was missing from that request. Refresh and try again.", code: "bad_request" }, 400); }
 
   // Lines: only the artist's own, non-rejected work.
   const raw = Array.isArray(body?.lines) ? body.lines.slice(0, BULK_MAX_LINES) : [];
@@ -54,13 +54,13 @@ export async function POST(req: Request) {
       return { art, size, framed, frameColor, quantity };
     })
     .filter(Boolean) as { art: (typeof arts)[number]; size: "S" | "M" | "L" | "XL"; framed: boolean; frameColor: string | null; quantity: number }[];
-  if (!lines.length) return json({ error: "Add at least one print." }, 400);
+  if (!lines.length) return json({ error: "Add at least one print.", code: "no_lines" }, 400);
 
   // No blurry prints, same rule as retail checkout: only sizes the file is sharp enough for.
   const blurry = lines.find((l) => !sizeAllowed(l.art.printableSizes, BULK_SIZE_KEY[l.size]));
   if (blurry) {
     const s = BULK_SIZE_LABEL[blurry.size];
-    return json({ error: `${blurry.art.title} isn't sharp enough for ${s.name} (${s.inches}). Pick a smaller size.`, size: blurry.size, artworkId: blurry.art.id }, 400);
+    return json({ error: `${blurry.art.title} isn't sharp enough for ${s.name} (${s.inches}). Pick a smaller size.`, code: "size_too_big", size: blurry.size, artworkId: blurry.art.id }, 400);
   }
 
   // Ship to (required: these go to the artist, not a buyer)
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
     zip: clean(body?.ship?.zip, 12),
   };
   if (!ship.name || !ship.line1 || !ship.city || !ship.state || !/^\d{5}(-\d{4})?$/.test(ship.zip)) {
-    return json({ error: "Add a full US shipping address." }, 400);
+    return json({ error: "Add a full US shipping address.", code: "address_required" }, 400);
   }
   const shipAddress = `${ship.line1}${ship.line2 ? `, ${ship.line2}` : ""}, ${ship.city}, ${ship.state} ${ship.zip}, US`;
 
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
 
   // Limited editions: bulk prints use up numbers too, so refuse more than are left.
   const short = await editionShortfalls(lines.map((l) => ({ artworkId: l.art.id, title: l.art.title, editionSize: l.art.editionSize, quantity: l.quantity })));
-  if (short.length) return json({ error: editionMessage(short), soldOut: short }, 409);
+  if (short.length) return json({ error: editionMessage(short), code: "sold_out", soldOut: short }, 409);
 
   if (!process.env.STRIPE_SECRET_KEY) {
     if (!testCheckoutAllowed()) return checkoutUnavailable("bulk");
@@ -129,7 +129,7 @@ export async function POST(req: Request) {
     return json({ url: session.url });
   } catch (err) {
     console.error("bulk: Stripe session failed", err);
-    return json({ error: "Checkout didn't open. Try again." }, 500);
+    return json({ error: "Checkout didn't open. Try again.", code: "server_error" }, 500);
   }
 
   /** No Stripe keys (localhost): record a paid bulk order now. Same fields as the webhook writes. */
@@ -184,9 +184,9 @@ export async function POST(req: Request) {
       await sendWorkOrder(order.id);
       return json({ url: `/studio/bulk?placed=${order.id}`, dev: true });
     } catch (err) {
-      if (err instanceof EditionSoldOutError) return json({ error: err.message, soldOut: err.shortfalls }, 409);
+      if (err instanceof EditionSoldOutError) return json({ error: err.message, code: "sold_out", soldOut: err.shortfalls }, 409);
       console.error("[bulk:dev] failed", err);
-      return json({ error: "Test order failed" }, 500);
+      return json({ error: "The test order didn't go through. Try again.", code: "server_error" }, 500);
     }
   }
 }

@@ -27,7 +27,7 @@ export default function RecoverPasswordForm() {
         body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
       if (res.status === 429) throw new Error("Too many tries. Wait a minute and try again.");
-      if (!res.ok) throw new Error("Something went wrong. Try again.");
+      if (!res.ok) throw new Error((await res.json().catch(() => null))?.error || "Something went wrong. Try again.");
       setSent(true);
     } catch (err: any) {
       setError(err?.message || "Something went wrong. Try again.");
@@ -57,7 +57,13 @@ export default function RecoverPasswordForm() {
             Forgot your <Brushed>password?</Brushed>
           </h1>
           <p className="-mt-2 text-[16px] text-ink-2">We’ll email you a link to set a new one.</p>
-          <FormAlert>{error}</FormAlert>
+          <FormAlert>
+            {error && (
+              <>
+                {error} Still stuck? <Link href="/contact" className="underline underline-offset-4">Contact us</Link>
+              </>
+            )}
+          </FormAlert>
           <Field label="Email" type="email" name="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus required />
           <button type="submit" className="btn btn-blue btn-lg w-full" disabled={busy}>
             {busy && <Spinner />}

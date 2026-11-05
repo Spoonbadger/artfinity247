@@ -1,7 +1,9 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-import { toast } from "sonner";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { errorText, failed, saved } from "@/lib/feedback";
+import { EmptyState } from "./EmptyState";
+import { Problem } from "./Problem";
 import { CalendarDays, Loader2, MapPin, Pencil, Trash2 } from "lucide-react";
 import { eventsApi, migrateLocalEvents, todayKey, type StudioEvent } from "./events-store";
 
@@ -26,7 +28,11 @@ export default function EventsBoard({ initial }: { initial: StudioEvent[] }) {
   const [end, setEnd] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setErrorState] = useState<{ message: string; fix?: { label: string; onClick: () => void } } | null>(null);
+  const setError = (message: string | null, fix?: { label: string; onClick: () => void }) => setErrorState(message ? { message, fix } : null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const focus = (id: string) => ({ label: "Show me", onClick: () => document.getElementById(id)?.focus() });
+  const startNew = () => { const el = document.getElementById("event-name"); el?.scrollIntoView({ behavior: "smooth", block: "center" }); el?.focus(); };
 
   // One-time move of events an older version saved in this browser.
   useEffect(() => {
@@ -35,7 +41,7 @@ export default function EventsBoard({ initial }: { initial: StudioEvent[] }) {
       .then((list) => {
         if (!live || !list) return;
         setEvents(sortEvents(list));
-        toast.success(`Moved ${list.length} ${list.length === 1 ? "event" : "events"} from this browser to your account`);
+        saved(`Moved ${list.length} ${list.length === 1 ? "event" : "events"} from this browser to your account`);
       })
       .catch(() => {});
     return () => { live = false; };
@@ -48,24 +54,24 @@ export default function EventsBoard({ initial }: { initial: StudioEvent[] }) {
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!name.trim()) return setError("Name the event.");
-    if (!start) return setError("Pick a start date.");
-    if (end && end < start) return setError("End date is before the start.");
+    if (!name.trim()) { setError("Name the event.", focus("event-name")); document.getElementById("event-name")?.focus(); return; }
+    if (!start) { setError("Pick a start date.", focus("event-start")); document.getElementById("event-start")?.focus(); return; }
+    if (end && end < start) { setError("End date is before the start.", focus("event-end")); document.getElementById("event-end")?.focus(); return; }
     const fields = { name: name.trim(), venue: venue.trim(), start, end: end || start };
     setBusy(true);
     try {
       if (editing) {
         const updated = await eventsApi.update(editing, fields);
         setEvents((list) => sortEvents(list.map((x) => (x.id === updated.id ? updated : x))));
-        toast.success("Event updated");
+        saved("Event updated");
       } else {
         const created = await eventsApi.create(fields);
         setEvents((list) => sortEvents([...list, created]));
-        toast.success("Event added");
+        saved("Event added", { description: "It shows on your page under \u201cSee it in person\u201d." });
       }
       reset();
-    } catch (err: any) {
-      setError(err.message || "Could not save. Try again.");
+    } catch (err) {
+      setError(errorText(err, "Could not save. Try again."), { label: "Try again", onClick: () => formRef.current?.requestSubmit() });
     } finally {
       setBusy(false);
     }
@@ -77,9 +83,10 @@ export default function EventsBoard({ initial }: { initial: StudioEvent[] }) {
     if (editing === ev.id) reset();
     try {
       await eventsApi.remove(ev.id);
-    } catch (err: any) {
+      saved(`Removed ${ev.name}`);
+    } catch (err) {
       setEvents(before);
-      toast.error(err.message || "Could not remove it. Try again.");
+      failed(errorText(err, "Could not remove it. Try again."), { retry: () => { void remove(ev); } });
     }
   }
 
@@ -95,11 +102,11 @@ export default function EventsBoard({ initial }: { initial: StudioEvent[] }) {
 
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-10">
-      <form onSubmit={submit} className="af-card grid gap-3 p-4 sm:p-5" noValidate>
+      <form ref={formRef} onSubmit={submit} className="af-card grid gap-3 p-4 sm:p-5" noValidate>
         <h2 className="text-[22px] font-bold">{editing ? "Edit event" : "New event"}</h2>
         <label className="af-field">
           <span className="label">Event name</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} placeholder="Brooklyn Flea" required />
+          <input id="event-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} placeholder="Brooklyn Flea" required />
         </label>
         <label className="af-field">
           <span className="label">Venue</span>
@@ -108,14 +115,14 @@ export default function EventsBoard({ initial }: { initial: StudioEvent[] }) {
         <div className="grid gap-3 min-[420px]:grid-cols-2">
           <label className="af-field">
             <span className="label">Starts</span>
-            <input type="date" value={start} onChange={(e) => setStart(e.target.value)} required />
+            <input id="event-start" type="date" value={start} onChange={(e) => setStart(e.target.value)} required />
           </label>
           <label className="af-field">
             <span className="label">Ends</span>
-            <input type="date" value={end} min={start || undefined} onChange={(e) => setEnd(e.target.value)} />
+            <input id="event-end" type="date" value={end} min={start || undefined} onChange={(e) => setEnd(e.target.value)} />
           </label>
         </div>
-        {error && <p role="alert" className="text-[14px] font-semibold text-coral">{error}</p>}
+        {error && <Problem tone="error" title={error.message} fix={error.fix} />}
         <div className="flex flex-wrap gap-2">
           <button type="submit" className="btn btn-blue" disabled={busy}>
             {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}{editing ? "Save changes" : "Add event"}
@@ -130,11 +137,13 @@ export default function EventsBoard({ initial }: { initial: StudioEvent[] }) {
       <section className="grid gap-4" aria-labelledby="up-h">
         <h2 id="up-h" className="text-[22px] font-bold">Coming up</h2>
         {upcoming.length === 0 && (
-          <div className="grid justify-items-start gap-2 rounded-[4px] border-2 border-dashed border-line bg-wall p-6">
-            <i className="paint-dab h-8 w-8" style={{ ["--dab" as string]: "#7b2d8e" }} />
-            <b className="font-display text-[24px] [font-variation-settings:'wdth'_80]">Nothing on the calendar.</b>
-            <span className="text-[14px] text-ink-2">Add your next market or show.</span>
-          </div>
+          <EmptyState
+            dab="#7b2d8e"
+            title="Nothing on the calendar"
+            body="Add your next market, show or open studio. It shows on your page under “See it in person”, and you can tag QR codes with it to see which event sold best."
+            action={{ label: "Add an event", onClick: startNew }}
+            secondary={{ label: "Print codes for it", href: "/studio/qr" }}
+          />
         )}
         <ul className="grid gap-3">
           {upcoming.map((e, i) => <EventRow key={e.id} e={e} dab={DABS[i % DABS.length]} onEdit={() => edit(e)} onDelete={() => remove(e)} live={e.start <= today} />)}

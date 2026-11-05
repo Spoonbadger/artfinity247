@@ -1,7 +1,8 @@
 "use client";
 
 import { FormEvent, PointerEvent as ReactPointerEvent, ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { failed, problemFrom, saved } from "@/lib/feedback";
+import { EmptyState } from "@/components/studio/EmptyState";
 import { ArrowDown, ArrowUp, Check, Copy, Download, Eye, GripVertical, Pencil, Plus, Trash2, X } from "lucide-react";
 import QRCode from "@/components/af/QRCode";
 import { qrSVG } from "@/lib/qr/render";
@@ -28,16 +29,33 @@ import {
 
 /* ---------------- API ---------------- */
 
+class ApiError extends Error {
+  constructor(message: string, public fix?: { label: string; href: string }, public status = 0) { super(message); }
+}
+
 async function api<T>(url: string, method: string, body?: unknown): Promise<T> {
-  const res = await fetch(url, {
-    method,
-    headers: body ? { "Content-Type": "application/json" } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-    credentials: "include",
-  });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json.error || "Something went wrong. Try again.");
-  return json as T;
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method,
+      headers: body ? { "Content-Type": "application/json" } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+      credentials: "include",
+    });
+  } catch {
+    throw new ApiError("You seem to be offline. Check your connection and try again.");
+  }
+  if (!res.ok) {
+    const p = await problemFrom(res, "Something went wrong. Try again.");
+    throw new ApiError(p.message, p.fix, res.status);
+  }
+  return (await res.json().catch(() => ({}))) as T;
+}
+
+/** Error toast with the server's fix, or Try again when there's nothing to fix but the connection. */
+function oops(e: unknown, retry?: () => void) {
+  const err = e instanceof ApiError ? e : new ApiError("Something went wrong. Try again.");
+  failed(err.message, { fix: err.fix, retry: err.fix || (err.status >= 400 && err.status < 500) ? undefined : retry });
 }
 
 const num = (n: number) => n.toLocaleString("en-US");
@@ -189,6 +207,7 @@ function Row({
 
   async function save(e: FormEvent) {
     e.preventDefault();
+    if (urlErr) return;
     setBusy(true);
     const ok = await onSave({ url, label: label.trim() || null, display });
     setBusy(false);
@@ -264,7 +283,7 @@ function Row({
             ))}
           </div>
           <div className="flex gap-2">
-            <button type="submit" disabled={busy || !!urlErr} className="btn btn-blue btn-sm">
+            <button type="submit" disabled={busy} className="btn btn-blue btn-sm">
               {busy ? "Saving" : "Save"}
             </button>
             <button type="button" onClick={() => setEditing(false)} className="btn btn-ghost btn-sm">
@@ -302,8 +321,11 @@ function AddSocial({ onAdd, have }: { onAdd: (p: { url: string; display: "icon";
   const detected = norm && "url" in norm ? detectKind(norm.url) : null;
   const mismatch = kind && detected && detected !== kind && kind !== "website";
 
+  const [empty, setEmpty] = useState(false);
+
   async function submit(e: FormEvent) {
     e.preventDefault();
+    if (kind && !value.trim()) return setEmpty(true);
     if (!kind || !norm || "error" in norm) return;
     setBusy(true);
     const ok = await onAdd({ url: norm.url, display: "icon", kind: detected && kind !== "email" ? detected : kind });
@@ -350,7 +372,7 @@ function AddSocial({ onAdd, have }: { onAdd: (p: { url: string; display: "icon";
               <input
                 ref={inputRef}
                 value={value}
-                onChange={(e) => setValue(e.target.value)}
+                onChange={(e) => { setValue(e.target.value); setEmpty(false); }}
                 inputMode={kind === "email" ? "email" : "url"}
                 autoComplete="off"
                 autoCapitalize="none"
@@ -361,9 +383,10 @@ function AddSocial({ onAdd, have }: { onAdd: (p: { url: string; display: "icon";
             </span>
           </label>
           {err && <p className="text-[13px] font-semibold text-coral">{err}</p>}
+          {empty && <p className="text-[13px] font-semibold text-coral">{kind === "email" ? "Type your email address first." : `Type your ${KIND_LABEL[kind]} ${kind === "website" ? "address" : "handle"} first.`}</p>}
           {mismatch && <p className="text-[13px] text-ink-2">That looks like {KIND_LABEL[detected!]}. It will show that icon.</p>}
           <div className="flex gap-2">
-            <button type="submit" disabled={busy || !norm || !!err} className="btn btn-blue btn-sm gap-1.5">
+            <button type="submit" disabled={busy} className="btn btn-blue btn-sm gap-1.5">
               <Plus className="h-4 w-4" aria-hidden="true" /> {busy ? "Adding" : `Add ${KIND_LABEL[kind]}`}
             </button>
             <button type="button" onClick={() => setKind(null)} className="btn btn-ghost btn-sm">Cancel</button>
@@ -383,8 +406,11 @@ function AddButton({ onAdd }: { onAdd: (p: { url: string; label: string; display
   const err = norm && "error" in norm ? norm.error : null;
   const detected = norm && "url" in norm ? detectKind(norm.url) : null;
 
+  const [empty, setEmpty] = useState(false);
+
   async function submit(e: FormEvent) {
     e.preventDefault();
+    if (!url.trim()) return setEmpty(true);
     if (!norm || "error" in norm) return;
     const finalLabel = label.trim() || (detected ? KIND_LABEL[detected] : prettyUrl(norm.url).split("/")[0]);
     setBusy(true);
@@ -410,16 +436,17 @@ function AddButton({ onAdd }: { onAdd: (p: { url: string; label: string; display
         <span className="text-[12.5px] font-semibold text-ink-2">Link</span>
         <span className="flex items-center gap-2">
           {detected && <SocialIcon kind={detected} className="h-[18px] w-[18px] text-ink-2" />}
-          <input autoFocus value={url} onChange={(e) => setUrl(e.target.value)} inputMode="url" autoComplete="off" autoCapitalize="none" placeholder="https://" className="min-w-0 flex-1 bg-transparent text-[15px] outline-none" aria-invalid={!!err} />
+          <input autoFocus value={url} onChange={(e) => { setUrl(e.target.value); setEmpty(false); }} inputMode="url" autoComplete="off" autoCapitalize="none" placeholder="https://" className="min-w-0 flex-1 bg-transparent text-[15px] outline-none" aria-invalid={!!err} />
         </span>
       </label>
       {err && <p className="-mt-1 text-[13px] font-semibold text-coral">{err}</p>}
+      {empty && <p className="-mt-1 text-[13px] font-semibold text-coral">Paste the link first, like yourname.art or a full https:// address.</p>}
       <label className="af-field">
         <span className="text-[12.5px] font-semibold text-ink-2">Button label</span>
         <input value={label} onChange={(e) => setLabel(e.target.value)} maxLength={60} placeholder={detected ? KIND_LABEL[detected] : "Studio newsletter"} className="bg-transparent text-[15px] outline-none" />
       </label>
       <div className="flex gap-2">
-        <button type="submit" disabled={busy || !norm || !!err} className="btn btn-blue btn-sm gap-1.5">
+        <button type="submit" disabled={busy} className="btn btn-blue btn-sm gap-1.5">
           <Plus className="h-4 w-4" aria-hidden="true" /> {busy ? "Adding" : "Add link"}
         </button>
         <button type="button" onClick={() => setOpen(false)} className="btn btn-ghost btn-sm">Cancel</button>
@@ -493,7 +520,7 @@ export default function LinksEditor({
         setSaveState("saved");
       } catch (e) {
         setSaveState("error");
-        toast.error((e as Error).message);
+        oops(e, () => setTheme((t) => ({ ...t })));
       }
     }, 600);
     return () => clearTimeout(t);
@@ -518,15 +545,15 @@ export default function LinksEditor({
     try {
       const { link } = await api<{ link: LinkRow }>("/api/studio/links", "POST", payload);
       setLinks((ls) => [...ls, link]);
-      toast.success("Added");
+      saved(`${link.label || KIND_LABEL[iconFor(link)]} added`, { description: "It's live on your links page now." });
       return true;
     } catch (e) {
-      toast.error((e as Error).message);
+      oops(e, () => add(payload));
       return false;
     }
   }
 
-  async function save(id: string, patch: Record<string, unknown>) {
+  async function save(id: string, patch: Record<string, unknown>, quiet = false) {
     try {
       const { link } = await api<{ link: LinkRow }>(`/api/studio/links/${id}`, "PATCH", patch);
       setLinks((ls) => {
@@ -534,16 +561,18 @@ export default function LinksEditor({
         // Switching between icon and button moves it to the other list; keep socials first.
         return [...next.filter((l) => isSocialKind(l.kind)), ...next.filter((l) => !isSocialKind(l.kind))];
       });
+      if (!quiet) saved("Link saved");
       return true;
     } catch (e) {
-      toast.error((e as Error).message);
+      oops(e, () => save(id, patch, quiet));
       return false;
     }
   }
 
   async function toggle(id: string, active: boolean) {
     setLinks((ls) => ls.map((l) => (l.id === id ? { ...l, active } : l)));
-    const ok = await save(id, { active });
+    const ok = await save(id, { active }, true);
+    if (ok) saved(active ? "Showing on your links page" : "Hidden from your links page", { description: active ? undefined : "It's still here. Switch it back on any time." });
     if (!ok) setLinks((ls) => ls.map((l) => (l.id === id ? { ...l, active: !active } : l)));
   }
 
@@ -551,17 +580,18 @@ export default function LinksEditor({
     try {
       await api(`/api/studio/links/${id}`, "DELETE");
       setLinks((ls) => ls.filter((l) => l.id !== id));
-      toast.success("Deleted");
+      saved("Link deleted");
     } catch (e) {
-      toast.error((e as Error).message);
+      oops(e, () => remove(id));
     }
   }
 
   async function persistOrder(next: LinkRow[]) {
     try {
       await api("/api/studio/links/reorder", "POST", { ids: next.map((l) => l.id) });
+      saved("Order saved");
     } catch (e) {
-      toast.error((e as Error).message);
+      oops(e, () => persistOrder(next));
     }
   }
 
@@ -592,8 +622,9 @@ export default function LinksEditor({
       await navigator.clipboard.writeText(fullShareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
+      saved("Link copied", { description: "Paste it into your Instagram or TikTok bio." });
     } catch {
-      toast.error("Couldn't copy. Select the link and copy it.");
+      failed("Couldn't copy", { description: `Your browser blocked it. Select ${shareUrl} and copy it by hand.` });
     }
   }
 
@@ -604,6 +635,7 @@ export default function LinksEditor({
     a.download = `${page.slug}-links-qr.svg`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    saved("QR code downloaded", { description: "Print it on cards or market signs. It opens this links page." });
   }
 
   const renderRows = (section: "social" | "button", list: LinkRow[]) => (
@@ -648,6 +680,7 @@ export default function LinksEditor({
             </div>
             <p className="num text-[13px] text-ink-2">
               <b className="text-ink">{num(totalClicks)}</b> {totalClicks === 1 ? "click" : "clicks"} so far
+              {totalClicks === 0 && <span>. Put this link in your Instagram or TikTok bio and every tap shows up here.</span>}
             </p>
           </div>
           <div className="w-[104px] rounded-xl border-[1.5px] border-line bg-white p-2 sm:w-[120px]" title={`QR code for ${shareUrl}`}>
@@ -657,11 +690,19 @@ export default function LinksEditor({
 
         <Panel id="socials-h" title="Socials" dab="#5bc0be" aside={<span className="text-[13px] text-ink-2">Icons at the top. Also on your artist page.</span>}>
           <AddSocial onAdd={add} have={new Set(socials.map((s) => s.kind))} />
-          {socials.length > 0 ? renderRows("social", socials) : <p className="text-[14px] text-ink-2">No socials yet.</p>}
+          {socials.length > 0 ? (
+            renderRows("social", socials)
+          ) : (
+            <EmptyState compact title="No socials yet" body="Tap Instagram, TikTok or any of the buttons above and add your handle. They show as icons at the top of your links page and your artist page." />
+          )}
         </Panel>
 
         <Panel id="links-h" title="Links" dab="#ffd43b" aside={<span className="text-[13px] text-ink-2">Big buttons. Any link you like.</span>}>
-          {buttons.length > 0 ? renderRows("button", buttons) : <p className="text-[14px] text-ink-2">No links yet.</p>}
+          {buttons.length > 0 ? (
+            renderRows("button", buttons)
+          ) : (
+            <EmptyState compact title="No links yet" body="Add big buttons for anything: your website, a market you're at this weekend, a commission form. They sit above Shop my prints." />
+          )}
           <AddButton onAdd={add} />
           <p className="flex items-center gap-2 rounded-lg bg-wall px-3 py-2.5 text-[13px] text-ink-2">
             <i className="paint-dab" style={{ ["--dab" as string]: "#2b37f0" }} />

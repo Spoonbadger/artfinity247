@@ -13,21 +13,31 @@ async function own(id: string, artistId: string) {
 }
 
 export async function PATCH(req: Request, { params }: Ctx) {
-  const artistId = await currentArtistId();
-  if (!artistId) return NextResponse.json({ error: "Log in first." }, { status: 401 });
-  const current = await own(params.id, artistId);
-  if (!current) return NextResponse.json({ error: "Event not found." }, { status: 404 });
-  const body = await req.json().catch(() => null);
-  const r = cleanEvent(body, current);
-  if ("error" in r) return NextResponse.json({ error: r.error }, { status: 400 });
-  const event = await prisma.studioEvent.update({ where: { id: current.id }, data: r.data, select: eventSelect });
-  return NextResponse.json({ event });
+  try {
+    const artistId = await currentArtistId();
+    if (!artistId) return NextResponse.json({ error: "Log in to keep going.", code: "not_logged_in" }, { status: 401 });
+    const current = await own(params.id, artistId);
+    if (!current) return NextResponse.json({ error: "That event is gone. Refresh to see your list.", code: "event_not_found" }, { status: 404 });
+    const body = await req.json().catch(() => null);
+    const r = cleanEvent(body, current);
+    if ("error" in r) return NextResponse.json({ error: r.error, code: "invalid_event" }, { status: 400 });
+    const event = await prisma.studioEvent.update({ where: { id: current.id }, data: r.data, select: eventSelect });
+    return NextResponse.json({ event });
+  } catch (e) {
+    console.error("[studio/events]", e);
+    return NextResponse.json({ error: "Couldn't save just now. Try again in a moment.", code: "server_error" }, { status: 500 });
+  }
 }
 
 export async function DELETE(_req: Request, { params }: Ctx) {
-  const artistId = await currentArtistId();
-  if (!artistId) return NextResponse.json({ error: "Log in first." }, { status: 401 });
-  const { count } = await prisma.studioEvent.deleteMany({ where: { id: params.id, artistId } });
-  if (!count) return NextResponse.json({ error: "Event not found." }, { status: 404 });
-  return NextResponse.json({ ok: true });
+  try {
+    const artistId = await currentArtistId();
+    if (!artistId) return NextResponse.json({ error: "Log in to keep going.", code: "not_logged_in" }, { status: 401 });
+    const { count } = await prisma.studioEvent.deleteMany({ where: { id: params.id, artistId } });
+    if (!count) return NextResponse.json({ error: "That event is gone. Refresh to see your list.", code: "event_not_found" }, { status: 404 });
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error("[studio/events]", e);
+    return NextResponse.json({ error: "Couldn't save just now. Try again in a moment.", code: "server_error" }, { status: 500 });
+  }
 }

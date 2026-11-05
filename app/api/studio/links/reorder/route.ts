@@ -8,9 +8,9 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Log in first." }, { status: 401 });
+  if (!user?.id) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
   const parsed = z.object({ ids: z.array(z.string().max(40)).max(100) }).safeParse(await req.json().catch(() => ({})));
-  if (!parsed.success) return NextResponse.json({ error: "Bad order." }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: "Couldn't save that order. Refresh the page and try again.", code: "invalid_input" }, { status: 400 });
 
   const mine = await prisma.artistLink.findMany({ where: { artistId: user.id }, orderBy: [{ position: "asc" }, { createdAt: "asc" }], select: { id: true } });
   const known = new Set(mine.map((l) => l.id));

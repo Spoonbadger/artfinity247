@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { errorText, failed, problemFrom, saved } from "@/lib/feedback";
 import { Download, ImageIcon, Loader2, Pencil } from "lucide-react";
 import { qrSVG, type DotStyle, type EyeStyle } from "@/lib/qr/render";
 import { shortUrl } from "@/lib/shortcode";
@@ -34,6 +34,7 @@ export default function CodeEditor({ initial, arts, look, base, venues = [] }: {
   const dirty = f.label !== initial.label || f.venue !== initial.venue || f.venueId !== initial.venueId || f.discountPct !== initial.discountPct || f.active !== initial.active || f.expires !== dayOf(initial.expiresAt) || f.artworkId !== initial.artworkId;
   const art = arts.find((a) => a.id === f.artworkId) || null;
 
+  const formRef = useRef<HTMLFormElement>(null);
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -46,12 +47,15 @@ export default function CodeEditor({ initial, arts, look, base, venues = [] }: {
           expiresAt: f.expires ? new Date(`${f.expires}T23:59:59`).toISOString() : null,
         }),
       });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(j?.error || "Couldn't save. Try again.");
-      toast.success("Saved", { description: "The printed code opens the new version now." });
+      if (!r.ok) {
+        const p = await problemFrom(r, "Couldn't save. Try again.");
+        failed(p.message, { fix: p.fix, retry: p.fix ? undefined : () => formRef.current?.requestSubmit() });
+        return;
+      }
+      saved("Saved", { description: "The printed code opens the new version now." });
       router.refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't save. Try again.");
+      failed(errorText(err, "Couldn't save. Try again."), { retry: () => formRef.current?.requestSubmit() });
     } finally { setBusy(false); }
   }
 
@@ -82,7 +86,7 @@ export default function CodeEditor({ initial, arts, look, base, venues = [] }: {
 
   return (
     <div className="grid content-start gap-4">
-      <form onSubmit={save} className="af-card grid gap-4 p-4 sm:p-5" aria-labelledby="edit-h">
+      <form ref={formRef} onSubmit={save} className="af-card grid gap-4 p-4 sm:p-5" aria-labelledby="edit-h">
         <h2 id="edit-h" className="flex items-center gap-2 text-[20px] font-bold">
           <span className="paint-dab h-3 w-5" style={{ ["--dab" as string]: "#ffd43b" }} aria-hidden="true" />Behind the code
         </h2>
@@ -150,7 +154,7 @@ export default function CodeEditor({ initial, arts, look, base, venues = [] }: {
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => saveBlob(new Blob([`<?xml version="1.0" encoding="UTF-8"?>\n${svg}`], { type: "image/svg+xml" }), `artfinity-${initial.code}.svg`)}>
             <Download className="h-4 w-4" aria-hidden="true" />SVG
           </button>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => png().catch(() => toast.error("The PNG didn't download. Try again."))}>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => png().then(() => saved("Code PNG downloaded")).catch(() => failed("The PNG didn't download. Try again.", { retry: () => { void png(); } }))}>
             <ImageIcon className="h-4 w-4" aria-hidden="true" />PNG
           </button>
         </div>

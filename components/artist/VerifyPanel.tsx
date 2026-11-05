@@ -34,6 +34,9 @@ export default function VerifyPanel({ initial, name, slug }: { initial: State; n
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const igRef = useRef<HTMLInputElement>(null);
+  // Which part of the form the error is about, so it can offer the fix right there.
+  const errorAbout = !error ? null : /photo/i.test(error) ? "photo" : /instagram|website/i.test(error) ? "link" : null;
 
   async function upload(file: File) {
     setUploading(true);
@@ -137,7 +140,7 @@ export default function VerifyPanel({ initial, name, slug }: { initial: State; n
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="af-field">
                 <span className="label">Instagram</span>
-                <input value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@yourhandle" autoComplete="off" inputMode="url" />
+                <input ref={igRef} value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@yourhandle" autoComplete="off" inputMode="url" />
               </label>
               <label className="af-field">
                 <span className="label">Website</span>
@@ -192,9 +195,15 @@ export default function VerifyPanel({ initial, name, slug }: { initial: State; n
             </label>
 
             {error && (
-              <p role="alert" className="rounded-lg bg-[#fff0ec] px-3 py-2 text-[14px] font-semibold text-[#b3311a]">
-                {error}
-              </p>
+              <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-[#fff0ec] px-3 py-2 text-[14px] font-semibold text-[#b3311a]">
+                <span className="min-w-0 flex-1">{error}</span>
+                {errorAbout === "photo" && (
+                  <button type="button" className="btn btn-sm" onClick={() => fileRef.current?.click()} disabled={uploading}>Add photo</button>
+                )}
+                {errorAbout === "link" && (
+                  <button type="button" className="btn btn-sm" onClick={() => igRef.current?.focus()}>Add a link</button>
+                )}
+              </div>
             )}
 
             <div className="flex flex-wrap gap-2">

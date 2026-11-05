@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { StudioPage } from "@/components/studio/StudioPage";
+import { EmptyState } from "@/components/studio/EmptyState";
 import CollectionsManager from "@/components/collections/CollectionsManager";
 import { listStudioCollections } from "@/components/collections/server";
 import { requireArtist } from "../_lib/data";
@@ -27,10 +28,13 @@ export default async function CollectionsPage() {
       actions={<Link href={`/@${artist.slug}`} className="btn btn-ghost">View my page</Link>}
     >
       {arts.length === 0 ? (
-        <div className="grid justify-items-center gap-4 rounded-[4px] border-2 border-dashed border-line bg-wall px-6 py-16 text-center">
-          <h2 className="display text-[34px]">Upload a piece first.</h2>
-          <Link href="/studio/art/new" className="btn btn-blue">Upload art</Link>
-        </div>
+        <EmptyState
+          dab="#c98a5a"
+          title="Collections appear once you have art"
+          body="Group pieces into a series, a place or a season. Each collection gets its own page buyers can browse."
+          action={{ label: "Upload art", href: "/studio/art/new" }}
+          help={{ label: "How collections work", href: "/help/selling/collections" }}
+        />
       ) : (
         <CollectionsManager
           artistSlug={artist.slug}

@@ -7,6 +7,7 @@
 // Paintings picked in Google Drive or Dropbox (./cloudImport.tsx) join the same queue: they go through
 // POST /api/uploads/import instead, which runs the same pipeline and returns the same result as /api/uploads.
 import Link from "next/link";
+import { errorText } from "@/lib/feedback";
 import { DragEvent, useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { AlertCircle, ArrowLeft, ArrowRight, Check, FolderOpen, Loader2, Plus, RotateCcw, Trash2 } from "lucide-react";
 import type { SizeKey } from "@/lib/earnings";
@@ -375,8 +376,8 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
       if (!res.ok) throw new Error(await saveError(res));
       const saved = await res.json();
       result = { state: saved.status === "PENDING" ? "review" : "live", id: saved.id, slug: saved.slug, title: saved.title, imageUrl: saved.imageUrl, notice: saved.notice, duplicate: saved.duplicate, moderation: saved.moderation };
-    } catch (e: any) {
-      result = { state: "failed", error: e?.message || "Could not save. Try again." };
+    } catch (e) {
+      result = { state: "failed", error: errorText(e, "Could not save. Try again.") };
     }
     setPublishing(null);
     setItems((cur) => cur.map((it) => (it.id === id ? { ...it, result } : it)));

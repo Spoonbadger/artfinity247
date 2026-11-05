@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { errorText, failed } from "@/lib/feedback";
+import { Problem } from "@/components/studio/Problem";
 import { Check, Loader2, Plus, Trash2 } from "lucide-react";
 import { BrushStroke } from "@/components/af/Brush";
 import EditionBadge from "@/components/art/EditionBadge";
@@ -41,7 +42,9 @@ export default function BulkOrder({ arts, past, placedId, defaultName }: { arts:
   const [tags, setTags] = useState(true);
   const [ship, setShip] = useState({ name: defaultName, line1: "", line2: "", city: "", state: "", zip: "" });
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setErrorState] = useState<{ message: string; fix?: { label: string; href?: string; onClick?: () => void } } | null>(null);
+  const setError = (message: string | null, fix?: { label: string; href?: string; onClick?: () => void }) => setErrorState(message ? { message, fix } : null);
+  const toShipTo = () => { const el = document.getElementById("ship-to"); el?.scrollIntoView({ behavior: "smooth", block: "center" }); el?.querySelector("input")?.focus(); };
 
   // Keep a draft of the ship-to address on this device (not the order itself).
   useEffect(() => {
@@ -62,9 +65,9 @@ export default function BulkOrder({ arts, past, placedId, defaultName }: { arts:
   };
 
   const add = (a: BulkArt) => {
-    if (lines.length >= BULK_MAX_LINES) { toast.error(`Up to ${BULK_MAX_LINES} lines per order.`); return; }
+    if (lines.length >= BULK_MAX_LINES) { failed(`Up to ${BULK_MAX_LINES} lines per order.`, { description: "Raise the count on a line you already have, or place a second order." }); return; }
     const room = left(a.id);
-    if (room <= 0) { toast.error(a.edition?.soldOut ? `${a.title} is sold out.` : `No ${a.title} prints left.`); return; }
+    if (room <= 0) { failed(a.edition?.soldOut ? `${a.title} is sold out.` : `No ${a.title} prints left.`, { description: "Its limited edition is used up. Pick another piece.", fix: { label: "About editions", href: "/help/selling/limited-editions" } }); return; }
     const size = (["M", "S", "L", "XL"] as PrintSize[]).find((s) => a.sizes.includes(s)) ?? "S";
     setLines((ls) => [...ls, { key: `${a.id}-${Date.now()}`, artworkId: a.id, size, framed: false, frameColor: "black", quantity: Math.min(10, room) }]);
   };
@@ -73,10 +76,10 @@ export default function BulkOrder({ arts, past, placedId, defaultName }: { arts:
 
   async function placeOrder() {
     setError(null);
-    if (!lines.length) { setError("Pick at least one piece."); return; }
+    if (!lines.length) { setError("Pick at least one piece.", { label: "Pick work", onClick: () => window.scrollTo({ top: 0, behavior: "smooth" }) }); return; }
     if (!ship.name.trim() || !ship.line1.trim() || !ship.city.trim() || !ship.state.trim() || !/^\d{5}(-\d{4})?$/.test(ship.zip.trim())) {
-      setError("Add where to ship them.");
-      document.getElementById("ship-to")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setError("Add where to ship them: name, street, city, state and a 5-digit ZIP.", { label: "Fill in address", onClick: toShipTo });
+      toShipTo();
       return;
     }
     try { localStorage.setItem(DRAFT, JSON.stringify(ship)); } catch {}
@@ -89,7 +92,13 @@ export default function BulkOrder({ arts, past, placedId, defaultName }: { arts:
         body: JSON.stringify({ lines: lines.map(({ key, ...l }) => l), ship, tags }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.url) throw new Error(data.error || "Checkout didn't open. Try again.");
+      if (!res.ok || !data.url) {
+        const message = data.error || "Checkout didn't open. Try again.";
+        // Fixable here: a size too big for the file, a sold-out edition, the address. Everything else: try again.
+        setError(message, data.code === "address_required" ? { label: "Fill in address", onClick: toShipTo } : data.code === "size_too_big" || data.code === "sold_out" ? { label: "Change prints", onClick: () => window.scrollTo({ top: 0, behavior: "smooth" }) } : { label: "Try again", onClick: placeOrder });
+        setBusy(false);
+        return;
+      }
       if (data.dev) {
         setLines([]);
         router.push(data.url, { scroll: true });
@@ -98,8 +107,10 @@ export default function BulkOrder({ arts, past, placedId, defaultName }: { arts:
       } else {
         window.location.href = data.url;
       }
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e) {
+      const msg = errorText(e, "Checkout didn't open. Try again.");
+      setError(msg, { label: "Try again", onClick: placeOrder });
+      failed(msg, { retry: placeOrder });
       setBusy(false);
     }
   }
@@ -322,7 +333,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName }: { arts:
             </span>
           </label>
 
-          {error && <p role="alert" className="rounded-xl border-2 border-coral bg-[#fff1ed] px-3.5 py-2.5 text-[14px] font-semibold">{error}</p>}
+          {error && <Problem tone="error" title={error.message} fix={error.fix} />}
           <button type="button" onClick={placeOrder} disabled={busy || !lines.length} className="btn btn-blue btn-lg w-full">
             {busy && <Loader2 className="h-5 w-5 animate-spin" aria-hidden />}
             {lines.length ? `Pay ${usd(quote.total)}` : "Pick a piece"}

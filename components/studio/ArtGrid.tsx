@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { toast } from "sonner";
+import { errorText, failed, problemFrom, saved } from "@/lib/feedback";
+import { EmptyState } from "./EmptyState";
 import { cn } from "@/lib/utils";
 import { artPath } from "@/lib/urls";
 
@@ -42,12 +43,16 @@ export default function ArtGrid({ items, handle }: { items: GridArt[]; handle: s
     setBusy(a.slug);
     try {
       const res = await fetch(`/api/artworks/${encodeURIComponent(a.slug)}`, { method: "DELETE", credentials: "include" });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const p = await problemFrom(res, `Couldn't delete ${a.title}. Try again.`);
+        failed(p.message, { fix: p.fix, retry: p.fix ? undefined : () => remove(a) });
+        return;
+      }
       setList((l) => l.filter((x) => x.id !== a.id));
-      toast.success(`Deleted ${a.title}`);
+      saved(`Deleted ${a.title}`, { description: a.sold > 0 ? "Past sales stay in your records." : undefined });
       router.refresh();
-    } catch {
-      toast.error("Could not delete. Try again.");
+    } catch (e) {
+      failed(errorText(e, `Couldn't delete ${a.title}. Try again.`), { retry: () => remove(a) });
     } finally {
       setBusy(null);
       setConfirming(null);
@@ -56,11 +61,13 @@ export default function ArtGrid({ items, handle }: { items: GridArt[]; handle: s
 
   if (!list.length) {
     return (
-      <div className="grid justify-items-center gap-4 rounded-[4px] border-2 border-dashed border-line bg-wall px-6 py-16 text-center">
-        <i className="paint-dab h-10 w-10" style={{ ["--dab" as string]: "#e8743b" }} />
-        <h2 className="display text-[34px]">A blank wall.</h2>
-        <Link href="/studio/art/new" className="btn btn-blue">Upload your first piece</Link>
-      </div>
+      <EmptyState
+        dab="#e8743b"
+        title="No paintings yet"
+        body="Upload your first and its QR code is ready to print. Buyers order prints in four sizes; we print, frame and ship."
+        action={{ label: "Upload art", href: "/studio/art/new" }}
+        help={{ label: "How uploading works", href: "/help/getting-started/upload-art" }}
+      />
     );
   }
 

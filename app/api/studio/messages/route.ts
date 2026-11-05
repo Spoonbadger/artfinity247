@@ -26,15 +26,15 @@ async function currentArtist() {
 
 export async function GET(req: Request) {
   const artist = await currentArtist();
-  if (!artist) return NextResponse.json({ error: "Log in first." }, { status: 401 });
+  if (!artist) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
   const email = new URL(req.url).searchParams.get("email")?.trim().toLowerCase();
-  if (!email) return NextResponse.json({ error: "Missing email." }, { status: 400 });
+  if (!email) return NextResponse.json({ error: "Missing email.", code: "invalid_input" }, { status: 400 });
   return NextResponse.json({ messages: await getMessages(artist.id, email) });
 }
 
 export async function POST(req: Request) {
   const artist = await currentArtist();
-  if (!artist) return NextResponse.json({ error: "Log in first." }, { status: 401 });
+  if (!artist) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
 
   const input = await req.json().catch(() => ({}));
   const email = typeof input.email === "string" ? input.email.trim().toLowerCase() : "";
@@ -42,15 +42,15 @@ export async function POST(req: Request) {
   const body = typeof input.body === "string" ? input.body.replace(/\r\n/g, "\n").trim() : "";
   const orderId = typeof input.orderId === "string" && input.orderId ? input.orderId : null;
 
-  if (!email || !mode) return NextResponse.json({ error: "Pick a customer and a note type." }, { status: 400 });
-  if (!body) return NextResponse.json({ error: "Write something first." }, { status: 400 });
-  if (body.length > MAX_BODY) return NextResponse.json({ error: `Keep it under ${MAX_BODY} characters.` }, { status: 400 });
+  if (!email || !mode) return NextResponse.json({ error: "Pick a customer and a note type.", code: "invalid_input" }, { status: 400 });
+  if (!body) return NextResponse.json({ error: "Write something first.", code: "missing_content" }, { status: 400 });
+  if (body.length > MAX_BODY) return NextResponse.json({ error: `Keep it under ${MAX_BODY} characters.`, code: "too_long" }, { status: 400 });
 
   // Only people who bought this artist's work.
   const customer = await getCustomer(artist.id, email);
-  if (!customer) return NextResponse.json({ error: "Not one of your customers." }, { status: 404 });
+  if (!customer) return NextResponse.json({ error: "Not one of your customers.", code: "not_found" }, { status: 404 });
   const order = orderId ? customer.orders.find((o) => o.id === orderId) : null;
-  if (orderId && !order) return NextResponse.json({ error: "That order is not theirs." }, { status: 400 });
+  if (orderId && !order) return NextResponse.json({ error: "That order is not theirs.", code: "invalid_input" }, { status: 400 });
 
   if (mode === "note") {
     const message = await prisma.message.create({
@@ -61,12 +61,12 @@ export async function POST(req: Request) {
 
   // Sending email: per-artist burst limit, per-buyer limit, and a daily cap.
   if (!rateLimit(`crm-send:${artist.id}`, 8, 10 * 60_000) || !rateLimit(`crm-send:${artist.id}:${customer.email}`, 3, 60 * 60_000)) {
-    return NextResponse.json({ error: "Easy there. Try again in a few minutes." }, { status: 429 });
+    return NextResponse.json({ error: "Easy there. Try again in a few minutes.", code: "rate_limited" }, { status: 429 });
   }
   const today = await prisma.message.count({
     where: { artistId: artist.id, direction: "out", sentAt: { gte: new Date(Date.now() - 86_400_000) } },
   });
-  if (today >= DAILY_SENDS) return NextResponse.json({ error: "That is today's limit. Try again tomorrow." }, { status: 429 });
+  if (today >= DAILY_SENDS) return NextResponse.json({ error: "That's today's limit of 40 notes. Try again tomorrow, or save a private note for now.", code: "note_daily_limit" }, { status: 429 });
 
   const artistName = artist.artist_name || artist.name || "Your artist";
   // Parcel notes only make sense before the print ships.
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
     if (error) throw error;
   } catch (err) {
     console.error("Studio thank-you email failed", err);
-    return NextResponse.json({ error: "Could not send. Try again." }, { status: 502 });
+    return NextResponse.json({ error: "The note didn't send. Try again in a moment.", code: "send_failed" }, { status: 502 });
   }
 
   const message = await prisma.message.create({

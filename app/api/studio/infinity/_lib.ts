@@ -20,7 +20,9 @@ export function baseUrlFrom(req: Request) {
   }
 }
 
-export const fail = (error: string, status = 400) => NextResponse.json({ error }, { status });
+/** { error, code } with a status. The code lets the page offer the fix (lib/feedback.ts FIXES). */
+export const fail = (error: string, status = 400, code?: string) =>
+  NextResponse.json({ error, code: code ?? (status === 401 ? "not_logged_in" : status === 429 ? "rate_limited" : "billing_error") }, { status });
 
 export function billingFailure(where: string, err: unknown) {
   if (err instanceof BillingError) return fail(err.message, err.status);

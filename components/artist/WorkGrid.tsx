@@ -52,10 +52,19 @@ function EmptyWall({ isOwner }: { isOwner?: boolean }) {
   return (
     <div className="grid justify-items-start gap-3 rounded-2xl border border-dashed border-line bg-wall/60 p-8">
       <span className="paint-dab h-6 w-6" style={{ ["--dab" as string]: "var(--accent, var(--af-sticker))" }} />
-      <p className="text-[17px] font-semibold text-ink">{isOwner ? "Your wall is empty." : "New work coming soon."}</p>
-      {isOwner && (
-        <Link href="/studio" className="btn btn-blue btn-sm">
+      <p className="text-[17px] font-semibold text-ink">{isOwner ? "Your page is live — add your first piece" : "New work coming soon."}</p>
+      <p className="max-w-[52ch] text-[14px] text-ink-2">
+        {isOwner
+          ? "Only you see this note. Each piece you add hangs here, ready to order as a print, with a QR code you can print right after."
+          : "This artist is getting their wall ready. Follow to hear when the first piece goes up."}
+      </p>
+      {isOwner ? (
+        <Link href="/studio/art/new" className="btn btn-blue btn-sm">
           Add your first piece
+        </Link>
+      ) : (
+        <Link href="/art" className="text-[14px] font-semibold text-ink underline underline-offset-4">
+          Browse art from other artists
         </Link>
       )}
     </div>

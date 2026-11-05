@@ -24,7 +24,7 @@ export async function POST(
   { params }: { params: { slug: string } }
 ) {
   const token = req.cookies.get('auth-token')?.value
-  if (!token) return new NextResponse('Not authenticated', { status: 401 })
+  if (!token) return NextResponse.json({ error: "Log in to keep going.", code: "not_logged_in" }, { status: 401 })
 
   try {
     const payload = await verifyAuthTokenOrThrow(token); // signature, expiry and session version
@@ -54,11 +54,11 @@ export async function POST(
     })
 
     if (!artwork || String(artwork.artistId) !== String(currentArtistId)) {
-      return new NextResponse('Forbidden', { status: 403 })
+      return NextResponse.json({ error: "That piece isn't yours.", code: "not_your_art" }, { status: 403 })
     }
 
     if (!artwork || artwork.artistId !== payload.id)
-      return new NextResponse('Forbidden', { status: 403 })
+      return NextResponse.json({ error: "That piece isn't yours.", code: "not_your_art" }, { status: 403 })
 
     // A new image: re-check print sizes and rights, like a new upload.
     const newImage = !!imageUrl && imageUrl !== artwork.imageUrl
@@ -68,12 +68,12 @@ export async function POST(
     if (newImage) {
       const printable = parsePrintable(form.get("printable"))
       if (String(form.get("ownership") ?? "") !== "yes") {
-        return new NextResponse("Confirm this is your original work and you hold the rights to sell prints of it.", { status: 400 })
+        return NextResponse.json({ error: "Confirm this is your original work and you hold the rights to sell prints of it.", code: "ownership_required" }, { status: 400 })
       }
       if (!printable || !verifyPrintable(imageUrl!, printable, form.get("printableSig"))) {
-        return new NextResponse("Upload the image again so we can check its print sizes.", { status: 400 })
+        return NextResponse.json({ error: "Upload the image again so we can check its print sizes.", code: "reupload" }, { status: 400 })
       }
-      if (!printable.length) return new NextResponse("This file is too small to print well. Try the original photo or a bigger scan.", { status: 400 })
+      if (!printable.length) return NextResponse.json({ error: "This file is too small to print well. Try the original photo or a bigger scan.", code: "image_too_small" }, { status: 400 })
       imageData = { printableSizes: printable, ownershipConfirmedAt: new Date() }
       // Artists whose uploads are reviewed get a new image reviewed too.
       if (artwork.status === "APPROVED" && (await initialArtworkStatus(artwork.artistId)) === "PENDING") imageData.status = "PENDING"
@@ -104,10 +104,10 @@ export async function POST(
         const sold = await soldCount(artwork.id)
         if (sold > 0) {
           const now = artwork.editionSize ? `${sold} of ${artwork.editionSize} sold` : `${sold} sold as an open edition`
-          return new NextResponse(`Locked: ${now}. Editions can't change once a print sells.`, { status: 400 })
+          return NextResponse.json({ error: `Locked: ${now}. Editions can't change once a print sells.`, code: "edition_locked" }, { status: 400 })
         }
         if (editionSize !== null && (!Number.isFinite(editionSize) || editionSize < EDITION_MIN || editionSize > EDITION_MAX)) {
-          return new NextResponse(`An edition is ${EDITION_MIN} to ${EDITION_MAX} prints.`, { status: 400 })
+          return NextResponse.json({ error: `An edition is ${EDITION_MIN} to ${EDITION_MAX} prints.`, code: "invalid_edition" }, { status: 400 })
         }
       }
     }
@@ -178,6 +178,8 @@ export async function POST(
     })
   } catch (err) {
     console.error('Editing error', err)
-    return new NextResponse('Server error', { status: 500 })
+    // An expired or tampered login cookie: ask them to log in again rather than calling it our fault.
+    if (String((err as { code?: unknown })?.code ?? "").startsWith("ERR_JW")) return NextResponse.json({ error: "Your login ran out. Log in again to keep going.", code: "not_logged_in" }, { status: 401 })
+    return NextResponse.json({ error: "Something went wrong on our side. Try again in a moment.", code: "server_error" }, { status: 500 })
   }
 }

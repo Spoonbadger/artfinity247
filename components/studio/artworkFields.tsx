@@ -12,6 +12,7 @@ import { SENSITIVE_LABELS } from "./sensitive";
 import { EDITION_MAX, EDITION_MIN } from "@/lib/editionFormat";
 import { SIZE_IN } from "@/components/art/pricing";
 import { joinOriginal } from "@/lib/originalSize";
+import { problemFrom } from "@/lib/feedback";
 import type { PriceGuide } from "@/app/api/artworks/price-guide/route";
 
 export const SIZES: SizeKey[] = ["small", "medium", "large", "xl"];
@@ -159,11 +160,18 @@ export function artworkFormData(
   return fd;
 }
 
-/** Message from a failed artwork save (the routes answer with plain text). */
+/** Message from a failed artwork save (the routes answer { error, code }). */
 export async function saveError(res: Response) {
-  if (res.status === 429) return (await res.text().catch(() => "")) || "Too many uploads right now. Wait a minute.";
-  if (res.status >= 500) return "Could not save. Try again.";
-  return (await res.text().catch(() => "")) || "Could not save. Try again.";
+  return (await saveProblem(res)).message;
+}
+
+/** A failed artwork save: the message, the server's code and, for known codes, the page that fixes it. */
+export async function saveProblem(res: Response) {
+  const fallback = res.status === 429 ? "Too many uploads right now. Wait a minute." : "Could not save. Try again.";
+  const p = await problemFrom(res, fallback);
+  // Bare 5xx bodies ("Internal Server Error") read as ours, not theirs.
+  if (res.status >= 500 && !p.code) return { ...p, message: "Could not save. Try again in a moment." };
+  return p;
 }
 
 /** Per-size crop previews: how each print size trims the picture, and which sizes are too small. */

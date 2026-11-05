@@ -44,7 +44,7 @@ export default function AccountDetails({ initial }: { initial: Account }) {
         body: JSON.stringify(body),
       });
       const d = await res.json().catch(() => ({}));
-      if (!res.ok) return setError({ msg: d.error || "Could not save.", field: d.field });
+      if (!res.ok) return setError({ msg: d.error || "Could not save. Try again.", field: d.field });
       const next: Account = {
         first_name: d.account.first_name ?? "",
         last_name: d.account.last_name ?? "",
@@ -54,7 +54,9 @@ export default function AccountDetails({ initial }: { initial: Account }) {
       };
       setA(next);
       setSaved(next);
-      toast.success("Account details saved");
+      if (body.email && !d.emailVerified) {
+        toast.success("Saved. Confirm your new email", { description: `We sent a link to ${next.email}. Payouts and newsletters wait until you click it.`, duration: 8000 });
+      } else toast.success("Account details saved");
       if (body.email) refreshUser();
       router.refresh();
     } catch {
@@ -79,7 +81,7 @@ export default function AccountDetails({ initial }: { initial: Account }) {
   );
 
   return (
-    <section aria-labelledby="acct-details-h" className="mt-8 grid gap-4 border-t border-dashed border-line pt-5">
+    <section id="account-details" aria-labelledby="acct-details-h" className="mt-8 grid scroll-mt-24 gap-4 border-t border-dashed border-line pt-5">
       <div className="grid gap-1">
         <h2 id="acct-details-h" className="text-[18px] font-bold">Account details</h2>
         <p className="flex items-center gap-1.5 text-[13.5px] text-ink-2">

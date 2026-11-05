@@ -3,7 +3,8 @@
 import { DragEvent, FormEvent, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { collectionPath } from "@/lib/urls";
-import { toast } from "sonner";
+import { errorText, failed, saved as savedToast } from "@/lib/feedback";
+import { EmptyState } from "@/components/studio/EmptyState";
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ExternalLink, GripVertical, Plus, Star, Trash2, X } from "lucide-react";
 import { BrushStroke } from "@/components/af/Brush";
 import { cn } from "@/lib/utils";
@@ -19,7 +20,12 @@ const move = <T,>(list: T[], from: number, to: number) => {
 };
 
 async function api(url: string, method: string, body?: unknown) {
-  const res = await fetch(url, { method, credentials: "include", headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+  let res: Response;
+  try {
+    res = await fetch(url, { method, credentials: "include", headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+  } catch (e) {
+    throw new Error(errorText(e, "Didn't save. Try again."));
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Didn't save. Try again.");
   return data;
@@ -31,6 +37,10 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
   const [newTitle, setNewTitle] = useState("");
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(0);
+  // Last save result, shown next to "Saving…": the quiet confirmation for drag-and-drop and auto-saves.
+  const [lastSave, setLastSave] = useState<"saved" | "failed" | null>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
+  const [nameHint, setNameHint] = useState(false);
   const [picking, setPicking] = useState(initial.length > 0 && initial[0].artworkIds.length === 0);
   const queue = useRef<Promise<unknown>>(Promise.resolve());
   const editorRef = useRef<HTMLDivElement>(null);
@@ -42,7 +52,12 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
     setSaving((n) => n + 1);
     queue.current = queue.current
       .then(fn)
-      .catch((e: Error) => toast.error(e.message))
+      .then(() => setLastSave("saved"))
+      .catch((e: Error) => {
+        setLastSave("failed");
+        // The screen already shows the change; a refresh brings back what's really saved.
+        failed(e.message, { fix: { label: "Refresh", href: "/studio/collections" } });
+      })
       .finally(() => setSaving((n) => n - 1));
   };
 
@@ -65,7 +80,9 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
   async function create(e: FormEvent) {
     e.preventDefault();
     const title = newTitle.trim();
-    if (!title || creating) return;
+    if (creating) return;
+    if (!title) { setNameHint(true); titleRef.current?.focus(); return; }
+    setNameHint(false);
     setCreating(true);
     try {
       const { collection } = await api("/api/studio/collections", "POST", { title });
@@ -73,9 +90,10 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
       setActiveId(collection.id);
       setNewTitle("");
       setPicking(true);
+      savedToast(`Made ${collection.title}`, { description: "Now tap pieces to add them." });
       setTimeout(() => editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err) {
+      failed(errorText(err, "Couldn't make the collection. Try again."), { retry: () => titleRef.current?.form?.requestSubmit() });
     } finally {
       setCreating(false);
     }
@@ -86,7 +104,7 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
     const rest = cols.filter((x) => x.id !== c.id);
     setCols(rest);
     setActiveId(rest[0]?.id ?? null);
-    save(() => api(`/api/studio/collections/${c.id}`, "DELETE"));
+    save(() => api(`/api/studio/collections/${c.id}`, "DELETE").then(() => savedToast(`Deleted ${c.title}`, { description: "The art stays on your page." })));
   }
 
   const pick = (id: string) => {
@@ -117,15 +135,22 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
         <form onSubmit={create} className="flex gap-2">
           <label className="af-field flex-1 py-2">
             <span className="label">New collection</span>
-            <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} maxLength={80} placeholder="East River series" />
+            <input ref={titleRef} id="new-collection" value={newTitle} onChange={(e) => { setNewTitle(e.target.value); if (nameHint) setNameHint(false); }} maxLength={80} placeholder="East River series" aria-describedby={nameHint ? "new-collection-hint" : undefined} />
           </label>
-          <button type="submit" className="btn btn-blue shrink-0 self-stretch px-4" disabled={!newTitle.trim() || creating} aria-label="Create collection">
+          <button type="submit" className="btn btn-blue shrink-0 self-stretch px-4" disabled={creating} aria-label="Create collection">
             <Plus className="h-5 w-5" aria-hidden /><span className="hidden sm:inline">Add</span>
           </button>
         </form>
+        {nameHint && <p id="new-collection-hint" role="alert" className="-mt-1 text-[13px] font-semibold text-coral">Type a name first, like &ldquo;East River series&rdquo;.</p>}
 
         {cols.length === 0 ? (
-          <p className="rounded-xl border-2 border-dashed border-line bg-wall px-4 py-8 text-center text-[15px] text-ink-2">Name your first one above.</p>
+          <EmptyState
+            compact
+            dab="#c98a5a"
+            title="No collections yet"
+            body="Name one above, then tap pieces to add them. Each collection gets its own page on your site."
+            action={{ label: "Name your first", onClick: () => titleRef.current?.focus() }}
+          />
         ) : (
           <ol className="grid gap-2">
             {cols.map((c, i) => {
@@ -165,18 +190,23 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
             })}
           </ol>
         )}
-        <p className="text-[12.5px] text-ink-2" aria-live="polite">{saving ? "Saving…" : cols.length > 1 ? "Drag or use the arrows to sort." : ""}</p>
+        <p className="text-[12.5px] text-ink-2" aria-live="polite">
+          {saving ? "Saving…" : lastSave === "saved" ? "All changes saved. " : lastSave === "failed" ? "Last change didn't save. " : ""}
+          {!saving && cols.length > 1 ? "Drag or use the arrows to sort." : ""}
+        </p>
       </aside>
 
       {/* Editor */}
       <div ref={editorRef} className="min-w-0 scroll-mt-4">
         {!active ? (
-          <div className="grid min-h-[320px] place-items-center rounded-[4px] border-2 border-dashed border-line bg-wall p-8 text-center">
-            <div className="grid justify-items-center gap-2">
-              <h2 className="display text-[34px]">Hang a few together.</h2>
-              <p className="text-ink-2">A series, a place, a season.</p>
-            </div>
-          </div>
+          <EmptyState
+            className="min-h-[320px] content-center"
+            dab="#c98a5a"
+            title="Hang a few together"
+            body="A series, a place, a season. Name a collection, pick its pieces and sort them. Buyers see it on your page."
+            action={{ label: "Make a collection", onClick: () => titleRef.current?.focus() }}
+            help={{ label: "How collections work", href: "/help/selling/collections" }}
+          />
         ) : (
           <section key={active.id} aria-label={`Edit ${active.title}`} className="grid gap-5">
             <div className="grid gap-3 rounded-2xl border-[1.5px] border-ink bg-white p-4 sm:p-5">
@@ -259,7 +289,14 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
             )}
 
             {active.artworkIds.length === 0 ? (
-              !picking && <p className="rounded-xl border-2 border-dashed border-line bg-wall px-4 py-10 text-center text-[15px] text-ink-2">Empty wall. Add pieces.</p>
+              !picking && (
+                <EmptyState
+                  compact
+                  title="Nothing in this collection yet"
+                  body="Add pieces and sort them. The first one is the cover."
+                  action={{ label: "Add pieces", onClick: () => setPicking(true) }}
+                />
+              )
             ) : (
               <ol className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
                 {active.artworkIds.map((id, i) => {

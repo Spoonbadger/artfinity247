@@ -17,7 +17,7 @@ async function artistId() {
 
 export async function GET() {
   const id = await artistId();
-  if (!id) return NextResponse.json({ error: "Log in first." }, { status: 401 });
+  if (!id) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
   const rows = await prisma.emailTemplate.findMany({ where: { artistId: id } });
   const templates = Object.fromEntries(
     EMAIL_KINDS.map((k) => {
@@ -30,17 +30,17 @@ export async function GET() {
 
 export async function PUT(req: Request) {
   const id = await artistId();
-  if (!id) return NextResponse.json({ error: "Log in first." }, { status: 401 });
-  if (!rateLimit(`crm-tpl:${id}`, 60, 60_000)) return NextResponse.json({ error: "Slow down a little." }, { status: 429 });
+  if (!id) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
+  if (!rateLimit(`crm-tpl:${id}`, 60, 60_000)) return NextResponse.json({ error: "Slow down a little. Try again in a minute.", code: "rate_limited" }, { status: 429 });
 
   const input = await req.json().catch(() => ({}));
-  if (!isEmailKind(input.kind)) return NextResponse.json({ error: "Unknown email." }, { status: 400 });
+  if (!isEmailKind(input.kind)) return NextResponse.json({ error: "That email type doesn't exist. Refresh the page.", code: "invalid_input" }, { status: 400 });
   const subject = typeof input.subject === "string" ? input.subject.replace(/\s+/g, " ").trim() : "";
   const body = typeof input.body === "string" ? input.body.replace(/\r\n/g, "\n").trim() : "";
   const enabled = input.enabled !== false;
-  if (!subject || !body) return NextResponse.json({ error: "Add a subject and a message." }, { status: 400 });
-  if (subject.length > EMAIL_LIMITS.subject) return NextResponse.json({ error: `Subject: ${EMAIL_LIMITS.subject} characters max.` }, { status: 400 });
-  if (body.length > EMAIL_LIMITS.body) return NextResponse.json({ error: `Message: ${EMAIL_LIMITS.body} characters max.` }, { status: 400 });
+  if (!subject || !body) return NextResponse.json({ error: "Add a subject and a message.", code: "missing_content" }, { status: 400 });
+  if (subject.length > EMAIL_LIMITS.subject) return NextResponse.json({ error: `Subject: ${EMAIL_LIMITS.subject} characters max.`, code: "too_long" }, { status: 400 });
+  if (body.length > EMAIL_LIMITS.body) return NextResponse.json({ error: `Message: ${EMAIL_LIMITS.body} characters max.`, code: "too_long" }, { status: 400 });
 
   const t = await prisma.emailTemplate.upsert({
     where: { artistId_kind: { artistId: id, kind: input.kind } },
@@ -52,9 +52,9 @@ export async function PUT(req: Request) {
 
 export async function DELETE(req: Request) {
   const id = await artistId();
-  if (!id) return NextResponse.json({ error: "Log in first." }, { status: 401 });
+  if (!id) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
   const kind = new URL(req.url).searchParams.get("kind");
-  if (!isEmailKind(kind)) return NextResponse.json({ error: "Unknown email." }, { status: 400 });
+  if (!isEmailKind(kind)) return NextResponse.json({ error: "That email type doesn't exist. Refresh the page.", code: "invalid_input" }, { status: 400 });
   await prisma.emailTemplate.deleteMany({ where: { artistId: id, kind } });
   return NextResponse.json({ template: { kind, ...DEFAULT_TEMPLATES[kind], enabled: true, custom: false } });
 }

@@ -15,7 +15,7 @@ const select = { verification: true, verifiedAt: true, verificationRequestedAt: 
 
 export async function GET() {
   const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Log in first." }, { status: 401 });
+  if (!user?.id) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
   const a = await prisma.artist.findUnique({ where: { id: user.id }, select });
   if (!a) return NextResponse.json({ error: "Artist not found." }, { status: 404 });
   return NextResponse.json({ ...a, verificationEvidence: readEvidence(a.verificationEvidence) });
@@ -23,15 +23,15 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Log in first." }, { status: 401 });
+  if (!user?.id) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
 
   const body = await req.json().catch(() => null);
   const parsed = parseEvidence(body);
-  if (parsed.error !== undefined) return NextResponse.json({ error: parsed.error }, { status: 400 });
+  if (parsed.error !== undefined) return NextResponse.json({ error: parsed.error, code: "missing_evidence" }, { status: 400 });
 
   const current = await prisma.artist.findUnique({ where: { id: user.id }, select: { verification: true, artist_name: true, name: true, slug: true } });
   if (!current) return NextResponse.json({ error: "Artist not found." }, { status: 404 });
-  if (current.verification === "VERIFIED") return NextResponse.json({ error: "You're already verified." }, { status: 409 });
+  if (current.verification === "VERIFIED") return NextResponse.json({ error: "You're already verified. The blue seal is on your page.", code: "already_verified" }, { status: 409 });
 
   const updated = await prisma.artist.update({
     where: { id: user.id },

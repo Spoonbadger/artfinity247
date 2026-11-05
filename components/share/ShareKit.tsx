@@ -49,9 +49,9 @@ export default function ShareKit({ arts, initialSlug, base, pro = true }: { arts
   }, [art.slug]);
 
   return (
-    <div className="grid min-w-0 gap-6">
+    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6">
       {/* which piece */}
-      <div className="grid min-w-0 gap-2">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2">
         <h2 className="text-[17px] font-extrabold">Which piece?</h2>
         <div ref={rowRef} className="relative -mx-4 flex gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0" role="group" aria-label="Artwork">
           {arts.map((a) => (
