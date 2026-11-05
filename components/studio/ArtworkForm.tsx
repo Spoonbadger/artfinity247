@@ -255,8 +255,9 @@ export default function ArtworkForm({ artwork, split, handle }: { artwork?: Artw
         )}
         {printable && imageUrl && (
           <div className="grid gap-2" aria-live="polite">
-            <p className="text-[13px] font-semibold">
-              How it prints{dims ? <span className="num font-normal text-ink-2"> · {dims.w} × {dims.h} px</span> : null}
+            <p className="flex flex-wrap items-baseline justify-between gap-x-3 text-[13px] font-semibold">
+              <span>How it prints{dims ? <span className="num font-normal text-ink-2"> · {dims.w} × {dims.h} px</span> : null}</span>
+              <Link href="/help/getting-started/file-sizes-print-sharp" target="_blank" className="text-[12.5px] text-scan underline-offset-2 hover:underline">Which files print sharp?</Link>
             </p>
             <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">
               {SIZES.map((s) => {

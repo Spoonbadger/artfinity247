@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { StudioPage } from "@/components/studio/StudioPage";
+import HelpLink from "@/components/help/HelpLink";
 import QrStudio from "@/components/qr/QrStudio";
 import { DEFAULT_DESIGN, DISCOUNTS, PRESETS, cardSVG, presetLook, qrValue, renderCard, sanitizeDesign, sheetSVG, type ArtInfo, type Design, type PresetKey } from "@/components/qr/card";
 import { PLACEHOLDER_CODE, normalizeCode } from "@/lib/shortcode";
@@ -79,7 +80,7 @@ export default async function QrPage({ searchParams }: { searchParams: { art?: s
   }
 
   return (
-    <StudioPage title="QR codes" sub="Pick a piece. Pick a look. Print. Every code here really scans." actions={<Link href="/studio/codes" className="btn btn-ghost btn-sm">My codes</Link>}>
+    <StudioPage title="QR codes" sub="Pick a piece. Pick a look. Print. Every code here really scans." actions={<><HelpLink href="/help/qr-codes/qr-templates" /><Link href="/studio/codes" className="btn btn-ghost btn-sm">My codes</Link></>}>
       <QrStudio arts={arts} initialSlug={slug} initialDesign={design} initialCard={initialCard} base={base} initialSaved={savedCode} split={split} handle={artist.slug} />
     </StudioPage>
   );

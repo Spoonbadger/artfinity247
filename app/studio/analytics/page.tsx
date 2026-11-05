@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Download } from "lucide-react";
 import { PaintChip } from "@/components/af/Brush";
 import { StudioPage } from "@/components/studio/StudioPage";
+import HelpLink from "@/components/help/HelpLink";
 import ViewsChart from "@/components/studio/ViewsChart";
 import { conversion, getArtistAnalytics, parseRange, RANGES } from "@/lib/analytics";
 import { sourceLabel } from "@/lib/pageviews";
@@ -31,9 +32,12 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
       title="Analytics"
       sub="Which walls and posts bring people in, and what they buy."
       actions={
-        <a href={`/api/studio/analytics?range=${range}`} className="btn btn-ghost" download>
-          <Download className="h-4 w-4" aria-hidden="true" />Export CSV
-        </a>
+        <>
+          <HelpLink href="/help/growing/analytics" />
+          <a href={`/api/studio/analytics?range=${range}`} className="btn btn-ghost" download>
+            <Download className="h-4 w-4" aria-hidden="true" />Export CSV
+          </a>
+        </>
       }
     >
       <nav aria-label="Time range" className="flex gap-1.5">

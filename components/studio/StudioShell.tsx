@@ -112,6 +112,9 @@ export default function StudioShell({ artist, children }: { artist: ShellArtist;
           <Link href="/studio/purchases" className={`px-2 text-[13px] font-semibold hover:text-ink ${isActive(path, "/studio/purchases") ? "text-ink" : "text-ink-2"}`}>
             My purchases
           </Link>
+          <Link href="/help" className="-mt-1 px-2 text-[13px] font-semibold text-ink-2 hover:text-ink">
+            Help center
+          </Link>
           <div className="flex items-center gap-2.5 border-t border-line pt-4 text-[13px]">
             <Avatar src={artist.profileImage} name={artist.name} />
             <div className="min-w-0 flex-1 leading-tight">
@@ -147,6 +150,7 @@ export default function StudioShell({ artist, children }: { artist: ShellArtist;
           {STUDIO_NAV.map((n) => (
             <NavItem key={n.href} {...n} compact active={isActive(path, n.href)} />
           ))}
+          <NavItem href="/help" label="Help" dab="#9aa0ff" compact active={false} />
           <span aria-hidden="true" className="w-2 shrink-0" />
         </nav>
         {/* fade hints that the tabs scroll sideways */}

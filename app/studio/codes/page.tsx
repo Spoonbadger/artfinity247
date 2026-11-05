@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { PaintChip } from "@/components/af/Brush";
 import { StudioPage } from "@/components/studio/StudioPage";
+import HelpLink from "@/components/help/HelpLink";
 import { requireArtist, usd } from "../_lib/data";
 import { getCodes, pct, status, windowTotals, WINDOW_DAYS, type CodeRow } from "./_lib";
 
@@ -53,7 +54,7 @@ export default async function CodesPage() {
     <StudioPage
       title="My codes"
       sub={codes.length ? "Every printed code. Edit any of them, even after printing." : undefined}
-      actions={<Link href="/studio/qr" className="btn btn-blue btn-sm"><Plus className="h-4 w-4" aria-hidden="true" />Make a code</Link>}
+      actions={<><HelpLink href="/help/qr-codes/change-after-printing" /><Link href="/studio/qr" className="btn btn-blue btn-sm"><Plus className="h-4 w-4" aria-hidden="true" />Make a code</Link></>}
     >
       {codes.length === 0 ? (
         <div className="grid justify-items-center gap-4 rounded-[4px] border-2 border-dashed border-line bg-wall px-6 py-16 text-center">

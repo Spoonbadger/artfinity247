@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { StudioPage } from "@/components/studio/StudioPage";
+import HelpLink from "@/components/help/HelpLink";
 import BulkOrder, { type BulkArt, type PastBulk } from "@/components/bulk/BulkOrder";
 import { editionsFor } from "@/lib/editions";
 import { editionLabel } from "@/lib/editionFormat";
@@ -59,7 +60,7 @@ export default async function BulkPage({ searchParams }: { searchParams: { place
     <StudioPage
       title="Bulk prints"
       sub="Your own prints, at cost. Sell them at markets and shows."
-      actions={<Link href="/studio/art" className="btn btn-ghost">My art</Link>}
+      actions={<><HelpLink href="/help/selling/bulk-prints" /><Link href="/studio/art" className="btn btn-ghost">My art</Link></>}
     >
       {arts.length === 0 ? (
         <div className="grid justify-items-center gap-4 rounded-[4px] border-2 border-dashed border-line bg-wall px-6 py-16 text-center">

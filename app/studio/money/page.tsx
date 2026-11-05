@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { StudioPage } from "@/components/studio/StudioPage";
+import HelpLink from "@/components/help/HelpLink";
 import BalanceCard from "@/components/money/BalanceCard";
 import MoneyInsights from "@/components/money/MoneyInsights";
 import PayoutsList from "@/components/money/PayoutsList";
@@ -65,7 +66,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
     <StudioPage
       title="Money"
       sub="Sales in. Payouts out."
-      actions={<Link href="/studio/sales" className="btn btn-ghost">Sales</Link>}
+      actions={<><HelpLink href="/help/getting-paid/when-paid" label="How payouts work" /><Link href="/studio/sales" className="btn btn-ghost">Sales</Link></>}
     >
       {b.lateMonths.length > 0 && (
         <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[4px] border-2 border-coral bg-[#fff1ed] px-4 py-3 text-[14.5px]">

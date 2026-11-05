@@ -457,6 +457,13 @@ export default function ScanView({
               <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden />
               <span>Secure checkout by Stripe</span>
             </li>
+            <li className="flex items-center gap-2.5">
+              <Dab c="#9aa0ff" />
+              <span>
+                Questions?{" "}
+                <Link href="/help/buyers" className="text-ink-2 underline decoration-line underline-offset-2 hover:text-ink">Shipping, frames and returns</Link>
+              </span>
+            </li>
           </ul>
           <PrintNote className="md:order-last" />
 

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { artistUrl, artUrl, SITE_URL } from "@/lib/urls";
+import { HELP_ARTICLES, HELP_SECTIONS, articleHref } from "@/content/help";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 3600;
@@ -14,6 +15,7 @@ const STATIC: [string, number][] = [
   ["/sell-with-us", 0.7],
   ["/about-us", 0.6],
   ["/developers", 0.5],
+  ["/help", 0.6],
   ["/contact", 0.4],
   ["/report", 0.3],
   ["/dmca", 0.3],
@@ -41,6 +43,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     ...STATIC.map(([path, priority]) => ({ url: `${SITE_URL}${path === "/" ? "" : path}`, changeFrequency: "weekly" as const, priority })),
+    ...HELP_SECTIONS.map((s) => ({ url: `${SITE_URL}/help/${s.id}`, changeFrequency: "monthly" as const, priority: 0.4 })),
+    ...HELP_ARTICLES.map((a) => ({ url: `${SITE_URL}${articleHref(a)}`, changeFrequency: "monthly" as const, priority: 0.4 })),
     ...artists.map((a) => ({ url: artistUrl(a.slug, SITE_URL), lastModified: a.createdAt, changeFrequency: "weekly" as const, priority: 0.7 })),
     ...artworks.map((a) => ({ url: artUrl(a.artist.slug, a.slug!, SITE_URL), lastModified: a.createdAt, changeFrequency: "monthly" as const, priority: 0.6 })),
   ];

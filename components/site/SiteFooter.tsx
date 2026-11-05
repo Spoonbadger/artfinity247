@@ -11,9 +11,9 @@ const ADDRESS = AppConfigs.business_address.replace(/,\s*United States$/, "").re
 const HOURS = "Weekdays " + AppConfigs.business_open_time.split("\n")[0].trim().replace(/\s*-\s*/, " to ");
 
 const COLS: [string, [string, string][]][] = [
-  ["For artists", [["Start selling free", "/register"], ["How it works", "/#how"], ["Sell with us", "/sell-with-us"], ["Pricing", "/pricing"], ["For developers", "/developers"], ["Artist terms", "/artist-terms-and-agreement"]]],
-  ["For collectors", [["Browse art", "/art"], ["Artists", "/artists"], ["Scenes by neighborhood", "/scenes"], ["Returns", "/return-policy"]]],
-  ["Artfinity", [["About", "/about-us"], ["Contact", "/contact"], ["Privacy", "/privacy-policy"], ["Terms", "/terms-and-conditions"], ["Cookie Policy", "/cookie-policy"], ["Report art", "/report"], ["DMCA", "/dmca"]]],
+  ["For artists", [["Start selling free", "/register"], ["How it works", "/#how"], ["Sell with us", "/sell-with-us"], ["Pricing", "/pricing"], ["Artist help", "/help/getting-started"], ["For developers", "/developers"], ["Artist terms", "/artist-terms-and-agreement"]]],
+  ["For collectors", [["Browse art", "/art"], ["Artists", "/artists"], ["Scenes by neighborhood", "/scenes"], ["Buying help", "/help/buyers"], ["Returns", "/return-policy"]]],
+  ["Artfinity", [["About", "/about-us"], ["Help center", "/help"], ["Contact", "/contact"], ["Privacy", "/privacy-policy"], ["Terms", "/terms-and-conditions"], ["Cookie Policy", "/cookie-policy"], ["Report art", "/report"], ["DMCA", "/dmca"]]],
 ];
 
 export default function SiteFooter() {

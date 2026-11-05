@@ -4,6 +4,7 @@ import { Download, PenLine } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { PaintChip } from "@/components/af/Brush";
 import { StudioPage } from "@/components/studio/StudioPage";
+import HelpLink from "@/components/help/HelpLink";
 import FollowersTabs from "@/components/followers/FollowersTabs";
 import FollowerImport from "@/components/followers/FollowerImport";
 import { followerCounts } from "@/lib/followers";
@@ -48,6 +49,7 @@ export default async function FollowersPage({ searchParams }: { searchParams: { 
       sub={counts.confirmed ? `${counts.confirmed} ${counts.confirmed === 1 ? "person gets" : "people get"} your new work by email. The list is yours.` : "People who want your new work, by email. The list is yours."}
       actions={
         <>
+          <HelpLink href="/help/growing/followers-newsletter" />
           {any && (
             <a href="/api/studio/followers" download className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">
               <Download className="h-4 w-4" aria-hidden="true" />Export CSV

@@ -4,6 +4,7 @@ import { Check, Minus } from "lucide-react";
 import { Brushed, BrushStroke } from "@/components/af/Brush";
 import QRCode from "@/components/af/QRCode";
 import { StudioPage } from "@/components/studio/StudioPage";
+import HelpLink from "@/components/help/HelpLink";
 import TrialButton from "@/components/pro/TrialButton";
 import ReferralShare from "@/components/pro/ReferralShare";
 import ProCalculator from "@/components/pro/ProCalculator";
@@ -70,6 +71,7 @@ export default async function ProPage() {
       sub={plan.active ? `${pct(PRO.split)} of profit, videos, automations.` : `${proPrice()} a month. Or share Artfinity and get it free.`}
       actions={
         <>
+          <HelpLink href="/help/growing/infinity-plan" />
           <Link href="/studio/automations" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">Automations</Link>
           <Link href="/pricing" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">Pricing</Link>
         </>
