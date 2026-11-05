@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { parseSensitive } from "@/components/studio/sensitive";
+import { logAdminAction } from "@/lib/audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,7 +17,7 @@ const MAX_MARKUP_CENTS = 1_000_000; // $10,000
 
 const SELECT = {
   id: true, title: true, slug: true, description: true, imageUrl: true, status: true, sensitive: true,
-  markupSmall: true, markupMedium: true, markupLarge: true, markupXl: true, flaggedReason: true,
+  markupSmall: true, markupMedium: true, markupLarge: true, markupXl: true, flaggedReason: true, artistId: true,
   artist: { select: { slug: true, artist_name: true, name: true } },
 } as const;
 
@@ -73,7 +74,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   try {
     const artwork = await prisma.artwork.update({ where: { id: params.id }, data, select: SELECT });
-    console.info("ADMIN_ARTWORK_EDIT", JSON.stringify({ adminId: admin.id, artworkId: params.id, fields: Object.keys(data), at: new Date().toISOString() }));
+    const fields = Object.keys(data).filter((k) => k !== "flaggedReason" && k !== "flaggedBy");
+    await logAdminAction(admin, "artwork.edit", { type: "artwork", id: params.id }, `Edited “${artwork.title}”: ${fields.join(", ")}${data.status ? ` (status ${String(data.status)})` : ""}`, { artistId: artwork.artistId, fields, status: data.status ?? undefined });
     return NextResponse.json({ artwork });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") return fail("Not found", 404);

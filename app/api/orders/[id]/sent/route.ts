@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { adminGuard } from "@/lib/admin"
+import { getAdmin } from "@/lib/admin"
+import { logAdminAction } from "@/lib/audit"
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
@@ -9,8 +10,8 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const denied = await adminGuard()
-  if (denied) return denied
+  const admin = await getAdmin()
+  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
   try {
     const { sent } = await req.json()
@@ -22,6 +23,7 @@ export async function POST(
       },
     })
 
+    await logAdminAction(admin, sent ? "order.sent_to_printer" : "order.unsent_to_printer", { type: "order", id: order.id }, sent ? "Marked sent to printer" : "Unmarked sent to printer")
     return NextResponse.json(order)
   } catch (err) {
     console.error(err)

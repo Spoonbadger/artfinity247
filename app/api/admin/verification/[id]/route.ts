@@ -2,16 +2,17 @@
 // Admin decision on an artist's verification. Emails the artist.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { adminGuard } from "@/lib/admin";
+import { getAdmin } from "@/lib/admin";
 import { resend } from "@/lib/resend";
+import { logAdminAction } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
 const SITE = process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com";
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
-  const denied = await adminGuard();
-  if (denied) return denied;
+  const admin = await getAdmin();
+  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = (await req.json().catch(() => null)) as { action?: string; note?: string } | null;
   const action = body?.action;
@@ -59,6 +60,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
           };
 
   await resend.emails.send({ from: "Artfinity <notifications@theartfinity.com>", to: artist.email, ...mail }).catch(() => null);
+  const verb = action === "approve" ? "Verified" : action === "decline" ? "Declined verification for" : "Removed verification from";
+  await logAdminAction(admin, `verification.${action}`, { type: "artist", id: artist.id }, `${verb} ${artist.artist_name || artist.name}`, { from: artist.verification, note: note || undefined });
 
   return NextResponse.json({ artist: updated });
 }

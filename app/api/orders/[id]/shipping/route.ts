@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma";
-import { adminGuard } from "@/lib/admin"
+import { getAdmin } from "@/lib/admin"
+import { logAdminAction } from "@/lib/audit"
 import { sendReviewRequest } from "@/lib/reviews"
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const denied = await adminGuard()
-  if (denied) return denied
+  const admin = await getAdmin()
+  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
   const { status } = await req.json().catch(() => ({}))
 
@@ -23,6 +24,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     where: { id: params.id },
     data: { shippingStatus: status },
   })
+
+  if (exists.shippingStatus !== status) {
+    await logAdminAction(admin, "order.shipping_status", { type: "order", id: order.id }, `Shipping ${exists.shippingStatus} → ${status}`, { from: exists.shippingStatus, to: status })
+  }
 
   // Delivered: ask the buyer for a review (lib/reviews.ts skips bulk orders and already-reviewed items).
   if (exists.shippingStatus !== "delivered" && status === "delivered") {

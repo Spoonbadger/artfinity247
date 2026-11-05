@@ -122,7 +122,7 @@ export function sizesFor(a: Markups) {
   }));
 }
 
-export const PUBLIC_ARTWORK: Prisma.ArtworkWhereInput = { status: "APPROVED", slug: { not: null }, artist: { closedAt: null } };
+export const PUBLIC_ARTWORK: Prisma.ArtworkWhereInput = { status: "APPROVED", slug: { not: null }, artist: { closedAt: null, suspendedAt: null } };
 
 export const artworkSelect = {
   id: true, slug: true, title: true, imageUrl: true, sensitive: true, editionSize: true, createdAt: true,

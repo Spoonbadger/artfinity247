@@ -22,7 +22,7 @@ export const GET = handler<Ctx>(async (req, { params }) => {
   const collectionSlug = collectionRaw ? cleanSlug(collectionRaw) : null;
   if (collectionRaw && !collectionSlug) return apiError("bad_request", "collection is not valid.", 400);
 
-  const artist = await prisma.artist.findFirst({ where: { slug: handle, closedAt: null }, select: { id: true, slug: true } });
+  const artist = await prisma.artist.findFirst({ where: { slug: handle, closedAt: null, suspendedAt: null }, select: { id: true, slug: true } });
   if (!artist) return notFound("Artist");
 
   const where: Prisma.ArtworkWhereInput = { ...PUBLIC_ARTWORK, artistId: artist.id };

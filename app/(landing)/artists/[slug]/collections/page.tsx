@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 type Props = { params: { slug: string } };
 
 async function artistOf(slug: string) {
-  return prisma.artist.findFirst({ where: { slug: { equals: decodeURIComponent(slug), mode: "insensitive" }, closedAt: null }, select: { id: true, slug: true, name: true, artist_name: true, profileImage: true } });
+  return prisma.artist.findFirst({ where: { slug: { equals: decodeURIComponent(slug), mode: "insensitive" }, closedAt: null, suspendedAt: null }, select: { id: true, slug: true, name: true, artist_name: true, profileImage: true } });
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

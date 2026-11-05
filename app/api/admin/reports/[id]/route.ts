@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/auth";
 import { resend } from "@/lib/resend";
 import { REASON_SHORT, SITE_URL, type AnyReason } from "@/lib/reports";
 import { artUrl } from "@/lib/urls";
+import { logAdminAction } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     where: { id: params.id },
     select: {
       id: true, reason: true, status: true, name: true, email: true, artworkUrl: true,
-      artwork: { select: { id: true, slug: true, title: true, status: true, flaggedBy: true, artist: { select: { slug: true, email: true, first_name: true, artist_name: true, name: true } } } },
+      artwork: { select: { id: true, slug: true, title: true, status: true, flaggedBy: true, artistId: true, artist: { select: { slug: true, email: true, first_name: true, artist_name: true, name: true } } } },
     },
   });
   if (!report) return NextResponse.json({ error: "Report not found." }, { status: 404 });
@@ -126,5 +127,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   }
 
   await Promise.all(mails.map((m) => resend.emails.send(m).catch((e) => console.error("report email failed", e))));
+  const verb = action === "takedown" ? "Took down" : action === "restore" ? "Restored" : "Dismissed report on";
+  await logAdminAction(admin, `report.${action}`, { type: "report", id: report.id }, `${verb} ${art ? `“${art.title}”` : report.artworkUrl || "unlinked art"} (${report.reason})`, {
+    artworkId: art?.id, artistId: art?.artistId, reason: report.reason, note: note || undefined,
+  });
   return NextResponse.json({ ok: true });
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { adminGuard } from "@/lib/admin"
+import { getAdmin } from "@/lib/admin"
+import { logAdminAction } from "@/lib/audit"
 import { resend } from "@/lib/resend"
 import ShippingStatusEmail from "@/emails/ShippingStatusEmail"
 import { sendArtistOrderEmail } from "@/lib/artistEmails.server"
@@ -18,8 +19,8 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const denied = await adminGuard()
-  if (denied) return denied
+  const admin = await getAdmin()
+  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
   const input = await req.json().catch(() => ({}))
   const { shippingStatus } = input
@@ -84,6 +85,12 @@ export async function POST(
   // Only email on real transitions
   const was = existing.shippingStatus
   const now = shippingStatus
+
+  if (was !== now || tracking) {
+    await logAdminAction(admin, tracking ? "order.ship" : "order.shipping_status", { type: "order", id: order.id },
+      tracking ? `Marked shipped: ${tracking.carrier} ${tracking.number}` : `Shipping ${was} → ${now}`,
+      { from: was, to: now, tracking: tracking ?? undefined })
+  }
 
   if (
     (was === "pending" && now === "shipped") ||

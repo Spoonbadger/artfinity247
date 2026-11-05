@@ -1,7 +1,8 @@
 // POST /api/admin/scenes/annotation { annotation } : writes scenes/annotations/<id>.json. Admin only; dev only
 // unless SCENES_ADMIN_WRITE=1 (the files live in the repo).
 import { NextResponse } from "next/server";
-import { adminGuard } from "@/lib/admin";
+import { getAdmin } from "@/lib/admin";
+import { logAdminAction } from "@/lib/audit";
 import { findPhoto, writeAnnotation } from "@/lib/scenes/catalog";
 import { scenesWritable } from "@/lib/scenes/server";
 import type { SceneAnnotation } from "@/lib/scenes/types";
@@ -12,8 +13,8 @@ export const runtime = "nodejs";
 const isPt = (p: unknown): p is [number, number] => Array.isArray(p) && p.length === 2 && p.every((v) => Number.isFinite(v));
 
 export async function POST(req: Request) {
-  const denied = await adminGuard();
-  if (denied) return denied;
+  const admin = await getAdmin();
+  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!scenesWritable()) return NextResponse.json({ error: "Annotations are saved in development only (or set SCENES_ADMIN_WRITE=1)." }, { status: 403 });
   const body = (await req.json().catch(() => null)) as { annotation?: SceneAnnotation } | null;
   const a = body?.annotation;
@@ -28,6 +29,7 @@ export async function POST(req: Request) {
   }
   try {
     const saved = await writeAnnotation({ ...a, image: { w: photo.w, h: photo.h } });
+    await logAdminAction(admin, "scenes.annotate", { type: "scene", id: a.id }, `${a.status === "rejected" ? "Rejected" : "Annotated"} scene photo ${a.id}`, { status: a.status });
     return NextResponse.json({ annotation: saved });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Couldn't save." }, { status: 500 });
