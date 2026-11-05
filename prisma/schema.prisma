@@ -117,6 +117,14 @@ model Artist {
 
   passwordResetTokens PasswordResetToken[]
 
+  // Payouts: a Venmo change waits for the artist to confirm it from their email
+  venmoPending       String?
+  venmoPendingToken  String?   @unique
+  venmoPendingAt     DateTime?
+  // Account closing: the page goes offline right away; unpaid earnings are still paid out before the data is removed
+  closedAt           DateTime?
+  events             StudioEvent[]
+
   @@index([citySlug])
 }
 
@@ -144,6 +152,11 @@ model Artwork {
   qrCodes         QrCode[]
   flaggedReason String?
   flaggedBy     String?
+  // Print sizes this file is sharp enough for (small/medium/large/xl). Empty = not checked (older uploads).
+  printableSizes String[]     @default([])
+  // Rights: when the artist confirmed "this is my original work and I hold the rights"
+  ownershipConfirmedAt DateTime?
+  reports         ArtReport[]
 }
 
 enum ArtworkStatus {
@@ -295,4 +308,37 @@ model ScanEvent {
   qrCode    QrCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
 
   @@index([qrCodeId, createdAt])
+}
+
+// Studio events (markets, open studios). Shown on the artist page and used to tag QR scans.
+model StudioEvent {
+  id        String   @id @default(cuid())
+  artistId  String
+  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  name      String
+  venue     String   @default("")
+  start     String   // YYYY-MM-DD
+  end       String   // YYYY-MM-DD
+  createdAt DateTime @default(now())
+
+  @@index([artistId, start])
+}
+
+// Copyright / rights reports from the public "Report this art" page
+model ArtReport {
+  id          String   @id @default(cuid())
+  artworkId   String?
+  artwork     Artwork? @relation(fields: [artworkId], references: [id], onDelete: SetNull)
+  artworkUrl  String   @default("")
+  reason      String   // "copyright" | "ai" | "offensive" | "other"
+  details     String   @default("")
+  name        String
+  email       String
+  isRightsHolder Boolean @default(false)
+  status      String   @default("open") // open | removed | dismissed
+  adminNote   String?
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+
+  @@index([status, createdAt])
 }
