@@ -1,6 +1,7 @@
 import NewArtwork from "@/components/studio/NewArtwork";
 import { StudioPage } from "@/components/studio/StudioPage";
 import { prisma } from "@/lib/prisma";
+import { mockImportAllowed } from "@/lib/cloudImport/sources";
 import { artistSplitNow, requireArtist } from "../../_lib/data";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +14,8 @@ export default async function NewArtPage() {
   const canQueue = count > 0;
   return (
     <StudioPage title="Upload art" sub={canQueue ? "One piece, or a whole folder of them." : "One piece, a few prices, done."}>
-      <NewArtwork split={split} handle={artist.slug} canQueue={canQueue} />
+      {/* mockImport: the dev-only "Sample files" import button (ALLOW_MOCK_IMPORT=1, never in production). */}
+      <NewArtwork split={split} handle={artist.slug} canQueue={canQueue} mockImport={mockImportAllowed()} />
     </StudioPage>
   );
 }

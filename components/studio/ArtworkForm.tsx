@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DragEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { FolderOpen, ImagePlus, Loader2 } from "lucide-react";
+import { FolderOpen, ImagePlus, Loader2, RotateCcw } from "lucide-react";
 import type { SizeKey } from "@/lib/earnings";
 import { BrushStroke } from "@/components/af/Brush";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ import {
   artworkFormData, checkArtwork, DetailsFields, EditionField, filesFromDrop, isImageFile, OwnershipField, PriceFields,
   pricesFrom, PrintSizes, REVIEW_NOTE, SensitiveField, saveError, titleFromFile, useLastPrices, usePriceGuide, type ArtworkValues, type Prices,
 } from "./artworkFields";
+import { cloudImportAvailable, CloudImportButtons, ImportFailed, importCloudFile, importingLabel, isCloudImage, type CloudFile, type UploadedImage } from "./cloudImport";
 
 export type ArtworkInput = {
   slug: string;
@@ -35,8 +36,18 @@ export type ArtworkInput = {
 /**
  * The upload / edit form. `onManyFiles` (new uploads by an artist who already has work) lets the picker and the
  * drop zone take several files or a whole folder; more than one image hands them to the upload queue.
+ * New uploads can also come from Google Drive or Dropbox (./cloudImport.tsx): several picked files go to the queue
+ * through `onCloudFiles`; one (or the first, for an artist's very first upload) is imported straight into this form.
  */
-export default function ArtworkForm({ artwork, split, handle, onManyFiles }: { artwork?: ArtworkInput; split?: number; handle: string; onManyFiles?: (files: File[]) => void }) {
+export default function ArtworkForm({ artwork, split, handle, onManyFiles, onCloudFiles, mock }: {
+  artwork?: ArtworkInput;
+  split?: number;
+  handle: string;
+  onManyFiles?: (files: File[]) => void;
+  onCloudFiles?: (files: CloudFile[]) => void;
+  /** Dev-only sample import button (ALLOW_MOCK_IMPORT=1). */
+  mock?: boolean;
+}) {
   const router = useRouter();
   const editing = !!artwork;
   const fileRef = useRef<HTMLInputElement>(null);
@@ -53,7 +64,11 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles }: { a
   const [shape, setShape] = useState<{ w: number; h: number } | null>(null);
   const [owned, setOwned] = useState(false);
   const needsOwnership = !editing || !!fresh;
-  const [uploading, setUploading] = useState(false);
+  // What's happening to the image right now ("Uploading", "Importing from Drive…"), or null.
+  const [uploading, setUploading] = useState<string | null>(null);
+  // A cloud import that failed and can be tried again, plus a note when only the first picked file was taken.
+  const [retryCloud, setRetryCloud] = useState<CloudFile | null>(null);
+  const [cloudNote, setCloudNote] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   // The original's size is saved as the description's first line ("Original: 24 × 30 in", lib/originalSize.ts).
   const [parsed] = useState(() => splitOriginal(artwork?.description));
@@ -83,26 +98,57 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles }: { a
   // React has no prop for folder picking.
   useEffect(() => { folderRef.current?.setAttribute("webkitdirectory", ""); }, [many]);
 
+  /** The image is stored (device upload or cloud import, same result): show it with its print sizes. */
+  function applyImage(data: UploadedImage, fileName: string) {
+    setImageUrl(data.url);
+    setShape(null);
+    setFresh({ printable: (data.printable || []) as SizeKey[], sig: data.printableSig || "" });
+    setDims(data.width ? { w: data.width, h: data.height } : null);
+    setV((cur) => (cur.title ? cur : { ...cur, title: titleFromFile(fileName) }));
+  }
+
   async function upload(file: File) {
     setError(null);
+    setRetryCloud(null);
+    setCloudNote(null);
     if (!isImageFile(file)) { setError("Pick an image file: JPG, PNG, WEBP or HEIC."); return; }
-    setUploading(true);
+    setUploading("Uploading");
     try {
       const fd = new FormData();
       fd.append("file", file);
       const res = await fetch("/api/uploads", { method: "POST", body: fd, credentials: "include" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Upload failed. Try again.");
-      setImageUrl(data.url);
-      setShape(null);
-      setFresh({ printable: data.printable || [], sig: data.printableSig || "" });
-      setDims(data.width ? { w: data.width, h: data.height } : null);
-      setV((cur) => (cur.title ? cur : { ...cur, title: titleFromFile(file.name) }));
+      applyImage(data, file.name);
     } catch (e: any) {
       setError(e.message || "Upload failed. Try again.");
     } finally {
-      setUploading(false);
+      setUploading(null);
     }
+  }
+
+  async function importOne(file: CloudFile) {
+    setError(null);
+    setRetryCloud(null);
+    setUploading(importingLabel(file.source));
+    try {
+      applyImage(await importCloudFile(file), file.name);
+    } catch (e: any) {
+      setError(e?.message || "Import failed. Try again.");
+      if (!(e instanceof ImportFailed) || e.retry) setRetryCloud(file);
+    } finally {
+      setUploading(null);
+    }
+  }
+
+  /** Picked in Drive / Dropbox: several go to the queue; otherwise the first is imported here. */
+  function takeCloud(files: CloudFile[]) {
+    const images = files.filter(isCloudImage);
+    setCloudNote(null);
+    if (!images.length) { setError("Pick an image file: JPG, PNG, WEBP or HEIC."); return; }
+    if (many && images.length > 1 && onCloudFiles) { onCloudFiles(images); return; }
+    if (images.length > 1) setCloudNote(`We took the first one, ${images[0].name}. You can add more after your first piece is published.`);
+    importOne(images[0]);
   }
 
   /** One image: the usual form. Several (and no image here yet): the upload queue. */
@@ -219,11 +265,22 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles }: { a
             </span>
           )}
           {uploading && (
-            <span className="absolute inset-0 grid place-items-center bg-white/80 text-[15px] font-bold">
-              <span className="flex items-center gap-2"><Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />Uploading</span>
+            <span className="absolute inset-0 grid place-items-center bg-white/80 text-[15px] font-bold" role="status">
+              <span className="flex items-center gap-2"><Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />{uploading}</span>
             </span>
           )}
         </label>
+        {!editing && !imageUrl && cloudImportAvailable(mock) && (
+          <div className="grid gap-1.5">
+            <span className="text-[13px] font-semibold text-ink-2">Or import from</span>
+            <CloudImportButtons onPick={takeCloud} mock={mock} max={many ? undefined : 1} disabled={!!uploading} />
+            {!many && <p className="text-[12.5px] text-ink-2">Your first upload is one piece. You can import more after it&apos;s published.</p>}
+          </div>
+        )}
+        {cloudNote && <p role="status" className="rounded-lg bg-wall px-3 py-2 text-[13px]">{cloudNote}</p>}
+        {retryCloud && !uploading && (
+          <button type="button" className="btn btn-ghost btn-sm justify-self-start" onClick={() => importOne(retryCloud)}><RotateCcw className="h-4 w-4" aria-hidden="true" />Retry import</button>
+        )}
         {many && !imageUrl && (
           <div className="flex flex-wrap items-center gap-2">
             <input ref={folderRef} type="file" accept="image/*" multiple className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => { const fs = Array.from(e.target.files || []); e.target.value = ""; if (fs.length) take(fs); }} />
@@ -254,7 +311,7 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles }: { a
         {error && <p role="alert" className="rounded-xl border-2 border-coral bg-[#fff1ed] px-3.5 py-2.5 text-[14px] font-semibold">{error}</p>}
 
         <div className="flex flex-wrap items-center gap-3">
-          <button type="submit" className="btn btn-blue btn-lg relative z-0" disabled={saving || uploading}>
+          <button type="submit" className="btn btn-blue btn-lg relative z-0" disabled={saving || !!uploading}>
             {saving && <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />}
             {editing ? "Save changes" : "Put it on my page"}
           </button>
@@ -269,3 +326,4 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles }: { a
     </form>
   );
 }
+

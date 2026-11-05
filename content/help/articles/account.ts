@@ -13,10 +13,10 @@ export const account: HelpArticle[] = [
     popular: 4,
     faq: true,
     link: { href: "/login", label: "Log in" },
-    related: ["account-details", "close-account"],
+    related: ["social-sign-in", "account-details", "close-account"],
     body: `
 ## Logging in
-Go to [Log in](/login) and enter the email you signed up with and your password.
+Go to [Log in](/login) and enter the email you signed up with and your password. Signed up with Google, Apple, Facebook or Instagram? Use that button instead. See [Signing in with Google, Apple, Facebook or Instagram](/help/account/social-sign-in).
 
 ## Forgot your password?
 1. On the log-in page, tap **Forgot password?**
@@ -30,6 +30,41 @@ Logged in? Open [My page](/studio/page) and choose **Change password**. Password
 
 ## "This account is closed"
 If you closed your account, you can't log in to the Studio. You'll still be paid what you earned. [Contact us](/contact) to reopen it.
+`,
+  },
+  {
+    slug: "social-sign-in",
+    section,
+    audience: "artist",
+    title: "Signing in with Google, Apple, Facebook or Instagram",
+    summary: "Choose \"Continue with Google\" (or Apple, Facebook, Instagram) on the log-in or sign-up page. You can connect or disconnect these, and set a password, in My page → Sign-in methods.",
+    link: { href: "/studio/page#connected", label: "Sign-in methods" },
+    related: ["login-reset-password", "account-details", "close-account"],
+    body: `
+## Signing up
+On [Claim your page](/register), choose **Continue with Google** (or Apple, Facebook or Instagram). We fill in your name, email and photo from that account. You still pick your link and city and add your first piece. There's no password to make.
+
+## Logging in
+On [Log in](/login), choose the same button you signed up with. Already have a page with the same email? Google and Apple confirm your email, so they connect to your page automatically. Facebook and Instagram don't, so log in with your password first and connect them from [My page](/studio/page#connected).
+
+## Instagram: what to know
+- It only works with Instagram **professional** accounts (Creator or Business). Switching is free: in Instagram, go to Settings → Account type and tools → Switch to professional account.
+- Instagram doesn't share your email, so we ask for it. That's where your sales notices go.
+- We add your Instagram to your links for you.
+
+## Apple: "Hide my email"
+If you chose **Hide my email**, your account uses an Apple relay address. Our emails still reach you through Apple. To use your real address instead, change it in [Account details](/studio/page).
+
+## Connect, disconnect, or add a password
+Open [My page](/studio/page#connected) and scroll to **Sign-in methods**.
+- **Connect** adds another way to log in.
+- **Disconnect** removes one. You always need at least one way in, so you can't remove the last one.
+- **Set a password** lets you log in with your email too. It's handy if you ever lose access to that Google, Apple, Facebook or Instagram account.
+
+## Forgot your password?
+If you signed up with Google (or Apple, Facebook, Instagram) and never set a password, "Forgot password?" emails you a reminder of which button to use instead of a reset link.
+
+> Closed accounts can't log in either way. [Contact us](/contact) to reopen.
 `,
   },
   {

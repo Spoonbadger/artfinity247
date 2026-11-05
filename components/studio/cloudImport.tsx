@@ -43,6 +43,8 @@ const DROPBOX_APP_KEY = process.env.NEXT_PUBLIC_DROPBOX_APP_KEY || "";
 
 export const driveEnabled = !!(GOOGLE_API_KEY && GOOGLE_CLIENT_ID && GOOGLE_APP_ID);
 export const dropboxEnabled = !!DROPBOX_APP_KEY;
+/** Any import button to show? */
+export const cloudImportAvailable = (mock?: boolean) => driveEnabled || dropboxEnabled || !!mock;
 
 const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 // Image types the upload pipeline reads (lib/storage.ts uses sharp; HEIC goes through Cloudinary when it's on).
@@ -208,8 +210,8 @@ export function CloudImportButtons({ onPick, mock, max = QUEUE_MAX, disabled, si
 }) {
   const [busy, setBusy] = useState<CloudSource | null>(null);
   const [error, setError] = useState<string | null>(null);
+  if (!cloudImportAvailable(mock)) return null;
   const sources: CloudSource[] = [...(driveEnabled ? ["drive" as const] : []), ...(dropboxEnabled ? ["dropbox" as const] : []), ...(mock ? ["mock" as const] : [])];
-  if (!sources.length) return null;
 
   async function open(s: CloudSource) {
     if (busy) return;

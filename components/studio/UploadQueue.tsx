@@ -18,7 +18,7 @@ import {
   pricesFrom, PrintSizes, REVIEW_NOTE, SensitiveField, saveError, sortFiles, titleFromFile, useLastPrices, usePriceGuide,
   type ArtworkValues, type Prices,
 } from "./artworkFields";
-import { CloudImportButtons, ImportFailed, importCloudFile, importingLabel, isCloudImage, type CloudFile, type CloudSource } from "./cloudImport";
+import { CloudImportButtons, ImportFailed, importCloudFile, importingLabel, isCloudImage, SOURCE_LABEL, type CloudFile, type CloudSource } from "./cloudImport";
 
 type Result = {
   state: "live" | "review" | "failed";
@@ -78,7 +78,6 @@ function writeDraft(handle: string, d: QueueDraft | null) {
 }
 
 const TOO_BIG = `That file is over ${Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB.`;
-const SOURCE_FROM: Record<CloudSource, string> = { drive: "Google Drive", dropbox: "Dropbox", mock: "the sample folder" };
 
 const BLANK: Omit<ArtworkValues, "title" | "prices"> = { description: "", origW: "", origH: "", sensitive: [], limited: false, edition: "25" };
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -506,7 +505,7 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
           {/* Image */}
           <div className="grid gap-3 lg:sticky lg:top-6">
             <div className="relative grid min-h-[260px] place-items-center overflow-hidden rounded-[4px] bg-gallery p-4 sm:min-h-[360px]">
-              {!thumb(item) && item.source && <span className="text-[14px] font-semibold text-ink-2">From {SOURCE_FROM[item.source]}</span>}
+              {!thumb(item) && item.source && <span className="text-[14px] font-semibold text-ink-2">From {SOURCE_LABEL[item.source]}</span>}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {thumb(item) && <img src={thumb(item)} alt={item.v.title || "Your artwork"} className={cn("max-h-[480px] w-auto max-w-full rounded-[2px] shadow-[0_12px_30px_rgba(21,22,27,.22)]", item.upload !== "done" && "opacity-60")} />}
               {(item.upload === "uploading" || item.upload === "waiting") && (
