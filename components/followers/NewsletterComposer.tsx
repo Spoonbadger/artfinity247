@@ -172,9 +172,8 @@ export default function NewsletterComposer({
             <EmptyState
               compact
               title="No approved art yet"
-              body="Once a piece is approved it shows up here, so you can put it in the email with a link to buy the print."
-              action={{ label: "Add your first piece", href: "/studio/art/new" }}
-              secondary={{ label: "See my art", href: "/studio/art" }}
+              body="Approved pieces show up here, each with a link to buy the print."
+              secondary={{ label: "Add your first piece", href: "/studio/art/new" }}
             />
           ) : (
             <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5">

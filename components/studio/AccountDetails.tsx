@@ -1,9 +1,9 @@
 "use client";
 
-import { FormEvent, InputHTMLAttributes, useEffect, useState } from "react";
+import { FormEvent, InputHTMLAttributes, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, ChevronDown, Loader2, Lock } from "lucide-react";
+import { Check, Loader2, Lock } from "lucide-react";
 import { useUser } from "@/components/contexts";
 import { checks, formatPhone } from "@/lib/smartFields";
 import { stateCode } from "@/lib/places";
@@ -21,14 +21,6 @@ export default function AccountDetails({ initial }: { initial: Account }) {
   const [a, setA] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<{ msg: string; field?: Key } | null>(null);
-  // Collapsed by default: most people set this once. Links to #account-details (e.g. "Wrong address?") open it.
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    const check = () => window.location.hash === "#account-details" && setOpen(true);
-    check();
-    window.addEventListener("hashchange", check);
-    return () => window.removeEventListener("hashchange", check);
-  }, []);
   const changed = (Object.keys(a) as Key[]).filter((k) => a[k].trim() !== saved[k]);
   const dirty = changed.length > 0;
 
@@ -94,25 +86,14 @@ export default function AccountDetails({ initial }: { initial: Account }) {
 
   return (
     <section id="account-details" aria-labelledby="acct-details-h" className="grid scroll-mt-24 gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-        <div className="grid min-w-0 gap-1">
-          <h2 id="acct-details-h" className="text-[18px] font-bold">Account details</h2>
-          <p className="flex items-center gap-1.5 text-[13.5px] text-ink-2">
-            <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            Private. For payouts and tax only.
-          </p>
-          {!open && (
-            <p className="min-w-0 truncate text-[14px]">
-              {[saved.first_name, saved.last_name].filter(Boolean).join(" ") || <span className="text-coral">Legal name missing</span>} · {saved.email}
-            </p>
-          )}
-        </div>
-        <button type="button" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0" aria-expanded={open} aria-controls="acct-form" onClick={() => setOpen((o) => !o)}>
-          {open ? "Close" : "Edit"}
-          <ChevronDown className={"h-4 w-4 transition" + (open ? " rotate-180" : "")} aria-hidden="true" />
-        </button>
+      <div className="grid gap-1">
+        <h2 id="acct-details-h" className="text-[18px] font-bold">Account details</h2>
+        <p className="flex items-center gap-1.5 text-[13.5px] text-ink-2">
+          <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          Private. For payouts and tax only.
+        </p>
       </div>
-      <form id="acct-form" onSubmit={save} className={open ? "grid gap-3" : "hidden"} noValidate>
+      <form onSubmit={save} className="grid gap-3" noValidate>
         <div className="grid gap-3 sm:grid-cols-2">
           {field("first_name", "Legal first name", { autoComplete: "given-name", maxLength: 60, required: true })}
           {field("last_name", "Legal last name", { autoComplete: "family-name", maxLength: 60, required: true })}

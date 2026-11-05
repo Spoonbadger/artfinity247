@@ -6,6 +6,7 @@ import { listRequests, shippedAtFor } from "@/lib/reprints";
 import { helpDeadline } from "@/lib/reprintFormat";
 import { sizeWords } from "@/lib/artistEmails";
 import { adminOrRedirect } from "../_components/gate";
+import { PageHead } from "../_components/ui";
 import ReprintsQueue, { type AdminReprint } from "../_components/ReprintsQueue";
 
 export const dynamic = "force-dynamic";
@@ -77,12 +78,8 @@ export default async function AdminReprintsPage({ searchParams }: { searchParams
   });
 
   return (
-    <div className="grid gap-6">
-      <div>
-        <p className="eyebrow">{openCount === 0 ? "All caught up" : `${openCount} waiting`}</p>
-        <h1 className="display text-[44px] sm:text-[56px]">Reprints</h1>
-        <p className="mt-1 max-w-[62ch] text-[14px] text-ink-2">Damaged, misprinted or wrong prints, sent by buyers with photos. Artfinity pays: a reprint is a free order and never touches the artist&apos;s sale or earnings.</p>
-      </div>
+    <div className="grid gap-5">
+      <PageHead title="Reprints" sub={`${openCount === 0 ? "All caught up" : `${openCount} waiting`} · Artfinity pays, the artist keeps their sale`} />
       <nav aria-label="Reprint views" className="flex flex-wrap gap-2">
         {TABS.map((t) => (
           <Link
@@ -90,7 +87,7 @@ export default async function AdminReprintsPage({ searchParams }: { searchParams
             href={t.id === "open" ? "/admin/reprints" : `/admin/reprints?tab=${t.id}`}
             aria-current={tab === t.id ? "page" : undefined}
             className={cn(
-              "rounded-full border-[1.5px] px-3.5 py-1.5 text-[14px] font-semibold no-underline transition",
+              "inline-flex min-h-[40px] items-center rounded-full border-[1.5px] px-3.5 text-[14px] font-semibold no-underline transition",
               tab === t.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink",
             )}
           >
@@ -99,7 +96,7 @@ export default async function AdminReprintsPage({ searchParams }: { searchParams
           </Link>
         ))}
       </nav>
-      <ReprintsQueue key={tab} requests={list} />
+      <ReprintsQueue key={tab} requests={list} tab={tab} />
     </div>
   );
 }

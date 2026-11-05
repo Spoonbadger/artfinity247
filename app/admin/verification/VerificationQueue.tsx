@@ -3,7 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { failed, saved } from "@/lib/feedback";
+import { EmptyState } from "@/components/studio/EmptyState";
+import { passes, sortRows, SortSelect, TableToolbar, useTable, type SortDir } from "../_components/table";
 import Medal from "@/components/af/Medal";
 import VerifiedBadge from "@/components/af/VerifiedBadge";
 import { fmtDate, type Evidence } from "@/components/artist/verification";
@@ -28,10 +30,16 @@ export type VerRow = {
 };
 
 const EMPTY: Record<string, string> = {
-  queue: "No requests waiting.",
-  verified: "No verified artists yet.",
-  declined: "Nothing declined.",
+  queue: "No requests waiting",
+  verified: "No verified artists yet",
+  declined: "Nothing declined",
 };
+const SORTS: { key: string; dir: SortDir; label: string }[] = [
+  { key: "date", dir: "asc", label: "Oldest first" },
+  { key: "date", dir: "desc", label: "Newest first" },
+  { key: "name", dir: "asc", label: "Name A–Z" },
+  { key: "sold", dir: "desc", label: "Most prints sold" },
+];
 
 type Action = "approve" | "decline" | "revoke";
 
@@ -41,12 +49,20 @@ export default function VerificationQueue({ rows: initial, tab }: { rows: VerRow
   const [busy, setBusy] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [revoking, setRevoking] = useState<string | null>(null);
+  const [noteOpen, setNoteOpen] = useState<Record<string, boolean>>({});
+  const t = useTable(`verification-${tab}`, { sort: { key: "date", dir: tab === "queue" ? "asc" : "desc" } });
+  const shown = sortRows(
+    rows.filter((r) => passes(t.filters, { search: `${r.name} ${r.email} ${r.slug} ${r.city}`, date: (tab === "verified" ? r.verifiedAt : r.requestedAt) ?? r.joined })),
+    t.sort,
+    (r, k) => (k === "date" ? (tab === "verified" ? r.verifiedAt : r.requestedAt) : k === "name" ? r.name.toLowerCase() : r.printsSold),
+  );
 
   async function act(r: VerRow, action: Action) {
     const note = (notes[r.id] || "").trim();
     if (action === "decline" && !note) {
-      toast.error("Add a note so they know what to fix.");
-      document.getElementById(`note-${r.id}`)?.focus();
+      setNoteOpen((o) => ({ ...o, [r.id]: true }));
+      failed("Add a note so they know what to fix.", { description: "Declining needs a reason." });
+      setTimeout(() => document.getElementById(`note-${r.id}`)?.focus(), 0);
       return;
     }
     setBusy(r.id);
@@ -59,10 +75,10 @@ export default function VerificationQueue({ rows: initial, tab }: { rows: VerRow
       const j = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(j.error || "Something went wrong.");
       setRows((prev) => prev.filter((x) => x.id !== r.id));
-      toast.success(action === "approve" ? `${r.name} is verified. We emailed them.` : action === "decline" ? `Declined. ${r.name} got your note.` : `Seal removed from ${r.name}.`);
+      saved(action === "approve" ? `${r.name} is verified` : action === "decline" ? "Declined" : `Seal removed from ${r.name}`, { description: action === "approve" ? "We emailed them." : action === "decline" ? `${r.name} got your note.` : undefined });
       router.refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Something went wrong.");
+      failed(e instanceof Error ? e.message : "Something went wrong.", { retry: () => act(r, action) });
     } finally {
       setBusy(null);
       setRevoking(null);
@@ -70,19 +86,25 @@ export default function VerificationQueue({ rows: initial, tab }: { rows: VerRow
   }
 
   if (!rows.length) {
-    return (
-      <div className="grid justify-items-start gap-2 rounded-2xl border border-dashed border-line bg-white p-8">
-        <span className="paint-dab h-5 w-5" style={{ ["--dab" as string]: "var(--af-scan)" }} aria-hidden="true" />
-        <p className="text-[17px] font-semibold">{EMPTY[tab]}</p>
-      </div>
-    );
+    return <EmptyState title={EMPTY[tab]} dab="var(--af-earned)" />;
   }
+
+  const toolbar = (
+    <>
+      <TableToolbar filters={t.filters} setFilter={t.setFilter} clear={t.clear} active={t.active} search="Name, email or city" dates count={shown.length} total={rows.length}>
+        <SortSelect options={SORTS} sort={t.sort} onChange={t.setSort} />
+      </TableToolbar>
+      {shown.length === 0 && <EmptyState compact title="Nothing matches" action={{ label: "Clear filters", onClick: t.clear }} />}
+    </>
+  );
 
   if (tab === "queue") {
     return (
-      <ul className="grid gap-5">
-        {rows.map((r) => (
-          <li key={r.id} className="af-card grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+      <div className="grid min-w-0 gap-3">
+      {toolbar}
+      <ul className="grid gap-4">
+        {shown.map((r) => (
+          <li key={r.id} className="af-panel grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
             {/* Who */}
             <div className="grid content-start gap-4">
               <Who r={r} />
@@ -126,22 +148,25 @@ export default function VerificationQueue({ rows: initial, tab }: { rows: VerRow
                 </dl>
               </div>
 
-              <label className="af-field">
-                <span className="label">Note to the artist (needed to decline)</span>
-                <textarea
-                  id={`note-${r.id}`}
-                  rows={2}
-                  maxLength={500}
-                  value={notes[r.id] || ""}
-                  onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))}
-                  placeholder="e.g. The Instagram name doesn't match. Send a link that shows your name."
-                />
-              </label>
+              <details open={!!noteOpen[r.id] || !!notes[r.id]} onToggle={(e) => { const open = (e.target as HTMLDetailsElement).open; setNoteOpen((o) => ({ ...o, [r.id]: open })); }}>
+                <summary className="cursor-pointer text-[13.5px] font-semibold text-ink-2 hover:text-ink">Note to the artist <span className="font-normal">(needed to decline)</span></summary>
+                <label className="af-field mt-2">
+                  <span className="label">Note</span>
+                  <textarea
+                    id={`note-${r.id}`}
+                    rows={2}
+                    maxLength={500}
+                    value={notes[r.id] || ""}
+                    onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))}
+                    placeholder="e.g. The Instagram name doesn't match. Send a link that shows your name."
+                  />
+                </label>
+              </details>
               <div className="flex flex-wrap gap-2">
-                <button type="button" className="btn btn-blue" disabled={busy === r.id} onClick={() => act(r, "approve")}>
-                  <VerifiedBadge size={18} className="-ml-1" /> Approve
+                <button type="button" className="btn btn-sm" disabled={busy === r.id} onClick={() => act(r, "approve")}>
+                  <VerifiedBadge size={16} className="-ml-1" /> Approve
                 </button>
-                <button type="button" className="btn btn-ghost" disabled={busy === r.id} onClick={() => act(r, "decline")}>
+                <button type="button" className="btn btn-ghost btn-sm" disabled={busy === r.id} onClick={() => act(r, "decline")}>
                   Decline
                 </button>
               </div>
@@ -149,12 +174,15 @@ export default function VerificationQueue({ rows: initial, tab }: { rows: VerRow
           </li>
         ))}
       </ul>
+      </div>
     );
   }
 
   return (
+    <div className="grid min-w-0 gap-3">
+    {toolbar}
     <ul className="grid gap-3">
-      {rows.map((r) => (
+      {shown.map((r) => (
         <li key={r.id} className="af-panel grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
           <div className="grid gap-2">
             <Who r={r} compact />
@@ -177,13 +205,14 @@ export default function VerificationQueue({ rows: initial, tab }: { rows: VerRow
                 </div>
               </div>
             ) : (
-              <button type="button" className="btn btn-ghost btn-sm min-h-[44px] w-fit md:min-h-0" onClick={() => setRevoking(r.id)}>
+              <button type="button" className="btn btn-ghost btn-sm min-h-[40px] w-fit" onClick={() => setRevoking(r.id)}>
                 Revoke
               </button>
             ))}
         </li>
       ))}
     </ul>
+    </div>
   );
 }
 

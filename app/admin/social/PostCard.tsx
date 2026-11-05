@@ -202,8 +202,8 @@ export default function PostCard({
         </div>
         {canEdit && ["draft", "approved"].includes(post.status) && (
           <div className="flex gap-1">
-            <button type="button" className="btn btn-ghost btn-sm" disabled={busy || first} onClick={() => act({ action: "move", direction: "up" })} aria-label={`Move “${m.title}” up`}><ArrowUp size={14} aria-hidden="true" /></button>
-            <button type="button" className="btn btn-ghost btn-sm" disabled={busy || last} onClick={() => act({ action: "move", direction: "down" })} aria-label={`Move “${m.title}” down`}><ArrowDown size={14} aria-hidden="true" /></button>
+            <button type="button" className="btn btn-ghost btn-sm" disabled={busy || first} onClick={() => act({ action: "move", direction: "up" })} aria-label={`Move “${m.title}” up`} title="Move up"><ArrowUp size={14} aria-hidden="true" /></button>
+            <button type="button" className="btn btn-ghost btn-sm" disabled={busy || last} onClick={() => act({ action: "move", direction: "down" })} aria-label={`Move “${m.title}” down`} title="Move down"><ArrowDown size={14} aria-hidden="true" /></button>
           </div>
         )}
       </div>
@@ -237,10 +237,10 @@ export default function PostCard({
       {/* actions */}
       {canEdit && (
         <div className="flex flex-wrap items-center gap-2">
-          {post.status === "draft" && !dirty && <button type="button" className="btn btn-blue btn-sm" onClick={() => setOpen((o) => !o)} aria-expanded={open}>{open ? "Hide preview" : "Preview and approve"}</button>}
+          {post.status === "draft" && !dirty && <button type="button" className="btn btn-sm" onClick={() => setOpen((o) => !o)} aria-expanded={open}>{open ? "Hide preview" : "Preview and approve"}</button>}
           {post.status === "approved" && post.mediaUrl && (
             <>
-              {!connected && <a href={post.mediaUrl} download={`artfinity-${post.id}.${fileExt}`} className="btn btn-blue btn-sm" onClick={() => saved("Video downloading", { description: "Post it on Instagram, then press Mark as posted." })}><Download size={14} aria-hidden="true" /> Download video</a>}
+              {!connected && <a href={post.mediaUrl} download={`artfinity-${post.id}.${fileExt}`} className="btn btn-sm" onClick={() => saved("Video downloading", { description: "Post it on Instagram, then press Mark as posted." })}><Download size={14} aria-hidden="true" /> Download video</a>}
               <button type="button" className="btn btn-ghost btn-sm" onClick={async () => (await copy(post.caption)) ? saved("Caption copied", { description: "Paste it in Instagram." }) : failed("Couldn't copy", { description: "Select the caption and copy it by hand.", fix: { label: "Show caption", href: `#post-${post.id}` } })}><Copy size={14} aria-hidden="true" /> Copy caption</button>
               {connected && <button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => act({ action: "publish_now" })}>Publish now</button>}
               <button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => act({ action: "unschedule" })}>Back to draft</button>

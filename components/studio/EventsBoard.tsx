@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { errorText, failed, saved } from "@/lib/feedback";
 import { EmptyState } from "./EmptyState";
 import { Problem } from "./Problem";
-import { CalendarDays, Loader2, MapPin, Pencil, Trash2 } from "lucide-react";
+import { CalendarDays, Loader2, MapPin, Pencil, Plus, Trash2 } from "lucide-react";
 import { eventsApi, migrateLocalEvents, todayKey, type StudioEvent } from "./events-store";
 import LocationInput from "@/components/forms/LocationInput";
 import { recall, remember } from "@/lib/smartFields";
@@ -148,18 +148,26 @@ export default function EventsBoard({ initial }: { initial: StudioEvent[] }) {
           {editing && <button type="button" className="btn btn-ghost" onClick={reset}>Cancel</button>}
         </div>
         <p className="border-t border-dashed border-line pt-3 text-[13px] text-ink-2">
-          Upcoming events show on your page under &ldquo;See it in person&rdquo;.
+          Shows on your page under &ldquo;See it in person&rdquo;.
         </p>
       </form>
 
-      <section className="grid gap-4" aria-labelledby="up-h">
-        <h2 id="up-h" className="text-[22px] font-bold">Coming up</h2>
+      {/* With events on the calendar, phones see them first; with none, the form leads. */}
+      <section className={upcoming.length ? "grid gap-4 max-lg:order-first" : "grid gap-4"} aria-labelledby="up-h">
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="up-h" className="text-[22px] font-bold">Coming up</h2>
+          {upcoming.length > 0 && (
+            <button type="button" onClick={startNew} className="inline-flex min-h-[40px] items-center gap-1 text-[14px] font-bold text-scan lg:hidden">
+              <Plus className="h-4 w-4" aria-hidden="true" />Add event
+            </button>
+          )}
+        </div>
         {upcoming.length === 0 && (
           <EmptyState
+            compact
             dab="#7b2d8e"
             title="Nothing on the calendar"
-            body="Add your next market, show or open studio. It shows on your page under “See it in person”, and you can tag QR codes with it to see which event sold best."
-            action={{ label: "Add an event", onClick: startNew }}
+            body="Add your next market or show. Tag codes with it to see what sold there."
             secondary={{ label: "Print codes for it", href: "/studio/qr" }}
           />
         )}
@@ -168,7 +176,7 @@ export default function EventsBoard({ initial }: { initial: StudioEvent[] }) {
         </ul>
         {past.length > 0 && (
           <details className="text-[14px]">
-            <summary className="cursor-pointer font-semibold text-ink-2">Past ({past.length})</summary>
+            <summary className="inline-flex min-h-[40px] cursor-pointer items-center font-semibold text-ink-2">Past ({past.length})</summary>
             <ul className="mt-3 grid gap-2 opacity-70">
               {past.map((e) => <EventRow key={e.id} e={e} dab="#c9cbc0" onEdit={() => edit(e)} onDelete={() => remove(e)} />)}
             </ul>
@@ -190,10 +198,10 @@ function EventRow({ e, dab, onEdit, onDelete, live = false }: { e: StudioEvent; 
           {e.venue && <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" aria-hidden="true" />{e.venue}</span>}
         </span>
       </div>
-      <button type="button" onClick={onEdit} className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-2 hover:bg-wall hover:text-ink" aria-label={`Edit ${e.name}`}>
+      <button type="button" onClick={onEdit} className="-my-1 grid h-10 w-10 shrink-0 place-items-center rounded-full text-ink-2 hover:bg-wall hover:text-ink" aria-label={`Edit ${e.name}`} title="Edit">
         <Pencil className="h-4 w-4" aria-hidden="true" />
       </button>
-      <button type="button" onClick={onDelete} className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-2 hover:bg-wall hover:text-coral" aria-label={`Remove ${e.name}`}>
+      <button type="button" onClick={onDelete} className="-my-1 grid h-10 w-10 shrink-0 place-items-center rounded-full text-ink-2 hover:bg-wall hover:text-coral" aria-label={`Remove ${e.name}`} title="Remove">
         <Trash2 className="h-4 w-4" aria-hidden="true" />
       </button>
     </li>

@@ -4,6 +4,9 @@ import { adminRoleOrRedirect } from "../_components/gate";
 import ActionButton from "../_components/ActionButton";
 import { usd } from "../_components/util";
 import VenueForm from "./_components/VenueForm";
+import { PageHead, Pill } from "../_components/ui";
+import { DataTable, type Row } from "../_components/table";
+import { EmptyState } from "@/components/studio/EmptyState";
 import { pctLabel, unlinkedVenueNames, venueList } from "@/lib/venues";
 
 export const dynamic = "force-dynamic";
@@ -17,64 +20,59 @@ export default async function AdminVenuesPage() {
   const options = venues.map((v) => ({ value: v.id, label: `${v.name}${v.neighborhood ? ` · ${v.neighborhood}` : ""}${v.active ? "" : " (paused)"}` }));
   const owed = venues.reduce((s, v) => s + v.unpaidCents, 0);
 
+  const rows: Row[] = venues.map((v) => ({
+    id: v.id,
+    status: v.active ? "active" : "paused",
+    search: `${v.name} ${v.neighborhood ?? ""}`,
+    sort: { name: v.name.toLowerCase(), codes: v.liveCodes, sales: v.sales, revenue: v.grossCents, profit: v.artfinityCents, share: v.sharePct, unpaid: v.unpaidCents },
+    cells: {
+      name: (
+        <>
+          <Link href={`/admin/venues/${v.id}`} className="font-bold text-ink underline-offset-2 hover:underline">{v.name}</Link>
+          <span className="flex flex-wrap items-center gap-1.5 text-[12.5px] text-ink-2">{v.neighborhood || "—"}{!v.active && <Pill>Paused</Pill>}</span>
+        </>
+      ),
+      codes: <>{n(v.liveCodes)}<span className="text-ink-2">/{n(v.codes)}</span></>,
+      sales: n(v.sales),
+      revenue: usd(v.grossCents),
+      profit: usd(v.artfinityCents),
+      share: v.sharePct > 0 ? pctLabel(v.sharePct) : <span className="text-ink-2">0%</span>,
+      unpaid: <b className={v.unpaidCents ? "text-earned" : "text-ink-2"}>{usd(v.unpaidCents)}</b>,
+    },
+  }));
+
   return (
-    <div className="grid gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="eyebrow">Venue partner program</p>
-          <h1 className="display text-[44px] sm:text-[56px]">Venues</h1>
-          <p className="mt-1 max-w-[62ch] text-[14.5px] text-ink-2">
-            Cafés, bars, shops and markets that hang artists&apos; codes. Each gets a public page and, if you set one, a share of Artfinity&apos;s profit on sales from its walls.
-          </p>
-        </div>
-        <Link href="/venues" className="btn btn-ghost btn-sm">Public venue list</Link>
-      </div>
+    <div className="grid gap-5">
+      <PageHead
+        title="Venues"
+        sub={`${n(venues.length)} ${venues.length === 1 ? "venue" : "venues"}${owed > 0 ? ` · ${usd(owed)} unpaid share` : ""}`}
+        action={<Link href="/venues" className="btn btn-ghost btn-sm">Public list</Link>}
+      />
 
-      <section aria-labelledby="list-h" className="af-card overflow-x-auto">
-        <div className="flex flex-wrap items-baseline justify-between gap-2 px-4 pt-4">
-          <h2 id="list-h" className="text-[19px] font-bold">{n(venues.length)} {venues.length === 1 ? "venue" : "venues"}</h2>
-          {owed > 0 && <span className="text-[13.5px] text-ink-2">Unpaid venue share, all months: <b className="num text-ink">{usd(owed)}</b></span>}
-        </div>
-        {venues.length ? (
-          <table className="mt-2 w-full min-w-[760px] text-left text-[14px]">
-            <caption className="sr-only">Partner venues</caption>
-            <thead className="border-b border-line text-[12px] text-ink-2">
-              <tr>
-                <th scope="col" className="px-4 py-2.5 font-semibold">Venue</th>
-                <th scope="col" className="px-3 py-2.5 text-right font-semibold">Codes</th>
-                <th scope="col" className="px-3 py-2.5 text-right font-semibold">Sales</th>
-                <th scope="col" className="px-3 py-2.5 text-right font-semibold">Revenue</th>
-                <th scope="col" className="px-3 py-2.5 text-right font-semibold">Artfinity profit</th>
-                <th scope="col" className="px-3 py-2.5 text-right font-semibold">Share</th>
-                <th scope="col" className="px-4 py-2.5 text-right font-semibold">Unpaid share</th>
-              </tr>
-            </thead>
-            <tbody>
-              {venues.map((v) => (
-                <tr key={v.id} className="border-b border-line last:border-0 hover:bg-wall/60">
-                  <td className="px-4 py-3">
-                    <Link href={`/admin/venues/${v.id}`} className="font-bold text-ink underline-offset-2 hover:underline">{v.name}</Link>
-                    <span className="block text-[12.5px] text-ink-2">{[v.neighborhood, v.active ? null : "Paused"].filter(Boolean).join(" · ") || "—"}</span>
-                  </td>
-                  <td className="num px-3 py-3 text-right">{n(v.liveCodes)}<span className="text-ink-2">/{n(v.codes)}</span></td>
-                  <td className="num px-3 py-3 text-right">{n(v.sales)}</td>
-                  <td className="num px-3 py-3 text-right">{usd(v.grossCents)}</td>
-                  <td className="num px-3 py-3 text-right">{usd(v.artfinityCents)}</td>
-                  <td className="num px-3 py-3 text-right">{v.sharePct > 0 ? pctLabel(v.sharePct) : <span className="text-ink-2">0%</span>}</td>
-                  <td className={`num px-4 py-3 text-right font-bold ${v.unpaidCents ? "text-earned" : "text-ink-2"}`}>{usd(v.unpaidCents)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p className="px-4 pb-4 pt-2 text-[14.5px] text-ink-2">No venues yet. Add one below, or create one from a venue name artists already use.</p>
-        )}
-      </section>
+      <DataTable
+        id="venues"
+        caption="Partner venues"
+        minWidth={760}
+        defaultSort={{ key: "unpaid", dir: "desc" }}
+        search={venues.length > 6 ? "Venue or neighborhood" : undefined}
+        statuses={[{ value: "active", label: "Active" }, { value: "paused", label: "Paused" }]}
+        columns={[
+          { key: "name", label: "Venue" },
+          { key: "codes", label: "Codes on", align: "right" },
+          { key: "sales", label: "Sales", align: "right" },
+          { key: "revenue", label: "Revenue", align: "right" },
+          { key: "profit", label: "Profit", align: "right" },
+          { key: "share", label: "Share", align: "right" },
+          { key: "unpaid", label: "Unpaid", align: "right" },
+        ]}
+        rows={rows}
+        empty={<EmptyState title="No venues yet" body="Add one below, or create one from a name artists already use." />}
+      />
 
-      <section aria-labelledby="merge-h" className="af-card grid gap-3 p-4 sm:p-5">
+      <section aria-labelledby="merge-h" className="af-panel grid gap-3 p-4 sm:p-5">
         <div>
-          <h2 id="merge-h" className="text-[19px] font-bold">Venue names on codes, not linked yet</h2>
-          <p className="text-[13.5px] text-ink-2">What artists typed as the venue. Link a name to a partner venue (its codes then count for that venue) or turn it into a new venue.</p>
+          <h2 id="merge-h" className="text-[18px] font-bold">Unlinked venue names {unlinked.length > 0 && <span className="num text-[14px] font-normal text-ink-2">{unlinked.length}</span>}</h2>
+          <p className="text-[13.5px] text-ink-2">What artists typed on their codes. Link it or make it a venue.</p>
         </div>
         {unlinked.length ? (
           <ul className="grid gap-2">
@@ -95,7 +93,7 @@ export default async function AdminVenuesPage() {
                     />
                   )}
                   <ActionButton
-                    url="/api/admin/venues" body={{ fromText: u.text }} need="accounts" tone="blue" label="Create venue from this" title="New venue"
+                    url="/api/admin/venues" body={{ fromText: u.text }} need="accounts" label="Make venue" title="New venue"
                     confirm={<>Creates the venue and links {u.codes === 1 ? "its code" : `its ${u.codes} codes`}. Add the address and contact on its page after.</>}
                     fields={[
                       { name: "name", label: "Name", required: true, defaultValue: u.text },
@@ -109,14 +107,14 @@ export default async function AdminVenuesPage() {
             ))}
           </ul>
         ) : (
-          <p className="text-[14px] text-ink-2">Every venue name on a code is linked.</p>
+          <p className="text-[14px] text-ink-2">All linked.</p>
         )}
       </section>
 
-      <section aria-labelledby="add-h" className="af-card grid gap-3 p-4 sm:p-5">
-        <h2 id="add-h" className="text-[19px] font-bold">Add a venue</h2>
-        <VenueForm />
-      </section>
+      <details id="add" className="af-panel p-4 sm:p-5" open={venues.length === 0}>
+        <summary className="cursor-pointer text-[18px] font-bold">Add a venue</summary>
+        <div className="mt-3"><VenueForm /></div>
+      </details>
     </div>
   );
 }

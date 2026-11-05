@@ -308,7 +308,7 @@ export function DataTable({
                 </tr>
               ) : (
                 shown.map((r) => (
-                  <tr key={r.id} className={cn("border-b border-line align-top last:border-b-0", r.className)}>
+                  <tr key={r.id} className={cn("border-b border-line align-middle last:border-b-0", r.className)}>
                     {columns.map((c) => (
                       <td key={c.key} className={cn("px-3 py-2.5", c.align === "right" && "whitespace-nowrap text-right", c.className)}>{r.cells[c.key]}</td>
                     ))}

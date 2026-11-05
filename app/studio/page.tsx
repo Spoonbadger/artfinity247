@@ -13,9 +13,11 @@ import { countArtistViews } from "@/lib/pageviews";
 import { getBalance } from "@/lib/balance";
 import { dayUTC } from "@/components/money/format";
 import { EmptyState } from "@/components/studio/EmptyState";
+import { StudioPage } from "@/components/studio/StudioPage";
 import { Upload } from "lucide-react";
 import { readScanSettings } from "@/lib/scanning.server";
-import { requireArtist, firstName, getSales, getArtworks, dayKey, serverGreeting, timeAgo, SIZE_LABEL, STUDIO_TZ, usd } from "./_lib/data";
+import { pct } from "@/lib/plans";
+import { artistSplitNow, requireArtist, firstName, getSales, getArtworks, dayKey, serverGreeting, timeAgo, SIZE_LABEL, STUDIO_TZ, usd } from "./_lib/data";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Studio" };
@@ -51,6 +53,7 @@ export default async function StudioHome() {
     prisma.qrCode.count({ where: { artistId: artist.id } }),
   ]);
   const sales = allSales.filter((s) => s.date >= since);
+  const split = await artistSplitNow(artist.id);
   // Painting scans: suggest one when more than one piece can't print at the biggest size (lib/scanning.server.ts).
   const [scanOn, limitedCount, scanOpen] = await Promise.all([
     readScanSettings().then((s) => s.enabled).catch(() => false),
@@ -66,7 +69,7 @@ export default async function StudioHome() {
     countArtistScans(artist.id, new Date(since.getTime() - 30 * DAY), since),
     countArtistViews(artist.id, new Date(now.getTime() - 7 * DAY), now),
   ]);
-  const scanDelta = !scans && !scansBefore ? (codeCount ? "Hang your codes to start" : "Print a code to start") : !scansBefore ? "New this month" : `${scans >= scansBefore ? "+" : "−"}${Math.abs(Math.round(((scans - scansBefore) / scansBefore) * 100))}% on the 30 days before`;
+  const scanDelta = !scans && !scansBefore ? (codeCount ? "Hang your codes to start" : "Print a code to start") : !scansBefore ? "New this month" : `${scans >= scansBefore ? "+" : "−"}${Math.abs(Math.round(((scans - scansBefore) / scansBefore) * 100))}% on last month`;
 
   const prints = sales.reduce((n, s) => n + s.quantity, 0);
   const earned = sales.reduce((n, s) => n + s.shareCents, 0);
@@ -99,13 +102,10 @@ export default async function StudioHome() {
   const late = balance.lateMonths.length > 0;
 
   return (
-    <div className="mx-auto grid max-w-[1320px] gap-6 px-4 pb-16 pt-6 sm:px-6 lg:px-10 lg:pt-9">
-      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
-        <h1 className="display min-w-0 text-[clamp(34px,5vw,50px)]">
-          <Greeting initial={serverGreeting(now)} />, <Brushed>{firstName(artist)}</Brushed>
-        </h1>
-        <Link href="/studio/art/new" className="btn btn-blue"><Upload className="h-4 w-4" aria-hidden="true" />Upload art</Link>
-      </div>
+    <StudioPage
+      title={<><Greeting initial={serverGreeting(now)} />, <Brushed>{firstName(artist)}</Brushed></>}
+      actions={<Link href="/studio/art/new" className="btn btn-blue"><Upload className="h-4 w-4" aria-hidden="true" />Upload art</Link>}
+    >
 
       {/* What to do next. Hides itself once everything is done. */}
       <NextSteps hasProfile={!!artist.profileImage && !!artist.bio?.trim()} hasArt={hasArt} hasSold={hasSold} hasVenmo={!!artist.venmoHandle || balance.payoutVia === "stripe"} hasEvent={eventCount > 0} slug={artist.slug} suggestion={scanSuggestion} />
@@ -115,10 +115,10 @@ export default async function StudioHome() {
         <section aria-labelledby="stats-h" className="grid gap-3">
           <h2 id="stats-h" className="text-[13px] font-bold uppercase tracking-[0.08em] text-ink-2">Last 30 days</h2>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-            <Stat href="/studio/sales" dab="#0f7a55" label="You earned" value={usd(earned)} note={sales.length ? `${sales.length} ${sales.length === 1 ? "order" : "orders"}` : "Your 60% of each sale's profit"} tone="earned" />
+            <Stat href="/studio/sales" dab="#0f7a55" label="You earned" value={usd(earned)} note={sales.length ? `${sales.length} ${sales.length === 1 ? "order" : "orders"}` : `Your ${pct(split)} of each sale's profit`} tone="earned" />
             <Stat href="/studio/sales" dab="#e8743b" label="Prints sold" value={prints.toLocaleString("en-US")} note={best ? `Best: ${best.title}` : "None yet"} />
             <Stat href="/studio/codes" dab="#2b37f0" label="Scans" value={scans.toLocaleString("en-US")} note={scanDelta} />
-            <Stat href="/studio/money" dab="#0f7a55" label="Balance" value={usd(balanceCents)} note={late ? "Payout late. See Money" : `Paid ${dayUTC(balance.nextPayout.date)}`} tone={late ? "late" : undefined} />
+            <Stat href="/studio/money" dab="#0f7a55" label="Balance" value={usd(balanceCents)} note={late ? "Payout late. See Money" : `Next payout ${dayUTC(balance.nextPayout.date)}`} tone={late ? "late" : undefined} />
           </div>
         </section>
       )}
@@ -196,6 +196,6 @@ export default async function StudioHome() {
       )}
 
       {hasArt && <ProCard active={plan.active} proUntil={plan.proUntil} />}
-    </div>
+    </StudioPage>
   );
 }

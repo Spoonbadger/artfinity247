@@ -131,16 +131,16 @@ export default async function FollowersPage({ searchParams }: { searchParams: { 
         </section>
       )}
 
-      <FollowerImport defaultOpen={!any} />
+      <FollowerImport />
 
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[13.5px] font-semibold text-ink-2 [&>*]:inline-flex [&>*]:min-h-[40px] [&>*]:items-center">
-        {any && (
+      {any && (
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[13.5px] font-semibold text-ink-2 [&>*]:inline-flex [&>*]:min-h-[40px] [&>*]:items-center">
           <a href="/api/studio/followers" download className="gap-1.5 hover:text-ink">
             <Download className="h-4 w-4" aria-hidden="true" />Export CSV
           </a>
-        )}
-        <Link href="/help/growing/followers-newsletter" className="underline underline-offset-2 hover:text-ink">How followers work</Link>
-      </div>
+          <Link href="/help/growing/followers-newsletter" className="underline underline-offset-2 hover:text-ink">How followers work</Link>
+        </div>
+      )}
     </StudioPage>
   );
 }

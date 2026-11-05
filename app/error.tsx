@@ -24,12 +24,12 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
           {currentUser ? <Link href="/studio" className="btn btn-ghost">Go to my Studio</Link> : <Link href="/" className="btn btn-ghost">Go home</Link>}
         </div>
         <p className="mt-2 text-[14.5px] text-ink-2">
-          Keeps happening? <Link href="/contact" className="font-semibold text-ink underline underline-offset-4">Tell us</Link>
+          Keeps happening? <Link href="/contact" className="inline-flex min-h-[40px] items-center font-semibold text-ink underline underline-offset-4">Tell us</Link>
           {error?.digest ? " and mention the ref above" : ""}
           <span aria-hidden="true"> · </span>
-          <Link href="/art" className="font-semibold text-ink underline underline-offset-4">Browse art</Link>
+          <Link href="/art" className="inline-flex min-h-[40px] items-center font-semibold text-ink underline underline-offset-4">Browse art</Link>
           <span aria-hidden="true"> · </span>
-          <Link href="/help" className="font-semibold text-ink underline underline-offset-4">Help center</Link>
+          <Link href="/help" className="inline-flex min-h-[40px] items-center font-semibold text-ink underline underline-offset-4">Help center</Link>
         </p>
       </div>
     </main>

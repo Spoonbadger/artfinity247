@@ -4,7 +4,10 @@
 // and the three outcomes. Every outcome emails the buyer.
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import Link from "next/link";
+import { failed, saved } from "@/lib/feedback";
+import { EmptyState } from "@/components/studio/EmptyState";
+import { passes, sortRows, SortSelect, TableToolbar, useTable, type SortDir } from "./table";
 import { cn } from "@/lib/utils";
 import { reasonLabel, type ReprintStatus } from "@/lib/reprintFormat";
 import { useAdminCan } from "./AdminRole";
@@ -31,7 +34,7 @@ const STATUS: Record<ReprintStatus, { label: string; cls: string }> = {
   declined: { label: "Declined", cls: "bg-ink/10 text-ink-2" },
 };
 
-const day = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+const day = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" });
 const usd = (c: number) => "$" + (c / 100).toFixed(2);
 
 function Card({ r }: { r: AdminReprint }) {
@@ -39,27 +42,28 @@ function Card({ r }: { r: AdminReprint }) {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [zoom, setZoom] = useState<string | null>(null);
+  const [noteOpen, setNoteOpen] = useState(false);
   const canRefund = useAdminCan("money");
 
   const act = async (action: "approve" | "refund" | "decline") => {
-    if (action === "decline" && !note.trim()) { toast.error("Add a short note for the buyer first."); return; }
+    if (action === "decline" && !note.trim()) { setNoteOpen(true); failed("Add a short note for the buyer first.", { description: "Declining needs a reason." }); return; }
     if (action === "refund" && !confirm("Refund the buyer in Stripe yourself. This only marks it refunded and emails them. Go on?")) return;
     setBusy(action);
     try {
       const res = await fetch(`/api/admin/reprints/${r.id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, note }) });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(j.error || "Couldn't save.");
-      toast.success(action === "approve" ? "Reprint order created. It's in Orders, ready for the printer." : action === "refund" ? "Marked refunded" : "Declined");
+      saved(action === "approve" ? "Reprint order created" : action === "refund" ? "Marked refunded" : "Declined", action === "approve" ? { next: { label: "See orders", href: "/admin/orders?month=all&filter=print" } } : undefined);
       router.refresh();
     } catch (e: any) {
-      toast.error(e?.message || "Couldn't save.");
+      failed(e?.message || "Couldn't save.", { retry: () => act(action) });
       setBusy(null);
     }
   };
 
   const late = new Date(r.createdAt) > new Date(r.order.deadline);
   return (
-    <li className="af-card grid gap-4 p-4 sm:p-5">
+    <li className="af-panel grid gap-4 p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -71,9 +75,9 @@ function Card({ r }: { r: AdminReprint }) {
             <b className="text-ink">{r.order.name}</b> · <a href={`mailto:${r.order.email}`} className="underline-offset-2 hover:underline">{r.order.email}</a> · sent {day(r.createdAt)}
           </p>
         </div>
-        <a href={`/admin/orders?month=${r.order.month}`} className="num text-[13px] font-semibold text-scan hover:underline">
-          Order {r.order.id.slice(-8)} · {day(r.order.date)} · {r.order.kind === "reprint" ? "free reprint" : usd(r.order.total)}
-        </a>
+        <Link href={`/admin/orders/${r.order.id}`} className="num text-[13px] font-semibold text-scan hover:underline">
+          Order {r.order.id.slice(-8).toUpperCase()} · {day(r.order.date)} · {r.order.kind === "reprint" ? "free reprint" : usd(r.order.total)}
+        </Link>
       </div>
 
       <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
@@ -98,7 +102,7 @@ function Card({ r }: { r: AdminReprint }) {
         <div className="grid content-start gap-2">
           <div className="flex flex-wrap gap-2">
             {r.photos.map((p) => (
-              <button key={p} type="button" onClick={() => setZoom(zoom === p ? null : p)} className="overflow-hidden rounded-[3px] border-[3px] border-white shadow-[0_6px_16px_-8px_rgba(21,22,27,.6)] focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-scan" aria-label="Bigger photo">
+              <button key={p} type="button" onClick={() => setZoom(zoom === p ? null : p)} className="overflow-hidden rounded-[3px] border-[3px] border-white shadow-[0_6px_16px_-8px_rgba(21,22,27,.6)] focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-scan" aria-label="Bigger photo" title="Show bigger">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={p} alt="Buyer's photo" className="h-24 w-24 object-cover" />
               </button>
@@ -114,16 +118,18 @@ function Card({ r }: { r: AdminReprint }) {
 
       {r.status === "open" ? (
         <div className="grid gap-2.5 border-t border-line pt-4">
-          <label className="af-field">
-            <span className="label">Note to the buyer (needed to decline, optional otherwise)</span>
-            <textarea rows={2} maxLength={600} value={note} onChange={(e) => setNote(e.target.value)} className="resize-none text-[15px]" />
-          </label>
+          <details open={noteOpen || !!note} onToggle={(e) => setNoteOpen((e.target as HTMLDetailsElement).open)}>
+            <summary className="cursor-pointer text-[13.5px] font-semibold text-ink-2 hover:text-ink">Note to the buyer <span className="font-normal">(needed to decline)</span></summary>
+            <label className="af-field mt-2">
+              <span className="label">Note</span>
+              <textarea rows={2} maxLength={600} value={note} onChange={(e) => setNote(e.target.value)} className="resize-none text-[15px]" />
+            </label>
+          </details>
           <div className="flex flex-wrap gap-2">
-            <button type="button" disabled={!!busy} onClick={() => act("approve")} className="btn btn-blue">{busy === "approve" ? "Creating…" : "Approve reprint"}</button>
-            <button type="button" disabled={!!busy || !canRefund} title={canRefund ? undefined : "Refunds need the admin or owner role."} onClick={() => act("refund")} className="btn btn-ghost">{busy === "refund" ? "Saving…" : "Refund instead"}</button>
-            <button type="button" disabled={!!busy} onClick={() => act("decline")} className="btn btn-ghost">{busy === "decline" ? "Saving…" : "Decline"}</button>
+            <button type="button" disabled={!!busy} onClick={() => act("approve")} className="btn btn-sm" title="Makes a free order for the printer">{busy === "approve" ? "Creating…" : "Approve reprint"}</button>
+            <button type="button" disabled={!!busy || !canRefund} title={canRefund ? undefined : "Refunds need the admin or owner role."} onClick={() => act("refund")} className="btn btn-ghost btn-sm">{busy === "refund" ? "Saving…" : "Refund instead"}</button>
+            <button type="button" disabled={!!busy} onClick={() => act("decline")} className="btn btn-ghost btn-sm">{busy === "decline" ? "Saving…" : "Decline"}</button>
           </div>
-          <p className="text-[12.5px] text-ink-2">Approve makes a free order in Orders (marked Free reprint) for the printer. The artist&apos;s sale and earnings stay as they are.</p>
         </div>
       ) : (
         r.decision && (
@@ -139,9 +145,31 @@ function Card({ r }: { r: AdminReprint }) {
   );
 }
 
-export default function ReprintsQueue({ requests }: { requests: AdminReprint[] }) {
+const SORTS: { key: string; dir: SortDir; label: string }[] = [
+  { key: "date", dir: "asc", label: "Oldest first" },
+  { key: "date", dir: "desc", label: "Newest first" },
+  { key: "reason", dir: "asc", label: "Reason" },
+  { key: "buyer", dir: "asc", label: "Buyer A–Z" },
+];
+
+export default function ReprintsQueue({ requests, tab = "open" }: { requests: AdminReprint[]; tab?: string }) {
+  const t = useTable(`reprints-${tab}`, { sort: { key: "date", dir: tab === "open" ? "asc" : "desc" } });
   if (!requests.length) {
-    return <p className="rounded-2xl border-2 border-dashed border-line bg-white px-5 py-12 text-center text-[15px] text-ink-2">Nothing here. Every print arrived happy.</p>;
+    return <EmptyState title={tab === "open" ? "No reprint requests" : "Nothing decided yet"} body={tab === "open" ? "Every print arrived happy." : undefined} dab="var(--af-earned)" />;
   }
-  return <ul className="grid gap-4">{requests.map((r) => <Card key={r.id} r={r} />)}</ul>;
+  const reasons = Array.from(new Set(requests.map((r) => r.reason))).map((r) => ({ value: r, label: reasonLabel(r) }));
+  const shown = sortRows(
+    requests.filter((r) => passes(t.filters, { search: `${r.order.name} ${r.order.email} ${r.order.id} ${r.note} ${r.items.map((i) => `${i.title} ${i.artist}`).join(" ")}`, status: r.reason, date: r.createdAt })),
+    t.sort,
+    (r, k) => (k === "date" ? r.createdAt : k === "reason" ? reasonLabel(r.reason) : r.order.name.toLowerCase()),
+  );
+  return (
+    <div className="grid min-w-0 gap-3">
+      <TableToolbar filters={t.filters} setFilter={t.setFilter} clear={t.clear} active={t.active} search="Buyer, order or print" statuses={reasons.length > 1 ? reasons : undefined} statusLabel="Reason" dates count={shown.length} total={requests.length}>
+        <SortSelect options={SORTS} sort={t.sort} onChange={t.setSort} />
+      </TableToolbar>
+      {shown.length === 0 && <EmptyState compact title="Nothing matches" action={{ label: "Clear filters", onClick: t.clear }} />}
+      <ul className="grid gap-4">{shown.map((r) => <Card key={r.id} r={r} />)}</ul>
+    </div>
+  );
 }

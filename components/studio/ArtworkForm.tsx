@@ -12,6 +12,7 @@ import { BrushStroke } from "@/components/af/Brush";
 import { cn } from "@/lib/utils";
 import { artPath } from "@/lib/urls";
 import { splitOriginal } from "@/lib/originalSize";
+import { FREE_SPLIT, pct } from "@/lib/plans";
 import { useUnsavedChanges } from "@/components/forms/useUnsavedChanges";
 import ImageEditor, { type EditResult } from "@/components/media/ImageEditor";
 import { parseStored, type StoredEdits } from "@/lib/imageEdits";
@@ -415,7 +416,7 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
           <Link href="/studio/art" className="btn btn-ghost">Cancel</Link>
           {!editing && (
             <span className="relative z-0 text-[13px] text-ink-2">
-              Free to list. <span className="relative inline-block font-semibold text-ink">You keep 60% of profit<BrushStroke className="absolute -bottom-1 left-0 -z-10 h-2 w-full" /></span>
+              Free to list. <span className="relative inline-block font-semibold text-ink">You keep {pct(split ?? FREE_SPLIT)} of profit<BrushStroke className="absolute -bottom-1 left-0 -z-10 h-2 w-full" /></span>
             </span>
           )}
         </div>

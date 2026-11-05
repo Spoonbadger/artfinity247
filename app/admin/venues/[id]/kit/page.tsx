@@ -43,17 +43,17 @@ export default async function VenueKitPage({ params }: { params: { id: string } 
       <div className="no-print flex flex-wrap items-center justify-between gap-3">
         <Link href={`/admin/venues/${v.id}`} className="inline-flex items-center gap-1 text-[13.5px] font-semibold text-ink-2 no-underline hover:text-ink"><ArrowLeft className="h-4 w-4" aria-hidden="true" />{v.name}</Link>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[13px] text-ink-2">Print, or choose &ldquo;Save as PDF&rdquo;. Sticker prints at 6 × 6 in.</span>
+          <span className="text-[13px] text-ink-2">Sticker prints at 6 × 6 in.</span>
           <PrintButton className="btn btn-blue btn-sm" label="Print or save PDF" />
         </div>
       </div>
 
       {/* Page 1: window sticker */}
-      <section aria-label="Window sticker" className="kit-page grid min-h-[10in] place-items-center rounded-2xl border border-line bg-white p-6 shadow-sm">
-        <div className="grid w-[6in] max-w-full justify-items-center gap-4 rounded-[28px] border-[6px] border-ink bg-sticker px-8 pb-7 pt-8 text-center text-ink">
-          <p className="display text-[54px] leading-[0.9] sm:text-[64px]">Local art here</p>
+      <section aria-label="Window sticker" className="kit-page grid min-h-[10in] grid-cols-[minmax(0,1fr)] place-items-center rounded-2xl border border-line bg-white p-4 shadow-sm sm:p-6">
+        <div className="grid w-full max-w-[6in] justify-items-center gap-4 rounded-[28px] border-[6px] border-ink bg-sticker px-5 pb-7 pt-8 text-center text-ink sm:px-8">
+          <p className="display text-[44px] leading-[0.9] sm:text-[64px]">Local art here</p>
           <p className="text-[22px] font-bold">Scan to buy a print</p>
-          <div className="w-[3.1in] max-w-full rounded-2xl bg-white p-3" dangerouslySetInnerHTML={{ __html: qr }} />
+          <div className="w-full max-w-[3.1in] rounded-2xl bg-white p-3" dangerouslySetInnerHTML={{ __html: qr }} />
           <p className="text-[17px] font-semibold">The art on these walls is by local artists, and it&apos;s for sale.</p>
           <p className="num text-[14px] font-semibold">{shown}</p>
           <div className="flex items-center gap-2 text-[15px] font-semibold">

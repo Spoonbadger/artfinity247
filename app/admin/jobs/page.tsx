@@ -5,7 +5,10 @@ import { cn } from "@/lib/utils";
 import { roleCan } from "@/lib/adminRoles";
 import { JOBS } from "@/lib/jobs/registry";
 import { previousMonth } from "@/lib/bookkeeping";
-import { monthLabel } from "../_components/util";
+import { dayTime, monthLabel } from "../_components/util";
+import { PageHead, Pill, type Tone } from "../_components/ui";
+import { DataTable, type Row } from "../_components/table";
+import { EmptyState } from "@/components/studio/EmptyState";
 import { adminRoleOrRedirect } from "../_components/gate";
 import RunNowButton from "./RunNowButton";
 
@@ -15,7 +18,7 @@ export const metadata: Metadata = { title: "Jobs" };
 const TZ = "America/New_York";
 const STALE_MS = 15 * 60_000;
 
-const when = (d: Date) => d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: TZ });
+const when = (d: Date) => d.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: TZ });
 
 function ago(d: Date, now: number) {
   const m = Math.round((now - d.getTime()) / 60_000);
@@ -35,15 +38,15 @@ function statusOf(r: Run | undefined, now: number): Status {
   return r.ok ? "ok" : "failed";
 }
 
-const STATUS: Record<Status, { label: string; cls: string }> = {
-  ok: { label: "OK", cls: "bg-earned/15 text-earned" },
-  failed: { label: "Failed", cls: "bg-coral/15 text-coral" },
-  running: { label: "Running", cls: "bg-scan/15 text-scan" },
-  never: { label: "Never run", cls: "bg-line text-ink-2" },
+const STATUS: Record<Status, { label: string; tone: Tone }> = {
+  ok: { label: "OK", tone: "green" },
+  failed: { label: "Failed", tone: "red" },
+  running: { label: "Running", tone: "blue" },
+  never: { label: "Never run", tone: "grey" },
 };
 
 function Badge({ s }: { s: Status }) {
-  return <span className={cn("rounded-full px-2 py-0.5 text-[12px] font-bold", STATUS[s].cls)}>{STATUS[s].label}</span>;
+  return <Pill tone={STATUS[s].tone}>{STATUS[s].label}</Pill>;
 }
 
 const set = (v: string | undefined) => !!v?.trim();
@@ -84,17 +87,10 @@ export default async function AdminJobsPage() {
   ];
 
   return (
-    <div className="grid gap-6">
-      <div>
-        <p className="eyebrow">Automation</p>
-        <h1 className="display text-[44px] sm:text-[56px]">Jobs</h1>
-        <p className="max-w-[70ch] text-[15px] text-ink-2">
-          What runs by itself, when it last ran and what it did. Times are New York time. A failed run raises an alert on{" "}
-          <Link href="/admin/alerts" className="text-scan">Alerts</Link>.
-        </p>
-      </div>
+    <div className="grid gap-5">
+      <PageHead title="Jobs" sub={<>What runs by itself. Failures show up in <Link href="/admin/alerts" className="font-semibold text-scan">Alerts</Link>.</>} />
 
-      <section aria-labelledby="jobs-h" className="af-card grid gap-1 p-4 sm:p-5">
+      <section aria-labelledby="jobs-h" className="af-panel grid gap-1 p-4 sm:p-5">
         <h2 id="jobs-h" className="sr-only">Scheduled jobs</h2>
         <ul className="grid divide-y divide-line">
           {JOBS.map((j) => {
@@ -106,14 +102,12 @@ export default async function AdminJobsPage() {
               <li key={j.name} className="grid gap-2 py-4 first:pt-1 last:pb-1 md:grid-cols-[minmax(0,1fr)_auto] md:items-start md:gap-6">
                 <div className="grid min-w-0 gap-1">
                   <p className="flex flex-wrap items-center gap-2">
-                    <b className="text-[16.5px]">{j.label}</b>
+                    <b className="text-[16px]">{j.label}</b>
                     <Badge s={s} />
-                    <code className="text-[12px] text-ink-2">{j.name}</code>
                   </p>
                   <p className="text-[14px] text-ink-2">{j.description}</p>
-                  <p className="text-[13.5px]">
-                    <span className="font-semibold">Schedule:</span> {j.when}
-                    {j.schedule && <span className="text-ink-2"> · <code className="text-[12px]">{j.schedule}</code> UTC</span>}
+                  <p className="text-[13.5px]" title={j.schedule ? `${j.schedule} UTC` : undefined}>
+                    <span className="font-semibold">Runs:</span> {j.when}
                   </p>
                   <p className="text-[13.5px]">
                     <span className="font-semibold">Last run:</span>{" "}
@@ -131,7 +125,7 @@ export default async function AdminJobsPage() {
                 </div>
                 <div className="flex flex-wrap items-center gap-2 md:justify-end">
                   {j.name === "bookkeeping" && canMoney && (
-                    <a href={`/api/admin/bookkeeping?month=${thisMonth}`} className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">This month so far</a>
+                    <a href={`/api/admin/bookkeeping?month=${thisMonth}`} className="btn btn-ghost btn-sm min-h-[40px]">This month so far</a>
                   )}
                   <RunNowButton job={j.name} label={j.label} disabled={locked || s === "running"} reason={locked ? "Needs the money permission" : "Running"} />
                 </div>
@@ -142,11 +136,10 @@ export default async function AdminJobsPage() {
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <section aria-labelledby="books-h" className="af-card grid content-start gap-3 p-4 sm:p-5">
-          <h2 id="books-h" className="text-[20px] font-bold">Bookkeeping export</h2>
-          <p className="text-[14px] text-ink-2">
-            Gross sales, tax collected, Artfinity profit, artist share and payouts, reprint costs and refunds, plus one line per order. Same math as the
-            dashboard. Emailed to the owners on the 1st.
+        <section aria-labelledby="books-h" className="af-panel grid content-start gap-3 p-4 sm:p-5">
+          <h2 id="books-h" className="text-[18px] font-bold">Bookkeeping export</h2>
+          <p className="text-[14px] text-ink-2" title="Gross sales, tax, Artfinity profit, artist share and payouts, reprint costs, refunds, plus one line per order.">
+            The month&apos;s books as a CSV. Emailed to the owners on the 1st.
           </p>
           {canMoney ? (
             <form action="/api/admin/bookkeeping" method="get" className="flex flex-wrap items-end gap-2">
@@ -158,16 +151,16 @@ export default async function AdminJobsPage() {
                   ))}
                 </select>
               </label>
-              <button type="submit" className="btn btn-blue btn-sm mb-1 min-h-[44px] md:min-h-0">Download CSV</button>
+              <button type="submit" className="btn btn-ghost btn-sm mb-1 min-h-[40px]">Download CSV</button>
             </form>
           ) : (
             <p className="text-[14px]">Needs the money permission.</p>
           )}
         </section>
 
-        <section aria-labelledby="setup-h" className="af-card grid content-start gap-3 p-4 sm:p-5">
-          <h2 id="setup-h" className="text-[20px] font-bold">Setup</h2>
-          <ul className="grid gap-2">
+        <details className="af-panel grid content-start gap-3 p-4 sm:p-5" open={setup.some((x) => !x.ok && x.name === "CRON_SECRET")}>
+          <summary className="flex cursor-pointer flex-wrap items-center gap-2 text-[18px] font-bold">Setup {setup.every((x) => x.ok) ? <Pill tone="green">All set</Pill> : <Pill tone="amber">{setup.filter((x) => !x.ok).length} not set</Pill>}</summary>
+          <ul className="mt-3 grid gap-2">
             {setup.map((x) => (
               <li key={x.name} className="grid grid-cols-[14px_minmax(0,1fr)] gap-x-3">
                 <span aria-label={x.ok ? "Set" : "Not set"} className="mt-1.5 inline-block h-3 w-3 rounded-full" style={{ background: x.ok ? "var(--af-earned)" : "#e3b23c" }} />
@@ -175,43 +168,46 @@ export default async function AdminJobsPage() {
               </li>
             ))}
           </ul>
-        </section>
+        </details>
       </div>
 
-      <section aria-labelledby="runs-h" className="af-card grid gap-3 p-4 sm:p-5">
-        <h2 id="runs-h" className="text-[20px] font-bold">Recent runs</h2>
-        {recent.length === 0 ? (
-          <p className="text-[14px] text-ink-2">Nothing has run yet.</p>
-        ) : (
-          <div className="-mx-1 overflow-x-auto px-1">
-            <table className="w-full text-[13.5px]">
-              <thead>
-                <tr className="border-b border-line text-left text-[12px] uppercase tracking-[0.06em] text-ink-2">
-                  <th className="py-2 pr-3 font-bold">Started</th>
-                  <th className="py-2 pr-3 font-bold">Job</th>
-                  <th className="py-2 pr-3 font-bold">Status</th>
-                  <th className="py-2 pr-3 font-bold">Took</th>
-                  <th className="py-2 font-bold">Summary</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recent.map((r) => {
-                  const s = statusOf(r, now);
-                  const ms = r.finishedAt ? r.finishedAt.getTime() - r.startedAt.getTime() : null;
-                  return (
-                    <tr key={r.id} className="border-b border-line align-top last:border-b-0">
-                      <td className="num whitespace-nowrap py-2 pr-3">{when(r.startedAt)}</td>
-                      <td className="whitespace-nowrap py-2 pr-3 font-semibold">{labelOf.get(r.job) ?? r.job}</td>
-                      <td className="py-2 pr-3"><Badge s={s} /></td>
-                      <td className="num whitespace-nowrap py-2 pr-3 text-ink-2">{ms == null ? "—" : ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`}</td>
-                      <td className="min-w-[260px] py-2">{r.summary}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+      <section aria-labelledby="runs-h" className="grid gap-2">
+        <h2 id="runs-h" className="text-[18px] font-bold">Recent runs</h2>
+        <DataTable
+          id="job-runs"
+          caption="Recent job runs"
+          minWidth={640}
+          defaultSort={{ key: "started", dir: "desc" }}
+          search="Job or summary"
+          statuses={[{ value: "ok", label: "OK" }, { value: "failed", label: "Failed" }, { value: "running", label: "Running" }]}
+          dates
+          columns={[
+            { key: "started", label: "Started", firstDir: "desc" },
+            { key: "job", label: "Job" },
+            { key: "status", label: "Status" },
+            { key: "took", label: "Took", align: "right" },
+            { key: "summary", label: "Summary", sortable: false },
+          ]}
+          rows={recent.map((r): Row => {
+            const st = statusOf(r, now);
+            const ms = r.finishedAt ? r.finishedAt.getTime() - r.startedAt.getTime() : null;
+            return {
+              id: r.id,
+              status: st,
+              date: r.startedAt.toISOString(),
+              search: `${labelOf.get(r.job) ?? r.job} ${r.summary}`,
+              sort: { started: r.startedAt.toISOString(), job: labelOf.get(r.job) ?? r.job, status: STATUS[st].label, took: ms },
+              cells: {
+                started: <span className="num whitespace-nowrap">{dayTime(r.startedAt)}</span>,
+                job: <span className="whitespace-nowrap font-semibold">{labelOf.get(r.job) ?? r.job}</span>,
+                status: <Badge s={st} />,
+                took: <span className="text-ink-2">{ms == null ? "—" : ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`}</span>,
+                summary: <span className="block min-w-[240px]">{r.summary}</span>,
+              },
+            };
+          })}
+          empty={<EmptyState compact title="Nothing has run yet" body="Press Run now on a job above." />}
+        />
       </section>
     </div>
   );

@@ -19,6 +19,7 @@ import {
   type SceneAnnotation,
 } from "@/lib/scenes/types";
 import { cn } from "@/lib/utils";
+import MoreMenu from "./MoreMenu";
 
 type Photo = { id: string; w: number; h: number; source: "photo" | "fixture"; credit: PhotoCredit | null };
 type Art = { slug: string; title: string; imageUrl: string };
@@ -435,9 +436,11 @@ export default function SceneAnnotator({ photos, annotations, arts, writable }: 
             <button type="button" className="btn btn-ghost btn-sm" disabled={!writable} onClick={() => rebuild(false)} title="npm run scenes:build">
               Build scenes.json
             </button>
-            <button type="button" className="btn btn-ghost btn-sm" disabled={!writable} onClick={() => rebuild(true)} title="Includes synthetic fixtures: testing only">
-              Build with fixtures (test)
-            </button>
+            <MoreMenu>
+              <button type="button" className="btn btn-ghost btn-sm" disabled={!writable} onClick={() => rebuild(true)} title="Includes synthetic fixtures: testing only">
+                Build with fixtures (test)
+              </button>
+            </MoreMenu>
           </span>
         </div>
         {buildMsg && <p className="text-[13px] text-ink-2">{buildMsg}</p>}

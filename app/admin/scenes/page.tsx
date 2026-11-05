@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { adminOrRedirect } from "../_components/gate";
+import { PageHead } from "../_components/ui";
 import SceneAnnotator from "../_components/SceneAnnotator";
 import { listPhotos, loadCatalog, readAllAnnotations } from "@/lib/scenes/catalog";
 import { scenesWritable } from "@/lib/scenes/server";
@@ -20,18 +21,18 @@ export default async function ScenesAdminPage() {
   const catalog = loadCatalog();
   return (
     <div className="grid gap-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="display text-[34px] leading-none">Photo scenes</h1>
-          <p className="mt-1 max-w-[760px] text-[14px] text-ink-2">
-            Mark the wall, the hanging point and something of known height in each photo. The compositor uses these to hang any print at true size. Files:{" "}
+      <PageHead
+        title="Scenes"
+        sub={catalog ? `Live: ${catalog.distinct} scenes from ${catalog.photos.length} photos${catalog.fixtures ? " (includes test fixtures)" : ""}` : "Live: procedural rooms (no photo scenes built)"}
+      >
+        <details className="text-[13.5px] text-ink-2">
+          <summary className="cursor-pointer font-semibold">How this works</summary>
+          <p className="mt-1 max-w-[70ch]">
+            Mark the wall, the hanging point and something of known height. The compositor hangs prints at true size from these. Files:{" "}
             <code className="text-[13px]">scenes/photos</code> → <code className="text-[13px]">scenes/annotations</code> → <code className="text-[13px]">data/scenes.json</code>.
           </p>
-        </div>
-        <p className="text-[13px] text-ink-2">
-          {catalog ? `Live: ${catalog.distinct} distinct scenes from ${catalog.photos.length} photos${catalog.fixtures ? " (includes test fixtures!)" : ""}` : "Live: procedural rooms (no photo scenes built)"}
-        </p>
-      </div>
+        </details>
+      </PageHead>
       <SceneAnnotator
         photos={photos.map((p) => ({ id: p.id, w: p.w, h: p.h, source: p.source, credit: p.credit }))}
         annotations={Object.fromEntries(anns)}

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 import { earliestRestore, parseDetails } from "@/lib/reports";
 import { adminOrRedirect } from "../_components/gate";
+import { PageHead } from "../_components/ui";
 import ReportsQueue, { type ReportRow } from "./ReportsQueue";
 
 export const dynamic = "force-dynamic";
@@ -75,12 +76,8 @@ export default async function ReportsPage({ searchParams }: { searchParams: { ta
   }));
 
   return (
-    <div className="grid gap-6">
-      <div>
-        <p className="eyebrow">{open === 0 ? "All clear" : `${open} waiting`}</p>
-        <h1 className="display text-[44px] sm:text-[56px]">Reports</h1>
-        <p className="mt-2 text-[14.5px] text-ink-2">Copyright, AI and content reports from /report, plus DMCA counter-notices. Reply within 2 business days.</p>
-      </div>
+    <div className="grid gap-5">
+      <PageHead title="Reports" sub={`${open === 0 ? "All clear" : `${open} waiting`} · reply within 2 business days`} />
 
       <nav aria-label="Report views" className="flex flex-wrap gap-2">
         {TABS.map((t) => (
@@ -89,7 +86,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: { ta
             href={t.id === "queue" ? "/admin/reports" : `/admin/reports?tab=${t.id}`}
             aria-current={tab.id === t.id ? "page" : undefined}
             className={cn(
-              "inline-flex min-h-[44px] items-center rounded-full border-[1.5px] px-3.5 py-1.5 text-[14px] font-semibold no-underline transition md:min-h-0",
+              "inline-flex min-h-[40px] items-center rounded-full border-[1.5px] px-3.5 text-[14px] font-semibold no-underline transition",
               tab.id === t.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"
             )}
           >

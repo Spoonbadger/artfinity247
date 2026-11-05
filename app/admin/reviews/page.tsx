@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 import { adminOrRedirect } from "../_components/gate";
+import { PageHead } from "../_components/ui";
 import ReviewsAdmin, { type AdminReview } from "../_components/ReviewsAdmin";
 
 export const dynamic = "force-dynamic";
@@ -50,12 +51,8 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
   }));
 
   return (
-    <div className="grid gap-6">
-      <div>
-        <p className="eyebrow">{flaggedCount === 0 ? "Nothing held" : `${flaggedCount} held for a look`}</p>
-        <h1 className="display text-[44px] sm:text-[56px]">Reviews</h1>
-        <p className="mt-1 text-[14px] text-ink-2">Reviews with a link or a word from the rough list wait here before they go up.</p>
-      </div>
+    <div className="grid gap-5">
+      <PageHead title="Reviews" sub={flaggedCount === 0 ? "Nothing held" : `${flaggedCount} held: a link or a rough word`} />
       <nav aria-label="Review views" className="flex flex-wrap gap-2">
         {TABS.map((t) => (
           <Link
@@ -63,7 +60,7 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
             href={t.id === "all" ? "/admin/reviews" : `/admin/reviews?tab=${t.id}`}
             aria-current={tab === t.id ? "page" : undefined}
             className={cn(
-              "rounded-full border-[1.5px] px-3.5 py-1.5 text-[14px] font-semibold no-underline transition",
+              "inline-flex min-h-[40px] items-center rounded-full border-[1.5px] px-3.5 text-[14px] font-semibold no-underline transition",
               tab === t.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"
             )}
           >
@@ -72,7 +69,7 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
           </Link>
         ))}
       </nav>
-      <ReviewsAdmin key={tab} reviews={reviews} />
+      <ReviewsAdmin key={tab} reviews={reviews} tab={tab} />
     </div>
   );
 }

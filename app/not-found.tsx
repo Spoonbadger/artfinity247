@@ -21,11 +21,11 @@ export default async function NotFound() {
             <Link href="/art" className="btn btn-ghost">Browse art</Link>
           </div>
           <p className="mt-2 text-[14.5px] text-ink-2">
-            {user ? <Link href="/" className="whitespace-nowrap font-semibold text-ink underline underline-offset-4">Home</Link> : <Link href="/artists" className="whitespace-nowrap font-semibold text-ink underline underline-offset-4">Find an artist</Link>}
+            {user ? <Link href="/" className="inline-flex min-h-[40px] items-center whitespace-nowrap font-semibold text-ink underline underline-offset-4">Home</Link> : <Link href="/artists" className="inline-flex min-h-[40px] items-center whitespace-nowrap font-semibold text-ink underline underline-offset-4">Find an artist</Link>}
             <span aria-hidden="true"> · </span>
-            <Link href="/help" className="whitespace-nowrap font-semibold text-ink underline underline-offset-4">Help center</Link>
+            <Link href="/help" className="inline-flex min-h-[40px] items-center whitespace-nowrap font-semibold text-ink underline underline-offset-4">Help center</Link>
             <span aria-hidden="true"> · </span>
-            <Link href="/contact" className="whitespace-nowrap font-semibold text-ink underline underline-offset-4">Contact us</Link>
+            <Link href="/contact" className="inline-flex min-h-[40px] items-center whitespace-nowrap font-semibold text-ink underline underline-offset-4">Contact us</Link>
           </p>
         </div>
       </main>

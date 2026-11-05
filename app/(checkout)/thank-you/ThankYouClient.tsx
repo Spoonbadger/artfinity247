@@ -8,6 +8,7 @@ import { BrushStroke } from "@/components/af/Brush";
 import { usd } from "@/components/art/pricing";
 import { editionLabel } from "@/lib/editionFormat";
 import { deliveryRange } from "@/lib/delivery";
+import { FREE_SPLIT, pct } from "@/lib/plans";
 
 type OrderItem = {
   id: string;
@@ -171,7 +172,7 @@ export default function ThankYouClient({ sessionId, collector = { signedIn: fals
         </div>
         {/* Small print, one line each. The collection is a soft offer, never needed to buy (lib/collector.ts). */}
         <ul className="grid gap-1.5 border-t border-line pt-4 text-[14px] text-ink-2">
-          {artist?.name && <li>{artist.name.split(" ")[0]} gets 60% of the profit.</li>}
+          {artist?.name && <li>{artist.name.split(" ")[0]} gets at least {pct(FREE_SPLIT)} of the profit.</li>}
           {order.helpPath && (
             <li>Something wrong when it arrives? <Link href={order.helpPath} className="font-semibold text-ink underline underline-offset-4">Tell us</Link></li>
           )}

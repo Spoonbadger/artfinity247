@@ -3,7 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { failed, saved } from "@/lib/feedback";
+import { EmptyState } from "@/components/studio/EmptyState";
+import { passes, sortRows, SortSelect, TableToolbar, useTable, type SortDir } from "../_components/table";
 import { ExternalLink } from "lucide-react";
 import { REASON_SHORT, type AnyReason, type DmcaCounter, type DmcaNotice } from "@/lib/reports";
 import { cn } from "@/lib/utils";
@@ -49,9 +51,15 @@ const ART_STATUS: Record<string, [string, string]> = {
   REJECTED: ["Taken down", "text-coral"],
 };
 const STATUS_LABEL: Record<string, string> = { removed: "Taken down", dismissed: "Dismissed", restored: "Restored" };
-const EMPTY: Record<string, string> = { queue: "No reports waiting.", removed: "Nothing taken down yet.", closed: "Nothing here yet." };
+const EMPTY: Record<string, string> = { queue: "No reports waiting", removed: "Nothing taken down yet", closed: "Nothing here yet" };
+const SORTS: { key: string; dir: SortDir; label: string }[] = [
+  { key: "date", dir: "asc", label: "Oldest first" },
+  { key: "date", dir: "desc", label: "Newest first" },
+  { key: "reason", dir: "asc", label: "Reason" },
+  { key: "artist", dir: "asc", label: "Artist A–Z" },
+];
 
-const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "");
+const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" }) : "");
 
 type Action = "takedown" | "dismiss" | "restore";
 
@@ -62,6 +70,13 @@ export default function ReportsQueue({ rows: initial, tab }: { rows: ReportRow[]
   const [notes, setNotes] = useState<Record<string, string>>({});
   // DMCA notices and counter-notices: owner and admin only (support sees them, can't decide them).
   const canDmca = useAdminCan("takedown");
+  const t = useTable(`reports-${tab}`, { sort: { key: "date", dir: tab === "queue" ? "asc" : "desc" } });
+  const reasons = Array.from(new Set(initial.map((r) => r.reason))).map((r) => ({ value: r, label: REASON_SHORT[r as AnyReason] ?? r }));
+  const shown = sortRows(
+    rows.filter((r) => passes(t.filters, { search: `${r.name} ${r.email} ${r.details} ${r.art?.title ?? ""} ${r.art?.artistName ?? ""} ${r.artworkUrl}`, status: r.reason, date: r.createdAt })),
+    t.sort,
+    (r, k) => (k === "date" ? r.createdAt : k === "reason" ? (REASON_SHORT[r.reason as AnyReason] ?? r.reason) : (r.art?.artistName ?? "").toLowerCase()),
+  );
 
   async function act(r: ReportRow, action: Action) {
     if (action === "takedown" && !confirm(`Take down “${r.art?.title}”? The artist and reporter will be emailed.`)) return;
@@ -76,32 +91,32 @@ export default function ReportsQueue({ rows: initial, tab }: { rows: ReportRow[]
       const j = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(j.error || "Something went wrong.");
       setRows((prev) => prev.filter((x) => x.id !== r.id));
-      toast.success(action === "takedown" ? "Taken down. Artist and reporter emailed." : action === "restore" ? "Restored. The artist was emailed." : "Dismissed.");
+      saved(action === "takedown" ? "Taken down" : action === "restore" ? "Restored" : "Dismissed", action === "dismiss" ? undefined : { description: action === "takedown" ? "Artist and reporter emailed." : "The artist was emailed." });
       router.refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Something went wrong.");
+      failed(e instanceof Error ? e.message : "Something went wrong.", { retry: () => act(r, action) });
     } finally {
       setBusy(null);
     }
   }
 
   if (!rows.length) {
-    return (
-      <div className="grid justify-items-start gap-2 rounded-2xl border border-dashed border-line bg-white p-8">
-        <span className="paint-dab h-5 w-5" style={{ ["--dab" as string]: "var(--af-scan)" }} aria-hidden="true" />
-        <p className="text-[17px] font-semibold">{EMPTY[tab]}</p>
-      </div>
-    );
+    return <EmptyState title={EMPTY[tab]} body={tab === "queue" ? "Reports from /report and DMCA counter-notices land here." : undefined} dab="var(--af-earned)" />;
   }
 
   return (
-    <ul className="grid gap-5">
-      {rows.map((r) => {
+    <div className="grid min-w-0 gap-3">
+    <TableToolbar filters={t.filters} setFilter={t.setFilter} clear={t.clear} active={t.active} search="Reporter, art or artist" statuses={reasons.length > 1 ? reasons : undefined} statusLabel="Reason" dates count={shown.length} total={rows.length}>
+      <SortSelect options={SORTS} sort={t.sort} onChange={t.setSort} />
+    </TableToolbar>
+    {shown.length === 0 && <EmptyState compact title="Nothing matches" action={{ label: "Clear filters", onClick: t.clear }} />}
+    <ul className="grid gap-4">
+      {shown.map((r) => {
         const counter = r.reason === "counter";
         const n = r.notice;
         const [artLabel, artCls] = ART_STATUS[r.art?.status ?? ""] ?? ["", ""];
         return (
-          <li key={r.id} className="af-card grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <li key={r.id} className="af-panel grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
             {/* The art */}
             <div className="grid content-start gap-3">
               {r.art ? (
@@ -156,12 +171,15 @@ export default function ReportsQueue({ rows: initial, tab }: { rows: ReportRow[]
                 {n && (
                   <Row label="Signed">
                     <span className="font-display italic">{n.signature}</span> · {fmt(n.signedAt)}
-                    <ul className="mt-1 grid gap-0.5 text-[12.5px] text-ink-2">{n.statements.map((s) => <li key={s}>✓ {s}</li>)}</ul>
+                    <details className="mt-1 text-[12.5px] text-ink-2">
+                      <summary className="cursor-pointer font-semibold">{n.statements.length} statements</summary>
+                      <ul className="mt-1 grid gap-0.5">{n.statements.map((s) => <li key={s}>✓ {s}</li>)}</ul>
+                    </details>
                   </Row>
                 )}
                 {counter && r.restoreAfter && r.status === "open" && (
                   <Row label="Restore after">
-                    <b>{fmt(r.restoreAfter)}</b> <span className="text-ink-2">(10 business days after receipt, and by 14. Don’t restore if the reporter says they’ve filed suit.)</span>
+                    <b>{fmt(r.restoreAfter)}</b> <span className="text-ink-2">(10–14 business days. Not if they&apos;ve filed suit.)</span>
                   </Row>
                 )}
                 {r.status !== "open" && (
@@ -173,18 +191,21 @@ export default function ReportsQueue({ rows: initial, tab }: { rows: ReportRow[]
 
               {r.status === "open" && (
                 <>
-                  <label className="af-field">
-                    <span className="label">{counter ? "Note (sent to the artist if you dismiss)" : "Note (sent to the artist if you take it down)"}</span>
-                    <textarea rows={2} maxLength={1000} value={notes[r.id] || ""} onChange={(e) => setNotes((x) => ({ ...x, [r.id]: e.target.value }))} placeholder="Optional" />
-                  </label>
+                  <details open={!!notes[r.id]}>
+                    <summary className="cursor-pointer text-[13.5px] font-semibold text-ink-2 hover:text-ink">Add a note for the artist</summary>
+                    <label className="af-field mt-2">
+                      <span className="label">{counter ? "Sent if you dismiss" : "Sent if you take it down"}</span>
+                      <textarea rows={2} maxLength={1000} value={notes[r.id] || ""} onChange={(e) => setNotes((x) => ({ ...x, [r.id]: e.target.value }))} placeholder="Optional" />
+                    </label>
+                  </details>
                   {(counter || r.reason === "copyright") && !canDmca && <p className="text-[12.5px] text-ink-2">DMCA decisions need the admin or owner role.</p>}
                   <div className="flex flex-wrap gap-2">
                     {counter ? (
-                      <button type="button" className="btn btn-blue" disabled={busy === r.id || !r.art || !canDmca} onClick={() => act(r, "restore")}>Restore</button>
+                      <button type="button" className="btn btn-sm" disabled={busy === r.id || !r.art || !canDmca} onClick={() => act(r, "restore")}>Restore</button>
                     ) : (
-                      <button type="button" className="btn btn-blue" disabled={busy === r.id || !r.art || r.art.status === "REJECTED" || (r.reason === "copyright" && !canDmca)} onClick={() => act(r, "takedown")}>Take down</button>
+                      <button type="button" className="btn btn-sm" disabled={busy === r.id || !r.art || r.art.status === "REJECTED" || (r.reason === "copyright" && !canDmca)} onClick={() => act(r, "takedown")}>Take down</button>
                     )}
-                    <button type="button" className="btn btn-ghost" disabled={busy === r.id || ((counter || r.reason === "copyright") && !canDmca)} onClick={() => act(r, "dismiss")}>Dismiss</button>
+                    <button type="button" className="btn btn-ghost btn-sm" disabled={busy === r.id || ((counter || r.reason === "copyright") && !canDmca)} onClick={() => act(r, "dismiss")}>Dismiss</button>
                   </div>
                 </>
               )}
@@ -193,6 +214,7 @@ export default function ReportsQueue({ rows: initial, tab }: { rows: ReportRow[]
         );
       })}
     </ul>
+    </div>
   );
 }
 

@@ -5,6 +5,7 @@ import { getTrust } from "@/lib/artistTrust";
 import { readEvidence } from "@/components/artist/verification";
 import { cn } from "@/lib/utils";
 import { adminOrRedirect } from "../_components/gate";
+import { PageHead } from "../_components/ui";
 import VerificationQueue, { type VerRow } from "./VerificationQueue";
 
 export const dynamic = "force-dynamic";
@@ -57,12 +58,8 @@ export default async function VerificationPage({ searchParams }: { searchParams:
   }));
 
   return (
-    <div className="grid gap-6">
-      <div>
-        <p className="eyebrow">{pending === 0 ? "All clear" : `${pending} waiting`}</p>
-        <h1 className="display text-[44px] sm:text-[56px]">Verification</h1>
-        <p className="mt-2 text-[14.5px] text-ink-2">Check the name matches the link and the work is theirs.</p>
-      </div>
+    <div className="grid gap-5">
+      <PageHead title="Verification" sub={`${pending === 0 ? "All clear" : `${pending} waiting`} · does the name match the link?`} />
 
       <nav aria-label="Verification views" className="flex flex-wrap gap-2">
         {TABS.map((t) => (
@@ -71,7 +68,7 @@ export default async function VerificationPage({ searchParams }: { searchParams:
             href={t.id === "queue" ? "/admin/verification" : `/admin/verification?tab=${t.id}`}
             aria-current={tab.id === t.id ? "page" : undefined}
             className={cn(
-              "inline-flex min-h-[44px] items-center rounded-full border-[1.5px] px-3.5 py-1.5 text-[14px] font-semibold no-underline transition md:min-h-0",
+              "inline-flex min-h-[40px] items-center rounded-full border-[1.5px] px-3.5 text-[14px] font-semibold no-underline transition",
               tab.id === t.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"
             )}
           >

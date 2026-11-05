@@ -154,12 +154,12 @@ export default function BulkOrder({ arts, past, placedId, defaultName }: { arts:
                       onClick={() => add(a)}
                       disabled={out}
                       className={cn(
-                        "group relative grid w-full min-w-0 content-start gap-1.5 rounded-xl p-1.5 text-left transition focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-scan disabled:opacity-50",
+                        "group relative grid w-full min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-1.5 rounded-xl p-1.5 text-left transition focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-scan disabled:opacity-50",
                         n ? "bg-scan-soft" : "hover:bg-wall",
                       )}
                     >
                       <span className="sr-only">Add </span>
-                      <span className="relative grid aspect-square place-items-center overflow-hidden rounded-lg bg-gallery p-2">
+                      <span className="relative grid aspect-square grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)] place-items-center overflow-hidden rounded-lg bg-gallery p-2">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={a.imageUrl} alt="" className="max-h-full max-w-full bg-white object-contain shadow-[0_6px_14px_-4px_rgba(21,22,27,.4)]" />
                         <span className={cn("absolute right-1.5 top-1.5 grid h-7 min-w-7 place-items-center rounded-full px-1.5 text-[13px] font-bold", n ? "num bg-ink text-white" : "bg-white/90 text-ink opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100")}>

@@ -309,7 +309,7 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
                 />
               )
             ) : (
-              <ol className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+              <ol className="grid grid-cols-2 gap-3 sm:grid-cols-3 2xl:grid-cols-4">
                 {active.artworkIds.map((id, i) => {
                   const a = artById.get(id);
                   if (!a) return null;

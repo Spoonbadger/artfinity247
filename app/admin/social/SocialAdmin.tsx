@@ -13,6 +13,8 @@ import { FORMATS, PRESETS, type Season, type VideoFormat } from "@/lib/social/pr
 import type { SocialSettings } from "@/lib/social/settings";
 import type { AdminPost, PromoteOptions } from "@/lib/social/admin";
 import PostCard from "./PostCard";
+import { PageHead } from "../_components/ui";
+import { passes, sortRows, SortSelect, TableToolbar, useTable, type SortDir } from "../_components/table";
 
 type Ig = {
   connected: boolean;
@@ -22,16 +24,30 @@ type Ig = {
   quota: { used: number; limit: number } | null;
 };
 
-function Section({ id, title, sub, children, action }: { id: string; title: string; sub?: string; children: React.ReactNode; action?: React.ReactNode }) {
+function Section({ id, title, sub, children, action, fold }: { id: string; title: string; sub?: string; children: React.ReactNode; action?: React.ReactNode; fold?: boolean }) {
+  const head = (
+    <>
+      <div>
+        <h2 id={`${id}-h`} className="text-[20px] font-bold">{title}</h2>
+        {sub && <p className="text-[13.5px] text-ink-2">{sub}</p>}
+      </div>
+      {action}
+    </>
+  );
+  if (fold) {
+    return (
+      <details id={id} aria-labelledby={`${id}-h`} className="group scroll-mt-24 rounded-2xl border border-line bg-white p-4 sm:p-6">
+        <summary className="flex cursor-pointer list-none flex-wrap items-end justify-between gap-3 [&::-webkit-details-marker]:hidden">
+          {head}
+          <span aria-hidden="true" className="text-ink-2 transition group-open:rotate-180">▾</span>
+        </summary>
+        <div className="mt-4 grid gap-4">{children}</div>
+      </details>
+    );
+  }
   return (
     <section id={id} aria-labelledby={`${id}-h`} className="grid scroll-mt-24 gap-4 rounded-2xl border border-line bg-white p-4 sm:p-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 id={`${id}-h`} className="display text-[30px]">{title}</h2>
-          {sub && <p className="text-[14px] text-ink-2">{sub}</p>}
-        </div>
-        {action}
-      </header>
+      <header className="flex flex-wrap items-end justify-between gap-3">{head}</header>
       {children}
     </section>
   );
@@ -103,7 +119,7 @@ function SettingsForm({ initial, connected, canEdit }: { initial: SocialSettings
           {s.times.map((t, i) => (
             <span key={i} className="flex items-end gap-1">
               <label className="af-field w-[130px]"><small>Time {i + 1}</small><input type="time" value={t} disabled={!canEdit} onChange={(e) => set("times", s.times.map((x, j) => (j === i ? e.target.value : x)))} /></label>
-              {s.times.length > 1 && <button type="button" className="btn btn-ghost btn-sm mb-1" disabled={!canEdit} onClick={() => set("times", s.times.filter((_, j) => j !== i))} aria-label={`Remove time ${i + 1}`}><Trash2 size={14} aria-hidden="true" /></button>}
+              {s.times.length > 1 && <button type="button" className="btn btn-ghost btn-sm mb-1" disabled={!canEdit} onClick={() => set("times", s.times.filter((_, j) => j !== i))} aria-label={`Remove time ${i + 1}`} title="Remove this time"><Trash2 size={14} aria-hidden="true" /></button>}
             </span>
           ))}
           {s.times.length < 5 && <button type="button" className="btn btn-ghost btn-sm mb-1" disabled={!canEdit} onClick={() => set("times", [...s.times, "18:00"])}><Plus size={14} aria-hidden="true" /> Add a time</button>}
@@ -183,6 +199,31 @@ function Promote({ options, canEdit }: { options: PromoteOptions; canEdit: boole
   );
 }
 
+const HISTORY_SORTS: { key: string; dir: SortDir; label: string }[] = [
+  { key: "date", dir: "desc", label: "Newest first" },
+  { key: "date", dir: "asc", label: "Oldest first" },
+  { key: "status", dir: "asc", label: "Status" },
+];
+
+/** Posted, failed and skipped posts with search, status filter and sort. */
+function History({ posts, render }: { posts: AdminPost[]; render: (p: AdminPost) => React.ReactNode }) {
+  const t = useTable("social-history", { sort: { key: "date", dir: "desc" } });
+  const statuses = Array.from(new Set(posts.map((p) => p.status))).map((v) => ({ value: v, label: v.charAt(0).toUpperCase() + v.slice(1) }));
+  const shown = sortRows(
+    posts.filter((p) => passes(t.filters, { search: `${p.caption} ${p.headline ?? ""} ${p.error ?? ""}`, status: p.status, date: p.postedAt ?? p.createdAt })),
+    t.sort,
+    (p, k) => (k === "date" ? p.postedAt ?? p.createdAt : p.status),
+  );
+  return (
+    <div className="grid min-w-0 gap-3">
+      <TableToolbar filters={t.filters} setFilter={t.setFilter} clear={t.clear} active={t.active} search="Caption or error" statuses={statuses.length > 1 ? statuses : undefined} dates count={shown.length} total={posts.length}>
+        <SortSelect options={HISTORY_SORTS} sort={t.sort} onChange={t.setSort} />
+      </TableToolbar>
+      {shown.length === 0 ? <EmptyState compact title="Nothing matches" action={{ label: "Clear filters", onClick: t.clear }} /> : <ol className="grid gap-3">{shown.map(render)}</ol>}
+    </div>
+  );
+}
+
 export default function SocialAdmin({
   settings, queue, history, promote, scale, season, ig, canEdit, base, focus,
 }: {
@@ -206,24 +247,20 @@ export default function SocialAdmin({
 
   return (
     <div className="grid gap-5">
-      <div>
-        <p className="eyebrow">Marketing</p>
-        <h1 className="display text-[44px] sm:text-[56px]">Social</h1>
-        <p className="max-w-[680px] text-[14px] text-ink-2">
-          Videos of artists&apos; work for Artfinity&apos;s Instagram, made from our room scenes. Approving a post renders its video in your browser and schedules it.
-          Artists who turned off &quot;feature my work&quot; are never queued. <Link href="/admin/social/setup" className="font-semibold text-scan">Setup guide →</Link>
-        </p>
-      </div>
+      <PageHead
+        title="Social"
+        sub={<>Room-scene videos for our Instagram. <Link href="/admin/social/setup" className="font-semibold text-scan">Setup</Link></>}
+        action={canEdit ? <a href="#promote" className="btn btn-ghost btn-sm">Promote something</a> : undefined}
+      />
 
       {!ig.connected ? (
         <Problem tone="info" title="Manual mode: Instagram isn't connected" fix={{ label: "How to connect", href: "/admin/social/setup" }}>
-          Everything works: approve a post, then download the video, copy the caption, post it on Instagram and mark it as posted.
-          To post automatically, add {[!ig.setup.accountId && "INSTAGRAM_BUSINESS_ACCOUNT_ID", !ig.setup.token && "INSTAGRAM_ACCESS_TOKEN"].filter(Boolean).join(" and ")}.
+          Approve, download, post by hand, then mark it posted.
         </Problem>
       ) : (
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl border border-earned/40 bg-earned-soft px-4 py-3 text-[14px]">
           <b>Connected{ig.username ? ` to ${ig.username}` : ""}</b>
-          {ig.health && <span>Token: {ig.health.status}{ig.health.expiresAt ? `, expires ${new Date(ig.health.expiresAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : ""}</span>}
+          {ig.health && <span>Token: {ig.health.status}{ig.health.expiresAt ? `, expires ${new Date(ig.health.expiresAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" })}` : ""}</span>}
           {ig.quota && <span>Posts in the last 24 h: {ig.quota.used} of {ig.quota.limit}</span>}
           {!settings.enabled && <span className="font-semibold text-coral">Auto-posting is off</span>}
           {canEdit && <button type="button" className="btn btn-ghost btn-sm ml-auto" disabled={checking} onClick={checkToken}>{checking ? "Checking…" : "Check token"}</button>}
@@ -233,16 +270,10 @@ export default function SocialAdmin({
         <Problem tone={ig.health.status === "expired" ? "error" : "warning"} title={ig.health.status === "expired" ? "The Instagram token has expired" : "The Instagram token expires soon"} fix={{ label: "Make a new token", href: "/admin/social/setup#token" }}>{ig.health.message}</Problem>
       )}
       {!ig.connected && due.length > 0 && (
-        <Problem tone="warning" title={`${due.length} approved ${due.length === 1 ? "post is" : "posts are"} due`} fix={{ label: "Post them", href: "#queue" }}>Download each video, post it with its caption, then mark it as posted.</Problem>
+        <Problem tone="warning" title={`${due.length} approved ${due.length === 1 ? "post is" : "posts are"} due`} fix={{ label: "Post them", href: "#queue" }}>Download, post with the caption, mark posted.</Problem>
       )}
 
-      <nav aria-label="Social sections" className="flex flex-wrap gap-1.5">
-        {[["queue", `Queue (${queue.length})`], ["promote", "Promote"], ["settings", "Settings"], ["history", `History (${history.length})`]].map(([id, label]) => (
-          <a key={id} href={`#${id}`} className="rounded-full border-[1.5px] border-line bg-white px-3.5 py-1.5 text-[14px] font-semibold no-underline hover:border-ink">{label}</a>
-        ))}
-      </nav>
-
-      <Section id="queue" title="Queue" sub={`Approved posts go out ${settings.maxPerDay === 1 ? "once a day" : `up to ${settings.maxPerDay} a day`} at ${settings.times.join(", ")} New York.`}>
+      <Section id="queue" title="Queue" sub={`${settings.maxPerDay === 1 ? "Once a day" : `Up to ${settings.maxPerDay} a day`} at ${settings.times.join(", ")}`}>
         {queue.length === 0 ? (
           <EmptyState
             title="Nothing in the queue"
@@ -268,19 +299,19 @@ export default function SocialAdmin({
         )}
       </Section>
 
-      <Section id="promote" title="Promote" sub="Feature any artwork, collection, event or artist. It goes to the queue as a draft.">
+      <Section id="promote" title="Promote" sub="Any artwork, collection, event or artist. Lands as a draft.">
         <Promote options={promote} canEdit={canEdit} />
       </Section>
 
-      <Section id="settings" title="Settings">
+      <Section id="settings" title="Settings" fold>
         <SettingsForm initial={settings} connected={ig.connected} canEdit={canEdit} />
       </Section>
 
-      <Section id="history" title="History" sub="Posted, failed and skipped posts. Failed ones say why and how to fix it.">
+      <Section id="history" title={`History (${history.length})`} sub="Posted, failed and skipped." fold>
         {history.length === 0 ? (
           <EmptyState compact title="No posts yet" body="Posted, failed and skipped posts show up here." action={{ label: "Go to the queue", href: "#queue" }} />
         ) : (
-          <ol className="grid gap-3">{history.map((p) => <PostCard key={p.id} post={p} base={base} connected={ig.connected} canEdit={canEdit} scale={scale} season={season} focus={focus === p.id} />)}</ol>
+          <History posts={history} render={(p) => <PostCard key={p.id} post={p} base={base} connected={ig.connected} canEdit={canEdit} scale={scale} season={season} focus={focus === p.id} />} />
         )}
       </Section>
     </div>
