@@ -7,8 +7,10 @@ import { prisma } from "@/lib/prisma";
 import { getUserFromCookie } from "@/lib/auth";
 import ScanView from "@/components/art/ScanView";
 import { getArtistTrust } from "@/lib/artistTrust";
-import { parseDiscount, parseVenue, priceFor } from "@/components/art/pricing";
+import { PRINT_SIZES, parseDiscount, parseVenue, priceFor } from "@/components/art/pricing";
 import { editionOf, soldCount } from "@/lib/editions";
+import { getArtistSplitFor } from "@/lib/revenue";
+import { deliveryRange } from "@/lib/delivery";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +34,8 @@ const artSelect = {
   markupXl: true,
   editionSize: true,
   roomScenes: true,
-  artist: { select: { id: true, slug: true, name: true, artist_name: true, profileImage: true, city: true, state: true } },
+  printableSizes: true,
+  artist: { select: { id: true, slug: true, name: true, artist_name: true, profileImage: true, city: true, state: true, proUntil: true } },
 } as const;
 
 async function loadArt(rawSlug: string) {
@@ -71,7 +74,7 @@ export default async function ArtPage({ params, searchParams }: Props) {
     where: { artistId: art.artistId, id: { not: art.id }, status: "APPROVED", slug: { not: null } },
     orderBy: { createdAt: "desc" },
     take: 8,
-    select: { slug: true, title: true, imageUrl: true, sensitive: true, markupSmall: true, markupMedium: true, markupLarge: true, markupXl: true },
+    select: { slug: true, title: true, imageUrl: true, sensitive: true, markupSmall: true, markupMedium: true, markupLarge: true, markupXl: true, printableSizes: true },
   });
 
   const edition = art.editionSize ? editionOf(art.editionSize, await soldCount(art.id)) : null;
@@ -94,6 +97,7 @@ export default async function ArtPage({ params, searchParams }: Props) {
         markupXl: art.markupXl ?? 0,
         edition,
         roomScenes: art.roomScenes ?? [],
+        printableSizes: art.printableSizes ?? [],
       }}
       artist={{ id: a.id, slug: a.slug, name: a.artist_name || a.name, avatar: a.profileImage || null, place }}
       more={moreRows.map((m) => ({
@@ -101,7 +105,7 @@ export default async function ArtPage({ params, searchParams }: Props) {
         title: m.title,
         imageUrl: m.imageUrl,
         sensitive: m.sensitive ?? [],
-        fromCents: priceFor(m, "small").list,
+        fromCents: priceFor(m, PRINT_SIZES.find((sz) => m.printableSizes?.includes(sz)) ?? "small").list, // cheapest printable size
       }))}
       venue={venue}
       pct={pct}
@@ -110,6 +114,8 @@ export default async function ArtPage({ params, searchParams }: Props) {
       isOwner={isOwner}
       status={art.status}
       trust={await trustP}
+      artistSplit={getArtistSplitFor({ orderDate: new Date(), proUntil: a.proUntil })}
+      arrives={deliveryRange()}
     />
   );
 }

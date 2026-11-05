@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserFromCookie } from "@/lib/auth";
 import { getBalance, type LedgerStatus } from "@/lib/balance";
+import { bucketOf, type MoneyBucket } from "@/components/money/format";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -11,17 +12,19 @@ const csv = (v: unknown) => {
 };
 const dollars = (c: number) => (c / 100).toFixed(2);
 
-/** CSV of the artist's transactions. Optional ?status=pending|available|paid and ?q= (same filters as the page). */
+/** CSV of the artist's transactions. Optional ?bucket=hold|ready|paid (the page's filter), ?status=pending|available|paid and ?q=. */
 export async function GET(req: NextRequest) {
   const user = await getUserFromCookie();
   if (!user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status") as LedgerStatus | null;
+  const bucket = searchParams.get("bucket") as MoneyBucket | null;
   const q = (searchParams.get("q") || "").trim().toLowerCase();
 
   const b = await getBalance(user.id);
   const rows = b.ledger.filter((l) =>
     (!status || l.status === status) &&
+    (!bucket || bucketOf(l, b.currentMonth) === bucket) &&
     (!q || [l.title, l.buyerFirst, l.buyerCity, l.size].join(" ").toLowerCase().includes(q))
   );
 

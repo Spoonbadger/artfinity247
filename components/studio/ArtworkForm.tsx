@@ -11,6 +11,7 @@ import { BrushStroke } from "@/components/af/Brush";
 import { cn } from "@/lib/utils";
 import { SENSITIVE_LABELS } from "./sensitive";
 import { EDITION_MAX, EDITION_MIN } from "@/lib/editionFormat";
+import { SIZE_IN } from "@/components/art/pricing";
 
 const SIZES: SizeKey[] = ["small", "medium", "large", "xl"];
 const FIELD: Record<SizeKey, "markupSmall" | "markupMedium" | "markupLarge" | "markupXl"> = {
@@ -30,7 +31,11 @@ export type ArtworkInput = {
   editionSize?: number | null;
   /** Prints already sold (an edition can't go below this). */
   sold?: number;
+  /** Sizes the current image prints sharply; empty = never checked. */
+  printableSizes?: string[];
 };
+
+const REVIEW_NOTE = "In review — usually within a day";
 
 // The artist types the full print price. Markup = price - base, and the price can't go below the base.
 const priceFor = (size: SizeKey, markup: number | null | undefined) => ((basePrices[size] + Math.max(0, markup || 0)) / 100).toFixed(2);
@@ -45,8 +50,15 @@ export default function ArtworkForm({ artwork }: { artwork?: ArtworkInput }) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [imageUrl, setImageUrl] = useState(artwork?.imageUrl || "");
-  const [printable, setPrintable] = useState<SizeKey[] | null>(null);
+  // A fresh upload's measured sizes and their signature from /api/uploads.
+  const [fresh, setFresh] = useState<{ printable: SizeKey[]; sig: string } | null>(null);
+  const stored = artwork?.printableSizes?.length ? (artwork.printableSizes as SizeKey[]) : null;
+  const printable = fresh ? fresh.printable : stored;
   const [dims, setDims] = useState<{ w: number; h: number } | null>(null);
+  // Shown image's pixel size, for the crop previews' orientation.
+  const [shape, setShape] = useState<{ w: number; h: number } | null>(null);
+  const [owned, setOwned] = useState(false);
+  const needsOwnership = !editing || !!fresh;
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [title, setTitle] = useState(artwork?.title || "");
@@ -62,7 +74,7 @@ export default function ArtworkForm({ artwork }: { artwork?: ArtworkInput }) {
   const editionMin = Math.max(EDITION_MIN, sold);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<{ slug: string; title: string; imageUrl: string } | null>(null);
+  const [done, setDone] = useState<{ slug: string; title: string; imageUrl: string; pending: boolean } | null>(null);
 
   // New pieces start from the artist's last prices.
   useEffect(() => {
@@ -87,7 +99,8 @@ export default function ArtworkForm({ artwork }: { artwork?: ArtworkInput }) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Upload failed. Try again.");
       setImageUrl(data.url);
-      setPrintable(data.printable || []);
+      setShape(null);
+      setFresh({ printable: data.printable || [], sig: data.printableSig || "" });
       setDims(data.width ? { w: data.width, h: data.height } : null);
       if (!title) setTitle(file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()).slice(0, 80));
     } catch (e: any) {
@@ -109,6 +122,7 @@ export default function ArtworkForm({ artwork }: { artwork?: ArtworkInput }) {
     setError(null);
     if (!imageUrl) { setError("Add an image first."); return; }
     if (!title.trim()) { setError("Give it a title."); return; }
+    if (printable && !printable.length) { setError("This file is too small to print well. Try the original photo or a bigger scan."); return; }
     const low = SIZES.find((s) => toCents(prices[s]) < basePrices[s]);
     if (low) { setError(`${SIZE_NAME[low]} prints start at ${money(basePrices[low])}.`); return; }
     const n = parseInt(edition, 10);
@@ -116,6 +130,7 @@ export default function ArtworkForm({ artwork }: { artwork?: ArtworkInput }) {
       setError(sold > EDITION_MIN ? `${sold} already sold. Pick ${editionMin} to ${EDITION_MAX}.` : `An edition is ${EDITION_MIN} to ${EDITION_MAX} prints.`);
       return;
     }
+    if (needsOwnership && !owned) { setError("Tick the box to confirm it's your original work."); return; }
     setSaving(true);
     try {
       const fd = new FormData();
@@ -125,16 +140,17 @@ export default function ArtworkForm({ artwork }: { artwork?: ArtworkInput }) {
       for (const s of SIZES) fd.append(FIELD[s], String(Math.max(0, toCents(prices[s]) - basePrices[s])));
       fd.append("sensitive", sensitive.join(","));
       fd.append("editionSize", limited ? String(n) : "");
-      if (printable) fd.append("printable", printable.join(","));
+      if (fresh) { fd.append("printable", fresh.printable.join(",")); fd.append("printableSig", fresh.sig); }
+      if (needsOwnership && owned) fd.append("ownership", "yes");
       const res = await fetch(editing ? `/api/artworks/update/${artwork!.slug}` : "/api/artworks/upload", { method: "POST", body: fd, credentials: "include" });
       if (!res.ok) throw new Error((await res.text()) || "Could not save. Try again.");
       const saved = await res.json();
       if (editing) {
-        toast.success("Saved");
+        toast.success(saved.status === "PENDING" && fresh ? `Saved. New image ${REVIEW_NOTE.toLowerCase()}.` : "Saved");
         router.push("/studio/art");
         router.refresh();
       } else {
-        setDone({ slug: saved.slug, title: saved.title, imageUrl: saved.imageUrl });
+        setDone({ slug: saved.slug, title: saved.title, imageUrl: saved.imageUrl, pending: saved.status === "PENDING" });
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     } catch (e: any) {
@@ -149,14 +165,22 @@ export default function ArtworkForm({ artwork }: { artwork?: ArtworkInput }) {
       <div className="af-card mx-auto grid max-w-[640px] gap-5 p-5 text-center sm:p-8">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={done.imageUrl} alt={done.title} className="mx-auto max-h-[340px] w-auto rounded-[3px] shadow-[0_10px_30px_rgba(21,22,27,.18)]" />
-        <div>
-          <h2 className="display text-[40px]">It&apos;s live.</h2>
-          <p className="mt-2 text-ink-2">{done.title} is on your page. Next: hang its code.</p>
-        </div>
+        {done.pending ? (
+          <div className="grid justify-items-center gap-3">
+            <span className="sticker-badge">{REVIEW_NOTE}</span>
+            <h2 className="display text-[40px]">Almost on the wall.</h2>
+            <p className="text-ink-2">We look over every new artist&apos;s first pieces. We&apos;ll email you when {done.title} is live. You can print its code now.</p>
+          </div>
+        ) : (
+          <div>
+            <h2 className="display text-[40px]">It&apos;s live.</h2>
+            <p className="mt-2 text-ink-2">{done.title} is on your page. Next: hang its code.</p>
+          </div>
+        )}
         <div className="flex flex-wrap justify-center gap-2">
           <Link href={`/studio/qr?art=${done.slug}`} className="btn btn-blue">Print its code</Link>
           <Link href={`/art/${done.slug}`} className="btn btn-ghost">View</Link>
-          <button type="button" className="btn btn-ghost" onClick={() => { setDone(null); setImageUrl(""); setPrintable(null); setDims(null); setTitle(""); setDescription(""); setSensitive([]); setLimited(false); }}>
+          <button type="button" className="btn btn-ghost" onClick={() => { setDone(null); setImageUrl(""); setFresh(null); setShape(null); setOwned(false); setDims(null); setTitle(""); setDescription(""); setSensitive([]); setLimited(false); }}>
             Upload another
           </button>
         </div>
@@ -182,7 +206,11 @@ export default function ArtworkForm({ artwork }: { artwork?: ArtworkInput }) {
           <input ref={fileRef} type="file" accept="image/*" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ""; }} aria-label={imageUrl ? "Replace image" : "Choose an image"} />
           {imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={imageUrl} alt={title || "Your artwork"} className="max-h-[520px] w-auto max-w-full rounded-[2px] shadow-[0_12px_30px_rgba(21,22,27,.22)]" />
+            <img
+              src={imageUrl} alt={title || "Your artwork"}
+              onLoad={(e) => setShape({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
+              className="max-h-[520px] w-auto max-w-full rounded-[2px] shadow-[0_12px_30px_rgba(21,22,27,.22)]"
+            />
           ) : (
             <span className="grid justify-items-center gap-3">
               <span className="relative grid h-16 w-16 place-items-center">
@@ -202,21 +230,42 @@ export default function ArtworkForm({ artwork }: { artwork?: ArtworkInput }) {
         {imageUrl && (
           <button type="button" onClick={() => fileRef.current?.click()} className="btn btn-ghost btn-sm justify-self-start">Replace image</button>
         )}
-        {printable && (
+        {printable && imageUrl && (
           <div className="grid gap-2" aria-live="polite">
             <p className="text-[13px] font-semibold">
-              Print-ready sizes{dims ? <span className="num font-normal text-ink-2"> · {dims.w} × {dims.h} px</span> : null}
+              How it prints{dims ? <span className="num font-normal text-ink-2"> · {dims.w} × {dims.h} px</span> : null}
             </p>
-            <ul className="flex flex-wrap gap-1.5">
-              {SIZES.map((s) => (
-                <li key={s} className={cn("flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12.5px] font-semibold", ready(s) ? "border-ink bg-white" : "border-line text-ink-2 line-through")}>
-                  {ready(s) && <Check className="h-3.5 w-3.5 text-earned" aria-hidden="true" />}
-                  {SIZE_NAME[s]} <span className="font-normal">{SIZE_INCHES[s]}</span>
-                  <span className="sr-only">{ready(s) ? "ready" : "needs a bigger file"}</span>
-                </li>
-              ))}
+            <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">
+              {SIZES.map((s) => {
+                const ok = ready(s);
+                const [short, long] = SIZE_IN[s];
+                const portrait = !shape || shape.h >= shape.w;
+                return (
+                  <li key={s} className={cn("grid content-start gap-2 rounded-xl border bg-white p-2", ok ? "border-line" : "border-coral/50")}>
+                    <div className="grid h-[104px] place-items-center rounded-lg bg-wall">
+                      <div
+                        className="overflow-hidden rounded-[2px] bg-gallery shadow-[0_4px_12px_rgba(21,22,27,.18)]"
+                        style={portrait ? { width: Math.round((88 * short) / long), height: 88 } : { width: 88, height: Math.round((88 * short) / long) }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={imageUrl} alt="" className={cn("h-full w-full object-cover", !ok && "opacity-40 grayscale")} />
+                      </div>
+                    </div>
+                    <div className="px-0.5 leading-tight">
+                      <b className="block text-[13.5px]">{SIZE_NAME[s]} <span className="num font-normal text-ink-2">{SIZE_INCHES[s]}</span></b>
+                      {ok ? (
+                        <span className="mt-0.5 flex items-center gap-1 text-[12.5px] font-semibold text-earned"><Check className="h-3.5 w-3.5" aria-hidden="true" />Sharp</span>
+                      ) : (
+                        <span className="mt-0.5 block text-[12px] font-semibold text-coral">Too small for this size — hidden from buyers</span>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
-            {printable.length < SIZES.length && <p className="text-[12.5px] text-ink-2">Bigger file, bigger prints.</p>}
+            {printable.length === 0
+              ? <p className="text-[12.5px] font-semibold text-coral">Too small to print. Try the original photo or a bigger scan.</p>
+              : <p className="text-[12.5px] text-ink-2">{printable.length < SIZES.length && "Bigger file, bigger prints. "}Each crop shows how that size trims the edges.</p>}
           </div>
         )}
       </div>
@@ -317,6 +366,17 @@ export default function ArtworkForm({ artwork }: { artwork?: ArtworkInput }) {
             })}
           </div>
         </fieldset>
+
+        {needsOwnership && (
+          <label className={cn("flex cursor-pointer items-start gap-3 rounded-xl border-2 bg-white p-3 transition has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-scan", owned ? "border-ink" : "border-line hover:border-ink-2")}>
+            <input type="checkbox" className="sr-only" checked={owned} onChange={(e) => setOwned(e.target.checked)} required />
+            <span aria-hidden="true" className={cn("mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-[5px] border-2", owned ? "border-ink bg-sticker" : "border-ink/40")}>{owned && <Check className="h-3.5 w-3.5" />}</span>
+            <span className="text-[14.5px] leading-snug">
+              <b>This is my original work and I hold the rights to sell prints of it.</b>
+              {!editing && <span className="block text-[12.5px] text-ink-2">New artists&apos; first few pieces get a quick look before they go live.</span>}
+            </span>
+          </label>
+        )}
 
         {error && <p role="alert" className="rounded-xl border-2 border-coral bg-[#fff1ed] px-3.5 py-2.5 text-[14px] font-semibold">{error}</p>}
 

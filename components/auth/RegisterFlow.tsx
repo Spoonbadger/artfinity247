@@ -23,7 +23,7 @@ const SENSITIVE = ["Nudity", "Violence or gore", "Disturbing imagery", "Drug use
 
 type Step = 1 | 2 | 3 | 4;
 type HandleState = { status: "idle" | "checking" | "ok" | "bad"; message?: string; suggestions?: string[] };
-type Upload = { preview: string; url?: string; width?: number; height?: number; printable?: string[]; uploading: boolean; error?: string };
+type Upload = { preview: string; url?: string; width?: number; height?: number; printable?: string[]; printableSig?: string; uploading: boolean; error?: string };
 
 const cleanHandle = (v: string) => v.toLowerCase().replace(/^@/, "").replace(/[^a-z0-9_.]/g, "").slice(0, 30);
 
@@ -81,10 +81,11 @@ export default function RegisterFlow() {
   const [title, setTitle] = useState("");
   const [isSensitive, setIsSensitive] = useState(false);
   const [labels, setLabels] = useState<string[]>([]);
+  const [owned, setOwned] = useState(false);
   const [dragging, setDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   // step 4
-  const [artwork, setArtwork] = useState<{ slug: string; title: string } | null>(null);
+  const [artwork, setArtwork] = useState<{ slug: string; title: string; pending: boolean } | null>(null);
 
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -213,7 +214,7 @@ export default function RegisterFlow() {
       const res = await fetch("/api/uploads", { method: "POST", body: fd });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.error || "Upload failed. Try again.");
-      setUpload({ preview, uploading: false, url: d.url, width: d.width, height: d.height, printable: d.printable || [] });
+      setUpload({ preview, uploading: false, url: d.url, width: d.width, height: d.height, printable: d.printable || [], printableSig: d.printableSig || "" });
     } catch (err: any) {
       setUpload({ preview, uploading: false, error: err.message || "Upload failed. Try again." });
     }
@@ -230,6 +231,7 @@ export default function RegisterFlow() {
     if (!upload?.url) return;
     if (!title.trim()) return setErrors({ title: "Give it a title." });
     if (isSensitive && labels.length === 0) return setErrors({ sensitive: "Pick at least one." });
+    if (!owned) return setErrors({ owned: "Tick the box to confirm it's your original work." });
     setErrors({});
     setBusy(true);
     setFormError(null);
@@ -240,10 +242,13 @@ export default function RegisterFlow() {
       fd.append("imageUrl", upload.url);
       for (const k of ["markupSmall", "markupMedium", "markupLarge", "markupXl"]) fd.append(k, "0");
       fd.append("sensitive", isSensitive ? labels.join(",") : "");
+      fd.append("printable", (upload.printable || []).join(","));
+      fd.append("printableSig", upload.printableSig || "");
+      fd.append("ownership", "yes");
       const res = await fetch("/api/artworks/upload", { method: "POST", body: fd });
-      if (!res.ok) throw new Error(res.status === 429 ? "Too many uploads right now. Wait a minute." : "Couldn't publish it. Try again.");
+      if (!res.ok) throw new Error(res.status === 429 ? "Too many uploads right now. Wait a minute." : res.status === 400 ? (await res.text()) || "Couldn't publish it. Try again." : "Couldn't publish it. Try again.");
       const d = await res.json();
-      setArtwork({ slug: d.slug, title: d.title });
+      setArtwork({ slug: d.slug, title: d.title, pending: d.status === "PENDING" });
       go(4);
     } catch (err: any) {
       setFormError(err.message);
@@ -458,6 +463,13 @@ export default function RegisterFlow() {
                       </fieldset>
                     )}
                   </div>
+                  <div className="grid gap-1">
+                    <label className="flex min-h-[44px] cursor-pointer items-start gap-2.5 text-[14.5px] font-semibold leading-snug">
+                      <input type="checkbox" checked={owned} onChange={(e) => { setOwned(e.target.checked); setErrors((x) => ({ ...x, owned: null })); }} className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[var(--af-scan)]" aria-invalid={!!errors.owned || undefined} />
+                      This is my original work and I hold the rights to sell prints of it.
+                    </label>
+                    {errors.owned && <span className="pl-[28px] text-[13px] font-semibold text-coral" role="alert">{errors.owned}</span>}
+                  </div>
                 </div>
               </div>
             )}
@@ -477,7 +489,7 @@ export default function RegisterFlow() {
         {step === 4 && (
           <div className="grid gap-5">
             <StepHead n={4} refEl={headingRef}>
-              {artwork ? <>Your code is <Brushed>live</Brushed></> : <>Your page is <Brushed>live</Brushed></>}
+              {artwork?.pending ? <>Your code is <Brushed>ready</Brushed></> : artwork ? <>Your code is <Brushed>live</Brushed></> : <>Your page is <Brushed>live</Brushed></>}
             </StepHead>
             {artwork ? (
               <div className="grid items-center gap-6 sm:grid-cols-[220px_minmax(0,1fr)]">
@@ -486,6 +498,12 @@ export default function RegisterFlow() {
                   <span className="mt-2 block text-center text-[13px] font-bold">Scan to buy a print</span>
                 </div>
                 <div className="grid gap-3">
+                  {artwork.pending && (
+                    <p className="grid justify-items-start gap-2 text-[15px] text-ink-2">
+                      <span className="sticker-badge">In review — usually within a day</span>
+                      We look over every new artist&apos;s first pieces. Print the code now; it opens for buyers once {artwork.title} is live.
+                    </p>
+                  )}
                   <p className="text-[16px] text-ink-2">
                     Point your phone at it. It opens <b className="text-ink">{artwork.title}</b> with sizes and a buy button.
                   </p>

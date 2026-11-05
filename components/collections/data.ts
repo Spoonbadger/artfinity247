@@ -9,7 +9,7 @@ export type PublicCollectionCard = { id: string; slug: string; title: string; de
 
 function findArtist(slug: string) {
   return prisma.artist.findFirst({
-    where: { slug: { equals: decodeURIComponent(slug), mode: "insensitive" } },
+    where: { slug: { equals: decodeURIComponent(slug), mode: "insensitive" }, closedAt: null },
     select: { id: true, slug: true, name: true, artist_name: true, profileImage: true, city: true },
   });
 }

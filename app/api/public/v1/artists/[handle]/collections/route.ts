@@ -11,8 +11,8 @@ type Ctx = { params: { handle: string } };
 export const GET = handler<Ctx>(async (req, { params }) => {
   const handle = cleanHandle(params.handle);
   if (!handle) return notFound("Artist");
-  const artist = await prisma.artist.findUnique({
-    where: { slug: handle },
+  const artist = await prisma.artist.findFirst({
+    where: { slug: handle, closedAt: null },
     select: {
       slug: true,
       collections: {

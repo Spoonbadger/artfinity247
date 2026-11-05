@@ -2,49 +2,51 @@
 
 import { useMemo, useState } from "react";
 import { Download, Search } from "lucide-react";
-import type { LedgerLine, LedgerStatus } from "@/lib/balance";
-import { SIZE_LABEL, STATUS_COLOR, STATUS_LABEL, dayUTC, monthName, usd } from "./format";
+import type { LedgerLine } from "@/lib/balance";
+import { BUCKET_COLOR, BUCKET_LABEL, SIZE_LABEL, bucketOf, dayUTC, monthName, usd, type MoneyBucket } from "./format";
 
-const FILTERS: { id: "" | LedgerStatus; label: string }[] = [
+const FILTERS: { id: "" | MoneyBucket; label: string }[] = [
   { id: "", label: "All" },
-  { id: "pending", label: "Incoming" },
-  { id: "available", label: "Available" },
-  { id: "paid", label: "Paid" },
+  { id: "hold", label: "On hold" },
+  { id: "ready", label: "Ready" },
+  { id: "paid", label: "Paid out" },
 ];
 const PAGE = 25;
 
-function StatusTag({ l, compact = false }: { l: LedgerLine; compact?: boolean }) {
-  const note = l.status === "pending" ? `Clears ${dayUTC(l.clearsAt)}` : `${monthName(l.payoutMonth).split(" ")[0]} payout`;
+function StatusTag({ l, currentMonth, compact = false }: { l: LedgerLine; currentMonth: string; compact?: boolean }) {
+  const bucket = bucketOf(l, currentMonth);
+  const month = monthName(l.payoutMonth).split(" ")[0];
+  const note = l.status === "pending" ? `Clears ${dayUTC(l.clearsAt)}` : bucket === "ready" ? "Next payout" : `${month} payout`;
   return (
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[12.5px]">
       <i
         className="inline-block h-2.5 w-2.5 rounded-full"
-        style={{ background: STATUS_COLOR[l.status], ...(l.status === "pending" ? { boxShadow: "inset 0 0 0 1.5px #3d9f76" } : {}) }}
+        style={{ background: BUCKET_COLOR[bucket], ...(bucket === "hold" ? { boxShadow: "inset 0 0 0 1.5px #3d9f76" } : {}) }}
         aria-hidden="true"
       />
-      <b className="font-semibold">{STATUS_LABEL[l.status]}</b>
+      <b className="font-semibold">{BUCKET_LABEL[bucket]}</b>
       {!compact && <span className="text-ink-2">{note}</span>}
     </span>
   );
 }
 
 /** Every sale line: search, status filter, CSV export. */
-export default function Ledger({ ledger }: { ledger: LedgerLine[] }) {
+export default function Ledger({ ledger, currentMonth }: { ledger: LedgerLine[]; currentMonth: string }) {
   const [q, setQ] = useState("");
-  const [status, setStatus] = useState<"" | LedgerStatus>("");
+  const [status, setStatus] = useState<"" | MoneyBucket>("");
   const [shown, setShown] = useState(PAGE);
 
   const rows = useMemo(() => {
     const t = q.trim().toLowerCase();
-    return ledger.filter((l) => (!status || l.status === status) && (!t || [l.title, l.buyerFirst, l.buyerCity, SIZE_LABEL[l.size]].join(" ").toLowerCase().includes(t)));
-  }, [ledger, q, status]);
+    return ledger.filter((l) => (!status || bucketOf(l, currentMonth) === status) && (!t || [l.title, l.buyerFirst, l.buyerCity, SIZE_LABEL[l.size]].join(" ").toLowerCase().includes(t)));
+  }, [ledger, q, status, currentMonth]);
   const total = rows.reduce((n, l) => n + l.shareCents, 0);
   const counts = useMemo(() => {
-    const c: Record<string, number> = { "": ledger.length, pending: 0, available: 0, paid: 0 };
-    for (const l of ledger) c[l.status]++;
+    const c: Record<string, number> = { "": ledger.length, hold: 0, ready: 0, paid: 0 };
+    for (const l of ledger) c[bucketOf(l, currentMonth)]++;
     return c;
-  }, [ledger]);
-  const exportHref = `/api/studio/money/export?${new URLSearchParams({ ...(status ? { status } : {}), ...(q.trim() ? { q: q.trim() } : {}) })}`;
+  }, [ledger, currentMonth]);
+  const exportHref = `/api/studio/money/export?${new URLSearchParams({ ...(status ? { bucket: status } : {}), ...(q.trim() ? { q: q.trim() } : {}) })}`;
 
   return (
     <section aria-labelledby="ledger-h" className="af-card grid min-w-0 gap-3 p-4 sm:p-5">
@@ -108,7 +110,7 @@ export default function Ledger({ ledger }: { ledger: LedgerLine[] }) {
                       <b className="min-w-0 truncate font-semibold">{l.title}</b>
                       <b className="text-right text-earned">+{usd(l.shareCents)}</b>
                       <span className="min-w-0 truncate text-[12px] text-ink-2">{SIZE_LABEL[l.size]}{l.quantity > 1 ? ` ×${l.quantity}` : ""} · {dayUTC(l.date)} · {buyer}</span>
-                      <span className="text-right"><StatusTag l={l} compact /></span>
+                      <span className="text-right"><StatusTag l={l} currentMonth={currentMonth} compact /></span>
                       <span className="col-span-2 text-[11.5px] text-ink-2">{usd(l.grossCents)} − {usd(l.printingCents)} printing − {usd(l.feesCents)} fees · {Math.round(l.split * 100)}%</span>
                     </td>
                     <td className="hidden whitespace-nowrap py-2.5 pr-3 text-ink-2 lg:table-cell">{dayUTC(l.date)}</td>
@@ -131,7 +133,7 @@ export default function Ledger({ ledger }: { ledger: LedgerLine[] }) {
                       <b className="block text-earned">+{usd(l.shareCents)}</b>
                       <span className="text-[11.5px] text-ink-2">{Math.round(l.split * 100)}%</span>
                     </td>
-                    <td className="hidden whitespace-nowrap py-2.5 lg:table-cell"><StatusTag l={l} /></td>
+                    <td className="hidden whitespace-nowrap py-2.5 lg:table-cell"><StatusTag l={l} currentMonth={currentMonth} /></td>
                   </tr>
                 );
               })}

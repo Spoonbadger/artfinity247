@@ -18,6 +18,7 @@ import ArtZoom from "@/components/art/ArtZoom";
 import PrintNote from "@/components/art/PrintNote";
 import { InlineBadges } from "@/components/artist/TrustBlock";
 import type { Trust } from "@/lib/artistTrust";
+import { FREE_SPLIT, pct as pctOf } from "@/lib/plans";
 import {
   FRAME_COLORS,
   FrameColor,
@@ -49,6 +50,8 @@ export default function ScanView({
   isOwner,
   status = "APPROVED",
   trust = null,
+  artistSplit = FREE_SPLIT,
+  arrives = null,
 }: {
   art: ScanArt;
   artist: ScanArtist;
@@ -63,13 +66,22 @@ export default function ScanView({
   status?: string;
   /** Medal + real verification for the artist line (lib/artistTrust). */
   trust?: Trust | null;
+  /** Artist's share of profit on a sale today (Infinity or Free). */
+  artistSplit?: number;
+  /** Delivery estimate, e.g. "Nov 12–18" (lib/delivery). */
+  arrives?: string | null;
 }) {
   const router = useRouter();
   const { addToCart, cartItems } = useCart();
   const { currentUser } = useUser();
   const [sensitivePref] = useSensitivePref();
 
-  const [size, setSize] = useState<PrintSize>("medium");
+  // Only sizes the file is sharp enough for; an empty list means it wasn't checked, so show all.
+  const sizes = useMemo(() => {
+    const ok = PRINT_SIZES.filter((s) => art.printableSizes?.includes(s));
+    return ok.length ? ok : PRINT_SIZES;
+  }, [art.printableSizes]);
+  const [size, setSize] = useState<PrintSize>(() => (sizes.includes("medium") ? "medium" : sizes[0]));
   const [framed, setFramed] = useState(false);
   const [frameColor, setFrameColor] = useState<FrameColor>("black");
   const [landscape, setLandscape] = useState(false);
@@ -162,6 +174,11 @@ export default function ScanView({
   };
 
   const soldOut = !!art.edition?.soldOut;
+  // "Verified artist · 55 prints sold" (sales only when the artist shows stats)
+  const artistLine = [
+    trust?.verified ? "Verified artist" : null,
+    trust?.showStats && trust.printsSold > 0 ? `${trust.printsSold.toLocaleString("en-US")} print${trust.printsSold === 1 ? "" : "s"} sold` : null,
+  ].filter(Boolean).join(" · ");
   const buyLabel = soldOut ? "Sold out" : busy ? "Opening checkout…" : `${qty > 1 ? `Buy ${qty} prints` : "Buy this print"} · ${usd(price.now * Math.min(qty, maxQty))}`;
 
   return (
@@ -265,8 +282,8 @@ export default function ScanView({
           {/* Size */}
           <fieldset className="grid gap-2">
             <legend className="mb-2 text-[15px] font-bold">Size</legend>
-            <div className="grid grid-cols-4 gap-2">
-              {PRINT_SIZES.map((s) => {
+            <div className={cn("grid gap-2", sizes.length === 4 ? "grid-cols-4" : "grid-cols-3")}>
+              {sizes.map((s) => {
                 const on = s === size;
                 const [sw, sh] = SIZE_IN[s];
                 return (
@@ -363,11 +380,41 @@ export default function ScanView({
             </p>
           </div>
 
-          <ul className="md:order-6 flex flex-wrap gap-x-5 gap-y-2.5 border-t border-line pt-4 text-[14px] font-semibold [&>li]:whitespace-nowrap">
-            <li className="flex items-center gap-2"><i className="paint-dab" style={{ ["--dab" as any]: "var(--af-scan)" }} />Free US shipping</li>
-            <li className="flex items-center gap-2"><i className="paint-dab" style={{ ["--dab" as any]: "var(--af-sticker)" }} />Made to order</li>
-            <li className="flex items-center gap-2"><i className="paint-dab" style={{ ["--dab" as any]: "var(--af-earned)" }} />{firstName} gets 60% of profit</li>
-            <li className="flex items-center gap-2"><i className="paint-dab" style={{ ["--dab" as any]: "var(--af-ink)" }} />Secure checkout by Stripe</li>
+          {/* Trust row: one short line each */}
+          <ul aria-label="Buying with confidence" className="md:order-6 grid gap-2.5 border-t border-line pt-4 text-[14px] leading-snug">
+            <li className="flex items-center gap-2.5">
+              <Dab c="var(--af-scan)" />
+              <span>{arrives ? <><b>Arrives {arrives}</b> · free US shipping</> : <b>Free US shipping</b>}</span>
+            </li>
+            <li className="flex items-center gap-2.5">
+              <Dab c="var(--af-coral)" />
+              <span>
+                Arrives damaged?{" "}
+                <Link href="/return-policy" className="font-semibold text-ink underline decoration-line underline-offset-2 hover:decoration-ink">We reprint it free.</Link>
+              </span>
+            </li>
+            {artistLine && (
+              <li className="flex items-center gap-2.5">
+                <Dab c="var(--af-sticker)" />
+                <span>{artistLine}</span>
+                <InlineBadges trust={trust} size={15} className="-ml-1" />
+              </li>
+            )}
+            <li className="flex items-center gap-2.5">
+              <Dab c="var(--af-earned)" />
+              <span>{firstName} gets {pctOf(artistSplit)} of the profit</span>
+            </li>
+            <li className="flex items-center gap-2.5">
+              <Dab c="var(--af-ink)" />
+              <span>
+                Printed and shipped by Artfinity ·{" "}
+                <Link href="/about-us" className="text-ink-2 underline decoration-line underline-offset-2 hover:text-ink">Who we are</Link>
+              </span>
+            </li>
+            <li className="flex items-center gap-2.5">
+              <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              <span>Secure checkout by Stripe</span>
+            </li>
           </ul>
           <PrintNote className="md:order-last" />
 
@@ -424,6 +471,10 @@ export default function ScanView({
         )}
       </section>
 
+      <p className="mx-auto max-w-[1240px] px-4 pt-4 text-[13px] text-ink-2 sm:px-6">
+        <Link href={`/report?art=${encodeURIComponent(art.slug)}`} className="inline-flex min-h-[44px] items-center underline underline-offset-2 hover:text-ink">Report this art</Link>
+      </p>
+
       <ArtZoom open={zoom} onClose={() => setZoom(false)} src={art.imageUrl} alt={`${art.title} by ${artist.name}`} />
 
       {/* Sticky buy bar on phones */}
@@ -432,12 +483,14 @@ export default function ScanView({
           {buyLabel}
         </button>
         <p className="mt-1.5 flex items-center justify-center gap-1.5 text-[13px] text-ink-2">
-          <Lock className="h-3 w-3" aria-hidden /> Apple Pay · Google Pay · Card
+          <Lock className="h-3 w-3" aria-hidden /> {arrives ? <>Secure checkout · Arrives {arrives}</> : "Apple Pay · Google Pay · Card"}
         </p>
       </div>
     </div>
   );
 }
+
+const Dab = ({ c }: { c: string }) => <i aria-hidden className="paint-dab" style={{ ["--dab" as string]: c }} />;
 
 function ZoomButton({ onClick, hidden }: { onClick: () => void; hidden?: boolean }) {
   if (hidden) return null;

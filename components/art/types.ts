@@ -18,6 +18,8 @@ export type ScanArt = {
   edition?: Edition | null;
   /** Room scenes (0–999) the artist picked for the room previews; empty = auto. */
   roomScenes?: number[];
+  /** Sizes the file is sharp enough for; empty/undefined = not checked, show all. */
+  printableSizes?: string[];
 };
 
 export type ScanArtist = {

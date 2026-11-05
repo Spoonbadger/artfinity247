@@ -20,6 +20,9 @@ const WORKS = {
   priyanair: ["River Figure I", "Swimmers"],
 };
 const SENSITIVE = { "Bather, Sliding Rock": ["Nudity"] };
+// Print sizes each file is sharp enough for. These two are smaller files, so XL is hidden from buyers.
+const ALL_SIZES = ["small", "medium", "large", "xl"];
+const PRINTABLE = { "Second Frost": ["small", "medium", "large"], "Haystack Rock": ["small", "medium", "large"] };
 
 // mirrors lib/artwork_price.ts and lib/revenue.ts
 const BASE = { small: 3499, medium: 4499, large: 6499, xl: 7999 };
@@ -78,6 +81,7 @@ async function main() {
         imageUrl: `/seed/art-${String(img++).padStart(2, "0")}.jpg`, artistId: artist.id, status: "APPROVED",
         markupSmall: markup, markupMedium: markup, markupLarge: markup + 500, markupXl: markup + 1000,
         sensitive: SENSITIVE[title] || [], createdAt: new Date(Date.now() - (40 - img) * 86400000),
+        printableSizes: PRINTABLE[title] || ALL_SIZES, ownershipConfirmedAt: new Date(Date.now() - (40 - img) * 86400000),
       }, include: { artist: true } });
       arts.push(art);
     }
@@ -105,7 +109,8 @@ async function main() {
   for (let n = 0; n < plan.length; n++) {
     const pool = by(plan[n]);
     const art = pool[Math.floor(r() * (plan[n] === "mayaokafor" ? 3 : pool.length))];
-    const size = ["small", "medium", "medium", "large", "xl"][Math.floor(r() * 5)];
+    const rolled = ["small", "medium", "medium", "large", "xl"][Math.floor(r() * 5)];
+    const size = art.printableSizes.includes(rolled) ? rolled : "large";
     const markup = size === "large" ? art.markupLarge : size === "xl" ? art.markupXl : art.markupSmall;
     const unit = BASE[size] + markup, lineTotal = unit;
     const created = new Date(Date.now() - Math.floor(r() * 60) * 86400000 - Math.floor(r() * 36e6));

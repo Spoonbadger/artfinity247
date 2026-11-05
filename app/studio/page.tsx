@@ -31,13 +31,14 @@ export default async function StudioHome() {
   const artist = await requireArtist("/studio");
   const now = new Date();
   const since = new Date(now.getTime() - 30 * DAY);
-  const [allSales, artworks, trust, ver, plan, balance] = await Promise.all([
+  const [allSales, artworks, trust, ver, plan, balance, eventCount] = await Promise.all([
     getSales(artist.id),
     getArtworks(artist.id),
     getArtistTrust(artist.id),
     prisma.artist.findUnique({ where: { id: artist.id }, select: { verification: true } }),
     getArtistPlan(artist.id),
     getBalance(artist.id, now),
+    prisma.studioEvent.count({ where: { artistId: artist.id } }),
   ]);
   const sales = allSales.filter((s) => s.date >= since);
   // Real scans of the artist's short link codes: last 30 days vs the 30 before.
@@ -113,7 +114,7 @@ export default async function StudioHome() {
           <SalesChart days={days} />
         </section>
 
-        <NextSteps hasProfile={!!artist.profileImage && !!artist.bio?.trim()} hasArt={artworks.length > 0} hasSold={allSales.length > 0} hasVenmo={!!artist.venmoHandle} slug={artist.slug} />
+        <NextSteps hasProfile={!!artist.profileImage && !!artist.bio?.trim()} hasArt={artworks.length > 0} hasSold={allSales.length > 0} hasVenmo={!!artist.venmoHandle} hasEvent={eventCount > 0} slug={artist.slug} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
@@ -177,6 +178,9 @@ export default async function StudioHome() {
               <span className="relative block aspect-[4/5] overflow-hidden rounded-[3px] bg-gallery shadow-[0_2px_0_var(--af-line)]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={a.imageUrl} alt={a.title} className="h-full w-full object-cover transition group-hover:scale-[1.03]" />
+                {a.status === "PENDING" && (
+                  <span className="absolute left-1.5 top-1.5 rounded-full border-[1.5px] border-ink bg-sticker px-2 py-0.5 text-[11px] font-bold" title="Usually within a day">In review</span>
+                )}
               </span>
               <span className="truncate font-semibold">{a.title}</span>
             </Link>

@@ -37,6 +37,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ code: "bad_password" }, { status: 401 });
     }
 
+    if (artist.closedAt) {
+      return NextResponse.json({ code: "account_closed" }, { status: 403 });
+    }
+
     const jwtExpire = remember ? "30d" : "3h";
     const token = await new SignJWT({
       id: artist.id,

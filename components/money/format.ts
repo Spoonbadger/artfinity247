@@ -23,7 +23,19 @@ export const SIZE_INCH: Record<string, string> = { S: "5×7", M: "8×12", L: "11
 
 /** Status colors: one green ramp, light to deep, pending also hatched. */
 export const STATUS_COLOR: Record<LedgerStatus, string> = { pending: "#a9d8c1", available: "#3d9f76", paid: "#0f7a55" };
-export const STATUS_LABEL: Record<LedgerStatus, string> = { pending: "Incoming", available: "Available", paid: "Paid" };
+export const STATUS_LABEL: Record<LedgerStatus, string> = { pending: "On hold", available: "Ready", paid: "Paid out" };
+
+/**
+ * Where a sale's money is, as artists see it: "ready" = in the next payout (a closed month, not paid yet,
+ * even if a few sales are still in the return window), "hold" = this month (paid the month after), "paid".
+ */
+export type MoneyBucket = "hold" | "ready" | "paid";
+export const BUCKET_LABEL: Record<MoneyBucket, string> = { hold: "On hold", ready: "Ready for payout", paid: "Paid out" };
+export const BUCKET_COLOR: Record<MoneyBucket, string> = { hold: STATUS_COLOR.pending, ready: STATUS_COLOR.available, paid: STATUS_COLOR.paid };
+export function bucketOf(l: Pick<LedgerLine, "status" | "payoutMonth">, currentMonth: string): MoneyBucket {
+  if (l.status === "paid") return "paid";
+  return l.payoutMonth < currentMonth ? "ready" : "hold";
+}
 export const PAYOUT_LABEL: Record<PayoutStatus, string> = { paid: "Paid", scheduled: "Scheduled", in_progress: "In progress" };
 
 export type Period = "30d" | "90d" | "12m" | "all";

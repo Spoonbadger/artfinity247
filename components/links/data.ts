@@ -22,8 +22,8 @@ async function findArtist(rawSlug: string) {
     profileImage: true, verification: true, linksTheme: true,
   } as const;
   return (
-    (await prisma.artist.findUnique({ where: { slug }, select })) ??
-    (await prisma.artist.findFirst({ where: { slug: { equals: slug, mode: "insensitive" } }, select }))
+    (await prisma.artist.findFirst({ where: { slug, closedAt: null }, select })) ??
+    (await prisma.artist.findFirst({ where: { slug: { equals: slug, mode: "insensitive" }, closedAt: null }, select }))
   );
 }
 

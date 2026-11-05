@@ -14,7 +14,7 @@ export default async function EditArtPage({ params }: { params: { slug: string }
   const artist = await requireArtist(`/studio/art/${slug}`);
   const art = await prisma.artwork.findUnique({
     where: { slug },
-    select: { id: true, slug: true, title: true, description: true, imageUrl: true, sensitive: true, markupSmall: true, markupMedium: true, markupLarge: true, markupXl: true, editionSize: true, artistId: true },
+    select: { id: true, slug: true, title: true, description: true, imageUrl: true, sensitive: true, markupSmall: true, markupMedium: true, markupLarge: true, markupXl: true, editionSize: true, printableSizes: true, artistId: true },
   });
   // Only the owner can edit; anyone else gets a 404 rather than a hint that it exists.
   if (!art || !art.slug || art.artistId !== artist.id) notFound();

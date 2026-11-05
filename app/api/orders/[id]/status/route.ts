@@ -4,6 +4,7 @@ import { adminGuard } from "@/lib/admin"
 import { resend } from "@/lib/resend"
 import ShippingStatusEmail from "@/emails/ShippingStatusEmail"
 import { sendArtistOrderEmail } from "@/lib/artistEmails.server"
+import { sendReviewRequest } from "@/lib/reviews"
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
@@ -85,6 +86,11 @@ export async function POST(
     } catch (err) {
       console.error("Shipping status email failed", err)
     }
+  }
+
+  // Delivered: ask the buyer for a review (lib/reviews.ts skips bulk orders and already-reviewed items).
+  if (was !== "delivered" && now === "delivered") {
+    await sendReviewRequest(order.id).catch((err) => console.error("Review request email failed", err))
   }
 
   return NextResponse.json(order)

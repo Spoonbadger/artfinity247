@@ -12,6 +12,7 @@ const MESSAGES: Record<string, string> = {
   user_not_found: "No account with that email.",
   bad_password: "That password doesn't match.",
   missing_fields: "Enter your email and password.",
+  account_closed: "This account is closed — contact us to reopen.",
 };
 
 
@@ -25,7 +26,11 @@ export default function LoginForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const next = safeNext(params.get("next"));
-  const notice = params.get("reset") ? "Password updated. Log in with the new one." : null;
+  const notice = params.get("reset")
+    ? "Password updated. Log in with the new one."
+    : params.get("closed")
+      ? "Your account is closed. You'll still be paid what you've earned."
+      : null;
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

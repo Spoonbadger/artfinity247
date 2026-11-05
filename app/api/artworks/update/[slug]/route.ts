@@ -7,6 +7,9 @@ import Busboy from 'busboy'
 import { toNodeReadable } from '@/lib/toNodeReadables'
 import { parseSensitive } from '@/components/studio/sensitive'
 import { EDITION_MAX, EDITION_MIN, soldCount } from '@/lib/editions'
+import { parsePrintable } from '@/lib/printSizes'
+import { verifyPrintable } from '@/lib/printSign'
+import { initialArtworkStatus } from '@/lib/artworkLive'
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
@@ -69,6 +72,23 @@ export async function POST(
     if (!artwork || artwork.artistId !== payload.id)
       return new NextResponse('Forbidden', { status: 403 })
 
+    // A new image: re-check print sizes and rights, like a new upload.
+    const newImage = !!imageUrl && imageUrl !== artwork.imageUrl
+    let imageData: { printableSizes: string[]; ownershipConfirmedAt: Date; status?: "PENDING" } | undefined
+    if (newImage) {
+      const printable = parsePrintable(form.get("printable"))
+      if (String(form.get("ownership") ?? "") !== "yes") {
+        return new NextResponse("Confirm this is your original work and you hold the rights to sell prints of it.", { status: 400 })
+      }
+      if (!printable || !verifyPrintable(imageUrl!, printable, form.get("printableSig"))) {
+        return new NextResponse("Upload the image again so we can check its print sizes.", { status: 400 })
+      }
+      if (!printable.length) return new NextResponse("This file is too small to print well. Try the original photo or a bigger scan.", { status: 400 })
+      imageData = { printableSizes: printable, ownershipConfirmedAt: new Date() }
+      // Artists whose uploads are reviewed get a new image reviewed too.
+      if (artwork.status === "APPROVED" && (await initialArtworkStatus(artwork.artistId)) === "PENDING") imageData.status = "PENDING"
+    }
+
     // Limited print run. Leave the field out to keep it; "" = open edition; a number can't go
     // below EDITION_MIN or below prints already sold.
     const editionRaw = form.get("editionSize")
@@ -120,6 +140,7 @@ export async function POST(
         imageUrl: imageUrl || artwork.imageUrl,
         ...(sensitiveRaw !== null ? { sensitive: parseSensitive(sensitiveRaw) } : {}),
         ...(editionSize !== undefined ? { editionSize } : {}),
+        ...(imageData ?? {}),
         },
     })
 

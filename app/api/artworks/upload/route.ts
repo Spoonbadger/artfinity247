@@ -5,11 +5,11 @@ import slugify from 'slugify'
 import { rateLimit } from '@/lib/rateLimit'
 import { resend } from "@/lib/resend"
 import NewArtworkUploadedEmail from "@/emails/NewArtworkUploadedEmail"
-import ArtworkLiveWithQrEmail from "@/emails/ArtworkLiveWithQrEmail";
-import { SignJWT } from "jose"
 import { parseSensitive } from "@/components/studio/sensitive"
 import { EDITION_MAX, EDITION_MIN } from "@/lib/editionFormat"
-import { rewardReferralOnUpload } from "@/lib/referrals"
+import { parsePrintable } from "@/lib/printSizes"
+import { verifyPrintable } from "@/lib/printSign"
+import { announceArtworkLive, initialArtworkStatus } from "@/lib/artworkLive"
 
 export const dynamic = "force-dynamic"
 
@@ -52,15 +52,18 @@ export async function POST(req: NextRequest) {
     const imageUrl = String(form.get("imageUrl") ?? "").trim();
     // Content labels, comma-separated: "Nudity,Violence or gore". Labeled art is blurred for buyers.
     const sensitive = parseSensitive(form.get("sensitive"));
-    // Optional: sizes the file can print sharply ("small,medium,..."), from POST /api/uploads.
-    // There is no column for it yet, so it is only validated here; sizes still use the markups below.
-    const printableRaw = form.get("printable");
+    // Sizes the file prints sharply ("small,medium,..."), measured and signed by POST /api/uploads.
+    const printable = parsePrintable(form.get("printable"));
+    // Rights: the artist ticks "This is my original work and I hold the rights to sell prints of it."
+    const ownership = String(form.get("ownership") ?? "") === "yes";
 
     if (!title) return new NextResponse("Title required", { status: 400 });
     if (!imageUrl) return new NextResponse("Image required", { status: 400 });
-    if (printableRaw !== null && !String(printableRaw).split(",").filter(Boolean).every((s) => ["small", "medium", "large", "xl"].includes(s.trim()))) {
-      return new NextResponse("Invalid printable sizes", { status: 400 });
+    if (!ownership) return new NextResponse("Confirm this is your original work and you hold the rights to sell prints of it.", { status: 400 });
+    if (!printable || !verifyPrintable(imageUrl, printable, form.get("printableSig"))) {
+      return new NextResponse("Upload the image again so we can check its print sizes.", { status: 400 });
     }
+    if (!printable.length) return new NextResponse("This file is too small to print well. Try the original photo or a bigger scan.", { status: 400 });
     const markupSmall = parseInt(form.get("markupSmall") as string) || 0;
     const markupMedium = parseInt(form.get("markupMedium") as string) || 0;
     const markupLarge = parseInt(form.get("markupLarge") as string) || 0;
@@ -78,6 +81,9 @@ export async function POST(req: NextRequest) {
       '-' +
       Date.now().toString(36).slice(-4) // To be unique
 
+    // First pieces from new, unverified artists wait for a quick review.
+    const status = await initialArtworkStatus(payload.id as string)
+
     const artwork = await prisma.artwork.create({
       data: {
         title,
@@ -89,9 +95,11 @@ export async function POST(req: NextRequest) {
         description: description || '',
         imageUrl: imageUrl,
         artistId: payload.id as string,
-        status: "APPROVED",
+        status,
         sensitive,
         editionSize,
+        printableSizes: printable,
+        ownershipConfirmedAt: new Date(),
       },
       include: {
         artist: {
@@ -107,55 +115,14 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Referrals: a referred artist's first approved upload earns their referrer Infinity months (once).
-    if (artwork.status === "APPROVED") {
-      try {
-        await rewardReferralOnUpload(artwork.artistId)
-      } catch (err) {
-        console.error("Referral reward failed", err)
-      }
-    }
-
-    const base = process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com"
-
-    const artworkUrl = `${base}/art/${artwork.slug}`
-
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET!)
-
-    const qrToken = await new SignJWT({
-      slug: artwork.slug,
-      artistId: artwork.artistId,
-      role: artwork.artist?.role || "ARTIST",
-      type: "qr_download",
-    })
-      .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime("7d")
-      .sign(secret)
-
-    const qrDownloadUrl =
-      `${base}/api/artworks/${artwork.slug}/qr?download=1&token=${qrToken}`
-
-    try {
-      await resend.emails.send({
-        from: "Artfinity <notifications@theartfinity.com>",
-        to: artwork.artist?.email, // if included — otherwise use payload email
-        subject: `Your artwork is live – ${artwork.title}`,
-        react: ArtworkLiveWithQrEmail({
-          artistName: artwork.artist?.artist_name || "",
-          title: artwork.title,
-          artworkUrl,
-          qrDownloadUrl,
-        }),
-      });
-    } catch (err) {
-      console.error("Artist QR email failed", err);
-    }
+    // Live now: referral reward + the artist's "it's live" email. Pending pieces get these on approval.
+    if (artwork.status === "APPROVED") await announceArtworkLive(artwork.id)
 
     try {
       await resend.emails.send({
         from: "Artfinity <notifications@theartfinity.com>",
         to: "craig@theartfinity.com",
-        subject: `New Artwork – ${artwork.title}`,
+        subject: `${artwork.status === "PENDING" ? "To review" : "New Artwork"} – ${artwork.title}`,
         react: NewArtworkUploadedEmail({
           artistName: artwork?.artist.artist_name || "unknown",
           title: artwork.title,

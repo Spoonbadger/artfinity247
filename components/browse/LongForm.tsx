@@ -11,6 +11,7 @@ const POLICIES: [string, string][] = [
   ["Privacy policy", "/privacy-policy"],
   ["Cookie policy", "/cookie-policy"],
   ["Return policy", "/return-policy"],
+  ["Copyright and DMCA", "/dmca"],
 ];
 
 /** Readable long-form typography for policy text (works on raw HTML and JSX alike). */

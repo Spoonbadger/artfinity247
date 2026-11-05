@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Balance } from "@/lib/balance";
-import { RETURN_WINDOW_DAYS } from "@/lib/balance";
+import { RETURN_WINDOW_DAYS, payoutDateFor } from "@/lib/balance";
 import { STATUS_COLOR, dayUTC, monthName, usd } from "./format";
 
 /** One painted bar, pending → available → paid, clipped to a brush-stroke shape. */
@@ -50,11 +50,30 @@ export default function BalanceCard({ b }: { b: Balance }) {
   const monthsText = months.length > 2 ? `${months.slice(0, -1).join(", ")} and ${months[months.length - 1]}` : months.join(" and ");
   const clearing = b.ledger.filter((l) => np.months.includes(l.payoutMonth) && l.status === "pending");
   const lastClear = clearing.reduce((m, l) => (l.clearsAt > m ? l.clearsAt : m), "");
+  const late = b.lateMonths.length > 0;
+
+  // Buckets by where the money goes: next payout, the one after, or already paid.
+  const readyCents = np.projected ? 0 : np.amountCents;
+  const holdCents = b.pendingCents + b.availableCents - readyCents;
+  const holdDate = dayUTC(payoutDateFor(b.currentMonth).toISOString());
+  const thisMonth = monthName(b.currentMonth, "long").split(" ")[0];
 
   const segs = [
-    { k: "pending" as const, label: "Incoming", value: b.pendingCents, note: `This month, plus sales in the ${RETURN_WINDOW_DAYS}-day return window` },
-    { k: "available" as const, label: "Available for next payout", value: b.availableCents, note: "Cleared, from closed months" },
-    { k: "paid" as const, label: "Paid out", value: b.paidTotalCents, note: "Sent to you, all time" },
+    {
+      k: "pending" as const,
+      label: <>On hold <span className="font-normal text-ink-2">(return window)</span></>,
+      value: holdCents,
+      note: `${thisMonth} sales. They clear after the ${RETURN_WINDOW_DAYS}-day return window and are paid ${holdDate}.`,
+    },
+    {
+      k: "available" as const,
+      label: readyCents > 0 ? <>Ready for next payout <span className="whitespace-nowrap">— {late ? "was due" : "paid"} {dayUTC(np.date)}</span></> : <>Ready for next payout</>,
+      value: readyCents,
+      note: readyCents > 0
+        ? `${monthsText} sales, sent to your Venmo automatically.${clearing.length ? ` Includes ${usd(np.clearingCents)} still in the return window.` : ""}`
+        : `Nothing waiting. ${thisMonth}'s sales move here when the month ends.`,
+    },
+    { k: "paid" as const, label: <>Paid out</>, value: b.paidTotalCents, note: "Sent to your Venmo, all time." },
   ];
 
   return (
@@ -63,15 +82,15 @@ export default function BalanceCard({ b }: { b: Balance }) {
         <div className="min-w-0">
           <h2 id="balance-h" className="eyebrow">Your balance</h2>
           <p className="display num mt-1 text-[clamp(44px,9vw,72px)] leading-none text-earned">{usd(b.pendingCents + b.availableCents)}</p>
-          <p className="mt-1.5 text-[13.5px] text-ink-2">Not paid out yet · {usd(b.lifetimeCents)} earned all time</p>
+          <p className="mt-1.5 text-[13.5px] text-ink-2">Earned, not paid out yet · {usd(b.lifetimeCents)} earned all time</p>
         </div>
       </div>
 
       <div className="grid gap-3">
-        <PaintedBar pending={b.pendingCents} available={b.availableCents} paid={b.paidTotalCents} />
+        <PaintedBar pending={holdCents} available={readyCents} paid={b.paidTotalCents} />
         <dl className="grid gap-3 sm:grid-cols-3 sm:gap-5">
           {segs.map((s) => (
-            <div key={s.k} className="grid grid-cols-[14px_minmax(0,1fr)_auto] items-baseline gap-x-2.5 sm:grid-cols-[14px_minmax(0,1fr)] sm:gap-y-0.5">
+            <div key={s.k} className="grid grid-cols-[14px_minmax(0,1fr)_auto] items-baseline gap-x-2.5 sm:grid-cols-[14px_minmax(0,1fr)] sm:gap-y-0.5" title={s.note}>
               <i
                 className="paint-dab h-3 w-3 self-center sm:self-baseline"
                 style={{ ["--dab" as string]: STATUS_COLOR[s.k], ...(s.k === "pending" ? { backgroundImage: "repeating-linear-gradient(45deg, transparent 0 3px, rgba(15,122,85,.45) 3px 4.5px)" } : {}) }}
@@ -87,7 +106,7 @@ export default function BalanceCard({ b }: { b: Balance }) {
       <div className="grid gap-2 rounded-[4px] bg-wall p-3.5 sm:flex sm:items-center sm:justify-between sm:gap-6 sm:p-4">
         <div className="min-w-0">
           <p className="text-[15.5px] sm:text-[17px]">
-            <b>Next payout: {dayUTC(np.date)}</b>
+            <b>{late ? "Payout was due" : "Next payout"}: {dayUTC(np.date)}</b>
             <span className="text-ink-2"> · </span>
             <b className="num text-earned">{usd(np.amountCents)}</b>
             <span className="text-ink-2"> to </span>
@@ -96,7 +115,7 @@ export default function BalanceCard({ b }: { b: Balance }) {
           <p className="mt-0.5 text-[12.5px] text-ink-2">
             {np.projected
               ? `${monthsText} so far. Grows with every sale this month.`
-              : `${monthsText} sales${clearing.length ? ` · ${usd(np.clearingCents)} still clearing until ${dayUTC(lastClear)}` : ""}${np.late ? " · on its way" : ""}`}
+              : `${monthsText} sales${clearing.length ? ` · ${usd(np.clearingCents)} still clearing until ${dayUTC(lastClear)}, paid anyway` : ""}`}
           </p>
         </div>
         <p className="flex items-center gap-2 text-[13px] font-semibold text-ink sm:max-w-[260px] sm:text-right">

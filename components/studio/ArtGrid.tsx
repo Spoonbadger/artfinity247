@@ -20,10 +20,10 @@ export type GridArt = {
 function StatusChip({ art }: { art: GridArt }) {
   if (art.status === "REJECTED")
     return <span className="rounded-full bg-coral px-2.5 py-0.5 text-[12px] font-bold text-white">Rejected</span>;
+  if (art.status === "PENDING")
+    return <span className="rounded-full border-[1.5px] border-ink bg-sticker px-2.5 py-0.5 text-[12px] font-bold" title="Usually within a day">In review</span>;
   if (art.sensitive.length)
     return <span className="rounded-full border-[1.5px] border-ink bg-sticker px-2.5 py-0.5 text-[12px] font-bold" title={art.sensitive.join(", ")}>Sensitive · blurred</span>;
-  if (art.status === "PENDING")
-    return <span className="rounded-full border-[1.5px] border-line bg-white px-2.5 py-0.5 text-[12px] font-bold text-ink-2">In review</span>;
   return (
     <span className="flex items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-white px-2.5 py-0.5 text-[12px] font-bold">
       <i className="paint-dab h-2.5 w-2.5" style={{ ["--dab" as string]: "#2b37f0" }} />Live
@@ -89,7 +89,7 @@ export default function ArtGrid({ items }: { items: GridArt[] }) {
           <div className="min-w-0">
             <b className="block truncate text-[15px]">{a.title}</b>
             <span className="num text-[12.5px] text-ink-2">
-              {a.status === "REJECTED" && a.flaggedReason ? a.flaggedReason : a.sold ? `${a.sold} sold` : "No sales yet"}
+              {a.status === "REJECTED" && a.flaggedReason ? a.flaggedReason : a.status === "PENDING" ? "In review — usually within a day" : a.sold ? `${a.sold} sold` : "No sales yet"}
             </span>
           </div>
           <div className="-mb-2 flex flex-wrap gap-x-3.5 text-[14px] font-semibold [&>*]:inline-flex [&>*]:min-h-[44px] [&>*]:items-center lg:mb-0 lg:gap-y-1 lg:text-[13px] lg:[&>*]:min-h-0">

@@ -62,6 +62,7 @@ export const getArtistPage = cache(async (rawSlug: string): Promise<ArtistPageDa
       profileImage: true,
       createdAt: true,
       pageTheme: true,
+      closedAt: true,
       artworks: {
         where: { status: "APPROVED" },
         orderBy: { createdAt: "desc" },
@@ -83,7 +84,8 @@ export const getArtistPage = cache(async (rawSlug: string): Promise<ArtistPageDa
   const artist =
     (await prisma.artist.findUnique({ where: { slug }, select })) ??
     (await prisma.artist.findFirst({ where: { slug: { equals: slug, mode: "insensitive" } }, select }));
-  if (!artist) return null;
+  // A closed account's page is offline.
+  if (!artist || artist.closedAt) return null;
 
   // Paid prints per artwork (sum of quantities on paid orders).
   const soldRows = await prisma.orderItem.groupBy({
@@ -151,26 +153,26 @@ export function bannerColor(theme: PageTheme) {
   return theme.banner.kind === "color" ? paint(theme.banner.paint).color : null;
 }
 
-/**
- * Placeholder venues for the seeded demo artists until a venue model exists.
- * Real artists get no list, so the "See it in person" block is hidden for them.
- */
-const SAMPLE_VENUES: Record<string, { name: string; when: string }[]> = {
-  mayaokafor: [
-    { name: "Lumen Café, West Asheville", when: "On now" },
-    { name: "River Arts Market", when: "Sat and Sun" },
-    { name: "Holiday Pop-up", when: "Dec 6" },
-  ],
-  junopark: [
-    { name: "Cosmic Coffee", when: "On now" },
-    { name: "East Austin Studio Tour", when: "Nov 15" },
-  ],
-  inesduarte: [{ name: "Canyon Road Market", when: "Fridays" }],
-  calebmoreno: [{ name: "Heart Coffee, Burnside", when: "On now" }],
+export type ArtistVenue = { name: string; when: string };
+
+const fmtDay = (key: string) => {
+  const [y, m, d] = key.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric" });
 };
 
-export function venuesFor(slug: string) {
-  return SAMPLE_VENUES[slug.toLowerCase()] ?? [];
+/** Upcoming and current events from the artist's Studio (StudioEvent), soonest first. */
+export async function venuesFor(artistId: string, now = new Date()): Promise<ArtistVenue[]> {
+  const today = now.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  const rows = await prisma.studioEvent.findMany({
+    where: { artistId, end: { gte: today } },
+    orderBy: [{ start: "asc" }, { createdAt: "asc" }],
+    take: 5,
+    select: { name: true, venue: true, start: true, end: true },
+  });
+  return rows.map((e) => ({
+    name: e.venue ? `${e.name}, ${e.venue}` : e.name,
+    when: e.start <= today ? "On now" : e.end !== e.start ? `${fmtDay(e.start)} to ${fmtDay(e.end)}` : fmtDay(e.start),
+  }));
 }
 
 export function money(cents: number) {

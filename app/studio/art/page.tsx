@@ -17,12 +17,13 @@ export default async function MyArtPage() {
   const items = art
     .filter((a) => a.slug)
     .map(({ OrderItem, ...a }) => ({ ...a, slug: a.slug!, sold: OrderItem.reduce((n, o) => n + (o.quantity ?? 1), 0) }));
-  const live = items.filter((a) => a.status !== "REJECTED").length;
+  const live = items.filter((a) => a.status === "APPROVED").length;
+  const inReview = items.filter((a) => a.status === "PENDING").length;
 
   return (
     <StudioPage
       title="My art"
-      sub={`${live} on your page`}
+      sub={`${live} on your page${inReview ? ` · ${inReview} in review` : ""}`}
       actions={
         <>
           {live > 0 && (

@@ -6,7 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { checkoutUnavailable, testCheckoutAllowed } from "@/lib/testCheckout";
 import { artistSplitsForOrder, calcItemProfitCents, type PrintSize as RevenueSize } from "@/lib/revenue";
 import { claimEditionNumbers, EditionSoldOutError, editionMessage, editionShortfalls } from "@/lib/editions";
-import { applyDiscount, isPrintSize, parseDiscount, parseVenue, priceFor, type PrintSize } from "@/components/art/pricing";
+import { applyDiscount, isPrintSize, parseDiscount, parseVenue, priceFor, SIZE_LABEL, sizeInches, type PrintSize } from "@/components/art/pricing";
+import { sizeAllowed } from "@/lib/printSizes";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -38,6 +39,9 @@ type Line = {
   qrCodeId: string | null; // the short link code this sale came through (OrderItem.qrCodeId)
 };
 
+/** A size the artwork's file is too small to print sharply. */
+class SizeUnavailableError extends Error {}
+
 /** Price every line from the DB. Client prices and titles are ignored. */
 async function buildLines(items: any[]): Promise<Line[]> {
   const lines = await Promise.all(
@@ -53,12 +57,16 @@ async function buildLines(items: any[]): Promise<Line[]> {
         where: { slug },
         select: {
           id: true, slug: true, title: true, imageUrl: true, artistId: true, status: true,
-          markupSmall: true, markupMedium: true, markupLarge: true, markupXl: true, editionSize: true,
+          markupSmall: true, markupMedium: true, markupLarge: true, markupXl: true, editionSize: true, printableSizes: true,
           artist: { select: { name: true, artist_name: true } },
         },
       });
       // Only approved work can be bought (PENDING and REJECTED are skipped).
       if (!art || art.status !== "APPROVED") return null;
+      // No blurry prints: only sizes the file is sharp enough for.
+      if (!sizeAllowed(art.printableSizes, size)) {
+        throw new SizeUnavailableError(`${art.title} isn't available at ${SIZE_LABEL[size]} (${sizeInches(size)}). Pick a smaller size and it will print sharp.`);
+      }
 
       // Scan discount. Short link codes (/q/CODE) are looked up: the discount and venue come from the code's record,
       // and only when it's live and belongs to this artwork (or its artist). Older printed codes carry a signed
@@ -95,6 +103,7 @@ export async function POST(req: Request) {
   try {
     lines = await buildLines(items);
   } catch (err) {
+    if (err instanceof SizeUnavailableError) return json({ error: err.message }, 400);
     console.error("checkout: pricing failed", err);
     return json({ error: "Could not price your cart" }, 500);
   }
@@ -152,7 +161,6 @@ export async function POST(req: Request) {
       customer_email: buyerEmail,
       metadata: { userId: buyer?.id || "", buyerEmail: buyerEmail ?? "" },
       shipping_address_collection: { allowed_countries: ["US"] },
-      phone_number_collection: { enabled: true },
       shipping_options: [{ shipping_rate_data: { display_name: "Free US shipping", fixed_amount: { amount: 0, currency: "usd" }, type: "fixed_amount" } }],
     });
     return json({ url: session.url });

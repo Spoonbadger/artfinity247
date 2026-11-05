@@ -1,6 +1,7 @@
 // Real example requests and responses for the docs, built from the same serializers the API uses.
 import { prisma } from "@/lib/prisma";
 import { getArtistTrust } from "@/lib/artistTrust";
+import { getReviewSummary } from "@/lib/reviews";
 import {
   PUBLIC_ARTWORK, absUrl, artistSelect, artworkSelect, displayName, editionSales, serializeArtist, serializeArtwork, siteBase, sizesFor,
 } from "./publicApi";
@@ -31,10 +32,11 @@ export async function getExamples() {
   const sensitive = works.find((w) => w.sensitive.length) ?? null;
   const api = `${base}/api/public/v1/artists/${full.slug}`;
   const shown = serializeArtist(base, full, trust);
-  const artistRes = { artist: { ...shown, links: shown.links.slice(0, 2) } };
+  const [artistRating, pickRating] = await Promise.all([getReviewSummary({ artistId: artist.id }), getReviewSummary({ artworkId: pick.id })]);
+  const artistRes = { artist: { ...shown, links: shown.links.slice(0, 2), rating: artistRating.count ? artistRating.average : null, reviewCount: artistRating.count } };
   const listRes = { artworks: [serializeArtwork(base, works[0], sold.get(works[0].id) ?? 0)], nextCursor: works[1]?.id ?? null };
   const artworkRes = {
-    artwork: { ...serializeArtwork(base, pick, sold.get(pick.id) ?? 0), description: pick.description || "", sizes: sizesFor(pick).slice(0, 2), buyUrl: `${base}/art/${pick.slug}` },
+    artwork: { ...serializeArtwork(base, pick, sold.get(pick.id) ?? 0), description: pick.description || "", rating: pickRating.count ? pickRating.average : null, reviewCount: pickRating.count, sizes: sizesFor(pick).slice(0, 2), buyUrl: `${base}/art/${pick.slug}` },
   };
   const col = full.collections[0];
   const collectionsRes = {

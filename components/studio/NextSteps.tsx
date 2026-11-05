@@ -4,21 +4,22 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BrushStroke } from "@/components/af/Brush";
 import { cn } from "@/lib/utils";
-import { readEvents } from "./events-store";
+import { readLocalEvents } from "./events-store";
 
 export const SHARED_KEY = "af-studio-shared";
 
 type Step = { label: string; done: boolean; href?: string; act?: string; onClick?: () => void };
 
-export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true, slug }: { hasProfile: boolean; hasArt: boolean; hasSold: boolean; hasVenmo?: boolean; slug: string }) {
+export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true, hasEvent: serverHasEvent = false, slug }: { hasProfile: boolean; hasArt: boolean; hasSold: boolean; hasVenmo?: boolean; hasEvent?: boolean; slug: string }) {
   const [shared, setShared] = useState(false);
-  const [hasEvent, setHasEvent] = useState(false);
+  const [hasEvent, setHasEvent] = useState(serverHasEvent);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     try { setShared(localStorage.getItem(SHARED_KEY) === "1"); } catch {}
-    setHasEvent(readEvents().length > 0);
-  }, []);
+    // Events not yet moved from this browser still count; the Events page uploads them.
+    if (!serverHasEvent && readLocalEvents().length > 0) setHasEvent(true);
+  }, [serverHasEvent]);
 
   async function copyLink() {
     const url = `https://theartfinity.com/@${slug}`;

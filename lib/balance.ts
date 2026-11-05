@@ -33,6 +33,9 @@ export const PAYOUT_DAY_OF_MONTH = 5;
 
 const DAY_MS = 86_400_000;
 
+/** A month's payout counts as late once it is still unpaid this many days after the 5th. */
+export const LATE_AFTER_DAYS = 3;
+
 export type LedgerStatus = "pending" | "available" | "paid";
 export type PayoutStatus = "paid" | "scheduled" | "in_progress";
 
@@ -104,6 +107,8 @@ export type Balance = {
     /** True when the due date has passed and the months aren't marked paid yet. */
     late: boolean;
   };
+  /** Closed months still unpaid more than LATE_AFTER_DAYS after their payout day, oldest first. */
+  lateMonths: string[];
   venmoHandle: string | null;
   method: string;
   ledger: LedgerLine[];
@@ -117,6 +122,11 @@ export const utcMonth = (d: Date) => d.toISOString().slice(0, 7);
 export function payoutDateFor(month: string): Date {
   const [y, m] = month.split("-").map(Number);
   return new Date(Date.UTC(y, m, PAYOUT_DAY_OF_MONTH)); // m is 1-based, so this is next month
+}
+
+/** Unpaid and more than LATE_AFTER_DAYS days past the payout day (the whole 5th counts as on time). */
+export function isPayoutLate(month: string, now: Date = new Date()) {
+  return now.getTime() >= payoutDateFor(month).getTime() + (1 + LATE_AFTER_DAYS) * DAY_MS;
 }
 
 export function monthLabel(month: string, style: "long" | "short" = "long") {
@@ -262,6 +272,8 @@ export async function getBalance(artistId: string, now: Date = new Date()): Prom
     };
   }
 
+  const lateMonths = owedMonths.filter((m) => isPayoutLate(m, now));
+
   const months = Array.from(new Set([...Array.from(byMonth.keys()), ...Array.from(paid.keys())])).sort((a, b) => b.localeCompare(a));
   const payouts: PayoutRow[] = months.map((m) => {
     const agg = byMonth.get(m) || { cents: 0, sales: 0, prints: 0 };
@@ -292,9 +304,32 @@ export async function getBalance(artistId: string, now: Date = new Date()): Prom
     lifetimeCents,
     adjustmentCents,
     nextPayout,
+    lateMonths,
     venmoHandle: artist?.venmoHandle?.trim() || null,
     method,
     ledger,
     payouts,
   };
+}
+
+/**
+ * Every artist with a late payout: a closed month with paid sales, not marked paid, more than
+ * LATE_AFTER_DAYS past its payout day. Closed accounts included (they are still owed).
+ */
+export async function latePayouts(now: Date = new Date()): Promise<{ artistId: string; month: string }[]> {
+  const rows = await prisma.$queryRaw<{ artistId: string; month: string }[]>`
+    SELECT DISTINCT a."artistId" AS "artistId", to_char(o."createdAt" AT TIME ZONE 'UTC', 'YYYY-MM') AS month
+    FROM "OrderItem" oi
+    JOIN "Order" o ON o.id = oi."orderId"
+    JOIN "Artwork" a ON a.id = oi."artworkId"
+    WHERE o."paymentStatus" = 'paid' AND o.kind <> 'bulk'
+      AND o."createdAt" < ${new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))}`;
+  const late = rows.filter((r) => isPayoutLate(r.month, now));
+  if (!late.length) return [];
+  const paid = await prisma.payout.findMany({
+    where: { artistId: { in: Array.from(new Set(late.map((r) => r.artistId))) }, paidAt: { not: null } },
+    select: { artistId: true, month: true },
+  });
+  const done = new Set(paid.map((p) => `${p.artistId}:${p.month}`));
+  return late.filter((r) => !done.has(`${r.artistId}:${r.month}`)).sort((a, b) => a.month.localeCompare(b.month));
 }

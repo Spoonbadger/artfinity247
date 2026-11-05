@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth"
 import { Prisma } from "@prisma/client";
+import { announceArtworkLive } from "@/lib/artworkLive";
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
@@ -38,6 +39,9 @@ export async function PATCH(
             flaggedBy: admin.id,
           };
 
+    const before = await prisma.artwork.findUnique({ where: { id }, select: { status: true } });
+    if (!before) return new NextResponse("Not found", { status: 404 });
+
     const artwork = await prisma.artwork.update({
       where: { id },
       data: updateData,
@@ -48,6 +52,9 @@ export async function PATCH(
         flaggedBy: true,
       },
     });
+
+    // Out of review: referral reward and the artist's "it's live" email.
+    if (action === "approve" && before.status !== "APPROVED") await announceArtworkLive(artwork.id);
 
     return NextResponse.json(artwork, { status: 200 });
   } catch (err: any) {

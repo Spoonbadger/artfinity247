@@ -15,6 +15,9 @@ import ArtistTabs from "@/components/artist/ArtistTabs";
 import CollectionsTab from "@/components/collections/CollectionsTab";
 import { getPublicCollections } from "@/components/collections/data";
 import { WorkLayout } from "@/components/artist/WorkGrid";
+import { getReviews } from "@/lib/reviews";
+import ReviewStars from "@/components/reviews/ReviewStars";
+import ReviewList from "@/components/reviews/ReviewList";
 
 export const dynamic = "force-dynamic";
 
@@ -74,6 +77,7 @@ export default async function ArtistPage({ params, searchParams }: Props) {
   if (!artist) notFound();
   const socials = await getArtistSocials(artist.id);
   const collections = await getPublicCollections(artist.slug);
+  const { summary: rating, reviews } = await getReviews({ artistId: artist.id });
 
   const me = await getUserFromCookie();
   const isOwner = !!me?.slug && me.slug.toLowerCase() === artist.slug.toLowerCase();
@@ -82,7 +86,7 @@ export default async function ArtistPage({ params, searchParams }: Props) {
   const banner = preview ? resolveBanner(artist.works, theme) : artist.banner;
   const accent = paint(theme.accent);
   const trust = { ...artist.trust, medal: theme.showStats ? artist.trust.earned : null };
-  const venues = venuesFor(artist.slug);
+  const venues = await venuesFor(artist.id);
   const tagline = artist.bio ? firstSentence(artist.bio) : "";
   const cityShort = artist.city.split(",")[0];
   const since = artist.memberSince.toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -126,6 +130,7 @@ export default async function ArtistPage({ params, searchParams }: Props) {
             <p className="truncate text-[15px] text-ink-2 sm:text-base">
               {[artist.city, tagline].filter(Boolean).join(" · ")}
             </p>
+            <ReviewStars average={rating.average} count={rating.count} href="#reviews" className="w-fit" />
           </div>
           <div className="flex flex-wrap items-center gap-3 pb-2 sm:ml-auto">
             <ArtistSocials links={socials} />
@@ -154,8 +159,8 @@ export default async function ArtistPage({ params, searchParams }: Props) {
                   See it in person
                 </h2>
                 <ul className="grid gap-0 rounded-xl border-[1.5px] border-line bg-wall/50 px-3.5 py-1.5">
-                  {venues.map((v) => (
-                    <li key={v.name} className="flex items-baseline justify-between gap-3 border-b border-dashed border-line py-2 text-[14px] last:border-0">
+                  {venues.map((v, i) => (
+                    <li key={i} className="flex items-baseline justify-between gap-3 border-b border-dashed border-line py-2 text-[14px] last:border-0">
                       <span className="min-w-0 text-ink">{v.name}</span>
                       <span className="shrink-0 text-[12.5px] font-semibold text-ink-2">{v.when}</span>
                     </li>
@@ -183,6 +188,15 @@ export default async function ArtistPage({ params, searchParams }: Props) {
               tabs={[
                 { id: "work", label: "Work", count: artist.works.length, panel: <WorkLayout works={artist.works} layout={theme.layout} pinned={theme.pinned} isOwner={isOwner} /> },
                 ...(collections.length ? [{ id: "collections", label: "Collections", count: collections.length, panel: <CollectionsTab artistSlug={artist.slug} collections={collections} /> }] : []),
+                ...(rating.count ? [{
+                  id: "reviews", label: "Reviews", count: rating.count,
+                  panel: (
+                    <div className="grid gap-5">
+                      <ReviewStars average={rating.average} count={rating.count} size="lg" />
+                      <ReviewList reviews={reviews} artistName={artist.firstName || artist.name} showArtwork />
+                    </div>
+                  ),
+                }] : []),
                 { id: "about", label: "About", panel: about },
               ]}
             />

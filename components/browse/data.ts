@@ -4,7 +4,7 @@ import { basePrices } from "@/lib/artwork_price";
 
 /** Public listings never show rejected work. */
 // Only approved work is public (matches the public APIs and the scan page).
-export const PUBLIC_ART: Prisma.ArtworkWhereInput = { status: "APPROVED", slug: { not: null } };
+export const PUBLIC_ART: Prisma.ArtworkWhereInput = { status: "APPROVED", slug: { not: null }, artist: { closedAt: null } };
 
 const artSelect = {
   id: true, slug: true, title: true, imageUrl: true, sensitive: true, markupSmall: true, markupMedium: true, createdAt: true, editionSize: true,

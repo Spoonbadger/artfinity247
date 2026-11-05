@@ -3,6 +3,10 @@ const nextConfig = {
   images: {
     remotePatterns: [{ protocol: "https", hostname: "res.cloudinary.com" }],
   },
+  // TDMRep (W3C): reserve text-and-data-mining rights on every page and image.
+  async headers() {
+    return [{ source: "/:path*", headers: [{ key: "tdm-reservation", value: "1" }] }];
+  },
   async rewrites() {
     return [
       // Artist pages live at theartfinity.com/@handle

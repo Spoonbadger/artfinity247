@@ -6,14 +6,17 @@ import { cn } from "@/lib/utils";
 
 type Tab = { id: string; label: string; count?: number; panel: ReactNode };
 
-/** Work / About tabs. Panels are rendered on the server; this only switches them. Syncs with #about. */
+/** Work / About tabs. Panels are rendered on the server; this only switches them. Syncs with #about, #reviews etc. */
 export default function ArtistTabs({ tabs }: { tabs: Tab[] }) {
   const [active, setActive] = useState(tabs[0]?.id);
 
   useEffect(() => {
     const fromHash = () => {
       const h = window.location.hash.slice(1);
-      if (tabs.some((t) => t.id === h)) setActive(h);
+      if (!tabs.some((t) => t.id === h)) return;
+      setActive(h);
+      // Links like the rating under the name (#reviews) jump down to the tabs.
+      if (h !== tabs[0]?.id) requestAnimationFrame(() => document.getElementById(`tab-${h}`)?.scrollIntoView({ behavior: "smooth", block: "start" }));
     };
     fromHash();
     window.addEventListener("hashchange", fromHash);

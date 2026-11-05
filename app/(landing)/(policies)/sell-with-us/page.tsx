@@ -7,6 +7,8 @@ import SplitBar from "@/components/home/SplitBar";
 import EarningsCalculator from "@/components/home/EarningsCalculator";
 import { DabRow } from "@/components/browse/PageHead";
 import Splat from "@/components/motion/Splat";
+import { FREE_SPLIT, PRO, pct, proPrice } from "@/lib/plans";
+import { PAYOUT_DAY_OF_MONTH, RETURN_WINDOW_DAYS } from "@/lib/balance";
 import BrushWipe from "@/components/motion/BrushWipe";
 
 export const metadata: Metadata = { title: "Sell with us", description: "Free for artists. We print, ship and pay you 60% of the profit." };
@@ -19,10 +21,11 @@ const WE_DO: [string, string, string][] = [
 ];
 
 const FAQ: [string, React.ReactNode][] = [
-  ["Does it cost anything?", "No. No sign-up fee, no subscription, no upfront printing costs. You don’t manage inventory."],
-  ["How do I get paid?", "After production and operating costs, each sale’s profit splits 60% to you and 40% to Artfinity. Payouts are calculated monthly and sent through Venmo by the 5th of the following month."],
-  ["Who owns my art?", <>You do. You give us a license to show it and print orders while it’s listed. Details in the <Link href="/artist-terms-and-agreement">artist terms</Link>.</>],
-  ["Can I set my own prices?", "Yes. Add a markup on any size. Bigger sizes pay more."],
+  ["Does it cost anything?", `No. No sign-up fee, no upfront printing costs, no inventory. The Infinity plan is optional, at ${proPrice()} a month.`],
+  ["How do I get paid?", `After each order's printing, shipping and payment costs, the profit splits ${pct(FREE_SPLIT)} to you (${pct(PRO.split)} on Infinity). Each sale is held ${RETURN_WINDOW_DAYS} days for returns, then each month's earnings go out by Venmo by the ${PAYOUT_DAY_OF_MONTH}th of the following month.`],
+  ["Who owns my art?", <>You do. You keep your copyright and give us a limited license to print, sell and promote the work while it&apos;s listed. We never use it to train AI. Details in the <Link href="/artist-terms-and-agreement">artist terms</Link>.</>],
+  ["Can I set my own prices?", "Yes. You set the price of each size, from the base price up. Bigger sizes pay more."],
+  ["What about shipping?", "Buyers in the US get free shipping. It's part of the print cost, so nothing is added at checkout."],
   ["What about taxes?", "Artists report and pay their own taxes. Artfinity doesn’t withhold taxes for you."],
 ];
 
@@ -76,6 +79,7 @@ export default function SellWithUsPage() {
             </details>
           ))}
         </div>
+        <p className="mt-4 text-[14px] text-ink-2">Last updated: November 4, 2026</p>
       </section>
 
       <section className="relative overflow-hidden bg-ink text-white">

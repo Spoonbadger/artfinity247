@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     const skip = (page - 1) * limit
 
     // Search artworks (approved only: pending/rejected work is never public)
-    const artworkWhere = { status: "APPROVED" as const, title: { contains: q, mode: "insensitive" as const } }
+    const artworkWhere = { status: "APPROVED" as const, artist: { closedAt: null }, title: { contains: q, mode: "insensitive" as const } }
     const artworks = await prisma.artwork.findMany({
       where: artworkWhere,
       select: { slug: true, title: true, imageUrl: true, artist: { select: { name: true, slug: true } } },
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 
     // Search artists
     const artists = await prisma.artist.findMany({
-      where: { name: { contains: q, mode: "insensitive" } },
+      where: { name: { contains: q, mode: "insensitive" }, closedAt: null },
       select: { slug: true, name: true, profileImage: true },
       skip,
       take: limit,
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     // Count totals
     const [artworkCount, artistCount] = await Promise.all([
       prisma.artwork.count({ where: artworkWhere }),
-      prisma.artist.count({ where: { name: { contains: q, mode: "insensitive" } } }),
+      prisma.artist.count({ where: { name: { contains: q, mode: "insensitive" }, closedAt: null } }),
     ])
 
     return NextResponse.json({

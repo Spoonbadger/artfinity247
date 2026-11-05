@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Swatch } from "@/components/af/Brush";
 import { DabRow } from "@/components/browse/PageHead";
 import { prisma } from "@/lib/prisma";
+import { getUserFromCookie } from "@/lib/auth";
 import ReportForm, { type ReportArt } from "./ReportForm";
 
 export const dynamic = "force-dynamic";
@@ -13,30 +15,49 @@ const STEPS: [string, string, string][] = [
   ["var(--af-sticker)", "We tell you", "You’ll get an email with what we decided."],
 ];
 
-export default async function ReportPage({ searchParams }: { searchParams: { art?: string } }) {
+const COUNTER_STEPS: [string, string, string][] = [
+  ["var(--af-scan)", "We pass it on", "The person who filed the notice gets a copy of your counter-notice."],
+  ["var(--af-sticker)", "We wait 10 business days", "That gives them time to go to court. Most don’t."],
+  ["var(--af-earned)", "Your work goes back up", "Unless they tell us they’ve filed a lawsuit, we restore it within 14 business days."],
+];
+
+export default async function ReportPage({ searchParams }: { searchParams: { art?: string; type?: string } }) {
+  const counter = searchParams.type === "counter";
   const slug = typeof searchParams.art === "string" ? searchParams.art.trim().slice(0, 200) : "";
+  const user = counter ? await getUserFromCookie() : null;
+
   const row = slug
     ? await prisma.artwork
         .findFirst({
-          where: { slug, status: "APPROVED" },
-          select: { slug: true, title: true, imageUrl: true, sensitive: true, artist: { select: { artist_name: true, name: true } } },
+          // Counter-notices are about work that was taken down, so any status.
+          where: counter ? { slug } : { slug, status: "APPROVED" },
+          select: { slug: true, title: true, imageUrl: true, sensitive: true, artistId: true, artist: { select: { artist_name: true, name: true } } },
         })
         .catch(() => null)
     : null;
-  const art: ReportArt | null = row
+  // Only the artist (or an admin) may file a counter-notice for their own work.
+  const canCounter = !!row && !!user && (user.id === row.artistId || user.role === "ADMIN");
+  const art: ReportArt | null = row && (!counter || canCounter)
     ? { slug: row.slug!, title: row.title, imageUrl: row.imageUrl, sensitive: row.sensitive ?? [], artist: row.artist.artist_name || row.artist.name }
     : null;
+
+  const steps = counter ? COUNTER_STEPS : STEPS;
+  const next = `/report?type=counter${slug ? `&art=${encodeURIComponent(slug)}` : ""}`;
 
   return (
     <div className="pb-24">
       <section className="mx-auto max-w-[1240px] px-4 pb-8 pt-10 sm:px-6 md:pt-16">
-        <div className="mb-4 flex items-center gap-2.5"><DabRow /><span className="eyebrow">Report art</span></div>
-        <h1 className="display text-[48px] sm:text-[80px]">Something not right?</h1>
-        <p className="mt-4 max-w-[48ch] text-[18px] text-ink-2">Artists should get paid for their own work. Tell us what you saw and we’ll look into it.</p>
+        <div className="mb-4 flex items-center gap-2.5"><DabRow /><span className="eyebrow">{counter ? "Counter-notice" : "Report art"}</span></div>
+        <h1 className="display text-[48px] sm:text-[80px]">{counter ? "Taken down by mistake?" : "Something not right?"}</h1>
+        <p className="mt-4 max-w-[48ch] text-[18px] text-ink-2">
+          {counter
+            ? "If your work was removed after a copyright notice and it’s yours, you can file a counter-notice."
+            : "Artists should get paid for their own work. Tell us what you saw and we’ll look into it."}
+        </p>
       </section>
       <section className="mx-auto grid max-w-[1240px] items-start gap-8 px-4 sm:px-6 lg:grid-cols-[1fr_1.3fr] lg:gap-12">
         <ol className="order-last grid gap-5 lg:order-none">
-          {STEPS.map(([color, title, sub]) => (
+          {steps.map(([color, title, sub]) => (
             <li key={title} className="grid grid-cols-[56px_1fr] gap-4 border-t-[3px] border-ink pt-4">
               <Swatch color={color} className="h-10" />
               <div className="grid min-w-0 gap-1">
@@ -46,10 +67,27 @@ export default async function ReportPage({ searchParams }: { searchParams: { art
             </li>
           ))}
           <p className="border-t border-line pt-4 text-[14.5px] text-ink-2">
-            Reports go to our team, not the artist. If we take something down, the artist hears why and can reply.
+            {counter ? "Only file this if you truly believe the takedown was wrong. False statements can carry legal penalties." : "Reports go to our team, not the artist. If we take something down, the artist hears why and can reply."}{" "}
+            <Link href="/dmca" className="font-semibold text-ink underline-offset-2 hover:underline">How DMCA works here</Link>
           </p>
         </ol>
-        <ReportForm art={art} />
+        {counter && !art ? (
+          <div className="af-card grid justify-items-start gap-3 p-5 sm:p-7">
+            <h2 className="display text-[32px]">{user ? "We couldn’t find that work" : "Log in first"}</h2>
+            <p className="text-[16px] text-ink-2">
+              {user
+                ? "Open the link from your takedown email, or write to us from the contact page."
+                : "Counter-notices come from the artist’s account. Log in and we’ll bring you back here."}
+            </p>
+            {user ? (
+              <Link href="/contact" className="btn btn-ghost">Contact us</Link>
+            ) : (
+              <Link href={`/login?next=${encodeURIComponent(next)}`} className="btn btn-blue">Log in</Link>
+            )}
+          </div>
+        ) : (
+          <ReportForm art={art} mode={counter ? "counter" : "report"} />
+        )}
       </section>
     </div>
   );

@@ -24,6 +24,8 @@ export const metadata: Metadata = {
   description:
     "Artists upload their work free, print a QR code to hang beside it, and get paid when people scan it and buy a print.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com"),
+  // Opt out of AI training. Pages that set their own robots (admin, studio) replace this.
+  robots: "noai, noimageai",
   icons: {
     icon: [
       { url: "/brand/favicon.svg", type: "image/svg+xml" },

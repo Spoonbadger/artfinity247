@@ -4,12 +4,15 @@ import Link from "next/link";
 import Logo from "@/components/af/Logo";
 import AdminNav from "./_components/AdminNav";
 import { adminOrRedirect } from "./_components/gate";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: { default: "Admin", template: "%s · Admin · Artfinity" }, robots: { index: false } };
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const admin = await adminOrRedirect();
+  const openReports = await prisma.artReport.count({ where: { status: "open" } }).catch(() => 0);
+  const heldReviews = await prisma.review.count({ where: { status: "flagged" } }).catch(() => 0);
 
   return (
     <div className="min-h-[100svh] bg-wall">
@@ -19,7 +22,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
             <Logo href="/admin/orders" />
             <span className="sticker-badge text-[11.5px]">Admin</span>
           </div>
-          <AdminNav />
+          <AdminNav counts={{ "/admin/reports": openReports, "/admin/reviews": heldReviews }} />
           <div className="ml-auto flex items-center gap-3 text-[14px]">
             <span className="hidden text-ink-2 lg:inline">{admin.email}</span>
             <Link href="/" className="btn btn-ghost btn-sm">View site</Link>

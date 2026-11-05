@@ -33,10 +33,12 @@ export async function requireArtist(nextPath?: string) {
     where: { id: user.id },
     select: {
       id: true, slug: true, name: true, first_name: true, artist_name: true, city: true,
-      profileImage: true, bio: true, venmoHandle: true, email: true, role: true,
+      profileImage: true, bio: true, venmoHandle: true, email: true, role: true, closedAt: true,
     },
   });
   if (!artist) redirect(`/login?next=${encodeURIComponent(next)}`);
+  // A closed account's old cookie no longer opens the Studio.
+  if (artist.closedAt) redirect("/login?closed=1");
   return artist;
 }
 

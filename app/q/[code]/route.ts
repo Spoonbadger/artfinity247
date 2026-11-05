@@ -18,7 +18,8 @@ function go(req: NextRequest, path: string) {
 
 export async function GET(req: NextRequest, { params }: { params: { code: string } }) {
   const qr = await resolveCode(params.code).catch((e) => { console.error("[q] lookup failed", e); return null; });
-  if (!qr) return go(req, "/?code=unknown");
+  // A closed account's codes go nowhere (its page is offline).
+  if (!qr || qr.artist.closedAt) return go(req, "/?code=unknown");
 
   const handle = encodeURIComponent(qr.artist.slug);
   if (!isLive(qr)) return go(req, `/@${handle}?expired=1`);
@@ -45,7 +46,7 @@ export async function GET(req: NextRequest, { params }: { params: { code: string
 // Link checkers send HEAD: answer the same redirect, count nothing.
 export async function HEAD(req: NextRequest, { params }: { params: { code: string } }) {
   const qr = await resolveCode(params.code).catch(() => null);
-  if (!qr) return go(req, "/?code=unknown");
+  if (!qr || qr.artist.closedAt) return go(req, "/?code=unknown");
   const handle = encodeURIComponent(qr.artist.slug);
   if (!isLive(qr)) return go(req, `/@${handle}?expired=1`);
   return go(req, qr.artwork?.slug ? `/art/${encodeURIComponent(qr.artwork.slug)}?c=${qr.code}` : `/@${handle}?c=${qr.code}`);

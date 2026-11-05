@@ -15,11 +15,12 @@ if (sort === "random") {
   const artists = await prisma.$queryRaw<any[]>`
     SELECT id, slug, name, bio, "profileImage", city, state, country
     FROM "Artist"
+    WHERE "closedAt" IS NULL
     ORDER BY RANDOM()
     LIMIT ${limit} OFFSET ${skip}
   `
 
-  const total = await prisma.artist.count()
+  const total = await prisma.artist.count({ where: { closedAt: null } })
 
   return NextResponse.json({ artists, total }, { status: 200 });
 }
@@ -36,6 +37,7 @@ if (sort === "random") {
 
   const [artists, total] = await Promise.all([
     prisma.artist.findMany({
+      where: { closedAt: null },
       skip,
       take: limit,
       orderBy,
@@ -50,7 +52,7 @@ if (sort === "random") {
         country: true,
       },
     }),
-    prisma.artist.count(),
+    prisma.artist.count({ where: { closedAt: null } }),
   ])
 
     return NextResponse.json({ artists, total }, { status: 200 });

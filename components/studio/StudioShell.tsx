@@ -19,6 +19,7 @@ export const STUDIO_NAV = [
   { href: "/studio/developers", label: "Embed", dab: "#9aa0ff" },
   { href: "/studio/links", label: "Links", dab: "#5bc0be" },
   { href: "/studio/customers", label: "Customers", dab: "#c98a5a" },
+  { href: "/studio/reviews", label: "Reviews", dab: "#ffd43b" },
   { href: "/studio/events", label: "Events", dab: "#7b2d8e" },
   { href: "/studio/sales", label: "Sales", dab: "#0f7a55" },
   { href: "/studio/money", label: "Money", dab: "#0f7a55" },

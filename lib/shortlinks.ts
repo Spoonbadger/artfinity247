@@ -78,7 +78,7 @@ export async function ensureArtworkCode(artistId: string, artworkId: string, lab
 
 const resolveSelect = {
   id: true, code: true, artistId: true, artworkId: true, venue: true, discountPct: true, active: true, expiresAt: true, label: true,
-  artist: { select: { slug: true } },
+  artist: { select: { slug: true, closedAt: true } },
   artwork: { select: { id: true, slug: true, status: true } },
 } as const;
 

@@ -3,6 +3,7 @@ import ProfileEditor from "@/components/studio/ProfileEditor";
 import AccountDetails from "@/components/studio/AccountDetails";
 import { StudioPage } from "@/components/studio/StudioPage";
 import { prisma } from "@/lib/prisma";
+import { VENMO_CONFIRM_HOURS } from "@/lib/venmo";
 import { requireArtist, displayName } from "../_lib/data";
 
 export const dynamic = "force-dynamic";
@@ -12,8 +13,11 @@ export default async function MyPageEditor() {
   const artist = await requireArtist("/studio/page");
   const acct = await prisma.artist.findUnique({
     where: { id: artist.id },
-    select: { first_name: true, last_name: true, email: true, phone: true, state: true },
+    select: { first_name: true, last_name: true, email: true, phone: true, state: true, venmoPending: true, venmoPendingAt: true },
   });
+  // An unconfirmed Venmo change only counts while its emailed link still works.
+  const pendingLive = acct?.venmoPendingAt && Date.now() - acct.venmoPendingAt.getTime() < VENMO_CONFIRM_HOURS * 3_600_000;
+  const venmoPending = pendingLive ? acct?.venmoPending ?? null : null;
   const art = await prisma.artwork.findMany({
     where: { artistId: artist.id, status: { not: "REJECTED" } },
     orderBy: { createdAt: "desc" },
@@ -34,6 +38,7 @@ export default async function MyPageEditor() {
     >
       <ProfileEditor
         initial={{ name: displayName(artist), city: artist.city || "", bio: artist.bio || "", profileImage: artist.profileImage, venmoHandle: artist.venmoHandle || "" }}
+        venmoPending={venmoPending}
         slug={artist.slug}
         art={art}
         account={

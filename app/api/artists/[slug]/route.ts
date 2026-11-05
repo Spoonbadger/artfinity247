@@ -34,14 +34,15 @@ export async function GET(
         country: true,
         profileImage: true,
         venmoHandle: true,
+        closedAt: true,
       },
     })
 
-    if (!artist) return new NextResponse("Artist not found", { status: 404 });
+    if (!artist || artist.closedAt) return new NextResponse("Artist not found", { status: 404 });
 
     // Contact and payout details are private: only the artist themself or an admin sees them.
     const { allowed } = await getArtistManager(artist.id)
-    const { email, phone, venmoHandle, ...publicArtist } = artist
+    const { email, phone, venmoHandle, closedAt: _closed, ...publicArtist } = artist
     const artistOut = allowed ? artist : publicArtist
 
     const where = { artistId: artist.id, status: ArtworkStatus.APPROVED };

@@ -3,13 +3,13 @@
 import { useMemo, useState } from "react";
 import type { LedgerLine } from "@/lib/balance";
 import BarChart, { Legend, type Bucket, type Series } from "./BarChart";
-import { PERIODS, SIZE_INCH, SIZE_LABEL, STATUS_COLOR, inPeriod, monthName, usd, weekStart, type Period } from "./format";
+import { PERIODS, SIZE_INCH, SIZE_LABEL, STATUS_COLOR, bucketOf, inPeriod, monthName, usd, weekStart, type Period } from "./format";
 
 const DAY = 86_400_000;
 const STATUS_SERIES: Series[] = [
-  { name: "Paid", color: STATUS_COLOR.paid },
-  { name: "Available", color: STATUS_COLOR.available },
-  { name: "Incoming", color: STATUS_COLOR.pending, hatch: true },
+  { name: "Paid out", color: STATUS_COLOR.paid },
+  { name: "Ready for payout", color: STATUS_COLOR.available },
+  { name: "On hold", color: STATUS_COLOR.pending, hatch: true },
 ];
 const GROSS_SERIES: Series[] = [
   { name: "Gross sales", color: "#c8763a" },
@@ -64,7 +64,8 @@ export default function MoneyInsights({ ledger, nowIso }: { ledger: LedgerLine[]
     for (const l of ledger) {
       const i = Math.floor((new Date(l.date).getTime() - first.getTime()) / (7 * DAY));
       if (i < 0 || i > 11) continue;
-      out[i].values[l.status === "paid" ? 0 : l.status === "available" ? 1 : 2] += l.shareCents;
+      const bucket = bucketOf(l, now.toISOString().slice(0, 7));
+      out[i].values[bucket === "paid" ? 0 : bucket === "ready" ? 1 : 2] += l.shareCents;
     }
     return out;
   }, [ledger, now]);

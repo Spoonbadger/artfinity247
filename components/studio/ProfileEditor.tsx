@@ -25,7 +25,7 @@ async function post(url: string, body: unknown) {
   return res.json();
 }
 
-export default function ProfileEditor({ initial, slug, art, account }: { initial: Profile; slug: string; art: Art[]; account?: ReactNode }) {
+export default function ProfileEditor({ initial, venmoPending = null, slug, art, account }: { initial: Profile; venmoPending?: string | null; slug: string; art: Art[]; account?: ReactNode }) {
   const router = useRouter();
   const { refreshUser } = useUser();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -35,6 +35,8 @@ export default function ProfileEditor({ initial, slug, art, account }: { initial
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  // A Venmo change waiting for the artist to confirm by email ("" = removing it).
+  const [pending, setPending] = useState<string | null>(venmoPending);
   const link = `theartfinity.com/@${slug}`;
   const dirty = p.name !== saved.name || p.city !== saved.city || p.bio !== saved.bio || p.venmoHandle !== saved.venmoHandle;
 
@@ -71,18 +73,35 @@ export default function ProfileEditor({ initial, slug, art, account }: { initial
       if (p.name !== saved.name) jobs.push(post("/api/artists/update-artist-name", { name: p.name.trim() }));
       if (p.city !== saved.city) jobs.push(post("/api/artists/update-city", { city: p.city.trim() }));
       if (p.bio !== saved.bio) jobs.push(post("/api/artists/update-bio", { bio: p.bio }));
-      if (p.venmoHandle !== saved.venmoHandle) jobs.push(post("/api/studio/venmo", { venmoHandle: p.venmoHandle }));
+      let venmo: { venmoHandle: string | null; pending: string | null } | null = null;
+      if (p.venmoHandle !== saved.venmoHandle) jobs.push(post("/api/studio/venmo", { venmoHandle: p.venmoHandle }).then((r) => { venmo = r; }));
       await Promise.all(jobs);
-      const next = { ...p, name: p.name.trim(), city: p.city.trim(), bio: p.bio.trim() };
+      const v = venmo as { venmoHandle: string | null; pending: string | null } | null;
+      // A change to an existing handle only applies after the email link is clicked.
+      const venmoHandle = v ? v.venmoHandle || "" : p.venmoHandle;
+      const next = { ...p, name: p.name.trim(), city: p.city.trim(), bio: p.bio.trim(), venmoHandle };
       setP(next);
       setSaved(next);
-      toast.success("Saved");
+      if (v) setPending(v.pending);
+      if (v?.pending != null) toast.success("Saved. Check your email to confirm the Venmo change.");
+      else toast.success("Saved");
       refreshUser();
       router.refresh();
     } catch (e: any) {
       setError(e.message || "Could not save.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function cancelVenmo() {
+    try {
+      const res = await fetch("/api/studio/venmo", { method: "DELETE", credentials: "include" });
+      if (!res.ok) throw new Error();
+      setPending(null);
+      toast.success("Venmo change canceled");
+    } catch {
+      toast.error("Couldn't cancel. Try again.");
     }
   }
 
@@ -127,10 +146,19 @@ export default function ProfileEditor({ initial, slug, art, account }: { initial
         </label>
         <div className="grid gap-2">
           <label className="af-field">
-            <span className="label">Venmo handle · payouts setup comes later</span>
+            <span className="label">Venmo handle · where we send your payouts</span>
             <input value={p.venmoHandle} onChange={(e) => setP({ ...p, venmoHandle: e.target.value.replace(/\s/g, "") })} maxLength={30} placeholder="@yourname" />
           </label>
-          {!saved.venmoHandle && (
+          {pending !== null && (
+            <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border-2 border-ink bg-sticker/40 px-3 py-2 text-[13.5px]">
+              <b className="min-w-0 flex-1">
+                {pending ? <>Waiting for you to confirm by email: {pending}</> : <>Waiting for you to confirm by email: remove your Venmo</>}
+              </b>
+              <button type="button" onClick={cancelVenmo} className="font-semibold text-ink-2 underline underline-offset-2 hover:text-coral">Cancel change</button>
+              <span className="basis-full text-[12.5px] text-ink-2">We emailed you a link (good for 24 hours). Payouts keep going to {saved.venmoHandle || "your current Venmo"} until then.</span>
+            </div>
+          )}
+          {!saved.venmoHandle && pending === null && (
             <p role="status" className="flex items-center gap-2 rounded-xl bg-sticker/40 px-3 py-2 text-[13.5px] font-semibold">
               <span className="sticker-badge text-[11px]">Heads up</span>Add your Venmo to get paid.
             </p>
@@ -188,24 +216,24 @@ export default function ProfileEditor({ initial, slug, art, account }: { initial
 }
 
 function DeleteAccount() {
-  const router = useRouter();
   const { refreshUser } = useUser();
   const [open, setOpen] = useState(false);
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  async function del() {
+  async function close() {
     setBusy(true);
     setErr(null);
     try {
       const res = await fetch("/api/artists/delete-profile", { method: "DELETE", credentials: "include" });
       if (!res.ok) throw new Error();
+      setDone(true);
       await refreshUser();
-      router.push("/");
-      router.refresh();
     } catch {
-      setErr("Could not delete your account. Try again.");
+      setErr("Could not close your account. Try again.");
+    } finally {
       setBusy(false);
     }
   }
@@ -213,26 +241,37 @@ function DeleteAccount() {
   return (
     <section aria-labelledby="acct-h" className="mt-8 grid gap-3 border-t border-dashed border-line pt-5">
       <h2 id="acct-h" className="text-[18px] font-bold">Account</h2>
-      {!open ? (
+      {done ? (
+        <div role="status" className="grid gap-2 rounded-2xl border-2 border-ink bg-wall p-4">
+          <b className="font-display text-[22px] [font-variation-settings:'wdth'_80]">Your account is closed.</b>
+          <p className="text-[14px]">Your page is offline. You&apos;ll still be paid what you&apos;ve earned, on the normal schedule. We emailed you the details.</p>
+          <a href="/" className="btn btn-ghost justify-self-start">Go to the homepage</a>
+        </div>
+      ) : !open ? (
         <div className="flex flex-wrap items-center gap-x-5 text-[14px] font-semibold [&>*]:inline-flex [&>*]:min-h-[44px] [&>*]:items-center">
           <Link href="/studio/purchases" className="text-scan underline-offset-2 hover:underline">My purchases</Link>
           <Link href="/change-password" className="text-scan underline-offset-2 hover:underline">Change password</Link>
           <button type="button" onClick={() => setOpen(true)} className="text-ink-2 underline-offset-2 hover:text-coral hover:underline">
-            Delete my account
+            Close my account
           </button>
         </div>
       ) : (
         <div role="alertdialog" aria-labelledby="del-h" className="grid gap-3 rounded-2xl border-2 border-coral bg-[#fff6f3] p-4">
-          <b id="del-h" className="font-display text-[22px] [font-variation-settings:'wdth'_80]">Delete your account?</b>
-          <p className="text-[14px]">Your page, your art and your codes go away for good. Past sales stay on record.</p>
+          <b id="del-h" className="font-display text-[22px] [font-variation-settings:'wdth'_80]">Close your account?</b>
+          <p className="text-[14px]">Your page goes offline right away. You&apos;ll still be paid what you&apos;ve earned.</p>
+          <ul className="grid list-disc gap-1 pl-5 text-[13.5px] text-ink-2">
+            <li>Your art and codes stop showing to buyers.</li>
+            <li>Unpaid earnings go to your Venmo on the usual monthly payout.</li>
+            <li>Past sales stay on record. Contact us if you want to reopen.</li>
+          </ul>
           <label className="af-field border-coral">
-            <span className="label">Type DELETE to confirm</span>
+            <span className="label">Type CLOSE to confirm</span>
             <input value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" autoFocus />
           </label>
           {err && <p role="alert" className="text-[13.5px] font-semibold text-coral">{err}</p>}
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={del} disabled={typed.trim().toUpperCase() !== "DELETE" || busy} className="btn border-coral bg-coral">
-              {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}Delete for good
+            <button type="button" onClick={close} disabled={typed.trim().toUpperCase() !== "CLOSE" || busy} className="btn border-coral bg-coral">
+              {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}Close my account
             </button>
             <button type="button" onClick={() => { setOpen(false); setTyped(""); }} className="btn btn-ghost">Keep my account</button>
           </div>
