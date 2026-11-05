@@ -1,4 +1,5 @@
 // Copy-paste snippets for the embed script. Pure strings, safe on server and client.
+import { artUrl } from "@/lib/urls";
 export const SITE = (process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com").replace(/\/$/, "");
 export const SCRIPT_TAG = `<script src="${SITE}/embed.js" async></script>`;
 
@@ -18,7 +19,7 @@ export const buySnippet = (slug: string) => `<div data-artfinity-buy="${slug}"><
 export const linksSnippet = (handle: string, theme?: Theme) => `<div data-artfinity-links="${handle}"${themeAttr(theme)}></div>\n${SCRIPT_TAG}`;
 
 /** No-JavaScript fallback: a plain link that still works where scripts are blocked (email, some site builders). */
-export const plainBuyLink = (slug: string, title: string) => `<a href="${SITE}/art/${slug}">Buy a print of ${title.replace(/[<>"]/g, "")}</a>`;
+export const plainBuyLink = (handle: string, slug: string, title: string) => `<a href="${artUrl(handle, slug, SITE)}">Buy a print of ${title.replace(/[<>"]/g, "")}</a>`;
 
 /** The Share kit's iframe card (/embed/art/<slug>): works where scripts are blocked but iframes are fine. */
 export const iframeSrc = (slug: string) => `${SITE}/embed/art/${encodeURIComponent(slug)}`;

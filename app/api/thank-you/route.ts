@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from "@/lib/prisma";
+import { helpPath } from "@/lib/reprints";
 
 export const dynamic = "force-dynamic"
 export const runtime = 'nodejs'
@@ -23,6 +24,7 @@ export async function GET(req: NextRequest) {
         currency: true,
         paymentStatus: true,
         receiptSentAt: true,
+        shippingStatus: true,
         shippingName: true,
         shippingAddress: true,
         items: {
@@ -52,5 +54,7 @@ export async function GET(req: NextRequest) {
   }
   if (!order) return NextResponse.json({ message: 'Order not found' }, { status: 404 })
 
-  return NextResponse.json(order)
+  // Holding the session id stands in for the buyer: once it ships, offer the signed "Problem with your print?" link.
+  const shipped = order.shippingStatus === "shipped" || order.shippingStatus === "delivered"
+  return NextResponse.json({ ...order, helpPath: shipped ? helpPath(order.id) : null })
 }

@@ -10,6 +10,7 @@ import { getUserFromCookie } from "@/lib/auth";
 import { calcItemProfitCents } from "@/lib/revenue";
 import { BULK_MAX_LINES, BULK_MAX_PER_LINE, BULK_SIZE_KEY, BULK_SIZE_LABEL, bulkQuote, isBulkSize } from "@/lib/bulk";
 import { claimEditionNumbers, EditionSoldOutError, editionMessage, editionShortfalls } from "@/lib/editions";
+import { sizeAllowed } from "@/lib/printSizes";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
   const ids = Array.from(new Set(raw.map((l: any) => String(l?.artworkId ?? "")).filter(Boolean))) as string[];
   const arts = await prisma.artwork.findMany({
     where: { id: { in: ids }, artistId: artist.id, status: { not: "REJECTED" } },
-    select: { id: true, slug: true, title: true, imageUrl: true, editionSize: true },
+    select: { id: true, slug: true, title: true, imageUrl: true, editionSize: true, printableSizes: true },
   });
   const byId = new Map(arts.map((a) => [a.id, a]));
   const lines = raw
@@ -52,6 +53,13 @@ export async function POST(req: Request) {
     })
     .filter(Boolean) as { art: (typeof arts)[number]; size: "S" | "M" | "L" | "XL"; framed: boolean; frameColor: string | null; quantity: number }[];
   if (!lines.length) return json({ error: "Add at least one print." }, 400);
+
+  // No blurry prints, same rule as retail checkout: only sizes the file is sharp enough for.
+  const blurry = lines.find((l) => !sizeAllowed(l.art.printableSizes, BULK_SIZE_KEY[l.size]));
+  if (blurry) {
+    const s = BULK_SIZE_LABEL[blurry.size];
+    return json({ error: `${blurry.art.title} isn't sharp enough for ${s.name} (${s.inches}). Pick a smaller size.`, size: blurry.size, artworkId: blurry.art.id }, 400);
+  }
 
   // Ship to (required: these go to the artist, not a buyer)
   const ship = {

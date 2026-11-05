@@ -10,6 +10,7 @@ import { editionsFor } from "@/lib/editions";
 import type { Edition } from "@/lib/editionFormat";
 import { money } from "@/lib/earnings";
 import { cn } from "@/lib/utils";
+import { artistPath, artPath, collectionPath } from "@/lib/urls";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${collection.title} by ${artist.name}`,
     description: collection.description || `${collection.works.length} works by ${artist.name}. Prints with free US shipping.`,
-    alternates: { canonical: `/@${artist.slug}/collections/${collection.slug}` },
+    alternates: { canonical: collectionPath(artist.slug, collection.slug) },
     openGraph: { title: `${collection.title} · ${artist.name}`, images: collection.cover ? [{ url: collection.cover.imageUrl, alt: collection.cover.title }] : undefined },
   };
 }
@@ -46,10 +47,10 @@ const WIDTH = [
 ];
 const DROP = ["", "lg:mt-16", "lg:mt-6", "", "lg:mt-10", "lg:mt-2"];
 
-function Hung({ w, i, edition }: { w: PublicWork; i: number; edition: Edition | null }) {
+function Hung({ w, i, edition, handle }: { w: PublicWork; i: number; edition: Edition | null; handle: string }) {
   return (
     <li className={cn("w-full max-w-[340px] sm:max-w-none", WIDTH[i % WIDTH.length], DROP[i % DROP.length])}>
-      <Link href={`/art/${w.slug}`} className="group block text-ink no-underline" aria-label={`${w.title}, from ${money(w.fromCents)}`}>
+      <Link href={artPath(handle, w.slug)} className="group block text-ink no-underline" aria-label={`${w.title}, from ${money(w.fromCents)}`}>
         <div className={cn("relative mx-auto w-fit transition duration-300 group-hover:-translate-y-1", TILT[i % TILT.length])}>
           {/* the hanging wire */}
           <span aria-hidden className="absolute -top-6 left-1/2 hidden h-6 w-24 -translate-x-1/2 sm:block">
@@ -80,7 +81,7 @@ function Hung({ w, i, edition }: { w: PublicWork; i: number; edition: Edition | 
 function Neighbor({ dir, artistSlug, c }: { dir: "prev" | "next"; artistSlug: string; c: { slug: string; title: string; cover: PublicWork | null } }) {
   return (
     <Link
-      href={`/@${artistSlug}/collections/${c.slug}`}
+      href={collectionPath(artistSlug, c.slug)}
       className={cn("group flex min-w-0 items-center gap-3 rounded-2xl border border-line bg-white p-2.5 text-ink no-underline transition hover:border-ink", dir === "next" && "flex-row-reverse text-right")}
     >
       {c.cover && (
@@ -111,7 +112,7 @@ export default async function CollectionPage({ params }: Props) {
   return (
     <div className="bg-[#efece5] bg-[radial-gradient(ellipse_at_50%_0%,#f7f5f0_0%,#ebe7df_55%,#e4dfd5_100%)] pb-16 sm:pb-24">
       <header className="mx-auto grid max-w-[1240px] gap-4 px-4 pb-8 pt-8 sm:px-6 sm:pb-12 sm:pt-14">
-        <Link href={`/@${artist.slug}`} className="flex w-fit min-h-[44px] items-center gap-2.5 text-ink no-underline">
+        <Link href={artistPath(artist.slug)} className="flex w-fit min-h-[44px] items-center gap-2.5 text-ink no-underline">
           <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-wall ring-2 ring-white">
             {artist.avatar ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -135,7 +136,7 @@ export default async function CollectionPage({ params }: Props) {
       </header>
 
       <ul className="mx-auto flex max-w-[1240px] flex-wrap items-start justify-center gap-x-[6%] gap-y-14 px-8 pb-10 pt-6 sm:gap-x-[7%] sm:px-6 lg:gap-x-[4%] lg:gap-y-16">
-        {collection.works.map((w, i) => <Hung key={w.id} w={w} i={i} edition={editions.get(w.id) ?? null} />)}
+        {collection.works.map((w, i) => <Hung key={w.id} w={w} i={i} edition={editions.get(w.id) ?? null} handle={artist.slug} />)}
       </ul>
 
       <nav aria-label="More collections" className="mx-auto mt-4 grid max-w-[1240px] gap-3 px-4 sm:grid-cols-2 sm:px-6">
@@ -143,7 +144,7 @@ export default async function CollectionPage({ params }: Props) {
         <div className="min-w-0">{next && <Neighbor dir="next" artistSlug={artist.slug} c={next} />}</div>
       </nav>
       <p className="mt-8 text-center">
-        <Link href={`/@${artist.slug}`} className="btn btn-ghost">All of {artist.name.split(" ")[0]}&apos;s work</Link>
+        <Link href={artistPath(artist.slug)} className="btn btn-ghost">All of {artist.name.split(" ")[0]}&apos;s work</Link>
       </p>
     </div>
   );

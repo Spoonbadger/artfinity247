@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from "@/lib/prisma";
 import {  } from '@/lib/auth'
 import { jwtVerify } from 'jose'
-import cloudinary from '@/lib/cloudinary'
+import { deleteUpload } from '@/lib/storage'
 import Busboy from 'busboy'
 import { toNodeReadable } from '@/lib/toNodeReadables'
 import { parseSensitive } from '@/components/studio/sensitive'
@@ -16,17 +16,6 @@ export const dynamicParams = true
 export const runtime = "nodejs"
 
 
-function extractPublicId(url: string) {
-  const afterUpload = url.split("/upload/")[1]
-  if (!afterUpload) return null
-
-  const parts = afterUpload.split("/")
-  
-  // Remove transformation + version (if present)
-  const filtered = parts.filter(p => !p.startsWith("v") && !p.includes(","))
-
-  return filtered.join("/").split(".")[0]
-}
 
 export async function POST(
   req: NextRequest,
@@ -89,21 +78,21 @@ export async function POST(
       if (artwork.status === "APPROVED" && (await initialArtworkStatus(artwork.artistId)) === "PENDING") imageData.status = "PENDING"
     }
 
-    // Limited print run. Leave the field out to keep it; "" = open edition; a number can't go
-    // below EDITION_MIN or below prints already sold.
+    // Limited print run. Leave the field out to keep it; "" = open edition; else EDITION_MIN..EDITION_MAX.
+    // Locked once any print has sold (retail or bulk, lib/editions.ts): buyers were promised that size.
     const editionRaw = form.get("editionSize")
     let editionSize: number | null | undefined = undefined
     if (editionRaw !== null) {
       const t = String(editionRaw).trim()
       editionSize = t ? parseInt(t, 10) : null
-      if (editionSize !== null) {
+      if (editionSize !== artwork.editionSize) {
         const sold = await soldCount(artwork.id)
-        const min = Math.max(EDITION_MIN, sold)
-        if (!Number.isFinite(editionSize) || editionSize < min || editionSize > EDITION_MAX) {
-          return new NextResponse(
-            sold > EDITION_MIN ? `${sold} already sold. Pick ${min} to ${EDITION_MAX}.` : `An edition is ${EDITION_MIN} to ${EDITION_MAX} prints.`,
-            { status: 400 },
-          )
+        if (sold > 0) {
+          const now = artwork.editionSize ? `${sold} of ${artwork.editionSize} sold` : `${sold} sold as an open edition`
+          return new NextResponse(`Locked: ${now}. Editions can't change once a print sells.`, { status: 400 })
+        }
+        if (editionSize !== null && (!Number.isFinite(editionSize) || editionSize < EDITION_MIN || editionSize > EDITION_MAX)) {
+          return new NextResponse(`An edition is ${EDITION_MIN} to ${EDITION_MAX} prints.`, { status: 400 })
         }
       }
     }
@@ -145,16 +134,14 @@ export async function POST(
     })
 
 
-    // Delete old Cloudinary image if replaced
-    if (imageUrl && artwork.imageUrl && imageUrl !== artwork.imageUrl) {
-    try {
-        const oldPublicId = extractPublicId(artwork.imageUrl)
-        if (oldPublicId) {
-        await cloudinary.uploader.destroy(oldPublicId)
-        }
-    } catch (err) {
-        console.error("Cloudinary deletion failed:", err)
-    }
+    // Replaced: delete the old preview and original, unless an order still needs the old file for printing.
+    if (newImage && artwork.imageUrl) {
+      try {
+        const ordered = await prisma.orderItem.count({ where: { imageUrl: artwork.imageUrl } })
+        if (!ordered) await deleteUpload(artwork.imageUrl)
+      } catch (err) {
+        console.error("Old image deletion failed:", err)
+      }
     }
 
     const artist = await prisma.artist.findUnique({

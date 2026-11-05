@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { ExternalLink } from "lucide-react";
 import { REASON_SHORT, type AnyReason, type DmcaCounter, type DmcaNotice } from "@/lib/reports";
 import { cn } from "@/lib/utils";
+import { artistPath, artPath } from "@/lib/urls";
 
 export type ReportRow = {
   id: string;
@@ -102,16 +103,16 @@ export default function ReportsQueue({ rows: initial, tab }: { rows: ReportRow[]
             <div className="grid content-start gap-3">
               {r.art ? (
                 <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-3">
-                  <a href={`/art/${r.art.slug}`} target="_blank" rel="noopener noreferrer" className="block aspect-[4/5] overflow-hidden rounded-[3px] bg-gallery">
+                  <a href={artPath(r.art.artistSlug, r.art.slug ?? "")} target="_blank" rel="noopener noreferrer" className="block aspect-[4/5] overflow-hidden rounded-[3px] bg-gallery">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={r.art.imageUrl} alt={r.art.title} className="h-full w-full object-cover" loading="lazy" />
                   </a>
                   <div className="grid min-w-0 content-start gap-1">
-                    <a href={`/art/${r.art.slug}`} target="_blank" rel="noopener noreferrer" className="inline-flex min-w-0 items-center gap-1 text-[18px] font-bold text-ink hover:text-scan">
+                    <a href={artPath(r.art.artistSlug, r.art.slug ?? "")} target="_blank" rel="noopener noreferrer" className="inline-flex min-w-0 items-center gap-1 text-[18px] font-bold text-ink hover:text-scan">
                       <span className="truncate">{r.art.title}</span><ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                     </a>
                     <span className="truncate text-[14px] text-ink-2">
-                      by <Link href={`/@${r.art.artistSlug}`} target="_blank" className="font-semibold text-ink hover:text-scan">{r.art.artistName}</Link>
+                      by <Link href={artistPath(r.art.artistSlug)} target="_blank" className="font-semibold text-ink hover:text-scan">{r.art.artistName}</Link>
                     </span>
                     <span className="truncate text-[13px] text-ink-2">{r.art.artistEmail}</span>
                     <span className={cn("text-[13px] font-bold", artCls)}>{artLabel}</span>

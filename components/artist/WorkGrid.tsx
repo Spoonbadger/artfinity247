@@ -14,7 +14,7 @@ export default function WorkGrid({ works, isOwner }: { works: ArtistWork[]; isOw
   return (
     <ul className="grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-x-5 lg:grid-cols-3 lg:gap-x-6 lg:gap-y-9">
       {works.map((w, i) => {
-        const href = w.slug ? `/art/${w.slug}` : "#";
+        const href = w.href;
         const best = topSold >= 3 && w.sold === topSold;
         return (
           <li key={w.id} className="min-w-0">
@@ -60,7 +60,7 @@ function EmptyWall({ isOwner }: { isOwner?: boolean }) {
   );
 }
 
-const hrefFor = (w: ArtistWork) => (w.slug ? `/art/${w.slug}` : "#");
+const hrefFor = (w: ArtistWork) => w.href;
 
 /** One big column: each piece uncropped on a patch of wall, title and price under it. */
 export function WorkSingle({ works, isOwner }: { works: ArtistWork[]; isOwner?: boolean }) {

@@ -3,6 +3,7 @@ import Link from "next/link";
 import ArtworkForm from "@/components/studio/ArtworkForm";
 import { StudioPage } from "@/components/studio/StudioPage";
 import { prisma } from "@/lib/prisma";
+import { artPath } from "@/lib/urls";
 import { artistSplitNow, requireArtist } from "../../_lib/data";
 import { soldCount } from "@/lib/editions";
 
@@ -27,11 +28,12 @@ export default async function EditArtPage({ params }: { params: { slug: string }
       actions={
         <>
           <Link href={`/studio/qr?art=${art.slug}`} className="btn btn-ghost btn-sm">Print code</Link>
-          <Link href={`/art/${art.slug}`} className="btn btn-ghost btn-sm">View</Link>
+          <a href={`/api/studio/originals/${id}`} className="btn btn-ghost btn-sm">Download original</a>
+          <Link href={artPath(artist.slug, art.slug)} className="btn btn-ghost btn-sm">View</Link>
         </>
       }
     >
-      <ArtworkForm artwork={{ ...rest, slug: art.slug, sold }} split={split} />
+      <ArtworkForm artwork={{ ...rest, slug: art.slug, sold }} split={split} handle={artist.slug} />
     </StudioPage>
   );
 }

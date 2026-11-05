@@ -1,6 +1,7 @@
 // Share kit: data shared by the Studio page, the image route and the embed widget.
 // Works on the server and in the browser (no Node or DOM imports).
 import { basePrices } from "@/lib/artwork_price";
+import { artPath } from "@/lib/urls";
 
 export type ShareArt = {
   slug: string;
@@ -45,9 +46,9 @@ export const dollars = (cents: number) => "$" + (cents / 100).toFixed(2);
 export const priceLine = (a: Pick<ShareArt, "fromCents">) => `Prints from ${dollars(a.fromCents)}`;
 export const editionLine = (a: Pick<ShareArt, "editionSize">) => (a.editionSize ? `Limited edition of ${a.editionSize}` : null);
 
-/** The artwork page, tagged with where the visit came from. */
-export function artLink(base: string, slug: string, src?: string) {
-  const u = new URL(`/art/${encodeURIComponent(slug)}`, base);
+/** The artwork page (/@handle/art/<slug>), tagged with where the visit came from. */
+export function artLink(base: string, handle: string, slug: string, src?: string) {
+  const u = new URL(artPath(handle, slug), base);
   if (src) u.searchParams.set("src", src);
   return u.toString();
 }

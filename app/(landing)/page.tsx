@@ -40,9 +40,9 @@ async function getPopular() {
     where: SAFE,
     orderBy: [{ OrderItem: { _count: "desc" } }, { createdAt: "desc" }],
     take: 14,
-    select: { slug: true, title: true, imageUrl: true, markupSmall: true, artist: { select: { name: true, artist_name: true } } },
+    select: { slug: true, title: true, imageUrl: true, markupSmall: true, artist: { select: { slug: true, name: true, artist_name: true } } },
   });
-  return rows.map((a) => ({ slug: a.slug!, title: a.title, imageUrl: a.imageUrl, artist: displayName(a.artist), priceFrom: basePrices.small + (a.markupSmall ?? 0) }));
+  return rows.map((a) => ({ slug: a.slug!, handle: a.artist.slug, title: a.title, imageUrl: a.imageUrl, artist: displayName(a.artist), priceFrom: basePrices.small + (a.markupSmall ?? 0) }));
 }
 
 /** The biggest few cities, each with two real pieces. */

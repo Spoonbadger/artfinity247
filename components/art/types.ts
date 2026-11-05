@@ -40,4 +40,5 @@ export type ScanCartProduct = CartItemProductType & {
   venue?: string | null; // where it was scanned
   discountSig?: string; // signature from the printed code (lib/scanSign.ts); unsigned discounts are ignored
   code?: string; // short link code (/q/CODE); checkout looks it up for the discount and credits the sale to it
+  handle?: string; // artist handle, for the /@handle/art/<slug> link (older cart items lack it)
 };

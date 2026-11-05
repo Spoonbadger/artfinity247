@@ -6,6 +6,7 @@ import ShippingStatusEmail from "@/emails/ShippingStatusEmail"
 import { sendArtistOrderEmail } from "@/lib/artistEmails.server"
 import { TRACKING_SUBJECT, cleanTracking, trackingText, type Tracking } from "@/lib/tracking"
 import { sendReviewRequest } from "@/lib/reviews"
+import { helpLine, helpUrl } from "@/lib/reprints"
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
@@ -90,7 +91,9 @@ export async function POST(
     // The status change is saved; a failed email shouldn't make the admin UI report failure.
     try {
       // The artist's own wording when they wrote one; otherwise Artfinity's default below.
-      const sentByArtist = await sendArtistOrderEmail(order.id, now === "shipped" ? "shipped" : "delivered", { append: tracking ? trackingText(tracking) : undefined }).catch((err) => {
+      // Under the artist's words: tracking (when shipping) and the signed "Problem with your print?" link.
+      const append = [tracking ? trackingText(tracking) : "", helpLine(order.id)].filter(Boolean).join("\n\n")
+      const sentByArtist = await sendArtistOrderEmail(order.id, now === "shipped" ? "shipped" : "delivered", { append }).catch((err) => {
         console.error("Artist shipping email failed, sending default", err)
         return false
       })
@@ -112,6 +115,7 @@ export async function POST(
             imageUrl: i.imageUrl ?? null,
           })),
           tracking,
+          helpUrl: helpUrl(order.id),
         }),
       })
     } catch (err) {

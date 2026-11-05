@@ -43,7 +43,7 @@ function Step({ n, color, title, className, children }: { n: number; color: stri
 
 const fmt = (cents: number) => "$" + (cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-export default function HowItWorks({ art, perPrint, smallPerPrint, monthBefore }: { art: { imageUrl: string; title: string; slug: string }; perPrint: number; smallPerPrint: number; monthBefore: number }) {
+export default function HowItWorks({ art, perPrint, smallPerPrint, monthBefore }: { art: { imageUrl: string; title: string; slug: string; artist?: { slug: string } }; perPrint: number; smallPerPrint: number; monthBefore: number }) {
   const to = fmt(monthBefore + perPrint);
   return (
     <section id="how" className="scroll-mt-20 border-t border-line">
@@ -71,11 +71,11 @@ export default function HowItWorks({ art, perPrint, smallPerPrint, monthBefore }
           <Step n={2} color="var(--af-scan)" title="Hang your code">
             <div className="flex items-end gap-3">
               <div className="w-[112px] rotate-[2deg] rounded-md bg-white p-2 shadow-[0_8px_18px_-6px_rgba(21,22,27,.35)]">
-                <QRDraw value={scanUrl(art.slug)} loop={7} label="" />
+                <QRDraw value={scanUrl(art.slug, art.artist?.slug)} loop={7} label="" />
                 <b className="mt-1 block text-[10.5px] leading-tight">Scan to buy a print</b>
               </div>
               <div className="w-[64px] -rotate-[4deg] rounded-full bg-sticker p-2.5 shadow-[0_8px_18px_-6px_rgba(21,22,27,.35)]">
-                <QRCode value={scanUrl(art.slug)} dots="rounded" eyes="rounded" />
+                <QRCode value={scanUrl(art.slug, art.artist?.slug)} dots="rounded" eyes="rounded" />
               </div>
             </div>
           </Step>

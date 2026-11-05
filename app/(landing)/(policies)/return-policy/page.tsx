@@ -7,16 +7,16 @@ export default function Page() {
   return (
     <LongForm eyebrow="Policy" title="Return policy" sub="Arrives damaged? We reprint it free." current="/return-policy">
       <section>
-        <p className="!mt-0 !text-[14px] text-ink-2">Last updated: November 4, 2026</p>
+        <p className="!mt-0 !text-[14px] text-ink-2">Last updated: November 5, 2026</p>
 
         <div>
           <h2>Damaged, misprinted or wrong</h2>
           <p>We&apos;ll make it right, at no cost to you.</p>
           <ul>
+            <li>Within 14 days of delivery, tap &ldquo;Problem with your print?&rdquo; in your shipping email and add a photo. No need to send it back.</li>
             <li>
-              Email <a href="mailto:support@theartfinity.com">support@theartfinity.com</a> within 14 days of delivery.
+              No email handy? Write to <a href="mailto:support@theartfinity.com">support@theartfinity.com</a> with your order number and a photo.
             </li>
-            <li>Include your order number and a photo of the problem.</li>
             <li>We reprint and reship it free. If a reprint won&apos;t fix it, we refund you to your original payment method.</li>
           </ul>
         </div>

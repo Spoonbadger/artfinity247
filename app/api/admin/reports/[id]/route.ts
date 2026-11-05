@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { resend } from "@/lib/resend";
 import { REASON_SHORT, SITE_URL, type AnyReason } from "@/lib/reports";
+import { artUrl } from "@/lib/urls";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     where: { id: params.id },
     select: {
       id: true, reason: true, status: true, name: true, email: true, artworkUrl: true,
-      artwork: { select: { id: true, slug: true, title: true, status: true, flaggedBy: true, artist: { select: { email: true, first_name: true, artist_name: true, name: true } } } },
+      artwork: { select: { id: true, slug: true, title: true, status: true, flaggedBy: true, artist: { select: { slug: true, email: true, first_name: true, artist_name: true, name: true } } } },
     },
   });
   if (!report) return NextResponse.json({ error: "Report not found." }, { status: 404 });
@@ -99,7 +100,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       from: FROM,
       to: report.email,
       subject: `“${art.title}” is back up`,
-      text: `Hi ${reporterFirst},\n\nWe've restored “${art.title}” after your counter-notice. It's live and for sale again:\n${SITE_URL}/art/${art.slug}\n\nArtfinity`,
+      text: `Hi ${reporterFirst},\n\nWe've restored “${art.title}” after your counter-notice. It's live and for sale again:\n${artUrl(artist.slug, art.slug!)}\n\nArtfinity`,
     });
   } else {
     // Dismiss. Clear a flag this report put on live art so it leaves the moderation queue.

@@ -81,7 +81,7 @@ const PUBLISHED = { status: "published" } as const;
 const publicSelect = {
   id: true, rating: true, body: true, buyerName: true, buyerCity: true, photoUrl: true, createdAt: true,
   artistReply: true, artistReplyAt: true,
-  artwork: { select: { title: true, slug: true, imageUrl: true } },
+  artwork: { select: { title: true, slug: true, imageUrl: true, artist: { select: { slug: true } } } },
 } as const;
 
 type Scope = { artistId: string } | { artworkId: string };

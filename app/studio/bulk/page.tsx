@@ -5,6 +5,8 @@ import { StudioPage } from "@/components/studio/StudioPage";
 import BulkOrder, { type BulkArt, type PastBulk } from "@/components/bulk/BulkOrder";
 import { editionsFor } from "@/lib/editions";
 import { editionLabel } from "@/lib/editionFormat";
+import { BULK_SIZES, BULK_SIZE_KEY } from "@/lib/bulk";
+import { sizeAllowed } from "@/lib/printSizes";
 import { requireArtist, displayName } from "../_lib/data";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +19,7 @@ export default async function BulkPage({ searchParams }: { searchParams: { place
     prisma.artwork.findMany({
       where: { artistId: artist.id, status: { not: "REJECTED" }, slug: { not: null } },
       orderBy: { createdAt: "desc" },
-      select: { id: true, slug: true, title: true, imageUrl: true, sensitive: true, editionSize: true },
+      select: { id: true, slug: true, title: true, imageUrl: true, sensitive: true, editionSize: true, printableSizes: true },
     }),
     prisma.order.findMany({
       where: { kind: "bulk", bulkArtistId: artist.id },
@@ -34,6 +36,8 @@ export default async function BulkPage({ searchParams }: { searchParams: { place
   const arts: BulkArt[] = rows.map((r) => ({
     id: r.id, slug: r.slug!, title: r.title, imageUrl: r.imageUrl, sensitive: r.sensitive ?? [],
     edition: editions.get(r.id) ?? null,
+    // Sizes the file is sharp enough for (empty = never checked, all allowed). Same rule as checkout.
+    sizes: BULK_SIZES.filter((s) => sizeAllowed(r.printableSizes, BULK_SIZE_KEY[s])),
   }));
   const past: PastBulk[] = orders.map((o) => ({
     id: o.id,

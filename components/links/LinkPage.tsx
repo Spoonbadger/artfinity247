@@ -10,6 +10,7 @@ import VerifiedBadge from "@/components/af/VerifiedBadge";
 import { useSensitivePref } from "@/components/site/useSensitivePref";
 import { medalFor } from "@/lib/medals";
 import { cn } from "@/lib/utils";
+import { artistPath, artPath, linksUrl } from "@/lib/urls";
 import SocialIcon from "./SocialIcon";
 import { FONT_PAIRS, linkFontVars } from "./fonts";
 import { KIND_LABEL, iconFor, isLight, isSocialKind, type LinksPageData, type LinksTheme } from "./model";
@@ -133,7 +134,7 @@ function ShopCard({ data, theme }: { data: LinksPageData; theme: LinksTheme }) {
 
   return (
     <section aria-label="Shop my prints" className={cn("relative w-full overflow-hidden p-2", radius, look.className.replace(/rounded-\S+/g, ""))} style={cardStyle}>
-      <a href={`/@${data.slug}`} className="flex min-h-[50px] items-center justify-between gap-3 rounded-[inherit] px-3 py-2 no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-current">
+      <a href={artistPath(data.slug)} className="flex min-h-[50px] items-center justify-between gap-3 rounded-[inherit] px-3 py-2 no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-current">
         <span className="grid text-left leading-tight">
           <b className="text-[16px]">Shop my prints</b>
           <span className="text-[12.5px] opacity-75">Printed and shipped by Artfinity</span>
@@ -146,7 +147,7 @@ function ShopCard({ data, theme }: { data: LinksPageData; theme: LinksTheme }) {
             const blur = t.sensitive.length > 0 && !pref;
             return (
               <li key={t.id}>
-                <a href={t.slug ? `/art/${t.slug}` : `/@${data.slug}`} className="relative block aspect-square overflow-hidden rounded-[10px] bg-black/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current">
+                <a href={t.slug ? artPath(data.slug, t.slug) : artistPath(data.slug)} className="relative block aspect-square overflow-hidden rounded-[10px] bg-black/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={t.imageUrl} alt={t.title} loading="lazy" className={cn("h-full w-full object-cover transition group-hover:scale-105", blur && "sensitive-blur")} />
                   {blur && <span className="absolute inset-0 grid place-items-center bg-black/25 p-1 text-center text-[11px] font-bold text-white">{t.sensitive[0]}</span>}
@@ -170,7 +171,7 @@ export default function LinkPage({ data, theme: themeOverride, mode = "page" }: 
   const ink = darkText ? "#15161b" : "#ffffff";
   const socials = data.links.filter((l) => isSocialKind(l.kind));
   const buttons = data.links.filter((l) => !isSocialKind(l.kind));
-  const shareUrl = `https://theartfinity.com/@${data.slug}/links`;
+  const shareUrl = linksUrl(data.slug);
 
   // In the Studio preview, nothing navigates (and nothing is counted).
   const stopInPreview = (e: MouseEvent) => {

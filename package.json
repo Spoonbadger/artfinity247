@@ -10,6 +10,7 @@
     "postinstall": "prisma generate",
     "db:seed": "node --env-file=.env prisma/seed.mjs",
     "db:images": "node scripts/gen-seed-images.mjs",
+    "images:privatize": "node scripts/privatize-originals.mjs",
     "setup:local": "node -e \"require('fs').existsSync('.env')||require('fs').copyFileSync('.env.example','.env')\" && prisma migrate deploy && node --env-file=.env prisma/seed.mjs",
     "local": "node scripts/local.mjs",
     "db:reset-local": "node -e \"require('fs').rmSync('.localdb',{recursive:true,force:true})\" && echo Local database removed. Run pnpm local to start fresh."

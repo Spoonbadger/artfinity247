@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
       const svg = shareSVG({
         format, layout, art, fonts, noise, blurred, palette: src.palette,
         painting: { href: "data:image/jpeg;base64," + fitted.toString("base64"), w: src.w, h: src.h },
-        qrText: artLink(base, art.slug, `share-${format}`),
+        qrText: artLink(base, art.handle, art.slug, `share-${format}`),
         handle: handleText(base, art.handle),
       });
       png = await sharp(Buffer.from(svg)).png({ compressionLevel: 8 }).toBuffer();

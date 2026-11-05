@@ -2,6 +2,7 @@
 
 import { DragEvent, FormEvent, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { collectionPath } from "@/lib/urls";
 import { toast } from "sonner";
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ExternalLink, GripVertical, Plus, Star, Trash2, X } from "lucide-react";
 import { BrushStroke } from "@/components/af/Brush";
@@ -195,7 +196,7 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
                   />
                 </label>
                 <div className="flex gap-2 sm:pt-2">
-                  <Link href={`/@${artistSlug}/collections/${active.slug}`} target="_blank" className="btn btn-ghost btn-sm">
+                  <Link href={collectionPath(artistSlug, active.slug)} target="_blank" className="btn btn-ghost btn-sm">
                     <ExternalLink className="h-4 w-4" aria-hidden />View
                   </Link>
                   <button type="button" onClick={() => remove(active)} className="btn btn-ghost btn-sm text-coral" aria-label={`Delete ${active.title}`}>

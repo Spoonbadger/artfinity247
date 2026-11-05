@@ -36,6 +36,7 @@ import {
   usd,
 } from "@/components/art/pricing";
 import type { MoreArt, ScanArt, ScanArtist, ScanCartProduct } from "@/components/art/types";
+import { artistPath, artPath } from "@/lib/urls";
 
 const canOptimize = (src: string) => src.startsWith("/") || src.includes("res.cloudinary.com");
 
@@ -114,6 +115,7 @@ export default function ScanView({
   const product = (): ScanCartProduct => ({
     id: art.id,
     slug: art.slug,
+    handle: artist.slug,
     title: art.title,
     artist: artist.name,
     imageUrl: art.imageUrl,
@@ -255,7 +257,7 @@ export default function ScanView({
         {/* Buy panel */}
         <section aria-label="Buy a print" className="grid min-w-0 content-start gap-5 px-4 pt-5 sm:px-6 md:px-0 md:pt-2">
           <div className="grid gap-2">
-            <Link href={`/@${artist.slug}`} className="group flex min-h-[44px] w-fit items-center gap-2.5 text-ink no-underline">
+            <Link href={artistPath(artist.slug)} className="group flex min-h-[44px] w-fit items-center gap-2.5 text-ink no-underline">
               <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full bg-wall ring-2 ring-white">
                 {artist.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -453,7 +455,7 @@ export default function ScanView({
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <h2 className="display text-[30px] md:text-[40px]">More by {firstName}</h2>
           <div className="flex items-center gap-2">
-            <Link href={`/@${artist.slug}`} className="btn btn-ghost btn-sm min-h-[44px] px-4 md:min-h-0">See all</Link>
+            <Link href={artistPath(artist.slug)} className="btn btn-ghost btn-sm min-h-[44px] px-4 md:min-h-0">See all</Link>
             <button type="button" onClick={onFollow} aria-pressed={following} className={cn("btn btn-sm min-h-[44px] px-4 md:min-h-0", following ? "btn-ghost" : "btn-blue")}>
               {following ? "Following" : `Follow ${firstName}`}
             </button>
@@ -463,7 +465,7 @@ export default function ScanView({
           <ul className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-4 sm:[&>li:nth-child(n+4)]:hidden lg:[&>li:nth-child(4)]:block sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-5 sm:overflow-visible sm:px-0 lg:grid-cols-4">
             {more.map((m) => (
               <li key={m.slug} className="w-[44vw] max-w-[220px] shrink-0 snap-start sm:w-auto sm:max-w-none">
-                <Link href={`/art/${m.slug}`} className="group grid gap-2 text-ink no-underline">
+                <Link href={artPath(artist.slug, m.slug)} className="group grid gap-2 text-ink no-underline">
                   <div className="aspect-[4/5] overflow-hidden rounded-lg bg-gallery">
                     <SensitiveImage labels={m.sensitive}>
                       <Image

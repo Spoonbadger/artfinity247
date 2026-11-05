@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { artistPath, artPath } from "@/lib/urls";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -90,9 +91,9 @@ export default function ReviewsAdmin({ reviews: initial }: { reviews: AdminRevie
             <p className="text-[13px] text-ink-2">
               <b className="text-ink">{r.buyerName}</b>{r.buyerCity ? ` · ${r.buyerCity}` : ""} · {r.buyerEmail}
               <br />
-              on {r.artworkSlug ? <Link href={`/art/${r.artworkSlug}`} className="font-semibold text-ink hover:text-scan">{r.artworkTitle}</Link> : (r.artworkTitle || "a removed piece")}
+              on {r.artworkSlug ? <Link href={artPath(r.artistSlug, r.artworkSlug)} className="font-semibold text-ink hover:text-scan">{r.artworkTitle}</Link> : (r.artworkTitle || "a removed piece")}
               {" by "}
-              <Link href={`/@${r.artistSlug}`} className="font-semibold text-ink hover:text-scan">{r.artistName}</Link>
+              <Link href={artistPath(r.artistSlug)} className="font-semibold text-ink hover:text-scan">{r.artistName}</Link>
             </p>
             {r.body ? <p className="whitespace-pre-line text-[15px] leading-relaxed [overflow-wrap:anywhere]">{r.body}</p> : <p className="text-[13px] italic text-ink-2">No words, just the rating.</p>}
             {r.photoUrl && (

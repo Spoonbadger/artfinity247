@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { BrushStroke } from "@/components/af/Brush";
+import { artPath } from "@/lib/urls";
 
 export default async function ArtNotFound() {
   const picks = await prisma.artwork
@@ -9,7 +10,7 @@ export default async function ArtNotFound() {
       where: { status: "APPROVED", sensitive: { isEmpty: true }, slug: { not: null } },
       orderBy: { createdAt: "desc" },
       take: 4,
-      select: { slug: true, title: true, imageUrl: true },
+      select: { slug: true, title: true, imageUrl: true, artist: { select: { slug: true } } },
     })
     .catch(() => []);
 
@@ -36,7 +37,7 @@ export default async function ArtNotFound() {
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {picks.map((p) => (
               <li key={p.slug}>
-                <Link href={`/art/${p.slug}`} className="group grid gap-1.5 text-ink no-underline">
+                <Link href={artPath(p.artist.slug, p.slug!)} className="group grid gap-1.5 text-ink no-underline">
                   <div className="aspect-[4/5] overflow-hidden rounded-lg bg-gallery">
                     <Image src={p.imageUrl} alt={p.title} width={400} height={500} unoptimized={!p.imageUrl.startsWith("/")} className="h-full w-full object-cover" />
                   </div>

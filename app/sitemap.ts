@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
-import { SITE_URL } from "@/lib/reports";
+import { artistUrl, artUrl, SITE_URL } from "@/lib/urls";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 3600;
@@ -28,7 +28,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [artworks, artists] = await Promise.all([
     prisma.artwork.findMany({
       where: { status: "APPROVED", slug: { not: null }, artist: { closedAt: null } },
-      select: { slug: true, createdAt: true },
+      select: { slug: true, createdAt: true, artist: { select: { slug: true } } },
       orderBy: { createdAt: "desc" },
       take: 45_000,
     }),
@@ -41,7 +41,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     ...STATIC.map(([path, priority]) => ({ url: `${SITE_URL}${path === "/" ? "" : path}`, changeFrequency: "weekly" as const, priority })),
-    ...artists.map((a) => ({ url: `${SITE_URL}/@${a.slug}`, lastModified: a.createdAt, changeFrequency: "weekly" as const, priority: 0.7 })),
-    ...artworks.map((a) => ({ url: `${SITE_URL}/art/${encodeURIComponent(a.slug!)}`, lastModified: a.createdAt, changeFrequency: "monthly" as const, priority: 0.6 })),
+    ...artists.map((a) => ({ url: artistUrl(a.slug, SITE_URL), lastModified: a.createdAt, changeFrequency: "weekly" as const, priority: 0.7 })),
+    ...artworks.map((a) => ({ url: artUrl(a.artist.slug, a.slug!, SITE_URL), lastModified: a.createdAt, changeFrequency: "monthly" as const, priority: 0.6 })),
   ];
 }

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resend } from "@/lib/resend";
 import { rateLimit } from "@/lib/rateLimit";
+import { artUrl } from "@/lib/urls";
 import { getUserFromCookie } from "@/lib/auth";
 import { DMCA_STATEMENTS, REASON_SHORT, REPORT_REASONS, SITE_URL, earliestRestore, type DmcaCounter, type DmcaNotice } from "@/lib/reports";
 
@@ -37,7 +38,7 @@ const Body = z.object({
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 const fmtDay = (d: Date) => d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
 
-// Pull a slug out of a pasted artfinity link like https://theartfinity.com/art/blue-ridge
+// Pull a slug out of a pasted artfinity link like https://theartfinity.com/@maya/art/blue-ridge (or the old /art/blue-ridge)
 function slugFromUrl(u: string) {
   const m = u.match(/\/art\/([^/?#\s]+)/i);
   return m ? decodeURIComponent(m[1]) : "";
@@ -69,7 +70,7 @@ export async function POST(req: NextRequest) {
         where: { slug },
         select: {
           id: true, slug: true, title: true, status: true, flaggedReason: true, artistId: true,
-          artist: { select: { artist_name: true, name: true, email: true } },
+          artist: { select: { slug: true, artist_name: true, name: true, email: true } },
         },
       })
     : null;
@@ -108,7 +109,7 @@ export async function POST(req: NextRequest) {
   if (Object.keys(errors).length || !b.reason) return NextResponse.json({ ok: false, errors }, { status: 422 });
   const reason = b.reason;
 
-  const artworkUrl = artwork ? `${SITE_URL}/art/${artwork.slug}` : b.artworkUrl;
+  const artworkUrl = artwork ? artUrl(artwork.artist.slug, artwork.slug!) : b.artworkUrl;
   const signedAt = new Date().toISOString();
 
   // Signed notices keep every statutory field as JSON in `details`.

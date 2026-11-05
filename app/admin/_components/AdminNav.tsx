@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 
 const LINKS = [
   { href: "/admin/orders", label: "Orders", dab: "var(--af-scan)" },
+  { href: "/admin/reprints", label: "Reprints", dab: "#c98a5a" },
   { href: "/admin/moderation", label: "Moderation", dab: "var(--af-coral)" },
   { href: "/admin/payouts", label: "Payouts", dab: "var(--af-earned)" },
   { href: "/admin/verification", label: "Verification", dab: "var(--af-sticker)" },

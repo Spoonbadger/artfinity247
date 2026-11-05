@@ -5,6 +5,7 @@ import { Dabs } from "@/components/reviews/ReviewStars";
 import ReplyBox from "@/components/reviews/ReplyBox";
 import { RATING_WORDS, ratingLabel, reviewMonth } from "@/components/reviews/format";
 import { prisma } from "@/lib/prisma";
+import { artPath } from "@/lib/urls";
 import { getReviewSummary } from "@/lib/reviews";
 import { cn } from "@/lib/utils";
 import { requireArtist } from "../_lib/data";
@@ -102,7 +103,7 @@ export default async function StudioReviewsPage({ searchParams }: { searchParams
                       <p className="mt-1 truncate text-[13.5px] text-ink-2">
                         <b className="font-semibold text-ink">{r.buyerName}</b>
                         {r.buyerCity ? ` · ${r.buyerCity}` : ""} · {reviewMonth(r.createdAt)}
-                        {r.artwork ? <> · {r.artwork.slug ? <Link href={`/art/${r.artwork.slug}`} className="text-ink-2 hover:text-scan">{r.artwork.title}</Link> : r.artwork.title}</> : null}
+                        {r.artwork ? <> · {r.artwork.slug ? <Link href={artPath(artist.slug, r.artwork.slug)} className="text-ink-2 hover:text-scan">{r.artwork.title}</Link> : r.artwork.title}</> : null}
                       </p>
                     </div>
                   </div>

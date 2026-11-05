@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { artPath } from "@/lib/urls";
 
 export type GridArt = {
   id: string;
@@ -31,7 +32,7 @@ function StatusChip({ art }: { art: GridArt }) {
   );
 }
 
-export default function ArtGrid({ items }: { items: GridArt[] }) {
+export default function ArtGrid({ items, handle }: { items: GridArt[]; handle: string }) {
   const router = useRouter();
   const [list, setList] = useState(items);
   const [confirming, setConfirming] = useState<string | null>(null);
@@ -97,7 +98,7 @@ export default function ArtGrid({ items }: { items: GridArt[] }) {
             <Link href={`/studio/qr?art=${a.slug}`} className="text-scan">Print code</Link>
             <Link href={`/studio/share?art=${a.slug}`} className="text-scan">Share</Link>
             <Link href={`/studio/rooms?art=${a.slug}`} className="text-scan">Rooms</Link>
-            <Link href={`/art/${a.slug}`} className="text-scan">View</Link>
+            <Link href={artPath(handle, a.slug)} className="text-scan">View</Link>
             <button type="button" className="ml-auto text-ink-2 hover:text-coral" onClick={() => setConfirming(a.id)} aria-label={`Delete ${a.title}`}>Delete</button>
           </div>
         </li>

@@ -1,6 +1,7 @@
 // GET /api/public/v1/artworks/:slug — one approved artwork with sizes, prices, edition info and buyer rating.
 import { prisma } from "@/lib/prisma";
 import { getReviewSummary } from "@/lib/reviews";
+import { artUrl } from "@/lib/urls";
 import {
   PUBLIC_ARTWORK, artworkSelect, cleanSlug, editionSales, handler, json, methodNotAllowed, notFound, preflight, serializeArtwork, siteBase, sizesFor,
 } from "@/components/devtools/publicApi";
@@ -26,7 +27,7 @@ export const GET = handler<Ctx>(async (req, { params }) => {
       reviewCount: reviews.count,
       description: a.description || "",
       sizes: sizesFor(a),
-      buyUrl: `${base}/art/${a.slug}`,
+      buyUrl: artUrl(a.artist.slug, a.slug!, base),
     },
   });
 });

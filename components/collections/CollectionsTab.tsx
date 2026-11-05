@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { collectionPath } from "@/lib/urls";
 import SensitiveImage from "@/components/site/SensitiveImage";
 import { getPublicCollections, type PublicCollectionCard } from "@/components/collections/data";
 
@@ -14,7 +15,7 @@ export default async function CollectionsTab({ artistSlug, collections }: { arti
     <ul className="grid grid-cols-1 gap-x-6 gap-y-9 min-[480px]:grid-cols-2 xl:grid-cols-3">
       {list.map((c) => (
         <li key={c.id}>
-          <Link href={`/@${artistSlug}/collections/${c.slug}`} className="group grid gap-3 text-ink no-underline">
+          <Link href={collectionPath(artistSlug, c.slug)} className="group grid gap-3 text-ink no-underline">
             {/* a little stack: the cover hung in front of two more pieces */}
             <div className="relative aspect-[5/4] overflow-hidden rounded-[6px] bg-gallery bg-[radial-gradient(ellipse_at_50%_0%,#f7f5f0_0%,#e9e6df_75%)]">
               {c.peek.map((p, i) => (

@@ -76,4 +76,4 @@ export function earliestRestore(received: Date, days = 10) {
   return d;
 }
 
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com").replace(/\/$/, "");
+export { SITE_URL } from "@/lib/urls";

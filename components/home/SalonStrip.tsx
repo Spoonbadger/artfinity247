@@ -2,8 +2,9 @@ import Link from "next/link";
 import Marquee from "@/components/motion/Marquee";
 import { money } from "@/lib/earnings";
 import { cn } from "@/lib/utils";
+import { artPath } from "@/lib/urls";
 
-export type SalonArt = { slug: string; title: string; imageUrl: string; artist: string; priceFrom: number };
+export type SalonArt = { slug: string; handle: string; title: string; imageUrl: string; artist: string; priceFrom: number };
 
 // Salon hang rhythm: frame size and drop vary piece to piece.
 const HANG = [
@@ -23,7 +24,7 @@ export default function SalonStrip({ art, seconds = 70, reverse = false, label =
       <ul className="flex items-start gap-6 pr-6 sm:gap-9 sm:pr-9">
         {art.map((a, i) => (
           <li key={a.slug} className={cn("shrink-0", HANG[i % HANG.length])}>
-            <Link href={`/art/${a.slug}`} className="group grid gap-2 text-ink no-underline">
+            <Link href={artPath(a.handle, a.slug)} className="group grid gap-2 text-ink no-underline">
               <span className={cn("block bg-white p-[6px] shadow-[0_2px_0_rgba(21,22,27,.06),0_16px_26px_-12px_rgba(21,22,27,.5)] transition duration-500 group-hover:-translate-y-1.5 group-focus-visible:-translate-y-1.5", TILT[i % TILT.length])}>
                 <span className="block aspect-[4/5] overflow-hidden bg-wall">
                   {/* eslint-disable-next-line @next/next/no-img-element */}

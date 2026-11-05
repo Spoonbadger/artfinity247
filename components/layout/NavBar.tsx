@@ -43,7 +43,7 @@ const NavBar = ({
 
   const { currentUser } = useUser()
   const loginSlug = AppPages.login.slug || "login"
-  const profileHref = currentUser?.slug ? `/artists/${currentUser.slug}` : `/${loginSlug}`
+  const profileHref = currentUser?.slug ? `/@${currentUser.slug}` : `/${loginSlug}`
   // Fix later:
   // const avatar = currentUser?.profileImage || "/assets/images/icons/users/generic-user-profile-picture.png"
 

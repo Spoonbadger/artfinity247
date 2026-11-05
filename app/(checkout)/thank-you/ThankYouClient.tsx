@@ -31,6 +31,8 @@ type Order = {
   receiptSentAt?: string | null;
   shippingName?: string | null;
   shippingAddress?: string | null;
+  /** Signed /order/<id>/help link, once the order has shipped. */
+  helpPath?: string | null;
   items: OrderItem[];
 };
 
@@ -158,6 +160,11 @@ export default function ThankYouClient({ sessionId }: { sessionId: string }) {
           <Link href="/art" className="btn btn-ghost">Browse art</Link>
         </div>
         {artist?.name && <p className="text-[13.5px] text-ink-2">{artist.name} gets 60% of the profit from this sale.</p>}
+        {order.helpPath && (
+          <p className="text-[14px] text-ink-2">
+            Arrived damaged or not quite right? <Link href={order.helpPath} className="font-semibold text-ink underline underline-offset-4">Problem with your print?</Link>
+          </p>
+        )}
       </div>
     </div>
   );

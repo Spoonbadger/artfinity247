@@ -2,6 +2,7 @@
 import { prisma } from "@/lib/prisma";
 import { getArtistTrust } from "@/lib/artistTrust";
 import { getReviewSummary } from "@/lib/reviews";
+import { artUrl } from "@/lib/urls";
 import {
   PUBLIC_ARTWORK, absUrl, artistSelect, artworkSelect, displayName, editionSales, serializeArtist, serializeArtwork, siteBase, sizesFor,
 } from "./publicApi";
@@ -36,7 +37,7 @@ export async function getExamples() {
   const artistRes = { artist: { ...shown, links: shown.links.slice(0, 2), rating: artistRating.count ? artistRating.average : null, reviewCount: artistRating.count } };
   const listRes = { artworks: [serializeArtwork(base, works[0], sold.get(works[0].id) ?? 0)], nextCursor: works[1]?.id ?? null };
   const artworkRes = {
-    artwork: { ...serializeArtwork(base, pick, sold.get(pick.id) ?? 0), description: pick.description || "", rating: pickRating.count ? pickRating.average : null, reviewCount: pickRating.count, sizes: sizesFor(pick).slice(0, 2), buyUrl: `${base}/art/${pick.slug}` },
+    artwork: { ...serializeArtwork(base, pick, sold.get(pick.id) ?? 0), description: pick.description || "", rating: pickRating.count ? pickRating.average : null, reviewCount: pickRating.count, sizes: sizesFor(pick).slice(0, 2), buyUrl: artUrl(pick.artist.slug, pick.slug!, base) },
   };
   const col = full.collections[0];
   const collectionsRes = {

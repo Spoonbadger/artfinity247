@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { artistPath, artPath } from "@/lib/urls";
 import { adminOrRedirect } from "../../../_components/gate";
 import ArtworkEditForm from "../../../_components/ArtworkEditForm";
 
@@ -26,8 +27,9 @@ export default async function AdminEditArtwork({ params }: { params: { id: strin
         <Link href="/admin/moderation" className="text-[14px] font-semibold text-ink-2 hover:text-ink">← Moderation</Link>
         <h1 className="display text-[40px] sm:text-[52px]">Edit artwork</h1>
         <p className="text-[14px] text-ink-2">
-          By <Link href={`/@${a.artist.slug}`} className="font-semibold text-ink hover:text-scan">{a.artist.artist_name || a.artist.name}</Link>
-          {a.slug && <> · <Link href={`/art/${a.slug}`} className="font-semibold text-scan">View live</Link></>}
+          By <Link href={artistPath(a.artist.slug)} className="font-semibold text-ink hover:text-scan">{a.artist.artist_name || a.artist.name}</Link>
+          {a.slug && <> · <Link href={artPath(a.artist.slug, a.slug)} className="font-semibold text-scan">View live</Link></>}
+          {" · "}<a href={`/api/admin/originals/${a.id}`} className="font-semibold text-scan">Download original</a>
         </p>
       </div>
       <ArtworkEditForm

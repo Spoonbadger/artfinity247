@@ -103,7 +103,7 @@ export function ImageAssets({ art }: { art: ShareArt }) {
 
 // ---------------- captions ----------------
 export function Captions({ art, base }: { art: ShareArt; base: string }) {
-  const list = useMemo(() => captions(art, artLink(base, art.slug, "share-post")), [art, base]);
+  const list = useMemo(() => captions(art, artLink(base, art.handle, art.slug, "share-post")), [art, base]);
   return (
     <ol className="grid gap-3 lg:grid-cols-3">
       {list.map((c, i) => (
@@ -137,7 +137,7 @@ const HINT: Record<Channel, string> = {
 
 export function ShareLinks({ art, base }: { art: ShareArt; base: string }) {
   const canShare = useCanShare();
-  const shareLink = artLink(base, art.slug, "share-native");
+  const shareLink = artLink(base, art.handle, art.slug, "share-native");
   return (
     <div className="grid gap-3">
       {canShare && (
@@ -151,7 +151,7 @@ export function ShareLinks({ art, base }: { art: ShareArt; base: string }) {
       )}
       <ul className="grid gap-2">
         {CHANNELS.map((c) => {
-          const link = artLink(base, art.slug, `share-${c.key}`);
+          const link = artLink(base, art.handle, art.slug, `share-${c.key}`);
           const open = openUrl(c.key, art, base, link);
           return (
             <li key={c.key} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 rounded-2xl border border-line bg-white p-3 sm:grid-cols-[auto_150px_minmax(0,1fr)_auto]">
@@ -189,7 +189,7 @@ export function embedSnippet(art: ShareArt, base: string) {
 }
 
 export function signatureHtml(art: ShareArt, base: string) {
-  const link = artLink(base, art.slug, "share-email-signature");
+  const link = artLink(base, art.handle, art.slug, "share-email-signature");
   const img = new URL(`/api/share/painting?art=${encodeURIComponent(art.slug)}&w=160`, base).toString();
   return `<table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.4;color:#15161b"><tr>` +
     `<td style="padding-right:12px;vertical-align:top"><a href="${link}"><img src="${img}" width="64" alt="${escAttr(art.title)}" style="display:block;border:0;border-radius:4px"></a></td>` +
@@ -201,7 +201,7 @@ export function signatureHtml(art: ShareArt, base: string) {
 export function EmbedKit({ art, base }: { art: ShareArt; base: string }) {
   const snippet = embedSnippet(art, base);
   const sig = signatureHtml(art, base);
-  const sigText = `${art.artist}\n${art.title}: buy a print\n${artLink(base, art.slug, "share-email-signature")}`;
+  const sigText = `${art.artist}\n${art.title}: buy a print\n${artLink(base, art.handle, art.slug, "share-email-signature")}`;
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="grid content-start gap-3">

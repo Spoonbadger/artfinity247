@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { artPath } from "@/lib/urls";
 import { SIZE_LABEL, usd } from "./util";
 import { CARRIERS, type Carrier, type Tracking } from "@/lib/tracking";
 
@@ -13,6 +14,7 @@ export type AdminOrderItem = {
   title: string;
   artistName: string;
   artistSlug: string | null;
+  artworkId: string | null;
   imageUrl: string | null;
   sensitive: string[];
   size: string;
@@ -37,7 +39,7 @@ export type AdminOrder = {
   shippingAddress: string | null;
   shippingStatus: string;
   sentToPrinter: boolean;
-  /** "bulk" = an artist's own at-cost order (no artist share). */
+  /** "bulk" = an artist's own at-cost order (no artist share). "reprint" = free replacement (lib/reprintFormat.ts). */
   kind?: string;
   items: AdminOrderItem[];
   /** Latest tracking sent to the buyer, if any. */
@@ -54,8 +56,10 @@ const FILTERS: { id: Filter; label: string; test: (o: AdminOrder) => boolean }[]
 
 const SHIP_DAB: Record<string, string> = { pending: "var(--af-sticker)", shipped: "var(--af-scan)", delivered: "var(--af-earned)" };
 
-/** Full-resolution original for the printer. Cloudinary: drop the f_auto,q_auto delivery transform, force a download. */
-function downloadUrl(url: string) {
+/** Full-resolution original for the printer (private, admin-only route). Without an artwork, the public file is all there is. */
+function downloadUrl(item: AdminOrderItem) {
+  const url = item.imageUrl || "";
+  if (item.artworkId) return `/api/admin/originals/${item.artworkId}?src=${encodeURIComponent(url)}`;
   if (!url.includes("res.cloudinary.com") || !url.includes("/upload/")) return url;
   if (url.includes("/upload/f_auto,q_auto/")) return url.replace("/upload/f_auto,q_auto/", "/upload/fl_attachment/");
   return url.replace("/upload/", "/upload/fl_attachment/");
@@ -173,7 +177,9 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-baseline gap-x-2">
                       <b className="truncate text-[15px]">{o.shippingName || o.email}</b>
-                      {o.paymentStatus !== "paid" && <span className="rounded-full bg-coral/15 px-2 text-[11.5px] font-bold text-coral">{o.paymentStatus}</span>}
+                      {o.kind === "reprint" ? (
+                        <span className="rounded-full bg-[#f3dcc8] px-2 text-[11.5px] font-bold text-ink" title="Free reprint for a damaged or wrong print. Artfinity pays. Not a sale, no payout.">Free reprint</span>
+                      ) : o.paymentStatus !== "paid" && <span className="rounded-full bg-coral/15 px-2 text-[11.5px] font-bold text-coral">{o.paymentStatus}</span>}
                       {o.kind === "bulk" && <span className="rounded-full bg-sticker px-2 text-[11.5px] font-bold text-ink" title="Artist's own prints at cost. Not a sale, no payout.">Bulk</span>}
                     </div>
                     <div className="truncate text-[13px] text-ink-2">
@@ -266,7 +272,7 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
                           {o.items.map((i) => (
                             <tr key={i.id} className="border-t border-line">
                               <td className="py-1.5 pr-2">
-                                {i.slug ? <Link href={`/art/${i.slug}`} className="font-semibold text-ink hover:text-scan">{i.title}</Link> : <b>{i.title}</b>}
+                                {i.slug ? <Link href={i.artistSlug ? artPath(i.artistSlug, i.slug) : `/art/${encodeURIComponent(i.slug)}`} className="font-semibold text-ink hover:text-scan">{i.title}</Link> : <b>{i.title}</b>}
                                 <div className="text-[12px] text-ink-2">{i.artistName}{i.quantity > 1 ? ` · ×${i.quantity}` : ""}</div>
                               </td>
                               <td className="py-1.5 text-right">{usd(i.lineTotal)}</td>
@@ -275,7 +281,7 @@ export default function OrdersBoard({ orders: initial }: { orders: AdminOrder[] 
                               <td className="py-1.5 text-right font-semibold text-earned">{usd(i.artistShare)}</td>
                               <td className="py-1.5 text-right">{usd(i.companyShare)}</td>
                               <td className="py-1.5 pl-3 text-right">
-                                {i.imageUrl && <a href={downloadUrl(i.imageUrl)} target="_blank" rel="noreferrer" download className="whitespace-nowrap font-semibold text-scan">Full-res file</a>}
+                                {i.imageUrl && <a href={downloadUrl(i)} target="_blank" rel="noreferrer" download className="whitespace-nowrap font-semibold text-scan">Full-res file</a>}
                               </td>
                             </tr>
                           ))}

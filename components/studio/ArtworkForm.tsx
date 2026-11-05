@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DragEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Check, ImagePlus, Loader2 } from "lucide-react";
+import { Check, ImagePlus, Loader2, Lock } from "lucide-react";
 import { breakdown, money, SIZE_INCHES, SIZE_NAME, type SizeKey } from "@/lib/earnings";
 import { basePrices } from "@/lib/artwork_price";
 import { BrushStroke } from "@/components/af/Brush";
 import { cn } from "@/lib/utils";
+import { artPath } from "@/lib/urls";
 import { SENSITIVE_LABELS } from "./sensitive";
 import { EDITION_MAX, EDITION_MIN } from "@/lib/editionFormat";
 import { SIZE_IN } from "@/components/art/pricing";
@@ -44,7 +45,7 @@ const toCents = (s: string) => {
   return Number.isFinite(n) ? Math.min(200000, Math.max(0, Math.round(n * 100))) : 0;
 };
 
-export default function ArtworkForm({ artwork, split }: { artwork?: ArtworkInput; split?: number }) {
+export default function ArtworkForm({ artwork, split, handle }: { artwork?: ArtworkInput; split?: number; handle: string }) {
   const router = useRouter();
   const editing = !!artwork;
   const fileRef = useRef<HTMLInputElement>(null);
@@ -71,7 +72,8 @@ export default function ArtworkForm({ artwork, split }: { artwork?: ArtworkInput
   const [limited, setLimited] = useState(!!artwork?.editionSize);
   const [edition, setEdition] = useState(String(artwork?.editionSize || 25));
   const sold = artwork?.sold ?? 0;
-  const editionMin = Math.max(EDITION_MIN, sold);
+  // Once a print sells, the edition is a promise to buyers: no resizing, no open/limited switch (server enforces it too).
+  const editionLocked = editing && sold > 0;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ slug: string; title: string; imageUrl: string; pending: boolean } | null>(null);
@@ -126,8 +128,8 @@ export default function ArtworkForm({ artwork, split }: { artwork?: ArtworkInput
     const low = SIZES.find((s) => toCents(prices[s]) < basePrices[s]);
     if (low) { setError(`${SIZE_NAME[low]} prints start at ${money(basePrices[low])}.`); return; }
     const n = parseInt(edition, 10);
-    if (limited && (!Number.isFinite(n) || n < editionMin || n > EDITION_MAX)) {
-      setError(sold > EDITION_MIN ? `${sold} already sold. Pick ${editionMin} to ${EDITION_MAX}.` : `An edition is ${EDITION_MIN} to ${EDITION_MAX} prints.`);
+    if (!editionLocked && limited && (!Number.isFinite(n) || n < EDITION_MIN || n > EDITION_MAX)) {
+      setError(`An edition is ${EDITION_MIN} to ${EDITION_MAX} prints.`);
       return;
     }
     if (needsOwnership && !owned) { setError("Tick the box to confirm it's your original work."); return; }
@@ -139,7 +141,7 @@ export default function ArtworkForm({ artwork, split }: { artwork?: ArtworkInput
       fd.append("imageUrl", imageUrl);
       for (const s of SIZES) fd.append(FIELD[s], String(Math.max(0, toCents(prices[s]) - basePrices[s])));
       fd.append("sensitive", sensitive.join(","));
-      fd.append("editionSize", limited ? String(n) : "");
+      if (!editionLocked) fd.append("editionSize", limited ? String(n) : "");
       if (fresh) { fd.append("printable", fresh.printable.join(",")); fd.append("printableSig", fresh.sig); }
       if (needsOwnership && owned) fd.append("ownership", "yes");
       const res = await fetch(editing ? `/api/artworks/update/${artwork!.slug}` : "/api/artworks/upload", { method: "POST", body: fd, credentials: "include" });
@@ -179,7 +181,7 @@ export default function ArtworkForm({ artwork, split }: { artwork?: ArtworkInput
         )}
         <div className="flex flex-wrap justify-center gap-2">
           <Link href={`/studio/qr?art=${done.slug}`} className="btn btn-blue">Print its code</Link>
-          <Link href={`/art/${done.slug}`} className="btn btn-ghost">View</Link>
+          <Link href={artPath(handle, done.slug)} className="btn btn-ghost">View</Link>
           <button type="button" className="btn btn-ghost" onClick={() => { setDone(null); setImageUrl(""); setFresh(null); setShape(null); setOwned(false); setDims(null); setTitle(""); setDescription(""); setSensitive([]); setLimited(false); }}>
             Upload another
           </button>
@@ -322,8 +324,16 @@ export default function ArtworkForm({ artwork, split }: { artwork?: ArtworkInput
         <fieldset className="grid gap-2">
           <legend className="mb-1">
             <span className="font-display text-[22px] font-bold [font-variation-settings:'wdth'_80]">Print run</span>
-            {sold > 0 && <span className="num ml-2 text-[12.5px] text-ink-2">{sold} sold so far</span>}
           </legend>
+          {editionLocked ? (
+            <div className="flex items-start gap-3 rounded-xl border-2 border-line bg-wall/60 p-3" aria-readonly="true">
+              <Lock className="mt-0.5 h-4 w-4 shrink-0 text-ink-2" aria-hidden="true" />
+              <p className="text-[14px] leading-snug text-ink-2">
+                <b className="block text-[15px] text-ink">{artwork?.editionSize ? `Limited edition of ${artwork.editionSize}` : "Open edition"}</b>
+                Locked: <span className="num">{artwork?.editionSize ? `${sold} of ${artwork.editionSize}` : sold}</span> sold. Editions can&apos;t change once a print sells.
+              </p>
+            </div>
+          ) : (<>
           <div className="grid gap-2 sm:grid-cols-2">
             <label className={cn("flex cursor-pointer items-center gap-3 rounded-xl border-2 bg-white p-3 transition has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-scan", !limited ? "border-ink" : "border-line hover:border-ink-2")}>
               <input type="radio" name="edition" className="sr-only" checked={!limited} onChange={() => setLimited(false)} />
@@ -337,7 +347,7 @@ export default function ArtworkForm({ artwork, split }: { artwork?: ArtworkInput
                 <b className="text-[15px] leading-tight">Limited edition of</b>
               </label>
               <input
-                type="number" inputMode="numeric" min={editionMin} max={EDITION_MAX} step={1}
+                type="number" inputMode="numeric" min={EDITION_MIN} max={EDITION_MAX} step={1}
                 value={edition} aria-label="Number of prints in the edition"
                 onFocus={() => setLimited(true)}
                 onChange={(e) => { setLimited(true); setEdition(e.target.value.replace(/[^0-9]/g, "").slice(0, 3)); }}
@@ -345,7 +355,8 @@ export default function ArtworkForm({ artwork, split }: { artwork?: ArtworkInput
               />
             </div>
           </div>
-          {limited && <p className="text-[12.5px] text-ink-2">Numbered 1 to {parseInt(edition, 10) || "N"}, all sizes. Then sold out.</p>}
+          {limited && <p className="text-[12.5px] text-ink-2">Numbered 1 to {parseInt(edition, 10) || "N"}, all sizes. Then sold out. Locked once the first print sells.</p>}
+          </>)}
         </fieldset>
 
         <fieldset className="grid gap-2">

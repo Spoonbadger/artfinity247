@@ -50,14 +50,14 @@ export default async function AboutPage() {
       where: { ...PUBLIC_ART, status: "APPROVED", sensitive: { isEmpty: true } },
       orderBy: { createdAt: "desc" },
       take: 24,
-      select: { slug: true, title: true, imageUrl: true, artistId: true, markupSmall: true, artist: { select: { name: true, artist_name: true } } },
+      select: { slug: true, title: true, imageUrl: true, artistId: true, markupSmall: true, artist: { select: { slug: true, name: true, artist_name: true } } },
     }),
     getStats(),
   ]);
   // one piece per artist first, so the wall shows range
   const seen = new Set<string>();
   const wall = [...art.filter((a) => !seen.has(a.artistId) && seen.add(a.artistId)), ...art].filter((a, i, all) => all.findIndex((b) => b.slug === a.slug) === i)
-    .map((a) => ({ slug: a.slug!, title: a.title, imageUrl: a.imageUrl, artist: displayName(a.artist), priceFrom: basePrices.small + (a.markupSmall ?? 0) }));
+    .map((a) => ({ slug: a.slug!, handle: a.artist.slug, title: a.title, imageUrl: a.imageUrl, artist: displayName(a.artist), priceFrom: basePrices.small + (a.markupSmall ?? 0) }));
   const half = Math.ceil(wall.length / 2);
 
   const split = getArtistSplit(new Date());

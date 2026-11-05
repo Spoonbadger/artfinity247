@@ -2,6 +2,7 @@
 // No hooks, so it renders in server or client components. Extra reviews fold into a <details>, no JS needed.
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { artPath } from "@/lib/urls";
 import { Dabs } from "./ReviewStars";
 import { RATING_WORDS, reviewMonth, type PublicReview } from "./format";
 
@@ -16,7 +17,7 @@ function ReviewCard({ r, artistName, showArtwork }: { r: PublicReview; artistNam
         </span>
         {showArtwork && r.artwork && (
           r.artwork.slug ? (
-            <Link href={`/art/${r.artwork.slug}`} className="min-w-0 truncate text-[13px] font-semibold text-ink-2 no-underline hover:text-scan">{r.artwork.title}</Link>
+            <Link href={artPath(r.artwork.artist.slug, r.artwork.slug)} className="min-w-0 truncate text-[13px] font-semibold text-ink-2 no-underline hover:text-scan">{r.artwork.title}</Link>
           ) : (
             <span className="min-w-0 truncate text-[13px] font-semibold text-ink-2">{r.artwork.title}</span>
           )

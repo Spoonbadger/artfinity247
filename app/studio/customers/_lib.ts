@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { toPrintSize } from "../_lib/data";
 import type { PrintSize } from "@/lib/revenue";
 import type { Stage } from "@/components/crm/format";
+import { approvedReprintReasons } from "@/lib/reprints";
+import { artistReprintLine } from "@/lib/reprintFormat";
 
 export type OrderStage = Stage;
 
@@ -49,6 +51,8 @@ export type CustomerOrder = {
   items: CustomerOrderItem[];
   prints: number;
   spentCents: number;
+  /** Set when Artfinity reprinted part of this order for free (lib/reprints.ts). */
+  reprint: string | null;
 };
 
 export type Customer = {
@@ -100,7 +104,7 @@ export async function getCustomers(artistId: string, onlyEmail?: string): Promis
     }
     let order = orderMap.get(o.id);
     if (!order) {
-      order = { id: o.id, date: o.createdAt, stage: stageOf(o), items: [], prints: 0, spentCents: 0 };
+      order = { id: o.id, date: o.createdAt, stage: stageOf(o), items: [], prints: 0, spentCents: 0, reprint: null };
       orderMap.set(o.id, order);
       c.orders.push(order);
       if (o.createdAt < c.first) c.first = o.createdAt;
@@ -122,6 +126,14 @@ export async function getCustomers(artistId: string, onlyEmail?: string): Promis
   }
   const list = Array.from(byEmail.values());
   for (const c of list) c.repeat = c.orders.length >= 2;
+  // Only the single-customer page shows reprint notes; skip the lookup for the full list.
+  if (onlyEmail) {
+    const reprints = await approvedReprintReasons(Array.from(orderMap.keys()));
+    for (const [id, reason] of Array.from(reprints)) {
+      const o = orderMap.get(id);
+      if (o) o.reprint = artistReprintLine(reason);
+    }
+  }
   return list;
 }
 

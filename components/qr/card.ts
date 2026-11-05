@@ -5,6 +5,7 @@ import { MARK_BOX, markPaths } from "@/lib/brand/mark";
 import { basePrices } from "@/lib/artwork_price";
 import { money, type SizeKey } from "@/lib/earnings";
 import { shortUrl } from "@/lib/shortcode";
+import { artPath } from "@/lib/urls";
 import { type Fonts, text, fit, fitBlock, capHeight, width, arcText, arcWidth, blockH } from "./text";
 
 // ---------------- options ----------------
@@ -125,10 +126,11 @@ export function ctaText(d: Design) {
  * The URL a code holds. With a saved short link `code`: `${base}/Q/${CODE}` in capitals (QR alphanumeric mode, the
  * smallest code), and everything behind it stays editable. Without one: the older signed artwork link, kept so codes
  * printed before short links still work (a discount only counts with its server-made signature `sig`, lib/scanSign.ts).
+ * With the artist's `handle` that link is /@handle/art/<slug>; without it, the old /art/<slug> (which redirects there).
  */
-export function qrValue(d: Pick<Design, "ev" | "disc">, slug: string, base: string, sig?: string | null, code?: string | null) {
+export function qrValue(d: Pick<Design, "ev" | "disc">, slug: string, base: string, sig?: string | null, code?: string | null, handle?: string | null) {
   if (code) return shortUrl(code, base);
-  const u = new URL(`/art/${encodeURIComponent(slug)}`, base);
+  const u = new URL(handle ? artPath(handle, slug) : `/art/${encodeURIComponent(slug)}`, base);
   if (d.ev.trim()) u.searchParams.set("at", d.ev.trim());
   if (d.disc) u.searchParams.set("off", String(d.disc));
   if (d.disc && sig) u.searchParams.set("s", sig);

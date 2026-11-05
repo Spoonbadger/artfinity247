@@ -47,7 +47,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   const src = await paintingSource(art.imageUrl).catch(() => null);
   const dims = src ? ` width="${src.w}" height="${src.h}"` : "";
   const img = `/api/share/painting?art=${encodeURIComponent(art.slug)}&w=640`;
-  const buy = artLink(base, art.slug, "embed");
+  const buy = artLink(base, art.handle, art.slug, "embed");
   const sensitive = art.sensitive.length > 0;
   const alt = `${art.title} by ${art.artist}`;
   const body =

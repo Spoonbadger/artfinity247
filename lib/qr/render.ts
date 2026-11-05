@@ -4,6 +4,7 @@
 // the most common reason a styled code fails to scan.
 import qrcode from "qrcode-generator";
 import { MARK_BOX, markPaths } from "@/lib/brand/mark";
+import { artUrl, SITE_URL } from "@/lib/urls";
 
 export type DotStyle = "square" | "rounded" | "dots" | "liquid" | "lines" | "diamond";
 export type EyeStyle = "frame" | "square" | "rounded" | "circle";
@@ -140,7 +141,7 @@ export function tagSVG(pct: number, fill = "#ffd43b", ink = "#15161b", sub = "wh
     `<text x="128" y="84" text-anchor="middle" fill="${ink}" font-size="14" style="font-family:var(--font-body);font-weight:600">${sub}</text></svg>`;
 }
 
-/** URL a printed code holds today: the artwork page. (Planned: short /q/<code> links with editable server records.) */
-export function scanUrl(slug: string, base = process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com") {
-  return `${base.replace(/\/$/, "")}/art/${slug}`;
+/** The artwork page as a full URL, for sample QR codes. Without a handle, the old /art/<slug> (it redirects). */
+export function scanUrl(slug: string, handle?: string | null, base = SITE_URL) {
+  return handle ? artUrl(handle, slug, base) : `${base.replace(/\/$/, "")}/art/${encodeURIComponent(slug)}`;
 }

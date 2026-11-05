@@ -2,6 +2,7 @@ import Link from "next/link";
 import SensitiveImage from "@/components/site/SensitiveImage";
 import { money } from "@/lib/earnings";
 import { cn } from "@/lib/utils";
+import { artistPath, artPath } from "@/lib/urls";
 import type { CardArt } from "./data";
 import { InlineBadges } from "@/components/artist/TrustBlock";
 import { getTrustBySlug, type Trust } from "@/lib/artistTrust";
@@ -27,19 +28,19 @@ export function HungArt({ src, alt, sensitive, priority = false }: { src: string
   return <div className="h-full w-full p-[10%]">{sensitive?.length ? <SensitiveImage labels={sensitive}>{picture}</SensitiveImage> : picture}</div>;
 }
 
-/** A piece hung on a little patch of gallery wall. Card → /art/[slug], artist → /@slug. */
+/** A piece hung on a little patch of gallery wall. Card → /@handle/art/[slug], artist → /@handle. */
 export default function ArtCard({ art, className, priority = false, showPrice = true, trust, edition }: { art: CardArt; className?: string; priority?: boolean; showPrice?: boolean; trust?: Trust | null; edition?: Edition | null }) {
   return (
     <article className={cn("group grid min-w-0 content-start gap-2.5", className)}>
-      <Link href={`/art/${art.slug}`} className="relative block aspect-[4/5] overflow-hidden rounded-md bg-wall" aria-label={`${art.title} by ${art.artist.name}`}>
+      <Link href={artPath(art.artist.slug, art.slug)} className="relative block aspect-[4/5] overflow-hidden rounded-md bg-wall" aria-label={`${art.title} by ${art.artist.name}`}>
         <HungArt src={art.imageUrl} alt={art.title} sensitive={art.sensitive} priority={priority} />
         <EditionBadge edition={edition} compact className="absolute left-2 top-2" />
       </Link>
       <div className="grid min-w-0 gap-0.5 px-0.5">
-        <Link href={`/art/${art.slug}`} className="truncate text-[15px] font-semibold leading-snug text-ink no-underline hover:text-scan">{art.title}</Link>
+        <Link href={artPath(art.artist.slug, art.slug)} className="truncate text-[15px] font-semibold leading-snug text-ink no-underline hover:text-scan">{art.title}</Link>
         <div className="grid min-w-0 gap-x-2 text-[13.5px] sm:flex sm:items-baseline sm:justify-between">
           <span className="flex min-w-0 items-center gap-1">
-            <Link href={`/@${art.artist.slug}`} className="truncate text-ink-2 no-underline hover:text-ink hover:underline">{art.artist.name}</Link>
+            <Link href={artistPath(art.artist.slug)} className="truncate text-ink-2 no-underline hover:text-ink hover:underline">{art.artist.name}</Link>
             <InlineBadges trust={trust} size={14} />
           </span>
           {showPrice && <span className="num shrink-0 text-ink-2">from <b className="font-semibold text-ink">{money(art.priceFrom)}</b></span>}

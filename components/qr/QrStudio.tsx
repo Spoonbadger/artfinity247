@@ -24,7 +24,9 @@ export type SavedCode = { code: string; slug: string; label: string; expiresAt: 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
-export default function QrStudio({ arts, initialSlug, initialDesign, initialCard, base, initialSaved = null, split }: {
+export default function QrStudio({ arts, initialSlug, initialDesign, initialCard, base, initialSaved = null, split, handle }: {
+  /** The artist's handle, for the full artwork link. */
+  handle?: string;
   /** The artist's current share of profit (Infinity pays more). */
   split?: number;
   arts: ArtInfo[];
@@ -68,7 +70,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
   const art = arts.find((a) => a.slug === slug) || arts[0];
   // The code holds only a short link. Before it's saved, the preview uses a same-length placeholder.
   const code = codes[art.slug] || null;
-  const qrText = qrValue(d, art.slug, base, null, code || PLACEHOLDER_CODE);
+  const qrText = qrValue(d, art.slug, base, null, code || PLACEHOLDER_CODE, handle);
   const card: Card | null = useMemo(() => (fonts ? renderCard(d, art, fonts, qrText) : null), [d, art, fonts, qrText]);
   const svg = card ? cardSVG(card) : initialCard?.svg || "";
 

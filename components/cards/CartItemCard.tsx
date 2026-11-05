@@ -7,6 +7,7 @@ import { useCart } from "@/components/contexts";
 import SensitiveImage from "@/components/site/SensitiveImage";
 import { CartItemType } from "@/types";
 import { cn } from "@/lib/utils";
+import { artPath } from "@/lib/urls";
 import { usd } from "@/components/art/pricing";
 import { sizeText } from "@/components/art/checkout";
 
@@ -15,13 +16,15 @@ const MAX_QTY = 10;
 /** One cart line: art, size, frame, scan deal, quantity and price. Set `readOnly` for order summaries. */
 const CartItemCard = ({ item, className, readOnly = false }: { item: CartItemType; className?: string; readOnly?: boolean }): ReactNode => {
   const { updateToCart, removeFromCart } = useCart();
-  const p = item.product as CartItemType["product"] & { listPrice?: number; discountPct?: number; venue?: string | null; sensitive?: string[] };
+  const p = item.product as CartItemType["product"] & { listPrice?: number; discountPct?: number; venue?: string | null; sensitive?: string[]; handle?: string };
+  // Older cart items have no handle; their /art/<slug> link redirects.
+  const href = p.handle ? artPath(p.handle, p.slug) : `/art/${encodeURIComponent(p.slug)}`;
   const q = item.quantity;
   const setQ = (n: number) => updateToCart(item.product, Math.max(1, Math.min(MAX_QTY, n)));
 
   return (
     <div className={cn("grid grid-cols-[76px_minmax(0,1fr)_auto] items-start gap-3 py-4 sm:grid-cols-[96px_minmax(0,1fr)_auto] sm:gap-4", className)}>
-      <Link href={`/art/${p.slug}`} className="block overflow-hidden rounded-[3px] bg-white p-1 shadow-[0_6px_14px_-6px_rgba(21,22,27,.45)]">
+      <Link href={href} className="block overflow-hidden rounded-[3px] bg-white p-1 shadow-[0_6px_14px_-6px_rgba(21,22,27,.45)]">
         <SensitiveImage labels={p.sensitive}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={p.imageUrl || ""} alt={p.title} className="aspect-[4/5] w-full object-cover" />
@@ -29,7 +32,7 @@ const CartItemCard = ({ item, className, readOnly = false }: { item: CartItemTyp
       </Link>
 
       <div className="grid min-w-0 gap-0.5">
-        <Link href={`/art/${p.slug}`} className="truncate text-[16px] font-bold text-ink no-underline hover:underline">{p.title}</Link>
+        <Link href={href} className="truncate text-[16px] font-bold text-ink no-underline hover:underline">{p.title}</Link>
         {p.artist && <span className="truncate text-[13px] text-ink-2">{p.artist}</span>}
         <span className="text-[13.5px]">
           {sizeText(p.selectedSize)}

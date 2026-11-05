@@ -11,7 +11,7 @@ export type PublicReview = {
   createdAt: string;
   artistReply: string | null;
   artistReplyAt: string | null;
-  artwork: { title: string; slug: string | null; imageUrl: string } | null;
+  artwork: { title: string; slug: string | null; imageUrl: string; artist: { slug: string } } | null;
 };
 
 export type ReviewSummary = { average: number; count: number };

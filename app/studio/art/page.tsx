@@ -37,7 +37,7 @@ export default async function MyArtPage() {
         </>
       }
     >
-      <ArtGrid items={items} />
+      <ArtGrid items={items} handle={artist.slug} />
     </StudioPage>
   );
 }

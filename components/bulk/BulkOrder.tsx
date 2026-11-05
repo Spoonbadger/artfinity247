@@ -16,7 +16,8 @@ import {
 import type { PrintSize } from "@/lib/revenue";
 import { cn } from "@/lib/utils";
 
-export type BulkArt = { id: string; slug: string; title: string; imageUrl: string; sensitive: string[]; edition: Edition | null };
+/** sizes: the print sizes this file is sharp enough for. */
+export type BulkArt = { id: string; slug: string; title: string; imageUrl: string; sensitive: string[]; edition: Edition | null; sizes: PrintSize[] };
 export type PastBulk = {
   id: string; date: string; total: number; paid: boolean; status: string; address: string | null; test: boolean;
   items: { id: string; title: string; imageUrl: string | null; size: string | null; framed: boolean; quantity: number; edition: string }[];
@@ -64,7 +65,8 @@ export default function BulkOrder({ arts, past, placedId, defaultName }: { arts:
     if (lines.length >= BULK_MAX_LINES) { toast.error(`Up to ${BULK_MAX_LINES} lines per order.`); return; }
     const room = left(a.id);
     if (room <= 0) { toast.error(a.edition?.soldOut ? `${a.title} is sold out.` : `No ${a.title} prints left.`); return; }
-    setLines((ls) => [...ls, { key: `${a.id}-${Date.now()}`, artworkId: a.id, size: "M", framed: false, frameColor: "black", quantity: Math.min(10, room) }]);
+    const size = (["M", "S", "L", "XL"] as PrintSize[]).find((s) => a.sizes.includes(s)) ?? "S";
+    setLines((ls) => [...ls, { key: `${a.id}-${Date.now()}`, artworkId: a.id, size, framed: false, frameColor: "black", quantity: Math.min(10, room) }]);
   };
   const patch = (key: string, p: Partial<Line>) => setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...p } : l)));
   const remove = (key: string) => setLines((ls) => ls.filter((l) => l.key !== key));
@@ -194,15 +196,21 @@ export default function BulkOrder({ arts, past, placedId, defaultName }: { arts:
                       <div className="grid gap-3">
                         <fieldset className="grid grid-cols-4 gap-1.5">
                           <legend className="sr-only">Size for {a.title}</legend>
-                          {BULK_SIZES.map((s) => (
-                            <label key={s} className={cn("grid cursor-pointer justify-items-center rounded-xl border-2 px-1 py-1.5 text-center leading-tight has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-scan", l.size === s ? "border-ink bg-white" : "border-line bg-white hover:border-ink-2")}>
-                              <input type="radio" className="sr-only" name={`size-${l.key}`} checked={l.size === s} onChange={() => patch(l.key, { size: s })} />
-                              <span className="text-[14px] font-bold">{BULK_SIZE_LABEL[s].name}</span>
-                              <span className="num text-[11.5px] text-ink-2">{BULK_SIZE_LABEL[s].inches}</span>
-                              <span className="num text-[12px] font-semibold">{usd0(bulkUnitCost(s, l.framed))}</span>
-                            </label>
-                          ))}
+                          {BULK_SIZES.map((s) => {
+                            const ok = a.sizes.includes(s);
+                            return (
+                              <label key={s} title={ok ? undefined : "This file would print soft at this size"} className={cn("grid justify-items-center rounded-xl border-2 px-1 py-1.5 text-center leading-tight has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-scan", !ok ? "cursor-not-allowed border-dashed border-line bg-wall opacity-50" : l.size === s ? "cursor-pointer border-ink bg-white" : "cursor-pointer border-line bg-white hover:border-ink-2")}>
+                                <input type="radio" className="sr-only" name={`size-${l.key}`} checked={l.size === s} disabled={!ok} onChange={() => patch(l.key, { size: s })} />
+                                <span className="text-[14px] font-bold">{BULK_SIZE_LABEL[s].name}</span>
+                                <span className="num text-[11.5px] text-ink-2">{BULK_SIZE_LABEL[s].inches}</span>
+                                <span className="num text-[12px] font-semibold">{usd0(bulkUnitCost(s, l.framed))}</span>
+                              </label>
+                            );
+                          })}
                         </fieldset>
+                        {a.sizes.length < BULK_SIZES.length && (
+                          <p className="-mt-1.5 text-[12.5px] text-ink-2">Greyed sizes would print soft from this file.</p>
+                        )}
                         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                           <div className="flex flex-wrap items-center gap-2">
                             <label className="flex cursor-pointer items-center gap-2 text-[14px] font-semibold">

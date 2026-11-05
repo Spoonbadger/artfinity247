@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { basePrices, getFinalPrice } from "@/lib/artwork_price";
 import { getArtistTrust, type Trust } from "@/lib/artistTrust";
 import { parseTheme, paint, type PageTheme } from "./theme";
+import { artPath } from "@/lib/urls";
 
 export type ArtistWork = {
   id: string;
@@ -13,6 +14,8 @@ export type ArtistWork = {
   sensitive: string[];
   fromCents: number;
   sold: number;
+  /** Buy page, /@handle/art/<slug>. */
+  href: string;
 };
 
 export type ArtistPageData = {
@@ -106,6 +109,7 @@ export const getArtistPage = cache(async (rawSlug: string): Promise<ArtistPageDa
     sensitive: a.sensitive ?? [],
     fromCents: lowestPrice(a),
     sold: sold.get(a.id) ?? 0,
+    href: a.slug ? artPath(artist.slug, a.slug) : "#",
   }));
 
   const sales = soldRows.reduce((n, r) => n + (r._sum.quantity ?? r._count._all), 0);

@@ -58,6 +58,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
         title: it.title || it.artwork?.title || it.slug || "Untitled",
         artistName: it.artistName || it.artwork?.artist.artist_name || it.artwork?.artist.name || "",
         artistSlug: it.artwork?.artist.slug ?? null,
+        artworkId: it.artworkId,
         imageUrl: it.imageUrl,
         sensitive: it.artwork?.sensitive ?? [],
         size,

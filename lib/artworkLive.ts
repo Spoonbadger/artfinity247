@@ -2,6 +2,7 @@
 // the referral reward and the "your artwork is live" email with its QR download link. Server-only.
 import { SignJWT } from "jose";
 import { prisma } from "@/lib/prisma";
+import { artUrl } from "@/lib/urls";
 import { resend } from "@/lib/resend";
 import { rewardReferralOnUpload } from "@/lib/referrals";
 import ArtworkLiveWithQrEmail from "@/emails/ArtworkLiveWithQrEmail";
@@ -22,7 +23,7 @@ export async function initialArtworkStatus(artistId: string): Promise<"APPROVED"
 export async function announceArtworkLive(artworkId: string) {
   const artwork = await prisma.artwork.findUnique({
     where: { id: artworkId },
-    select: { slug: true, title: true, artistId: true, status: true, artist: { select: { artist_name: true, name: true, email: true, role: true } } },
+    select: { slug: true, title: true, artistId: true, status: true, artist: { select: { slug: true, artist_name: true, name: true, email: true, role: true } } },
   });
   if (!artwork?.slug || artwork.status !== "APPROVED") return;
 
@@ -46,7 +47,7 @@ export async function announceArtworkLive(artworkId: string) {
       react: ArtworkLiveWithQrEmail({
         artistName: artwork.artist.artist_name || artwork.artist.name || "",
         title: artwork.title,
-        artworkUrl: `${base}/art/${artwork.slug}`,
+        artworkUrl: artUrl(artwork.artist.slug, artwork.slug!, base),
         qrDownloadUrl: `${base}/api/artworks/${artwork.slug}/qr?download=1&token=${qrToken}`,
       }),
     });

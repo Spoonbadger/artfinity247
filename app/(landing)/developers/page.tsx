@@ -148,7 +148,7 @@ export default async function DevelopersPage() {
               <div className="grid min-w-0 gap-3">
                 <h3 className="font-display text-[22px] font-extrabold [font-variation-settings:'wdth'_80]">Email or no iframes?</h3>
                 <p className="text-[14px] text-ink-2">A plain link always works.</p>
-                <Code code={plainBuyLink(ex.artworkSlug, ex.artworkTitle)} lang="html" title="Plain link" />
+                <Code code={plainBuyLink(ex.handle, ex.artworkSlug, ex.artworkTitle)} lang="html" title="Plain link" />
                 <p className="text-[13.5px] text-ink-2">oEmbed: <span className="num font-semibold text-ink [overflow-wrap:anywhere]">{SITE}/api/embed?url=</span> plus any artwork link.</p>
                 <p className="text-[13.5px] text-ink-2">Single-page app? Call <span className="num font-semibold text-ink">window.Artfinity.scan()</span> after you add new divs.</p>
               </div>

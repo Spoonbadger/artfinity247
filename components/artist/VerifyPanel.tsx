@@ -41,6 +41,7 @@ export default function VerifyPanel({ initial, name, slug }: { initial: State; n
     try {
       const fd = new FormData();
       fd.append("file", file);
+      fd.append("kind", "photo");
       const res = await fetch("/api/uploads", { method: "POST", body: fd });
       const j = await res.json().catch(() => ({}));
       if (!res.ok || !j.url) throw new Error(j.error || "Upload failed. Try again.");

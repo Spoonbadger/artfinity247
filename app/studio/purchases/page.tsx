@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { artPath } from "@/lib/urls";
 import { StudioPage } from "@/components/studio/StudioPage";
 import { requireArtist, STUDIO_TZ, usd } from "../_lib/data";
 
@@ -17,6 +18,7 @@ export default async function PurchasesPage() {
     select: {
       id: true, slug: true, size: true, quantity: true, lineTotal: true, title: true, artistName: true, imageUrl: true,
       order: { select: { createdAt: true, shippingStatus: true } },
+      artwork: { select: { slug: true, artist: { select: { slug: true } } } },
     },
   });
 
@@ -33,7 +35,7 @@ export default async function PurchasesPage() {
             <li key={i.id} className="af-panel flex items-center gap-4 p-3">
               {i.imageUrl ? <img src={i.imageUrl} alt={i.title || "Artwork"} className="h-16 w-14 shrink-0 rounded object-cover" /> : <span className="h-16 w-14 shrink-0 rounded bg-wall" />}
               <div className="min-w-0 flex-1">
-                {i.slug ? <Link href={`/art/${i.slug}`} className="font-bold text-ink no-underline hover:text-scan">{i.title}</Link> : <b>{i.title}</b>}
+                {i.artwork?.slug ? <Link href={artPath(i.artwork.artist.slug, i.artwork.slug)} className="font-bold text-ink no-underline hover:text-scan">{i.title}</Link> : <b>{i.title}</b>}
                 <div className="text-[13.5px] text-ink-2">
                   {i.artistName} · {SIZE[i.size || ""] || i.size} · ×{i.quantity || 1} · {i.order.createdAt.toLocaleDateString("en-US", { timeZone: STUDIO_TZ, month: "short", day: "numeric", year: "numeric" })}
                 </div>

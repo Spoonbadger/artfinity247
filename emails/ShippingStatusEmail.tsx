@@ -13,12 +13,15 @@ export default function ShippingStatusEmail({
   orderId,
   items,
   tracking,
+  helpUrl,
 }: {
   name: string;
   status: "shipped" | "delivered";
   orderId: string;
   items: Item[];
   tracking?: { carrier: string; number: string; url: string | null } | null;
+  /** Signed link to report a damaged or wrong print (lib/reprints.ts). */
+  helpUrl?: string;
 }) {
   return (
     <div style={{ fontFamily: "ui-sans-serif, system-ui", color: "#222" }}>
@@ -73,6 +76,14 @@ export default function ShippingStatusEmail({
         </>
       ) : (
         <p>Your print has been delivered. We hope you love it.</p>
+      )}
+
+      {helpUrl && (
+        <p style={{ marginTop: 16, fontSize: 14, color: "#5b5d66" }}>
+          Arrived damaged or not quite right?{" "}
+          <a href={helpUrl} style={{ color: "#2b37f0", fontWeight: 600 }}>Problem with your print?</a>{" "}
+          Send a photo within 14 days and we reprint it free.
+        </p>
       )}
 
       <p style={{ marginTop: 16 }}>

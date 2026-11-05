@@ -72,7 +72,7 @@ export default async function QrPage({ searchParams }: { searchParams: { art?: s
   try {
     const fonts = await loadFonts();
     const art = arts.find((a) => a.slug === slug)!;
-    const card = renderCard(design, art, fonts, qrValue(design, slug, base, null, savedCode?.code ?? PLACEHOLDER_CODE));
+    const card = renderCard(design, art, fonts, qrValue(design, slug, base, null, savedCode?.code ?? PLACEHOLDER_CODE, artist.slug));
     initialCard = { svg: cardSVG(card), sheet: sheetSVG(card, design.format) };
   } catch (e) {
     console.error("QR first paint failed", e);
@@ -80,7 +80,7 @@ export default async function QrPage({ searchParams }: { searchParams: { art?: s
 
   return (
     <StudioPage title="QR codes" sub="Pick a piece. Pick a look. Print. Every code here really scans." actions={<Link href="/studio/codes" className="btn btn-ghost btn-sm">My codes</Link>}>
-      <QrStudio arts={arts} initialSlug={slug} initialDesign={design} initialCard={initialCard} base={base} initialSaved={savedCode} split={split} />
+      <QrStudio arts={arts} initialSlug={slug} initialDesign={design} initialCard={initialCard} base={base} initialSaved={savedCode} split={split} handle={artist.slug} />
     </StudioPage>
   );
 }

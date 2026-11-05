@@ -4,9 +4,10 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, Search, ShoppingBag, X } from "lucide-react";
-import Logo from "@/components/af/Logo";
+import Logo, { LogoMark } from "@/components/af/Logo";
 import { useCart, useUser } from "@/components/contexts";
 import { cn } from "@/lib/utils";
+import { artistPath } from "@/lib/urls";
 
 const LINKS = [
   { href: "/art", label: "Browse art" },
@@ -15,7 +16,45 @@ const LINKS = [
   { href: "/pricing", label: "Pricing" },
 ];
 
-export default function SiteHeader() {
+/** On an artist's pages the artist's name takes the wordmark's place. */
+export type HeaderBrand = { handle: string; name: string; avatar: string | null };
+
+// The @header slot can keep an old artist header after a client-side move away, so check the path too.
+function onArtistPage(pathname: string | null, handle: string) {
+  let p = pathname || "";
+  try { p = decodeURIComponent(p); } catch {}
+  p = p.toLowerCase();
+  const h = handle.toLowerCase();
+  return [`/@${h}`, `/artists/${h}`].some((base) => p === base || p.startsWith(base + "/"));
+}
+
+const DABS = ["#f7c8a8", "#b8c4ff", "#ffd43b", "#a8dcc4", "#f5b3c8"];
+
+function ArtistBrand({ brand }: { brand: HeaderBrand }) {
+  const href = artistPath(brand.handle);
+  const initials = brand.name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("");
+  return (
+    <div className="flex min-w-0 items-center gap-2.5">
+      <Link href={href} tabIndex={-1} aria-hidden="true" className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-full bg-gallery shadow-[0_0_0_2px_#fff,0_0_0_3.5px_var(--af-line)] sm:h-11 sm:w-11">
+        {brand.avatar ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={brand.avatar} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <span className="grid h-full w-full place-items-center font-display text-[15px] font-extrabold text-ink" style={{ background: DABS[(brand.name.charCodeAt(0) || 0) % DABS.length] }}>{initials}</span>
+        )}
+      </Link>
+      <div className="grid min-w-0 gap-1">
+        <Link href={href} className="display truncate pb-0.5 text-[22px] leading-none text-ink no-underline hover:text-scan sm:text-[25px]">{brand.name}</Link>
+        <Link href="/" className="inline-flex w-fit items-center gap-1 text-[11.5px] font-semibold leading-none text-ink-2 no-underline hover:text-scan">
+          <LogoMark className="h-3.5 w-3.5" />
+          on Artfinity
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+export default function SiteHeader({ brand = null }: { brand?: HeaderBrand | null }) {
   const { currentUser } = useUser();
   const { cartItems } = useCart();
   const pathname = usePathname();
@@ -42,12 +81,13 @@ export default function SiteHeader() {
     };
   }, [open]);
   const count = cartItems?.reduce((n: number, i: any) => n + (i.quantity || 1), 0) || 0;
+  const shop = brand && onArtistPage(pathname, brand.handle) ? brand : null;
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-[1240px] items-center gap-6 px-4 py-3 sm:px-6">
-        <Logo />
-        <nav className="ml-auto hidden items-center gap-6 text-[15px] font-medium md:flex" aria-label="Main">
+        {shop ? <ArtistBrand brand={shop} /> : <Logo />}
+        <nav className={cn("ml-auto hidden items-center gap-6 text-[15px] font-medium md:flex", shop && "shrink-0")} aria-label="Main">
           {LINKS.map((l) => (
             <Link key={l.href} href={l.href} className={cn("text-ink no-underline hover:text-scan", pathname === l.href && "text-scan")}>{l.label}</Link>
           ))}
@@ -60,7 +100,7 @@ export default function SiteHeader() {
             <input type="search" name="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" maxLength={80} className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-2" />
           </label>
         </form>
-        <div className="ml-auto flex items-center gap-2 md:ml-0">
+        <div className={cn("ml-auto flex items-center gap-2 md:ml-0", shop && "shrink-0")}>
           <Link href="/search" className="hidden h-11 w-11 place-items-center rounded-full text-ink hover:bg-wall md:grid lg:hidden" aria-label="Search">
             <Search className="h-5 w-5" aria-hidden="true" />
           </Link>

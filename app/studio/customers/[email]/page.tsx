@@ -82,6 +82,7 @@ export default async function CustomerPage({ params }: { params: { email: string
                 stage: o.stage,
                 spentCents: o.spentCents,
                 items: o.items.map((i) => ({ id: i.id, title: i.title, imageUrl: i.imageUrl, size: i.size, framed: i.framed, quantity: i.quantity, priceCents: i.priceCents })),
+                reprint: o.reprint,
               }}
             />
           ))}

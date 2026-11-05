@@ -10,7 +10,7 @@ export default async function NewArtPage() {
   const split = await artistSplitNow(artist.id);
   return (
     <StudioPage title="Upload art" sub="One piece, a few prices, done.">
-      <ArtworkForm split={split} />
+      <ArtworkForm split={split} handle={artist.slug} />
     </StudioPage>
   );
 }

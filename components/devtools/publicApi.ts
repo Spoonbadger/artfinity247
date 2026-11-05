@@ -6,6 +6,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import { basePrices, framePrices, getFinalPrice } from "@/lib/artwork_price";
 import { MEDALS } from "@/lib/medals";
 import type { Trust } from "@/lib/artistTrust";
+import { artistUrl, artUrl, linksUrl } from "@/lib/urls";
 
 export const API_VERSION = "v1";
 /** Requests per minute, per IP. Generous in dev because every local request shares one IP. */
@@ -145,12 +146,12 @@ export function serializeArtwork(base: string, a: ArtworkRow, editionSold = 0) {
   return {
     slug: a.slug!,
     title: a.title,
-    url: `${base}/art/${a.slug}`,
+    url: artUrl(a.artist.slug, a.slug!, base),
     image: { url: absUrl(base, a.imageUrl), alt: a.title },
     sensitive: a.sensitive,
     fromPrice: money(fromPrice(a)),
     edition: edition(a.editionSize, editionSold),
-    artist: { handle: a.artist.slug, name: displayName(a.artist), url: `${base}/@${a.artist.slug}` },
+    artist: { handle: a.artist.slug, name: displayName(a.artist), url: artistUrl(a.artist.slug, base) },
     createdAt: a.createdAt.toISOString(),
   };
 }
@@ -203,8 +204,8 @@ export function serializeArtist(base: string, a: ArtistRow, trust: Trust) {
     printsSold: trust.showStats ? trust.printsSold : null,
     artworkCount: a._count.artworks,
     memberSince: a.createdAt.toISOString(),
-    url: `${base}/@${a.slug}`,
-    linksUrl: `${base}/@${a.slug}/links`,
+    url: artistUrl(a.slug, base),
+    linksUrl: linksUrl(a.slug, base),
     links: a.links.filter((l) => /^(https?:|mailto:)/i.test(l.url)).map((l) => ({ kind: l.kind, label: l.label || null, url: l.url })),
     api: { artworks: `${api}/artworks`, collections: `${api}/collections` },
   };

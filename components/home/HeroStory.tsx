@@ -6,6 +6,7 @@ import SensitiveImage from "@/components/site/SensitiveImage";
 import Stage from "@/components/motion/Stage";
 import Odometer from "@/components/motion/Odometer";
 import { scanUrl } from "@/lib/qr/render";
+import { artistPath, artPath } from "@/lib/urls";
 import { money } from "@/lib/earnings";
 import s from "./HeroStory.module.css";
 
@@ -23,7 +24,7 @@ export default function HeroStory({ art, perPrint, price, monthBefore }: { art: 
   const after = monthBefore + perPrint;
   const to = fmt(after);
   const from = fmt(monthBefore).padStart(to.length, " ");
-  const qr = scanUrl(art.slug);
+  const qr = scanUrl(art.slug, art.artist.slug);
 
   const painting = (
     <SensitiveImage labels={art.sensitive} light>
@@ -132,8 +133,8 @@ export default function HeroStory({ art, perPrint, price, monthBefore }: { art: 
         </div>
       </Stage>
       <p className="mt-3 pl-1 text-[13px] text-ink-2">
-        On the wall: <Link href={`/art/${art.slug}`} className="font-semibold text-ink no-underline hover:underline">{art.title}</Link> by{" "}
-        <Link href={`/@${art.artist.slug}`} className="text-ink no-underline hover:underline">{art.artist.name}</Link>
+        On the wall: <Link href={artPath(art.artist.slug, art.slug)} className="font-semibold text-ink no-underline hover:underline">{art.title}</Link> by{" "}
+        <Link href={artistPath(art.artist.slug)} className="text-ink no-underline hover:underline">{art.artist.name}</Link>
       </p>
     </div>
   );

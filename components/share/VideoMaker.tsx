@@ -26,7 +26,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 
 async function loadAssets(art: ShareArt, base: string): Promise<VideoAssets> {
   const [fonts, img] = await Promise.all([loadFonts(), loadImage(`/api/share/painting?art=${encodeURIComponent(art.slug)}`)]);
-  const svg = qrSVG(artLink(base, art.slug, "share-video"), { fg: "#15161b", dots: "rounded", eyes: "frame", eyeColor: "#2b37f0" })
+  const svg = qrSVG(artLink(base, art.handle, art.slug, "share-video"), { fg: "#15161b", dots: "rounded", eyes: "frame", eyeColor: "#2b37f0" })
     .replace("<svg ", `<svg width="672" height="672" `);
   const qr = await loadImage("data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg));
   const probe = document.createElement("canvas");

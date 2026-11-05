@@ -21,7 +21,7 @@ export function verifyScan(slug: string, off: number, at: string | null | undefi
 }
 
 /** Server-side version of components/qr/card.ts qrValue that signs the discount. */
-export async function signedQrValue(d: { ev: string; disc: number }, slug: string, base: string) {
+export async function signedQrValue(d: { ev: string; disc: number }, slug: string, base: string, handle?: string | null) {
   const { qrValue } = await import("@/components/qr/card");
-  return qrValue(d, slug, base, d.disc ? signScan(slug, d.disc, d.ev.trim() || null) : null);
+  return qrValue(d, slug, base, d.disc ? signScan(slug, d.disc, d.ev.trim() || null) : null, null, handle);
 }

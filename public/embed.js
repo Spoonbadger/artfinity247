@@ -75,7 +75,8 @@
     get("artworks/" + sl).then(function (r) {
       var a = r.artwork;
       paint(el, '<a class="b" href="' + u(a.url) + '" target="_blank" rel="noopener" aria-label="Buy a print of ' + e(a.title) + '">' + M.replace("#2b37f0", "#ffd43b").replace('"currentColor"', '"#fff"') + " Buy a print · from " + e(a.fromPrice.display) + "</a>");
-    }, function () { paint(el, '<a class="b" href="' + B + "/art/" + encodeURIComponent(sl) + '" target="_blank" rel="noopener">Buy a print</a>'); });
+    }, function () { // API down: no handle known, and the old /art/<slug> link redirects
+      paint(el, '<a class="b" href="' + B + "/art/" + encodeURIComponent(sl) + '" target="_blank" rel="noopener">Buy a print</a>'); });
   }
   function links(el, h) {
     get("artists/" + h).then(function (r) {

@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SIZE_TEXT, STAGE_META, STAGE_ORDER, shortDate, usd, type Stage } from "./format";
 
@@ -8,6 +8,8 @@ export type OrderCardData = {
   stage: Stage;
   spentCents: number;
   items: { id: string; title: string; imageUrl: string | null; size: string; framed: boolean; quantity: number; priceCents: number }[];
+  /** e.g. "Reprinted free by Artfinity (damaged in shipping)". The sale and earnings are unchanged. */
+  reprint?: string | null;
 };
 
 const STEP_LABEL: Record<Stage, string> = { paid: "Paid", printing: "Printer", shipped: "Shipped", delivered: "Delivered" };
@@ -41,6 +43,13 @@ export default function OrderCard({ order }: { order: OrderCardData }) {
           </li>
         ))}
       </ul>
+
+      {order.reprint && (
+        <p className="flex items-center gap-2 rounded-xl bg-earned-soft px-3 py-2 text-[13.5px] font-semibold text-earned">
+          <RotateCcw className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span>{order.reprint}. <span className="font-normal">Your earnings stay the same.</span></span>
+        </p>
+      )}
 
       <ol className="grid grid-cols-4 gap-1 border-t border-dashed border-line pt-3" aria-label="Order status">
         {STAGE_ORDER.map((s, i) => {
