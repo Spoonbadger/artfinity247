@@ -283,7 +283,7 @@ export default function RegisterFlow() {
 
         {currentUser && !created && step === 1 && (
           <FormAlert tone="ok">
-            You're logged in{currentUser.slug ? ` as @${currentUser.slug}` : ""}.{" "}
+            You’re logged in{currentUser.slug ? ` as @${currentUser.slug}` : ""}.{" "}
             <Link href={home} className="underline underline-offset-4">Go to your Studio</Link>
           </FormAlert>
         )}
@@ -509,13 +509,13 @@ export default function RegisterFlow() {
                   </p>
                   <Link href={`/studio/qr?art=${encodeURIComponent(artwork.slug)}`} className="btn btn-blue btn-lg">Style and print it</Link>
                   <Link href={home} className="btn btn-ghost btn-lg">Go to my Studio</Link>
-                  <p className="text-[13.5px] text-ink-2">We'll ask where to send your money after your first sale.</p>
+                  <p className="text-[13.5px] text-ink-2">We’ll ask where to send your money after your first sale.</p>
                 </div>
               </div>
             ) : (
               <div className="grid gap-3">
                 <p className="text-[16px] text-ink-2">
-                  You're at <b className="text-ink">theartfinity.com/@{handle}</b>. Add a piece and its code is ready to print.
+                  You’re at <b className="text-ink">theartfinity.com/@{handle}</b>. Add a piece and its code is ready to print.
                 </p>
                 <Link href="/studio/art/new" className="btn btn-blue btn-lg">Add your first piece</Link>
                 <Link href={home} className="btn btn-ghost btn-lg">Go to my Studio</Link>

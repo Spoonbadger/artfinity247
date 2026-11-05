@@ -56,7 +56,7 @@ export default function RecoverPasswordForm() {
           <h1 className="display text-[clamp(40px,9vw,54px)]">
             Forgot your <Brushed>password?</Brushed>
           </h1>
-          <p className="-mt-2 text-[16px] text-ink-2">We'll email you a link to set a new one.</p>
+          <p className="-mt-2 text-[16px] text-ink-2">We’ll email you a link to set a new one.</p>
           <FormAlert>{error}</FormAlert>
           <Field label="Email" type="email" name="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus required />
           <button type="submit" className="btn btn-blue btn-lg w-full" disabled={busy}>
