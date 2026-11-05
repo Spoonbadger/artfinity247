@@ -189,6 +189,7 @@ model Artwork {
   ownershipConfirmedAt DateTime?
   reports         ArtReport[]
   reviews         Review[]
+  wishlistItems   WishlistItem[]
   // Perceptual fingerprint (dHash, 16 hex chars) of the original, to catch re-uploads of the same image
   imageHash       String?
   @@index([imageHash])
@@ -323,6 +324,9 @@ model QrCode {
   active      Boolean     @default(true)
   expiresAt   DateTime?
   createdAt   DateTime    @default(now())
+  // The venue partner this code hangs at (cafe, shop, market), for venue revenue share
+  venueId     String?
+  venuePartner Venue?     @relation(fields: [venueId], references: [id], onDelete: SetNull)
   artist      Artist      @relation(fields: [artistId], references: [id], onDelete: Cascade)
   artwork     Artwork?    @relation(fields: [artworkId], references: [id], onDelete: SetNull)
   scans       ScanEvent[]
@@ -534,4 +538,41 @@ model JobRun {
   details    Json?
 
   @@index([job, startedAt])
+}
+
+// A buyer's account: passwordless (email link). Orders are matched by email.
+model Collector {
+  id         String    @id @default(cuid())
+  email      String    @unique
+  name       String?
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime?
+  wishlist   WishlistItem[]
+}
+
+model WishlistItem {
+  id          String    @id @default(cuid())
+  collectorId String
+  collector   Collector @relation(fields: [collectorId], references: [id], onDelete: Cascade)
+  artworkId   String
+  artwork     Artwork   @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@unique([collectorId, artworkId])
+}
+
+// A cafe, shop or market that hosts artists' codes, and may earn a share of sales from its walls
+model Venue {
+  id           String    @id @default(cuid())
+  name         String
+  slug         String    @unique
+  neighborhood String?
+  address      String?
+  contactName  String?
+  contactEmail String?
+  sharePct     Float     @default(0)   // share of Artfinity's profit on sales from this venue's codes, e.g. 0.05
+  active       Boolean   @default(true)
+  notes        String?
+  createdAt    DateTime  @default(now())
+  codes        QrCode[]
 }
