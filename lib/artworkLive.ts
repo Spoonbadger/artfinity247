@@ -9,6 +9,27 @@ import ArtworkLiveWithQrEmail from "@/emails/ArtworkLiveWithQrEmail";
 import ArtworksBatchLiveEmail from "@/emails/ArtworksBatchLiveEmail";
 import NewArtworksBatchEmail from "@/emails/NewArtworksBatchEmail";
 import { DUPLICATE_PREFIX } from "@/lib/imageHash";
+import { draftNewsletterForUpload } from "@/lib/newsletterAuto";
+import { alertKey, raiseAlert, resolveAlerts } from "@/lib/alerts";
+import { duplicateAlert, moderationAlert } from "@/lib/alertBuilders";
+
+/**
+ * Admin alert for a new upload that waits for review: a possible duplicate, or a new artist's first pieces.
+ * Goes in the daily digest. Never throws.
+ */
+export async function alertArtworkNeedsReview(artworkId: string) {
+  const a = await prisma.artwork
+    .findUnique({ where: { id: artworkId }, select: { id: true, title: true, status: true, flaggedReason: true, artist: { select: { artist_name: true, name: true } } } })
+    .catch(() => null);
+  if (!a || a.status !== "PENDING") return;
+  const artist = a.artist.artist_name || a.artist.name;
+  await raiseAlert(a.flaggedReason?.startsWith(DUPLICATE_PREFIX) ? duplicateAlert(a.id, a.title, artist) : moderationAlert(a.id, a.title, artist));
+}
+
+/** An admin approved, rejected or deleted the piece: its review alerts are done. */
+export function resolveArtworkAlerts(artworkIds: string[]) {
+  return resolveAlerts(artworkIds.flatMap((id) => [alertKey.duplicate(id), alertKey.moderation(id)]));
+}
 
 /** New artworks go live right away only for verified artists or ones with 3+ approved pieces. */
 export const AUTO_APPROVE_AFTER = 3;
@@ -73,7 +94,7 @@ export async function announceBatch(artistId: string, ids: string[]): Promise<{ 
   const rows = await prisma.artwork.findMany({
     where: { id: { in: ids.slice(0, 100) }, artistId, createdAt: { gte: since }, slug: { not: null } },
     orderBy: { createdAt: "asc" },
-    select: { slug: true, title: true, imageUrl: true, status: true, flaggedReason: true },
+    select: { id: true, slug: true, title: true, imageUrl: true, status: true, flaggedReason: true },
   });
   const artist = await prisma.artist.findUnique({ where: { id: artistId }, select: { slug: true, artist_name: true, name: true, email: true, city: true, state: true } });
   if (!artist || !rows.length) return { live: 0, review: 0 };
@@ -116,5 +137,7 @@ export async function announceBatch(artistId: string, ids: string[]): Promise<{ 
       console.error("Batch notification email failed", err);
     }
   }
+  // Studio → Automations "Draft a newsletter when I upload new work" (lib/newsletterAuto.ts; off unless switched on).
+  if (live) await draftNewsletterForUpload(artistId, rows.filter((r) => r.status === "APPROVED").map((r) => r.id));
   return { live, review };
 }

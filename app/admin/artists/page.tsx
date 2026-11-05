@@ -2,18 +2,20 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { adminOrRedirect } from "../_components/gate";
 import { usd } from "../_components/util";
-import { listArtists, type ArtistFilters } from "@/lib/adminArtists";
+import { ARTIST_FILTER_KEYS, listArtists, type ArtistFilters } from "@/lib/adminArtists";
+import ActionButton from "../_components/ActionButton";
+import { ROLE_LABEL, asAdminRole } from "@/lib/adminCaps";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Artists" };
+export const metadata: Metadata = { title: "Accounts" };
 
 const PAGE = 100;
 const STRIPE: Record<string, string> = { ready: "Stripe", pending: "Stripe setup unfinished", not_connected: "" };
 
 export default async function AdminArtistsPage({ searchParams }: { searchParams: ArtistFilters & { page?: string } }) {
   await adminOrRedirect("/admin/artists");
-  const f: ArtistFilters = { q: searchParams.q, verified: searchParams.verified, status: searchParams.status, balance: searchParams.balance, plan: searchParams.plan, stripe: searchParams.stripe };
+  const f: ArtistFilters = Object.fromEntries(ARTIST_FILTER_KEYS.map((k) => [k, searchParams[k]]));
   const rows = await listArtists(f);
   const page = Math.max(1, Number(searchParams.page) || 1);
   const shown = rows.slice((page - 1) * PAGE, page * PAGE);
@@ -26,10 +28,25 @@ export default async function AdminArtistsPage({ searchParams }: { searchParams:
     <div className="grid gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="eyebrow">{rows.length} {rows.length === 1 ? "artist" : "artists"}{filtered ? " match" : ""} · {usd(totalBalance)} unpaid</p>
+          <p className="eyebrow">{rows.length} {rows.length === 1 ? "account" : "accounts"}{filtered ? " match" : ""} · {usd(totalBalance)} unpaid</p>
           <h1 className="display text-[44px] sm:text-[56px]">Artists</h1>
+          <p className="text-[13.5px] text-ink-2">Every account, artists and admins.</p>
         </div>
-        <a href={`/api/admin/artists/export?${qs}`} className="btn btn-ghost btn-sm" download>Export CSV</a>
+        <div className="flex flex-wrap gap-2">
+          <ActionButton
+            url="/api/admin/artists" need="accounts" tone="blue" label="Create account" title="Create an artist account"
+            confirm="For an artist you met in person. They get an email to set their password; their page is live once they add art."
+            fields={[
+              { name: "artist_name", label: "Artist name (shown on their page)", required: true },
+              { name: "handle", label: "Handle", required: true, placeholder: "e.g. maya.paints", hint: "3–30 letters, numbers, dots or underscores. Their page is /@handle." },
+              { name: "email", label: "Email", required: true },
+              { name: "city", label: "City", required: true, defaultValue: "New York" },
+              { name: "first_name", label: "First name (for emails)", placeholder: "Optional" },
+            ]}
+            confirmLabel="Create and send invite" done="Account created"
+          />
+          <a href={`/api/admin/artists/export?${qs}`} className="btn btn-ghost btn-sm" download>Export CSV</a>
+        </div>
       </div>
 
       <form method="get" className="af-card grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end [&>label]:min-w-0">
@@ -56,6 +73,24 @@ export default async function AdminArtistsPage({ searchParams }: { searchParams:
             <option value="">Any</option><option value="ready">Stripe ready</option><option value="pending">Stripe unfinished</option><option value="none">No Stripe</option>
           </select>
         </label>
+        <label className="grid gap-1 text-[12.5px] font-semibold">Who
+          <select name="role" defaultValue={f.role || ""} className={field}>
+            <option value="">All accounts</option><option value="artists">Artists</option><option value="admins">Admins</option>
+          </select>
+        </label>
+        <label className="grid gap-1 text-[12.5px] font-semibold">Sign-in
+          <select name="signin" defaultValue={f.signin || ""} className={field}>
+            <option value="">Any</option><option value="social">Social only (no password)</option>
+          </select>
+        </label>
+        <label className="flex min-h-[40px] items-center gap-2 text-[13.5px] font-semibold">
+          <input type="checkbox" name="email" value="unverified" defaultChecked={f.email === "unverified"} className="h-4 w-4 accent-[var(--af-ink)]" />
+          Email not confirmed
+        </label>
+        <label className="flex min-h-[40px] items-center gap-2 text-[13.5px] font-semibold">
+          <input type="checkbox" name="joined" value="7d" defaultChecked={f.joined === "7d"} className="h-4 w-4 accent-[var(--af-ink)]" />
+          Signed up in the last 7 days
+        </label>
         <label className="flex min-h-[40px] items-center gap-2 text-[13.5px] font-semibold">
           <input type="checkbox" name="balance" value="1" defaultChecked={f.balance === "1"} className="h-4 w-4 accent-[var(--af-ink)]" />
           Has a balance
@@ -80,7 +115,9 @@ export default async function AdminArtistsPage({ searchParams }: { searchParams:
                   <span className="block truncate text-[13px] text-ink-2">@{a.slug} · {a.email}{a.city ? ` · ${a.city}` : ""}</span>
                 </div>
                 <div className="flex flex-wrap gap-1">
-                  {a.role === "ADMIN" && <Chip c="bg-ink text-white">Admin</Chip>}
+                  {a.role === "ADMIN" && <Chip c="bg-ink text-white">{ROLE_LABEL[asAdminRole(a.adminRole)]}</Chip>}
+                  {!a.emailVerified && <Chip c="bg-wall text-ink-2 ring-1 ring-line">Email unconfirmed</Chip>}
+                  {!a.hasPassword && <Chip c="bg-wall text-ink-2 ring-1 ring-line">{a.providers.length ? `${a.providers.join(", ")} only` : "No password yet"}</Chip>}
                   {a.suspended && <Chip c="bg-coral text-white">Suspended</Chip>}
                   {a.closed && <Chip c="bg-coral/15 text-coral">Closed</Chip>}
                   {a.verification === "VERIFIED" && <Chip c="bg-scan-soft text-scan">Verified</Chip>}

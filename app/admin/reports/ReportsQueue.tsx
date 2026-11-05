@@ -8,6 +8,7 @@ import { ExternalLink } from "lucide-react";
 import { REASON_SHORT, type AnyReason, type DmcaCounter, type DmcaNotice } from "@/lib/reports";
 import { cn } from "@/lib/utils";
 import { artistPath, artPath } from "@/lib/urls";
+import { useAdminCan } from "../_components/AdminRole";
 
 export type ReportRow = {
   id: string;
@@ -59,6 +60,8 @@ export default function ReportsQueue({ rows: initial, tab }: { rows: ReportRow[]
   const [rows, setRows] = useState(initial);
   const [busy, setBusy] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
+  // DMCA notices and counter-notices: owner and admin only (support sees them, can't decide them).
+  const canDmca = useAdminCan("takedown");
 
   async function act(r: ReportRow, action: Action) {
     if (action === "takedown" && !confirm(`Take down “${r.art?.title}”? The artist and reporter will be emailed.`)) return;
@@ -174,13 +177,14 @@ export default function ReportsQueue({ rows: initial, tab }: { rows: ReportRow[]
                     <span className="label">{counter ? "Note (sent to the artist if you dismiss)" : "Note (sent to the artist if you take it down)"}</span>
                     <textarea rows={2} maxLength={1000} value={notes[r.id] || ""} onChange={(e) => setNotes((x) => ({ ...x, [r.id]: e.target.value }))} placeholder="Optional" />
                   </label>
+                  {(counter || r.reason === "copyright") && !canDmca && <p className="text-[12.5px] text-ink-2">DMCA decisions need the admin or owner role.</p>}
                   <div className="flex flex-wrap gap-2">
                     {counter ? (
-                      <button type="button" className="btn btn-blue" disabled={busy === r.id || !r.art} onClick={() => act(r, "restore")}>Restore</button>
+                      <button type="button" className="btn btn-blue" disabled={busy === r.id || !r.art || !canDmca} onClick={() => act(r, "restore")}>Restore</button>
                     ) : (
-                      <button type="button" className="btn btn-blue" disabled={busy === r.id || !r.art || r.art.status === "REJECTED"} onClick={() => act(r, "takedown")}>Take down</button>
+                      <button type="button" className="btn btn-blue" disabled={busy === r.id || !r.art || r.art.status === "REJECTED" || (r.reason === "copyright" && !canDmca)} onClick={() => act(r, "takedown")}>Take down</button>
                     )}
-                    <button type="button" className="btn btn-ghost" disabled={busy === r.id} onClick={() => act(r, "dismiss")}>Dismiss</button>
+                    <button type="button" className="btn btn-ghost" disabled={busy === r.id || ((counter || r.reason === "copyright") && !canDmca)} onClick={() => act(r, "dismiss")}>Dismiss</button>
                   </div>
                 </>
               )}

@@ -14,6 +14,7 @@ import { decideRequest, requestsForOrder, ReprintError } from "@/lib/reprints";
 import { REPRINT_DIRECTION, isReprintReason, statusSubject, type ReprintBody } from "@/lib/reprintFormat";
 import { latestTracking, resendReceipt, sendShippingEmail } from "@/lib/orderEmails";
 import { orderNumber } from "@/lib/printer";
+import { adminRoleGuard } from "@/lib/adminRoles";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -36,6 +37,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   });
   if (!order) return fail("Order not found.", 404);
   const no = orderNumber(order.id);
+
+  // Refunds are money: owner and admin only (support handles everything else here).
+  if (input.action === "refund" || input.action === "refund_undo") {
+    const { denied } = await adminRoleGuard("money");
+    if (denied) return denied;
+  }
 
   switch (input.action) {
     case "refund": {

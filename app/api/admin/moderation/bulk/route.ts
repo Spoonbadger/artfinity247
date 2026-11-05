@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
-import { announceArtworkLive } from "@/lib/artworkLive";
+import { announceArtworkLive, resolveArtworkAlerts } from "@/lib/artworkLive";
 import { logAdminAction } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
@@ -38,5 +38,6 @@ export async function POST(req: NextRequest) {
       console.error("Bulk moderation failed for", a.id, err);
     }
   }
+  await resolveArtworkAlerts(done);
   return NextResponse.json({ ok: true, done, failed: ids.filter((id) => !done.includes(id)) });
 }

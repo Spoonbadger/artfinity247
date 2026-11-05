@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getAdmin } from "@/lib/admin";
 import { resend } from "@/lib/resend";
 import { logAdminAction } from "@/lib/audit";
+import { alertKey, resolveAlerts } from "@/lib/alerts";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     data,
     select: { id: true, verification: true, verifiedAt: true, verificationNote: true },
   });
+  await resolveAlerts({ prefix: alertKey.verificationPrefix(artist.id) });
 
   const first = artist.first_name || (artist.artist_name || artist.name).split(" ")[0];
   const mail =

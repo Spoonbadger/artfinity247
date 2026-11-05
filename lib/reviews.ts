@@ -8,6 +8,8 @@ import { prisma } from "@/lib/prisma";
 import { resend, emailEnabled } from "@/lib/resend";
 import { emailHtml, firstNameOf } from "@/lib/artistEmails";
 import { shortName, type PublicReview, type ReviewSummary } from "@/components/reviews/format";
+import { raiseAlert } from "@/lib/alerts";
+import { reviewAlert } from "@/lib/alertBuilders";
 
 export { shortName };
 export type { PublicReview, ReviewSummary };
@@ -150,6 +152,11 @@ export async function sendReviewRequest(orderId: string) {
   await resend.emails.send({ from: FROM, to: order.email, subject: "How does it look on your wall?", html, text });
   if (!emailEnabled) console.log(`[review-link] order=${order.id} ${url}`);
   return true;
+}
+
+/** A review held by moderate() raises an admin alert (digest). Never throws. */
+export async function alertIfFlagged(review: { id: string; status: string; rating: number; buyerName: string }) {
+  if (review.status === "flagged") await raiseAlert(reviewAlert(review.id, review.rating, review.buyerName));
 }
 
 /** Tells the artist a new review is up. Only for published reviews; flagged ones wait for admin. */

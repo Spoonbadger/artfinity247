@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 import { notifyArtistOfReview } from "@/lib/reviews";
 import { logAdminAction } from "@/lib/audit";
+import { alertKey, resolveAlert } from "@/lib/alerts";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const was = await prisma.review.findUnique({ where: { id: params.id }, select: { status: true, artistId: true, rating: true, buyerName: true, orderItem: { select: { orderId: true } } } });
   if (!was) return NextResponse.json({ error: "Review not found." }, { status: 404 });
   const review = await prisma.review.update({ where: { id: params.id }, data: { status }, select: { id: true, status: true } });
+  await resolveAlert(alertKey.reviewFlagged(review.id));
   if (was.status === "flagged" && status === "published") {
     await notifyArtistOfReview(review.id).catch((err) => console.error("Review email to artist failed", err));
   }
@@ -39,6 +41,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   const was = await prisma.review.findUnique({ where: { id: params.id }, select: { artistId: true, rating: true, buyerName: true, body: true, orderItem: { select: { orderId: true } } } });
   const gone = await prisma.review.deleteMany({ where: { id: params.id } });
   if (!gone.count) return NextResponse.json({ error: "Review not found." }, { status: 404 });
+  await resolveAlert(alertKey.reviewFlagged(params.id));
   await logAdminAction(admin, "review.delete", { type: "review", id: params.id }, `Deleted ${was?.rating ?? "?"}★ review by ${was?.buyerName ?? "a buyer"}`, {
     artistId: was?.artistId, orderId: was?.orderItem.orderId, body: was?.body?.slice(0, 300),
   });

@@ -2,7 +2,8 @@
 // Admin decision on an art report or DMCA counter-notice. Emails the people involved.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { currentAdmin, roleCan } from "@/lib/adminRoles";
+import { alertKey, resolveAlerts } from "@/lib/alerts";
 import { resend } from "@/lib/resend";
 import { REASON_SHORT, SITE_URL, type AnyReason } from "@/lib/reports";
 import { artUrl } from "@/lib/urls";
@@ -21,7 +22,7 @@ const TAKEDOWN_REASON: Record<string, string> = {
 };
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
-  const admin = await requireAdmin().catch(() => null);
+  const admin = await currentAdmin().catch(() => null);
   if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = (await req.json().catch(() => null)) as { action?: string; note?: string } | null;
@@ -42,6 +43,10 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   if (report.status !== "open") return NextResponse.json({ error: "This report is already closed." }, { status: 409 });
 
   const counter = report.reason === "counter";
+  // DMCA notices and counter-notices are legal decisions: owner and admin only. Support handles the other reports.
+  if ((report.reason === "copyright" || counter) && !roleCan(admin.adminRole, "takedown")) {
+    return NextResponse.json({ error: "DMCA decisions need the admin or owner role." }, { status: 403 });
+  }
   if (action === "takedown" && counter) return NextResponse.json({ error: "Counter-notices can be restored or dismissed." }, { status: 400 });
   if (action === "restore" && !counter) return NextResponse.json({ error: "Only counter-notices can restore work." }, { status: 400 });
   if ((action === "takedown" || action === "restore") && !report.artwork) {
@@ -125,6 +130,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
           }
     );
   }
+
+  // This report (and any it closed along with it) no longer needs anyone.
+  const closedIds = action === "takedown" && art
+    ? (await prisma.artReport.findMany({ where: { artworkId: art.id, resolvedAt: now }, select: { id: true } })).map((r) => r.id)
+    : [];
+  await resolveAlerts(Array.from(new Set([report.id, ...closedIds])).map(alertKey.report));
 
   await Promise.all(mails.map((m) => resend.emails.send(m).catch((e) => console.error("report email failed", e))));
   const verb = action === "takedown" ? "Took down" : action === "restore" ? "Restored" : "Dismissed report on";

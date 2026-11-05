@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rateLimit";
-import { canEdit, moderate, notifyArtistOfReview, reviewState, shortName, verifyReview } from "@/lib/reviews";
+import { alertIfFlagged, canEdit, moderate, notifyArtistOfReview, reviewState, shortName, verifyReview } from "@/lib/reviews";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
       data: { rating, body, photoUrl, buyerName, buyerCity, status: item.review.status === "hidden" ? "hidden" : status },
       select: { id: true, status: true },
     });
+    await alertIfFlagged({ ...review, rating, buyerName });
     return NextResponse.json({ ok: true, review, edited: true });
   }
 
@@ -67,5 +68,6 @@ export async function POST(req: NextRequest) {
     select: { id: true, status: true },
   });
   await notifyArtistOfReview(review.id).catch((err) => console.error("Review email to artist failed", err));
+  await alertIfFlagged({ ...review, rating, buyerName });
   return NextResponse.json({ ok: true, review, edited: false });
 }

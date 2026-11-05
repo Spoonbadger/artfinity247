@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import * as Dialog from "@radix-ui/react-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { cantReason, type AdminRole, type Capability } from "@/lib/adminCaps";
+import { useAdminCan } from "./AdminRole";
 
 type Field = { name: string; label: string; type?: "text" | "textarea" | "number" | "select"; required?: boolean; placeholder?: string; defaultValue?: string; options?: { value: string; label: string }[]; hint?: string };
 
@@ -13,7 +15,7 @@ type Field = { name: string; label: string; type?: "text" | "textarea" | "number
  * toasts the result and refreshes the page.
  */
 export default function ActionButton({
-  url, body = {}, label, title, confirm, fields = [], confirmLabel, tone = "ghost", done, className, disabled, method = "POST",
+  url, body = {}, label, title, confirm, fields = [], confirmLabel, tone = "ghost", done, className, disabled, method = "POST", need, redirectTo,
 }: {
   url: string;
   body?: Record<string, unknown>;
@@ -28,8 +30,13 @@ export default function ActionButton({
   className?: string;
   disabled?: boolean;
   method?: "POST" | "PATCH";
+  /** Role needed (lib/adminCaps.ts). Without it the button is disabled with the reason as its tooltip. */
+  need?: Capability | AdminRole;
+  /** Go here after success instead of refreshing (e.g. the record was deleted). */
+  redirectTo?: string;
 }) {
   const router = useRouter();
+  const allowed = useAdminCan(need ?? "view");
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -51,6 +58,7 @@ export default function ActionButton({
       if (!r.ok) throw new Error(d.error || "Something went wrong.");
       toast.success(typeof d.message === "string" ? d.message : done || "Done");
       setOpen(false);
+      if (redirectTo) router.push(redirectTo);
       router.refresh();
     } catch (e: any) {
       setErr(e?.message || "Something went wrong.");
@@ -63,7 +71,7 @@ export default function ActionButton({
   return (
     <Dialog.Root open={open} onOpenChange={(o) => { setOpen(o); if (!o) setErr(null); }}>
       <Dialog.Trigger asChild>
-        <button type="button" disabled={disabled} className={cn(btn, className)}>{label}</button>
+        <button type="button" disabled={disabled || !allowed} title={!allowed && need ? cantReason(need) : undefined} className={cn(btn, className)}>{label}</button>
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-[60] bg-ink/40" />

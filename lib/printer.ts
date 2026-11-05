@@ -24,6 +24,8 @@ import { certUrl } from "@/lib/certificates";
 import { editionLabel } from "@/lib/editionFormat";
 import { normalizeSize } from "@/lib/sales";
 import { SIZE_LABEL, sizeInches, type PrintSize } from "@/components/art/pricing";
+import { alertKey, raiseAlert, resolveAlerts } from "@/lib/alerts";
+import { workOrderAlert } from "@/lib/alertBuilders";
 
 const SECRET = process.env.SCAN_SIGNING_SECRET || process.env.JWT_SECRET || "";
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com").replace(/\/$/, "");
@@ -56,6 +58,10 @@ export function verifyPrinterLink(what: string, e: unknown, t: unknown): boolean
 
 export const originalLink = (itemId: string) => `${APP_URL}/api/printer/originals/${itemId}?${signedQuery(`orig:${itemId}`)}`;
 export const slipLink = (orderId: string) => `${APP_URL}/api/printer/slip/${orderId}?${signedQuery(`slip:${orderId}`)}`;
+/** How long the lab's "enter tracking" link works (shipping can take longer than the file links). */
+export const TRACKING_LINK_DAYS = 45;
+/** The lab's form for this order's carrier + tracking number (app/api/printer/tracking). */
+export const labTrackingLink = (orderId: string) => `${APP_URL}/api/printer/tracking?o=${orderId}&${signedQuery(`track:${orderId}`, TRACKING_LINK_DAYS)}`;
 
 // ---------- The work order ----------
 
@@ -175,6 +181,9 @@ export function workOrderText(wo: WorkOrder): { subject: string; text: string } 
   lines.push("");
   lines.push(`Packing slip: ${wo.slipUrl}`);
   lines.push("");
+  lines.push(`Reply with tracking: ${labTrackingLink(wo.orderId)}`);
+  lines.push("(Once it ships, enter the carrier and tracking number there. The buyer gets the tracking email right away.)");
+  lines.push("");
   lines.push("Questions or a problem with a file? Reply to this email.");
   const subject = `${wo.reprintOf ? "Reprint" : "Work order"} #${wo.number}: ${prints} ${prints === 1 ? "print" : "prints"} for ${wo.shipName}`;
   return { subject, text: lines.join("\n") };
@@ -288,6 +297,7 @@ export async function sendWorkOrder(orderId: string, opts: { force?: boolean } =
       const ref = await provider.send(wo);
       await prisma.order.update({ where: { id: orderId }, data: { printerSentAt: new Date(), printerRef: `${provider.id}:${ref}`.slice(0, 190), sentToPrinter: true } });
       console.log(`[printer] work order #${wo.number} sent (${provider.id}:${ref})`);
+      await resolveAlerts([alertKey.workOrderFailed(orderId), alertKey.orderStuck(orderId)]);
       return { status: "sent", ref };
     } catch (err) {
       const error = await markFailed(orderId, err);
@@ -303,5 +313,6 @@ async function markFailed(orderId: string, err: unknown): Promise<string> {
   const error = ((err as Error)?.message || "Send failed").replace(/\s+/g, " ").slice(0, 300);
   console.error(`[printer] work order for ${orderId} failed: ${error}`);
   await prisma.order.update({ where: { id: orderId }, data: { printerRef: `failed: ${error}` } }).catch(() => {});
+  await raiseAlert(workOrderAlert(orderId, error));
   return error;
 }

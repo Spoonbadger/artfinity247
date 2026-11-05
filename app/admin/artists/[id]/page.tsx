@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { adminOrRedirect } from "../../_components/gate";
+import { adminRoleOrRedirect } from "../../_components/gate";
+import { ROLE_LABEL, asAdminRole, roleCan } from "@/lib/adminCaps";
+import { PROVIDER_LABEL, isProviderId } from "@/lib/oauth/meta";
+import { deleteBlocker } from "@/lib/adminAccounts";
 import { usd } from "../../_components/util";
 import ActionButton from "../../_components/ActionButton";
 import NotesPanel from "../../_components/NotesPanel";
@@ -22,7 +25,7 @@ const ART_STATUS: Record<string, string> = { PENDING: "bg-sticker text-ink", APP
 const STRIPE_LABEL: Record<string, string> = { ready: "Connected, payouts on", pending: "Started, not finished", not_connected: "Not connected" };
 
 export default async function AdminArtistPage({ params }: { params: { id: string } }) {
-  await adminOrRedirect(`/admin/artists/${params.id}`);
+  const me = await adminRoleOrRedirect(`/admin/artists/${params.id}`);
   const a = await prisma.artist.findUnique({
     where: { id: params.id },
     select: {
@@ -30,7 +33,8 @@ export default async function AdminArtistPage({ params }: { params: { id: string
       profileImage: true, bio: true, createdAt: true, role: true, plan: true, proUntil: true, referralCode: true, referredById: true,
       verification: true, verifiedAt: true, verificationRequestedAt: true, verificationEvidence: true, verificationNote: true,
       closedAt: true, suspendedAt: true, suspendedReason: true, venmoHandle: true, venmoPending: true, termsAcceptedAt: true,
-      stripeAccountId: true,
+      stripeAccountId: true, adminRole: true, emailVerifiedAt: true, password: true, sessionVersion: true,
+      oauthAccounts: { orderBy: { createdAt: "asc" }, select: { id: true, provider: true, email: true, createdAt: true, lastUsedAt: true } },
     },
   });
   if (!a) notFound();
@@ -64,6 +68,12 @@ export default async function AdminArtistPage({ params }: { params: { id: string
   const gross = balance.ledger.filter((l) => !l.refunded).reduce((n, l) => n + l.grossCents, 0);
   const lastPaid = balance.payouts.find((p) => p.status === "paid");
   const target = `/api/admin/artists/${a.id}`;
+  const hasPassword = !!a.password;
+  const isAdmin = a.role === "ADMIN";
+  const self = a.id === me.id;
+  // Another admin's account: account-level actions need an owner (the API checks this too).
+  const teammate = isAdmin && !self && !roleCan(me.adminRole, "team");
+  const blocker = roleCan(me.adminRole, "deleteAccount") ? await deleteBlocker(a.id) : null;
 
   return (
     <div className="grid gap-6">
@@ -78,7 +88,8 @@ export default async function AdminArtistPage({ params }: { params: { id: string
           </div>
         </div>
         <div className="flex flex-wrap gap-1.5">
-          {a.role === "ADMIN" && <Chip c="bg-ink text-white">Admin</Chip>}
+          {isAdmin && <Chip c="bg-ink text-white">{ROLE_LABEL[asAdminRole(a.adminRole)]}</Chip>}
+          <Chip c={a.emailVerifiedAt ? "bg-earned-soft text-earned" : "bg-coral/15 text-coral"}>{a.emailVerifiedAt ? "Email confirmed" : "Email not confirmed"}</Chip>
           {a.suspendedAt && <Chip c="bg-coral text-white">Suspended {day(a.suspendedAt)}</Chip>}
           {a.closedAt && <Chip c="bg-coral/15 text-coral">Closed {day(a.closedAt)}</Chip>}
           <Chip c={a.verification === "VERIFIED" ? "bg-scan-soft text-scan" : a.verification === "PENDING" ? "bg-sticker text-ink" : "bg-wall text-ink-2"}>
@@ -97,7 +108,8 @@ export default async function AdminArtistPage({ params }: { params: { id: string
         )}
       </div>
 
-      <section aria-label="Actions" className="af-card flex flex-wrap gap-2 p-4">
+      <section aria-label="Actions" className="af-card grid gap-3 p-4">
+        <div className="flex flex-wrap gap-2">
         {a.verification === "VERIFIED" ? (
           <ActionButton url={`/api/admin/verification/${a.id}`} body={{ action: "revoke" }} label="Unverify" title={`Remove ${name}'s verified seal?`} tone="danger"
             confirm="The seal comes off their page and they get an email with your note." fields={[{ name: "note", label: "Note for the artist", type: "textarea", placeholder: "Optional" }]} confirmLabel="Unverify" done="Verification removed" />
@@ -106,22 +118,58 @@ export default async function AdminArtistPage({ params }: { params: { id: string
             confirm="Their page shows the verified seal and they get an email." confirmLabel="Verify" done="Verified" />
         )}
         {a.suspendedAt ? (
-          <ActionButton url={target} body={{ action: "unsuspend" }} label="Unsuspend" title={`Unsuspend ${name}?`} tone="blue"
+          <ActionButton url={target} body={{ action: "unsuspend" }} need="suspend" label="Unsuspend" title={`Unsuspend ${name}?`} tone="blue"
             confirm="Their page, art and printed codes come back online and buyers can check out again. They get an email." confirmLabel="Unsuspend" done="Unsuspended" />
         ) : (
-          <ActionButton url={target} body={{ action: "suspend" }} label="Suspend" title={`Suspend ${name}?`} tone="danger" disabled={a.role === "ADMIN"}
+          <ActionButton url={target} body={{ action: "suspend" }} need="suspend" label="Suspend" title={`Suspend ${name}?`} tone="danger" disabled={isAdmin}
             confirm="Their public pages 404, printed codes go nowhere and nobody can check out their work. Earnings are still paid. They get an email and see the reason in Studio."
             fields={[{ name: "reason", label: "Reason (the artist sees this)", type: "textarea", required: true, placeholder: "e.g. Several copyright reports while we look into it" }]} confirmLabel="Suspend" done="Suspended" />
         )}
-        {a.closedAt && (
-          <ActionButton url={target} body={{ action: "reopen" }} label="Reopen account" title={`Reopen ${name}'s account?`}
+        {a.closedAt ? (
+          <ActionButton url={target} body={{ action: "reopen" }} need="suspend" label="Reopen account" title={`Reopen ${name}'s account?`}
             confirm="Their art goes back to how it was before they closed, and they can log in again." confirmLabel="Reopen" done="Account reopened" />
+        ) : (
+          <ActionButton url={target} body={{ action: "close" }} need="suspend" label="Close account" title={`Close ${name}'s account?`} tone="danger" disabled={isAdmin}
+            confirm="Same as the artist closing it: their page and art go offline, printed codes stop working and they're signed out. Orders and unpaid earnings stay and are paid on schedule. You can reopen it later."
+            fields={[{ name: "reason", label: "Reason (for the audit log)", type: "textarea", placeholder: "Optional" }]} confirmLabel="Close account" done="Account closed" />
         )}
-        <ActionButton url={target} body={{ action: "grant_infinity" }} label="Grant Infinity" title={`Give ${name} Infinity months`}
+        <ActionButton url={target} body={{ action: "grant_infinity" }} need="accounts" label="Grant Infinity" title={`Give ${name} Infinity months`}
           confirm={infinity ? `Adds to their current Infinity, which runs until ${formatPlanDate(a.proUntil!)}.` : "Starts today. They get the Infinity split on new sales while it lasts."}
           fields={[{ name: "months", label: "Months", type: "number", defaultValue: "2", required: true, hint: "1 to 24" }]} confirmLabel="Grant" done="Infinity granted" />
+        {infinity && (
+          <ActionButton url={target} body={{ action: "revoke_infinity" }} need="accounts" label="End Infinity" title={`End ${name}'s Infinity now?`} tone="danger"
+            confirm={`Their Infinity (until ${formatPlanDate(a.proUntil!)}) ends today. New sales use the free plan's split.`} confirmLabel="End Infinity" done="Infinity ended" />
+        )}
         <ActionButton url={target} body={{ action: "resend_payout_email" }} label="Resend payout email" title="Resend the payout email?" disabled={!lastPaid}
           confirm={lastPaid ? `Sends the “payout sent” email for ${lastPaid.label} (${usd(lastPaid.amountCents)}) to ${a.email} again.` : "No paid payout yet."} confirmLabel="Send" done="Payout email sent" />
+        </div>
+        <div className="flex flex-wrap gap-2 border-t border-line pt-3">
+          <span className="self-center text-[12px] font-bold uppercase tracking-[0.06em] text-ink-2">Account</span>
+          <ActionButton url={target} body={{ action: "send_password_reset" }} need="accountSupport" disabled={teammate} label={hasPassword ? "Send password reset link" : "Send set-password link"}
+            title="Email a password link?" confirm={`Sends the “Reset your password” email to ${a.email}. The link works for 30 minutes and signs them out everywhere once used.${hasPassword ? "" : " They have no password yet, so this lets them add one."}`} confirmLabel="Send link" done="Link sent" />
+          <ActionButton url={target} body={{ action: "resend_verification" }} need="accountSupport" disabled={!!a.emailVerifiedAt} label="Resend email confirmation"
+            title="Resend the confirmation link?" confirm={`Sends a fresh “Confirm your email” link to ${a.email} (good for 7 days).`} confirmLabel="Send" done="Confirmation sent" />
+          <ActionButton url={target} body={{ action: "sign_out_everywhere" }} need="accountSupport" disabled={teammate} label="Sign out everywhere" tone="danger"
+            title={`Sign ${name} out everywhere?`} confirm={self ? "Every session ends, including this one. You'll need to log in again." : "Every logged-in browser and phone is signed out on its next click. Their password and sign-in methods stay the same."} confirmLabel="Sign out everywhere" done="Signed out everywhere" />
+          <ActionButton url={target} body={{ action: "change_email" }} need="accounts" disabled={teammate} label="Change email"
+            title={`Change ${name}'s email`} confirm={`Now ${a.email}. The new address has to be confirmed (we email a link), and they're signed out everywhere. Payouts and newsletters wait until it's confirmed.`}
+            fields={[{ name: "email", label: "New email", required: true, defaultValue: a.email }]} confirmLabel="Change email" done="Email changed" />
+          <ActionButton url={target} body={{ action: "edit_profile" }} need="accounts" disabled={teammate} label="Edit name, handle, city"
+            title={`Edit ${name}'s profile`} confirm="A new handle keeps the old one working: /@old redirects, artwork links and printed codes keep working."
+            fields={[
+              { name: "artist_name", label: "Display name", defaultValue: name, required: true },
+              { name: "handle", label: "Handle", defaultValue: a.slug, required: true, hint: "3–30 letters, numbers, dots or underscores" },
+              { name: "city", label: "City", defaultValue: a.city, required: true },
+            ]} confirmLabel="Save" done="Profile saved" />
+          {roleCan(me.adminRole, "deleteAccount") && !self && (
+            <ActionButton url={target} body={{ action: "delete" }} need="deleteAccount" tone="danger" label="Delete permanently" disabled={!!blocker} redirectTo="/admin/artists"
+              title={`Delete ${name} for good?`}
+              confirm={blocker ? <>Can&apos;t delete: {blocker}</> : <>Removes the account, its art, links, codes and everything else. <b>This can&apos;t be undone.</b> Type the handle to confirm.</>}
+              fields={blocker ? [] : [{ name: "confirm", label: `Type ${a.slug}`, required: true }]} confirmLabel="Delete forever" done="Deleted" />
+          )}
+        </div>
+        {blocker && roleCan(me.adminRole, "deleteAccount") && <p className="text-[12.5px] text-ink-2">Can&apos;t delete permanently: {blocker}</p>}
+        {teammate && <p className="text-[12.5px] text-ink-2">This is another admin&apos;s account: only an owner can change its sign-in, email or profile.</p>}
       </section>
 
       <section aria-label="Money" className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
@@ -207,6 +255,35 @@ export default async function AdminArtistPage({ params }: { params: { id: string
         </div>
 
         <div className="grid content-start gap-6">
+          <Card title="Sign-in and account" sub={`Session version ${a.sessionVersion}`}>
+            <dl className="grid gap-1.5 text-[13.5px]">
+              <Row k="Email">{a.email} {a.emailVerifiedAt ? <span className="text-earned">· confirmed {day(a.emailVerifiedAt)}</span> : <span className="text-coral">· not confirmed</span>}</Row>
+              <Row k="Password">{hasPassword ? "Set" : "None (signs in with a provider, or hasn't set one yet)"}</Row>
+              {isAdmin && <Row k="Admin role"><Link href="/admin/team" className="text-scan">{ROLE_LABEL[asAdminRole(a.adminRole)]}</Link></Row>}
+            </dl>
+            {a.oauthAccounts.length === 0 ? (
+              <p className="text-[13px] text-ink-2">No social sign-ins connected.</p>
+            ) : (
+              <ul className="grid gap-1.5">
+                {a.oauthAccounts.map((o) => (
+                  <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line px-3 py-2 text-[13.5px]">
+                    <span className="min-w-0">
+                      <b>{isProviderId(o.provider) ? PROVIDER_LABEL[o.provider] : o.provider}</b>
+                      <span className="text-ink-2">{o.email ? ` · ${o.email}` : ""} · added {day(o.createdAt)}{o.lastUsedAt ? ` · last used ${day(o.lastUsedAt)}` : ""}</span>
+                    </span>
+                    {roleCan(me.adminRole, "disconnectOAuth") && (
+                      <ActionButton url={target} body={{ action: "disconnect_oauth", oauthId: o.id }} need="disconnectOAuth" tone="danger" label="Disconnect"
+                        disabled={!hasPassword && a.oauthAccounts.length === 1}
+                        title={`Disconnect ${isProviderId(o.provider) ? PROVIDER_LABEL[o.provider] : o.provider}?`}
+                        confirm={!hasPassword && a.oauthAccounts.length === 1 ? "This is their only way to log in. Send a set-password link first." : "They can't log in with it any more (they can connect it again from Studio). Existing sessions stay until they expire or you sign them out."}
+                        confirmLabel="Disconnect" done="Disconnected" />
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
           <NotesPanel targetType="artist" targetId={a.id} notes={notes.map((n) => ({ id: n.id, adminEmail: n.adminEmail, body: n.body, createdAt: n.createdAt.toISOString() }))} />
 
           <Card title="Verification">

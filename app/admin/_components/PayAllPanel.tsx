@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { monthLabel, usd } from "./util";
 import { PAYOUTS_CHANGED } from "./PayoutsTable";
+import { useAdminCan } from "./AdminRole";
 
 type ReadyMonth = { month: string; amountCents: number; failureReason: string | null };
 type Ready = { artistId: string; artistName: string; venmoHandle: string | null; route: "stripe" | "venmo"; months: ReadyMonth[]; totalCents: number };
@@ -41,7 +42,8 @@ export default function PayAllPanel() {
 
   const stripe = data?.ready.filter((r) => r.route === "stripe") ?? [];
   const venmo = data?.ready.filter((r) => r.route === "venmo") ?? [];
-  const canPay = data?.mode !== "off" && stripe.length > 0;
+  const allowed = useAdminCan("money");
+  const canPay = allowed && data?.mode !== "off" && stripe.length > 0;
 
   const run = async () => {
     if (!confirm(`Send ${usd(sum(stripe))} to ${stripe.length} ${stripe.length === 1 ? "artist" : "artists"} through Stripe? They'll get an email.`)) return;
@@ -71,7 +73,7 @@ export default function PayAllPanel() {
           <h2 id="payall-h" className="text-[22px] font-bold">Pay all ready payouts</h2>
           <p className="text-[13.5px] text-ink-2">Same amounts artists see on their Money page.</p>
         </div>
-        <button type="button" onClick={run} disabled={!canPay || busy} className="btn btn-blue">
+        <button type="button" onClick={run} disabled={!canPay || busy} title={allowed ? undefined : "Payouts need the admin or owner role."} className="btn btn-blue">
           {busy ? "Sending…" : stripe.length ? `Pay ${stripe.length} by Stripe · ${usd(sum(stripe))}` : "Pay all by Stripe"}
         </button>
       </div>

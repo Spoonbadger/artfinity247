@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
+import { movedHandle } from "@/lib/handleRedirects";
+import { artistPath } from "@/lib/urls";
 import SiteHeader from "@/components/site/SiteHeader";
 import { getUserFromCookie } from "@/lib/auth";
 import { bannerColor, getArtistPage, resolveBanner, venuesFor } from "@/components/artist/data";
@@ -79,7 +81,12 @@ function previewTheme(raw: string | string[] | undefined) {
 
 export default async function ArtistPage({ params, searchParams }: Props) {
   const artist = await getArtistPage(params.slug);
-  if (!artist) notFound();
+  if (!artist) {
+    // Renamed by an admin: the old handle keeps working.
+    const moved = await movedHandle(params.slug);
+    if (moved) permanentRedirect(artistPath(moved));
+    notFound();
+  }
   const socials = await getArtistSocials(artist.id);
   const collections = await getPublicCollections(artist.slug);
   const { summary: rating, reviews } = await getReviews({ artistId: artist.id });

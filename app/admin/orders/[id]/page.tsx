@@ -12,6 +12,7 @@ import { activeRefunds } from "@/lib/refunds";
 import { requestsForOrder } from "@/lib/reprints";
 import { REPRINT_REASONS, reasonLabel } from "@/lib/reprintFormat";
 import { CARRIERS, TRACKING_SUBJECT, parseTrackingMessage } from "@/lib/tracking";
+import { getTracking } from "@/lib/shipping/store";
 import { PARCEL_TAG } from "@/lib/artistEmails";
 import { certPath } from "@/lib/certificates";
 import { editionLabel } from "@/lib/editionFormat";
@@ -55,12 +56,15 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
   // A reprint order points back at its original through its session id.
   const originalId = o.kind === "reprint" ? o.stripeSessionId.split(":")[1] : null;
 
-  const tracking = messages.filter((m) => m.subject?.startsWith(TRACKING_SUBJECT)).map((m) => ({ at: m.createdAt, t: parseTrackingMessage(m.subject, m.body) }));
+  const trackingMsgs = messages.filter((m) => m.subject?.startsWith(TRACKING_SUBJECT)).map((m) => ({ at: m.createdAt, t: parseTrackingMessage(m.subject, m.body) }));
+  // Tracking columns first (lib/shipping/store.ts); older orders only have the Messages.
+  const colTracking = await getTracking(o.id);
+  const tracking = trackingMsgs.length || !colTracking ? trackingMsgs : [{ at: o.shippedAt ?? o.createdAt, t: colTracking }];
   const latestTracking = tracking.length ? tracking[tracking.length - 1].t : null;
   const parcel = messages.filter((m) => m.subject?.startsWith(PARCEL_TAG) && m.direction === "out");
   const printer = printerState(o);
   const sentToPrinterAt = o.printerSentAt ?? audit.filter((a) => a.action === "order.sent_to_printer").at(-1)?.createdAt ?? null;
-  const deliveredAt = audit.find((a) => (a.action === "order.shipping_status" || a.action === "order.ship") && (a.details as { to?: string } | null)?.to === "delivered")?.createdAt ?? null;
+  const deliveredAt = o.deliveredAt ?? audit.find((a) => (a.action === "order.shipping_status" || a.action === "order.ship") && (a.details as { to?: string } | null)?.to === "delivered")?.createdAt ?? null;
   const paid = o.paymentStatus === "paid";
 
   const items = o.items.map((it) => {
@@ -195,7 +199,7 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
                   <div className="col-span-2 flex flex-wrap gap-2 sm:col-span-1 sm:flex-col sm:items-end">
                     {it.artworkId && <a href={`/api/admin/originals/${it.artworkId}?src=${encodeURIComponent(it.imageUrl || "")}`} className="text-[13px] font-semibold text-scan">Full-res file</a>}
                     {paid && o.kind !== "bulk" && !refund && (
-                      <ActionButton url={url} body={{ action: "refund", itemId: it.id }} label="Mark refunded" tone="danger" title={`Record a refund for “${it.title || "this print"}”?`}
+                      <ActionButton url={url} body={{ action: "refund", itemId: it.id }} need="money" label="Mark refunded" tone="danger" title={`Record a refund for “${it.title || "this print"}”?`}
                         confirm={<>
                           <p>This only records it. Refund the buyer <b>{usd(b.lineTotal)}</b> (plus any tax) in the Stripe dashboard yourself.</p>
                           <p className="mt-2">If the artist hasn&apos;t been paid for this month yet, their share of <b>{usd(b.artistShare)}</b> is taken off their balance. If it was already paid out, they keep it.</p>
@@ -203,7 +207,7 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
                         fields={[{ name: "note", label: "Why", type: "textarea", placeholder: "e.g. Arrived damaged, buyer didn't want a reprint" }]} confirmLabel="Record refund" done="Refund recorded" />
                     )}
                     {refund && (
-                      <ActionButton url={url} body={{ action: "refund_undo", itemId: it.id }} label="Undo refund" title="Cancel this refund record?"
+                      <ActionButton url={url} body={{ action: "refund_undo", itemId: it.id }} need="money" label="Undo refund" title="Cancel this refund record?"
                         confirm="Use this if it was recorded by mistake. The artist's share counts again. It doesn't touch Stripe." confirmLabel="Undo refund" done="Refund cancelled" />
                     )}
                   </div>

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { reasonLabel, type ReprintStatus } from "@/lib/reprintFormat";
+import { useAdminCan } from "./AdminRole";
 
 export type AdminReprint = {
   id: string;
@@ -38,6 +39,7 @@ function Card({ r }: { r: AdminReprint }) {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [zoom, setZoom] = useState<string | null>(null);
+  const canRefund = useAdminCan("money");
 
   const act = async (action: "approve" | "refund" | "decline") => {
     if (action === "decline" && !note.trim()) { toast.error("Add a short note for the buyer first."); return; }
@@ -118,7 +120,7 @@ function Card({ r }: { r: AdminReprint }) {
           </label>
           <div className="flex flex-wrap gap-2">
             <button type="button" disabled={!!busy} onClick={() => act("approve")} className="btn btn-blue">{busy === "approve" ? "Creating…" : "Approve reprint"}</button>
-            <button type="button" disabled={!!busy} onClick={() => act("refund")} className="btn btn-ghost">{busy === "refund" ? "Saving…" : "Refund instead"}</button>
+            <button type="button" disabled={!!busy || !canRefund} title={canRefund ? undefined : "Refunds need the admin or owner role."} onClick={() => act("refund")} className="btn btn-ghost">{busy === "refund" ? "Saving…" : "Refund instead"}</button>
             <button type="button" disabled={!!busy} onClick={() => act("decline")} className="btn btn-ghost">{busy === "decline" ? "Saving…" : "Decline"}</button>
           </div>
           <p className="text-[12.5px] text-ink-2">Approve makes a free order in Orders (marked Free reprint) for the printer. The artist&apos;s sale and earnings stay as they are.</p>

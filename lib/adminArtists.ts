@@ -7,12 +7,15 @@ import { activeRefunds, shareAfterRefund } from "@/lib/refunds";
 import { isProActive } from "@/lib/plans";
 import { connectStatus, type ConnectStatus } from "@/lib/stripeConnect";
 
-export type ArtistFilters = { q?: string; verified?: string; status?: string; balance?: string; plan?: string; stripe?: string };
+// role: "artists" | "admins" (any by default) · email: "unverified" · signin: "social" (no password) · joined: "7d"
+export type ArtistFilters = { q?: string; verified?: string; status?: string; balance?: string; plan?: string; stripe?: string; role?: string; email?: string; signin?: string; joined?: string };
+export const ARTIST_FILTER_KEYS = ["q", "verified", "status", "balance", "plan", "stripe", "role", "email", "signin", "joined"] as const;
 
 export type ArtistListRow = {
   id: string; name: string; slug: string; email: string; city: string; createdAt: Date; role: string;
   verification: string; suspended: boolean; closed: boolean; infinity: boolean; proUntil: Date | null;
   stripe: ConnectStatus; venmo: boolean; live: number; prints: number; salesCents: number; balanceCents: number;
+  adminRole: string | null; emailVerified: boolean; hasPassword: boolean; providers: string[];
 };
 
 /**
@@ -55,7 +58,12 @@ export async function listArtists(f: ArtistFilters): Promise<ArtistListRow[]> {
   if (f.status === "active") and.push({ closedAt: null, suspendedAt: null });
   else if (f.status === "suspended") and.push({ suspendedAt: { not: null } });
   else if (f.status === "closed") and.push({ closedAt: { not: null } });
+  if (f.role === "admins") and.push({ role: "ADMIN" });
+  else if (f.role === "artists") and.push({ role: "USER" });
+  if (f.email === "unverified") and.push({ emailVerifiedAt: null });
+  if (f.signin === "social") and.push({ password: null });
   const now = new Date();
+  if (f.joined === "7d") and.push({ createdAt: { gte: new Date(now.getTime() - 7 * 86_400_000) } });
   if (f.plan === "infinity") and.push({ proUntil: { gt: now } });
   else if (f.plan === "free") and.push({ OR: [{ proUntil: null }, { proUntil: { lte: now } }] });
   const where: Prisma.ArtistWhereInput = and.length ? { AND: and } : {};
@@ -67,6 +75,7 @@ export async function listArtists(f: ArtistFilters): Promise<ArtistListRow[]> {
     select: {
       id: true, name: true, artist_name: true, slug: true, email: true, city: true, createdAt: true, role: true, verification: true,
       suspendedAt: true, closedAt: true, proUntil: true, stripeAccountId: true, stripePayoutsEnabled: true, venmoHandle: true,
+      adminRole: true, emailVerifiedAt: true, password: true, oauthAccounts: { select: { provider: true } },
       _count: { select: { artworks: { where: { status: "APPROVED" } } } },
     },
   });
@@ -78,6 +87,9 @@ export async function listArtists(f: ArtistFilters): Promise<ArtistListRow[]> {
       verification: a.verification, suspended: !!a.suspendedAt, closed: !!a.closedAt, infinity: isProActive(a), proUntil: a.proUntil,
       stripe: connectStatus(a), venmo: !!a.venmoHandle, live: a._count.artworks,
       prints: m?.prints ?? 0, salesCents: m?.salesCents ?? 0, balanceCents: m?.balanceCents ?? 0,
+      // Only whether a password exists ever leaves this function, never the hash.
+      adminRole: a.role === "ADMIN" ? a.adminRole : null, emailVerified: !!a.emailVerifiedAt, hasPassword: !!a.password,
+      providers: Array.from(new Set(a.oauthAccounts.map((o) => o.provider))),
     };
   });
   if (f.balance === "1") rows = rows.filter((r) => r.balanceCents > 0);

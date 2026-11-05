@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getAdmin } from "@/lib/admin"
+import { adminRoleGuard } from "@/lib/adminRoles"
+import { alertKey, resolveAlerts } from "@/lib/alerts"
 import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
 import { resend } from "@/lib/resend"
 import PayoutSentEmail from "@/emails/PayoutSentEmail"
@@ -14,8 +15,9 @@ export const runtime = "nodejs"
 
 
 export async function POST(req: NextRequest) {
-  const admin = await getAdmin()
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  // Money: owner and admin only (lib/adminRoles.ts).
+  const { admin, denied } = await adminRoleGuard("money")
+  if (denied) return denied
 
   const { artistId, month, unmark } = await req.json()
   if (!artistId || !month) {
@@ -116,6 +118,7 @@ export async function POST(req: NextRequest) {
     update: { paidAt: new Date(), amountCents, method, stripeTransferId: null, failureReason: null },
     create: { artistId, month, amountCents, paidAt: new Date(), method },
   })
+  await resolveAlerts([alertKey.payoutFailed(artistId, month), alertKey.payoutLate(artistId, month)])
   await logAdminAction(admin, "payout.mark_paid", { type: "payout", id: payout.id }, `Marked ${month} payout paid ($${(amountCents / 100).toFixed(2)}, ${method})`, { artistId, month, amountCents, method })
 
   // send email ONLY when transitioning unpaid → paid

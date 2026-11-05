@@ -16,4 +16,6 @@ export function middleware(req: NextRequest) {
   return NextResponse.next({ request: { headers } });
 }
 
-export const config = { matcher: ["/studio", "/studio/:path*", "/Q/:path*"] };
+// /admin too: the admin layout reads x-af-path to let /admin/invite/<token> render for people who aren't admins yet,
+// so the header must always come from here, never from the request.
+export const config = { matcher: ["/studio", "/studio/:path*", "/Q/:path*", "/admin", "/admin/:path*"] };

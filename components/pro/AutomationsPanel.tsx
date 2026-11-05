@@ -49,9 +49,33 @@ function Switch({ on, disabled, label, onChange }: { on: boolean; disabled: bool
   );
 }
 
-export default function AutomationsPanel({ pro, storageKey, recent }: { pro: boolean; storageKey: string; recent: Recent[] }) {
+/** Saved on the server (app/api/studio/automations), on every plan. */
+export type ServerAutomations = { newsletter: boolean; digest: boolean };
+
+export default function AutomationsPanel({ pro, storageKey, recent, server: initialServer = { newsletter: false, digest: true } }: { pro: boolean; storageKey: string; recent: Recent[]; server?: ServerAutomations }) {
   const [prefs, setPrefs] = useState<AutomationPrefs>(DEFAULT_PREFS);
   const [note, setNote] = useState<string | null>(null);
+  const [server, setServer] = useState<ServerAutomations>(initialServer);
+  const [saving, setSaving] = useState<keyof ServerAutomations | null>(null);
+  const [serverNote, setServerNote] = useState<string | null>(null);
+
+  async function saveServer(key: keyof ServerAutomations, v: boolean) {
+    const prev = server;
+    setServer({ ...server, [key]: v });
+    setSaving(key);
+    setServerNote(null);
+    try {
+      const res = await fetch("/api/studio/automations", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ [key]: v }) });
+      if (!res.ok) throw new Error();
+      setServer(await res.json());
+      setServerNote(key === "newsletter" ? (v ? "On. Your next upload starts a newsletter draft." : "Off.") : v ? "On. See you Monday." : "Off. No more weekly email.");
+    } catch {
+      setServer(prev);
+      setServerNote("Couldn't save. Try again.");
+    } finally {
+      setSaving(null);
+    }
+  }
 
   useEffect(() => {
     try {
@@ -71,6 +95,7 @@ export default function AutomationsPanel({ pro, storageKey, recent }: { pro: boo
     socialOn.length ? `Post to ${socialOn.join(", ")}` : null,
     prefs.video ? "Make a video" : null,
   ].filter(Boolean) as string[];
+  const serverActions = server.newsletter ? ["Draft a newsletter"] : [];
 
   return (
     <div className="grid gap-6">
@@ -95,7 +120,7 @@ export default function AutomationsPanel({ pro, storageKey, recent }: { pro: boo
             <li key={s.key} className="flex flex-wrap items-center gap-3 py-3">
               <i className="paint-dab" style={{ ["--dab" as string]: s.dab }} aria-hidden="true" />
               <span className="min-w-0 flex-1 text-[15.5px] font-semibold">{s.name}</span>
-              <button type="button" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0" onClick={() => setNote(`Connecting ${s.name} arrives with the backend.`)}>
+              <button type="button" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0" onClick={() => setNote(`Posting to ${s.name} is coming soon.`)}>
                 Connect
               </button>
               <Switch on={prefs[s.key]} disabled={!pro} label={`Post new paintings to ${s.name}`} onChange={(v) => set(s.key, v)} />
@@ -107,14 +132,23 @@ export default function AutomationsPanel({ pro, storageKey, recent }: { pro: boo
 
       <section aria-label="More automations" className="af-panel grid p-4 sm:p-5">
         <ul className="grid divide-y divide-line">
-          {/* Newsletter: real, on every plan. Starts a draft from work added since the last send. */}
-          <li className="flex flex-wrap items-center gap-3 py-3">
+          {/* Newsletter: real, on every plan. After an upload, a draft with the new pieces (lib/newsletterAuto.ts). */}
+          <li className="flex items-center gap-3 py-3">
             <i className="paint-dab" style={{ ["--dab" as string]: "#ffd43b" }} aria-hidden="true" />
             <span className="grid min-w-0 flex-1">
-              <span className="text-[15.5px] font-semibold">Newsletter for new work</span>
-              <span className="text-[13px] text-ink-2">A draft with your latest pieces, ready for your followers.</span>
+              <span className="text-[15.5px] font-semibold">Draft a newsletter when I upload new work</span>
+              <span className="text-[13px] text-ink-2">We start a draft with your new pieces and email you. Nothing goes to followers until you press Send.</span>
+              <Link href="/studio/newsletter?from=new" className="mt-1 inline-flex min-h-[44px] w-fit items-center text-[13.5px] font-semibold text-scan md:min-h-0">Draft one now →</Link>
             </span>
-            <Link href="/studio/newsletter?from=new" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">Draft one</Link>
+            <Switch on={server.newsletter} disabled={saving === "newsletter"} label="Draft a newsletter when I upload new work" onChange={(v) => saveServer("newsletter", v)} />
+          </li>
+          <li className="flex items-center gap-3 py-3">
+            <i className="paint-dab" style={{ ["--dab" as string]: "#5bc0be" }} aria-hidden="true" />
+            <span className="grid min-w-0 flex-1">
+              <span className="text-[15.5px] font-semibold">Weekly digest</span>
+              <span className="text-[13px] text-ink-2">Monday morning: your scans, views, sales and one tip.</span>
+            </span>
+            <Switch on={server.digest} disabled={saving === "digest"} label="Weekly digest email" onChange={(v) => saveServer("digest", v)} />
           </li>
           {OTHER.map((o) => (
             <li key={o.key} className="flex items-center gap-3 py-3">
@@ -127,6 +161,7 @@ export default function AutomationsPanel({ pro, storageKey, recent }: { pro: boo
             </li>
           ))}
         </ul>
+        {serverNote && <p role="status" className="mt-1 rounded-xl bg-wall px-3 py-2 text-[13.5px] font-semibold">{serverNote}</p>}
       </section>
 
       <section aria-labelledby="activity-h" className="grid gap-3">
@@ -147,7 +182,7 @@ export default function AutomationsPanel({ pro, storageKey, recent }: { pro: boo
                   <b className="truncate text-[14.5px]">{r.title}</b>
                   <span className="text-[13px] text-ink-2">
                     {new Date(r.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })} ·{" "}
-                    {pro && actions.length ? `Would: ${actions.join(" · ")}` : pro ? "Nothing switched on" : "Infinity only"}
+                    {[...(pro ? actions : []), ...serverActions].length ? `Would: ${[...(pro ? actions : []), ...serverActions].join(" · ")}` : pro ? "Nothing switched on" : "Infinity only"}
                   </span>
                 </span>
               </li>

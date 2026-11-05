@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth"
 import { Prisma } from "@prisma/client";
-import { announceArtworkLive } from "@/lib/artworkLive";
+import { announceArtworkLive, resolveArtworkAlerts } from "@/lib/artworkLive";
 import { logAdminAction } from "@/lib/audit";
 
 export const dynamic = "force-dynamic"
@@ -56,6 +56,7 @@ export async function PATCH(
 
     // Out of review: referral reward and the artist's "it's live" email.
     if (action === "approve" && before.status !== "APPROVED") await announceArtworkLive(artwork.id);
+    await resolveArtworkAlerts([artwork.id]);
     await logAdminAction(admin, `artwork.${action}`, { type: "artwork", id }, `${action === "approve" ? "Approved" : "Rejected"} “${before.title}”`, {
       artistId: before.artistId, from: before.status, flaggedReason: before.flaggedReason, reason: action === "reject" ? updateData.flaggedReason : undefined,
     });
@@ -94,6 +95,7 @@ export async function DELETE(
       });
     });
 
+    await resolveArtworkAlerts([id]);
     if (art) await logAdminAction(admin, "artwork.delete", { type: "artwork", id }, `Deleted “${art.title}”`, { artistId: art.artistId, status: art.status });
     return new NextResponse(null, { status: 204 });
   } catch (err: any) {

@@ -9,7 +9,7 @@ import { parseSensitive } from "@/components/studio/sensitive"
 import { EDITION_MAX, EDITION_MIN } from "@/lib/editionFormat"
 import { parsePrintable } from "@/lib/printSizes"
 import { verifyPrintable } from "@/lib/printSign"
-import { announceArtworkLive, initialArtworkStatus } from "@/lib/artworkLive"
+import { alertArtworkNeedsReview, announceArtworkLive, initialArtworkStatus } from "@/lib/artworkLive"
 import { checkUpload } from "@/lib/imageHash"
 import { DAILY_UPLOAD_LIMIT } from "@/lib/uploadLimits"
 
@@ -131,6 +131,7 @@ export async function POST(req: NextRequest) {
     // Live now: referral reward + the artist's "it's live" email. Pending pieces get these on approval.
     // In a batch the email waits for the batch summary; the referral reward doesn't.
     if (artwork.status === "APPROVED") await announceArtworkLive(artwork.id, { email: !batch })
+    else await alertArtworkNeedsReview(artwork.id) // admin alert: possible duplicate or first pieces to review
 
     if (!batch) try {
       await resend.emails.send({

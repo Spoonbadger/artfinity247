@@ -2,6 +2,7 @@
 // GET: what's ready (Stripe transfers vs Venmo by hand). POST: send the Stripe transfers.
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/lib/admin";
+import { adminRoleGuard } from "@/lib/adminRoles";
 import { payReadyPayouts, readyPayouts } from "@/lib/payouts";
 import { connectMode } from "@/lib/stripeConnect";
 import { logAdminAction } from "@/lib/audit";
@@ -16,8 +17,9 @@ export async function GET() {
 }
 
 export async function POST() {
-  const admin = await getAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  // Money: owner and admin only (lib/adminRoles.ts).
+  const { admin, denied } = await adminRoleGuard("money");
+  if (denied) return denied;
   try {
     const r = await payReadyPayouts({ source: "admin" });
     const total = r.paid.reduce((n, p) => n + p.amountCents, 0);

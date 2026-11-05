@@ -13,6 +13,8 @@ import { resend } from "@/lib/resend";
 import { getBalance, monthLabel, utcMonth } from "@/lib/balance";
 import { SIM_TRANSFER, connectMode, connectStatus, stripeOrNull, type ConnectMode } from "@/lib/stripeConnect";
 import PayoutSentEmail from "@/emails/PayoutSentEmail";
+import { alertKey, raiseAlert, resolveAlerts } from "@/lib/alerts";
+import { payoutFailedAlert } from "@/lib/alertBuilders";
 
 const FROM = "Artfinity <notifications@theartfinity.com>";
 
@@ -152,6 +154,7 @@ export async function payReadyPayouts(opts: { now?: Date; source: "admin" | "cro
           create: { artistId: a.artistId, month: m.month, ...data },
         });
         result.paid.push({ artistId: a.artistId, artistName: a.artistName, month: m.month, amountCents: m.amountCents, transferId, simulated: !stripe });
+        await resolveAlerts([alertKey.payoutFailed(a.artistId, m.month), alertKey.payoutLate(a.artistId, m.month)]);
         if (!stripe) console.log(`[payouts:sim] ${a.artistName} ${m.month} $${(m.amountCents / 100).toFixed(2)} -> ${transferId}`);
         await resend.emails
           .send({
@@ -171,6 +174,7 @@ export async function payReadyPayouts(opts: { now?: Date; source: "admin" | "cro
           create: { artistId: a.artistId, month: m.month, amountCents: m.amountCents, paidAt: null, method: "stripe", failureReason: reason },
         }).catch((e) => console.error("Couldn't record payout failure", e));
         result.failed.push({ artistId: a.artistId, artistName: a.artistName, month: m.month, amountCents: m.amountCents, reason });
+        await raiseAlert(payoutFailedAlert(a.artistId, a.artistName, m.month, reason));
       }
     }
   }

@@ -7,6 +7,7 @@ import { getAdmin } from "@/lib/admin";
 import { decideRequest, ReprintError, type Decision } from "@/lib/reprints";
 import { prisma } from "@/lib/prisma";
 import { logAdminAction } from "@/lib/audit";
+import { adminRoleGuard } from "@/lib/adminRoles";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -19,6 +20,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const input = await req.json().catch(() => ({}));
   const action = ACTIONS.find((a) => a === input?.action);
   if (!action) return NextResponse.json({ error: "Pick approve, refund or decline." }, { status: 400 });
+  // Refunds are money: owner and admin only. Support can approve or decline.
+  if (action === "refund") {
+    const { denied } = await adminRoleGuard("money");
+    if (denied) return denied;
+  }
   const note = typeof input.note === "string" ? input.note.replace(/\r\n/g, "\n").trim().slice(0, 600) : "";
   try {
     const r = await decideRequest(params.id, action, note);

@@ -1,6 +1,6 @@
 // POST /api/admin/settings { testStartDate: "YYYY-MM-DD" | "" }  The 90-day test's start (data/admin-settings.json).
 import { NextRequest, NextResponse } from "next/server";
-import { getAdmin } from "@/lib/admin";
+import { adminRoleGuard } from "@/lib/adminRoles";
 import { isDay, readAdminSettings, writeAdminSettings } from "@/lib/adminSettings";
 import { logAdminAction } from "@/lib/audit";
 
@@ -8,8 +8,9 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
-  const admin = await getAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  // Settings: owners only (lib/adminRoles.ts).
+  const { admin, denied } = await adminRoleGuard("settings");
+  if (denied) return denied;
   const input = (await req.json().catch(() => ({}))) as { testStartDate?: unknown };
   const raw = typeof input.testStartDate === "string" ? input.testStartDate.trim() : "";
   if (raw && !isDay(raw)) return NextResponse.json({ error: "Use a date like 2026-11-01." }, { status: 400 });

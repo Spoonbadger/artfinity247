@@ -4,19 +4,14 @@ import { resend } from "@/lib/resend"
 import ShippingStatusEmail from "@/emails/ShippingStatusEmail"
 import { sendArtistOrderEmail, sendArtistReceipt } from "@/lib/artistEmails.server"
 import { sendReceiptEmail } from "@/lib/email"
-import { TRACKING_SUBJECT, parseTrackingMessage, trackingText, type Tracking } from "@/lib/tracking"
+import { trackingText, type Tracking } from "@/lib/tracking"
+import { getTracking } from "@/lib/shipping/store"
 import { helpLine, helpUrl } from "@/lib/reprints"
 import { certLines, certLinksFor } from "@/lib/certificates"
 
-/** Latest tracking saved on the order (kept as Messages), or null. */
+/** Latest tracking saved on the order (the tracking columns, else the older Message), or null. */
 export async function latestTracking(orderId: string): Promise<Tracking | null> {
-  const rows = await prisma.message.findMany({
-    where: { orderId, subject: { startsWith: TRACKING_SUBJECT } },
-    orderBy: { createdAt: "desc" },
-    take: 1,
-    select: { subject: true, body: true },
-  })
-  return rows[0] ? parseTrackingMessage(rows[0].subject, rows[0].body) : null
+  return getTracking(orderId)
 }
 
 /**

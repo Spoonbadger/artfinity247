@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAdmin } from "@/lib/admin"
 import { logAdminAction } from "@/lib/audit"
-import { TRACKING_SUBJECT, cleanTracking, trackingText, type Tracking } from "@/lib/tracking"
+import { cleanTracking, type Tracking } from "@/lib/tracking"
+import { recordTracking } from "@/lib/shipping"
 import { sendReviewRequest } from "@/lib/reviews"
 import { sendShippingEmail } from "@/lib/orderEmails"
 
@@ -56,26 +57,16 @@ export async function POST(
   // Update status
   const order = await prisma.order.update({
     where: { id: params.id },
-    data: { shippingStatus },
+    data: {
+      shippingStatus,
+      ...(shippingStatus === "delivered" && !existing.deliveredAt ? { deliveredAt: new Date() } : {}),
+    },
   })
 
-  // Order has no tracking columns: keep it as a Message on the order for each artist in it,
-  // which also shows the artist the tracking in their customer thread.
+  // Tracking goes on the order's columns (plus a Message per artist, which shows it in their customer thread),
+  // and is registered with the carrier tracking provider so delivery is picked up automatically (lib/shipping).
   if (tracking) {
-    const artistIds = Array.from(new Set(existing.items.map((i) => i.artwork?.artistId).filter((x): x is string => !!x)))
-    if (artistIds.length) {
-      await prisma.message.createMany({
-        data: artistIds.map((artistId) => ({
-          artistId,
-          email: existing.email.trim().toLowerCase(),
-          orderId: existing.id,
-          direction: "out",
-          subject: `${TRACKING_SUBJECT}${tracking!.carrier} ${tracking!.number}`,
-          body: `Artfinity shipped this order.\n${trackingText(tracking!)}`,
-          sentAt: new Date(),
-        })),
-      }).catch((err) => console.error("Saving tracking failed", err))
-    }
+    await recordTracking(existing.id, tracking).catch((err) => console.error("Saving tracking failed", err))
   }
 
   // Only email on real transitions

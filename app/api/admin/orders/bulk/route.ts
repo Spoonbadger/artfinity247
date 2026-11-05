@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import { logAdminAction } from "@/lib/audit";
+import { alertKey, resolveAlerts } from "@/lib/alerts";
 
 export const dynamic = "force-dynamic";
 
@@ -17,5 +18,6 @@ export async function POST(req: NextRequest) {
   const todo = await prisma.order.findMany({ where: { id: { in: ids }, sentToPrinter: false }, select: { id: true } });
   await prisma.order.updateMany({ where: { id: { in: todo.map((o) => o.id) } }, data: { sentToPrinter: true } });
   for (const o of todo) await logAdminAction(admin, "order.sent_to_printer", { type: "order", id: o.id }, "Marked sent to printer (bulk)", { bulk: true });
+  await resolveAlerts(todo.flatMap((o) => [alertKey.orderStuck(o.id), alertKey.workOrderFailed(o.id)]));
   return NextResponse.json({ ok: true, updated: todo.map((o) => o.id) });
 }

@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { roleCan, type AdminRole } from "@/lib/adminCaps";
 
-type NavLink = { href: string; label: string; dab: string; exact?: boolean };
+type NavLink = { href: string; label: string; dab: string; exact?: boolean; owner?: boolean; minRole?: AdminRole };
 const SECTIONS: { title: string; links: NavLink[] }[] = [
   { title: "Today", links: [
     { href: "/admin", label: "Dashboard", dab: "var(--af-sticker)", exact: true },
+    { href: "/admin/alerts", label: "Alerts", dab: "var(--af-coral)" },
     { href: "/admin/activity", label: "Activity", dab: "#9aa3b5" },
   ] },
   { title: "Catalog", links: [
@@ -28,6 +30,11 @@ const SECTIONS: { title: string; links: NavLink[] }[] = [
   { title: "Money", links: [
     { href: "/admin/payouts", label: "Payouts", dab: "var(--af-earned)" },
   ] },
+  { title: "Admin", links: [
+    { href: "/admin/jobs", label: "Jobs", dab: "#5bc0be", minRole: "admin" },
+    { href: "/admin/team", label: "Team", dab: "#7c8cff" },
+    { href: "/admin/settings/notifications", label: "Alert emails", dab: "#9aa3b5" },
+  ] },
 ];
 
 const isOn = (pathname: string | null, l: NavLink) => (l.exact ? pathname === l.href : !!pathname?.startsWith(l.href));
@@ -38,13 +45,14 @@ function Badge({ n }: { n?: number }) {
 }
 
 /** Grouped admin menu: a sidebar on desktop, a scrolling strip on phones. `counts` adds badges by href. */
-export default function AdminNav({ counts = {} }: { counts?: Record<string, number> }) {
+export default function AdminNav({ counts = {}, role }: { counts?: Record<string, number>; role?: AdminRole }) {
   const pathname = usePathname();
+  const sections = SECTIONS.map((s) => ({ ...s, links: s.links.filter((l) => (!l.owner || roleCan(role, "owner")) && (!l.minRole || roleCan(role, l.minRole))) })).filter((s) => s.links.length);
   return (
     <>
       {/* phones and tablets */}
       <nav aria-label="Admin" className="-mx-4 flex gap-1 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:hidden">
-        {SECTIONS.map((s, si) => (
+        {sections.map((s, si) => (
           <div key={s.title} className="flex shrink-0 items-center gap-1">
             {si > 0 && <span aria-hidden="true" className="mx-1 h-5 w-px bg-line" />}
             {s.links.map((l) => {
@@ -65,7 +73,7 @@ export default function AdminNav({ counts = {} }: { counts?: Record<string, numb
 
       {/* desktop sidebar */}
       <nav aria-label="Admin" className="sticky top-[76px] hidden max-h-[calc(100svh-96px)] content-start gap-4 overflow-y-auto lg:grid">
-        {SECTIONS.map((s) => (
+        {sections.map((s) => (
           <div key={s.title} className="grid gap-0.5">
             <p className="eyebrow px-3 pb-1">{s.title}</p>
             {s.links.map((l) => {

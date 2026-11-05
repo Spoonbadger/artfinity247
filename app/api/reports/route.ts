@@ -6,6 +6,8 @@ import { resend } from "@/lib/resend";
 import { rateLimit } from "@/lib/rateLimit";
 import { artUrl } from "@/lib/urls";
 import { getUserFromCookie } from "@/lib/auth";
+import { raiseAlert } from "@/lib/alerts";
+import { reportAlert } from "@/lib/alertBuilders";
 import { DMCA_STATEMENTS, REASON_SHORT, REPORT_REASONS, SITE_URL, earliestRestore, type DmcaCounter, type DmcaNotice } from "@/lib/reports";
 
 export const runtime = "nodejs";
@@ -140,6 +142,9 @@ export async function POST(req: NextRequest) {
     },
     select: { id: true, createdAt: true },
   });
+
+  // Admin alert: DMCA notices and counter-notices are urgent (emailed right away), other reports go in the digest.
+  await raiseAlert(reportAlert({ id: report.id, reason, artworkUrl, artwork }));
 
   // DMCA notices keep the art live but put it in the moderation queue right away.
   if (artwork && dmca && artwork.status === "APPROVED" && !artwork.flaggedReason) {

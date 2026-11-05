@@ -8,7 +8,7 @@ import { itemBreakdown } from "@/lib/sales";
 import { activeRefunds } from "@/lib/refunds";
 import { getBalance, latePayouts } from "@/lib/balance";
 import { openRequestCount } from "@/lib/reprints";
-import { TRACKING_SUBJECT } from "@/lib/tracking";
+import { shippedDates } from "@/lib/shipping/store";
 import { DUPLICATE_PREFIX } from "@/lib/imageHash";
 import { connectStatus } from "@/lib/stripeConnect";
 import { integrationsHealth, type Health } from "@/lib/integrations";
@@ -55,11 +55,8 @@ export default async function AdminDashboard() {
     prisma.artist.count({ where: { verification: "PENDING" } }),
     prisma.artist.findMany({ where: { stripeAccountId: { not: null }, stripePayoutsEnabled: false }, select: { id: true, stripeAccountId: true, stripePayoutsEnabled: true } }),
   ]);
-  // Shipped date = when tracking was saved (a Message); older orders fall back to the order date.
-  const shipMsgs = shippedOrders.length
-    ? await prisma.message.groupBy({ by: ["orderId"], where: { orderId: { in: shippedOrders.map((o) => o.id) }, subject: { startsWith: TRACKING_SUBJECT } }, _min: { createdAt: true } })
-    : [];
-  const shippedAt = new Map(shipMsgs.map((m) => [m.orderId, m._min.createdAt]));
+  // Shipped date = Order.shippedAt, else when tracking was saved (older orders kept it as a Message), else the order date.
+  const shippedAt = await shippedDates(shippedOrders.map((o) => o.id));
   const staleShipped = shippedOrders.filter((o) => (shippedAt.get(o.id) ?? o.createdAt).getTime() < now.getTime() - SHIPPED_STALE_DAYS * DAY).length;
   const lateArtists = new Set(late.map((l) => l.artistId)).size;
   let stripeWithBalance = 0;

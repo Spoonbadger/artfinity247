@@ -9,8 +9,11 @@ import { resend } from "@/lib/resend";
 import { emailHtml, firstNameOf, joinTitles } from "@/lib/artistEmails";
 import { calcItemProfitCents } from "@/lib/revenue";
 import { normalizeSize } from "@/lib/sales";
-import { TRACKING_SUBJECT } from "@/lib/tracking";
+import { shippedDate } from "@/lib/shipping/store";
 import { sendWorkOrder } from "@/lib/printer";
+import { alertKey, raiseAlert, resolveAlert } from "@/lib/alerts";
+import { reprintAlert } from "@/lib/alertBuilders";
+import { logAdminAction } from "@/lib/audit";
 import {
   MAX_NOTE, MAX_PHOTOS, REPRINT_DIRECTION, REPRINT_KIND, REPRINT_PAYMENT, helpState, isReprintReason, parseReprintBody,
   reasonLabel, statusOf, statusSubject, type ReprintBody, type ReprintStatus,
@@ -50,14 +53,9 @@ export function photoOk(orderId: string, url: string) {
 
 // ---------- Reads ----------
 
-/** Shipped date: when admin saved the tracking number (a Message on the order). Null for older orders. */
+/** Shipped date: Order.shippedAt, else when admin saved the tracking number (older orders kept it as a Message). */
 export async function shippedAtFor(orderId: string): Promise<Date | null> {
-  const m = await prisma.message.findFirst({
-    where: { orderId, subject: { startsWith: TRACKING_SUBJECT } },
-    orderBy: { createdAt: "asc" },
-    select: { createdAt: true },
-  });
-  return m?.createdAt ?? null;
+  return shippedDate(orderId);
 }
 
 export type ReprintRow = { id: string; orderId: string; status: ReprintStatus; body: ReprintBody; createdAt: Date; decidedAt: Date | null };
@@ -109,7 +107,7 @@ export async function createRequest(orderId: string, input: { items?: unknown; r
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     select: {
-      id: true, email: true, shippingName: true, kind: true, paymentStatus: true, shippingStatus: true, createdAt: true,
+      id: true, email: true, shippingName: true, kind: true, paymentStatus: true, shippingStatus: true, createdAt: true, amountTotal: true,
       items: { select: { id: true, quantity: true, title: true, artwork: { select: { artistId: true } } } },
     },
   });
@@ -118,7 +116,8 @@ export async function createRequest(orderId: string, input: { items?: unknown; r
   if (state === "never") throw new ReprintError("This order can't take a reprint request.", 403);
   if (state === "waiting") throw new ReprintError("Your print hasn't shipped yet. Write to us if something's wrong.", 409);
   if (state === "closed") throw new ReprintError("It's been more than 14 days since delivery. Write to us and we'll take a look.", 409);
-  if ((await requestsForOrder(order.id)).some((r) => r.status === "open")) throw new ReprintError("We already have your request. We'll email you soon.", 409);
+  const earlier = await requestsForOrder(order.id);
+  if (earlier.some((r) => r.status === "open")) throw new ReprintError("We already have your request. We'll email you soon.", 409);
 
   if (!isReprintReason(input.reason)) throw new ReprintError("Pick what went wrong.");
   const byId = new Map(order.items.map((i) => [i.id, i]));
@@ -148,6 +147,31 @@ export async function createRequest(orderId: string, input: { items?: unknown; r
   });
 
   const titles = joinTitles(items.map((i) => byId.get(i.id)?.title || ""));
+
+  // Auto-approve: the buyer's first request on this order, with a photo, on an order of REPRINT_AUTO_MAX or less.
+  // The reprint order and its work order go out now, the buyer gets the "on its way" email, and admins get a low alert
+  // to glance at (plus an audit row). Anything else waits for an admin, as before.
+  if (autoApproves(order.amountTotal, earlier.length, photos.length)) {
+    try {
+      const r = await decideRequest(msg.id, "approve", "");
+      await logAdminAction(AUTOMATION, "reprint.approve", { type: "reprint", id: msg.id },
+        `auto-approved: reprint of ${titles} (first request, photo attached, order ${usd(order.amountTotal)} within the ${usd(autoMaxCents())} limit)`,
+        { orderId: order.id, reprintOrderId: r.reprintOrderId, auto: true, reason: body.reason });
+      await raiseAlert({
+        kind: "reprint_auto",
+        key: `reprint_auto:${msg.id}`,
+        title: `Reprint auto-approved on order #${order.id.slice(-8).toUpperCase()} (${reasonLabel(body.reason)}, ${usd(order.amountTotal)}): have a glance at the photos`,
+        link: `/admin/orders/${order.id}`,
+        severity: "low",
+      });
+      return msg.id;
+    } catch (err) {
+      // Leave it open for an admin, the normal way.
+      console.error("Reprint auto-approve failed, leaving it for an admin", msg.id, err);
+    }
+  }
+
+  await raiseAlert(reprintAlert(msg.id, order.id, reasonLabel(body.reason)));
   await sendBuyer(order.email, "We got your photos", [
     `Hi ${firstNameOf(order.shippingName)},`,
     `Sorry about ${titles}. Thank you for the photos.`,
@@ -162,6 +186,21 @@ export async function createRequest(orderId: string, input: { items?: unknown; r
   }).catch((err) => console.error("Reprint admin email failed", err));
   return msg.id;
 }
+
+// ---------- Auto-approve rule ----------
+
+/** The automation's name in the audit log. */
+const AUTOMATION = { id: "automation", email: "automation (reprint rule)" };
+const usd = (c: number) => `$${(c / 100).toFixed(2)}`;
+
+/** REPRINT_AUTO_MAX: the largest order total (dollars, tax included) a first reprint request is approved on by itself. Default $150; 0 turns it off. */
+export function autoMaxCents() {
+  const v = Number(process.env.REPRINT_AUTO_MAX ?? 150);
+  return Number.isFinite(v) && v >= 0 ? Math.round(v * 100) : 15000;
+}
+
+export const autoApproves = (amountTotalCents: number, earlierRequests: number, photos: number) =>
+  earlierRequests === 0 && photos > 0 && autoMaxCents() > 0 && amountTotalCents <= autoMaxCents();
 
 // ---------- Admin: decide ----------
 
@@ -232,6 +271,8 @@ export async function decideRequest(id: string, action: Decision, note: string) 
     }
     await tx.message.update({ where: { id }, data: { body: JSON.stringify({ ...row.body, decision }) } });
   });
+
+  await resolveAlert(alertKey.reprint(id));
 
   // The reprint goes to the print lab like any order (lib/printer.ts; never throws).
   if (decision.reprintOrderId) {

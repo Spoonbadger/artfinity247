@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { PaintChip } from "@/components/af/Brush";
 import { cn } from "@/lib/utils";
 import { monthLabel, usd } from "./util";
+import { useAdminCan } from "./AdminRole";
 
 type Row = {
   artistId: string;
@@ -168,6 +169,7 @@ function PaidTo({ r }: { r: Row }) {
 
 function PayButton({ r, busy, onClick }: { r: Row; busy: boolean; onClick: () => void }) {
   const paid = r.payout.status === "PAID";
+  const canPay = useAdminCan("money");
   const viaStripe = paid && r.payout.method === "stripe";
   const realTransfer = viaStripe && !!r.payout.stripeTransferId && !r.payout.stripeTransferId.startsWith("tr_sim_");
   return (
@@ -182,7 +184,7 @@ function PayButton({ r, busy, onClick }: { r: Row; busy: boolean; onClick: () =>
         <span className="max-w-[260px] text-left text-[12px] font-semibold text-coral" title={r.payout.failureReason}>Stripe failed: {r.payout.failureReason}</span>
       )}
       {!realTransfer && (
-        <button type="button" disabled={busy} onClick={onClick} className={cn("btn btn-sm", paid ? "btn-ghost" : "btn-blue")}>
+        <button type="button" disabled={busy || !canPay} title={canPay ? undefined : "Payouts need the admin or owner role."} onClick={onClick} className={cn("btn btn-sm", paid ? "btn-ghost" : "btn-blue")}>
           {paid ? "Undo" : "Mark paid"}
         </button>
       )}

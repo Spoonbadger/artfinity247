@@ -7,7 +7,7 @@ import MonthPicker from "../_components/MonthPicker";
 import OrdersBoard, { type AdminOrder, type Filter } from "../_components/OrdersBoard";
 import { activeRefunds } from "@/lib/refunds";
 import { currentMonth, monthLabel, monthRange, usd } from "../_components/util";
-import { TRACKING_SUBJECT, parseTrackingMessage, type Tracking } from "@/lib/tracking";
+import { trackingForOrders } from "@/lib/shipping/store";
 import { PARCEL_TAG, splitParcelTag } from "@/lib/artistEmails";
 import { certPath } from "@/lib/certificates";
 import { printerAuto, printerState } from "@/lib/printer";
@@ -37,19 +37,8 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
     },
   });
 
-  // Tracking is kept as Messages on the order (Order has no tracking columns); newest wins.
-  const trackingRows = orders.length
-    ? await prisma.message.findMany({
-        where: { orderId: { in: orders.map((o) => o.id) }, subject: { startsWith: TRACKING_SUBJECT } },
-        orderBy: { createdAt: "asc" },
-        select: { orderId: true, subject: true, body: true },
-      })
-    : [];
-  const trackingByOrder = new Map<string, Tracking>();
-  for (const m of trackingRows) {
-    const t = parseTrackingMessage(m.subject, m.body);
-    if (t && m.orderId) trackingByOrder.set(m.orderId, t);
-  }
+  // Tracking: the order's columns, else the older Message on the order (lib/shipping/store.ts).
+  const trackingByOrder = await trackingForOrders(orders);
 
   // Artists' thank-you notes to print into the parcel: Messages tagged [parcel] on the order (Studio customer page).
   const parcelRows = orders.length

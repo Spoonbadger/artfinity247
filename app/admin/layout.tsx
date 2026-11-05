@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
 import { ReactNode } from "react";
 import Link from "next/link";
+import { headers } from "next/headers";
 import Logo from "@/components/af/Logo";
 import AdminNav from "./_components/AdminNav";
 import AdminSearch from "./_components/AdminSearch";
-import { adminOrRedirect } from "./_components/gate";
+import { adminRoleOrRedirect } from "./_components/gate";
+import { AdminRoleProvider } from "./_components/AdminRole";
+import { openAlertCount } from "@/lib/alerts";
+import { ROLE_LABEL } from "@/lib/adminCaps";
 import { prisma } from "@/lib/prisma";
 import { openRequestCount } from "@/lib/reprints";
 
@@ -12,13 +16,16 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: { default: "Admin", template: "%s · Admin · Artfinity" }, robots: { index: false } };
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
-  const admin = await adminOrRedirect();
-  const [openReports, heldReviews, openReprints, toModerate, toVerify] = await Promise.all([
+  // Invite links are opened by people who aren't admins yet: no gate, no admin chrome (middleware sets x-af-path).
+  if ((headers().get("x-af-path") || "").startsWith("/admin/invite/")) return <div className="min-h-[100svh] bg-wall">{children}</div>;
+  const admin = await adminRoleOrRedirect();
+  const [openReports, heldReviews, openReprints, toModerate, toVerify, openAlerts] = await Promise.all([
     prisma.artReport.count({ where: { status: "open" } }).catch(() => 0),
     prisma.review.count({ where: { status: "flagged" } }).catch(() => 0),
     openRequestCount().catch(() => 0),
     prisma.artwork.count({ where: { OR: [{ status: "PENDING" }, { status: "APPROVED", flaggedReason: { not: null } }] } }).catch(() => 0),
     prisma.artist.count({ where: { verification: "PENDING" } }).catch(() => 0),
+    openAlertCount(),
   ]);
   const counts = {
     "/admin/reports": openReports,
@@ -26,6 +33,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     "/admin/reprints": openReprints,
     "/admin/moderation": toModerate,
     "/admin/verification": toVerify,
+    "/admin/alerts": openAlerts,
   };
 
   return (
@@ -40,14 +48,23 @@ export default async function AdminLayout({ children }: { children: ReactNode })
             <AdminSearch />
           </div>
           <div className="ml-auto flex items-center gap-3 text-[14px]">
-            <span className="hidden text-ink-2 xl:inline">{admin.email}</span>
+            <Link
+              href="/admin/alerts"
+              aria-label={openAlerts ? `${openAlerts} open alerts` : "Alerts, none open"}
+              title={openAlerts ? `${openAlerts} open alerts` : "No open alerts"}
+              className="relative grid h-10 w-10 place-items-center rounded-full border-[1.5px] border-line bg-white text-ink no-underline transition hover:border-ink"
+            >
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
+              {openAlerts > 0 && <span className="num absolute -right-1 -top-1 min-w-[20px] rounded-full bg-coral px-1 text-center text-[11.5px] font-bold leading-[20px] text-white">{openAlerts > 99 ? "99+" : openAlerts}</span>}
+            </Link>
+            <span className="hidden text-ink-2 xl:inline">{admin.email} · {ROLE_LABEL[admin.adminRole]}</span>
             <Link href="/" className="btn btn-ghost btn-sm">View site</Link>
           </div>
         </div>
       </header>
       <div className="mx-auto grid max-w-[1400px] gap-x-8 px-4 pb-20 pt-4 sm:px-6 lg:grid-cols-[200px_minmax(0,1fr)] lg:pt-8">
-        <AdminNav counts={counts} />
-        <main className="min-w-0 pt-4 lg:pt-0">{children}</main>
+        <AdminNav counts={counts} role={admin.adminRole} />
+        <main className="min-w-0 pt-4 lg:pt-0"><AdminRoleProvider role={admin.adminRole}>{children}</AdminRoleProvider></main>
       </div>
     </div>
   );

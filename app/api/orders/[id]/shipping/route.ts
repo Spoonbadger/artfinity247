@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma";
 import { getAdmin } from "@/lib/admin"
 import { logAdminAction } from "@/lib/audit"
+import { alertKey, resolveAlerts } from "@/lib/alerts"
 import { sendReviewRequest } from "@/lib/reviews"
 
 export const dynamic = "force-dynamic"
@@ -24,6 +25,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     where: { id: params.id },
     data: { shippingStatus: status },
   })
+
+  // Shipped or delivered: it reached the printer. Delivered: no longer "shipped, not delivered".
+  if (status !== "pending") await resolveAlerts([alertKey.orderStuck(order.id), alertKey.workOrderFailed(order.id), ...(status === "delivered" ? [alertKey.orderUndelivered(order.id)] : [])])
 
   if (exists.shippingStatus !== status) {
     await logAdminAction(admin, "order.shipping_status", { type: "order", id: order.id }, `Shipping ${exists.shippingStatus} → ${status}`, { from: exists.shippingStatus, to: status })

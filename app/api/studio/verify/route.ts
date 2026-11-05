@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { getUserFromCookie } from "@/lib/auth";
 import { resend } from "@/lib/resend";
 import { parseEvidence, readEvidence } from "@/components/artist/verification";
+import { raiseAlert } from "@/lib/alerts";
+import { verificationAlert } from "@/lib/alertBuilders";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +46,7 @@ export async function POST(req: Request) {
 
   // Let the team know there's a request to review (logged locally).
   const name = current.artist_name || current.name;
+  if (updated.verificationRequestedAt) await raiseAlert(verificationAlert(user.id, name, updated.verificationRequestedAt));
   await resend.emails
     .send({
       from: "Artfinity <notifications@theartfinity.com>",

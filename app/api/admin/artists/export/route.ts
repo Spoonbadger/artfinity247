@@ -1,7 +1,7 @@
 // GET /api/admin/artists/export?<same filters as /admin/artists>  The artists list as CSV.
 import { NextRequest, NextResponse } from "next/server";
 import { getAdmin } from "@/lib/admin";
-import { listArtists } from "@/lib/adminArtists";
+import { ARTIST_FILTER_KEYS, listArtists } from "@/lib/adminArtists";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,7 @@ const cell = (v: unknown) => {
 export async function GET(req: NextRequest) {
   if (!(await getAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const p = req.nextUrl.searchParams;
-  const rows = await listArtists({ q: p.get("q") || "", verified: p.get("verified") || "", status: p.get("status") || "", balance: p.get("balance") || "", plan: p.get("plan") || "", stripe: p.get("stripe") || "" });
+  const rows = await listArtists(Object.fromEntries(ARTIST_FILTER_KEYS.map((k) => [k, p.get(k) || ""])));
   const header = ["id", "name", "handle", "email", "city", "joined", "verification", "suspended", "closed", "plan", "infinity_until", "payouts", "live_artworks", "prints_sold", "sales_usd", "unpaid_usd"];
   const lines = [header.join(",")];
   for (const r of rows) {
