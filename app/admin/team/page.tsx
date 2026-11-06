@@ -107,7 +107,7 @@ export default async function TeamPage() {
     <div className="grid max-w-[1000px] gap-5">
       <PageHead
         title="Team"
-        sub={isOwner ? `${members.length} admins${pending.length ? ` · ${pending.length} invite${pending.length === 1 ? "" : "s"} out` : ""}` : "Only an owner can change the team."}
+        sub={isOwner ? `${members.length} ${members.length === 1 ? "admin" : "admins"}${pending.length ? ` · ${pending.length} invite${pending.length === 1 ? "" : "s"} out` : ""}` : "Only an owner can change the team."}
         action={
           <ActionButton
             url="/api/admin/team" body={{ action: "invite" }} need="team" tone="blue" label="Invite an admin" title="Invite someone to the admin team"

@@ -2,6 +2,7 @@
 // painting scan booking is confirmed and waiting for payment (lib/scanning.server.ts).
 import Link from "next/link";
 import { dayLabel, usd } from "@/lib/scanning";
+import ScanPayButton from "@/components/scanning/ScanPayButton";
 
 export default function ScanPayBanner({ id, priceCents, date }: { id: string; priceCents: number; date: Date | null }) {
   return (
@@ -11,7 +12,10 @@ export default function ScanPayBanner({ id, priceCents, date }: { id: string; pr
           <b className="text-[15.5px]">Your scan is confirmed — pay {usd(priceCents)}</b>{" "}
           {date ? <>for {dayLabel(date, { weekday: "long", month: "long", day: "numeric" })}. </> : null}Paying locks in the date.
         </p>
-        <Link href={`/studio/scanning?booking=${id}`} className="btn btn-blue btn-sm min-h-[44px] md:min-h-0">Pay {usd(priceCents)}</Link>
+        <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <Link href={`/studio/scanning?booking=${id}`} className="text-[13.5px] font-semibold text-ink-2 underline underline-offset-2 hover:text-ink">Details</Link>
+          <ScanPayButton id={id} priceCents={priceCents} className="btn btn-blue btn-sm min-h-[44px] md:min-h-0" />
+        </span>
       </div>
     </div>
   );

@@ -7,12 +7,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, ImageOff, Loader2, Minus, Plus, Trash2 } from "lucide-react";
 import { BrushStroke } from "@/components/af/Brush";
-import { EmptyState } from "@/components/studio/EmptyState";
 import { Problem } from "@/components/studio/Problem";
 import { errorText, failed, problemFrom, saved } from "@/lib/feedback";
 import { PRINT_SIZES, SIZE_LABEL, sizeInches, type PrintSize } from "@/components/art/pricing";
 import {
-  HANDOFF_LABEL, ITEM_BANDS, LARGEST_PRINT, MAX_SCAN_PIECES, STATUS_DAB, STATUS_LABEL, STATUS_STEPS, bandLabel, bandRange, dayLabel, estimate, estimateText, oversizedRange, usd,
+  HANDOFF_LABEL, ITEM_BANDS, MAX_SCAN_PIECES, STATUS_DAB, STATUS_LABEL, STATUS_STEPS, bandLabel, bandRange, dayLabel, estimate, estimateText, oversizedRange, usd,
   type Handoff, type ItemBand, type ScanBand, type ScanStatus,
 } from "@/lib/scanning";
 import { cn } from "@/lib/utils";
@@ -52,7 +51,12 @@ export default function ScanStudio({ enabled, arts, bookings, preselect, focus, 
     else if (preselect) formRef.current?.scrollIntoView({ block: "start" });
   }, [focus, preselect]);
 
-  const active = bookings.filter((b) => !["returned", "cancelled"].includes(b.status));
+  // A booking just went in (the list grew): close the form and show it.
+  const seen = useRef(bookings.length);
+  useEffect(() => {
+    if (bookings.length > seen.current) setFormOpen(false);
+    seen.current = bookings.length;
+  }, [bookings.length]);
   const paid = justPaid ? bookings.find((b) => b.id === justPaid) : null;
 
   return (
@@ -75,16 +79,11 @@ export default function ScanStudio({ enabled, arts, bookings, preselect, focus, 
         </section>
       )}
 
-      {enabled && !formOpen && bookings.length === 0 && (
-        <EmptyState dab="var(--af-scan)" title="Book a scan" action={{ label: "Book a scan", onClick: openForm }} />
-      )}
-
       {enabled && formOpen && (
         <div ref={formRef} className="scroll-mt-24">
           <BookingForm
             arts={arts} preselect={preselect} settings={settings} first={bookings.length === 0}
             onClose={bookings.length ? () => setFormOpen(false) : undefined}
-            onDone={() => setFormOpen(false)}
           />
         </div>
       )}
@@ -94,10 +93,10 @@ export default function ScanStudio({ enabled, arts, bookings, preselect, focus, 
 
 // ---------- Booking form ----------
 
-function BookingForm({ arts, preselect, settings, first, onClose, onDone }: {
+function BookingForm({ arts, preselect, settings, first, onClose }: {
   arts: ScanArt[]; preselect: string | null; settings: Settings;
   /** First booking: one line on what this is, in place of an intro card. */
-  first: boolean; onClose?: () => void; onDone: () => void;
+  first: boolean; onClose?: () => void;
 }) {
   const router = useRouter();
   const startBand = (a: ScanArt | undefined) => a?.band ?? null;
@@ -169,7 +168,6 @@ function BookingForm({ arts, preselect, settings, first, onClose, onDone }: {
       saved("Booking requested", { description: "We'll email you to confirm the date and the final price." });
       router.push(`/studio/scanning?booking=${id}`, { scroll: false });
       router.refresh();
-      onDone();
     } catch (err) {
       const msg = errorText(err, "We couldn't send that booking. Try again.");
       setError(msg, { label: "Try again", onClick: () => setError(null) });
@@ -188,7 +186,7 @@ function BookingForm({ arts, preselect, settings, first, onClose, onDone }: {
         {first && (
           <p className="-mt-4 text-[15px] text-ink-2">
             Free to book. We confirm the date and price, then you pay.{" "}
-            <Link href="/scanning" className="font-semibold text-scan underline-offset-2 hover:underline">How it works</Link>
+            <Link href="/scanning#prices" className="font-semibold text-scan underline-offset-2 hover:underline">See prices</Link>
           </p>
         )}
 
