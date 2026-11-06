@@ -6,6 +6,7 @@ import { ChevronDown, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { failed, problemFrom, saved } from "@/lib/feedback";
 import { EmptyState } from "@/components/studio/EmptyState";
+import StartInfinityButton from "@/components/pro/StartInfinityButton";
 
 // No schema field yet: saved per browser in localStorage.
 // Needed: Artist.automations Json? holding the AutomationPrefs shape below.
@@ -52,7 +53,7 @@ function Switch({ on, disabled, label, onChange }: { on: boolean; disabled: bool
   );
 }
 
-/** In place of a switch on Free: a quiet label. The section's one "See Infinity" button is the way in. */
+/** In place of a switch on Free: a quiet label. The section's one "Get Infinity" button is the way in. */
 function Locked() {
   return (
     <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-wall px-3 py-1.5 text-[13px] font-semibold text-ink-2">
@@ -158,7 +159,7 @@ export default function AutomationsPanel({ pro, storageKey, recent, server: init
         </ul>
         {!pro && (
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
-            <Link href="/studio/infinity" className="btn btn-blue btn-sm min-h-[44px] md:min-h-0">See Infinity</Link>
+            <StartInfinityButton className="btn btn-blue btn-sm min-h-[44px] md:min-h-0" included />
             <Link href="/studio/infinity#referrals" className="inline-flex min-h-[44px] items-center text-[13.5px] font-semibold text-ink-2 underline underline-offset-2 hover:text-ink md:min-h-0">Get 2 months free</Link>
           </div>
         )}

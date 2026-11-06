@@ -2,12 +2,12 @@
 // Share kit → Videos: pick a piece and a preset, watch the live preview, make a 6–15 s video (vertical 1080 × 1920 or
 // square 1080 × 1080) in the browser, then download it, share it (phones) and copy a caption.
 // Three presets are free; six more, brand colors, a logo outro and music are Infinity (shown locked, never dead).
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Copy, Download, Lock, Share2, Square, Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { failed, problemFrom, saved } from "@/lib/feedback";
 import { EmptyState } from "@/components/studio/EmptyState";
+import StartInfinityButton from "@/components/pro/StartInfinityButton";
 import { Problem } from "@/components/studio/Problem";
 import { artLink, captions, handleText, type ShareArt } from "@/components/share/shareData";
 import {
@@ -43,7 +43,7 @@ async function copy(text: string) {
 }
 
 function Unlock({ className, primary }: { className?: string; primary?: boolean }) {
-  return <Link href="/studio/infinity" className={cn("btn btn-sm", primary && "btn-blue", className)}><Lock size={14} aria-hidden="true" /> Unlock with Infinity</Link>;
+  return <StartInfinityButton label="Unlock with Infinity" icon={<Lock size={14} aria-hidden="true" />} className={cn("btn btn-sm", primary && "btn-blue", className)} />;
 }
 
 function Fold({ title, sub, open, children }: { title: string; sub: string; open?: boolean; children: React.ReactNode }) {

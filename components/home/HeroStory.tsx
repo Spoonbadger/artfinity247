@@ -124,7 +124,7 @@ export default function HeroStory({ art, perPrint, price, monthBefore }: { art: 
                         <span className="absolute inset-x-0 top-0 h-[0.6cqw] rounded-full bg-scan shadow-[0_0_2cqw_0.6cqw_rgba(43,55,240,.45)]" />
                       </div>
                     </div>
-                    <span className="absolute -bottom-[7cqw] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-ink/80 px-[1.4cqw] py-[0.4cqw] text-[1.7cqw] font-semibold text-white">theartfinity.com</span>
+                    <span className="absolute -bottom-[7cqw] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-ink px-[1.4cqw] py-[0.4cqw] text-[1.7cqw] font-semibold text-white">theartfinity.com</span>
                   </div>
                 </div>
               </div>

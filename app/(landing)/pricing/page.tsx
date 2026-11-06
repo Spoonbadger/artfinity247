@@ -6,6 +6,7 @@ import { Brushed, BrushStroke } from "@/components/af/Brush";
 import { DabRow } from "@/components/browse/PageHead";
 import { PUBLIC_ART } from "@/components/browse/data";
 import ProCalculator from "@/components/pro/ProCalculator";
+import StartInfinityButton from "@/components/pro/StartInfinityButton";
 import { FREE_SPLIT, PRO, REFERRALS, pct, planFeatures, proPrice, type Feature } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
@@ -110,7 +111,7 @@ export default async function PricingPage() {
             <p className="text-[15px] text-white/75">{pct(PRO.split)} of profit, plus auto videos and automations.</p>
           </div>
           <div className="relative grid gap-2">
-            <Link href="/studio/infinity#billing" className="btn btn-sticker btn-lg w-full">Get {PRO.name} · {proPrice()}/month</Link>
+            <StartInfinityButton label={<>Get {PRO.name} · {proPrice()}/month</>} className="btn btn-sticker btn-lg w-full" activeClassName="btn btn-ghost btn-lg w-full !border-white !text-white hover:!bg-white hover:!text-ink" />
             <span className="text-center text-[12.5px] text-white/70">Billed monthly by Stripe. Cancel anytime.</span>
             <Link href="/studio/infinity#referrals" className="text-center text-[14px] font-bold text-white underline-offset-2 hover:underline">Or share Artfinity, get {REFERRALS.rewardMonths} months free</Link>
           </div>
@@ -147,7 +148,7 @@ export default async function PricingPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href="/register" className="btn btn-blue btn-lg">Start selling free</Link>
-          <Link href="/studio/infinity" className="btn btn-ghost btn-lg">Try Infinity</Link>
+          <StartInfinityButton className="btn btn-ghost btn-lg" />
         </div>
       </section>
     </>

@@ -42,7 +42,8 @@ const focusEl = (id: string) => { const el = document.getElementById(id); el?.sc
 export default function ScanStudio({ enabled, arts, bookings, preselect, focus, justPaid, settings }: {
   enabled: boolean; arts: ScanArt[]; bookings: ScanBookingView[]; preselect: string | null; focus: string | null; justPaid: string | null; settings: Settings;
 }) {
-  const [formOpen, setFormOpen] = useState(enabled && !!preselect);
+  // No bookings yet, or a deep link to one piece (?art=): straight to the form, no intro card to click through.
+  const [formOpen, setFormOpen] = useState(enabled && (!!preselect || bookings.length === 0));
   const formRef = useRef<HTMLDivElement>(null);
   const openForm = () => { setFormOpen(true); requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })); };
 
@@ -74,29 +75,17 @@ export default function ScanStudio({ enabled, arts, bookings, preselect, focus, 
         </section>
       )}
 
-      {enabled && bookings.length === 0 && !formOpen && (
-        <EmptyState
-          dab="var(--af-scan)"
-          title="Get your paintings scanned"
-          body={
-            <>
-              Phone photos often stop at Medium. We scan the original in NYC, high-res and colour-accurate, and the file goes straight onto your artwork, so buyers can order every size up to {LARGEST_PRINT}.
-              {" "}Booking is free: you pay once we confirm the date and price.
-            </>
-          }
-          action={{ label: "Book a scan", onClick: openForm }}
-          secondary={{ label: "See prices", href: "/scanning#prices" }}
-          help={{ label: "Getting your paintings scanned", href: "/help/selling/painting-scans" }}
-        >
-          {arts.some((a) => a.limited) && (
-            <p className="text-[14px] font-semibold text-ink">{arts.filter((a) => a.limited).length} of your pieces can&apos;t print at {SIZE_LABEL.xl} yet.</p>
-          )}
-        </EmptyState>
+      {enabled && !formOpen && bookings.length === 0 && (
+        <EmptyState dab="var(--af-scan)" title="Book a scan" action={{ label: "Book a scan", onClick: openForm }} />
       )}
 
       {enabled && formOpen && (
         <div ref={formRef} className="scroll-mt-24">
-          <BookingForm arts={arts} preselect={preselect} settings={settings} onClose={active.length || bookings.length ? () => setFormOpen(false) : undefined} />
+          <BookingForm
+            arts={arts} preselect={preselect} settings={settings} first={bookings.length === 0}
+            onClose={bookings.length ? () => setFormOpen(false) : undefined}
+            onDone={() => setFormOpen(false)}
+          />
         </div>
       )}
     </div>
@@ -105,7 +94,11 @@ export default function ScanStudio({ enabled, arts, bookings, preselect, focus, 
 
 // ---------- Booking form ----------
 
-function BookingForm({ arts, preselect, settings, onClose }: { arts: ScanArt[]; preselect: string | null; settings: Settings; onClose?: () => void }) {
+function BookingForm({ arts, preselect, settings, first, onClose, onDone }: {
+  arts: ScanArt[]; preselect: string | null; settings: Settings;
+  /** First booking: one line on what this is, in place of an intro card. */
+  first: boolean; onClose?: () => void; onDone: () => void;
+}) {
   const router = useRouter();
   const startBand = (a: ScanArt | undefined) => a?.band ?? null;
   const [picked, setPicked] = useState<Map<string, ItemBand | null>>(() => {
@@ -176,7 +169,7 @@ function BookingForm({ arts, preselect, settings, onClose }: { arts: ScanArt[]; 
       saved("Booking requested", { description: "We'll email you to confirm the date and the final price." });
       router.push(`/studio/scanning?booking=${id}`, { scroll: false });
       router.refresh();
-      onClose?.();
+      onDone();
     } catch (err) {
       const msg = errorText(err, "We couldn't send that booking. Try again.");
       setError(msg, { label: "Try again", onClick: () => setError(null) });
@@ -192,6 +185,12 @@ function BookingForm({ arts, preselect, settings, onClose }: { arts: ScanArt[]; 
           <h2 id="book-h" className="display text-[34px]">Book a scan</h2>
           {onClose && <button type="button" onClick={onClose} className="text-[14px] font-semibold text-ink-2 underline-offset-2 hover:text-ink hover:underline">Close</button>}
         </div>
+        {first && (
+          <p className="-mt-4 text-[15px] text-ink-2">
+            Free to book. We confirm the date and price, then you pay.{" "}
+            <Link href="/scanning" className="font-semibold text-scan underline-offset-2 hover:underline">How it works</Link>
+          </p>
+        )}
 
         {/* 1. Paintings */}
         <section id="scan-pick" aria-labelledby="pick-h" className="grid gap-3 scroll-mt-24">

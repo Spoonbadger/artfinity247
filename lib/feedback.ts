@@ -40,7 +40,8 @@ const FIXES: Record<string, Fix> = {
   unauthorized: { label: "Log in", href: "/login" },
   stripe_not_connected: { label: "Connect Stripe", href: "/studio/money" },
   venmo_missing: { label: "Add Venmo", href: "/studio/page#venmo" },
-  infinity_required: { label: "See Infinity", href: "/studio/infinity" },
+  // ?start=1 opens checkout on arrival: one click, not a second "Get Infinity".
+  infinity_required: { label: "Get Infinity", href: "/studio/infinity?start=1" },
   daily_limit: { label: "See followers", href: "/studio/followers" },
   // Money, account and sign-in (Money / Account folders)
   no_sales: { label: "Print a QR code", href: "/studio/qr" },

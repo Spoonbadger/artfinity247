@@ -63,7 +63,7 @@ function planStatus(v: BillingView, daysLeft: number): { head: string; line: str
   }
 }
 
-export default async function ProPage({ searchParams }: { searchParams?: { billing?: string; session_id?: string } }) {
+export default async function ProPage({ searchParams }: { searchParams?: { billing?: string; session_id?: string; start?: string } }) {
   const artist = await requireArtist("/studio/infinity");
   const now = new Date();
   // Back from Stripe Checkout: turn Infinity on now rather than waiting for the webhook.
@@ -149,7 +149,7 @@ export default async function ProPage({ searchParams }: { searchParams?: { billi
             </p>
           )}
           <div className="relative">
-            <BillingPanel mode={billing.mode} kind={view.kind} intervals={billing.intervals} freeMonthsUntil={freeMonthsUntil} onDark={dark} />
+            <BillingPanel mode={billing.mode} kind={view.kind} intervals={billing.intervals} freeMonthsUntil={freeMonthsUntil} onDark={dark} autoStart={searchParams?.start === "1" && !plan.active} />
           </div>
           <p className={dark ? "relative text-[12.5px] text-white/70" : "text-[12.5px] text-ink-2"}>
             The higher share counts for orders placed while {PRO.name} is on. Earlier orders keep theirs.

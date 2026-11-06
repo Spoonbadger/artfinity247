@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PRO, REFERRALS, dollars } from "@/lib/plans";
 import type { BillingView } from "@/lib/billingStatus";
@@ -17,7 +17,7 @@ type SimAction = "subscribe" | "cancel" | "resume" | "payment_failed" | "payment
  * its states.
  */
 export default function BillingPanel({
-  mode, kind, intervals, freeMonthsUntil, onDark = false,
+  mode, kind, intervals, freeMonthsUntil, onDark = false, autoStart = false,
 }: {
   mode: Mode;
   kind: ViewKind;
@@ -25,6 +25,8 @@ export default function BillingPanel({
   /** Referral or granted months left: billing would start then. */
   freeMonthsUntil?: string | null;
   onDark?: boolean;
+  /** From ?start=1 (a "Get Infinity" button elsewhere, or after logging in): open checkout once, no second click. */
+  autoStart?: boolean;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
@@ -65,6 +67,18 @@ export default function BillingPanel({
   const checkout = (interval: "month" | "year") =>
     mode === "simulated" ? post("subscribe", "/api/studio/infinity/test", { action: "subscribe" }) : post(interval, "/api/studio/infinity/checkout", { interval });
   const sim = (action: SimAction) => post(action, "/api/studio/infinity/test", { action });
+
+  const started = useRef(false);
+  useEffect(() => {
+    if (!autoStart || started.current) return;
+    started.current = true;
+    // Drop ?start=1 first, so Back from Stripe or a refresh doesn't open checkout again.
+    const url = new URL(window.location.href);
+    url.searchParams.delete("start");
+    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+    if (!subscribed && mode !== "off") checkout("month");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStart]);
 
   const ghost = cn("btn btn-ghost btn-sm min-h-[44px] md:min-h-0", onDark && "!border-white !text-white hover:!bg-white hover:!text-ink");
   const muted = onDark ? "text-white/70" : "text-ink-2";

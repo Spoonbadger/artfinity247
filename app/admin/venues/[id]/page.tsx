@@ -111,7 +111,7 @@ export default async function AdminVenuePage({ params }: { params: { id: string 
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap items-center justify-end gap-1.5">
-                        {!m.paid && (
+                        {!m.paid && m.owedCents > 0 && (
                           <ActionButton
                             url={`/api/admin/venues/${v.id}/payout`} body={{ month: m.month }} need="money" label="Mark paid" title={`Mark ${label} paid`}
                             disabled={m.owedCents <= 0}

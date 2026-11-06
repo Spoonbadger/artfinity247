@@ -105,7 +105,7 @@ export default async function AdminJobsPage() {
                     <b className="text-[16px]">{j.label}</b>
                     <Badge s={s} />
                   </p>
-                  <p className="text-[14px] text-ink-2">{j.description}</p>
+                  <p className="line-clamp-2 text-[14px] text-ink-2 lg:line-clamp-1" title={j.description}>{j.description}</p>
                   <p className="text-[13.5px]" title={j.schedule ? `${j.schedule} UTC` : undefined}>
                     <span className="font-semibold">Runs:</span> {j.when}
                   </p>

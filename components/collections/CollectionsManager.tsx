@@ -357,7 +357,7 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
             )}
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
               <p className="text-[13px] text-ink-2">Drag or use the arrows to sort. Saves as you go.</p>
-              <button type="button" onClick={() => remove(active)} className="btn btn-ghost btn-sm text-coral" aria-label={`Delete ${active.title}`}>
+              <button type="button" onClick={() => remove(active)} className="btn btn-ghost btn-sm text-coral" aria-label={`Delete collection ${active.title}`}>
                 <Trash2 className="h-4 w-4" aria-hidden />Delete collection
               </button>
             </div>

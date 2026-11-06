@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PRO, pct, proPrice } from "@/lib/plans";
+import StartInfinityButton from "./StartInfinityButton";
 
 /** Share kit video section for Free artists: a still preview and a friendly way to Infinity. */
 export default function VideoUpsell({ imageUrl, title }: { imageUrl: string; title: string }) {
@@ -19,7 +20,7 @@ export default function VideoUpsell({ imageUrl, title }: { imageUrl: string; tit
         <h3 className="display text-[28px] leading-none">Videos are an Infinity tool</h3>
         <p className="text-[15px] text-ink-2">A 10-second reel of “{title}”, made for you. Plus {pct(PRO.split)} of profit and automations.</p>
         <div className="flex flex-wrap gap-2">
-          <Link href="/studio/infinity" className="btn btn-blue">Try Infinity</Link>
+          <StartInfinityButton included />
           <Link href="/studio/infinity#referrals" className="btn btn-ghost">Share, get 2 months free</Link>
         </div>
         <span className="text-[12.5px] text-ink-2">{proPrice()}/mo. Images, captions and links below stay free.</span>
