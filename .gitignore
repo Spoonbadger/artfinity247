@@ -69,3 +69,8 @@ TODO.md
 
 # Sentry CLI config (holds an auth token)
 .sentryclirc
+
+# Temporary scripts agents write while testing
+*.tmp.mjs
+*.tmp.js
+*.tmp.cjs
