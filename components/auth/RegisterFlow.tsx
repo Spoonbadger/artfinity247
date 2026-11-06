@@ -581,7 +581,8 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
             )}
             {/* Phones: once a photo is in, Publish stays pinned to the bottom while you fill in the rest */}
             <div className={cn("flex flex-wrap items-center justify-between gap-3", upload?.preview && "max-sm:sticky max-sm:bottom-0 max-sm:z-10 max-sm:-mx-6 max-sm:-mb-6 max-sm:flex-col-reverse max-sm:gap-1 max-sm:rounded-b-[20px] max-sm:border-t max-sm:border-line max-sm:bg-paper/95 max-sm:px-6 max-sm:pb-[calc(12px+env(safe-area-inset-bottom))] max-sm:pt-3 max-sm:backdrop-blur")}>
-              <button type="button" className="min-h-[44px] text-[15px] font-semibold text-ink-2 underline underline-offset-4 hover:text-scan" onClick={() => go(4)} disabled={busy}>
+              <button type="button" className="min-h-[44px] text-[15px] font-semibold text-ink-2 underline underline-offset-4 hover:text-scan" onClick={() => { setBusy(true); window.location.assign(home); }} disabled={busy}>
+                {/* Straight to the Studio (or where they were headed): no "Your page is live" card to click past. */}
                 Skip for now
               </button>
               <span className="grid justify-items-end gap-1 max-sm:w-full max-sm:justify-items-stretch">

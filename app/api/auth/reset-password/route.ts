@@ -3,6 +3,7 @@ import { z } from "zod";
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
+import { signAuthToken } from "@/lib/auth";
 
 export const dynamic = "force-dynamic"
 
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
     // New password signs out every existing session (sessionVersion, lib/auth.ts). The link was emailed, so the
     // address is confirmed too.
     const a = await prisma.artist.findUnique({ where: { id: record.artistId }, select: { emailVerifiedAt: true } });
-    await prisma.artist.update({
+    const updated = await prisma.artist.update({
       where: { id: record.artistId },
       data: {
         password: hashedPw,
@@ -49,7 +50,12 @@ export async function POST(req: Request) {
     // one-time use: this token and any others still out there
     await prisma.passwordResetToken.deleteMany({ where: { artistId: record.artistId } });
 
-    return NextResponse.json({ ok: true }, { status: 200 });
+    // The emailed link proved who they are: sign this browser in (a session cookie, like an unticked "Remember me"),
+    // so they land in the Studio instead of typing the new password straight back into the log-in form.
+    if (updated.closedAt || updated.suspendedAt) return NextResponse.json({ ok: true, signedIn: false }, { status: 200 });
+    const res = NextResponse.json({ ok: true, signedIn: true, admin: updated.role.toUpperCase() === "ADMIN" }, { status: 200 });
+    res.cookies.set("auth-token", await signAuthToken(updated, "3h"), { httpOnly: true, secure: process.env.NODE_ENV === "production", path: "/", sameSite: "lax" });
+    return res;
   } catch (e) {
     if (e instanceof z.ZodError) return NextResponse.json({ ok: false, error: "Use at least 8 characters.", code: "weak_password" }, { status: 400 });
     return NextResponse.json({ ok: false, error: "Something went wrong on our side. Try again in a minute.", code: "server_error" }, { status: 500 });

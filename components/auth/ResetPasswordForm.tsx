@@ -49,7 +49,10 @@ export default function ResetPasswordForm({ status = "ok" }: { status?: "ok" | k
         const d = await res.json().catch(() => null);
         throw new Error(d?.error || "This link has expired or was already used.");
       }
-      router.push("/login?reset=1");
+      const d = (await res.json().catch(() => null)) as { signedIn?: boolean; admin?: boolean } | null;
+      // Signed in by the reset itself: straight in (full load, so the header knows who they are).
+      if (d?.signedIn) window.location.assign(d.admin ? "/admin" : "/studio");
+      else router.push("/login?reset=1");
     } catch (err: any) {
       setError(err?.message && err.message !== "Failed to fetch" ? err.message : "Couldn't reach Artfinity. Check your connection.");
       setBusy(false);

@@ -51,7 +51,7 @@ export default async function AdminVenuePage({ params }: { params: { id: string 
         action={
           <>
             {v.active && <a href={`/venues/${v.slug}`} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">Public page<ArrowUpRight className="h-4 w-4" aria-hidden="true" /></a>}
-            <a href={`/admin/venues/${v.id}/kit`} target="_blank" rel="noreferrer" className="btn btn-blue btn-sm"><Printer className="h-4 w-4" aria-hidden="true" />Venue kit</a>
+            <a href={`/admin/venues/${v.id}/kit?print=1`} target="_blank" rel="noreferrer" className="btn btn-blue btn-sm"><Printer className="h-4 w-4" aria-hidden="true" />Venue kit</a>
           </>
         }
       >

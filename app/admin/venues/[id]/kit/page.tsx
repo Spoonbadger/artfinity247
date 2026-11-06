@@ -17,7 +17,7 @@ export const metadata: Metadata = { title: "Venue kit" };
  * Printable venue kit (Print → Save as PDF): a window sticker with a QR code to the public venue page, and a
  * thank-you note for the owner. Two US Letter pages; the admin chrome is hidden when printing.
  */
-export default async function VenueKitPage({ params }: { params: { id: string } }) {
+export default async function VenueKitPage({ params, searchParams }: { params: { id: string }; searchParams?: { print?: string } }) {
   await adminRoleOrRedirect(`/admin/venues/${params.id}`);
   const v = await prisma.venue.findUnique({ where: { id: params.id } });
   if (!v) notFound();
@@ -44,7 +44,7 @@ export default async function VenueKitPage({ params }: { params: { id: string } 
         <Link href={`/admin/venues/${v.id}`} className="inline-flex items-center gap-1 text-[13.5px] font-semibold text-ink-2 no-underline hover:text-ink"><ArrowLeft className="h-4 w-4" aria-hidden="true" />{v.name}</Link>
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[13px] text-ink-2">Sticker prints at 6 × 6 in.</span>
-          <PrintButton className="btn btn-blue btn-sm" label="Print or save PDF" />
+          <PrintButton className="btn btn-blue btn-sm" label="Print or save PDF" auto={searchParams?.print === "1"} />
         </div>
       </div>
 
