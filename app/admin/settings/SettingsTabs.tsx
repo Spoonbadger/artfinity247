@@ -9,7 +9,7 @@ const TABS = [
   { href: "/admin/settings/notifications", label: "Alert emails" },
   { href: "/admin/settings/rewards", label: "Collector rewards" },
   { href: "/admin/settings/scanning", label: "Scanning service" },
-  { href: "/admin/settings/code-prints", label: "Code prints" },
+  { href: "/admin/settings/code-prints", label: "Code print prices" },
 ];
 
 export default function SettingsTabs({ owner }: { owner: boolean }) {

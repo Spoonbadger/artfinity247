@@ -294,7 +294,7 @@ function BookingForm({ arts, preselect, settings, onClose }: { arts: ScanArt[]; 
           {handoff === "pickup" && (
             <label className="af-field">
               <span className="label">Pickup address, with ZIP</span>
-              <textarea id="scan-address" rows={2} maxLength={300} value={address} onChange={(e) => setAddress(e.target.value)} autoComplete="street-address" placeholder="123 Wythe Ave, Apt 4, Brooklyn, NY 11249" />
+              <textarea id="scan-address" name="street-address" rows={2} maxLength={300} value={address} onChange={(e) => setAddress(e.target.value)} autoComplete="street-address" placeholder="123 Wythe Ave, Apt 4, Brooklyn, NY 11249" />
             </label>
           )}
         </section>

@@ -414,7 +414,7 @@ function MailOrder({ quote, infinity, pricing, address, onOrdered, onPriceChange
       <span>{label}{opts.optional && <span className="font-normal text-ink-2"> (optional)</span>}</span>
       <input
         ref={(el) => { refs.current[k] = el; }}
-        value={a[k]} onChange={(e) => set(k, e.target.value)} autoComplete={opts.auto} inputMode={opts.inputMode} required={!opts.optional}
+        name={k} value={a[k]} onChange={(e) => set(k, e.target.value)} autoComplete={opts.auto ? `shipping ${opts.auto}` : undefined} inputMode={opts.inputMode} required={!opts.optional}
         aria-invalid={bad === k || undefined} aria-describedby={bad === k ? "ship-err" : undefined}
         className={cn("min-h-[42px] w-full min-w-0 rounded-lg border-[1.5px] bg-white px-2.5 text-[15px] font-normal text-ink", bad === k ? "border-coral" : "border-line")}
       />
@@ -462,7 +462,7 @@ function MailOrder({ quote, infinity, pricing, address, onOrdered, onPriceChange
             State
             <select
               ref={(el) => { refs.current.state = el; }}
-              value={a.state} onChange={(e) => set("state", e.target.value)} autoComplete="address-level1" aria-invalid={bad === "state" || undefined} aria-describedby={bad === "state" ? "ship-err" : undefined}
+              name="state" value={a.state} onChange={(e) => set("state", e.target.value)} autoComplete="shipping address-level1" aria-invalid={bad === "state" || undefined} aria-describedby={bad === "state" ? "ship-err" : undefined}
               className={cn("min-h-[42px] w-full min-w-0 rounded-lg border-[1.5px] bg-white px-2 text-[15px] font-normal text-ink", bad === "state" ? "border-coral" : "border-line")}
             >
               <option value="">State</option>

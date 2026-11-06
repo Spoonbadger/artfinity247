@@ -23,7 +23,7 @@ import { getPublicCollections } from "@/components/collections/data";
 import { WorkLayout } from "@/components/artist/WorkGrid";
 import { getReviews } from "@/lib/reviews";
 import ReviewStars from "@/components/reviews/ReviewStars";
-import ReviewList from "@/components/reviews/ReviewList";
+import ArtistReviews from "@/components/artist/ArtistReviews";
 import { activeFollowerCount } from "@/lib/followers";
 import ViewBeacon from "@/components/analytics/ViewBeacon";
 import { UrlSort } from "@/components/browse/UrlSort";
@@ -238,12 +238,7 @@ export default async function ArtistPage({ params, searchParams }: Props) {
                 ...(collections.length ? [{ id: "collections", label: "Collections", count: collections.length, panel: <CollectionsTab artistSlug={artist.slug} collections={collections} /> }] : []),
                 ...(rating.count ? [{
                   id: "reviews", label: "Reviews", count: rating.count,
-                  panel: (
-                    <div className="grid gap-5">
-                      <ReviewStars average={rating.average} count={rating.count} size="lg" />
-                      <ReviewList reviews={reviews} artistName={artist.firstName || artist.name} showArtwork />
-                    </div>
-                  ),
+                  panel: <ArtistReviews reviews={reviews} average={rating.average} count={rating.count} artistName={artist.firstName || artist.name} />,
                 }] : []),
                 { id: "about", label: "About", panel: about },
               ]}
