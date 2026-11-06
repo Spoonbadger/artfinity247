@@ -47,10 +47,13 @@ export default async function MyArtPage() {
       title="My art"
       sub={items.length ? `${live} live${inReview ? ` · ${inReview} in review` : ""}` : undefined}
       actions={
-        <>
-          <MoreMenu items={more} />
-          <Link href="/studio/art/new" className="btn btn-blue"><Upload className="h-4 w-4" aria-hidden="true" />Upload art</Link>
-        </>
+        // With nothing uploaded yet the empty state below carries the one Upload button.
+        items.length > 0 && (
+          <>
+            <MoreMenu items={more} />
+            <Link href="/studio/art/new" className="btn btn-blue"><Upload className="h-4 w-4" aria-hidden="true" />Upload art</Link>
+          </>
+        )
       }
     >
       <ArtGrid items={items} handle={artist.slug} />

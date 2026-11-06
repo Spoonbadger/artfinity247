@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { failed, saved } from "@/lib/feedback";
 import { useAdminCan } from "../../_components/AdminRole";
 
 type V = { enabled: boolean; every: number; pct: number };
@@ -21,10 +21,10 @@ export default function RewardsForm({ value }: { value: V }) {
       const r = await fetch("/api/admin/settings/rewards", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(v) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || "Couldn't save.");
-      toast.success(v.enabled ? `Rewards on: every ${v.every}th print, ${v.pct}% off` : "Rewards off");
+      saved(v.enabled ? `Rewards on: every ${v.every}th print, ${v.pct}% off` : "Rewards off");
       router.refresh();
     } catch (err) {
-      toast.error((err as Error).message);
+      failed((err as Error).message, { description: "Nothing was changed. Try saving again." });
     } finally {
       setBusy(false);
     }

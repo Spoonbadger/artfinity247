@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { saved } from "@/lib/feedback";
 import { cantReason } from "@/lib/adminCaps";
 import { useAdminCan } from "../../_components/AdminRole";
 import LocationInput from "@/components/forms/LocationInput";
@@ -51,7 +51,7 @@ export default function VenueForm({ initial, onDone }: { initial?: VenueFormValu
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || "Couldn't save.");
-      toast.success(d.message || "Saved");
+      saved(d.message || "Saved");
       if (!editing) setF(EMPTY);
       onDone?.();
       router.refresh();

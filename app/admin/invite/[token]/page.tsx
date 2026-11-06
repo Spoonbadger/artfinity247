@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Logo from "@/components/af/Logo";
+import { Problem } from "@/components/studio/Problem";
 import { getUserFromCookie } from "@/lib/auth";
 import { checkInvite } from "@/lib/adminTeam";
 import { ROLE_BLURB, ROLE_LABEL } from "@/lib/adminCaps";
@@ -21,7 +22,6 @@ export default async function InvitePage({ params }: { params: { token: string }
       <Logo href="/" />
       <section className="af-card grid gap-4 p-5 sm:p-6">
         <div>
-          <p className="eyebrow">Admin team invite</p>
           <h1 className="display text-[36px] sm:text-[44px]">{c.ok || c.code === "unverified" || c.code === "wrong_account" ? "Join the Artfinity team" : "This invite can't be used"}</h1>
         </div>
         {role && (c.ok || c.code === "unverified" || c.code === "wrong_account") && (
@@ -41,7 +41,7 @@ export default async function InvitePage({ params }: { params: { token: string }
         )}
         {c.ok && user && <AcceptButton token={params.token} />}
         {!c.ok && (
-          <p role="alert" className="rounded-lg border-[1.5px] border-coral bg-[#fff1ed] px-3 py-2 text-[14.5px]">{c.message}</p>
+          <Problem tone="error" title={c.message} fix={["unverified", "wrong_account", "already_admin"].includes(c.code ?? "") ? undefined : { label: "Ask for a new invite", href: "/contact" }} />
         )}
         {!c.ok && c.code === "unverified" && <ResendConfirmButton />}
         {!c.ok && c.code === "wrong_account" && (

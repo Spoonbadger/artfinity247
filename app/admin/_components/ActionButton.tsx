@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import * as Dialog from "@radix-ui/react-dialog";
-import { toast } from "sonner";
+import { saved } from "@/lib/feedback";
 import { cn } from "@/lib/utils";
 import { cantReason, type AdminRole, type Capability } from "@/lib/adminCaps";
 import { useAdminCan } from "./AdminRole";
@@ -56,7 +56,7 @@ export default function ActionButton({
       const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, ...values }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || "Something went wrong.");
-      toast.success(typeof d.message === "string" ? d.message : done || "Done");
+      saved(typeof d.message === "string" ? d.message : done || "Done");
       setOpen(false);
       if (redirectTo) router.push(redirectTo);
       router.refresh();

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
+import { failed, saved } from "@/lib/feedback";
 
 export type AdminNoteRow = { id: string; adminEmail: string; body: string; createdAt: string };
 
@@ -23,9 +23,9 @@ export default function NotesPanel({ targetType, targetId, notes: initial }: { t
       if (!r.ok) throw new Error(d.error || "Couldn't save the note.");
       setNotes((n) => [{ ...d.note, createdAt: d.note.createdAt }, ...n]);
       setBody("");
-      toast.success("Note saved");
+      saved("Note saved");
     } catch (e: any) {
-      toast.error(e?.message || "Couldn't save the note.");
+      failed(e?.message || "Couldn't save the note.", { description: "Your note is still in the box. Try again." });
     } finally {
       setBusy(false);
     }

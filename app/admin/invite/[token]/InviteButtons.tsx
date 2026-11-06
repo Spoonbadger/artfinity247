@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { failed, saved } from "@/lib/feedback";
 
 export function AcceptButton({ token }: { token: string }) {
   const router = useRouter();
@@ -18,11 +18,11 @@ export function AcceptButton({ token }: { token: string }) {
           const r = await fetch(`/api/admin/invite/${encodeURIComponent(token)}`, { method: "POST" });
           const d = await r.json().catch(() => ({}));
           if (!r.ok) throw new Error(d.error || "");
-          toast.success("Welcome to the team");
+          saved("Welcome to the team");
           router.push("/admin");
           router.refresh();
         } catch (e: any) {
-          toast.error(e?.message || "Couldn't accept the invite.");
+          failed(e?.message || "Couldn't accept the invite.", { fix: { label: "Ask for a new invite", href: "/contact" } });
           setBusy(false);
         }
       }}
@@ -42,8 +42,8 @@ export function ResendConfirmButton() {
       onClick={async () => {
         setState("busy");
         const r = await fetch("/api/auth/verify-email/resend", { method: "POST" }).catch(() => null);
-        if (r?.ok) { setState("sent"); toast.success("Confirmation link sent. Click it, then come back here."); }
-        else { setState("idle"); toast.error(r?.status === 429 ? "Too many tries. Wait a bit." : "Couldn't send it."); }
+        if (r?.ok) { setState("sent"); saved("Confirmation link sent", { description: "Click it, then come back here." }); }
+        else { setState("idle"); failed(r?.status === 429 ? "Too many tries. Wait a bit." : "Couldn't send it.", { description: "Try again in a minute." }); }
       }}
     >
       {state === "sent" ? "Sent: check your inbox" : state === "busy" ? "Sending…" : "Send the confirmation link again"}

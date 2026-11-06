@@ -9,6 +9,7 @@ import { adminRoleOrRedirect } from "../../_components/gate";
 import { igConfigured, igSetupState } from "@/lib/social/instagram";
 import { cloudinaryOn } from "@/lib/social/storage";
 import { cn } from "@/lib/utils";
+import { PageHead, Pill } from "../../_components/ui";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Instagram setup" };
@@ -135,13 +136,12 @@ export default async function SocialSetupPage() {
   ];
   return (
     <div className="grid gap-5">
-      <Link href="/admin/social" className="text-[14px] font-semibold text-scan">← Back to Social</Link>
+      <PageHead back={{ href: "/admin/social", label: "Social" }} title="Instagram setup" sub={`${igConfigured() ? "Connected" : "Manual mode: not connected yet"} · Graph API ${s.version}`} />
       <section aria-label="What's set" className="grid gap-2 rounded-2xl border border-line bg-white p-4">
-        <p className="text-[15px] font-bold">{igConfigured() ? "Instagram is connected." : "Manual mode: Instagram isn't connected yet."} Graph API {s.version}.</p>
         <ul className="grid gap-1 text-[14px] sm:grid-cols-2">
           {checks.map((c) => (
             <li key={c.label} className="flex items-center gap-2">
-              <span className={cn("rounded-full px-2 py-0.5 text-[12px] font-bold", c.ok ? "bg-earned text-white" : c.optional ? "bg-line text-ink-2" : "bg-coral/15 text-coral")}>{c.ok ? "Set" : c.optional ? "Optional" : "Missing"}</span>
+              <Pill tone={c.ok ? "green" : c.optional ? "grey" : "red"}>{c.ok ? "Set" : c.optional ? "Optional" : "Missing"}</Pill>
               {c.label}
             </li>
           ))}

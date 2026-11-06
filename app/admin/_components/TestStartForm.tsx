@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { failed, saved } from "@/lib/feedback";
 import { useAdminCan } from "./AdminRole";
 
 /** Sets the 90-day test's start date (saved to data/admin-settings.json). */
@@ -18,10 +18,10 @@ export default function TestStartForm({ value }: { value: string }) {
       const r = await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ testStartDate: v }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || "Couldn't save.");
-      toast.success(v ? `Test starts ${v}` : "Test starts at the first order");
+      saved(v ? `Test starts ${v}` : "Test starts at the first order");
       router.refresh();
     } catch (e: any) {
-      toast.error(e?.message || "Couldn't save.");
+      failed(e?.message || "Couldn't save.", { description: "Nothing was changed. Try saving again." });
     } finally {
       setBusy(false);
     }

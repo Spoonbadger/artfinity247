@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { adminRoleOrRedirect } from "../../_components/gate";
 import { rewardSettings } from "@/lib/collectorRewards";
 import RewardsForm from "./RewardsForm";
+import { PageHead } from "../../_components/ui";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Collector rewards" };
@@ -11,15 +12,16 @@ export default async function RewardsSettingsPage() {
   const s = await rewardSettings();
   return (
     <div className="grid max-w-[720px] gap-5">
-      <div>
-        <p className="eyebrow">Settings</p>
-        <h1 className="display text-[44px] sm:text-[56px]">Collector rewards</h1>
-        <p className="text-[14px] text-ink-2">
-          A perk for buyers with a free collection: after every Nth print they&apos;re emailed a one-time code for a discount on their next order, filled in at checkout while
-          they&apos;re signed in. The discount comes out of Artfinity&apos;s share only: each print&apos;s discount is capped at Artfinity&apos;s share of its profit, and the artist&apos;s
-          share is kept at the full price. Off by default. When off, buyers see no reward copy anywhere.
-        </p>
-      </div>
+      <PageHead title="Collector rewards" sub="Every Nth print, the buyer gets a one-time discount code.">
+        <details className="text-[13px] text-ink-2">
+          <summary className="cursor-pointer font-semibold">How it works</summary>
+          <ul className="mt-1 grid list-disc gap-1 pl-5">
+            <li>For buyers with a free collection. The code fills in at checkout when they&apos;re signed in.</li>
+            <li>It comes out of Artfinity&apos;s share only. The artist is paid on the full price.</li>
+            <li>Off by default. When off, buyers see nothing about rewards.</li>
+          </ul>
+        </details>
+      </PageHead>
       {s.source === "env" ? (
         <p className="rounded-xl bg-wall p-4 text-[14px]">
           Set by the environment: <b>{s.enabled ? `on, every ${s.every}th print, ${s.pct}% off` : "off"}</b>. Change COLLECTOR_REWARDS, COLLECTOR_REWARD_EVERY and COLLECTOR_REWARD_PCT there.

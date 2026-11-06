@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { failed, saved } from "@/lib/feedback";
 import { cn } from "@/lib/utils";
 import type { NotifyPref } from "@/lib/alertKinds";
 
@@ -29,10 +29,10 @@ export default function NotifyForm({ rows }: { rows: Row[] }) {
       const r = await fetch("/api/admin/settings/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prefs }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || "");
-      toast.success("Saved");
+      saved("Saved");
       router.refresh();
     } catch (err: any) {
-      toast.error(err?.message || "Couldn't save.");
+      failed(err?.message || "Couldn't save.", { description: "Nothing was changed. Try saving again." });
     } finally {
       setBusy(false);
     }

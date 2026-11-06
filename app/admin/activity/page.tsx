@@ -4,6 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { adminOrRedirect } from "../_components/gate";
 import AuditList from "../_components/AuditList";
+import { PageHead } from "../_components/ui";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Activity" };
@@ -50,58 +51,57 @@ export default async function ActivityPage({ searchParams }: { searchParams: SP 
   const filtered = Object.entries(sp).some(([k, v]) => k !== "before" && !!v);
 
   const field = "w-full min-w-0 min-h-[40px] rounded-lg border-[1.5px] border-line bg-white px-2.5 text-[14px] text-ink";
+  const more_ = !!(sp.target || sp.id || sp.from || sp.to);
   return (
-    <div className="grid gap-6">
-      <div>
-        <p className="eyebrow">Audit log</p>
-        <h1 className="display text-[44px] sm:text-[56px]">Activity</h1>
-        <p className="mt-2 max-w-[640px] text-[15px] text-ink-2">Every admin action, who did it and when. Filter by action, admin, what it was done to, or date.</p>
-      </div>
+    <div className="grid gap-5">
+      <PageHead title="Activity" sub={`Every admin action. ${total.toLocaleString()} ${total === 1 ? "entry" : "entries"}${filtered ? " match" : ""}${sp.before ? " (older page)" : ""}`} />
 
-      <form className="af-card grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end [&>label]:min-w-0" method="get">
-        <label className="grid gap-1 text-[12.5px] font-semibold">Action
-          <select name="action" defaultValue={sp.action || ""} className={field}>
-            <option value="">All actions</option>
-            {groups.map((g) => (
-              <optgroup key={g} label={g}>
-                <option value={g}>All {g}.*</option>
-                {actions.filter((a) => a.action.startsWith(`${g}.`)).map((a) => <option key={a.action} value={a.action}>{a.action} ({a._count._all})</option>)}
-              </optgroup>
-            ))}
-          </select>
-        </label>
-        <label className="grid gap-1 text-[12.5px] font-semibold">Admin
-          <select name="admin" defaultValue={sp.admin || ""} className={field}>
-            <option value="">Anyone</option>
-            {admins.map((a) => <option key={a.adminEmail} value={a.adminEmail}>{a.adminEmail || "(no email)"}</option>)}
-          </select>
-        </label>
-        <label className="grid gap-1 text-[12.5px] font-semibold">Target
-          <select name="target" defaultValue={sp.target || ""} className={field}>
-            <option value="">Any</option>
-            {TARGETS.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
-        </label>
-        <label className="grid gap-1 text-[12.5px] font-semibold">Target id
-          <input name="id" defaultValue={sp.id || ""} placeholder="Artist, order or artwork id" className={field} />
-        </label>
-        <label className="grid gap-1 text-[12.5px] font-semibold">From
-          <input type="date" name="from" defaultValue={sp.from || ""} className={field} />
-        </label>
-        <label className="grid gap-1 text-[12.5px] font-semibold">To
-          <input type="date" name="to" defaultValue={sp.to || ""} className={field} />
-        </label>
-        <div className="flex gap-2">
-          <button type="submit" className="btn btn-blue btn-sm">Filter</button>
-          {filtered && <Link href="/admin/activity" className="btn btn-ghost btn-sm">Clear</Link>}
+      <form className="grid gap-2" method="get">
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="grid min-w-[180px] flex-1 gap-1 text-[12.5px] font-semibold sm:max-w-[260px]">Action
+            <select name="action" defaultValue={sp.action || ""} className={field}>
+              <option value="">All actions</option>
+              {groups.map((g) => (
+                <optgroup key={g} label={g}>
+                  <option value={g}>All {g}.*</option>
+                  {actions.filter((a) => a.action.startsWith(`${g}.`)).map((a) => <option key={a.action} value={a.action}>{a.action} ({a._count._all})</option>)}
+                </optgroup>
+              ))}
+            </select>
+          </label>
+          <label className="grid min-w-[180px] flex-1 gap-1 text-[12.5px] font-semibold sm:max-w-[260px]">Admin
+            <select name="admin" defaultValue={sp.admin || ""} className={field}>
+              <option value="">Anyone</option>
+              {admins.map((a) => <option key={a.adminEmail} value={a.adminEmail}>{a.adminEmail || "(no email)"}</option>)}
+            </select>
+          </label>
+          <button type="submit" className="btn btn-ghost btn-sm min-h-[40px]">Apply</button>
+          {filtered && <Link href="/admin/activity" className="min-h-[40px] content-center px-1 text-[13px] font-semibold text-ink-2 underline underline-offset-2">Clear filters</Link>}
         </div>
+        <details open={more_}>
+          <summary className="inline-flex min-h-[40px] cursor-pointer items-center text-[13.5px] font-semibold text-ink-2 hover:text-ink">More filters</summary>
+          <div className="af-panel mt-1 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end [&>label]:min-w-0">
+            <label className="grid gap-1 text-[12.5px] font-semibold">Target
+              <select name="target" defaultValue={sp.target || ""} className={field}>
+                <option value="">Any</option>
+                {TARGETS.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </label>
+            <label className="grid gap-1 text-[12.5px] font-semibold">Target id
+              <input name="id" defaultValue={sp.id || ""} placeholder="Artist, order or artwork id" className={field} />
+            </label>
+            <label className="grid gap-1 text-[12.5px] font-semibold">From
+              <input type="date" name="from" defaultValue={sp.from || ""} className={field} />
+            </label>
+            <label className="grid gap-1 text-[12.5px] font-semibold">To
+              <input type="date" name="to" defaultValue={sp.to || ""} className={field} />
+            </label>
+          </div>
+        </details>
       </form>
 
-      <section className="af-card grid gap-2 p-4">
-        <p className="num text-[13px] text-ink-2">{total.toLocaleString()} {total === 1 ? "entry" : "entries"}{sp.before ? " (older page)" : ""}</p>
-        <AuditList rows={shown} empty={filtered ? "Nothing matches these filters." : "Nothing logged yet. Admin actions show up here as they happen."} />
-        {nextHref && <Link href={nextHref} className="btn btn-ghost btn-sm justify-self-start">Older entries</Link>}
-      </section>
+      <AuditList rows={shown} empty={filtered ? "Nothing matches these filters." : "Nothing logged yet."} />
+      {nextHref && <Link href={nextHref} className="btn btn-ghost btn-sm justify-self-start">Older entries</Link>}
     </div>
   );
 }
