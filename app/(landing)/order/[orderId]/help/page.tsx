@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requestsForOrder, shippedAtFor, verifyHelp } from "@/lib/reprints";
-import { helpDeadline, helpState, reasonLabel } from "@/lib/reprintFormat";
+import { HELP_DAYS_AFTER_DELIVERY, helpDeadline, helpState, reasonLabel } from "@/lib/reprintFormat";
 import { sizeWords } from "@/lib/artistEmails";
 import { BrushStroke } from "@/components/af/Brush";
 import HelpForm, { type HelpItem } from "@/components/reprints/HelpForm";
@@ -70,7 +70,7 @@ export default async function HelpPage({ params, searchParams }: Props) {
     const copy = {
       open: { badge: "Request received", title: "We have your photos", body: <p>We&apos;ll look today or tomorrow and email you. If it&apos;s on us, we reprint it free.</p> },
       approved: { badge: "Approved", title: "Your free reprint is on its way", body: <p>We&apos;re printing it again and will email tracking when it ships. No need to send the old one back.</p> },
-      refunded: { badge: "Refunded", title: "We've refunded you", body: <p>It goes back to your original payment method and can take 5 to 10 days to show.</p> },
+      refunded: { badge: "Refunded", title: "We've refunded you", body: <p>It goes back to the card or wallet you paid with. It can take 5 to 10 business days to show.</p> },
       declined: { badge: "We looked closely", title: "We can't reprint this one", body: <p>If we got it wrong, <WriteToUs /> and tell us more.</p> },
     }[latest.status];
     return (
@@ -96,7 +96,7 @@ export default async function HelpPage({ params, searchParams }: Props) {
   if (state === "closed") {
     return (
       <Note title="It's been a while" thumbs={thumbs}>
-        <p>Free reprints are for problems sent within 14 days of delivery. Still, <WriteToUs /> with a photo and we&apos;ll see what we can do.</p>
+        <p>Free reprints are for problems sent within {HELP_DAYS_AFTER_DELIVERY} days of delivery. Still, <WriteToUs /> with a photo and we&apos;ll see what we can do.</p>
       </Note>
     );
   }

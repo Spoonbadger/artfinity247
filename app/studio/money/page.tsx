@@ -11,7 +11,7 @@ import { EmptyState } from "@/components/studio/EmptyState";
 import { Problem } from "@/components/studio/Problem";
 import { ConfirmEmailProblem } from "@/components/studio/ResendConfirmButton";
 import { dayUTC } from "@/components/money/format";
-import { connectMode } from "@/lib/stripeConnect";
+import { connectDetail, connectMode } from "@/lib/stripeConnect";
 import { getBalance, monthLabel, PAYOUT_DAY_OF_MONTH, RETURN_WINDOW_DAYS } from "@/lib/balance";
 import { FREE_SPLIT, PRO, isProActive } from "@/lib/plans";
 import { prisma } from "@/lib/prisma";
@@ -36,7 +36,7 @@ const VENMO_NOTICE: Record<string, Notice> = {
 
 const STRIPE_NOTICE: Record<string, Notice> = {
   ready: { ok: true, text: "Stripe is connected. Your payouts now go to your bank." },
-  pending: { ok: false, text: "Almost there. Stripe needs a few more details. Press Finish setup when you're ready.", fix: { label: "Finish setup", href: "#getpaid-h" } },
+  // "pending" is shown by the payout-state notice below, which carries the Finish setup button itself.
   simulated: { ok: true, text: "Connected a test Stripe account. Stripe isn't set up here, so no money moves." },
   "simulated-dashboard": { ok: false, text: "This is a test account, so there's no Stripe dashboard to open.", fix: { label: "How payouts work", href: "/help/getting-paid/how-payouts-reach-you" } },
   off: { ok: false, text: "Stripe isn't set up here yet. We'll keep paying you by Venmo.", fix: { label: "Add Venmo", href: "/studio/page#venmo" } },
@@ -50,6 +50,8 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
     prisma.artist.findUnique({ where: { id: artist.id }, select: { proUntil: true, venmoPending: true, venmoPendingAt: true, emailVerifiedAt: true, _count: { select: { artworks: true } } } }),
   ]);
   const verified = !!acct?.emailVerifiedAt;
+  // Only asks Stripe while payouts are connected but not on yet.
+  const payoutDetail = b.stripeStatus === "pending" ? await connectDetail(artist.id) : null;
   const hasArt = (acct?._count.artworks ?? 0) > 0;
   const pro = isProActive(acct);
   const pendingLive = acct?.venmoPendingAt && Date.now() - acct.venmoPendingAt.getTime() < VENMO_CONFIRM_HOURS * 3_600_000;
@@ -88,6 +90,21 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
 
       {venmoNotice && <Problem tone={venmoNotice.ok ? "success" : "error"} title={venmoNotice.text} fix={venmoNotice.fix} />}
 
+      {/* Payouts set up but not on (back from Stripe unfinished, or paused later): the reason and the fix, one click to Stripe. */}
+      {payoutDetail && (payoutDetail.state !== "setup" || searchParams.stripe === "pending") ? (
+        <div role={payoutDetail.state === "paused" ? "alert" : "status"} className={`flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border px-4 py-3 ${payoutDetail.state === "paused" ? "border-coral/50 bg-coral/10" : "border-sticker bg-sticker/20"}`}>
+          <div className="min-w-0 flex-1">
+            <p className="text-[14.5px] font-bold">{payoutDetail.state === "review" ? "Stripe is reviewing your account" : payoutDetail.state === "paused" ? "Bank payouts are paused" : "Almost there"}</p>
+            <p className="text-[13.5px] text-ink-2">{payoutDetail.reason} We pay by Venmo until then.</p>
+          </div>
+          {payoutDetail.state === "review" ? (
+            payoutDetail.reason.startsWith("Stripe couldn't") && <Link href="/contact" className="btn btn-sm shrink-0">Message us</Link>
+          ) : (
+            <form method="post" action="/api/studio/stripe/connect"><button type="submit" className="btn btn-sm shrink-0">Finish setup</button></form>
+          )}
+        </div>
+      ) : null}
+
       {/* Payout details wait for a confirmed email (lib/emailVerify.ts): say so up front, with the fix. */}
       {/* The "Confirm your email" bar at the top of every Studio page covers the usual case; this is for the Stripe bounce. */}
       {!verified && searchParams.stripe === "unverified" && (
@@ -123,7 +140,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
 
       <div className={b.payouts.length ? "grid items-start gap-4 lg:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)]" : "grid items-start gap-4 lg:grid-cols-2"}>
         {b.payouts.length > 0 && <PayoutsList payouts={b.payouts} ledger={b.ledger} adjustments={b.adjustments} lateMonths={b.lateMonths} />}
-        <GetPaidCard status={b.stripeStatus} mode={connectMode()} venmoHandle={b.venmoHandle} nextDate={dayUTC(b.nextPayout.date)} verified={verified} email={artist.email} />
+        <GetPaidCard status={b.stripeStatus} mode={connectMode()} venmoHandle={b.venmoHandle} nextDate={dayUTC(b.nextPayout.date)} verified={verified} email={artist.email} detail={payoutDetail} />
       </div>
 
       {(b.ledger.length > 0 || b.adjustments.length > 0) && <Ledger ledger={b.ledger} adjustments={b.adjustments} currentMonth={b.currentMonth} />}

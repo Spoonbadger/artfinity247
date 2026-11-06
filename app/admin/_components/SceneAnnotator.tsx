@@ -474,7 +474,7 @@ export default function SceneAnnotator({ photos, annotations, arts, writable }: 
         <section className="grid content-start gap-2">
           <div className="flex flex-wrap items-center gap-2 text-[13px]">
             <strong className="text-[15px]">{photo.id}</strong>
-            {photo.source === "fixture" ? <span className="rounded bg-[#ff2d6f] px-1.5 py-0.5 text-[11px] font-bold text-white">SYNTHETIC FIXTURE · not a photo</span> : null}
+            {photo.source === "fixture" ? <span className="rounded bg-[#b0124a] px-1.5 py-0.5 text-[11px] font-bold text-white">SYNTHETIC FIXTURE · not a photo</span> : null}
             {credit && <span className="text-ink-2">{credit}</span>}
             <span className="text-ink-2">
               {photo.w}×{photo.h}

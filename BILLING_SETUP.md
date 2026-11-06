@@ -109,3 +109,25 @@ The **Integrations** panel on the admin dashboard shows whether billing is set u
    3. Cancel in the portal and check that it shows "Cancels on …".
    4. Use card `4000 0000 0000 0341` (it attaches but then fails) and trigger the renewal with a test clock. Check for the payment-failed banner and the admin alert.
 6. Swap in the live keys and the live webhook secret.
+
+## 9. How the payment pages look (Stripe Dashboard, all payments)
+
+Stripe hosts the payment page, the receipts and the billing portal, so their look and wording live in the Stripe
+Dashboard, not in the code. Set these once (in test mode and again in live mode) for every Artfinity payment: buyer
+prints, Infinity, painting scans, printed QR codes and bulk prints.
+
+| Where in the Dashboard | Set it to |
+|---|---|
+| Settings → Business → **Public details** | Business name **Artfinity**. Support email **support@theartfinity.com**. Website **https://theartfinity.com**. Terms of service **/terms-and-conditions** and privacy policy **/privacy-policy** (full https links). |
+| Settings → Business → **Branding** | Icon: the square Artfinity mark (`public/` app icon, 512 px). Logo: the Artfinity wordmark. Brand colour **#2b37f0** (Scan Blue). Accent colour **#15161b** (ink). |
+| Settings → Payments → **Checkout and Payment Links** | Turn on **Contact information** and **Legal policies**, so the terms and privacy links show under the Pay button. Turn on the **refund policy** and say: damaged, misprinted or wrong prints are reprinted free within 14 days of delivery (`HELP_DAYS_AFTER_DELIVERY`); no change-of-mind returns, each print is made to order. Leave "require agreement to terms" off: the code doesn't send `consent_collection`. |
+| Settings → Business → **Statement descriptor** | Statement descriptor **ARTFINITY**, shortened descriptor **ARTFINITY**. Checkout adds the order code as a suffix, so cards show `ARTFINITY* XX1KP4` (prints and bulk), the CP-code for printed QR codes and the SC-code for scans. Keep the shortened one to 10 characters or fewer. |
+| Settings → Customer emails | Turn on **Successful payments** and **Refunds**. Under Billing, turn on **Email finalized invoices** and **failed payment** emails, so Infinity subscribers get Stripe's receipt with the amount and tax every month. |
+| Settings → Billing → **Customer portal** | Same branding applies. Headline "Artfinity Infinity". See section 3 for the cancel settings. |
+| Settings → Payments → **Payment methods** | Cards, **Apple Pay** and **Google Pay** on (the checkout page promises these). Apple Pay needs the domain verified: Settings → Payment method domains → add theartfinity.com. |
+
+What the code already sends on every Checkout Session (so nobody needs to set it in the Dashboard): line items with the
+print image and "Print — title by artist, size", `submit_type: "pay"`, US shipping address collection (prints), the
+buyer's email when known, a delivery-date note above the address and a reprint note under the button (`custom_text`),
+the order code in `payment_intent_data.description`, a 2-hour expiry, and Stripe Tax exactly as before (lib/tax.ts).
+Promotion codes are off for prints.

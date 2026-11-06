@@ -17,7 +17,7 @@ export default function Page() {
           <h2>Damaged, misprinted or wrong</h2>
           <p>We&apos;ll make it right, at no cost to you.</p>
           <ul>
-            <li>Within 14 days of delivery, tap &ldquo;Problem with your print?&rdquo; in your shipping email and add a photo. No need to send it back.</li>
+            <li>Within {HELP_DAYS_AFTER_DELIVERY} days of delivery, tap &ldquo;Problem with your print?&rdquo; in your shipping email and add a photo. No need to send it back.</li>
             <li>
               No email handy? Write to <a href="mailto:support@theartfinity.com">support@theartfinity.com</a> with your order number and a photo.
             </li>
