@@ -134,7 +134,7 @@
   .box-inset { @apply rounded-xl bg-wall/70; }
   :is(.box, .af-card, .af-panel) :is(.box, .af-card, .af-panel) { border-color: transparent; background-color: rgb(var(--af-wall-rgb) / 0.6); }
   .af-field { @apply grid gap-0.5 rounded-xl border-2 border-ink bg-white px-3.5 py-2.5 transition focus-within:border-scan focus-within:shadow-[0_0_0_3px_#d9dcff]; }
-  .af-field > small, .af-field > span.label { @apply text-xs text-ink-2; }
+  .af-field > small, .af-field > span.label { @apply text-[13px] text-ink-2; }
   .af-field input, .af-field textarea, .af-field select { @apply w-full min-w-0 border-0 bg-transparent p-0 text-[17px] text-ink outline-none; }
   .af-hard-shadow { box-shadow: 8px 8px 0 var(--af-ink); }
 

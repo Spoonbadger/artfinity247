@@ -81,8 +81,8 @@ a readable column (about 68 characters) and clear steps between title, section a
 - A box inside a box loses its border and gets a faint tint. This happens on its own for `.box` inside `.box`;
   elsewhere use `.box-inset`.
 - Secondary buttons (`btn btn-ghost`) have a gray edge that turns ink on hover. Solid `btn` and `btn-blue` are unchanged.
-- Ink edges stay where they mean "you can type here" or "this is chosen": text inputs and selects (`.af-field`,
-  ink border, blue on focus; keep 3:1 or more), the selected chip, tab or option card, toggles, and previews of
+- Strong edges stay where they mean "you can type here" or "this is chosen": text inputs and selects use the
+  `--af-field-edge` gray (3:1 or more, blue on focus; `.af-field` keeps its ink border), the selected chip, tab or option card, toggles, and previews of
   printed things (QR cards, link-page and video previews, the certificate).
 - Notices use their tone's colour for the edge (`border-sticker`, `border-coral`), never ink.
 - Borders are 1px for boxes and 1.5px for buttons and chips. No `border-2 border-ink` on a box.
