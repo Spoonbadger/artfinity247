@@ -168,7 +168,7 @@ export default function EventsBoard({ initial }: { initial: StudioEvent[] }) {
             dab="#7b2d8e"
             title="Nothing on the calendar"
             body="Add your next market or show. Tag codes with it to see what sold there."
-            secondary={{ label: "Print codes for it", href: "/studio/qr" }}
+            help={{ label: "Tagging codes with events", href: "/help/qr-codes/scan-tracking" }}
           />
         )}
         <ul className="grid gap-3">
