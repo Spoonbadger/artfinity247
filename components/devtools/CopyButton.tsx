@@ -24,7 +24,7 @@ export default function CopyButton({ text, label = "Copy", className }: { text: 
       type="button"
       onClick={copy}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[12.5px] font-semibold text-white transition hover:bg-white/20",
+        "inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[13px] font-semibold text-white transition hover:bg-white/20",
         done && "border-[#9fe0bf] text-[#9fe0bf]",
         className,
       )}

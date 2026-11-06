@@ -101,7 +101,7 @@ export default function Medal({
     const p = MEDAL_PAINT[tier];
     return (
       <span
-        className={cn("inline-flex items-center gap-1.5 rounded-full border-[1.5px] py-0.5 pl-1 pr-2.5 font-body text-[12.5px] font-bold tracking-normal [font-variation-settings:normal]", className)}
+        className={cn("inline-flex items-center gap-1.5 rounded-full border-[1.5px] py-0.5 pl-1 pr-2.5 font-body text-[13px] font-bold tracking-normal [font-variation-settings:normal]", className)}
         style={{ borderColor: p.shade, background: p.light, color: p.ink }}
         title={long}
       >

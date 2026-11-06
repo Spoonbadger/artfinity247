@@ -107,7 +107,7 @@ export default function BarChart({ buckets, series, mode = "stack", label }: { b
       </svg>
       {h && hover !== null && (
         <div
-          className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg border border-line bg-white px-2.5 py-1.5 text-[12.5px] shadow-[0_4px_14px_rgba(21,22,27,.12)]"
+          className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg border border-line bg-white px-2.5 py-1.5 text-[13px] shadow-[0_4px_14px_rgba(21,22,27,.12)]"
           style={{ left: `${Math.min(84, Math.max(16, ((PAD_L + hover * step + step / 2) / W) * 100))}%` }}
         >
           <b className="block text-[13px]">{h.sub || h.label}</b>
@@ -129,7 +129,7 @@ export default function BarChart({ buckets, series, mode = "stack", label }: { b
 /** Legend row: swatch + name. Always shown for 2+ series. */
 export function Legend({ series }: { series: Series[] }) {
   return (
-    <ul className="flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-ink-2">
+    <ul className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-ink-2">
       {series.map((s) => (
         <li key={s.name} className="flex items-center gap-1.5">
           <i

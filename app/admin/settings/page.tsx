@@ -19,7 +19,7 @@ export default async function SettingsPage() {
 
       <section aria-labelledby="refund-h" className="af-panel grid gap-3 p-4 sm:p-5">
         <div>
-          <h2 id="refund-h" className="text-[18px] font-bold">Refunds after a payout</h2>
+          <h2 id="refund-h" className="t-card">Refunds after a payout</h2>
           <p className="text-[14px] text-ink-2">For a buyer return or chargeback after the artist was paid.</p>
         </div>
         {refund.source === "env" ? (
@@ -40,7 +40,7 @@ export default async function SettingsPage() {
       </section>
 
       <section aria-labelledby="more-h" className="af-panel grid gap-2 p-4 sm:p-5">
-        <h2 id="more-h" className="text-[18px] font-bold">Elsewhere</h2>
+        <h2 id="more-h" className="t-card">Elsewhere</h2>
         <ul className="grid gap-2 text-[14.5px]">
           <li>
             <Link href="/admin" className="font-semibold text-scan">90-day test start</Link>{" "}

@@ -177,7 +177,7 @@ export default async function SalesPage({ searchParams }: { searchParams: { when
         <>
           <section className="af-card min-w-0 p-4 sm:p-5" aria-labelledby="orders-h">
             <div className="mb-2 flex items-baseline justify-between gap-2">
-              <h2 id="orders-h" className="text-[20px] font-bold">Orders <span className="num text-[14px] font-semibold text-ink-2">{sales.length}</span></h2>
+              <h2 id="orders-h" className="t-card">Orders <span className="num text-[14px] font-semibold text-ink-2">{sales.length}</span></h2>
             </div>
             <div className="-mx-1 overflow-x-auto px-1">
             <table className="num w-full border-collapse text-[14px]">
@@ -220,7 +220,7 @@ export default async function SalesPage({ searchParams }: { searchParams: { when
                       <b className="block text-earned">+{usd(s.shareCents)}</b>
                       <span className="whitespace-nowrap text-[11.5px] text-ink-2">{Math.round(s.split * 100)}%{bucket.get(s.id) ? ` · ${BUCKET_LABEL[bucket.get(s.id)!]}` : ""}</span>
                     </td>
-                    <td className="col-start-2 text-[12.5px] text-ink-2 sm:hidden">
+                    <td className="col-start-2 text-[13px] text-ink-2 sm:hidden">
                       {shortDate(s.date)} · {SIZE_LABEL[s.size]} · {usd(s.priceCents)}{x && <> · <span className="whitespace-nowrap">−{usd(x.expenses)} costs</span></>}
                       {x && <> · <Link href={customerHref(x.email)} className="font-semibold text-scan">{buyer}</Link></>}
                     </td>
@@ -230,7 +230,7 @@ export default async function SalesPage({ searchParams }: { searchParams: { when
               </tbody>
             </table>
             </div>
-            <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 border-t border-line pt-3 text-[12.5px] text-ink-2">
+            <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 border-t border-line pt-3 text-[13px] text-ink-2">
               <span>You get {pctNow}% of profit{splitNow > 0.6 ? " with Infinity" : ""}. Orders before Oct 21, 2026 paid 50%.</span>
               {!showAll && <Link href={allHref} scroll={false} className="text-[14px] font-bold text-scan">Show all {sales.length}</Link>}
             </div>
@@ -247,7 +247,7 @@ export default async function SalesPage({ searchParams }: { searchParams: { when
                   <div className="h-3 overflow-hidden rounded-full bg-wall" aria-hidden="true">
                     <div className="h-full rounded-full bg-earned" style={{ width: `${Math.max(4, (m.share / maxShare) * 100)}%` }} />
                   </div>
-                  <span className="num text-[12.5px] text-ink-2">{m.prints} {m.prints === 1 ? "print" : "prints"} · {usd(m.gross)} in sales</span>
+                  <span className="num text-[13px] text-ink-2">{m.prints} {m.prints === 1 ? "print" : "prints"} · {usd(m.gross)} in sales</span>
                 </li>
               ))}
             </ul>
@@ -261,7 +261,7 @@ export default async function SalesPage({ searchParams }: { searchParams: { when
 function Total({ label, value, earned = false }: { label: string; value: string; earned?: boolean }) {
   return (
     <div className="grid min-w-0 gap-0.5">
-      <span className="truncate text-[12.5px] text-ink-2">{label}</span>
+      <span className="truncate text-[13px] text-ink-2">{label}</span>
       <b className={`display num truncate text-[24px] leading-tight sm:text-[28px] ${earned ? "text-earned" : ""}`}>{value}</b>
     </div>
   );

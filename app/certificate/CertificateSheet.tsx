@@ -47,9 +47,9 @@ export default function CertificateSheet({ c }: { c: Certificate }) {
             Print {c.printNo} of {c.editionSize}
           </p>
         </div>
-        <p className="mt-2 text-[12.5px] text-ink-2">Limited edition. No more than {c.editionSize} prints will ever be made, in any size.</p>
+        <p className="mt-2 text-[13px] text-ink-2">Limited edition. No more than {c.editionSize} prints will ever be made, in any size.</p>
 
-        <dl className="mt-6 grid w-full max-w-[6.2in] grid-cols-2 gap-x-8 gap-y-3 border-y border-ink/20 py-4 text-left text-[12.5px] leading-snug">
+        <dl className="mt-6 grid w-full max-w-[6.2in] grid-cols-2 gap-x-8 gap-y-3 border-y border-ink/20 py-4 text-left text-[13px] leading-snug">
           <div><dt className="eyebrow !text-[10px]">Size</dt><dd className="num mt-0.5">{SIZE_LABEL[c.size]} · {sizeInches(c.size)}</dd></div>
           <div><dt className="eyebrow !text-[10px]">Ordered</dt><dd className="num mt-0.5">{longDate(c.orderDate)}</dd></div>
           <div className="col-span-2"><dt className="eyebrow !text-[10px]">Print</dt><dd className="mt-0.5">12-color giclée on smooth matte, FSC-certified 310gsm archival paper, with a ½-inch border</dd></div>

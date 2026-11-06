@@ -104,7 +104,7 @@ export default async function ProPage({ searchParams }: { searchParams?: { billi
 
   return (
     <StudioPage
-      title={plan.active ? "Infinity plan" : <>Go <Brushed>Infinity</Brushed></>}
+      title={plan.active ? "Infinity plan" : "Go Infinity"}
       sub={plan.active ? `${pct(PRO.split)} of profit on new orders.` : `${proPrice()} a month. Or bring an artist and get it free.`}
       actions={
         <>
@@ -143,7 +143,7 @@ export default async function ProPage({ searchParams }: { searchParams?: { billi
             </div>
           ) : (
             <div className="grid gap-1">
-              <h2 id="plan-h" className="text-[20px] font-bold">What you get</h2>
+              <h2 id="plan-h" className="t-card">What you get</h2>
               <p className="text-[14px] text-ink-2">You&apos;re on Free: {pct(FREE_SPLIT)} of profit.</p>
             </div>
           )}
@@ -158,14 +158,14 @@ export default async function ProPage({ searchParams }: { searchParams?: { billi
           <div className="relative">
             <BillingPanel mode={billing.mode} kind={view.kind} intervals={billing.intervals} freeMonthsUntil={freeMonthsUntil} onDark={dark} autoStart={searchParams?.start === "1" && !plan.active} tax={billing.mode === "simulated" ? "test" : BILLING_TAX_ENABLED ? "added" : "none"} />
           </div>
-          <p className={dark ? "relative text-[12.5px] text-white/70" : "text-[12.5px] text-ink-2"}>
+          <p className={dark ? "relative text-[13px] text-white/70" : "text-[13px] text-ink-2"}>
             The higher share counts for orders placed while {PRO.name} is on. Earlier orders keep theirs.
           </p>
         </div>
 
         {/* Does it pay for itself? From their own last 30 days */}
         <div className="af-panel grid content-start gap-3 p-5 sm:p-6" aria-labelledby="worth-h" role="region">
-          <h2 id="worth-h" className="text-[20px] font-bold">Does it pay for itself?</h2>
+          <h2 id="worth-h" className="t-card">Does it pay for itself?</h2>
           {worth.prints === 0 ? (
             <p className="text-[15px] text-ink-2">No sales in the last 30 days. It pays for itself once the extra {pct(PRO.split - FREE_SPLIT)} passes {proPrice()} a month.</p>
           ) : (
@@ -176,10 +176,10 @@ export default async function ProPage({ searchParams }: { searchParams?: { billi
                   : `Not yet. Your last 30 days would leave you ${money(-worth.netCents)} short. Referral months cost nothing.`}
               </p>
               <dl className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl bg-white p-3"><dt className="text-[12.5px] text-ink-2">Prints, last 30 days</dt><dd className="num text-[20px] font-bold">{worth.prints}</dd></div>
-                <div className="rounded-xl bg-white p-3"><dt className="text-[12.5px] text-ink-2">Profit on them</dt><dd className="num text-[20px] font-bold">{money(worth.profitCents)}</dd></div>
-                <div className="rounded-xl bg-white p-3"><dt className="text-[12.5px] text-ink-2">Extra {pct(PRO.split - FREE_SPLIT)}</dt><dd className="num text-[20px] font-bold text-earned">+{money(worth.extraCents)}</dd></div>
-                <div className="rounded-xl bg-white p-3"><dt className="text-[12.5px] text-ink-2">{PRO.name} costs</dt><dd className="num text-[20px] font-bold">−{money(worth.priceCents)}</dd></div>
+                <div className="rounded-xl bg-white p-3"><dt className="text-[13px] text-ink-2">Prints, last 30 days</dt><dd className="num text-[20px] font-bold">{worth.prints}</dd></div>
+                <div className="rounded-xl bg-white p-3"><dt className="text-[13px] text-ink-2">Profit on them</dt><dd className="num text-[20px] font-bold">{money(worth.profitCents)}</dd></div>
+                <div className="rounded-xl bg-white p-3"><dt className="text-[13px] text-ink-2">Extra {pct(PRO.split - FREE_SPLIT)}</dt><dd className="num text-[20px] font-bold text-earned">+{money(worth.extraCents)}</dd></div>
+                <div className="rounded-xl bg-white p-3"><dt className="text-[13px] text-ink-2">{PRO.name} costs</dt><dd className="num text-[20px] font-bold">−{money(worth.priceCents)}</dd></div>
               </dl>
             </>
           )}
@@ -208,7 +208,7 @@ export default async function ProPage({ searchParams }: { searchParams?: { billi
           </div>
           <figure className="hidden justify-items-center gap-2 rounded-xl bg-white p-4 md:grid">
             <QRCode value={link} dots="rounded" eyes="frame" eyeColor="#2b37f0" className="w-full max-w-[148px]" />
-            <figcaption className="text-center text-[12.5px] text-ink-2">Scan to join with your link</figcaption>
+            <figcaption className="text-center text-[13px] text-ink-2">Scan to join with your link</figcaption>
           </figure>
         </div>
 
@@ -241,7 +241,7 @@ export default async function ProPage({ searchParams }: { searchParams?: { billi
                           <i className="paint-dab !h-2.5 !w-2.5" style={{ ["--dab" as string]: DAB[r.status] }} aria-hidden="true" />
                           {t.label}
                         </span>
-                        {t.note && <span className="text-[12.5px] text-ink-2">{t.note}</span>}
+                        {t.note && <span className="text-[13px] text-ink-2">{t.note}</span>}
                       </span>
                     );
                   })()}

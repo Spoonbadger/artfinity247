@@ -137,7 +137,7 @@ export default async function TeamPage() {
       />
 
       <section aria-labelledby="inv-h" className="grid gap-2">
-        <h2 id="inv-h" className="text-[18px] font-bold">Invites</h2>
+        <h2 id="inv-h" className="t-card">Invites</h2>
         <DataTable
           id="team-invites"
           caption="Invites"

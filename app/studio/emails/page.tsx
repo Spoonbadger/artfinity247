@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { Brushed } from "@/components/af/Brush";
 import { StudioPage } from "@/components/studio/StudioPage";
 import EmailEditor, { type EditorTemplate } from "@/components/crm/EmailEditor";
 import { DEFAULT_TEMPLATES, EMAIL_KINDS, type EmailKind } from "@/lib/artistEmails";
@@ -33,7 +32,7 @@ export default async function EmailsPage() {
 
   return (
     <StudioPage
-      title={<>Buyer <Brushed>emails</Brushed></>}
+      title="Buyer emails"
       sub="What buyers get, in your words."
       actions={
         <Link href="/studio/customers" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">

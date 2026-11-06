@@ -195,7 +195,7 @@ function SaveSheet({ open, onClose, artworkId, title }: { open: boolean; onClose
             <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute left-[-9999px] h-px w-px opacity-0" />
             {error && <p role="alert" className="text-[14px] font-semibold text-coral">{error}</p>}
             <button type="submit" disabled={busy} className="btn btn-blue w-full py-3 text-[16px]">{busy ? "Sending…" : "Email me a link"}</button>
-            <p className="text-center text-[12.5px] text-ink-2">
+            <p className="text-center text-[13px] text-ink-2">
               Your collection keeps your orders, wishlist and followed artists. <Link href="/help/buyers/orders-and-wishlist" className="underline underline-offset-2">How it works</Link>
             </p>
           </form>

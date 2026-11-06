@@ -237,7 +237,7 @@ function Who({ r, compact = false }: { r: VerRow; compact?: boolean }) {
           {r.email}
           {r.city ? ` · ${r.city}` : ""}
         </span>
-        <span className="num text-[12.5px] text-ink-2">
+        <span className="num text-[13px] text-ink-2">
           {r.printsSold} prints sold · joined {fmtDate(r.joined)}
           {r.status === "VERIFIED" && r.verifiedAt ? ` · verified ${fmtDate(r.verifiedAt)}` : ""}
           {r.status === "REJECTED" && r.requestedAt ? ` · last sent ${fmtDate(r.requestedAt)}` : ""}

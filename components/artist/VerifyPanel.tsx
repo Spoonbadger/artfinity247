@@ -93,7 +93,7 @@ export default function VerifyPanel({ initial, name, slug }: { initial: State; n
         <section aria-label="Status" className="af-card grid gap-3 p-4 sm:p-5">
           <div className="flex flex-wrap items-center gap-3">
             <span className="paint-dab h-4 w-5" style={{ ["--dab" as string]: st.dab }} aria-hidden="true" />
-            <h2 className="text-[20px] font-bold">{st.label}</h2>
+            <h2 className="t-card">{st.label}</h2>
             {s.status === "PENDING" && s.requestedAt && <span className="text-[13.5px] text-ink-2">Sent {fmtDate(s.requestedAt)}</span>}
           </div>
 
@@ -139,7 +139,7 @@ export default function VerifyPanel({ initial, name, slug }: { initial: State; n
         {editing && s.status !== "VERIFIED" && (
           <form onSubmit={submit} className="af-card grid gap-4 p-4 sm:p-5" aria-labelledby="ev-h" noValidate>
             <div className="grid gap-1">
-              <h2 id="ev-h" className="text-[20px] font-bold">{s.status === "NONE" ? "Show us it's you" : s.status === "PENDING" ? "Update evidence" : "Send it again"}</h2>
+              <h2 id="ev-h" className="t-card">{s.status === "NONE" ? "Show us it's you" : s.status === "PENDING" ? "Update evidence" : "Send it again"}</h2>
               {s.status === "NONE" && <p className="text-[14px] text-ink-2">A link and a photo. Takes a minute.</p>}
             </div>
 

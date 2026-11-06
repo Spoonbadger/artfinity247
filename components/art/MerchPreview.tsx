@@ -6,7 +6,7 @@ type Props = { imageUrl: string; title: string; artistFirstName: string };
 
 const CARD = "grid content-start gap-2";
 const LABEL = "text-[14px] font-bold leading-tight";
-const SUB = "text-[12.5px] text-ink-2";
+const SUB = "text-[13px] text-ink-2";
 
 function Tote({ src, id }: { src: string; id: string }) {
   return (

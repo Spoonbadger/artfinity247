@@ -71,7 +71,7 @@ function Background({ data, theme, mode }: { data: LinksPageData; theme: LinksTh
             type="button"
             onClick={() => setRevealed(true)}
             title={`Background marked: ${art.sensitive.join(", ")}`}
-            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full bg-white/85 px-3.5 text-[12.5px] font-bold text-ink shadow-sm backdrop-blur"
+            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full bg-white/85 px-3.5 text-[13px] font-bold text-ink shadow-sm backdrop-blur"
           >
             <EyeOff className="h-4 w-4" aria-hidden="true" />
             Show background
@@ -167,7 +167,7 @@ function ShopCard({ data, theme }: { data: LinksPageData; theme: LinksTheme }) {
       <a href={artistPath(data.slug)} className="flex min-h-[50px] items-center justify-between gap-3 rounded-[inherit] px-3 py-2 no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-current">
         <span className="grid text-left leading-tight">
           <b className="text-[16px]">Shop my prints</b>
-          <span className="text-[12.5px] opacity-75">Printed and shipped by Artfinity</span>
+          <span className="text-[13px] opacity-75">Printed and shipped by Artfinity</span>
         </span>
         <ArrowRight className="h-5 w-5 shrink-0" aria-hidden="true" />
       </a>
@@ -323,7 +323,7 @@ export default function LinkPage({ data, theme: themeOverride, mode = "page" }: 
         <a
           href="/register?ref=links"
           className={cn(
-            "mt-auto inline-flex items-center gap-1.5 rounded-full px-3 pb-1 pt-8 text-[12.5px] font-semibold no-underline opacity-90 hover:opacity-100",
+            "mt-auto inline-flex items-center gap-1.5 rounded-full px-3 pb-1 pt-8 text-[13px] font-semibold no-underline opacity-90 hover:opacity-100",
             !darkText && "[text-shadow:0_1px_6px_rgba(0,0,0,.5)]"
           )}
         >

@@ -87,7 +87,7 @@ function Hung({ w, i, edition, handle }: { w: PublicWork; i: number; edition: Ed
         <div className="mx-auto mt-4 flex w-fit max-w-full items-center gap-3 rounded-[2px] bg-white/80 px-3 py-1.5 shadow-[0_1px_0_rgba(21,22,27,.08)]">
           <span className="min-w-0 leading-tight">
             <b className="block truncate text-[14.5px] group-hover:underline">{w.title}</b>
-            <span className="num text-[12.5px] text-ink-2">Prints from {money(w.fromCents)}</span>
+            <span className="num text-[13px] text-ink-2">Prints from {money(w.fromCents)}</span>
           </span>
           <EditionBadge edition={edition} compact />
         </div>
@@ -111,7 +111,7 @@ function Neighbor({ dir, artistSlug, c }: { dir: "prev" | "next"; artistSlug: st
         </span>
       )}
       <span className="min-w-0 flex-1 leading-tight">
-        <span className="flex items-center gap-1 text-[12.5px] font-semibold text-ink-2 [justify-content:inherit]">
+        <span className="flex items-center gap-1 text-[13px] font-semibold text-ink-2 [justify-content:inherit]">
           {dir === "prev" ? <><ArrowLeft className="h-3.5 w-3.5" aria-hidden />Previous</> : <>Next<ArrowRight className="h-3.5 w-3.5" aria-hidden /></>}
         </span>
         <b className="block truncate font-display text-[20px] [font-variation-settings:'wdth'_80] group-hover:underline">{c.title}</b>

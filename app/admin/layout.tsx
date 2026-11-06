@@ -70,7 +70,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
       </header>
       <div className="mx-auto grid max-w-[1400px] gap-x-8 px-4 pb-20 pt-4 sm:px-6 lg:grid-cols-[200px_minmax(0,1fr)] lg:pt-8">
         <AdminNav counts={counts} role={admin.adminRole} />
-        <main className="min-w-0 pt-4 lg:pt-0 [&>div]:grid-cols-[minmax(0,1fr)]"><AdminRoleProvider role={admin.adminRole}>{children}</AdminRoleProvider></main>
+        <main className="af-app min-w-0 pt-4 lg:pt-0 [&>div]:grid-cols-[minmax(0,1fr)]"><AdminRoleProvider role={admin.adminRole}>{children}</AdminRoleProvider></main>
       </div>
     </div>
   );

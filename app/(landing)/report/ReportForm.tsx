@@ -125,7 +125,7 @@ export default function ReportForm({ art, mode = "report" }: { art: ReportArt | 
             <span className="eyebrow">{counter ? "Removed work" : "You’re reporting"}</span>
             <b className="truncate text-[17px]">{art.title}</b>
             <span className="truncate text-[14px] text-ink-2">by {art.artist}</span>
-            <span className="truncate text-[12.5px] text-ink-2">{SITE_URL.replace(/^https?:\/\//, "")}/art/{art.slug}</span>
+            <span className="truncate text-[13px] text-ink-2">{SITE_URL.replace(/^https?:\/\//, "")}/art/{art.slug}</span>
           </div>
         </div>
       ) : (

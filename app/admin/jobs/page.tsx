@@ -121,7 +121,7 @@ export default async function AdminJobsPage() {
                       <span className="text-ink-2">never</span>
                     )}
                   </p>
-                  {s === "failed" && lastOk && <p className="text-[12.5px] text-ink-2">Last good run {when(lastOk)}.</p>}
+                  {s === "failed" && lastOk && <p className="text-[13px] text-ink-2">Last good run {when(lastOk)}.</p>}
                 </div>
                 <div className="flex flex-wrap items-center gap-2 md:justify-end">
                   {j.name === "bookkeeping" && canMoney && (
@@ -137,7 +137,7 @@ export default async function AdminJobsPage() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <section aria-labelledby="books-h" className="af-panel grid content-start gap-3 p-4 sm:p-5">
-          <h2 id="books-h" className="text-[18px] font-bold">Bookkeeping export</h2>
+          <h2 id="books-h" className="t-card">Bookkeeping export</h2>
           <p className="text-[14px] text-ink-2" title="Gross sales, tax, Artfinity profit, artist share and payouts, reprint costs, refunds, plus one line per order.">
             The month&apos;s books as a CSV. Emailed to the owners on the 1st.
           </p>
@@ -164,7 +164,7 @@ export default async function AdminJobsPage() {
             {setup.map((x) => (
               <li key={x.name} className="grid grid-cols-[14px_minmax(0,1fr)] gap-x-3">
                 <span role="img" aria-label={x.ok ? "Set" : "Not set"} className="mt-1.5 inline-block h-3 w-3 rounded-full" style={{ background: x.ok ? "var(--af-earned)" : "#e3b23c" }} />
-                <span className="text-[14px]"><code className="text-[12.5px] font-bold">{x.name}</code> <span className="text-ink-2">{x.ok ? "set" : "not set"}. {x.note}</span></span>
+                <span className="text-[14px]"><code className="text-[13px] font-bold">{x.name}</code> <span className="text-ink-2">{x.ok ? "set" : "not set"}. {x.note}</span></span>
               </li>
             ))}
           </ul>
@@ -172,7 +172,7 @@ export default async function AdminJobsPage() {
       </div>
 
       <section aria-labelledby="runs-h" className="grid gap-2">
-        <h2 id="runs-h" className="text-[18px] font-bold">Recent runs</h2>
+        <h2 id="runs-h" className="t-card">Recent runs</h2>
         <DataTable
           id="job-runs"
           caption="Recent job runs"

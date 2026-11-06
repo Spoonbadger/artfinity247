@@ -28,7 +28,7 @@ export default function ProCard({ active, proUntil }: { active: boolean; proUnti
       </span>
       <span className="relative flex flex-wrap items-center gap-x-4 gap-y-2">
         <StartInfinityButton className="btn btn-sticker btn-sm min-h-[44px] md:min-h-0" included includedClassName="!text-white hover:!text-white" />
-        <Link href="/studio/infinity#referrals" className="sticker-badge !rotate-0 !text-[12.5px] no-underline">Or share, get 2 months free</Link>
+        <Link href="/studio/infinity#referrals" className="sticker-badge !rotate-0 !text-[13px] no-underline">Or share, get 2 months free</Link>
       </span>
     </div>
   );

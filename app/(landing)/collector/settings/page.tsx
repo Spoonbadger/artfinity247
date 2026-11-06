@@ -18,7 +18,7 @@ export default async function CollectorSettings() {
         <h1 className="display text-[44px] sm:text-[56px]">Settings</h1>
       </div>
       <section aria-labelledby="acct-h" className="grid gap-3 rounded-2xl border border-line bg-white p-5">
-        <h2 id="acct-h" className="text-[18px] font-bold">Your collection</h2>
+        <h2 id="acct-h" className="t-card">Your collection</h2>
         <dl className="grid gap-1 text-[15px]">
           <div className="flex flex-wrap gap-2"><dt className="text-ink-2">Email</dt><dd className="min-w-0 break-words font-semibold">{me.email}</dd></div>
           <div className="flex flex-wrap gap-2"><dt className="text-ink-2">Since</dt><dd>{me.createdAt.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</dd></div>
@@ -28,7 +28,7 @@ export default async function CollectorSettings() {
         <SignOutButton className="btn btn-ghost btn-sm w-fit min-h-[44px] px-4" />
       </section>
       <section aria-labelledby="del-section-h" className="grid gap-3 rounded-2xl border border-line bg-white p-5">
-        <h2 id="del-section-h" className="text-[18px] font-bold">Delete your collection</h2>
+        <h2 id="del-section-h" className="t-card">Delete your collection</h2>
         <p className="text-[14.5px] text-ink-2">
           Your wishlist goes right away. Orders stay on record for tax, and your order emails still work. Follows are separate: unfollow on your collection page.
         </p>

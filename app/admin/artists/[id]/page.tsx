@@ -198,7 +198,7 @@ export default async function AdminArtistPage({ params }: { params: { id: string
       {a.suspendedAt && (
         <Problem tone="error" title={`Suspended: ${a.suspendedReason || "no reason given"}`}>Pages 404, codes go nowhere, checkout is blocked.</Problem>
       )}
-      {teammate && <p className="text-[12.5px] text-ink-2">Another admin&apos;s account: only an owner can change its sign-in, email or profile.</p>}
+      {teammate && <p className="text-[13px] text-ink-2">Another admin&apos;s account: only an owner can change its sign-in, email or profile.</p>}
 
       <section aria-label="Money" className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="Ready to pay" value={usd(balance.availableCents)} earned />
@@ -326,7 +326,7 @@ export default async function AdminArtistPage({ params }: { params: { id: string
                 {billing.mode === "live" && <ActionButton url={billingTarget} body={{ action: "sync" }} need="money" label="Sync from Stripe" title="Re-read the subscription from Stripe?" confirm="Updates the status, period and Infinity date from Stripe." confirmLabel="Sync" done="Synced" />}
               </div>
             )}
-            {subLive && infinity && <p className="mt-2 text-[12.5px] text-ink-2">To take Infinity away from a paying artist, cancel the subscription here first; End Infinity is blocked while it&apos;s live.</p>}
+            {subLive && infinity && <p className="mt-2 text-[13px] text-ink-2">To take Infinity away from a paying artist, cancel the subscription here first; End Infinity is blocked while it&apos;s live.</p>}
           </Card>
 
           <Card fold title="Referrals">
@@ -396,7 +396,7 @@ export default async function AdminArtistPage({ params }: { params: { id: string
               fields={blocker ? [] : [{ name: "confirm", label: `Type ${a.slug}`, required: true }]} confirmLabel="Delete forever" done="Deleted" />
           )}
         </div>
-        {blocker && roleCan(me.adminRole, "deleteAccount") && <p className="mt-2 text-[12.5px] text-ink-2">Can&apos;t delete permanently: {blocker}</p>}
+        {blocker && roleCan(me.adminRole, "deleteAccount") && <p className="mt-2 text-[13px] text-ink-2">Can&apos;t delete permanently: {blocker}</p>}
       </details>
     </div>
   );
@@ -409,7 +409,7 @@ function Stat({ label, value, earned }: { label: string; value: string; earned?:
   return (
     <div className="rounded-xl border border-line bg-white p-3">
       <b className={cn("num block text-[22px]", earned && "text-earned")}>{value}</b>
-      <span className="text-[12.5px] text-ink-2">{label}</span>
+      <span className="text-[13px] text-ink-2">{label}</span>
     </div>
   );
 }
@@ -418,8 +418,8 @@ function Card({ title, sub, id, children, fold, open }: { title: string; sub?: s
     return (
       <details id={id} open={open} className="af-panel group p-4">
         <summary className="flex cursor-pointer list-none flex-wrap items-baseline gap-x-2 [&::-webkit-details-marker]:hidden">
-          <h2 className="text-[16px] font-bold">{title}</h2>
-          {sub && <span className="text-[12.5px] text-ink-2">{sub}</span>}
+          <h2 className="t-card">{title}</h2>
+          {sub && <span className="text-[13px] text-ink-2">{sub}</span>}
           <span aria-hidden="true" className="ml-auto text-ink-2 transition group-open:rotate-180">▾</span>
         </summary>
         <div className="mt-2 grid gap-2">{children}</div>
@@ -429,8 +429,8 @@ function Card({ title, sub, id, children, fold, open }: { title: string; sub?: s
   return (
     <section id={id} className="af-panel grid content-start gap-2 p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-        <h2 className="text-[16px] font-bold">{title}</h2>
-        {sub && <span className="text-[12.5px] text-ink-2">{sub}</span>}
+        <h2 className="t-card">{title}</h2>
+        {sub && <span className="text-[13px] text-ink-2">{sub}</span>}
       </div>
       {children}
     </section>

@@ -50,7 +50,7 @@ export default async function CodeOrderPage({ params }: { params: { id: string }
       </div>
 
       <section aria-labelledby="todo-h" className="af-card grid gap-4 p-4 sm:p-5">
-        <h2 id="todo-h" className="text-[19px] font-bold">Print and ship</h2>
+        <h2 id="todo-h" className="t-card">Print and ship</h2>
         {!paid && <p className="rounded-xl bg-wall p-3 text-[14px]">{st === "pending" ? "Not paid yet. Nothing to print until the artist finishes checkout." : "The artist canceled before paying."}</p>}
         <ol className="grid gap-3 text-[14.5px]">
           <li className="grid gap-2">
@@ -87,14 +87,14 @@ export default async function CodeOrderPage({ params }: { params: { id: string }
 
       <div className="grid gap-6 md:grid-cols-2">
         <section aria-labelledby="ship-h" className="af-card grid content-start gap-2 p-4 sm:p-5">
-          <h2 id="ship-h" className="text-[19px] font-bold">Mail to</h2>
+          <h2 id="ship-h" className="t-card">Mail to</h2>
           <address className="text-[15px] not-italic leading-relaxed">
             {o.shipName}<br />{o.shipLine1}{o.shipLine2 && <><br />{o.shipLine2}</>}<br />{o.shipCity}, {o.shipState} {o.shipZip}<br />United States
           </address>
           <p className="text-[13px] text-ink-2">{o.email}</p>
         </section>
         <section aria-labelledby="money-h" className="af-card grid content-start gap-2 p-4 sm:p-5">
-          <h2 id="money-h" className="text-[19px] font-bold">Paid</h2>
+          <h2 id="money-h" className="t-card">Paid</h2>
           <table className="w-full text-[14px]">
             <caption className="sr-only">Amounts</caption>
             <tbody>
@@ -104,7 +104,7 @@ export default async function CodeOrderPage({ params }: { params: { id: string }
               <tr className="border-t border-line"><th scope="row" className="py-1 text-left">Total</th><td className="num py-1 text-right font-bold">{usd(o.totalCents)}</td></tr>
             </tbody>
           </table>
-          <p className="text-[12.5px] text-ink-2">{o.stripeSessionId?.startsWith("dev_") ? "Test checkout (no Stripe keys): no money was taken." : o.stripeSessionId ? `Stripe session ${o.stripeSessionId}` : "No checkout yet."}</p>
+          <p className="text-[13px] text-ink-2">{o.stripeSessionId?.startsWith("dev_") ? "Test checkout (no Stripe keys): no money was taken." : o.stripeSessionId ? `Stripe session ${o.stripeSessionId}` : "No checkout yet."}</p>
           {o.refundNote && <p className="rounded-lg bg-coral/10 p-2 text-[13.5px]"><b>Refund:</b> {o.refundNote}{o.refundedAt && <span className="text-ink-2"> · {when(o.refundedAt)}</span>}</p>}
           <ActionButton
             url={`/api/admin/code-orders/${o.id}`} body={{ action: "refund_note" }} need="money" className="justify-self-start"
@@ -116,7 +116,7 @@ export default async function CodeOrderPage({ params }: { params: { id: string }
       </div>
 
       <section aria-labelledby="items-h" className="af-card grid gap-3 p-4 sm:p-5">
-        <h2 id="items-h" className="text-[19px] font-bold">Cards</h2>
+        <h2 id="items-h" className="t-card">Cards</h2>
         <ul className="grid gap-3 sm:grid-cols-2">
           {items.map((i, k) => (
             <li key={`${i.qrCodeId}-${i.format}`} className="flex items-center gap-3 rounded-xl border border-line p-3">
@@ -131,7 +131,7 @@ export default async function CodeOrderPage({ params }: { params: { id: string }
       </section>
 
       <section aria-labelledby="log-h" className="af-card grid gap-3 p-4 sm:p-5">
-        <h2 id="log-h" className="text-[19px] font-bold">Timeline</h2>
+        <h2 id="log-h" className="t-card">Timeline</h2>
         <ol className="flex flex-wrap gap-x-5 gap-y-1 text-[13.5px]">
           {steps.map(([l, d]) => <li key={l} className={d ? "text-ink" : "text-ink-2"}><b>{l}</b> {when(d) || "—"}</li>)}
         </ol>

@@ -123,7 +123,7 @@ export function ImageAssets({ art }: { art: ShareArt }) {
             </a>
             <figcaption className="flex items-baseline justify-between gap-2">
               <b className="text-[15px]">{IMAGE_LAYOUTS[l].name}</b>
-              <span className="text-[12.5px] text-ink-2">{IMAGE_LAYOUTS[l].sub}</span>
+              <span className="text-[13px] text-ink-2">{IMAGE_LAYOUTS[l].sub}</span>
             </figcaption>
             <div className="grid grid-cols-[1fr_auto] gap-2">
               <button type="button" onClick={() => download(l)} disabled={busy === l} className="btn py-3 sm:py-2.5"><Download size={16} aria-hidden="true" /> {busy === l ? "Making it…" : "Download"}</button>
@@ -240,7 +240,7 @@ export function EmbedKit({ art, base }: { art: ShareArt; base: string }) {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="grid content-start gap-3">
-        <h3 className="text-[19px] font-extrabold">Website widget</h3>
+        <h3 className="t-card">Website widget</h3>
         <div className="flex justify-center rounded-2xl border border-line bg-wall p-4">
           <iframe key={art.slug} src={`/embed/art/${encodeURIComponent(art.slug)}`} width={320} height={460} className="max-w-full border-0" loading="lazy" title={`Widget preview: ${art.title}`} />
         </div>
@@ -251,7 +251,7 @@ export function EmbedKit({ art, base }: { art: ShareArt; base: string }) {
         <CopyButton text={snippet} label="Copy code" big className="w-full sm:w-max" />
       </div>
       <div className="grid content-start gap-3">
-        <h3 className="text-[19px] font-extrabold">Email signature</h3>
+        <h3 className="t-card">Email signature</h3>
         <div className="rounded-2xl border border-line bg-white p-4">
           <p className="mb-3 text-[13px] text-ink-2">Thanks,</p>
           <div dangerouslySetInnerHTML={{ __html: sig }} />

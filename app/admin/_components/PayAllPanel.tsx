@@ -69,7 +69,7 @@ export default function PayAllPanel() {
     <section aria-labelledby="payall-h" className="af-panel grid gap-4 p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 id="payall-h" className="text-[20px] font-bold">Ready to pay</h2>
+          <h2 id="payall-h" className="t-card">Ready to pay</h2>
           <p className="text-[13.5px] text-ink-2">Every closed, unpaid month. Same amounts artists see.</p>
         </div>
         <button type="button" onClick={run} disabled={!canPay || busy} title={allowed ? undefined : "Payouts need the admin or owner role."} className="btn btn-blue">
@@ -144,8 +144,8 @@ function Group({ title, dab, rows, empty, note, right }: { title: string; dab: s
           {rows.map((r) => (
             <li key={r.artistId} className="flex items-baseline justify-between gap-3 py-1.5">
               <span className="min-w-0">
-                <b className="font-semibold">{r.artistName}</b> <span className="text-[12.5px] text-ink-2">{monthsText(r.months)}</span>
-                <span className="block text-[12.5px]">{right(r)}</span>
+                <b className="font-semibold">{r.artistName}</b> <span className="text-[13px] text-ink-2">{monthsText(r.months)}</span>
+                <span className="block text-[13px]">{right(r)}</span>
               </span>
               <span className="shrink-0 text-right">
                 <b className="num block text-earned">{usd(r.totalCents)}</b>
@@ -159,7 +159,7 @@ function Group({ title, dab, rows, empty, note, right }: { title: string; dab: s
           ))}
         </ul>
       )}
-      {note && rows.length > 0 && <p className="text-[12.5px] text-ink-2">{note}</p>}
+      {note && rows.length > 0 && <p className="text-[13px] text-ink-2">{note}</p>}
     </div>
   );
 }

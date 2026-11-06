@@ -181,7 +181,7 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <div className="grid content-start gap-6">
           <section className="af-panel grid gap-3 p-4">
-            <h2 className="text-[16px] font-bold">Prints</h2>
+            <h2 className="t-card">Prints</h2>
             <ul className="divide-y divide-line">
               {items.map(({ it, b, refund, artistShare, edition, cert, artist }) => (
                 <li key={it.id} className="grid grid-cols-[56px_minmax(0,1fr)] gap-3 py-3 sm:grid-cols-[56px_minmax(0,1fr)_auto]">
@@ -194,11 +194,11 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
                       {" · "}{SIZE_LABEL[normalizeSize(it.size)]}{it.frameChosen ? `, framed ${it.frameColor || ""}` : ""}{b.quantity > 1 ? ` · ×${b.quantity}` : ""}
                     </span>
                     {edition && <span className="block text-[13px]">{edition}{cert && <> · <a href={cert} target="_blank" rel="noopener" className="font-semibold text-scan">Certificate</a></>}</span>}
-                    <span className="num block text-[12.5px] text-ink-2">
+                    <span className="num block text-[13px] text-ink-2">
                       {usd(b.lineTotal)} paid · {usd(b.expenses)} costs · artist {usd(artistShare)}{refund?.reversed ? <s className="ml-1">{usd(b.artistShare)}</s> : null} · Artfinity {usd(b.companyShare)}
                     </span>
                     {refund && (
-                      <span className="mt-1 block rounded-md bg-coral/10 px-2 py-1 text-[12.5px] font-semibold text-coral">
+                      <span className="mt-1 block rounded-md bg-coral/10 px-2 py-1 text-[13px] font-semibold text-coral">
                         Refunded {usd(refund.amountCents)} on {at(refund.at)} ({REFUND_REASON_LABEL[refund.reason].toLowerCase()}). {refundOutcome(refund)}
                       </span>
                     )}
@@ -234,13 +234,13 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
           </section>
 
           <section className="af-panel grid gap-2 p-4">
-            <h2 className="text-[16px] font-bold">Timeline</h2>
+            <h2 className="t-card">Timeline</h2>
             <ol className="relative grid gap-3 border-l-2 border-line pl-5">
               {timeline.map((e, i) => (
                 <li key={i} className="relative">
                   <span aria-hidden="true" className={cn("absolute -left-[27px] top-1 h-3 w-3 rounded-full ring-4 ring-white", e.tone === "done" ? "bg-earned" : e.tone === "warn" ? "bg-coral" : "bg-scan")} />
                   <p className="text-[14.5px] font-semibold">{e.title}</p>
-                  <p className="text-[12.5px] text-ink-2">{e.at ? at(e.at) : "—"}{e.detail ? <> · {e.detail}</> : null}</p>
+                  <p className="text-[13px] text-ink-2">{e.at ? at(e.at) : "—"}{e.detail ? <> · {e.detail}</> : null}</p>
                 </li>
               ))}
             </ol>
@@ -248,11 +248,11 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
 
           {parcel.length > 0 && (
             <section className="af-panel grid gap-2 p-4">
-              <h2 className="text-[16px] font-bold">Print this note in the parcel</h2>
+              <h2 className="t-card">Print this note in the parcel</h2>
               {parcel.map((n) => (
                 <figure key={n.id} className="grid gap-1.5 rounded-lg border-[1.5px] border-dashed border-ink/30 bg-white p-3">
                   <blockquote className="whitespace-pre-wrap text-[14px] leading-relaxed">{n.body}</blockquote>
-                  <figcaption className="text-[12.5px] text-ink-2">— {n.artist.artist_name || n.artist.name}</figcaption>
+                  <figcaption className="text-[13px] text-ink-2">— {n.artist.artist_name || n.artist.name}</figcaption>
                 </figure>
               ))}
             </section>
@@ -261,7 +261,7 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
 
         <div className="grid content-start gap-6">
           <section className="af-panel grid gap-2 p-4 text-[14px]">
-            <h2 className="text-[16px] font-bold">Buyer</h2>
+            <h2 className="t-card">Buyer</h2>
             <p><b>{o.shippingName || "No name"}</b><br /><a href={`mailto:${o.email}`} className="text-scan">{o.email}</a></p>
             <p className="eyebrow mt-1">Ship to</p>
             <p className="whitespace-pre-line text-ink-2">{o.shippingAddress?.split(", ").join("\n") || "No address"}</p>
@@ -271,7 +271,7 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
               {o.printerRef && printer.status === "sent" ? ` · ref ${o.printerRef}` : ""}
             </p>
             <p className="eyebrow mt-1">Stripe</p>
-            <p className="break-all text-[12.5px] text-ink-2">{o.stripeSessionId}</p>
+            <p className="break-all text-[13px] text-ink-2">{o.stripeSessionId}</p>
           </section>
 
           <NotesPanel targetType="order" targetId={o.id} notes={notes.map((n) => ({ id: n.id, adminEmail: n.adminEmail, body: n.body, createdAt: n.createdAt.toISOString() }))} />

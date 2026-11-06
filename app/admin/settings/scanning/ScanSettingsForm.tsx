@@ -93,7 +93,7 @@ export default function ScanSettingsForm({ value }: { value: ScanSettings }) {
     placeholder(f) && !changed[f] ? (
       <span className="flex flex-wrap items-center gap-2">
         <span className="rounded-full bg-sticker px-2 py-0.5 text-[11.5px] font-bold text-ink">Placeholder · set by Craig</span>
-        <label className="flex cursor-pointer items-center gap-1.5 text-[12.5px] font-semibold text-ink-2">
+        <label className="flex cursor-pointer items-center gap-1.5 text-[13px] font-semibold text-ink-2">
           <input type="checkbox" checked={confirm.has(f)} onChange={(e) => setConfirm((c) => { const n = new Set(c); if (e.target.checked) n.add(f); else n.delete(f); return n; })} className="h-4 w-4 accent-[rgb(var(--af-scan-rgb))]" />
           Confirm as is
         </label>
@@ -146,7 +146,7 @@ export default function ScanSettingsForm({ value }: { value: ScanSettings }) {
       </Section>
 
       <Section title="NYC pickup fee" mark={mark("pickupFee")}>
-        <label className="grid gap-1 text-[12.5px] font-semibold">
+        <label className="grid gap-1 text-[13px] font-semibold">
           Per booking, in dollars. Empty = quoted when you confirm; 0 = free.
           <input inputMode="decimal" placeholder="Quoted" value={v.pickupFee} onChange={(e) => setV({ ...v, pickupFee: e.target.value.replace(/[^0-9.]/g, "").slice(0, 8) })} className={`${input} w-32`} />
         </label>
@@ -154,12 +154,12 @@ export default function ScanSettingsForm({ value }: { value: ScanSettings }) {
 
       <Section title="Turnaround">
         <div className="flex flex-wrap gap-6">
-          <label className="grid gap-1 text-[12.5px] font-semibold">
+          <label className="grid gap-1 text-[13px] font-semibold">
             Files on artworks within (days)
             <input type="number" min={1} max={120} value={v.turnaroundDays} onChange={(e) => setV({ ...v, turnaroundDays: e.target.value })} className={`${input} w-24`} />
             {mark("turnaroundDays")}
           </label>
-          <label className="grid gap-1 text-[12.5px] font-semibold">
+          <label className="grid gap-1 text-[13px] font-semibold">
             Paintings returned within (days)
             <input type="number" min={1} max={120} value={v.returnDays} onChange={(e) => setV({ ...v, returnDays: e.target.value })} className={`${input} w-24`} />
             {mark("returnDays")}
@@ -175,7 +175,7 @@ export default function ScanSettingsForm({ value }: { value: ScanSettings }) {
       <Section title="Care wording" mark={mark("careText")}>
         <p className="text-[13px] text-ink-2">Shown on /scanning and in the Studio. {"{returnDays}"} becomes the return days. Don&apos;t promise insurance terms you haven&apos;t confirmed.</p>
         <textarea rows={4} maxLength={800} value={v.careText} onChange={(e) => setV({ ...v, careText: e.target.value })} className={`${input} py-2`} aria-label="Care wording" />
-        {v.careText !== DEFAULT_CARE_TEXT && <button type="button" onClick={() => setV({ ...v, careText: DEFAULT_CARE_TEXT })} className="justify-self-start text-[12.5px] font-semibold text-scan">Reset to the default wording</button>}
+        {v.careText !== DEFAULT_CARE_TEXT && <button type="button" onClick={() => setV({ ...v, careText: DEFAULT_CARE_TEXT })} className="justify-self-start text-[13px] font-semibold text-scan">Reset to the default wording</button>}
       </Section>
 
       <div className="sticky bottom-3 z-10 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-white/95 p-3 shadow-sm backdrop-blur">
@@ -191,7 +191,7 @@ function Section({ title, mark, children }: { title: string; mark?: ReactNode; c
   return (
     <section className="grid gap-2.5 rounded-2xl border border-line bg-white p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-[17px] font-bold">{title}</h2>
+        <h2 className="t-card">{title}</h2>
         {mark}
       </div>
       {children}

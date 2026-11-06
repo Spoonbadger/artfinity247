@@ -207,7 +207,7 @@ export default function VideoMaker({ art, base }: { art: ShareArt; base: string 
                 <span className="paint-dab sm:mb-2" style={{ ["--dab" as string]: ["#ff5a36", "#ffd43b", "#2b37f0"][i] }} />
                 <span className="grid">
                   <b className="text-[15px] leading-tight">{TEMPLATES[id].name}</b>
-                  <span className={cn("text-[12.5px]", tpl === id ? "text-white/75" : "text-ink-2")}>{TEMPLATES[id].sub}</span>
+                  <span className={cn("text-[13px]", tpl === id ? "text-white/75" : "text-ink-2")}>{TEMPLATES[id].sub}</span>
                 </span>
               </button>
             ))}
@@ -238,7 +238,7 @@ export default function VideoMaker({ art, base }: { art: ShareArt; base: string 
         ) : (
           <div className="grid gap-3">
             {types && types.length > 1 && !busy && (
-              <div role="radiogroup" aria-label="File type" className="flex w-max gap-1 rounded-full border-2 border-ink p-1">
+              <div role="radiogroup" aria-label="File type" className="flex w-max gap-1 rounded-full border-[1.5px] border-edge-strong p-1">
                 {types.map((t, i) => (
                   <button key={t.ext} type="button" role="radio" aria-checked={typeIdx === i} onClick={() => setTypeIdx(i)}
                     className={cn("rounded-full px-4 py-1.5 text-[14px] font-bold", typeIdx === i ? "bg-ink text-white" : "text-ink")}>

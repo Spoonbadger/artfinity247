@@ -135,7 +135,7 @@ export default function SearchTypeahead({
           {...cb.listProps}
           aria-label="Suggestions"
           className={cn(
-            "absolute left-0 right-0 top-[calc(100%+8px)] z-50 max-h-[min(440px,65vh)] overflow-auto rounded-2xl border-2 border-ink bg-white p-1.5 text-left shadow-[0_18px_40px_-12px_rgba(21,22,27,.35)]",
+            "absolute left-0 right-0 top-[calc(100%+8px)] z-50 max-h-[min(440px,65vh)] overflow-auto rounded-2xl border border-edge bg-white p-1.5 text-left shadow-[0_18px_40px_-12px_rgba(21,22,27,.35)]",
             listClassName,
           )}
         >
@@ -161,7 +161,7 @@ export default function SearchTypeahead({
                   )}
                   <span className="min-w-0 leading-tight">
                     <span className={cn("block truncate text-[15px] text-ink", it.group ? "font-semibold" : "font-bold text-scan")}>{it.label}</span>
-                    {it.sub && <span className="block truncate text-[12.5px] text-ink-2">{it.sub}</span>}
+                    {it.sub && <span className="block truncate text-[13px] text-ink-2">{it.sub}</span>}
                   </span>
                 </span>
               </li>

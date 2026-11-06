@@ -21,7 +21,7 @@ function StatusTag({ l, currentMonth, compact = false }: { l: Pick<LedgerLine, "
   const month = monthName(l.payoutMonth).split(" ")[0];
   const note = l.status === "pending" ? (l.clearsAt ? `Clears ${dayUTC(l.clearsAt)}` : "Off a coming payout") : bucket === "ready" ? "Next payout" : `${month} payout`;
   return (
-    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[12.5px]">
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[13px]">
       <i
         className="inline-block h-2.5 w-2.5 rounded-full"
         style={{ background: BUCKET_COLOR[bucket], ...(bucket === "hold" ? { boxShadow: "inset 0 0 0 1.5px #3d9f76" } : {}) }}
@@ -111,7 +111,7 @@ export default function Ledger({ ledger, adjustments = [], currentMonth }: { led
   return (
     <section aria-labelledby="ledger-h" className="af-card grid min-w-0 gap-3 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="ledger-h" className="text-[20px] font-bold">Transactions</h2>
+        <h2 id="ledger-h" className="t-card">Transactions</h2>
         <div className="flex flex-wrap items-center gap-2">
           <Picker label="Sort" value={sort} options={SORTS} onChange={(v) => { setSort(v); setShown(PAGE); }} />
           <ExportCsvButton href={exportHref} label="CSV" className="btn-sm" />
@@ -139,7 +139,7 @@ export default function Ledger({ ledger, adjustments = [], currentMonth }: { led
         </div>
       </div>
 
-      <p className="num text-[12.5px] text-ink-2" aria-live="polite">
+      <p className="num text-[13px] text-ink-2" aria-live="polite">
         {sales} {sales === 1 ? "sale" : "sales"}{adjusted > 0 && <> · {adjusted} refund {adjusted === 1 ? "adjustment" : "adjustments"}</>} · {usd(total)} your share
       </p>
 

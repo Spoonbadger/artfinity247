@@ -608,7 +608,7 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
                 </span>
               )}
             </div>
-            <p className="truncate text-[12.5px] text-ink-2" title={item.name}>{item.name}</p>
+            <p className="truncate text-[13px] text-ink-2" title={item.name}>{item.name}</p>
             {item.upload === "error" && (
               <div className="grid gap-2 rounded-xl border-2 border-coral bg-[#fff1ed] p-3 text-[14px]" role="alert">
                 <b>{item.uploadError || "Upload failed."}</b>
@@ -812,7 +812,7 @@ function Summary({ items, handle, onMore, headingRef }: { items: QueueItem[]; ha
         <ul className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-8">
           {items.map((it) => (
             <li key={it.id}>
-              <Link href={it.result?.slug ? `/studio/art/${it.result.slug}` : "/studio/art"} className="group grid content-start gap-1.5 text-[12.5px] text-ink no-underline">
+              <Link href={it.result?.slug ? `/studio/art/${it.result.slug}` : "/studio/art"} className="group grid content-start gap-1.5 text-[13px] text-ink no-underline">
                 <span className="relative block aspect-[4/5] overflow-hidden rounded-[3px] bg-gallery">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={it.result?.imageUrl || it.imageUrl} alt="" className="h-full w-full object-cover transition group-hover:scale-[1.03]" />
@@ -837,7 +837,7 @@ function Summary({ items, handle, onMore, headingRef }: { items: QueueItem[]; ha
             )}
             <button type="button" className="btn btn-ghost" aria-expanded={open} onClick={() => setOpen((o) => !o)}>Add them to a collection</button>
           </div>
-          {review.length > 0 && <p className="text-[12.5px] text-ink-2">Pieces in review get their codes once they&apos;re live. Find them in <Link href="/studio/qr" className="text-scan hover:underline">QR codes</Link>.</p>}
+          {review.length > 0 && <p className="text-[13px] text-ink-2">Pieces in review get their codes once they&apos;re live. Find them in <Link href="/studio/qr" className="text-scan hover:underline">QR codes</Link>.</p>}
           {open && (
             <div className="grid gap-3 rounded-xl border-2 border-line bg-white p-3 sm:max-w-[520px]">
               {cols === null ? (

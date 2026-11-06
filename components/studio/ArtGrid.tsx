@@ -243,7 +243,7 @@ export default function ArtGrid({ items, handle }: { items: GridArt[]; handle: s
       )}
 
       {selecting && (
-        <div className="sticky bottom-3 z-20 flex flex-wrap items-center gap-2 rounded-2xl border-[1.5px] border-ink bg-white p-3 shadow-[0_10px_30px_-10px_rgba(21,22,27,.35)]" role="region" aria-label="Add codes to print queue">
+        <div className="sticky bottom-3 z-20 flex flex-wrap items-center gap-2 rounded-2xl border border-edge bg-white p-3 shadow-[0_10px_30px_-10px_rgba(21,22,27,.35)]" role="region" aria-label="Add codes to print queue">
           <b className="num text-[15px]" aria-live="polite">{picked.size} selected</b>
           <label className="flex items-center gap-1.5 text-[13.5px] font-semibold">
             Look

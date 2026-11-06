@@ -79,7 +79,7 @@ export default function BalanceCard({ b }: { b: Balance }) {
 
         {/* Next payout and where it goes: the two things people open this page for. */}
         <div className="grid gap-1 rounded-[4px] bg-wall p-3.5 sm:p-4">
-          <span className="text-[12.5px] font-semibold text-ink-2">Next payout</span>
+          <span className="text-[13px] font-semibold text-ink-2">Next payout</span>
           <p className="text-[19px] leading-tight sm:text-[21px]">
             <b className={late ? "text-coral" : undefined}>{late ? "Overdue" : dayUTC(np.date)}</b>
             {np.late && !late && <span className="text-[14px] text-ink-2"> (on its way)</span>}
@@ -96,7 +96,7 @@ export default function BalanceCard({ b }: { b: Balance }) {
             )}
           </p>
           {!fresh && (
-            <p className="text-[12.5px] text-ink-2">
+            <p className="text-[13px] text-ink-2">
               {np.projected
                 ? `${monthsText} so far. Grows with each sale.`
                 : `${lateDue}${monthsText} sales${clearing.length ? ` · ${usd(np.clearingCents)} still in the return window, paid anyway` : ""}`}
@@ -104,11 +104,11 @@ export default function BalanceCard({ b }: { b: Balance }) {
             </p>
           )}
           {b.carryForwardCents > 0 && (
-            <p className="text-[12.5px] font-semibold text-coral">
+            <p className="text-[13px] font-semibold text-coral">
               {usd(-b.carryForwardCents)} in refunds comes off your next payouts. A payout never goes below $0; the rest carries over.
             </p>
           )}
-          {!late && <p className="text-[12.5px] text-ink-2">Sent automatically. Nothing to do.</p>}
+          {!late && <p className="text-[13px] text-ink-2">Sent automatically. Nothing to do.</p>}
         </div>
       </div>
 
@@ -127,7 +127,7 @@ export default function BalanceCard({ b }: { b: Balance }) {
                   {s.label}
                 </dt>
                 <dd className="num text-right text-[18px] font-bold sm:pl-[22px] sm:text-left sm:text-[24px]">{usd(s.value)}</dd>
-                <dd className="col-span-2 pl-[22px] text-[12.5px] text-ink-2 sm:col-span-1">{s.note}</dd>
+                <dd className="col-span-2 pl-[22px] text-[13px] text-ink-2 sm:col-span-1">{s.note}</dd>
               </div>
             ))}
           </dl>

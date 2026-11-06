@@ -97,7 +97,7 @@ export default function VenueForm({ initial, onDone }: { initial?: VenueFormValu
             aria-invalid={emailErr ? true : undefined} aria-describedby={emailErr ? "venue-email-err" : undefined}
             maxLength={120} placeholder="owner@cafe.com"
           />
-          {emailErr && <span id="venue-email-err" className="text-[12.5px] font-semibold text-coral">{emailErr}</span>}
+          {emailErr && <span id="venue-email-err" className="text-[13px] font-semibold text-coral">{emailErr}</span>}
         </label>
         <label className="grid gap-1 text-[13px] font-semibold">
           Share of Artfinity&apos;s profit (%)

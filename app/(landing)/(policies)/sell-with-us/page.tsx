@@ -59,7 +59,7 @@ export default function SellWithUsPage() {
               </li>
             ))}
           </ul>
-          <Link href="/scanning" className="mt-10 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-2xl border-[1.5px] border-ink bg-white px-5 py-4 text-ink no-underline transition hover:-translate-y-0.5">
+          <Link href="/scanning" className="mt-10 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-2xl border border-edge bg-white px-5 py-4 text-ink no-underline transition hover:border-ink hover:-translate-y-0.5">
             <span className="min-w-0">
               <b className="block font-display text-[22px] leading-tight [font-variation-settings:'wdth'_80]">Only have phone photos?</b>
               <span className="text-[15px] text-ink-2">We scan originals in NYC so you can sell bigger prints.</span>

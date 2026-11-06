@@ -67,3 +67,53 @@ that matters, and filling up with long, samey copy. When in doubt: less, and the
 
 - Look at it at 390 px and 1280 px. No sideways scrolling, nothing cut off, tap targets at least 40 px.
 - Read every line of copy out loud. If it sounds like a brochure or a chatbot, rewrite it.
+
+## 9. Visual style
+
+The help center and the terms page are the reference: a calm page with one painted header, gray-edged boxes,
+a readable column (about 68 characters) and clear steps between title, section and body. Match them.
+
+### Boxes: gray, not black
+
+- Cards, panels and boxes use `.box` (white, `rounded-2xl`, 1px `border-edge`). `.af-card` and `.af-panel` are older
+  names for the same thing. In Tailwind: `border border-edge`.
+- Tokens: `--af-edge` #d9dad2 (box edges), `--af-edge-strong` #b4b6ab (secondary buttons, segmented controls).
+- A box inside a box loses its border and gets a faint tint. This happens on its own for `.box` inside `.box`;
+  elsewhere use `.box-inset`.
+- Secondary buttons (`btn btn-ghost`) have a gray edge that turns ink on hover. Solid `btn` and `btn-blue` are unchanged.
+- Ink edges stay where they mean "you can type here" or "this is chosen": text inputs and selects (`.af-field`,
+  ink border, blue on focus; keep 3:1 or more), the selected chip, tab or option card, toggles, and previews of
+  printed things (QR cards, link-page and video previews, the certificate).
+- Notices use their tone's colour for the edge (`border-sticker`, `border-coral`), never ink.
+- Borders are 1px for boxes and 1.5px for buttons and chips. No `border-2 border-ink` on a box.
+
+### Type scale
+
+| Class | Use it for | Looks like |
+|---|---|---|
+| `.t-page` | The page title (one per page). `StudioPage` and the admin `PageHead` already use it | Display font, 34 to 48px |
+| `.t-section` | A heading over a group of cards or a long-form section | Display font, 24px, 28px from 640px up |
+| `.t-card` | A card, panel, dialog or table title ("Next up", "Payouts", "Summary") | Body font, bold, 17px |
+| `.t-body` | Main text | 16px ink (long reading text: 17px, like the help articles) |
+| `.t-muted` | Secondary text, the line under a title | 15px ink-2 |
+| `.t-small` | Small print, help text, notes | 13.5px ink-2 |
+| `.t-num` | The one hero number on a page (a balance, a total) | Display font, 40 to 56px |
+
+- The condensed display font is for page titles, section titles and the single hero number. Not for card titles,
+  stat tiles, labels or buttons. Headings `h2` to `h6` use the body font unless they have `.t-section`, `.display`
+  or `font-display`.
+- Minimum sizes: body 15px, small print 13px. 11 and 12px are only for the uppercase `.eyebrow` label and tiny count
+  badges.
+- `.eyebrow` (12px uppercase) labels a group; it is not a heading for a card.
+
+### Paint
+
+- One painted accent per screen area. Paint marks brand moments, not every element.
+- Keep: the logo, artwork, the dab in `EmptyState`, the brush under page titles on public pages, the splotch behind
+  the current item in the help and policy side lists, medals and brush moments on artist pages, QR card designs.
+- In the Studio and admin, the highlighter goes on the active nav item only, not under page titles too.
+- No dab in front of every section heading. Inside the Studio and admin (`.af-app`) a `.paint-dab` placed
+  directly inside an `h2`, `h3`, `h4` or `legend` is hidden.
+- Nav dabs are gray; only the current page's dab is in colour. Studio folder icons sit on one muted tint; the folder
+  you are in shows its colour.
+- No coloured dots before stat labels. Coloured dots stay where they carry meaning: status, chart legends.

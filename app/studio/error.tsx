@@ -23,7 +23,7 @@ export default function StudioError({ error, reset }: { error: Error & { digest?
         <p className="max-w-[48ch] text-[16px] text-ink-2">
           This page broke on our side, not yours. Nothing you saved is lost. Try again, or carry on from Studio home.
         </p>
-        {error?.digest && <p className="text-[12.5px] text-ink-2">Ref {error.digest}</p>}
+        {error?.digest && <p className="text-[13px] text-ink-2">Ref {error.digest}</p>}
         <div className="mt-2 flex flex-wrap justify-center gap-2">
           <button type="button" onClick={() => reset()} className="btn btn-blue">Try again</button>
           <Link href="/studio" className="btn btn-ghost">Studio home</Link>

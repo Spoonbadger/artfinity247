@@ -79,7 +79,7 @@ export default async function StudioDevelopersPage() {
       <Disclosure title="For developers" hint="Your data as JSON · API keys">
         <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
           <section className="grid min-w-0 content-start gap-3" aria-labelledby="json-h">
-            <h2 id="json-h" className="text-[17px] font-bold">Your data, as JSON</h2>
+            <h2 id="json-h" className="t-card">Your data, as JSON</h2>
             <p className="text-[14px] text-ink-2">Public and read-only. No key needed. Approved pieces only.</p>
             <Code
               lang="shell"
@@ -92,7 +92,7 @@ export default async function StudioDevelopersPage() {
             <span className="sticker-badge justify-self-start">Coming with webhooks</span>
             <div className="flex items-center gap-2.5">
               <KeyRound className="h-5 w-5 text-ink-2" aria-hidden="true" />
-              <h2 id="keys-h" className="text-[17px] font-bold">API keys</h2>
+              <h2 id="keys-h" className="t-card">API keys</h2>
             </div>
             <p className="text-[14px] text-ink-2">Private keys come with sale webhooks, so your site can react when a print sells. Need one sooner? Tell us.</p>
             <div className="flex flex-wrap gap-2">

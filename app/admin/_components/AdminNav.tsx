@@ -115,7 +115,7 @@ export default function AdminNav({ counts = {}, role }: { counts?: Record<string
                   key={l.href} href={l.href} aria-current={on ? "page" : undefined}
                   className={cn("flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-[15px] font-semibold text-ink no-underline transition", on ? "bg-white shadow-[0_1px_0_var(--af-line)] ring-1 ring-line" : "hover:bg-white/70")}
                 >
-                  <span className="paint-dab" style={{ ["--dab" as string]: l.dab }} />
+                  <span className="paint-dab" style={{ ["--dab" as string]: on ? l.dab : "var(--af-edge)" }} />
                   {l.label}
                   <Badge n={counts[l.href]} />
                 </Link>

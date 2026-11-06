@@ -29,7 +29,7 @@ export default async function AdminVenuesPage() {
       name: (
         <>
           <Link href={`/admin/venues/${v.id}`} className="font-bold text-ink underline-offset-2 hover:underline">{v.name}</Link>
-          <span className="flex flex-wrap items-center gap-1.5 text-[12.5px] text-ink-2">{v.neighborhood || "—"}{!v.active && <Pill>Paused</Pill>}</span>
+          <span className="flex flex-wrap items-center gap-1.5 text-[13px] text-ink-2">{v.neighborhood || "—"}{!v.active && <Pill>Paused</Pill>}</span>
         </>
       ),
       codes: <>{n(v.liveCodes)}<span className="text-ink-2">/{n(v.codes)}</span></>,
@@ -71,7 +71,7 @@ export default async function AdminVenuesPage() {
 
       <section aria-labelledby="merge-h" className="af-panel grid gap-3 p-4 sm:p-5">
         <div>
-          <h2 id="merge-h" className="text-[18px] font-bold">Unlinked venue names {unlinked.length > 0 && <span className="num text-[14px] font-normal text-ink-2">{unlinked.length}</span>}</h2>
+          <h2 id="merge-h" className="t-card">Unlinked venue names {unlinked.length > 0 && <span className="num text-[14px] font-normal text-ink-2">{unlinked.length}</span>}</h2>
           <p className="text-[13.5px] text-ink-2">What artists typed on their codes. Link it or make it a venue.</p>
         </div>
         {unlinked.length ? (
@@ -80,8 +80,8 @@ export default async function AdminVenuesPage() {
               <li key={u.key} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line px-3 py-2.5">
                 <div className="min-w-0">
                   <b className="text-[15px]">{u.text}</b>
-                  {u.spellings.length > 1 && <span className="ml-2 text-[12.5px] text-ink-2">also &ldquo;{u.spellings.filter((s) => s !== u.text).join("”, “")}&rdquo;</span>}
-                  <span className="block text-[12.5px] text-ink-2">{n(u.codes)} {u.codes === 1 ? "code" : "codes"} ({n(u.live)} on) · {u.artists.join(", ")}</span>
+                  {u.spellings.length > 1 && <span className="ml-2 text-[13px] text-ink-2">also &ldquo;{u.spellings.filter((s) => s !== u.text).join("”, “")}&rdquo;</span>}
+                  <span className="block text-[13px] text-ink-2">{n(u.codes)} {u.codes === 1 ? "code" : "codes"} ({n(u.live)} on) · {u.artists.join(", ")}</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {options.length > 0 && (

@@ -198,7 +198,7 @@ export default async function ArtistPage({ params, searchParams }: Props) {
                   {venues.map((v, i) => (
                     <li key={i} className="flex items-baseline justify-between gap-3 border-b border-dashed border-line py-2 text-[14px] last:border-0">
                       <span className="min-w-0 text-ink">{v.name}</span>
-                      <span className="shrink-0 text-[12.5px] font-semibold text-ink-2">{v.when}</span>
+                      <span className="shrink-0 text-[13px] font-semibold text-ink-2">{v.when}</span>
                     </li>
                   ))}
                 </ul>
@@ -206,7 +206,7 @@ export default async function ArtistPage({ params, searchParams }: Props) {
             )}
 
             {isOwner && (
-              <section aria-label="Your page" className="relative grid gap-3 rounded-2xl border-[1.5px] border-ink bg-white p-4">
+              <section aria-label="Your page" className="relative grid gap-3 rounded-2xl border border-edge bg-white p-4">
                 <span className="sticker-badge absolute -top-3 left-4 text-[12px]">Your page</span>
                 <p className="pt-1 text-[14px] text-ink-2">Only you see this.</p>
                 <div className="flex flex-wrap gap-2">

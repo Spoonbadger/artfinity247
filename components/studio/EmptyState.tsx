@@ -50,8 +50,8 @@ export function EmptyState({
       )}
     >
       <span className="paint-dab h-5 w-5" style={{ ["--dab" as string]: dab }} aria-hidden="true" />
-      <p className={cn("font-bold text-ink", compact ? "text-[15px]" : "text-[18px]")}>{title}</p>
-      {body && <div className="max-w-[56ch] text-[14px] text-ink-2">{body}</div>}
+      <p className={cn("t-card", compact && "text-[15.5px]")}>{title}</p>
+      {body && <div className={cn("max-w-[56ch] text-ink-2", compact ? "text-[14px]" : "text-[15px]")}>{body}</div>}
       {children}
       {(action || secondary || help) && (
         <div className="mt-1 flex flex-wrap items-center gap-2">

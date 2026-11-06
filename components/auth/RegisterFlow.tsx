@@ -693,7 +693,7 @@ function HandleStatus({ hs, onPick }: { hs: HandleState; onPick: (s: string) => 
         <>
           <span className="text-ink-2">Try</span>
           {hs.suggestions.map((s) => (
-            <button key={s} type="button" onClick={() => onPick(s)} className="rounded-full border-[1.5px] border-ink px-2.5 py-0.5 font-semibold hover:bg-ink hover:text-white">
+            <button key={s} type="button" onClick={() => onPick(s)} className="rounded-full border-[1.5px] border-edge-strong px-2.5 py-0.5 font-semibold hover:border-ink">
               @{s}
             </button>
           ))}

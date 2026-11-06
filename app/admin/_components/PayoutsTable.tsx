@@ -139,7 +139,7 @@ export default function PayoutsTable({ month }: { month: string }) {
                   <tr key={r.artistId}>
                     <td className="px-4 py-3">
                       <b className="flex flex-wrap items-center gap-1.5">{r.artistName}<Badges r={r} /></b>
-                      <span className="text-[12.5px] text-ink-2">{r.artistEmail}</span>
+                      <span className="text-[13px] text-ink-2">{r.artistEmail}</span>
                     </td>
                     <td className="px-3 py-3"><PaidTo r={r} /></td>
                     <td className="px-3 py-3 text-right">{r.itemsCount}</td>
@@ -164,7 +164,7 @@ export default function PayoutsTable({ month }: { month: string }) {
                     </div>
                     <b className="num shrink-0 text-right text-[18px] text-earned">{usd(r.artistShare)}<AdjustNote r={r} /></b>
                   </div>
-                  <div className="num text-[12.5px] text-ink-2">{usd(r.gross)} sales · {usd(r.expenses)} costs · {usd(r.profit)} profit</div>
+                  <div className="num text-[13px] text-ink-2">{usd(r.gross)} sales · {usd(r.expenses)} costs · {usd(r.profit)} profit</div>
                   <PayButton r={r} busy={busy === r.artistId} onClick={() => toggle(r)} />
                 </li>
               ))}
@@ -203,7 +203,7 @@ function PayButton({ r, busy, onClick }: { r: Row; busy: boolean; onClick: () =>
   return (
     <div className="inline-flex flex-wrap items-center justify-end gap-2">
       {paid && (
-        <span className="rounded-full bg-earned-soft px-2.5 py-1 text-[12.5px] font-bold text-earned" title={r.payout.stripeTransferId || undefined}>
+        <span className="rounded-full bg-earned-soft px-2.5 py-1 text-[13px] font-bold text-earned" title={r.payout.stripeTransferId || undefined}>
           Paid {r.payout.paidAt ? new Date(r.payout.paidAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" }) : ""}
           {viaStripe ? " · Stripe" : r.payout.method === "venmo" ? " · Venmo" : ""}
         </span>

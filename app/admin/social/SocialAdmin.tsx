@@ -28,7 +28,7 @@ function Section({ id, title, sub, children, action, fold }: { id: string; title
   const head = (
     <>
       <div>
-        <h2 id={`${id}-h`} className="text-[20px] font-bold">{title}</h2>
+        <h2 id={`${id}-h`} className="t-card">{title}</h2>
         {sub && <p className="text-[13.5px] text-ink-2">{sub}</p>}
       </div>
       {action}
@@ -285,13 +285,13 @@ export default function SocialAdmin({
           <div className="grid gap-5">
             {approved.length > 0 && (
               <div className="grid gap-3">
-                <h3 className="text-[16px] font-extrabold">Approved · scheduled</h3>
+                <h3 className="t-card">Approved · scheduled</h3>
                 <ol className="grid gap-3">{approved.map((p, i, l) => card(p, i, l))}</ol>
               </div>
             )}
             {drafts.length > 0 && (
               <div className="grid gap-3">
-                <h3 className="text-[16px] font-extrabold">Drafts · waiting for approval</h3>
+                <h3 className="t-card">Drafts · waiting for approval</h3>
                 <ol className="grid gap-3">{drafts.map((p, i, l) => card(p, i, l))}</ol>
               </div>
             )}

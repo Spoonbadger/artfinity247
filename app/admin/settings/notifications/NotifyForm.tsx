@@ -45,7 +45,7 @@ export default function NotifyForm({ rows }: { rows: Row[] }) {
           <li key={r.kind} className="grid gap-2 px-2 py-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
             <div className="min-w-0">
               <p className="text-[15px] font-semibold">{r.label}</p>
-              <p className="text-[12.5px] text-ink-2">Default: {r.defaultLabel}</p>
+              <p className="text-[13px] text-ink-2">Default: {r.defaultLabel}</p>
             </div>
             <fieldset className="flex flex-wrap gap-1" aria-label={r.label}>
               {CHOICES.map((c) => {

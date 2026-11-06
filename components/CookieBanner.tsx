@@ -47,7 +47,7 @@ export default function CookieBanner() {
       aria-label="Cookie notice"
       className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--af-bottom-bar,0px)+env(safe-area-inset-bottom,0px))] z-40 flex justify-center sm:bottom-[calc(var(--af-bottom-bar,0px)+env(safe-area-inset-bottom,0px)+16px)] sm:justify-start sm:px-4"
     >
-      <div className="pointer-events-auto flex w-full items-center gap-3 border-t border-line bg-white/95 py-1.5 pl-4 pr-4 text-[13px] text-ink backdrop-blur sm:w-auto sm:rounded-full sm:border-2 sm:border-ink sm:bg-white sm:py-1 sm:pr-1 sm:text-[14px] sm:shadow-[0_10px_30px_-10px_rgba(21,22,27,.45)]">
+      <div className="pointer-events-auto flex w-full items-center gap-3 border-t border-line bg-white/95 py-1.5 pl-4 pr-4 text-[13px] text-ink backdrop-blur sm:w-auto sm:rounded-full sm:border sm:border-edge sm:bg-white sm:py-1 sm:pr-1 sm:text-[14px] sm:shadow-[0_10px_30px_-10px_rgba(21,22,27,.45)]">
         <p className="m-0 min-w-0 flex-1 leading-snug">
           We use cookies.{" "}
           <Link href="/cookie-policy" className="font-semibold text-ink underline underline-offset-2">

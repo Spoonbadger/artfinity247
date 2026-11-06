@@ -87,17 +87,17 @@ export default async function CodeOrdersPage({ searchParams }: { searchParams: {
                   <tr key={o.id} className="border-b border-line last:border-0 hover:bg-wall/60">
                     <td className="px-4 py-3">
                       <Link href={`/admin/code-orders/${o.id}`} className="num font-bold text-ink underline-offset-2 hover:underline">{codeOrderNumber(o.id)}</Link>
-                      <span className="block text-[12.5px] text-ink-2">{day(o.paidAt ?? o.createdAt)}</span>
+                      <span className="block text-[13px] text-ink-2">{day(o.paidAt ?? o.createdAt)}</span>
                     </td>
                     <td className="px-3 py-3">
                       {o.artistId ? <Link href={`/admin/artists/${o.artistId}`} className="font-semibold text-ink underline-offset-2 hover:underline">{o.artistName || o.email}</Link> : <span>{o.artistName || o.email}</span>}
-                      <span className="block text-[12.5px] text-ink-2">{o.email}</span>
+                      <span className="block text-[13px] text-ink-2">{o.email}</span>
                     </td>
                     <td className="px-3 py-3">{summaryOf(orderItems(o.items))}</td>
                     <td className="num px-3 py-3 text-right font-bold">{usd(o.totalCents)}</td>
                     <td className="px-3 py-3 text-[13px]">{o.shipCity}, {o.shipState}</td>
                     <td className="px-4 py-3">
-                      <span className="inline-flex items-center gap-1.5 text-[12.5px] font-bold">
+                      <span className="inline-flex items-center gap-1.5 text-[13px] font-bold">
                         <i className="paint-dab h-2.5 w-2.5" style={{ ["--dab" as string]: STATUS_DAB[st] }} aria-hidden="true" />{STATUS_LABEL[st]}
                       </span>
                       {o.refundNote && <span className="block text-[12px] text-coral">Refund noted</span>}

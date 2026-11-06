@@ -20,7 +20,7 @@ const short = (d: Date) => d.toLocaleDateString("en-US", { timeZone: "UTC", mont
 function Stat({ label, value, note, dab, money = false }: { label: string; value: string; note?: string; dab: string; money?: boolean }) {
   return (
     <div className="grid min-w-0 content-start gap-0.5 rounded-[3px] border border-line bg-white p-3 shadow-[0_2px_0_var(--af-line)]">
-      <span className="flex items-center gap-1.5 text-[12.5px] text-ink-2"><i className="paint-dab h-2.5 w-2.5" style={{ ["--dab" as string]: dab }} />{label}</span>
+      <span className="flex items-center gap-1.5 text-[13px] text-ink-2"><i className="paint-dab h-2.5 w-2.5" style={{ ["--dab" as string]: dab }} />{label}</span>
       <b className={`display num truncate text-[24px] leading-tight sm:text-[27px] ${money ? "text-earned" : "text-ink"}`} title={value}>{value}</b>
       {note && <span className="truncate text-[12px] text-ink-2" title={note}>{note}</span>}
     </div>
@@ -114,7 +114,7 @@ export default function MoneyInsights({ ledger, nowIso }: { ledger: LedgerLine[]
     <section aria-labelledby="insights-h" className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="insights-h" className="text-[15px] font-semibold text-ink-2">Period</h2>
-        <div role="radiogroup" aria-label="Period" className="flex rounded-full border-2 border-ink bg-white p-0.5">
+        <div role="radiogroup" aria-label="Period" className="flex rounded-full border-[1.5px] border-edge-strong bg-white p-0.5">
           {PERIODS.map((p) => (
             <button
               key={p.id} type="button" role="radio" aria-checked={period === p.id} onClick={() => setPeriod(p.id)}
@@ -140,16 +140,16 @@ export default function MoneyInsights({ ledger, nowIso }: { ledger: LedgerLine[]
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="af-card grid min-w-0 content-start gap-3 p-4 sm:p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h3 className="text-[18px] font-bold">Your share by week</h3>
-            <span className="num text-[12.5px] text-ink-2">{usd(weeksTotal)} · last 12 weeks</span>
+            <h3 className="t-card">Your share by week</h3>
+            <span className="num text-[13px] text-ink-2">{usd(weeksTotal)} · last 12 weeks</span>
           </div>
           <Legend series={STATUS_SERIES} />
           <BarChart buckets={weeks} series={STATUS_SERIES} label={`Your share per week, last 12 weeks, stacked by payout status. ${usd(weeksTotal)} in all.`} />
         </div>
         <div className="af-card grid min-w-0 content-start gap-3 p-4 sm:p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h3 className="text-[18px] font-bold">Gross vs your share</h3>
-            <span className="num text-[12.5px] text-ink-2">{period === "30d" || period === "90d" ? "By week" : "By month"} · {periodLabel}</span>
+            <h3 className="t-card">Gross vs your share</h3>
+            <span className="num text-[13px] text-ink-2">{period === "30d" || period === "90d" ? "By week" : "By month"} · {periodLabel}</span>
           </div>
           <Legend series={GROSS_SERIES} />
           <BarChart buckets={grossBuckets} series={GROSS_SERIES} mode="overlay" label={`Gross sales and your share, ${periodLabel}. Gross ${usd(stats.gross)}, your share ${usd(stats.share)}.`} />
@@ -184,15 +184,15 @@ function Sources({ lines, periodLabel }: { lines: LedgerLine[]; periodLabel: str
   return (
     <section aria-labelledby="sources-h" className="af-card grid gap-3 p-4 sm:p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 id="sources-h" className="text-[18px] font-bold">Where sales come from</h3>
-        <span className="text-[12.5px] text-ink-2">Your share · {periodLabel}</span>
+        <h3 id="sources-h" className="t-card">Where sales come from</h3>
+        <span className="text-[13px] text-ink-2">Your share · {periodLabel}</span>
       </div>
       <ul className="grid gap-2.5">
         {rows.map(([name, v]) => (
           <li key={name} className="grid gap-1">
             <div className="flex items-baseline justify-between gap-3 text-[14px]">
               <span className="min-w-0 truncate font-semibold">{name}</span>
-              <span className="num shrink-0"><b className="text-earned">{usd(v.share)}</b> <span className="text-[12.5px] text-ink-2">· {v.prints} {v.prints === 1 ? "print" : "prints"}</span></span>
+              <span className="num shrink-0"><b className="text-earned">{usd(v.share)}</b> <span className="text-[13px] text-ink-2">· {v.prints} {v.prints === 1 ? "print" : "prints"}</span></span>
             </div>
             <div className="h-2.5 overflow-hidden rounded-full bg-wall" aria-hidden="true">
               <div className="h-full rounded-full bg-earned" style={{ width: `${Math.max(3, (v.share / max) * 100)}%` }} />

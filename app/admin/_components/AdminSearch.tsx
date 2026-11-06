@@ -99,7 +99,7 @@ export default function AdminSearch() {
                   <span className="text-[11.5px] font-bold uppercase tracking-[0.06em] text-ink-2">{KIND[h.kind]}</span>
                   <span className="min-w-0">
                     <b className="block truncate text-[14.5px]">{h.title}</b>
-                    <span className="block truncate text-[12.5px] text-ink-2">{h.sub}</span>
+                    <span className="block truncate text-[13px] text-ink-2">{h.sub}</span>
                   </span>
                 </button>
               </li>

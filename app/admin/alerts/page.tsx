@@ -61,7 +61,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: { tab
       </nav>
 
       <AlertsTable key={tab} rows={rows} tab={tab} />
-      {tab === "history" && <p className="text-[12.5px] text-ink-2">Latest 150. Who did what is in <Link href="/admin/activity" className="font-semibold text-scan">Activity</Link>.</p>}
+      {tab === "history" && <p className="text-[13px] text-ink-2">Latest 150. Who did what is in <Link href="/admin/activity" className="font-semibold text-scan">Activity</Link>.</p>}
     </div>
   );
 }

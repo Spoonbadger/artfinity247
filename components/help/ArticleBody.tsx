@@ -75,7 +75,7 @@ export default function ArticleBody({ body }: { body: string }) {
         if (lines.every((l) => /^\s*\d+\. /.test(l))) return <ol key={k}>{lines.map((l, j) => <li key={j} className="pl-1">{inline(l.replace(/^\s*\d+\. /, ""), `${k}-${j}`)}</li>)}</ol>;
         if (lines.every((l) => l.startsWith(">"))) {
           return (
-            <aside key={k} className="relative my-6 rounded-2xl border-[1.5px] border-ink bg-[#fffbe8] px-5 py-4 pl-12 text-[16px] leading-relaxed">
+            <aside key={k} className="relative my-6 rounded-2xl border border-edge bg-[#fffbe8] px-5 py-4 pl-12 text-[16px] leading-relaxed">
               <i className="paint-dab absolute left-5 top-[22px]" style={{ ["--dab" as string]: "var(--af-sticker)" }} aria-hidden="true" />
               {inline(lines.map((l) => l.replace(/^>\s?/, "")).join(" "), k)}
             </aside>

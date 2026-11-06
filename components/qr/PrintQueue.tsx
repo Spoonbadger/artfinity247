@@ -262,7 +262,7 @@ export default function PrintQueue({ groups, pricing, infinity, orders, address,
             return (
               <section key={g.format} aria-labelledby={`grp-${g.format}`} className="af-card grid gap-4 p-4 sm:p-5">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <h2 id={`grp-${g.format}`} className="text-[20px] font-bold">{g.name}s <span className="text-[14px] font-semibold text-ink-2">· {g.size}</span></h2>
+                  <h2 id={`grp-${g.format}`} className="t-card">{g.name}s <span className="text-[14px] font-semibold text-ink-2">· {g.size}</span></h2>
                   <span className="num text-[13.5px] font-semibold text-ink-2">{cardWords(g.format, n)} · {sheets} {sheets === 1 ? "sheet" : "sheets"}{free ? ` · ${free} spot${free === 1 ? "" : "s"} left on the last` : ""}</span>
                 </div>
 
@@ -275,7 +275,7 @@ export default function PrintQueue({ groups, pricing, infinity, orders, address,
                           dangerouslySetInnerHTML={{ __html: it.svg }} />
                         <div className="grid min-w-0 gap-1.5">
                           <b className="truncate text-[15.5px]">{it.title}</b>
-                          <span className="flex flex-wrap items-center gap-1.5 text-[12.5px] text-ink-2">
+                          <span className="flex flex-wrap items-center gap-1.5 text-[13px] text-ink-2">
                             <span className="rounded-full bg-wall px-2 py-0.5 font-bold text-ink" title="The short link inside this code">{it.code}</span>
                             {it.venue && <span>· {it.venue}</span>}
                             {it.discountPct ? <span className="rounded-full bg-sticker px-2 py-0.5 font-bold text-ink">{it.discountPct}% off</span> : null}
@@ -333,13 +333,13 @@ export default function PrintQueue({ groups, pricing, infinity, orders, address,
                           <figcaption className="text-center text-[12px] text-ink-2">Sheet {i + 1} of {g.sheetCount}</figcaption>
                         </figure>
                       ))}
-                      {g.sheetCount > g.sheets.length && <p className="self-center text-[12.5px] text-ink-2">+{g.sheetCount - g.sheets.length} more</p>}
+                      {g.sheetCount > g.sheets.length && <p className="self-center text-[13px] text-ink-2">+{g.sheetCount - g.sheets.length} more</p>}
                     </div>
                   </div>
                 )}
 
                 <div className="grid gap-3 rounded-xl bg-wall p-4">
-                  <h3 className="flex items-center gap-2 text-[16px] font-bold"><Printer className="h-4 w-4" aria-hidden="true" />Print at home</h3>
+                  <h3 className="flex items-center gap-2 t-card"><Printer className="h-4 w-4" aria-hidden="true" />Print at home</h3>
                   <p className="text-[14px]">
                     <span className="text-ink-2">Buy </span><b>{g.paper.buy}</b><span className="text-ink-2">. {g.paper.note}</span>
                   </p>
@@ -418,7 +418,7 @@ function MailOrder({ quote, infinity, pricing, address, testMode, onOrdered, onP
   }
 
   const field = (k: keyof ShipAddress, label: string, opts: { auto: string; optional?: boolean; className?: string; inputMode?: "numeric" } = { auto: "" }) => (
-    <label className={cn("grid min-w-0 gap-1 text-[12.5px] font-semibold", opts.className)}>
+    <label className={cn("grid min-w-0 gap-1 text-[13px] font-semibold", opts.className)}>
       <span>{label}{opts.optional && <span className="font-normal text-ink-2"> (optional)</span>}</span>
       <input
         ref={(el) => { refs.current[k] = el; }}
@@ -426,14 +426,14 @@ function MailOrder({ quote, infinity, pricing, address, testMode, onOrdered, onP
         aria-invalid={bad === k || undefined} aria-describedby={bad === k ? "ship-err" : undefined}
         className={cn("min-h-[42px] w-full min-w-0 rounded-lg border-[1.5px] bg-white px-2.5 text-[15px] font-normal text-ink", bad === k ? "border-coral" : "border-line")}
       />
-      {bad === k && <span id="ship-err" role="alert" className="text-[12.5px] font-semibold text-coral">{badMsg}</span>}
+      {bad === k && <span id="ship-err" role="alert" className="text-[13px] font-semibold text-coral">{badMsg}</span>}
     </label>
   );
 
   return (
     <section aria-labelledby="mail-h" className="af-card grid gap-4 p-4 sm:p-5">
       <div className="grid gap-1">
-        <h2 id="mail-h" className="flex items-center gap-2 text-[20px] font-bold"><Truck className="h-5 w-5" aria-hidden="true" />Have us print them</h2>
+        <h2 id="mail-h" className="flex items-center gap-2 t-card"><Truck className="h-5 w-5" aria-hidden="true" />Have us print them</h2>
         <p className="text-[14px] text-ink-2">Laminated, pre-cut and mailed to you. Every code in your queue, ready to hang.</p>
       </div>
 
@@ -449,7 +449,7 @@ function MailOrder({ quote, infinity, pricing, address, testMode, onOrdered, onP
         totalCents={quote.total}
         footer={<span className="font-semibold text-earned">At cost: we don&apos;t make money on these.</span>}
       />
-      {!infinity && pricing.infinityFreeShipping && <p className="text-[12.5px] text-ink-2">Shipping is free on the <Link href="/studio/infinity" className="font-semibold text-scan">Infinity plan</Link>.</p>}
+      {!infinity && pricing.infinityFreeShipping && <p className="text-[13px] text-ink-2">Shipping is free on the <Link href="/studio/infinity" className="font-semibold text-scan">Infinity plan</Link>.</p>}
 
       <form ref={formRef} id="ship" onSubmit={order} className="grid scroll-mt-24 gap-3" noValidate>
         <fieldset className="grid grid-cols-6 gap-2.5">
@@ -458,7 +458,7 @@ function MailOrder({ quote, infinity, pricing, address, testMode, onOrdered, onP
           {field("line1", "Street address", { auto: "address-line1", className: "col-span-6" })}
           {field("line2", "Apt, suite, studio", { auto: "address-line2", optional: true, className: "col-span-6" })}
           {field("city", "City", { auto: "address-level2", className: "col-span-6 sm:col-span-3 lg:col-span-6" })}
-          <label className="col-span-3 grid min-w-0 gap-1 text-[12.5px] font-semibold sm:col-span-1 lg:col-span-3">
+          <label className="col-span-3 grid min-w-0 gap-1 text-[13px] font-semibold sm:col-span-1 lg:col-span-3">
             State
             <select
               ref={(el) => { refs.current.state = el; }}
@@ -468,11 +468,11 @@ function MailOrder({ quote, infinity, pricing, address, testMode, onOrdered, onP
               <option value="">State</option>
               {US_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
-            {bad === "state" && <span id="ship-err" role="alert" className="text-[12.5px] font-semibold text-coral">{badMsg}</span>}
+            {bad === "state" && <span id="ship-err" role="alert" className="text-[13px] font-semibold text-coral">{badMsg}</span>}
           </label>
           {field("zip", "ZIP", { auto: "postal-code", inputMode: "numeric", className: "col-span-3 sm:col-span-2 lg:col-span-3" })}
         </fieldset>
-        <p className="text-[12.5px] text-ink-2">US addresses only. We mail them with tracking.</p>
+        <p className="text-[13px] text-ink-2">US addresses only. We mail them with tracking.</p>
         <PayButton type="submit" amountCents={quote.total} busy={busy} disabled={!quote.cards} className="btn btn-blue w-full" />
         <p className="text-[12px] text-ink-2">{testMode ? "Test mode: saved as paid, no card needed." : "Secure payment by Stripe: Apple Pay, Google Pay or card."} We email your receipt, then tracking when they ship.</p>
       </form>
@@ -485,7 +485,7 @@ function Orders({ orders, busy, retry, cancel }: { orders: QueueOrder[]; busy: s
   if (!orders.length) return null;
   return (
     <section id="orders" aria-labelledby="orders-h" className="grid scroll-mt-24 gap-3">
-      <h2 id="orders-h" className="text-[20px] font-bold">Printed by us</h2>
+      <h2 id="orders-h" className="t-card">Printed by us</h2>
       <ul className="grid gap-3">
         {orders.map((o) => {
           const st = isOrderStatus(o.status) ? o.status : "pending";

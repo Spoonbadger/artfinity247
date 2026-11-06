@@ -162,7 +162,7 @@ export default function CustomerList({ rows }: { rows: CustomerRow[] }) {
           </ul>
 
           {/* Desktop: table */}
-          <div className="hidden overflow-hidden rounded-2xl border-[1.5px] border-ink bg-white md:block">
+          <div className="hidden overflow-hidden rounded-2xl border border-edge bg-white md:block">
             <table className="w-full border-collapse text-[14px]">
               <thead>
                 <tr className="border-b border-line bg-wall text-left text-[12px] text-ink-2">
@@ -188,7 +188,7 @@ export default function CustomerList({ rows }: { rows: CustomerRow[] }) {
                             </Link>
                             {r.repeat && <RepeatChip />}
                           </span>
-                          <span className="text-[12.5px] text-ink-2">{r.masked}</span>
+                          <span className="text-[13px] text-ink-2">{r.masked}</span>
                         </span>
                       </span>
                     </td>

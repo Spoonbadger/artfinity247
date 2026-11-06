@@ -10,8 +10,8 @@ export function PageHead({ title, sub, action, back, children }: { title: ReactN
       {back && <Link href={back.href} className="justify-self-start text-[13.5px] font-semibold text-ink-2 no-underline hover:text-ink">← {back.label}</Link>}
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
         <div className="min-w-0">
-          <h1 className="display break-words text-[36px] sm:text-[44px]">{title}</h1>
-          {sub && <p className="mt-1 text-[14px] text-ink-2">{sub}</p>}
+          <h1 className="t-page break-words">{title}</h1>
+          {sub && <p className="t-muted mt-1">{sub}</p>}
         </div>
         {action && <div className="flex flex-wrap items-center gap-2">{action}</div>}
       </div>
@@ -53,7 +53,7 @@ export function Panel({ title, action, children, className, id }: { title?: Reac
     <section id={id} className={cn("af-panel grid content-start gap-3 p-4 sm:p-5", className)}>
       {(title || action) && (
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          {title && <h2 className="text-[18px] font-bold">{title}</h2>}
+          {title && <h2 className="t-card">{title}</h2>}
           {action}
         </div>
       )}

@@ -146,7 +146,7 @@ export default function HelpForm({ orderId, token, items }: { orderId: string; t
 
       {/* 3. Photos */}
       <section className="grid gap-2.5" aria-labelledby="photos-h">
-        <h2 id="photos-h" className="flex items-center gap-2 text-[19px] font-bold"><i className="paint-dab" style={{ ["--dab" as string]: DAB[2] }} />Photos <span className="text-[14px] font-normal text-ink-2">1 to {MAX_PHOTOS}</span></h2>
+        <h2 id="photos-h" className="flex items-center gap-2 t-card"><i className="paint-dab" style={{ ["--dab" as string]: DAB[2] }} />Photos <span className="text-[14px] font-normal text-ink-2">1 to {MAX_PHOTOS}</span></h2>
         <p className="-mt-1 text-[14.5px] text-ink-2">Show the problem up close. For shipping damage, a photo of the box helps too.</p>
         <div className="flex flex-wrap gap-3">
           {photos.map((p) => (

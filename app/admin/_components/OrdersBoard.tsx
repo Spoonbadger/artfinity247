@@ -231,7 +231,7 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
       </TableToolbar>
 
       {shownSelected.length > 0 && (
-        <div className="sticky top-[64px] z-10 flex flex-wrap items-center gap-2 rounded-xl border-[1.5px] border-ink bg-white px-3 py-2 shadow-sm" role="region" aria-label="Bulk actions">
+        <div className="sticky top-[64px] z-10 flex flex-wrap items-center gap-2 rounded-xl border border-edge bg-white px-3 py-2 shadow-sm" role="region" aria-label="Bulk actions">
           <b className="num text-[14px]">{shownSelected.length} selected</b>
           <button type="button" disabled={busy === "bulk"} onClick={bulkSent} className="btn btn-blue btn-sm">Mark sent to printer</button>
           <a href={exportHref} className="btn btn-ghost btn-sm" download>Export CSV for the lab</a>
@@ -316,7 +316,7 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
                   {/* total */}
                   <div className="flex items-baseline gap-2 lg:block lg:text-right">
                     <b className="num text-[16px] text-earned">{usd(o.amountTotal)}</b>
-                    <div className="num text-[12.5px] text-ink-2">{usd(artistShare)} artist</div>
+                    <div className="num text-[13px] text-ink-2">{usd(artistShare)} artist</div>
                   </div>
 
                   {/* printer + shipping (one row on phones, two columns on desktop) */}
@@ -408,7 +408,7 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
                         {o.parcelNotes.map((n) => (
                           <figure key={n.id} className="grid gap-1.5 rounded-lg border-[1.5px] border-dashed border-ink/30 bg-white p-3">
                             <blockquote className="whitespace-pre-wrap text-[14px] leading-relaxed text-ink">{n.body}</blockquote>
-                            <figcaption className="text-[12.5px] text-ink-2">— {n.artistName}</figcaption>
+                            <figcaption className="text-[13px] text-ink-2">— {n.artistName}</figcaption>
                           </figure>
                         ))}
                         <a href={`/admin/orders/${o.id}/slip`} target="_blank" rel="noopener" className="btn btn-ghost btn-sm justify-self-start">Print slip with note</a>
@@ -453,20 +453,20 @@ function ShipForm({ busy, onSubmit, onCancel }: { busy: boolean; onSubmit: (t: {
     onSubmit({ carrier, trackingNumber: num.trim(), ...(carrier === "Other" ? { trackingUrl: url.trim() } : {}) });
   };
   return (
-    <form onSubmit={submit} className="mt-3 grid gap-3 rounded-xl border-[1.5px] border-ink bg-white p-3 lg:ml-[136px] sm:grid-cols-[140px_minmax(0,1fr)_auto] sm:items-end" noValidate>
-      <label className="grid gap-1 text-[12.5px] font-semibold">
+    <form onSubmit={submit} className="mt-3 grid gap-3 rounded-xl border border-edge bg-white p-3 lg:ml-[136px] sm:grid-cols-[140px_minmax(0,1fr)_auto] sm:items-end" noValidate>
+      <label className="grid gap-1 text-[13px] font-semibold">
         Carrier
         <select value={carrier} onChange={(e) => setCarrier(e.target.value as Carrier)} className="min-h-[40px] rounded-lg border-[1.5px] border-line bg-white px-2 text-[14px] text-ink">
           {CARRIERS.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
       </label>
       <div className="grid gap-2">
-        <label className="grid gap-1 text-[12.5px] font-semibold">
+        <label className="grid gap-1 text-[13px] font-semibold">
           Tracking number
           <input value={num} onChange={(e) => setNum(e.target.value)} maxLength={40} autoFocus className="min-h-[40px] rounded-lg border-[1.5px] border-line px-2.5 text-[14px] text-ink" placeholder="9400 1000 0000 0000 0000 00" />
         </label>
         {carrier === "Other" && (
-          <label className="grid gap-1 text-[12.5px] font-semibold">
+          <label className="grid gap-1 text-[13px] font-semibold">
             Tracking link
             <input value={url} onChange={(e) => setUrl(e.target.value)} maxLength={300} type="url" className="min-h-[40px] rounded-lg border-[1.5px] border-line px-2.5 text-[14px] text-ink" placeholder="https://" />
           </label>
@@ -477,7 +477,7 @@ function ShipForm({ busy, onSubmit, onCancel }: { busy: boolean; onSubmit: (t: {
         <button type="button" onClick={onCancel} className="btn btn-ghost btn-sm">Cancel</button>
       </div>
       {err && <p role="alert" className="text-[13px] font-semibold text-coral sm:col-span-3">{err}</p>}
-      <p className="text-[12.5px] text-ink-2 sm:col-span-3">The buyer gets an email with this link.</p>
+      <p className="text-[13px] text-ink-2 sm:col-span-3">The buyer gets an email with this link.</p>
     </form>
   );
 }

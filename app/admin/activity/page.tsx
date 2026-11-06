@@ -58,7 +58,7 @@ export default async function ActivityPage({ searchParams }: { searchParams: SP 
 
       <form className="grid gap-2" method="get">
         <div className="flex flex-wrap items-end gap-2">
-          <label className="grid min-w-[180px] flex-1 gap-1 text-[12.5px] font-semibold sm:max-w-[260px]">Action
+          <label className="grid min-w-[180px] flex-1 gap-1 text-[13px] font-semibold sm:max-w-[260px]">Action
             <select name="action" defaultValue={sp.action || ""} className={field}>
               <option value="">All actions</option>
               {groups.map((g) => (
@@ -69,7 +69,7 @@ export default async function ActivityPage({ searchParams }: { searchParams: SP 
               ))}
             </select>
           </label>
-          <label className="grid min-w-[180px] flex-1 gap-1 text-[12.5px] font-semibold sm:max-w-[260px]">Admin
+          <label className="grid min-w-[180px] flex-1 gap-1 text-[13px] font-semibold sm:max-w-[260px]">Admin
             <select name="admin" defaultValue={sp.admin || ""} className={field}>
               <option value="">Anyone</option>
               {admins.map((a) => <option key={a.adminEmail} value={a.adminEmail}>{a.adminEmail || "(no email)"}</option>)}
@@ -81,19 +81,19 @@ export default async function ActivityPage({ searchParams }: { searchParams: SP 
         <details open={more_}>
           <summary className="inline-flex min-h-[40px] cursor-pointer items-center text-[13.5px] font-semibold text-ink-2 hover:text-ink">More filters</summary>
           <div className="af-panel mt-1 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end [&>label]:min-w-0">
-            <label className="grid gap-1 text-[12.5px] font-semibold">Target
+            <label className="grid gap-1 text-[13px] font-semibold">Target
               <select name="target" defaultValue={sp.target || ""} className={field}>
                 <option value="">Any</option>
                 {TARGETS.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </label>
-            <label className="grid gap-1 text-[12.5px] font-semibold">Target id
+            <label className="grid gap-1 text-[13px] font-semibold">Target id
               <input name="id" defaultValue={sp.id || ""} placeholder="Artist, order or artwork id" className={field} />
             </label>
-            <label className="grid gap-1 text-[12.5px] font-semibold">From
+            <label className="grid gap-1 text-[13px] font-semibold">From
               <input type="date" name="from" defaultValue={sp.from || ""} className={field} />
             </label>
-            <label className="grid gap-1 text-[12.5px] font-semibold">To
+            <label className="grid gap-1 text-[13px] font-semibold">To
               <input type="date" name="to" defaultValue={sp.to || ""} className={field} />
             </label>
           </div>

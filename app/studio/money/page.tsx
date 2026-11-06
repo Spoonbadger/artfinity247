@@ -114,7 +114,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
       )}
 
       {venmoPending !== null && (
-        <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[4px] border-2 border-ink bg-sticker/40 px-4 py-3 text-[14.5px]">
+        <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[4px] border-[1.5px] border-sticker bg-sticker/30 px-4 py-3 text-[14.5px]">
           <b className="min-w-0 flex-1">Waiting for you to confirm by email: {venmoPending || "remove your Venmo"}</b>
           <Link href="/studio/page#venmo" className="text-[13.5px] font-semibold text-ink-2 underline underline-offset-2">Change or cancel</Link>
         </div>

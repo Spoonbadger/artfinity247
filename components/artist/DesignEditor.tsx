@@ -231,7 +231,7 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
   return (
     <section className="af-panel grid gap-3 p-4">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-[16px] font-bold">{title}</h2>
+        <h2 className="t-card">{title}</h2>
         {hint && <span className="truncate text-[13px] text-ink-2">{hint}</span>}
       </div>
       {children}
@@ -341,7 +341,7 @@ function Preview({ slug, json }: { slug: string; json: string }) {
           <span className={cn("paint-dab", loading && "animate-pulse")} style={{ ["--dab" as string]: "var(--af-coral)" }} aria-hidden="true" />
           Live preview
         </span>
-        <div role="radiogroup" aria-label="Preview size" className="flex rounded-full border-[1.5px] border-ink p-0.5 text-[13px] font-bold">
+        <div role="radiogroup" aria-label="Preview size" className="flex rounded-full border-[1.5px] border-edge-strong p-0.5 text-[13px] font-bold">
           {(["phone", "desktop"] as const).map((d) => (
             <button
               key={d}

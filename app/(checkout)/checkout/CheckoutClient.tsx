@@ -151,7 +151,7 @@ export default function CheckoutClient({ tax, collectorEmail = null, reward = nu
           <span>Email me when {who} {who.includes(" and ") ? "post" : "posts"} new work</span>
         </label>
         {reward && (
-          <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border-[1.5px] border-ink bg-sticker/40 px-3 py-2.5 text-left text-[14px] leading-snug text-ink">
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-sticker bg-sticker/30 px-3 py-2.5 text-left text-[14px] leading-snug text-ink">
             <input type="checkbox" checked={useReward} onChange={(e) => setUseReward(e.target.checked)} className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[rgb(var(--af-scan-rgb))]" />
             <span>
               <b>Use your reward: up to {reward.pct}% off</b> (code {reward.code}). Artfinity pays for it, not the artist.
@@ -169,7 +169,7 @@ export default function CheckoutClient({ tax, collectorEmail = null, reward = nu
             <b>Test mode.</b> No card needed: the order is saved as paid.
           </p>
         )}
-        {taxLine === "added" && <p className="text-[12.5px] text-ink-2">Address and payment on the next screen, where Stripe adds the sales tax for your address.</p>}
+        {taxLine === "added" && <p className="text-[13px] text-ink-2">Address and payment on the next screen, where Stripe adds the sales tax for your address.</p>}
         <div className="border-t border-line pt-3"><TrustStrip artist={who} /></div>
       </PaymentSummary>
 

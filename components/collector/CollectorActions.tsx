@@ -36,7 +36,7 @@ export function SignInForm({ next, defaultEmail = "" }: { next: string; defaultE
   if (message)
     return (
       <div className="grid gap-3 rounded-2xl border border-line bg-white p-5" aria-live="polite">
-        <h2 className="text-[20px] font-bold">Check your email</h2>
+        <h2 className="t-card">Check your email</h2>
         <p className="text-[15.5px] text-ink-2">{message}</p>
         <button type="button" onClick={() => setMessage(null)} className="btn btn-ghost btn-sm w-fit min-h-[44px] px-5">Use another email</button>
       </div>
@@ -50,7 +50,7 @@ export function SignInForm({ next, defaultEmail = "" }: { next: string; defaultE
       <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute left-[-9999px] h-px w-px opacity-0" />
       {error && <p role="alert" className="text-[14px] font-semibold text-coral">{error}</p>}
       <button type="submit" disabled={busy} className="btn btn-blue w-full py-3 text-[16px]">{busy ? "Sending…" : "Email me a sign-in link"}</button>
-      <p className="text-center text-[12.5px] text-ink-2">No password. The link works once, for 15 minutes.</p>
+      <p className="text-center text-[13px] text-ink-2">No password. The link works once, for 15 minutes.</p>
     </form>
   );
 }

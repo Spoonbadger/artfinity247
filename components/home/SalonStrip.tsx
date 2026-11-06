@@ -33,8 +33,8 @@ export default function SalonStrip({ art, seconds = 70, reverse = false, label =
               </span>
               <span className="grid gap-0.5 px-0.5">
                 <b className="truncate text-[13.5px] leading-tight group-hover:text-scan">{a.title}</b>
-                <span className="truncate text-[12.5px] text-ink-2">{a.artist}</span>
-                <span className="num text-[12.5px] font-semibold">from {money(a.priceFrom)}</span>
+                <span className="truncate text-[13px] text-ink-2">{a.artist}</span>
+                <span className="num text-[13px] font-semibold">from {money(a.priceFrom)}</span>
               </span>
             </Link>
           </li>

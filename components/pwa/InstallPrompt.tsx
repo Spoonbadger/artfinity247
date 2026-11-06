@@ -63,7 +63,7 @@ export default function InstallPrompt() {
 
   return (
     <div className="mx-auto max-w-[1320px] px-4 pt-4 sm:px-6 lg:px-10 lg:pt-6">
-    <section aria-labelledby={titleId} className="flex max-w-[640px] items-start gap-3 rounded-2xl border-[1.5px] border-ink bg-wall p-3.5">
+    <section aria-labelledby={titleId} className="flex max-w-[640px] items-start gap-3 rounded-2xl border border-edge bg-wall p-3.5">
       <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-line bg-white" aria-hidden="true">
         <LogoMark className="h-7 w-7" />
       </span>

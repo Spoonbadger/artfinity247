@@ -18,7 +18,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
       <div className="grid justify-items-center gap-3">
         <h1 className="display text-[44px] sm:text-[60px]">Paint spilled.</h1>
         <p className="max-w-[44ch] text-[17px] text-ink-2">Something broke on our side. Nothing you saved is lost.</p>
-        {error?.digest && <p className="text-[12.5px] text-ink-2">Ref {error.digest}</p>}
+        {error?.digest && <p className="text-[13px] text-ink-2">Ref {error.digest}</p>}
         <div className="mt-3 flex flex-wrap justify-center gap-2">
           <button type="button" onClick={() => reset()} className="btn btn-blue">Try again</button>
           {currentUser ? <Link href="/studio" className="btn btn-ghost">Go to my Studio</Link> : <Link href="/" className="btn btn-ghost">Go home</Link>}

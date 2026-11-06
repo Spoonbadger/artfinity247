@@ -311,7 +311,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
               onChange={(v) => { setVenueId(v.venueId); set({ ev: v.venue }); }}
             />
             <Toggle checked={d.evPrint} disabled={!d.ev.trim()} onChange={(v) => set({ evPrint: v })}>Print it on the card too</Toggle>
-            {!d.ev.trim() && <small className="-mt-1 block text-[12.5px] text-ink-2">Pick a venue or event above to print its name on the card.</small>}
+            {!d.ev.trim() && <small className="-mt-1 block text-[13px] text-ink-2">Pick a venue or event above to print its name on the card.</small>}
             <label className={s.field}>Size shown first
               <select value={d.size} onChange={(e) => set({ size: e.target.value as SizeKey })}>
                 {(Object.keys(SIZE_NAME) as SizeKey[]).map((k) => <option key={k} value={k}>{SIZE_NAME[k]} · {SIZE_INCHES[k]}</option>)}

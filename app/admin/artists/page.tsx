@@ -93,32 +93,32 @@ export default async function AdminArtistsPage({ searchParams }: { searchParams:
         <details open={advanced > 0} className="group">
           <summary className="inline-flex min-h-[40px] cursor-pointer items-center text-[13.5px] font-semibold text-ink-2 hover:text-ink">More filters{advanced ? ` (${advanced} on)` : ""}</summary>
           <div className="af-panel mt-1 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end [&>label]:min-w-0">
-            <label className="grid gap-1 text-[12.5px] font-semibold">Verified
+            <label className="grid gap-1 text-[13px] font-semibold">Verified
               <select name="verified" defaultValue={f.verified || ""} className={field}>
                 <option value="">Any</option><option value="yes">Verified</option><option value="pending">Requested</option><option value="no">Not verified</option>
               </select>
             </label>
-            <label className="grid gap-1 text-[12.5px] font-semibold">Account
+            <label className="grid gap-1 text-[13px] font-semibold">Account
               <select name="status" defaultValue={f.status || ""} className={field}>
                 <option value="">Any</option><option value="active">Active</option><option value="suspended">Suspended</option><option value="closed">Closed</option>
               </select>
             </label>
-            <label className="grid gap-1 text-[12.5px] font-semibold">Plan
+            <label className="grid gap-1 text-[13px] font-semibold">Plan
               <select name="plan" defaultValue={f.plan || ""} className={field}>
                 <option value="">Any</option><option value="infinity">Infinity</option><option value="free">Free</option>
               </select>
             </label>
-            <label className="grid gap-1 text-[12.5px] font-semibold">Payouts
+            <label className="grid gap-1 text-[13px] font-semibold">Payouts
               <select name="stripe" defaultValue={f.stripe || ""} className={field}>
                 <option value="">Any</option><option value="ready">Stripe ready</option><option value="pending">Stripe unfinished</option><option value="none">No Stripe</option>
               </select>
             </label>
-            <label className="grid gap-1 text-[12.5px] font-semibold">Who
+            <label className="grid gap-1 text-[13px] font-semibold">Who
               <select name="role" defaultValue={f.role || ""} className={field}>
                 <option value="">All accounts</option><option value="artists">Artists</option><option value="admins">Admins</option>
               </select>
             </label>
-            <label className="grid gap-1 text-[12.5px] font-semibold">Sign-in
+            <label className="grid gap-1 text-[13px] font-semibold">Sign-in
               <select name="signin" defaultValue={f.signin || ""} className={field}>
                 <option value="">Any</option><option value="social">Social only (no password)</option>
               </select>

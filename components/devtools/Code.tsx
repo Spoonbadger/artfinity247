@@ -80,7 +80,7 @@ export default function Code({
     <div className={cn("min-w-0 overflow-hidden rounded-2xl bg-[#17181f] text-white shadow-[0_2px_0_rgba(21,22,27,.15)]", className)}>
       {(title || copy) && (
         <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-2">
-          <span className="truncate text-[12.5px] font-semibold text-white/60">{title}</span>
+          <span className="truncate text-[13px] font-semibold text-white/60">{title}</span>
           {copy && <CopyButton text={code} />}
         </div>
       )}

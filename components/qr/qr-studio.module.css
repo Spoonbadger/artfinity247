@@ -3,22 +3,22 @@
 
 /* ---------- artwork picker ---------- */
 .picker { display: grid; gap: 8px; min-width: 0; }
-.pickerH { font-family: var(--font-display); font-variation-settings: "wdth" 80; font-weight: 750; font-size: 18px; line-height: 1.1; margin: 0; }
+.pickerH { font-family: var(--font-body); font-weight: 700; font-size: 17px; line-height: 1.1; margin: 0; }
 .thumbs { display: flex; gap: 10px; overflow-x: auto; padding: 4px 4px 10px; margin: 0 -4px; scroll-snap-type: x proximity; scrollbar-width: thin; }
 .thumb { flex: none; width: 92px; display: grid; gap: 6px; padding: 0; border: 0; background: none; cursor: pointer; text-align: left; scroll-snap-align: start; color: var(--af-ink); }
 .thumb img { width: 92px; height: 92px; object-fit: cover; border-radius: 4px; display: block; border: 3px solid #fff; box-shadow: 0 0 0 1px var(--af-line), 0 4px 10px rgba(21,22,27,.08); transition: transform .15s; }
-.thumb span { font-size: 12.5px; font-weight: 600; line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.thumb span { font-size: 13px; font-weight: 600; line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .thumb:hover img { transform: translateY(-2px) rotate(-1deg); }
 .thumb[aria-pressed="true"] img { box-shadow: 0 0 0 2.5px var(--af-ink), 5px 5px 0 var(--af-sticker); transform: rotate(-1.5deg); }
 
 /* ---------- studio frame ---------- */
-.studio { display: grid; grid-template-columns: 330px minmax(0, 1fr); grid-template-rows: auto 1fr; grid-template-areas: "ctl out" "ctl panels"; border: 2px solid var(--af-ink); border-radius: 18px; overflow: hidden; background: #fff; min-width: 0; }
-.ctl { grid-area: ctl; border-right: 2px solid var(--af-ink); padding: 8px 24px 24px; display: grid; align-content: start; min-width: 0; background: #fff; }
+.studio { display: grid; grid-template-columns: 330px minmax(0, 1fr); grid-template-rows: auto 1fr; grid-template-areas: "ctl out" "ctl panels"; border: 1px solid var(--af-edge); border-radius: 18px; overflow: hidden; background: #fff; min-width: 0; }
+.ctl { grid-area: ctl; border-right: 1px solid var(--af-edge); padding: 8px 24px 24px; display: grid; align-content: start; min-width: 0; background: #fff; }
 .group { border: 0; margin: 0; padding: 16px 0; min-width: 0; border-bottom: 1px dashed var(--af-line); }
 .group:last-child { border-bottom: 0; }
 .group legend { float: left; width: 100%; padding: 0; margin-bottom: 10px; display: flex; align-items: center; gap: 9px; font-family: var(--font-display); font-variation-settings: "wdth" 80; font-weight: 750; font-size: 19px; line-height: 1.1; color: var(--af-ink); }
 .groupBody { clear: both; display: grid; gap: 9px; min-width: 0; }
-.sub { font-size: 12.5px; font-weight: 600; color: var(--af-ink-2); margin-top: 4px; }
+.sub { font-size: 13px; font-weight: 600; color: var(--af-ink-2); margin-top: 4px; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chips button { border: 1.5px solid var(--af-line); background: #fff; color: var(--af-ink); border-radius: 999px; padding: 6px 12px; font: 600 13.5px/1.2 var(--font-body); cursor: pointer; }
@@ -59,12 +59,11 @@
     repeating-linear-gradient(0deg, rgba(21,22,27,.025) 0 1px, transparent 1px 4px),
     repeating-linear-gradient(90deg, rgba(21,22,27,.025) 0 1px, transparent 1px 5px); }
 .topRow { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; }
-.tabs { display: inline-flex; gap: 2px; padding: 3px; border: 2px solid var(--af-ink); border-radius: 999px; background: #fff; flex-wrap: wrap; }
+.tabs { display: inline-flex; gap: 2px; padding: 3px; border: 1.5px solid var(--af-edge-strong); border-radius: 999px; background: #fff; flex-wrap: wrap; }
 .tabs button { border: 0; background: transparent; color: var(--af-ink); border-radius: 999px; padding: 7px 14px; font: 600 13.5px/1.2 var(--font-body); cursor: pointer; }
 .tabs button[aria-selected="true"] { background: var(--af-ink); color: #fff; }
 .downloads { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .downloads :global(.btn-ghost) { background: #fff; }
-.downloads :global(.btn-ghost:hover) { background: var(--af-ink); }
 
 .stage { min-height: 440px; display: grid; place-items: center; padding: 10px 0; min-width: 0; }
 .loading { display: flex; gap: 10px; align-items: center; color: var(--af-ink-2); font-weight: 600; }
@@ -114,7 +113,7 @@
 .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .panel { background: #fff; border: 1px solid var(--af-line); border-radius: 14px; padding: 20px; display: grid; gap: 10px; align-content: start; min-width: 0; }
 .wide { grid-column: 1 / -1; }
-.panel h2 { margin: 0; display: flex; align-items: center; gap: 9px; font-family: var(--font-display); font-variation-settings: "wdth" 80; font-weight: 750; font-size: 19px; line-height: 1.1; color: var(--af-ink); }
+.panel h2 { margin: 0; display: flex; align-items: center; gap: 9px; font-family: var(--font-body); font-weight: 700; font-size: 17px; line-height: 1.1; color: var(--af-ink); }
 .checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
 .checks li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; font-size: 13.5px; line-height: 1.4; color: var(--af-ink); }
 .checks li i { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 12px; font-weight: 700; color: #fff; margin-top: 1px; }
@@ -140,7 +139,7 @@
 
 @media (max-width: 1100px) {
   .studio { grid-template-columns: 1fr; grid-template-rows: auto; grid-template-areas: "out" "ctl" "panels"; }
-  .ctl { border-right: 0; border-top: 2px solid var(--af-ink); border-bottom: 2px solid var(--af-ink); grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); column-gap: 28px; }
+  .ctl { border-right: 0; border-top: 1px solid var(--af-edge); border-bottom: 1px solid var(--af-edge); grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); column-gap: 28px; }
   .panelsWrap { padding-top: 20px; }
 }
 @media (max-width: 720px) {
@@ -166,6 +165,6 @@
   .colors button, .pick { width: 38px; height: 36px; }
   .toggle { min-height: 44px; }
   .thumb span { font-size: 13px; }
-  .presets small { font-size: 12.5px; }
+  .presets small { font-size: 13px; }
   .downloads :global(.btn-sm) { min-height: 44px; padding-left: 16px; padding-right: 16px; }
 }

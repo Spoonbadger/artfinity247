@@ -96,7 +96,7 @@ export default function ConnectedAccounts({ available, initial }: { available: P
   return (
     <section id="connected" aria-labelledby="signin-h" className="grid scroll-mt-24 gap-3">
       <div className="grid gap-1">
-        <h2 id="signin-h" className="text-[18px] font-bold">Sign-in methods</h2>
+        <h2 id="signin-h" className="t-card">Sign-in methods</h2>
         <p className="text-[13.5px] text-ink-2">Log in with any of these. Keep at least one.</p>
       </div>
 

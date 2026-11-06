@@ -65,7 +65,7 @@ export default async function ScanBookingPage({ params }: { params: { id: string
       {st !== "cancelled" && (
         <ol className="grid grid-cols-3 gap-1.5 sm:grid-cols-6" aria-label="Progress">
           {STATUS_STEPS.map((x, i) => (
-            <li key={x} className={cn("rounded-lg border px-2 py-1.5 text-[12.5px] font-semibold", i < step ? "border-earned/40 bg-earned-soft" : i === step ? "border-ink bg-white" : "border-line text-ink-2")}>
+            <li key={x} className={cn("rounded-lg border px-2 py-1.5 text-[13px] font-semibold", i < step ? "border-earned/40 bg-earned-soft" : i === step ? "border-ink bg-white" : "border-line text-ink-2")}>
               {STATUS_LABEL[x].split(" ·")[0]}<span className="sr-only">{i < step ? " (done)" : i === step ? " (now)" : ""}</span>
             </li>
           ))}
@@ -74,7 +74,7 @@ export default async function ScanBookingPage({ params }: { params: { id: string
 
       {/* The next action for this state */}
       <section aria-labelledby="next-h" className="af-card grid gap-3 p-4 sm:p-5">
-        <h2 id="next-h" className="text-[19px] font-bold">Next step</h2>
+        <h2 id="next-h" className="t-card">Next step</h2>
         <p className="text-[14.5px] text-ink-2">
           {st === "requested" && "Pick a date from the artist's choices (or another), set the final price and confirm. The artist gets an email and a pay button in their Studio."}
           {st === "confirmed" && `Waiting for the artist to pay ${usd(b.priceCents ?? 0)}. They have the pay button in their Studio and an email. You can change the date or price by confirming again.`}
@@ -116,7 +116,7 @@ export default async function ScanBookingPage({ params }: { params: { id: string
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <section aria-labelledby="items-h" className="af-card grid content-start gap-3 p-4 sm:p-5">
           <div>
-            <h2 id="items-h" className="text-[19px] font-bold">Paintings and scan files</h2>
+            <h2 id="items-h" className="t-card">Paintings and scan files</h2>
             <p className="text-[13.5px] text-ink-2">
               {canFile
                 ? "Upload each high-res scan (JPG, PNG, TIFF or WEBP, up to 120 MB). It replaces the artwork's image through the normal pipeline and re-measures its print sizes. The old image is kept until the booking is returned, so Undo works until then."
@@ -130,7 +130,7 @@ export default async function ScanBookingPage({ params }: { params: { id: string
 
         <div className="grid content-start gap-6">
           <section aria-labelledby="details-h" className="af-card grid gap-2 p-4 sm:p-5 text-[14px]">
-            <h2 id="details-h" className="text-[19px] font-bold">Details</h2>
+            <h2 id="details-h" className="t-card">Details</h2>
             <dl className="grid gap-2">
               <Row k="Artist">{name}{artist ? <span className="block text-ink-2">{artist.email}{artist.phone ? ` · ${artist.phone}` : ""}</span> : null}</Row>
               <Row k="Handoff">{HANDOFF_LABEL[b.handoff as "dropoff" | "pickup"]}{b.pickupAddress && <span className="block whitespace-pre-line text-ink-2">{b.pickupAddress}</span>}</Row>
@@ -144,7 +144,7 @@ export default async function ScanBookingPage({ params }: { params: { id: string
           </section>
 
           <section aria-labelledby="time-h" className="af-card grid gap-2 p-4 sm:p-5 text-[14px]">
-            <h2 id="time-h" className="text-[19px] font-bold">Timeline</h2>
+            <h2 id="time-h" className="t-card">Timeline</h2>
             <ul className="grid gap-1">
               {timeline.filter(([, d]) => d).map(([k, d]) => (
                 <li key={k} className="flex justify-between gap-3"><span>{k}</span><span className="num text-ink-2">{stamp(d)}</span></li>
@@ -154,7 +154,7 @@ export default async function ScanBookingPage({ params }: { params: { id: string
           </section>
 
           <section aria-labelledby="note-h" className="af-card grid gap-2 p-4 sm:p-5 text-[14px]">
-            <h2 id="note-h" className="text-[19px] font-bold">Team note</h2>
+            <h2 id="note-h" className="t-card">Team note</h2>
             <p className="whitespace-pre-line text-ink-2">{b.adminNote || "No note yet. Only admins see this."}</p>
             <ActionButton url={`/api/admin/scanning/${b.id}`} body={{ step: "note" }} need="orders" label={b.adminNote ? "Edit note" : "Add note"} title="Team note" confirm="Only admins see this." fields={[{ name: "note", label: "Note", type: "textarea", defaultValue: b.adminNote ?? "" }]} confirmLabel="Save note" className="justify-self-start" />
           </section>

@@ -139,7 +139,7 @@ export default function HelpSearch({ docs, autoFocus = false }: { docs: SearchDo
 
       <div id="help-results" aria-live="polite">
         {terms.length > 0 && (
-          <div className="mt-4 rounded-2xl border-[1.5px] border-ink bg-white p-2">
+          <div className="mt-4 rounded-2xl border border-edge bg-white p-2 shadow-[0_18px_40px_-12px_rgba(21,22,27,.25)]">
             {results.length ? (
               <ul className="grid">
                 {results.map((r) => (

@@ -141,7 +141,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName, tax = "ad
         </Problem>
       )}
       {placed && (
-        <section aria-live="polite" className="relative grid gap-3 overflow-hidden rounded-2xl border-[1.5px] border-ink bg-[#fffbe8] p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+        <section aria-live="polite" className="relative grid gap-3 overflow-hidden rounded-2xl border border-edge bg-[#fffbe8] p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
           <div>
             <span className="sticker-badge">Order placed{placed.test ? " · test" : ""}</span>
             <h2 className="display relative mt-2 text-[34px]">
@@ -160,7 +160,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName, tax = "ad
         <div className="grid min-w-0 gap-6">
           {/* 1. Pick work */}
           <section aria-labelledby="pick-h" className="grid gap-3">
-            <h2 id="pick-h" className="flex items-baseline gap-2 text-[20px] font-bold">
+            <h2 id="pick-h" className="flex items-baseline gap-2 t-card">
               <i className="paint-dab" style={{ ["--dab" as string]: "var(--af-scan)" }} />Pick work
             </h2>
             <ul className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0 xl:grid-cols-5">
@@ -197,7 +197,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName, tax = "ad
 
           {/* 2. Lines */}
           <section aria-labelledby="lines-h" className="grid gap-3">
-            <h2 id="lines-h" className="flex items-baseline gap-2 text-[20px] font-bold">
+            <h2 id="lines-h" className="flex items-baseline gap-2 t-card">
               <i className="paint-dab" style={{ ["--dab" as string]: "var(--af-sticker)" }} />Size, frame, how many
             </h2>
             {lines.length === 0 ? (
@@ -215,14 +215,14 @@ export default function BulkOrder({ arts, past, placedId, defaultName, tax = "ad
                         <img src={a.imageUrl} alt={a.title} className="h-16 w-14 shrink-0 rounded-[2px] bg-white object-cover shadow-[0_4px_10px_-3px_rgba(21,22,27,.35)] sm:h-[88px] sm:w-[72px]" />
                         <div className="min-w-0 flex-1 sm:hidden">
                           <b className="block truncate">{a.title}</b>
-                          {a.edition && <span className="num text-[12.5px] text-ink-2">{a.edition.left} of {a.edition.size} left</span>}
+                          {a.edition && <span className="num text-[13px] text-ink-2">{a.edition.left} of {a.edition.size} left</span>}
                         </div>
                         <button type="button" onClick={() => remove(l.key)} className="grid h-10 w-10 place-items-center rounded-full text-ink-2 hover:bg-wall hover:text-ink sm:hidden" aria-label={`Remove ${a.title}`}>
                           <Trash2 className="h-4 w-4" aria-hidden />
                         </button>
                       </div>
                       <div className="hidden items-baseline justify-between gap-2 sm:flex">
-                        <b className="truncate">{a.title}{a.edition && <span className="num ml-2 text-[12.5px] font-normal text-ink-2">{a.edition.left} of {a.edition.size} left</span>}</b>
+                        <b className="truncate">{a.title}{a.edition && <span className="num ml-2 text-[13px] font-normal text-ink-2">{a.edition.left} of {a.edition.size} left</span>}</b>
                         <button type="button" onClick={() => remove(l.key)} className="flex items-center gap-1 text-[13px] font-semibold text-ink-2 hover:text-ink" aria-label={`Remove ${a.title}`}>
                           <Trash2 className="h-3.5 w-3.5" aria-hidden />Remove
                         </button>
@@ -243,7 +243,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName, tax = "ad
                           })}
                         </fieldset>
                         {a.sizes.length < BULK_SIZES.length && (
-                          <p className="-mt-1.5 text-[12.5px] text-ink-2">Greyed sizes would print soft from this file.</p>
+                          <p className="-mt-1.5 text-[13px] text-ink-2">Greyed sizes would print soft from this file.</p>
                         )}
                         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                           <div className="flex flex-wrap items-center gap-2">
@@ -276,7 +276,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName, tax = "ad
 
           {/* 3. Ship to */}
           <section id="ship-to" aria-labelledby="ship-h" className="grid gap-3">
-            <h2 id="ship-h" className="flex items-baseline gap-2 text-[20px] font-bold">
+            <h2 id="ship-h" className="flex items-baseline gap-2 t-card">
               <i className="paint-dab" style={{ ["--dab" as string]: "var(--af-coral)" }} />Ship to you
             </h2>
             <AddressFields idPrefix="bulk-ship" value={ship} onChange={(a) => setShip({ ...a, name: a.name ?? "" })} />
@@ -289,7 +289,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName, tax = "ad
             title="At cost"
             rows={[
               { label: `${quote.prints} ${quote.prints === 1 ? "print" : "prints"}`, cents: quote.subtotal },
-              ...(quote.discount > 0 ? [{ label: <><span className="rounded-full bg-sticker px-2 py-0.5 text-[12.5px] font-bold text-ink">{quote.discountPct}% off</span> volume</>, cents: -quote.discount }] : []),
+              ...(quote.discount > 0 ? [{ label: <><span className="rounded-full bg-sticker px-2 py-0.5 text-[13px] font-bold text-ink">{quote.discountPct}% off</span> volume</>, cents: -quote.discount }] : []),
               { label: "Handling, shipping included", cents: quote.handling || (lines.length ? BULK_HANDLING_FEE_CENTS : 0) },
             ]}
             tax={tax}
@@ -302,7 +302,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName, tax = "ad
                 {[...BULK_TIERS].sort((a, b) => a.min - b.min).map((t) => {
                   const on = quote.prints >= t.min;
                   return (
-                    <span key={t.min} className={cn("num flex items-center gap-1 rounded-full border-[1.5px] px-2.5 py-1 text-[12.5px] font-bold", on ? "border-ink bg-sticker" : "border-line text-ink-2")}>
+                    <span key={t.min} className={cn("num flex items-center gap-1 rounded-full border-[1.5px] px-2.5 py-1 text-[13px] font-bold", on ? "border-ink bg-sticker" : "border-line text-ink-2")}>
                       {on && <Check className="h-3.5 w-3.5" aria-hidden />}{t.min}+ · {t.pct}% off
                     </span>
                   );
@@ -314,7 +314,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName, tax = "ad
 
           {/* Margin calculator */}
           <section aria-labelledby="margin-h" className="grid gap-2.5 rounded-2xl bg-wall p-4 sm:p-5">
-            <h2 id="margin-h" className="text-[16px] font-bold">At your market</h2>
+            <h2 id="margin-h" className="t-card">At your market</h2>
             <label className="flex flex-wrap items-center gap-2 text-[15px]">
               Sell at
               <span className="flex items-center rounded-lg border-2 border-ink bg-white px-2 py-1 focus-within:border-scan">
@@ -345,7 +345,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName, tax = "ad
 
           {error && <Problem tone="error" title={error.message} fix={error.fix} />}
           <PayButton amountCents={quote.total} plusTax={tax === "added"} busy={busy} onPay={placeOrder} disabled={!lines.length} label={lines.length ? undefined : "Pick a piece"} lock={lines.length > 0} className="btn btn-blue btn-lg w-full" />
-          <p className="text-center text-[12.5px] text-ink-2">
+          <p className="text-center text-[13px] text-ink-2">
             {tax === "test" ? "Test mode: saved as paid, no card needed. " : "Secure payment by Stripe. "}Bulk prints don&apos;t count as sales or earnings.
           </p>
         </aside>
@@ -356,7 +356,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName, tax = "ad
         <div className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-3 border-t border-line bg-white/95 px-4 pt-3 backdrop-blur pb-[calc(12px+env(safe-area-inset-bottom))] lg:hidden">
           <span className="min-w-0 flex-1 leading-tight">
             <b className="num block font-display text-[24px] font-extrabold [font-variation-settings:'wdth'_80]">{usd(quote.total)}</b>
-            <span className="num text-[12.5px] text-ink-2">{quote.prints} prints{quote.discountPct ? ` · ${quote.discountPct}% off` : ""}{tax === "added" ? " · + tax" : ""}</span>
+            <span className="num text-[13px] text-ink-2">{quote.prints} prints{quote.discountPct ? ` · ${quote.discountPct}% off` : ""}{tax === "added" ? " · + tax" : ""}</span>
           </span>
           <PayButton amountCents={quote.total} busy={busy} onPay={placeOrder} label="Pay" busyLabel="Opening…" lock={false} className="btn btn-blue shrink-0 px-6" />
           <style>{`@media (max-width: 1023px) { body { padding-bottom: calc(84px + env(safe-area-inset-bottom)); } }`}</style>
@@ -365,7 +365,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName, tax = "ad
 
       {past.length > 0 && (
         <section aria-labelledby="past-h" className="grid gap-3 border-t border-line pt-6">
-          <h2 id="past-h" className="text-[20px] font-bold">Your bulk orders</h2>
+          <h2 id="past-h" className="t-card">Your bulk orders</h2>
           <ul className="grid gap-3 md:grid-cols-2">
             {past.map((o) => (
               <li key={o.id} className={cn("af-panel grid gap-2 p-4", o.id === placedId && "border-ink")}>
@@ -384,7 +384,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName, tax = "ad
                       {i.imageUrl && <img src={i.imageUrl} alt="" className="h-9 w-8 shrink-0 rounded-[2px] object-cover" />}
                       <span className="min-w-0 flex-1 leading-tight">
                         <span className="block truncate font-semibold">{i.title}</span>
-                        <span className="num text-[12.5px] text-ink-2">
+                        <span className="num text-[13px] text-ink-2">
                           {BULK_SIZE_LABEL[(i.size as PrintSize) ?? "M"]?.name ?? i.size}{i.framed ? " · framed" : ""} · ×{i.quantity}{i.edition ? ` · ${i.edition}` : ""}
                         </span>
                       </span>

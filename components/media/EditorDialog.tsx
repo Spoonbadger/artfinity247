@@ -36,7 +36,7 @@ export function EditorDialog({ label, onClose, children, wide = true }: { label:
     <div className="fixed inset-0 z-[1000] grid bg-ink/70 sm:place-items-center sm:p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) close.current(); }}>
       <div
         ref={ref} role="dialog" aria-modal="true" aria-label={label}
-        className={`flex h-[100dvh] w-full flex-col overflow-hidden bg-paper sm:h-[min(880px,94vh)] sm:rounded-2xl sm:border-2 sm:border-ink sm:shadow-[0_24px_60px_rgba(21,22,27,.35)] ${wide ? "sm:max-w-[960px]" : "sm:max-w-[560px]"}`}
+        className={`flex h-[100dvh] w-full flex-col overflow-hidden bg-paper sm:h-[min(880px,94vh)] sm:rounded-2xl sm:border sm:border-edge sm:shadow-[0_24px_60px_rgba(21,22,27,.35)] ${wide ? "sm:max-w-[960px]" : "sm:max-w-[560px]"}`}
       >
         {children}
       </div>

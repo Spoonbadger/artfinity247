@@ -32,14 +32,14 @@ export function MoreMenu({ items, label = "More", className }: { items: MoreItem
         <MoreHorizontal className="h-4 w-4" aria-hidden="true" />{label}
       </button>
       {open && (
-        <ul id={id} className="absolute right-0 top-[calc(100%+6px)] z-40 grid w-max min-w-[220px] max-w-[min(320px,calc(100vw-32px))] gap-0.5 rounded-xl border-[1.5px] border-ink bg-white p-1.5 shadow-[0_14px_34px_-14px_rgba(21,22,27,.45)]">
+        <ul id={id} className="absolute right-0 top-[calc(100%+6px)] z-40 grid w-max min-w-[220px] max-w-[min(320px,calc(100vw-32px))] gap-0.5 rounded-xl border border-edge bg-white p-1.5 shadow-[0_14px_34px_-14px_rgba(21,22,27,.45)]">
           {items.map((it) => {
             const inner = (
               <>
                 {it.icon && <span aria-hidden="true" className="mt-0.5 shrink-0 text-ink-2 [&>svg]:h-4 [&>svg]:w-4">{it.icon}</span>}
                 <span className="min-w-0">
                   <span className="block">{it.label}</span>
-                  {it.hint && <span className="block text-[12.5px] font-normal text-ink-2">{it.hint}</span>}
+                  {it.hint && <span className="block text-[13px] font-normal text-ink-2">{it.hint}</span>}
                 </span>
               </>
             );

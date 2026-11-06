@@ -183,7 +183,7 @@ export default function Conversation({
 
   return (
     <section aria-labelledby="talk-h" className="grid gap-3 lg:sticky lg:top-6">
-      <h2 id="talk-h" className="text-[20px] font-bold">Notes &amp; messages</h2>
+      <h2 id="talk-h" className="t-card">Notes &amp; messages</h2>
 
       {messages.length === 0 ? (
         <EmptyState compact title="No notes yet" body="Buyers who hear from you come back. A short thank-you below is plenty." />
@@ -194,7 +194,7 @@ export default function Conversation({
         </ol>
       )}
 
-      <form onSubmit={submit} className="grid gap-3 rounded-2xl border-[1.5px] border-ink bg-white p-3 sm:p-4">
+      <form onSubmit={submit} className="grid gap-3 rounded-2xl border border-edge bg-white p-3 sm:p-4">
         <div role="radiogroup" aria-label="Note type" className="grid grid-cols-2 gap-1 rounded-full bg-wall p-1">
           {([
             { key: "thank_you", label: "Thank-you note", icon: Heart },
@@ -217,7 +217,7 @@ export default function Conversation({
         </div>
 
         {orders.length > 1 && (
-          <label className="grid gap-1 text-[12.5px] font-semibold text-ink-2">
+          <label className="grid gap-1 text-[13px] font-semibold text-ink-2">
             About
             <select
               value={orderId}
@@ -229,7 +229,7 @@ export default function Conversation({
           </label>
         )}
 
-        <label className="grid gap-1 text-[12.5px] font-semibold text-ink-2">
+        <label className="grid gap-1 text-[13px] font-semibold text-ink-2">
           {mode === "thank_you" ? `To ${buyerFirstName}, from ${artistName} via Artfinity` : "Only you see this"}
           <textarea
             ref={textRef}
@@ -256,7 +256,7 @@ export default function Conversation({
             />
             <span>
               Also print this note in the parcel
-              {!canParcel && <span className="block text-[12.5px]">Already shipped</span>}
+              {!canParcel && <span className="block text-[13px]">Already shipped</span>}
             </span>
           </label>
         )}

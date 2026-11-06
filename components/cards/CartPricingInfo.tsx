@@ -25,7 +25,7 @@ const CartPricingInfo = ({
 }): ReactNode => {
   const f = (n: number) => `${currency}${n.toFixed(decimalPrecision)}`;
   return (
-    <div className={cn("w-full rounded-2xl border-[1.5px] border-ink bg-white p-5", className)}>
+    <div className={cn("box w-full p-5", className)}>
       <h2 className="mb-3 text-[22px] font-extrabold">{title}</h2>
       <dl className="num grid gap-1.5 text-[15px]">
         <div className="flex justify-between"><dt className="text-ink-2">Prints</dt><dd>{f(subtotal + savings)}</dd></div>

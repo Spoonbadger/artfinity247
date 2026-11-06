@@ -71,7 +71,7 @@ export default function ShareKit({ arts, initialSlug, base, pro = true }: { arts
       {/* which piece */}
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-[17px] font-extrabold">Which piece?</h2>
+          <h2 className="t-card">Which piece?</h2>
           {arts.length > 1 && <SortMenu label="Sort pieces" value={pieceSort} onChange={setPieceSort} options={[...PIECE_SORTS]} />}
         </div>
         <div ref={rowRef} className="relative -mx-4 flex gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0" role="group" aria-label="Artwork">
@@ -88,7 +88,7 @@ export default function ShareKit({ arts, initialSlug, base, pro = true }: { arts
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={a.imageUrl} alt="" loading="lazy" className="aspect-square w-full rounded-[3px] border-[3px] border-white object-cover shadow-[0_1px_4px_rgba(21,22,27,.25)]" />
-              <span className="line-clamp-2 text-[12.5px] font-semibold leading-tight">{a.title}</span>
+              <span className="line-clamp-2 text-[13px] font-semibold leading-tight">{a.title}</span>
             </button>
           ))}
         </div>

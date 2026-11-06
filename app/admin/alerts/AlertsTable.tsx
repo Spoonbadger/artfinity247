@@ -60,7 +60,7 @@ export default function AlertsTable({ rows, tab }: { rows: AlertRow[]; tab: stri
     <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3">
       <TableToolbar filters={t.filters} setFilter={t.setFilter} clear={t.clear} active={t.active} search="Search alerts" statuses={kinds.length > 1 ? kinds : undefined} statusLabel="Kind" dates count={shown.length} total={rows.length} />
       {picked.length > 0 && (
-        <div className="sticky top-[64px] z-10 flex flex-wrap items-center gap-2 rounded-xl border-[1.5px] border-ink bg-white px-3 py-2 shadow-sm" role="region" aria-label="Bulk actions">
+        <div className="sticky top-[64px] z-10 flex flex-wrap items-center gap-2 rounded-xl border border-edge bg-white px-3 py-2 shadow-sm" role="region" aria-label="Bulk actions">
           <b className="num text-[14px]">{picked.length} selected</b>
           {tab === "history" ? (
             <button type="button" disabled={!!busy} onClick={() => run("reopen", picked.map((r) => r.id))} className="btn btn-blue btn-sm">Reopen</button>
@@ -97,7 +97,7 @@ export default function AlertsTable({ rows, tab }: { rows: AlertRow[]; tab: stri
                 <td className="min-w-0 px-3 py-2.5">
                   <span className="sm:hidden"><StatusPill status={r.severity} /></span>
                   <Link href={r.href} className="block break-words font-semibold text-ink no-underline hover:text-scan">{r.title}</Link>
-                  <p className="text-[12.5px] text-ink-2">{r.kindLabel}{r.meta ? ` · ${r.meta}` : ""}<span className="sm:hidden"> · {when(r.at)}</span></p>
+                  <p className="text-[13px] text-ink-2">{r.kindLabel}{r.meta ? ` · ${r.meta}` : ""}<span className="sm:hidden"> · {when(r.at)}</span></p>
                 </td>
                 <td className="num hidden whitespace-nowrap px-3 py-2.5 text-right text-[13px] text-ink-2 sm:table-cell">{when(r.at)}</td>
                 <td className="px-3 py-2.5 text-right">

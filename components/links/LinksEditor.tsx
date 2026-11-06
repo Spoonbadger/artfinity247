@@ -246,12 +246,12 @@ function Row({
       {editing && (
         <form onSubmit={save} className="grid gap-3 border-t border-line p-3">
           <label className="af-field">
-            <span className="text-[12.5px] font-semibold text-ink-2">Link</span>
+            <span className="text-[13px] font-semibold text-ink-2">Link</span>
             <input value={url} onChange={(e) => setUrl(e.target.value)} inputMode="url" autoComplete="off" className="bg-transparent text-[15px] outline-none" aria-invalid={!!urlErr} />
           </label>
           {urlErr && <p className="-mt-1.5 text-[13px] font-semibold text-coral">{urlErr}</p>}
           <label className="af-field">
-            <span className="text-[12.5px] font-semibold text-ink-2">Label {display === "icon" && "(optional)"}</span>
+            <span className="text-[13px] font-semibold text-ink-2">Label {display === "icon" && "(optional)"}</span>
             <input value={label} onChange={(e) => setLabel(e.target.value)} maxLength={60} className="bg-transparent text-[15px] outline-none" />
           </label>
           <div className="flex flex-wrap items-center gap-2 text-[13.5px]">
@@ -362,7 +362,7 @@ function AddSocial({ onAdd, have }: { onAdd: (p: { url: string; display: "icon";
         ))}
       </div>
       {kind && (
-        <form onSubmit={submit} className="grid gap-2 rounded-xl border-[1.5px] border-ink bg-[#f2f3ec99] p-3">
+        <form onSubmit={submit} className="box-inset grid gap-2 p-3">
           {handleKind ? (
             <HandleInput
               ref={inputRef}
@@ -375,7 +375,7 @@ function AddSocial({ onAdd, have }: { onAdd: (p: { url: string; display: "icon";
             />
           ) : (
           <label className="af-field">
-            <span className="text-[12.5px] font-semibold text-ink-2">Email address</span>
+            <span className="text-[13px] font-semibold text-ink-2">Email address</span>
             <span className="flex min-w-0 items-center text-[15px]">
               <input
                 ref={inputRef}
@@ -443,9 +443,9 @@ function AddButton({ onAdd }: { onAdd: (p: { url: string; label: string; display
     );
 
   return (
-    <form onSubmit={submit} className="grid gap-2.5 rounded-xl border-[1.5px] border-ink bg-[#f2f3ec99] p-3">
+    <form onSubmit={submit} className="box-inset grid gap-2.5 p-3">
       <label className="af-field">
-        <span className="text-[12.5px] font-semibold text-ink-2">Link</span>
+        <span className="text-[13px] font-semibold text-ink-2">Link</span>
         <span className="flex items-center gap-2">
           {detected && <SocialIcon kind={detected} className="h-[18px] w-[18px] text-ink-2" />}
           <input autoFocus value={url} onChange={(e) => { setUrl(e.target.value); setEmpty(false); }} inputMode="url" autoComplete="off" autoCapitalize="none" placeholder="https://" className="min-w-0 flex-1 bg-transparent text-[15px] outline-none" aria-invalid={!!err} />
@@ -454,7 +454,7 @@ function AddButton({ onAdd }: { onAdd: (p: { url: string; label: string; display
       {err && <p className="-mt-1 text-[13px] font-semibold text-coral">{err}</p>}
       {empty && <p className="-mt-1 text-[13px] font-semibold text-coral">Paste the link first, like yourname.art or a full https:// address.</p>}
       <label className="af-field">
-        <span className="text-[12.5px] font-semibold text-ink-2">Button label</span>
+        <span className="text-[13px] font-semibold text-ink-2">Button label</span>
         <input value={label} onChange={(e) => setLabel(e.target.value)} maxLength={60} placeholder={detected ? KIND_LABEL[detected] : "Studio newsletter"} className="bg-transparent text-[15px] outline-none" />
       </label>
       <div className="flex gap-2">

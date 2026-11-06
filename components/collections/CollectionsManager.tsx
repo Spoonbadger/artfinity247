@@ -188,7 +188,7 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
                     </span>
                     <span className="min-w-0 leading-tight">
                       <b className="block truncate text-[15px]">{c.title}</b>
-                      <span className="num text-[12.5px] text-ink-2">{c.artworkIds.length} {c.artworkIds.length === 1 ? "piece" : "pieces"}</span>
+                      <span className="num text-[13px] text-ink-2">{c.artworkIds.length} {c.artworkIds.length === 1 ? "piece" : "pieces"}</span>
                     </span>
                   </button>
                   <span className="flex shrink-0 flex-col">
@@ -204,7 +204,7 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
             })}
           </ol>
         )}
-        <p className="text-[12.5px] text-ink-2" aria-live="polite">
+        <p className="text-[13px] text-ink-2" aria-live="polite">
           {saving ? "Saving…" : lastSave === "saved" ? "All changes saved. " : lastSave === "failed" ? "Last change didn't save. " : ""}
           {!saving && cols.length > 1 ? "Drag or use the arrows to sort." : ""}
         </p>
@@ -223,7 +223,7 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
           />
         ) : (
           <section key={active.id} aria-label={`Edit ${active.title}`} className="grid gap-5">
-            <div className="grid gap-3 rounded-2xl border-[1.5px] border-ink bg-white p-4 sm:p-5">
+            <div className="grid gap-3 rounded-2xl border border-edge bg-white p-4 sm:p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <label className="af-field min-w-0 flex-1 basis-[240px]">
                   <span className="label">Name</span>
@@ -259,7 +259,7 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="flex items-baseline gap-2 text-[20px] font-bold">
+              <h2 className="flex items-baseline gap-2 t-card">
                 <i className="paint-dab" style={{ ["--dab" as string]: "var(--af-scan)" }} />On the wall
                 <span className="num text-[14px] font-semibold text-ink-2">{active.artworkIds.length}</span>
               </h2>
@@ -344,7 +344,7 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
                           type="button"
                           onClick={() => update(active.id, { coverArtworkId: id }, { coverArtworkId: id })}
                           aria-pressed={isCover}
-                          className={cn("flex h-9 items-center gap-1 rounded-full px-2.5 text-[12.5px] font-semibold", isCover ? "text-ink" : "text-ink-2 hover:bg-wall hover:text-ink")}
+                          className={cn("flex h-9 items-center gap-1 rounded-full px-2.5 text-[13px] font-semibold", isCover ? "text-ink" : "text-ink-2 hover:bg-wall hover:text-ink")}
                           aria-label={isCover ? `${a.title} is the cover` : `Make ${a.title} the cover`}
                         >
                           <Star className={cn("h-4 w-4", isCover && "fill-sticker text-ink")} aria-hidden />{isCover ? "Cover" : <span className="hidden sm:inline">Cover</span>}

@@ -75,7 +75,7 @@ function ArtistBand({ brand }: { brand: HeaderBrand }) {
             All work
           </Link>
           {brand.owner ? (
-            <a href={brand.owner.href} target="_blank" rel="noopener" className="inline-flex min-h-[36px] items-center gap-1 rounded-full border-[1.5px] border-ink bg-white px-3 text-[13px] font-semibold text-ink no-underline hover:bg-wall">
+            <a href={brand.owner.href} target="_blank" rel="noopener" className="inline-flex min-h-[36px] items-center gap-1 rounded-full border-[1.5px] border-edge-strong bg-white px-3 text-[13px] font-semibold text-ink no-underline hover:border-ink">
               Your piece{brand.owner.note ? <span className="hidden font-normal text-ink-2 sm:inline"> · {brand.owner.note}</span> : null} · QR code
             </a>
           ) : (

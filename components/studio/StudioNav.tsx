@@ -150,7 +150,7 @@ export function NavItem({ href, label, dab, active, size = "md", onNavigate, bad
         !active && "hover:bg-white/70"
       )}
     >
-      <i className="paint-dab" style={{ ["--dab" as string]: dab }} />
+      <i className="paint-dab" style={{ ["--dab" as string]: active ? dab : "var(--af-edge)" }} />
       <span className="truncate">{label}</span>
       {!!badge && <span className="num ml-auto rounded-full bg-coral px-1.5 text-[12px] font-bold leading-[18px] text-white" aria-label={`${badge} waiting`}>{badge > 99 ? "99+" : badge}</span>}
       {active && <BrushStroke className="absolute -left-1 top-[3px] -z-10 h-[calc(100%-6px)] w-[calc(100%+8px)]" />}
@@ -174,11 +174,11 @@ function Folder({ section, path, open, onToggle, size, animate, onNavigate, badg
           size === "lg" ? "min-h-[52px] text-[17px]" : "min-h-[40px] text-[15px]"
         )}
       >
-        {/* a soft blob of the folder's colour behind its icon */}
+        {/* a soft blob behind the icon: muted, in the folder's colour only when you're in it */}
         <span
           aria-hidden="true"
           className="grid h-7 w-7 shrink-0 place-items-center"
-          style={{ borderRadius: "52% 44% 58% 40%", background: `color-mix(in srgb, ${section.dab} 26%, transparent)` }}
+          style={{ borderRadius: "52% 44% 58% 40%", background: hasActive ? `color-mix(in srgb, ${section.dab} 30%, transparent)` : "rgb(var(--af-ink-rgb) / 0.06)" }}
         >
           <Icon className="h-[15px] w-[15px]" strokeWidth={2.25} />
         </span>

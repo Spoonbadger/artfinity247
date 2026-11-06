@@ -196,7 +196,7 @@ export default async function AdminDashboard() {
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="break-words text-[15px] font-semibold leading-snug">{t.label}</p>
-                  {t.sub && <p className="text-[12.5px] text-ink-2">{t.sub}</p>}
+                  {t.sub && <p className="text-[13px] text-ink-2">{t.sub}</p>}
                 </div>
                 <Link href={t.href} className={cn("btn btn-sm shrink-0 min-w-[84px]", i === 0 ? "btn-blue" : "btn-ghost")}>{t.action}</Link>
               </li>
@@ -284,7 +284,7 @@ export default async function AdminDashboard() {
 
       <details id="integrations" className="af-panel group p-4 sm:p-5">
         <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 [&::-webkit-details-marker]:hidden">
-          <h2 className="text-[18px] font-bold">Integrations</h2>
+          <h2 className="t-card">Integrations</h2>
           {issues.length ? <Pill tone="amber">{issues.length} need a look</Pill> : <Pill tone="green">All OK</Pill>}
           <span className="ml-auto text-[13px] font-semibold text-ink-2 group-open:hidden">Show</span>
           <span className="ml-auto hidden text-[13px] font-semibold text-ink-2 group-open:inline">Hide</span>
@@ -295,7 +295,7 @@ export default async function AdminDashboard() {
               <Dot s={h.status} />
               <div className="min-w-0">
                 <p className="flex flex-wrap items-baseline gap-x-2"><b className="text-[14.5px]">{h.name}</b><span className="text-[13px] text-ink-2">{h.state}</span></p>
-                {h.fix && <p className="mt-0.5 break-words text-[12.5px] leading-snug text-ink-2">{h.fix}</p>}
+                {h.fix && <p className="mt-0.5 break-words text-[13px] leading-snug text-ink-2">{h.fix}</p>}
               </div>
             </li>
           ))}

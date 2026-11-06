@@ -191,9 +191,9 @@ export default function PostCard({
         <div className="grid min-w-0 flex-1 gap-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className={cn("rounded-full px-2 py-0.5 text-[12px] font-bold", st.cls)}>{st.label}</span>
-            <span className="text-[12.5px] font-semibold text-ink-2">{KIND[post.kind] ?? post.kind}{post.source === "auto" ? " · auto-queued" : ""}</span>
-            {post.scheduledFor && post.status === "approved" && <span className="text-[12.5px] font-semibold text-scan">{connected ? "Posts" : "Due"} {when(post.scheduledFor)}</span>}
-            {post.postedAt && <span className="text-[12.5px] text-ink-2">Posted {when(post.postedAt)}{post.postedBy === "manual" ? " by hand" : ""}</span>}
+            <span className="text-[13px] font-semibold text-ink-2">{KIND[post.kind] ?? post.kind}{post.source === "auto" ? " · auto-queued" : ""}</span>
+            {post.scheduledFor && post.status === "approved" && <span className="text-[13px] font-semibold text-scan">{connected ? "Posts" : "Due"} {when(post.scheduledFor)}</span>}
+            {post.postedAt && <span className="text-[13px] text-ink-2">Posted {when(post.postedAt)}{post.postedBy === "manual" ? " by hand" : ""}</span>}
           </div>
           <p className="truncate text-[16px] font-bold">{m.title || "Untitled"}</p>
           <p className="text-[13.5px] text-ink-2">

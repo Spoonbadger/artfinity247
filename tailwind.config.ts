@@ -33,6 +33,8 @@ const config = {
         paper: "rgb(var(--af-paper-rgb) / <alpha-value>)",
         wall: "rgb(var(--af-wall-rgb) / <alpha-value>)",
         line: "rgb(var(--af-line-rgb) / <alpha-value>)",
+        // box edges: border-edge (cards, panels), border-edge-strong (secondary buttons, chips)
+        edge: { DEFAULT: "rgb(var(--af-edge-rgb) / <alpha-value>)", strong: "rgb(var(--af-edge-strong-rgb) / <alpha-value>)" },
         gallery: "rgb(var(--af-gallery-rgb) / <alpha-value>)",
         scan: { DEFAULT: "rgb(var(--af-scan-rgb) / <alpha-value>)", soft: "rgb(var(--af-scan-soft-rgb) / <alpha-value>)" },
         sticker: "rgb(var(--af-sticker-rgb) / <alpha-value>)",

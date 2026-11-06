@@ -164,7 +164,7 @@ export default function StudioShell({ artist, children, badges }: { artist: Shel
         </div>
       )}
 
-      <main id="studio-main" className="min-w-0">
+      <main id="studio-main" className="af-app min-w-0">
         <InstallPrompt />
         {children}
       </main>

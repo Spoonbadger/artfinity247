@@ -53,14 +53,14 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
                 <li key={a.slug}>
                   <Link href={`/@${a.slug}`} className="flex items-center gap-2.5 rounded-full border-[1.5px] border-line bg-white py-1 pl-1 pr-4 text-ink no-underline hover:border-ink">
                     <Avatar src={a.avatar} name={a.name} className="h-9 w-9 ring-0" />
-                    <span className="grid leading-tight"><b className="text-[15px]">{a.name}</b><span className="text-[12.5px] text-ink-2">{a.city}</span></span>
+                    <span className="grid leading-tight"><b className="text-[15px]">{a.name}</b><span className="text-[13px] text-ink-2">{a.city}</span></span>
                   </Link>
                 </li>
               ))}
               {matchCities.map((c) => (
                 <li key={c.slug}>
                   <Link href={`/scenes/${c.slug}`} className="flex h-full items-center gap-2 rounded-full border-[1.5px] border-ink bg-sticker px-4 py-2 text-[15px] font-bold text-ink no-underline">
-                    Art from {c.name} <span className="num text-[12.5px] font-semibold">{c.pieces}</span>
+                    Art from {c.name} <span className="num text-[13px] font-semibold">{c.pieces}</span>
                   </Link>
                 </li>
               ))}

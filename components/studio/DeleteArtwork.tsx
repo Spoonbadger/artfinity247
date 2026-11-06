@@ -32,7 +32,7 @@ export default function DeleteArtwork({ slug, title, sold }: { slug: string; tit
 
   return (
     <section aria-labelledby="delete-h" className="grid gap-2 border-t border-line pt-6">
-      <h2 id="delete-h" className="text-[16px] font-bold">Delete this piece</h2>
+      <h2 id="delete-h" className="t-card">Delete this piece</h2>
       {asking ? (
         <div role="alertdialog" aria-labelledby="delete-q" className="grid justify-items-start gap-3 rounded-xl border border-coral/50 bg-coral/10 p-4">
           <p id="delete-q" className="text-[14.5px]">

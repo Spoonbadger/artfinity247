@@ -43,7 +43,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams: { 
       {codeOrders.length > 0 && (
         <section aria-labelledby="code-orders-h" className="grid gap-3">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 id="code-orders-h" className="text-[20px] font-bold">Code orders</h2>
+            <h2 id="code-orders-h" className="t-card">Code orders</h2>
             <Link href="/studio/qr/queue#orders" className="text-[14px] font-semibold text-scan">Print queue</Link>
           </div>
           <ul className="grid gap-3">
@@ -60,7 +60,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams: { 
                     Ordered {day(o.createdAt)}{o.shippedAt ? ` · shipped ${day(o.shippedAt)}` : ""}{o.deliveredAt ? ` · delivered ${day(o.deliveredAt)}` : ""}
                   </p>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-wall px-2.5 py-1 text-[12.5px] font-bold text-ink-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-wall px-2.5 py-1 text-[13px] font-bold text-ink-2">
                       <i className="paint-dab h-2 w-2" style={{ ["--dab" as string]: STATUS_DAB[st] }} aria-hidden="true" />{STATUS_LABEL[st]}
                     </span>
                     {o.trackingNumber && (o.trackingUrl
@@ -72,7 +72,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams: { 
               );
             })}
           </ul>
-          {items.length > 0 && <h2 className="mt-3 text-[20px] font-bold">Prints</h2>}
+          {items.length > 0 && <h2 className="mt-3 t-card">Prints</h2>}
         </section>
       )}
       {items.length === 0 ? (

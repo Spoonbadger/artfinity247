@@ -432,7 +432,7 @@ export default function ImageEditor({ source, sourceSize, initial, previous, ori
         {/* Top: title and the two tools */}
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-2.5">
           <h2 className="font-display text-[22px] font-bold [font-variation-settings:'wdth'_80]">Edit photo</h2>
-          <div role="tablist" aria-label="Tool" className="flex rounded-full border-2 border-ink p-0.5">
+          <div role="tablist" aria-label="Tool" className="flex rounded-full border-[1.5px] border-edge-strong p-0.5">
             {([["crop", "Crop"], ["angle", "Fix angle"]] as const).map(([m, label]) => (
               <button
                 key={m} type="button" role="tab" aria-selected={mode === m} data-autofocus={m === "crop" ? "" : undefined}
@@ -544,9 +544,9 @@ export default function ImageEditor({ source, sourceSize, initial, previous, ori
               )}
             </div>
           )}
-          {blocked && mode === "crop" && edits.corners && <p className="text-[12.5px] text-ink-2">The flattened preview isn&apos;t available for this photo. It&apos;s applied when you save.</p>}
+          {blocked && mode === "crop" && edits.corners && <p className="text-[13px] text-ink-2">The flattened preview isn&apos;t available for this photo. It&apos;s applied when you save.</p>}
           {impact && <p className={cn("text-[13px]", impact.tone === "warn" ? "font-semibold text-coral" : "text-ink-2")} aria-live="polite">{impact.text}</p>}
-          {full && full.original === false && <p className="text-[12.5px] text-ink-2">No full-size original on file for this one, so edits use the web copy.</p>}
+          {full && full.original === false && <p className="text-[13px] text-ink-2">No full-size original on file for this one, so edits use the web copy.</p>}
           {error && <Problem tone="error" title={error.message} fix={error.fix ?? { label: "Try again", onClick: save }} />}
         </div>
 

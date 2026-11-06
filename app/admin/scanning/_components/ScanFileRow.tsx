@@ -91,7 +91,7 @@ export default function ScanFileRow({ item, canFile, options }: { item: ScanItem
           <b className="truncate text-[15px]">
             {item.slug ? <Link href={`/admin/artworks/${item.artworkId}/edit`} className="text-ink">{item.title}</Link> : item.title || "Not uploaded yet"}
           </b>
-          <span className="text-[12.5px] text-ink-2">{item.band}{item.size ? ` · ${item.size}` : ""}{item.scanned ? " · scanned" : ""}</span>
+          <span className="text-[13px] text-ink-2">{item.band}{item.size ? ` · ${item.size}` : ""}{item.scanned ? " · scanned" : ""}</span>
         </div>
         {item.artworkId && (item.scanned ? (
           <>
@@ -103,7 +103,7 @@ export default function ScanFileRow({ item, canFile, options }: { item: ScanItem
         ))}
         {needsLink && canFile && (
           options.length ? (
-            <label className="grid gap-1 text-[12.5px] font-semibold">
+            <label className="grid gap-1 text-[13px] font-semibold">
               Put the scan on which of their artworks?
               <select value={artworkId} onChange={(e) => setArtworkId(e.target.value)} className="min-h-[40px] rounded-lg border-[1.5px] border-line bg-white px-2 text-[14px] font-normal text-ink">
                 {options.map((o) => <option key={o.id} value={o.id}>{o.title}</option>)}

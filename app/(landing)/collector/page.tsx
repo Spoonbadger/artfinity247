@@ -65,14 +65,14 @@ function Timeline({ step, dates, tracking }: { step: number; dates: (string | nu
         return (
           <li key={label} className="grid content-start gap-1" aria-current={i === step ? "step" : undefined}>
             <span className={cn("h-1.5 rounded-full", done ? "bg-scan" : "bg-line")} aria-hidden />
-            <span className={cn("text-[12.5px] font-semibold leading-tight", done ? "text-ink" : "text-ink-2")}>
+            <span className={cn("text-[13px] font-semibold leading-tight", done ? "text-ink" : "text-ink-2")}>
               {label}
               <span className="sr-only">{done ? " (done)" : " (not yet)"}</span>
             </span>
             {done && dates[i] && <span className="num text-[12px] leading-tight text-ink-2">{dates[i]}</span>}
             {i === 2 && done && tracking && (
               tracking.url ? (
-                <a href={tracking.url} target="_blank" rel="noopener" className="text-[12.5px] font-semibold text-scan underline underline-offset-2">
+                <a href={tracking.url} target="_blank" rel="noopener" className="text-[13px] font-semibold text-scan underline underline-offset-2">
                   Track<span className="sr-only"> package ({tracking.carrier} {tracking.number})</span>
                 </a>
               ) : (

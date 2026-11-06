@@ -71,8 +71,8 @@ export default async function AdminScanningPage({ searchParams }: { searchParams
 
       <section aria-labelledby="cal-h" className="af-card grid gap-3 p-4 sm:p-5">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="cal-h" className="text-[19px] font-bold">Next 3 weeks</h2>
-          <span className="flex flex-wrap gap-3 text-[12.5px] text-ink-2">
+          <h2 id="cal-h" className="t-card">Next 3 weeks</h2>
+          <span className="flex flex-wrap gap-3 text-[13px] text-ink-2">
             <span className="flex items-center gap-1.5"><i className="h-3 w-3 rounded-sm bg-scan" aria-hidden="true" />Booked date</span>
             <span className="flex items-center gap-1.5"><i className="h-3 w-3 rounded-sm border border-dashed border-ink-2" aria-hidden="true" />Asked for (not confirmed)</span>
           </span>

@@ -28,7 +28,7 @@ function Thumb({ c }: { c: CodeRow }) {
 function Status({ c }: { c: CodeRow }) {
   const s = status(c);
   return (
-    <span className={`inline-flex items-center gap-1.5 text-[12.5px] font-bold ${s.on ? "text-ink" : "text-ink-2"}`}>
+    <span className={`inline-flex items-center gap-1.5 text-[13px] font-bold ${s.on ? "text-ink" : "text-ink-2"}`}>
       <i className="paint-dab h-2.5 w-2.5" style={{ ["--dab" as string]: s.on ? "#0f7a55" : "#b9bcc4" }} aria-hidden="true" />
       {s.text}
     </span>
@@ -45,7 +45,7 @@ function Printed({ c }: { c: CodeRow }) {
 
 function Deal({ c }: { c: CodeRow }) {
   return (
-    <span className="flex flex-wrap items-center gap-1.5 text-[12.5px] text-ink-2">
+    <span className="flex flex-wrap items-center gap-1.5 text-[13px] text-ink-2">
       <b className="text-ink">{c.code}</b>
       {c.venue && <span>· {c.venue}</span>}
       {c.discountPct ? <span className="rounded-full bg-sticker px-2 py-0.5 font-bold text-ink">{c.discountPct}% off</span> : null}
@@ -80,7 +80,7 @@ export default async function CodesPage() {
           <section aria-labelledby="totals-h" className="grid gap-2">
             <h2 id="totals-h" className="flex flex-wrap items-baseline justify-between gap-2 text-[13px] font-bold uppercase tracking-[0.08em] text-ink-2">
               Last {WINDOW_DAYS} days
-              <span className="num text-[12.5px] font-semibold normal-case tracking-normal">{n(allScans)} scans all time</span>
+              <span className="num text-[13px] font-semibold normal-case tracking-normal">{n(allScans)} scans all time</span>
             </h2>
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
               <PaintChip color="#2b37f0" value={n(win.scans)} label="scans" note="Ultramarine · every scan" />

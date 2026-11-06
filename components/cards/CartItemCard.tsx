@@ -64,7 +64,7 @@ const CartItemCard = ({ item, className, readOnly = false }: { item: CartItemTyp
       <div className="num text-right leading-tight">
         <b className="block text-[16px]">{usd(p.unitPrice * q)}</b>
         {p.listPrice && p.listPrice > p.unitPrice ? <s className="text-[13px] text-ink-2">{usd(p.listPrice * q)}</s> : null}
-        {readOnly && q > 1 && <span className="block text-[12.5px] text-ink-2">{q} × {usd(p.unitPrice)}</span>}
+        {readOnly && q > 1 && <span className="block text-[13px] text-ink-2">{q} × {usd(p.unitPrice)}</span>}
       </div>
     </div>
   );

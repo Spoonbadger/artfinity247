@@ -103,8 +103,8 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
           {a.views > 0 && (
           <section className="af-card grid content-start gap-3 p-4 sm:p-5" aria-labelledby="views-h">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 id="views-h" className="text-[20px] font-bold">Views by day</h2>
-              <span className="num text-[12.5px] text-ink-2">{n(a.views)} in {range} days</span>
+              <h2 id="views-h" className="t-card">Views by day</h2>
+              <span className="num text-[13px] text-ink-2">{n(a.views)} in {range} days</span>
             </div>
             <ViewsChart days={a.days} />
           </section>
@@ -113,7 +113,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
           <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
             <section className="af-card min-w-0 p-4 sm:p-5" aria-labelledby="sources-h">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <h2 id="sources-h" className="text-[20px] font-bold">Where visitors came from</h2>
+                <h2 id="sources-h" className="t-card">Where visitors came from</h2>
                 {a.sources.length > 1 && <UrlPicker param="src" label="Sort sources" value={srcSort} options={SRC_SORTS} storageKey="af:analytics:src" />}
               </div>
               {sources.length === 0 ? (
@@ -150,7 +150,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
                   </tbody>
                 </table>
               )}
-              <p className="mt-3 text-[12.5px] text-ink-2">
+              <p className="mt-3 text-[13px] text-ink-2">
                 Sales are counted for QR codes only.{otherSales > 0 ? ` ${n(otherSales)} more came in without a code.` : ""}
               </p>
               {sources.length > SOURCES_SHOWN && (
@@ -172,7 +172,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
             </section>
 
             <section className="af-card grid content-start gap-3 p-4 sm:p-5" aria-labelledby="devices-h">
-              <h2 id="devices-h" className="text-[20px] font-bold">Devices</h2>
+              <h2 id="devices-h" className="t-card">Devices</h2>
               {a.devices.length === 0 ? (
                 <p className="text-[14px] text-ink-2">No visits in this range.{longer && <> <Link href={longer} className="font-semibold text-scan underline-offset-2 hover:underline">See 90 days</Link></>}</p>
               ) : (
@@ -198,7 +198,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
 
           <section className="af-card min-w-0 p-4 sm:p-5" aria-labelledby="art-h">
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-              <h2 id="art-h" className="text-[20px] font-bold">Top artworks</h2>
+              <h2 id="art-h" className="t-card">Top artworks</h2>
               {a.artworks.length > 1 && <UrlPicker param="art" label="Sort artworks" value={artSort} options={ART_SORTS} storageKey="af:analytics:art" />}
             </div>
             {artworks.length === 0 ? (
@@ -242,7 +242,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
             )}
           </section>
 
-          <p className="text-[12.5px] text-ink-2">
+          <p className="text-[13px] text-ink-2">
             One visit per person per page every 30 minutes. Your own visits, bots and do-not-track visitors don&apos;t count.
           </p>
         </>
@@ -254,7 +254,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
 function Stat({ label, value, earned = false }: { label: string; value: string; earned?: boolean }) {
   return (
     <div className="grid min-w-0 gap-0.5 last:col-span-2 sm:last:col-span-1">
-      <span className="truncate text-[12.5px] text-ink-2">{label}</span>
+      <span className="truncate text-[13px] text-ink-2">{label}</span>
       <b className={`display num truncate text-[26px] leading-tight sm:text-[30px] ${earned ? "text-earned" : ""}`}>{value}</b>
     </div>
   );

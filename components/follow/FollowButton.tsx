@@ -132,7 +132,7 @@ export function FollowSheet({ handle, firstName, source = "page", open, onClose 
             <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute left-[-9999px] h-px w-px opacity-0" />
             {error && <p role="alert" className="text-[14px] font-semibold text-coral">{error}</p>}
             <button type="submit" disabled={busy} className="btn btn-blue w-full py-3 text-[16px]">{busy ? "Sending…" : "Follow"}</button>
-            <p className="text-center text-[12.5px] text-ink-2">We&apos;ll email you a link to confirm. Unsubscribe anytime.</p>
+            <p className="text-center text-[13px] text-ink-2">We&apos;ll email you a link to confirm. Unsubscribe anytime.</p>
           </form>
         ) : state === "pending" ? (
           <div className="grid gap-3" aria-live="polite">

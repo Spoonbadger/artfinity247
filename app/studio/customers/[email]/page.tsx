@@ -93,7 +93,7 @@ export default async function CustomerPage({ params }: { params: { email: string
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <section aria-labelledby="orders-h" className="grid gap-3">
-          <h2 id="orders-h" className="text-[20px] font-bold">
+          <h2 id="orders-h" className="t-card">
             Orders <span className="num text-[14px] font-semibold text-ink-2">since {shortDate(customer.first, true)}</span>
           </h2>
           {customer.orders.slice(0, SHOW_ORDERS).map(card)}

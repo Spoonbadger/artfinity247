@@ -31,8 +31,8 @@ export function Problem({
   return (
     <div role={tone === "error" ? "alert" : "status"} className={cn("flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border px-4 py-3", TONES[tone], className)}>
       <div className="min-w-0 flex-1">
-        <p className="text-[14.5px] font-bold text-ink">{title}</p>
-        {children && <div className="text-[13.5px] text-ink-2">{children}</div>}
+        <p className="text-[15px] font-semibold text-ink">{title}</p>
+        {children && <div className="t-small">{children}</div>}
       </div>
       {(fix || secondary) && (
         <div className="flex shrink-0 flex-wrap gap-2">

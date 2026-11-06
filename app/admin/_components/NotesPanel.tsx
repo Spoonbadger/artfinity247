@@ -33,7 +33,7 @@ export default function NotesPanel({ targetType, targetId, notes: initial }: { t
 
   return (
     <section aria-labelledby={`notes-${targetId}`} className="af-card grid content-start gap-3 p-4">
-      <h2 id={`notes-${targetId}`} className="text-[17px] font-bold">Notes <span className="num text-[13px] font-semibold text-ink-2">{notes.length}</span></h2>
+      <h2 id={`notes-${targetId}`} className="t-card">Notes <span className="num text-[13px] font-semibold text-ink-2">{notes.length}</span></h2>
       <form onSubmit={add} className="grid gap-2">
         <label className="sr-only" htmlFor={`note-${targetId}`}>New note</label>
         <textarea

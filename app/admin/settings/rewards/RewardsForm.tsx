@@ -36,11 +36,11 @@ export default function RewardsForm({ value }: { value: V }) {
         Rewards on
       </label>
       <div className="flex flex-wrap gap-4">
-        <label className="grid gap-1 text-[12.5px] font-semibold">
+        <label className="grid gap-1 text-[13px] font-semibold">
           Every Nth print earns a reward
           <input type="number" min={2} max={50} value={v.every} onChange={(e) => setV({ ...v, every: Number(e.target.value) })} className="min-h-[38px] w-28 rounded-lg border-[1.5px] border-line bg-white px-2 text-[14px] text-ink" />
         </label>
-        <label className="grid gap-1 text-[12.5px] font-semibold">
+        <label className="grid gap-1 text-[13px] font-semibold">
           Discount on the next order (%)
           <input type="number" min={5} max={30} value={v.pct} onChange={(e) => setV({ ...v, pct: Number(e.target.value) })} className="min-h-[38px] w-28 rounded-lg border-[1.5px] border-line bg-white px-2 text-[14px] text-ink" />
         </label>

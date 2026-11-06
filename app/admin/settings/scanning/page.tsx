@@ -28,14 +28,14 @@ export default async function ScanningSettingsPage() {
       </div>
       <ScanSettingsForm value={s} />
       <section aria-labelledby="wl-h" className="af-card grid gap-2 p-4 sm:p-5">
-        <h2 id="wl-h" className="text-[19px] font-bold">Waitlist <span className="num text-[15px] font-normal text-ink-2">{waitlist}</span></h2>
+        <h2 id="wl-h" className="t-card">Waitlist <span className="num text-[15px] font-normal text-ink-2">{waitlist}</span></h2>
         <p className="text-[13.5px] text-ink-2">People who asked to hear when scanning opens (shown while the service is off). Email them yourself when you turn it on.</p>
         {recent.length ? (
           <ul className="grid gap-1 text-[14px]">
             {recent.map((w) => (
               <li key={w.email} className="flex flex-wrap justify-between gap-2 border-b border-line py-1 last:border-0">
                 <span className="font-semibold">{w.email}</span>
-                <span className="num text-[12.5px] text-ink-2">{w.source === "studio" ? "artist, from Studio" : "public page"} · {w.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                <span className="num text-[13px] text-ink-2">{w.source === "studio" ? "artist, from Studio" : "public page"} · {w.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
               </li>
             ))}
           </ul>

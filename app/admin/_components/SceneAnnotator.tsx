@@ -574,7 +574,7 @@ export default function SceneAnnotator({ photos, annotations, arts, writable }: 
               )}
             </svg>
           </div>
-          <p className="text-[12.5px] text-ink-2">
+          <p className="text-[13px] text-ink-2">
             Keys: <b>Q</b> wall corners · <b>A</b> anchor · <b>L</b> alternate spots · <b>R</b> reference · <b>1–8</b> reference kind · <b>H</b> width reference (oblique walls) · <b>Z</b> size · <b>F</b> frame · <b>M</b> mat ·{" "}
             <b>Tab</b> next spot · <b>[ ]</b> shadow · <b>P</b> real render · <b>S</b> save · <b>Enter</b> save &amp; next · <b>D</b> unusable &amp; next · <b>← →</b> browse · <b>U</b> undo point · scale {k.toFixed(2)}
           </p>
@@ -630,13 +630,13 @@ export default function SceneAnnotator({ photos, annotations, arts, writable }: 
                 in
               </label>
             )}
-            <p className="rounded-lg bg-wall px-2 py-1.5 text-[12.5px] leading-snug text-ink-2">
+            <p className="rounded-lg bg-wall px-2 py-1.5 text-[13px] leading-snug text-ink-2">
               Draw the line on something <b>touching the wall</b> (a door, a sofa back against it, a person leaning on it), from where it meets the floor to its top. Objects in front of the wall
               look bigger than they would at the wall, so a person 3 ft out from the wall in a 10 ft deep shot makes prints about 30% too big.
             </p>
             <details className="text-[13px]">
               <summary className="cursor-pointer font-semibold">Oblique wall? Width reference (H) and lens</summary>
-              <p className="mt-1 text-[12.5px] text-ink-2">
+              <p className="mt-1 text-[13px] text-ink-2">
                 When the wall recedes at an angle and verticals stay vertical, the photo alone can&apos;t tell how wide the wall is. Draw a horizontal line across something on the wall of known width (H), or
                 give the lens.
               </p>
@@ -700,18 +700,18 @@ export default function SceneAnnotator({ photos, annotations, arts, writable }: 
             <h2 className="text-[15px] font-bold">Preview</h2>
             <div className="grid grid-cols-4 gap-1">
               {PRINT_SIZE_KEYS.map((s) => (
-                <button key={s} type="button" onClick={() => setSize(s)} className={cn("rounded-lg border-2 px-1 py-1 text-[12.5px] font-semibold", size === s ? "border-ink bg-wall" : "border-line", solve && !usable.includes(s) && "text-coral")}>
+                <button key={s} type="button" onClick={() => setSize(s)} className={cn("rounded-lg border-2 px-1 py-1 text-[13px] font-semibold", size === s ? "border-ink bg-wall" : "border-line", solve && !usable.includes(s) && "text-coral")}>
                   {SIZE_IN[s]}
                 </button>
               ))}
             </div>
             <div className="flex flex-wrap gap-1">
               {FRAME_KEYS.map((f) => (
-                <button key={f} type="button" onClick={() => setFrame(f)} className={cn("rounded-full border-2 px-2.5 py-0.5 text-[12.5px] font-semibold capitalize", frame === f ? "border-ink" : "border-line")}>
+                <button key={f} type="button" onClick={() => setFrame(f)} className={cn("rounded-full border-2 px-2.5 py-0.5 text-[13px] font-semibold capitalize", frame === f ? "border-ink" : "border-line")}>
                   {f}
                 </button>
               ))}
-              <label className="ml-auto flex items-center gap-1 text-[12.5px]">
+              <label className="ml-auto flex items-center gap-1 text-[13px]">
                 <input type="checkbox" checked={mat} onChange={(e) => setMat(e.target.checked)} /> mat
               </label>
             </div>
@@ -724,7 +724,7 @@ export default function SceneAnnotator({ photos, annotations, arts, writable }: 
               ))}
             </select>
             {draft.anchors.length > 1 && (
-              <div className="flex items-center gap-1 text-[12.5px]">
+              <div className="flex items-center gap-1 text-[13px]">
                 Spot:
                 {draft.anchors.map((_, i) => (
                   <button key={i} type="button" onClick={() => setAnchorIdx(i)} className={cn("rounded-full border-2 px-2", anchorIdx === i ? "border-ink" : "border-line")}>
@@ -746,10 +746,10 @@ export default function SceneAnnotator({ photos, annotations, arts, writable }: 
             <label className="flex items-center gap-2">
               Wall tint
               <input type="color" value={draft.tint} onChange={(e) => set((d) => ({ ...d, tint: e.target.value, tintAuto: false }))} className="h-7 w-12 rounded border border-line" />
-              <span className="num text-[12.5px] text-ink-2">{draft.tint}</span>
+              <span className="num text-[13px] text-ink-2">{draft.tint}</span>
               <button
                 type="button"
-                className="ml-auto text-[12.5px] underline"
+                className="ml-auto text-[13px] underline"
                 onClick={() => {
                   if (imgRef.current && draft.quad.length === 4) {
                     const t = sampleTint(imgRef.current, draft.quad, photo.w);
@@ -763,22 +763,22 @@ export default function SceneAnnotator({ photos, annotations, arts, writable }: 
             <label className="grid grid-cols-[110px_1fr_40px] items-center gap-2">
               Shadow falls
               <input type="range" min={0} max={359} value={draft.shadow.angle} onChange={(e) => set((d) => ({ ...d, shadow: { ...d.shadow, angle: Number(e.target.value) } }))} />
-              <span className="num text-[12.5px]">{draft.shadow.angle}°</span>
+              <span className="num text-[13px]">{draft.shadow.angle}°</span>
             </label>
             <label className="grid grid-cols-[110px_1fr_40px] items-center gap-2">
               Strength
               <input type="range" min={0} max={1} step={0.05} value={draft.shadow.strength} onChange={(e) => set((d) => ({ ...d, shadow: { ...d.shadow, strength: Number(e.target.value) } }))} />
-              <span className="num text-[12.5px]">{draft.shadow.strength.toFixed(2)}</span>
+              <span className="num text-[13px]">{draft.shadow.strength.toFixed(2)}</span>
             </label>
             <label className="grid grid-cols-[110px_1fr_40px] items-center gap-2">
               Art brightness
               <input type="range" min={0.5} max={1.5} step={0.05} value={draft.exposure} onChange={(e) => set((d) => ({ ...d, exposure: Number(e.target.value) }))} />
-              <span className="num text-[12.5px]">{draft.exposure.toFixed(2)}</span>
+              <span className="num text-[13px]">{draft.exposure.toFixed(2)}</span>
             </label>
             <label className="grid grid-cols-[110px_1fr_40px] items-center gap-2">
               Softness
               <input type="range" min={0} max={2} step={0.1} value={draft.softness} onChange={(e) => set((d) => ({ ...d, softness: Number(e.target.value) }))} />
-              <span className="num text-[12.5px]">{draft.softness.toFixed(1)}</span>
+              <span className="num text-[13px]">{draft.softness.toFixed(1)}</span>
             </label>
           </div>
 
@@ -790,7 +790,7 @@ export default function SceneAnnotator({ photos, annotations, arts, writable }: 
                   key={t}
                   type="button"
                   onClick={() => set((d) => ({ ...d, tags: [...d.tags.filter((x) => !(ROOM_TAGS as readonly string[]).includes(x)), ...(d.tags.includes(t) ? [] : [t])] }))}
-                  className={cn("rounded-full border-2 px-2.5 py-0.5 text-[12.5px] font-semibold", draft.tags.includes(t) ? "border-ink bg-ink text-white" : "border-line")}
+                  className={cn("rounded-full border-2 px-2.5 py-0.5 text-[13px] font-semibold", draft.tags.includes(t) ? "border-ink bg-ink text-white" : "border-line")}
                 >
                   {ROOM_TAG_LABEL[t]}
                 </button>
@@ -802,7 +802,7 @@ export default function SceneAnnotator({ photos, annotations, arts, writable }: 
                   key={t}
                   type="button"
                   onClick={() => set((d) => ({ ...d, tags: d.tags.includes(t) ? d.tags.filter((x) => x !== t) : [...d.tags.filter((x) => !(t === "warm" ? x === "cool" : t === "cool" ? x === "warm" : false)), t] }))}
-                  className={cn("rounded-full border-2 px-2.5 py-0.5 text-[12.5px] font-semibold", draft.tags.includes(t) ? "border-ink bg-wall" : "border-line")}
+                  className={cn("rounded-full border-2 px-2.5 py-0.5 text-[13px] font-semibold", draft.tags.includes(t) ? "border-ink bg-wall" : "border-line")}
                 >
                   {t === "person" ? "has person" : t}
                 </button>

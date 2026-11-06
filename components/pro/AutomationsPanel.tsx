@@ -135,7 +135,7 @@ export default function AutomationsPanel({ pro, storageKey, recent, server: init
     <div className="grid gap-6">
       {/* Real on every plan: these come first. */}
       <section aria-labelledby="every-h" className="af-panel grid p-4 sm:p-5">
-        <h2 id="every-h" className="text-[20px] font-bold">On every plan</h2>
+        <h2 id="every-h" className="t-card">On every plan</h2>
         <ul className="grid divide-y divide-line">
           {/* After an upload, a draft with the new pieces (lib/newsletterAuto.ts). */}
           {row("#ffd43b", "Draft a newsletter when I upload", "We email you a draft. Nothing goes out until you press Send.",
@@ -147,7 +147,7 @@ export default function AutomationsPanel({ pro, storageKey, recent, server: init
       </section>
 
       <section aria-labelledby="social-h" className="af-panel grid gap-1 p-4 sm:p-5">
-        <h2 id="social-h" className="text-[20px] font-bold">With Infinity</h2>
+        <h2 id="social-h" className="t-card">With Infinity</h2>
         <p className="text-[13.5px] text-ink-2">
           Auto-posting goes live soon. Until then, the <Link href="/studio/share" className="font-semibold text-ink underline underline-offset-2">Share kit</Link> has every post ready.
         </p>

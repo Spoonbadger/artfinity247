@@ -124,7 +124,7 @@ export default async function ScanningPage() {
             <div className="af-card overflow-hidden">
               <table className="w-full text-left text-[15.5px]">
                 <caption className="sr-only">Scan prices by painting size</caption>
-                <thead className="border-b border-line text-[12.5px] text-ink-2">
+                <thead className="border-b border-line text-[13px] text-ink-2">
                   <tr><th scope="col" className="px-5 py-3 font-semibold">Painting size</th><th scope="col" className="px-5 py-3 text-right font-semibold">Per painting</th></tr>
                 </thead>
                 <tbody>
@@ -151,7 +151,7 @@ export default async function ScanningPage() {
       )}
 
       <section className="mx-auto max-w-[1240px] px-4 py-16 sm:px-6 md:py-20" aria-labelledby="care-h">
-        <div className="grid gap-6 rounded-2xl border-[1.5px] border-ink bg-[#fffbe8] p-6 sm:p-8 md:grid-cols-[auto_1fr] md:items-start">
+        <div className="grid gap-6 rounded-2xl border border-edge bg-[#fffbe8] p-6 sm:p-8 md:grid-cols-[auto_1fr] md:items-start">
           <span className="paint-dab h-10 w-10" style={{ ["--dab" as string]: "var(--af-earned)" }} aria-hidden="true" />
           <div className="grid gap-2">
             <h2 id="care-h" className="display text-[36px] sm:text-[44px]">Your paintings, in good hands</h2>
@@ -196,7 +196,7 @@ export default async function ScanningPage() {
 
 function SizeCard({ title, note, sizes, tone }: { title: string; note: string; sizes: readonly string[]; tone: "muted" | "scan" }) {
   return (
-    <div className={tone === "scan" ? "af-card grid gap-3 border-[1.5px] border-ink p-5" : "grid gap-3 rounded-2xl border border-dashed border-line bg-wall p-5"}>
+    <div className={tone === "scan" ? "af-card grid gap-3 p-5" : "grid gap-3 rounded-2xl border border-dashed border-line bg-wall p-5"}>
       <div className="flex items-baseline justify-between gap-3">
         <b className="text-[17px]">{title}</b>
         <span className={tone === "scan" ? "text-[13px] font-semibold text-earned" : "text-[13px] text-ink-2"}>{note}</span>
@@ -212,7 +212,7 @@ function SizeCard({ title, note, sizes, tone }: { title: string; note: string; s
                 style={{ width: w, height: h }}
                 aria-hidden="true"
               />
-              <span className={ok ? "text-[12.5px] font-bold" : "text-[12.5px] text-ink-2 line-through"}>
+              <span className={ok ? "text-[13px] font-bold" : "text-[13px] text-ink-2 line-through"}>
                 {SIZE_LABEL[s as keyof typeof SIZE_LABEL]}<span className="sr-only">{ok ? " (sharp)" : " (too small)"}</span>
               </span>
             </li>

@@ -43,7 +43,7 @@ export default function CodePrintsForm({ value, placeholder }: { value: CodePrin
   };
 
   const money = (label: string, val: string, on: (s: string) => void, hint?: string) => (
-    <label className="grid gap-1 text-[12.5px] font-semibold">
+    <label className="grid gap-1 text-[13px] font-semibold">
       {label}
       <span className="flex items-center gap-1">
         <span aria-hidden="true" className="text-ink-2">$</span>
@@ -80,7 +80,7 @@ export default function CodePrintsForm({ value, placeholder }: { value: CodePrin
         <button type="submit" disabled={busy || !canEdit} title={canEdit ? undefined : "Only an owner can change settings."} className="btn btn-blue btn-sm w-fit">
           {busy ? "Saving…" : placeholder ? "Save real prices" : "Save"}
         </button>
-        {!canEdit && <span className="text-[12.5px] text-ink-2">Only an owner can change this.</span>}
+        {!canEdit && <span className="text-[13px] text-ink-2">Only an owner can change this.</span>}
       </div>
     </form>
   );

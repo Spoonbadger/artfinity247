@@ -71,7 +71,7 @@ export default function SalesChart({ days }: { days: DayPoint[] }) {
       </svg>
       {h && hover !== null && (
         <div
-          className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg border border-line bg-white px-2.5 py-1.5 text-[12.5px] shadow-[0_4px_14px_rgba(21,22,27,.12)]"
+          className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg border border-line bg-white px-2.5 py-1.5 text-[13px] shadow-[0_4px_14px_rgba(21,22,27,.12)]"
           style={{ left: `${Math.min(88, Math.max(12, ((PAD_L + hover * step + step / 2) / W) * 100))}%` }}
         >
           <b className="num block text-[14px]">{h.prints} sold</b>

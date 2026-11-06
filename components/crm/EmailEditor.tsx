@@ -171,7 +171,7 @@ export default function EmailEditor({
 
       <div id="email-panel" role="tabpanel" aria-labelledby={`tab-${kind}`} className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         {/* Editor */}
-        <section aria-label={`${EMAIL_KIND_LABEL[kind]} email`} className="grid gap-4 rounded-2xl border-[1.5px] border-ink bg-white p-4 sm:p-5">
+        <section aria-label={`${EMAIL_KIND_LABEL[kind]} email`} className="grid gap-4 rounded-2xl border border-edge bg-white p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <span className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-ink-2">
               <Clock className="h-4 w-4" aria-hidden="true" />{EMAIL_KIND_WHEN[kind]}
@@ -199,7 +199,7 @@ export default function EmailEditor({
             <p className="-mt-2 text-[13px] text-ink-2">Buyers get Artfinity&apos;s standard email until you save.</p>
           ) : null}
           {kind === "thank_you" && (
-            <p className="-mt-2 rounded-lg bg-wall px-3 py-2 text-[12.5px] text-ink-2">Your note saves now. Automatic sending is coming soon.</p>
+            <p className="-mt-2 rounded-lg bg-wall px-3 py-2 text-[13px] text-ink-2">Your note saves now. Automatic sending is coming soon.</p>
           )}
 
           <label className="af-field">
@@ -235,7 +235,7 @@ export default function EmailEditor({
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => insert(v)}
-                  className="rounded-full border-[1.5px] border-ink bg-white px-2.5 py-1 text-[12.5px] font-semibold text-ink hover:bg-sticker focus-visible:outline focus-visible:outline-2 focus-visible:outline-scan"
+                  className="rounded-full border-[1.5px] border-edge-strong bg-white px-2.5 py-1 text-[13px] font-semibold text-ink hover:border-ink hover:bg-sticker focus-visible:outline focus-visible:outline-2 focus-visible:outline-scan"
                 >
                   {`{${v}}`}
                 </button>

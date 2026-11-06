@@ -163,7 +163,7 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
                 onUnreadable={(f) => { setCropping(null); changePhoto(f); }}
               />
             )}
-            <span className="text-[12.5px] text-ink-2">A face or your studio. You can crop it.</span>
+            <span className="text-[13px] text-ink-2">A face or your studio. You can crop it.</span>
           </div>
         </div>
 
@@ -184,12 +184,12 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
             <input value={p.venmoHandle} onChange={(e) => setP({ ...p, venmoHandle: e.target.value.replace(/\s/g, "") })} maxLength={30} placeholder="@yourname" />
           </label>
           {pending !== null && (
-            <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border-2 border-ink bg-sticker/40 px-3 py-2 text-[13.5px]">
+            <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border-[1.5px] border-sticker bg-sticker/30 px-3 py-2 text-[13.5px]">
               <b className="min-w-0 flex-1">
                 {pending ? <>Waiting for you to confirm by email: {pending}</> : <>Waiting for you to confirm by email: remove your Venmo</>}
               </b>
               <button type="button" onClick={cancelVenmo} className="font-semibold text-ink-2 underline underline-offset-2 hover:text-coral">Cancel change</button>
-              <span className="basis-full text-[12.5px] text-ink-2">The link works for 24 hours. Until then, payouts go to {saved.venmoHandle || "your current Venmo"}.</span>
+              <span className="basis-full text-[13px] text-ink-2">The link works for 24 hours. Until then, payouts go to {saved.venmoHandle || "your current Venmo"}.</span>
             </div>
           )}
           {!saved.venmoHandle && pending === null && (
@@ -216,14 +216,14 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
 
       {/* Live preview of the public page: under the form on phones, beside it on desktop */}
       <aside className="grid gap-3 lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1" aria-label="Preview of your page">
-        <div className="flex items-center gap-2 rounded-full border-2 border-ink bg-white py-1.5 pl-4 pr-1.5">
+        <div className="flex items-center gap-2 rounded-full border-[1.5px] border-edge bg-white py-1.5 pl-4 pr-1.5">
           <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{link}</span>
           <button type="button" onClick={copy} className="btn btn-sm shrink-0" aria-live="polite">
             {copied ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
             {copied ? "Copied" : "Copy"}
           </button>
         </div>
-        <div className="overflow-hidden rounded-2xl border-[1.5px] border-ink bg-wall">
+        <div className="overflow-hidden rounded-2xl border border-edge bg-wall">
           <div className="relative grid justify-items-center gap-2 px-5 pb-5 pt-7 text-center">
             <Avatar src={p.profileImage} name={p.name || "A"} className="h-20 w-20 border-[3px] border-white text-2xl shadow-[0_6px_16px_rgba(21,22,27,.18)]" />
             <h2 className="display relative z-0 text-[34px]">
@@ -326,7 +326,7 @@ function DeleteAccount() {
     <section aria-labelledby="acct-h" className="grid gap-1">
       <h2 id="acct-h" className="sr-only">More account options</h2>
       {done ? (
-        <div role="status" className="grid gap-2 rounded-2xl border-2 border-ink bg-wall p-4">
+        <div role="status" className="grid gap-2 rounded-2xl border border-edge bg-wall p-4">
           <b className="font-display text-[22px] [font-variation-settings:'wdth'_80]">Your account is closed.</b>
           <p className="text-[14px]">Your page is offline. You&apos;ll still be paid what you&apos;ve earned, on the normal schedule. We emailed you the details. Changed your mind? <a href="/contact" className="font-semibold underline underline-offset-2">Message us</a> and we&apos;ll reopen it.</p>
           <a href="/" className="btn btn-ghost justify-self-start">Go to the homepage</a>

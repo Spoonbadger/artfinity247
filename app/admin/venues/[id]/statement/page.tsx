@@ -94,7 +94,7 @@ export default async function VenueStatementPage({ params, searchParams }: { par
           <dt className="border-t border-line pt-1.5 font-bold">Venue share ({pctLabel(v.sharePct)})</dt><dd className="num border-t border-line pt-1.5 text-right font-bold text-earned">{usd(t.owedCents)}</dd>
           <dt className="text-ink-2">Status</dt><dd className="text-right text-ink-2">{t.paid ? `Paid ${usd(t.paid.amountCents)}` : t.owedCents > 0 ? "Unpaid" : "Nothing owed"}</dd>
         </dl>
-        <p className="text-[12.5px] text-ink-2">Artfinity profit is the sale price minus printing, payment fees and the artist&apos;s share. Months run on UTC dates.</p>
+        <p className="text-[13px] text-ink-2">Artfinity profit is the sale price minus printing, payment fees and the artist&apos;s share. Months run on UTC dates.</p>
       </article>
     </div>
   );

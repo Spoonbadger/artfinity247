@@ -231,7 +231,7 @@ export default function ArtGallery({
         {/* what's on the stage: a room's size and the photo's credit, or which close-up */}
         {now.kind !== "art" && (
           <p className="pointer-events-none absolute bottom-2.5 left-2.5 right-2.5 flex flex-wrap items-center gap-x-1.5 sm:bottom-3 sm:left-3">
-            <span className="pointer-events-auto max-w-full truncate rounded-full bg-white/95 px-2.5 py-1 text-[12.5px] font-semibold text-ink shadow-[0_1px_3px_rgba(21,22,27,.2)]">
+            <span className="pointer-events-auto max-w-full truncate rounded-full bg-white/95 px-2.5 py-1 text-[13px] font-semibold text-ink shadow-[0_1px_3px_rgba(21,22,27,.2)]">
               {now.kind === "room" ? (
                 <>
                   {now.room.label} · <span className="num">{dims}</span>

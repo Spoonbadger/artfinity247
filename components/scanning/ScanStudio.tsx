@@ -73,7 +73,7 @@ export default function ScanStudio({ enabled, arts, bookings, preselect, focus, 
       {bookings.length > 0 && (
         <section id="bookings" aria-labelledby="bookings-h" className="grid gap-3 scroll-mt-24">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 id="bookings-h" className="text-[20px] font-bold">Your bookings</h2>
+            <h2 id="bookings-h" className="t-card">Your bookings</h2>
             {enabled && !formOpen && <button type="button" onClick={openForm} className="btn btn-blue btn-sm">Book another scan</button>}
           </div>
           <ul className="grid gap-4">
@@ -195,7 +195,7 @@ function BookingForm({ arts, preselect, settings, first, onClose }: {
 
         {/* 1. Paintings */}
         <section id="scan-pick" aria-labelledby="pick-h" className="grid gap-3 scroll-mt-24">
-          <h3 id="pick-h" className="flex items-baseline gap-2 text-[20px] font-bold"><i className="paint-dab" style={{ ["--dab" as string]: "var(--af-scan)" }} />Which paintings?</h3>
+          <h3 id="pick-h" className="flex items-baseline gap-2 t-card"><i className="paint-dab" style={{ ["--dab" as string]: "var(--af-scan)" }} />Which paintings?</h3>
           {sorted.length ? (
             <>
               <p className="-mt-1 text-[13.5px] text-ink-2">Tap to add. Pieces that can&apos;t print at {SIZE_LABEL.xl} yet come first.</p>
@@ -243,7 +243,7 @@ function BookingForm({ arts, preselect, settings, first, onClose }: {
                     <img src={a.imageUrl} alt="" className="hidden h-14 w-14 rounded-[2px] bg-white object-cover sm:block" />
                     <div className="grid gap-2">
                       <div className="flex items-baseline justify-between gap-2">
-                        <b className="truncate">{a.title}{a.original && <span className="num ml-2 text-[12.5px] font-normal text-ink-2">original {a.original}</span>}</b>
+                        <b className="truncate">{a.title}{a.original && <span className="num ml-2 text-[13px] font-normal text-ink-2">original {a.original}</span>}</b>
                         <button type="button" onClick={() => toggle(a)} className="flex shrink-0 items-center gap-1 text-[13px] font-semibold text-ink-2 hover:text-ink" aria-label={`Remove ${a.title}`}><Trash2 className="h-3.5 w-3.5" aria-hidden="true" />Remove</button>
                       </div>
                       <BandPicker id={`size-${id}`} name={`band-${id}`} label={`Size of ${a.title}`} value={band} onChange={(b) => setBand(id, b)} settings={settings} />
@@ -279,7 +279,7 @@ function BookingForm({ arts, preselect, settings, first, onClose }: {
 
         {/* 2. Handoff */}
         <section aria-labelledby="handoff-h" className="grid gap-3">
-          <h3 id="handoff-h" className="flex items-baseline gap-2 text-[20px] font-bold"><i className="paint-dab" style={{ ["--dab" as string]: "var(--af-sticker)" }} />Drop-off or pickup</h3>
+          <h3 id="handoff-h" className="flex items-baseline gap-2 t-card"><i className="paint-dab" style={{ ["--dab" as string]: "var(--af-sticker)" }} />Drop-off or pickup</h3>
           <div className="grid gap-2.5 sm:grid-cols-2" role="radiogroup" aria-label="Drop-off or pickup">
             {(["dropoff", "pickup"] as Handoff[]).map((h) => (
               <label key={h} className={cn("grid cursor-pointer gap-1 rounded-xl border-2 bg-white p-3.5 has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-scan", handoff === h ? "border-ink" : "border-line hover:border-ink-2")}>
@@ -301,7 +301,7 @@ function BookingForm({ arts, preselect, settings, first, onClose }: {
 
         {/* 3. Dates */}
         <section aria-labelledby="dates-h" className="grid gap-3">
-          <h3 id="dates-h" className="flex items-baseline gap-2 text-[20px] font-bold"><i className="paint-dab" style={{ ["--dab" as string]: "var(--af-coral)" }} />Days that work</h3>
+          <h3 id="dates-h" className="flex items-baseline gap-2 t-card"><i className="paint-dab" style={{ ["--dab" as string]: "var(--af-coral)" }} />Days that work</h3>
           <p className="-mt-1 text-[13.5px] text-ink-2">Up to three. We confirm one of them, or suggest another.</p>
           <div className="grid gap-2.5 sm:grid-cols-3">
             {dates.map((d, i) => (
@@ -321,7 +321,7 @@ function BookingForm({ arts, preselect, settings, first, onClose }: {
       {/* Live estimate */}
       <aside aria-label="Estimate" className="grid gap-4 lg:sticky lg:top-6">
         <section className="af-card grid gap-3 p-4 sm:p-5" aria-live="polite">
-          <h3 className="text-[20px] font-bold">Estimate</h3>
+          <h3 className="t-card">Estimate</h3>
           <dl className="num grid gap-1.5 text-[14.5px]">
             {[...settings.bands.map((b) => b.key), "oversized" as const].map((k) => {
               const n = items.filter((i) => i.band === k).length;
@@ -462,9 +462,9 @@ function BookingCard({ b, settings, highlight, onBookAgain }: { b: ScanBookingVi
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
           <p className="text-[13px] text-ink-2">Booked {dayLabel(new Date(b.createdAt))} · {n} {n === 1 ? "painting" : "paintings"} · {HANDOFF_LABEL[b.handoff]}{b.priceCents != null ? ` · ${usd(b.priceCents)}` : ""}</p>
-          <h3 className="relative mt-0.5 text-[19px] font-bold">{next.title}</h3>
+          <h3 className="relative mt-0.5 t-card">{next.title}</h3>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-white px-2.5 py-0.5 text-[12.5px] font-bold">
+        <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-white px-2.5 py-0.5 text-[13px] font-bold">
           <i className="paint-dab !h-2.5 !w-2.5" style={{ ["--dab" as string]: STATUS_DAB[b.status] }} aria-hidden="true" />{STATUS_LABEL[b.status]}{b.test && b.paidAt ? " · test" : ""}
         </span>
       </div>

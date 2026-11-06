@@ -35,7 +35,7 @@ export const PROSE = cn(
 /** The short version at the top of a long page. Plain-language pointers only; the full text below is what applies. */
 function Summary({ items }: { items: ReactNode[] }) {
   return (
-    <aside aria-labelledby="in-short-h" className="mb-10 max-w-[68ch] rounded-2xl border-[1.5px] border-ink bg-white p-5 sm:p-6">
+    <aside aria-labelledby="in-short-h" className="box mb-10 max-w-[68ch] p-5 sm:p-6">
       <h2 id="in-short-h" className="font-display text-[24px] font-extrabold leading-none [font-variation-settings:'wdth'_80]">In short</h2>
       <ul className="mt-3 grid gap-2 text-[16px] leading-snug text-ink">
         {items.map((it, i) => (

@@ -112,7 +112,7 @@ export default async function PricingPage() {
           </div>
           <div className="relative grid gap-2">
             <StartInfinityButton label={<>Get {PRO.name} · {proPrice()}/month</>} className="btn btn-sticker btn-lg w-full" activeClassName="btn btn-ghost btn-lg w-full !border-white !text-white hover:!bg-white hover:!text-ink" />
-            <span className="text-center text-[12.5px] text-white/70">Billed monthly by Stripe. Cancel anytime.</span>
+            <span className="text-center text-[13px] text-white/70">Billed monthly by Stripe. Cancel anytime.</span>
             <Link href="/studio/infinity#referrals" className="text-center text-[14px] font-bold text-white underline-offset-2 hover:underline">Or share Artfinity, get {REFERRALS.rewardMonths} months free</Link>
           </div>
           <div className="relative"><FeatureList which="pro" dark /></div>

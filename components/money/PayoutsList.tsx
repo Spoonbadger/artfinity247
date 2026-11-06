@@ -12,12 +12,12 @@ const SORTS = [
 
 export function PayoutChip({ row, late = false }: { row: PayoutRow; late?: boolean }) {
   if (late) {
-    return <span className="inline-flex items-center whitespace-nowrap rounded-full bg-coral px-2.5 py-0.5 text-[12.5px] font-bold text-white">Late</span>;
+    return <span className="inline-flex items-center whitespace-nowrap rounded-full bg-coral px-2.5 py-0.5 text-[13px] font-bold text-white">Late</span>;
   }
   const cls =
     row.status === "paid" ? "bg-earned-soft text-earned" : row.status === "scheduled" ? "bg-sticker/60 text-ink" : "bg-wall text-ink-2";
   return (
-    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[12.5px] font-semibold ${cls}`}>
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[13px] font-semibold ${cls}`}>
       {row.status === "paid" && <svg viewBox="0 0 12 12" className="h-3 w-3" aria-hidden="true"><path d="M2 6.5l2.5 2.5L10 3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>}
       {row.status === "scheduled" && <svg viewBox="0 0 12 12" className="h-3 w-3" aria-hidden="true"><circle cx="6" cy="6" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="M6 3.5V6l1.8 1.2" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>}
       {row.status === "in_progress" && <i className="paint-dab h-2.5 w-2.5" style={{ ["--dab" as string]: "#a9d8c1" }} />}
@@ -39,8 +39,8 @@ export default function PayoutsList({ payouts, ledger, adjustments = [], lateMon
       {payouts.length === 0 ? (
         <>
         <div className="grid gap-0.5">
-          <h2 id="payouts-h" className="text-[20px] font-bold">Payouts</h2>
-          <span className="text-[12.5px] text-ink-2">One a month. Tap one to see its sales.</span>
+          <h2 id="payouts-h" className="t-card">Payouts</h2>
+          <span className="text-[13px] text-ink-2">One a month. Tap one to see its sales.</span>
         </div>
         <EmptyState
           compact
@@ -55,8 +55,8 @@ export default function PayoutsList({ payouts, ledger, adjustments = [], lateMon
           options={SORTS}
           className="grid"
           toolbar={<div className="grid gap-0.5">
-          <h2 id="payouts-h" className="text-[20px] font-bold">Payouts</h2>
-          <span className="text-[12.5px] text-ink-2">One a month. Tap one to see its sales.</span>
+          <h2 id="payouts-h" className="t-card">Payouts</h2>
+          <span className="text-[13px] text-ink-2">One a month. Tap one to see its sales.</span>
         </div>}
           head={
           <div className="hidden grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_20px] gap-3 border-b border-line pb-2 text-[12px] font-semibold text-ink-2 md:grid">
@@ -73,7 +73,7 @@ export default function PayoutsList({ payouts, ledger, adjustments = [], lateMon
                   <span className="whitespace-nowrap font-semibold">{p.label}</span>
                   <b className="num text-right text-[16px] text-earned md:order-none">{usd(p.amountCents)}</b>
                   <svg viewBox="0 0 12 12" className="h-3.5 w-3.5 text-ink-2 transition group-open:rotate-180 md:order-last" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                  <span className="col-span-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[12.5px] text-ink-2 md:contents">
+                  <span className="col-span-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] text-ink-2 md:contents">
                     <span className="md:block"><PayoutChip row={p} late={late} /></span>
                     <span className="num whitespace-nowrap md:text-[14px] md:text-ink">{when(p, late)}</span>
                   </span>

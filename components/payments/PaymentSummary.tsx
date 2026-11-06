@@ -63,8 +63,8 @@ export default function PaymentSummary({
   const label = totalLabel ?? (tax === "added" ? "Total before tax" : "Total");
 
   return (
-    <section id={id} aria-label={typeof title === "string" ? title : "Payment summary"} className={cn("grid w-full content-start gap-3 rounded-2xl border-[1.5px] border-ink bg-white p-4 sm:p-5", className)}>
-      {title && <H className="text-[20px] font-extrabold leading-tight">{title}</H>}
+    <section id={id} aria-label={typeof title === "string" ? title : "Payment summary"} className={cn("box grid w-full content-start gap-3 p-4 sm:p-5", className)}>
+      {title && <H className="t-card">{title}</H>}
 
       {lines.length > 0 && (
         <ul className="grid divide-y divide-line">
@@ -80,7 +80,7 @@ export default function PaymentSummary({
               </div>
               <span className="num shrink-0 text-right leading-tight">
                 <b className="block text-[15px]">{money(l.amountCents)}</b>
-                {l.wasCents && l.wasCents > l.amountCents ? <s className="text-[12.5px] text-ink-2">{money(l.wasCents)}</s> : null}
+                {l.wasCents && l.wasCents > l.amountCents ? <s className="text-[13px] text-ink-2">{money(l.wasCents)}</s> : null}
               </span>
             </li>
           ))}
@@ -101,7 +101,7 @@ export default function PaymentSummary({
       </dl>
 
       {children && <div className="grid gap-2">{children}</div>}
-      {footer && <div className="text-[12.5px] leading-snug text-ink-2">{footer}</div>}
+      {footer && <div className="t-small">{footer}</div>}
     </section>
   );
 }

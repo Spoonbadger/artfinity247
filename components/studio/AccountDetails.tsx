@@ -87,7 +87,7 @@ export default function AccountDetails({ initial }: { initial: Account }) {
   return (
     <section id="account-details" aria-labelledby="acct-details-h" className="grid scroll-mt-24 gap-4">
       <div className="grid gap-1">
-        <h2 id="acct-details-h" className="text-[18px] font-bold">Account details</h2>
+        <h2 id="acct-details-h" className="t-card">Account details</h2>
         <p className="flex items-center gap-1.5 text-[13.5px] text-ink-2">
           <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           Private. For payouts and tax only.

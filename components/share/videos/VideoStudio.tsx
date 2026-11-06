@@ -219,7 +219,7 @@ export default function VideoStudio({ art, arts, base, pro }: { art: ShareArt; a
                 <span className="paint-dab sm:mb-2" style={{ ["--dab" as string]: p.dab }} aria-hidden="true" />
                 <span className="grid">
                   <b className="text-[15px] leading-tight">{p.name}</b>
-                  <span className={cn("text-[12.5px]", preset === p.id ? "text-white/75" : "text-ink-2")}>{p.sub}</span>
+                  <span className={cn("text-[13px]", preset === p.id ? "text-white/75" : "text-ink-2")}>{p.sub}</span>
                 </span>
               </button>
             ))}
@@ -229,14 +229,14 @@ export default function VideoStudio({ art, arts, base, pro }: { art: ShareArt; a
                 <span className="paint-dab sm:mb-2" style={{ ["--dab" as string]: p.dab }} aria-hidden="true" />
                 <span className="grid">
                   <b className="text-[15px] leading-tight">{p.name}</b>
-                  <span className={cn("text-[12.5px]", preset === p.id ? "text-white/75" : "text-ink-2")}>{p.sub}</span>
+                  <span className={cn("text-[13px]", preset === p.id ? "text-white/75" : "text-ink-2")}>{p.sub}</span>
                 </span>
               </button>
             ))}
           </div>
         </fieldset>
 
-        <div role="radiogroup" aria-label="Format" className="flex w-max gap-1 rounded-full border-2 border-ink p-1">
+        <div role="radiogroup" aria-label="Format" className="flex w-max gap-1 rounded-full border-[1.5px] border-edge-strong p-1">
           {(Object.keys(FORMATS) as VideoFormat[]).map((f) => (
             <button key={f} type="button" role="radio" aria-checked={format === f} disabled={busy} onClick={() => setFormat(f)}
               className={cn("rounded-full px-4 py-1.5 text-[14px] font-bold", format === f ? "bg-ink text-white" : "text-ink")}>
@@ -377,7 +377,7 @@ export default function VideoStudio({ art, arts, base, pro }: { art: ShareArt; a
                 </label>
                 {music !== "none" && <button type="button" className="btn btn-ghost btn-sm" onClick={listen}><Volume2 size={14} aria-hidden="true" /> Listen</button>}
               </div>
-              <p className="text-[12.5px] text-ink-2">{music === "none" ? "No sound, on purpose: add licensed trending audio in Instagram or TikTok when you post." : "Made right here in your browser, so it's royalty-free with no copyright claims. With music, recording takes the video's full length."}</p>
+              <p className="text-[13px] text-ink-2">{music === "none" ? "No sound, on purpose: add licensed trending audio in Instagram or TikTok when you post." : "Made right here in your browser, so it's royalty-free with no copyright claims. With music, recording takes the video's full length."}</p>
           </Fold>
         ) : (
           <Fold title="More with Infinity" sub="6 more presets, brand colors, logo and music" open={locked}>
@@ -391,7 +391,7 @@ export default function VideoStudio({ art, arts, base, pro }: { art: ShareArt; a
                 </span>
                 <span className="grid">
                   <b className="text-[15px] leading-tight">{p.name}{!pro && <span className="sr-only"> (Infinity)</span>}</b>
-                  <span className={cn("text-[12.5px]", preset === p.id ? "text-white/75" : "text-ink-2")}>{p.sub}</span>
+                  <span className={cn("text-[13px]", preset === p.id ? "text-white/75" : "text-ink-2")}>{p.sub}</span>
                 </span>
               </button>
             ))}

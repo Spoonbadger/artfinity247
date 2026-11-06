@@ -62,14 +62,14 @@ export default async function AdminVenuePage({ params }: { params: { id: string 
         {tiles.map(([val, label, money]) => (
           <div key={label} className="grid min-w-0 gap-0.5">
             <b className={`display num truncate text-[26px] ${money ? "text-earned" : ""}`}>{val}</b>
-            <span className="text-[12.5px] text-ink-2">{label}</span>
+            <span className="text-[13px] text-ink-2">{label}</span>
           </div>
         ))}
       </section>
 
       <section aria-labelledby="months-h" className="af-panel relative overflow-x-auto">
         <div className="grid gap-1 px-4 pt-4">
-          <h2 id="months-h" className="text-[18px] font-bold">Share by month</h2>
+          <h2 id="months-h" className="t-card">Share by month</h2>
           <p className="text-[13px] text-ink-2" title="Profit = sale minus printing, fees and the artist's share. Refunded lines left out. Months are UTC, like artist payouts.">
             {share} of Artfinity&apos;s profit on sales from codes here.
           </p>
@@ -150,7 +150,7 @@ export default async function AdminVenuePage({ params }: { params: { id: string 
       </section>
 
       <section aria-labelledby="codes-h" className="grid gap-2">
-        <h2 id="codes-h" className="text-[18px] font-bold">Codes here</h2>
+        <h2 id="codes-h" className="t-card">Codes here</h2>
         <DataTable
           id="venue-codes"
           caption={`Codes at ${v.name}`}
@@ -187,7 +187,7 @@ export default async function AdminVenuePage({ params }: { params: { id: string 
                     ) : (
                       <b className="truncate font-semibold">{c.artwork?.title || "Artist page"}</b>
                     )}
-                    <span className="truncate text-[12.5px] text-ink-2">{c.label || "—"}</span>
+                    <span className="truncate text-[13px] text-ink-2">{c.label || "—"}</span>
                   </span>
                 </span>
               ),
@@ -216,7 +216,7 @@ export default async function AdminVenuePage({ params }: { params: { id: string 
           </div>
         </details>
         <section aria-labelledby="log-h" className="af-panel grid content-start gap-3 p-4 sm:p-5">
-          <h2 id="log-h" className="text-[18px] font-bold">History</h2>
+          <h2 id="log-h" className="t-card">History</h2>
           {activity.length ? (
             <ul className="grid gap-2.5 text-[13.5px]">
               {activity.map((a) => (

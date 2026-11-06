@@ -44,7 +44,7 @@ export default function HelpIndex() {
               const items = articlesIn(s.id);
               return (
                 <li key={s.id}>
-                  <Link href={`/help/${s.id}`} className="af-card group grid h-full content-start gap-2 p-4 no-underline sm:p-5 transition hover:-translate-y-0.5 hover:shadow-[0_6px_0_rgba(21,22,27,.9)]">
+                  <Link href={`/help/${s.id}`} className="af-card group grid h-full content-start gap-2 p-4 no-underline sm:p-5 transition hover:-translate-y-0.5 hover:border-ink hover:shadow-[0_6px_0_rgba(21,22,27,.9)]">
                     <span className="flex items-center gap-2.5">
                       <i className="paint-dab h-5 w-5" style={{ ["--dab" as string]: s.dab }} aria-hidden="true" />
                       <b className="font-display text-[20px] leading-none text-ink [font-variation-settings:'wdth'_80] sm:text-[24px]">{s.title}</b>

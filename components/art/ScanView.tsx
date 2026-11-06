@@ -245,7 +245,7 @@ export default function ScanView({
                   {usd(price.list)}
                 </s>
               )}
-              {pct > 0 && <span className="rounded-full bg-sticker px-2.5 py-1 text-[12.5px] font-bold leading-none text-ink">{pct}% off for scanning</span>}
+              {pct > 0 && <span className="rounded-full bg-sticker px-2.5 py-1 text-[13px] font-bold leading-none text-ink">{pct}% off for scanning</span>}
               <EditionBadge edition={art.edition} compact />
             </div>
             {discountEnded && <p className="text-[13.5px] text-ink-2">This card&apos;s discount has ended.</p>}
@@ -273,7 +273,7 @@ export default function ScanView({
                       </span>
                     )}
                     <span className="text-[15px] font-bold leading-tight">{SIZE_LABEL[s]}</span>
-                    <span className="num text-[12.5px] leading-tight text-ink-2">{landscape ? `${sh}×${sw}` : `${sw}×${sh}`} in</span>
+                    <span className="num text-[13px] leading-tight text-ink-2">{landscape ? `${sh}×${sw}` : `${sw}×${sh}`} in</span>
                     <span className="num text-[13px] font-semibold leading-tight">{usd(sizePrices[s].now)}</span>
                   </label>
                 );
@@ -336,7 +336,7 @@ export default function ScanView({
       {/* Below the fold: the rest, once each */}
       <div className="mx-auto mt-10 grid max-w-[1240px] gap-8 border-t border-line px-4 pt-8 sm:px-6 md:mt-14 md:grid-cols-2 md:gap-12 md:pt-10">
         <section aria-labelledby="about-h" className="grid content-start gap-3">
-          <h2 id="about-h" className="text-[18px] font-bold">About this piece</h2>
+          <h2 id="about-h" className="t-card">About this piece</h2>
           {aboutText.trim() && <p className="whitespace-pre-line text-[15px] leading-relaxed text-ink-2">{aboutText}</p>}
           {original && <p className="text-[15px] text-ink-2">Original: {originalText(original)}</p>}
           <Link href={artistPath(artist.slug)} className="group mt-1 flex w-fit items-center gap-3 text-ink no-underline">
@@ -359,7 +359,7 @@ export default function ScanView({
         </section>
 
         <section aria-labelledby="print-h" className="grid content-start gap-3">
-          <h2 id="print-h" className="text-[18px] font-bold">The print{framed ? " and frame" : ""}</h2>
+          <h2 id="print-h" className="t-card">The print{framed ? " and frame" : ""}</h2>
           <ul className="grid list-disc gap-1.5 pl-5 text-[15px] leading-snug text-ink-2 marker:text-line">
             <li>
               {SIZE_LABEL[size]}, {sizeInches(size)}. Giclée on 310gsm archival matte paper, ½-inch border.
@@ -442,7 +442,7 @@ export default function ScanView({
             {soldOut ? "Sold out" : busy ? "Opening…" : `Buy · ${usd(price.now)}`}
           </button>
         </div>
-        <p className="mt-1 text-center text-[12.5px] text-ink-2">{arrives ? `Arrives ${arrives} · free US shipping` : "Free US shipping"} · free reprint if damaged</p>
+        <p className="mt-1 text-center text-[13px] text-ink-2">{arrives ? `Arrives ${arrives} · free US shipping` : "Free US shipping"} · free reprint if damaged</p>
       </div>
     </div>
   );

@@ -23,7 +23,7 @@ export default function VideoUpsell({ imageUrl, title }: { imageUrl: string; tit
           <StartInfinityButton included />
           <Link href="/studio/infinity#referrals" className="btn btn-ghost">Share, get 2 months free</Link>
         </div>
-        <span className="text-[12.5px] text-ink-2">{proPrice()}/mo. Images, captions and links below stay free.</span>
+        <span className="text-[13px] text-ink-2">{proPrice()}/mo. Images, captions and links below stay free.</span>
       </div>
     </div>
   );

@@ -59,7 +59,7 @@ function Comparison({ a, d }: { a: ModArtwork; d: DuplicateOf }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={x.imageUrl} alt={x.title} loading="lazy" className="h-full w-full object-contain" />
       </div>
-      <figcaption className="grid min-w-0 gap-0.5 text-[12.5px]">
+      <figcaption className="grid min-w-0 gap-0.5 text-[13px]">
         <b className="truncate text-[13.5px]">{x.title}</b>
         <span className="truncate">
           <Link href={`/@${x.artistSlug}`} className="font-semibold text-ink hover:text-scan">{x.artistName}</Link>
@@ -272,7 +272,7 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
     </TableToolbar>
     <div className="contents">
       {picked.length > 0 && (
-        <div role="region" aria-label="Bulk actions" className="sticky top-[64px] z-10 flex flex-1 flex-wrap items-center gap-2 rounded-xl border-[1.5px] border-ink bg-white px-3 py-2 shadow-sm">
+        <div role="region" aria-label="Bulk actions" className="sticky top-[64px] z-10 flex flex-1 flex-wrap items-center gap-2 rounded-xl border border-edge bg-white px-3 py-2 shadow-sm">
           <b className="num text-[14px]">{picked.length} selected</b>
           <button type="button" disabled={busy === "bulk"} onClick={() => bulk("approve")} className="btn btn-blue btn-sm">Approve</button>
           <button type="button" disabled={busy === "bulk"} onClick={() => bulk("reject")} className="btn btn-ghost btn-sm">Reject</button>
@@ -337,7 +337,7 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
                 </div>
               )}
 
-              {flagged && <p className="text-[12.5px] font-semibold text-coral">Flagged: {flagged}</p>}
+              {flagged && <p className="text-[13px] font-semibold text-coral">Flagged: {flagged}</p>}
               {a.autoCheck && <AutoCheck c={a.autoCheck} />}
 
               <div className="mt-1 flex flex-wrap items-center gap-2">

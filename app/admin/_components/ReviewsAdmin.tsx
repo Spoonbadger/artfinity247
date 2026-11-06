@@ -103,7 +103,7 @@ export default function ReviewsAdmin({ reviews: initial, tab = "all" }: { review
             <div className="flex items-center gap-2">
               <span className={cn("rounded-full px-2 py-0.5 text-[11.5px] font-bold", st.cls)}>{st.label}</span>
               <Dabs value={r.rating} size="sm" />
-              <span className="ml-auto text-[12.5px] text-ink-2">{new Date(r.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" })}</span>
+              <span className="ml-auto text-[13px] text-ink-2">{new Date(r.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" })}</span>
             </div>
             <p className="text-[13px] text-ink-2">
               <b className="text-ink">{r.buyerName}</b>{r.buyerCity ? ` · ${r.buyerCity}` : ""} · {r.buyerEmail}

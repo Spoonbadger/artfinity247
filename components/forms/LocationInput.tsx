@@ -183,7 +183,7 @@ export default function LocationInput({
     <ul
       {...cb.listProps}
       aria-label={scope === "address" ? "Address suggestions" : "Place suggestions"}
-      className="absolute inset-x-0 top-[calc(100%+6px)] z-50 max-h-[min(320px,50vh)] overflow-auto rounded-xl border-2 border-ink bg-white p-1 shadow-[0_18px_40px_-12px_rgba(21,22,27,.35)]"
+      className="absolute inset-x-0 top-[calc(100%+6px)] z-50 max-h-[min(320px,50vh)] overflow-auto rounded-xl border border-edge bg-white p-1 shadow-[0_18px_40px_-12px_rgba(21,22,27,.35)]"
     >
       {items.map((s, i) => (
         <li
@@ -196,7 +196,7 @@ export default function LocationInput({
             <span className="block truncate text-[15px] font-semibold text-ink">
               <Highlight text={s.primary} query={(scope === "address" && !usingGoogle) || tail ? value.split(",").pop() || "" : value} />
             </span>
-            {s.secondary && <span className="block truncate text-[12.5px] text-ink-2">{s.secondary}</span>}
+            {s.secondary && <span className="block truncate text-[13px] text-ink-2">{s.secondary}</span>}
           </span>
         </li>
       ))}

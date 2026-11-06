@@ -28,12 +28,12 @@ export default function TestStartForm({ value }: { value: string }) {
   };
   return (
     <form onSubmit={save} className="flex flex-wrap items-end gap-2 border-t border-dashed border-line pt-3">
-      <label className="grid gap-1 text-[12.5px] font-semibold">
+      <label className="grid gap-1 text-[13px] font-semibold">
         Start date
         <input type="date" value={v} onChange={(e) => setV(e.target.value)} className="min-h-[38px] rounded-lg border-[1.5px] border-line bg-white px-2 text-[14px] text-ink" />
       </label>
       <button type="submit" disabled={busy || v === value || !canEdit} title={canEdit ? undefined : "Only an owner can change settings."} className="btn btn-ghost btn-sm">Save</button>
-      {value && <button type="button" disabled={busy} onClick={() => setV("")} className="text-[12.5px] font-semibold text-ink-2 underline">Use first order</button>}
+      {value && <button type="button" disabled={busy} onClick={() => setV("")} className="text-[13px] font-semibold text-ink-2 underline">Use first order</button>}
     </form>
   );
 }

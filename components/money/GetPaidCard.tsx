@@ -19,8 +19,8 @@ export default function GetPaidCard({ status, mode, venmoHandle, nextDate, verif
   return (
     <section aria-labelledby="getpaid-h" className="af-card grid content-start gap-3 p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
-        <h2 id="getpaid-h" className="text-[20px] font-bold leading-tight">How you get paid</h2>
-        <span className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[12.5px] font-bold ${chip.cls}`}>
+        <h2 id="getpaid-h" className="t-card">How you get paid</h2>
+        <span className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[13px] font-bold ${chip.cls}`}>
           {status === "ready" && <svg viewBox="0 0 12 12" className="h-3 w-3" aria-hidden="true"><path d="M2 6.5l2.5 2.5L10 3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>}
           {chip.label}
         </span>
@@ -60,7 +60,7 @@ export default function GetPaidCard({ status, mode, venmoHandle, nextDate, verif
             </form>
           )}
           {mode === "simulated" && (
-            <p className="text-[12.5px] text-ink-2"><b className="text-ink">Stripe isn&apos;t set up here.</b> {status === "ready" ? "This is a test account." : "Connecting makes a test account."} No money moves.</p>
+            <p className="text-[13px] text-ink-2"><b className="text-ink">Stripe isn&apos;t set up here.</b> {status === "ready" ? "This is a test account." : "Connecting makes a test account."} No money moves.</p>
           )}
         </>
       )}

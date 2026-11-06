@@ -34,7 +34,7 @@ export default async function AdminPayoutsPage({ searchParams }: { searchParams:
       <PayAllPanel />
       <section aria-labelledby="month-h" className="grid gap-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <h2 id="month-h" className="text-[20px] font-bold">By month</h2>
+          <h2 id="month-h" className="t-card">By month</h2>
           <div className="flex flex-wrap items-center gap-2">
             <MonthPicker months={months} value={month} allowAll={false} />
             <a href={`/api/admin/payouts?month=${month}`} className="btn btn-ghost btn-sm">Export CSV</a>

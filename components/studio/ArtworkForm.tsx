@@ -366,7 +366,7 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
           <div className="grid gap-1.5">
             <span className="text-[13px] font-semibold text-ink-2">Or import from</span>
             <CloudImportButtons onPick={takeCloud} mock={mock} max={many ? undefined : 1} disabled={!!uploading} />
-            {!many && <p className="text-[12.5px] text-ink-2">Start with one piece. Import more once it&apos;s live.</p>}
+            {!many && <p className="text-[13px] text-ink-2">Start with one piece. Import more once it&apos;s live.</p>}
           </div>
         )}
         {cloudNote && <p role="status" className="rounded-lg bg-wall px-3 py-2 text-[13px]">{cloudNote}</p>}

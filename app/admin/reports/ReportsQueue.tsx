@@ -152,8 +152,8 @@ export default function ReportsQueue({ rows: initial, tab }: { rows: ReportRow[]
             {/* The report */}
             <div className="grid content-start gap-3">
               <div className="flex flex-wrap items-center gap-2">
-                <span className={cn("rounded-full px-2.5 py-0.5 text-[12.5px] font-bold", CHIP[r.reason] ?? CHIP.other)}>{REASON_SHORT[r.reason as AnyReason] ?? r.reason}</span>
-                {r.isRightsHolder && <span className="text-[12.5px] font-semibold text-ink-2">Signed by rights holder</span>}
+                <span className={cn("rounded-full px-2.5 py-0.5 text-[13px] font-bold", CHIP[r.reason] ?? CHIP.other)}>{REASON_SHORT[r.reason as AnyReason] ?? r.reason}</span>
+                {r.isRightsHolder && <span className="text-[13px] font-semibold text-ink-2">Signed by rights holder</span>}
                 <span className="num ml-auto text-[13px] text-ink-2">{fmt(r.createdAt)}</span>
               </div>
 
@@ -171,7 +171,7 @@ export default function ReportsQueue({ rows: initial, tab }: { rows: ReportRow[]
                 {n && (
                   <Row label="Signed">
                     <span className="font-display italic">{n.signature}</span> · {fmt(n.signedAt)}
-                    <details className="mt-1 text-[12.5px] text-ink-2">
+                    <details className="mt-1 text-[13px] text-ink-2">
                       <summary className="cursor-pointer font-semibold">{n.statements.length} statements</summary>
                       <ul className="mt-1 grid gap-0.5">{n.statements.map((s) => <li key={s}>✓ {s}</li>)}</ul>
                     </details>
@@ -198,7 +198,7 @@ export default function ReportsQueue({ rows: initial, tab }: { rows: ReportRow[]
                       <textarea rows={2} maxLength={1000} value={notes[r.id] || ""} onChange={(e) => setNotes((x) => ({ ...x, [r.id]: e.target.value }))} placeholder="Optional" />
                     </label>
                   </details>
-                  {(counter || r.reason === "copyright") && !canDmca && <p className="text-[12.5px] text-ink-2">DMCA decisions need the admin or owner role.</p>}
+                  {(counter || r.reason === "copyright") && !canDmca && <p className="text-[13px] text-ink-2">DMCA decisions need the admin or owner role.</p>}
                   <div className="flex flex-wrap gap-2">
                     {counter ? (
                       <button type="button" className="btn btn-sm" disabled={busy === r.id || !r.art || !canDmca} onClick={() => act(r, "restore")}>Restore</button>

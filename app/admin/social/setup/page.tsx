@@ -53,7 +53,7 @@ function render(md: string): ReactNode[] {
     if (/^#{1,3} /.test(l)) {
       const level = l.match(/^#+/)![0].length;
       const text = l.replace(/^#+ /, "");
-      out.push(level === 1 ? <h1 key={k++} className="display text-[40px] sm:text-[52px]">{text}</h1> : level === 2 ? <h2 key={k++} className="display mt-4 text-[28px]">{text}</h2> : <h3 key={k++} className="text-[17px] font-extrabold">{text}</h3>);
+      out.push(level === 1 ? <h1 key={k++} className="display text-[40px] sm:text-[52px]">{text}</h1> : level === 2 ? <h2 key={k++} className="display mt-4 text-[28px]">{text}</h2> : <h3 key={k++} className="t-card">{text}</h3>);
       i++; continue;
     }
     if (l.trim().startsWith("```")) {
@@ -61,7 +61,7 @@ function render(md: string): ReactNode[] {
       i++;
       while (i < lines.length && !lines[i].trim().startsWith("```")) code.push(lines[i++].trim());
       i++;
-      out.push(<pre key={k++} tabIndex={0} className="overflow-x-auto rounded-xl bg-ink p-3 text-[12.5px] text-white"><code>{code.join("\n")}</code></pre>);
+      out.push(<pre key={k++} tabIndex={0} className="overflow-x-auto rounded-xl bg-ink p-3 text-[13px] text-white"><code>{code.join("\n")}</code></pre>);
       continue;
     }
     if (l.startsWith("|")) {
@@ -105,7 +105,7 @@ function render(md: string): ReactNode[] {
               {it.sub.length > 0 && (
                 <div className="mt-1 grid gap-1">
                   {it.sub.map((s, n) => s.startsWith("\u0000")
-                    ? <pre key={n} tabIndex={0} className="overflow-x-auto rounded-xl bg-ink p-3 text-[12.5px] text-white"><code>{s.slice(1)}</code></pre>
+                    ? <pre key={n} tabIndex={0} className="overflow-x-auto rounded-xl bg-ink p-3 text-[13px] text-white"><code>{s.slice(1)}</code></pre>
                     : <Fragment key={n}><span className="block pl-3 text-ink-2">• {inline(s, `s${j}${n}`)}</span></Fragment>)}
                 </div>
               )}
