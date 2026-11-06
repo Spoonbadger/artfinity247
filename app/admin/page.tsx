@@ -77,6 +77,13 @@ export default async function AdminDashboard() {
     prisma.codePrintOrder.count({ where: { status: "paid" } }).catch(() => 0),
     prisma.scanBooking.count({ where: { status: "requested" } }).catch(() => 0),
   ]);
+  // Just one waiting: open that exact item, not the list it sits in.
+  const [oneCode, oneScan, oneUnsent, oneFailed] = await Promise.all([
+    codeOrders === 1 ? prisma.codePrintOrder.findFirst({ where: { status: "paid" }, select: { id: true } }).catch(() => null) : null,
+    scanBookings === 1 ? prisma.scanBooking.findFirst({ where: { status: "requested" }, select: { id: true } }).catch(() => null) : null,
+    notSent === 1 ? prisma.order.findFirst({ where: { OR: [{ paymentStatus: "paid" }, { kind: "reprint" }], shippingStatus: "pending", sentToPrinter: false, printerSentAt: null }, select: { id: true } }) : null,
+    failedWo === 1 ? prisma.order.findFirst({ where: { printerRef: { startsWith: "failed" }, shippingStatus: "pending" }, select: { id: true } }) : null,
+  ]);
   const COVERED = new Set(["report", "reprint", "duplicate", "moderation", "review_flagged", "verification", "work_order_failed", "order_stuck", "order_undelivered", "payout_late", "code_print_order", "scan_booking"]);
   const urgent = alerts.filter((a) => a.severity === "urgent");
   const otherAlerts = alerts.filter((a) => a.severity !== "urgent" && !COVERED.has(a.kind)).length;
@@ -84,13 +91,13 @@ export default async function AdminDashboard() {
   // Most urgent first: money and buyers waiting, then the review queues.
   const queue = ([
     ...urgent.map((a) => ({ key: a.id, n: 0, label: a.title, sub: kindMeta(a.kind).label, href: a.link || kindMeta(a.kind).queue, action: "Open", urgent: true })),
-    { key: "wo", n: failedWo, label: "Work orders failed to send", href: "/admin/orders?month=all&filter=print", action: "Retry" },
-    { key: "print", n: notSent, label: "Orders not sent to the printer", href: "/admin/orders?month=all&filter=print", action: "Send" },
+    { key: "wo", n: failedWo, label: "Work orders failed to send", href: oneFailed ? `/admin/orders/${oneFailed.id}` : "/admin/orders?month=all&filter=print", action: "Retry" },
+    { key: "print", n: notSent, label: "Orders not sent to the printer", href: oneUnsent ? `/admin/orders/${oneUnsent.id}` : "/admin/orders?month=all&filter=print", action: "Send" },
     { key: "late", n: lateArtists, label: "Artists with a late payout", href: "/admin/payouts", action: "Pay" },
     { key: "reports", n: openReports, label: "Reports (DMCA, AI, content)", href: "/admin/reports", action: "Review" },
     { key: "reprints", n: reprints, label: "Reprint requests", href: "/admin/reprints", action: "Review" },
-    { key: "codes", n: codeOrders, label: "Code orders to print", href: "/admin/code-orders?status=paid", action: "Print" },
-    { key: "scans", n: scanBookings, label: "Scan bookings to confirm", href: "/admin/scanning", action: "Confirm" },
+    { key: "codes", n: codeOrders, label: "Code orders to print", href: oneCode ? `/admin/code-orders/${oneCode.id}` : "/admin/code-orders?status=paid", action: "Print" },
+    { key: "scans", n: scanBookings, label: "Scan bookings to confirm", href: oneScan ? `/admin/scanning/${oneScan.id}` : "/admin/scanning", action: "Confirm" },
     { key: "mod", n: pendingArt, label: "Artworks to review", href: "/admin/moderation", action: "Review" },
     { key: "dupes", n: duplicates, label: "Possible duplicates", href: "/admin/moderation", action: "Compare" },
     { key: "verify", n: toVerify, label: "Verification requests", href: "/admin/verification", action: "Review" },
