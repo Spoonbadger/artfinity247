@@ -173,7 +173,7 @@ export type ConnectDetail = { state: "setup" | "paused" | "review"; reason: stri
 export async function connectDetail(artistId: string): Promise<ConnectDetail | null> {
   const artist = await prisma.artist.findUnique({ where: { id: artistId }, select: { stripeAccountId: true, stripePayoutsEnabled: true } });
   if (!artist || connectStatus(artist) !== "pending") return null;
-  if (isSimAccount(artist.stripeAccountId)) return { state: "paused", reason: "Test account: payouts are off until you finish setup. No money moves." };
+  if (isSimAccount(artist.stripeAccountId)) return { state: "paused", reason: "Payouts are paused on this test account." };
   const stripe = stripeOrNull();
   if (!stripe) return null;
   try {

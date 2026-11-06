@@ -10,6 +10,7 @@
     "a11y": "node scripts/a11y.mjs",
     "test:oauth": "node --test lib/oauth/oauth.test.mjs",
     "test:sw": "node --test lib/pwa/sw.test.mjs",
+    "test:checkout": "node --experimental-strip-types --test lib/checkoutSession.test.mjs",
     "postinstall": "prisma generate",
     "db:seed": "node --env-file=.env prisma/seed.mjs",
     "db:images": "node scripts/gen-seed-images.mjs",
