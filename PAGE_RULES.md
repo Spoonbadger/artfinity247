@@ -60,6 +60,8 @@ that matters, and filling up with long, samey copy. When in doubt: less, and the
 - Fewer buttons per item. The item itself is the main click (usually Edit); one or two quick actions with icons;
   everything else (delete, rare tools) lives inside the item's edit page.
 - Every icon-only button has a tooltip and an aria-label. Icons and words together beat either alone.
+- No double clicks: a button lands on the final screen. Never send people to a page or card whose only job is
+  another "Continue" button. "Get Infinity" anywhere starts checkout; "Book a scan" opens the booking form.
 
 ## 8. Check it
 
