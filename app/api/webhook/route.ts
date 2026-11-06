@@ -12,6 +12,7 @@ import { markRewardUsed, preservedSplit } from "@/lib/collectorRewards"
 import { reportError } from "@/lib/monitor"
 import { markScanPaid } from "@/lib/scanning.server"
 import { markCodeOrderPaid } from "@/lib/codePrints"
+import { orderIdFrom, shippingFrom } from "@/lib/checkoutSession"
 
 export const dynamic = "force-dynamic"
 export const runtime = 'nodejs'
@@ -54,18 +55,7 @@ export async function POST(req: NextRequest) {
   if (event.type === 'checkout.session.completed') {
     console.log("EVENT TYPE:", event.type)
 
-    const session = event.data.object as Stripe.Checkout.Session & {
-      shipping_details?: {
-        name?: string
-        address?: {
-          line1?: string
-          city?: string
-          state?: string
-          postal_code?: string
-          country?: string
-        }
-      }
-    }
+    const session = event.data.object as Stripe.Checkout.Session
 
     // Infinity subscriptions are not print orders: /api/webhook/billing handles them (lib/billing.ts).
     if (session.mode === 'subscription') return new Response(null, { status: 200 })
@@ -105,7 +95,10 @@ export async function POST(req: NextRequest) {
       : null
 
     try {
-      const shipping = session.shipping_details
+      // Since API version 2025-03-31.basil the address is at collected_information.shipping_details (lib/checkoutSession.ts).
+      const shipping = shippingFrom(session)
+      // The order id made with the session (its code is on the buyer's card statement and Stripe receipt), if any.
+      const presetId = orderIdFrom(session.metadata)
       // 1) Idempotent order create (upsert by unique stripeSessionId)
       const order = await prisma.order.upsert({
         where: { stripeSessionId: session.id },
@@ -113,24 +106,19 @@ export async function POST(req: NextRequest) {
           // Don’t touch totals on retry, but update shipping/email if missing
           email: buyerEmail,
           paymentStatus: session.payment_status ?? '',
-
-          shippingName: shipping?.name ?? null,
-
-          shippingAddress: shipping?.address
-            ? `${shipping.address.line1 ?? ''}, ${shipping.address.city ?? ''}, ${shipping.address.state ?? ''} ${shipping.address.postal_code ?? ''}, ${shipping.address.country ?? ''}`
-            : null,
+          shippingName: shipping.name,
+          shippingAddress: shipping.address,
           ...(bulk ?? {}),
         },
         create: {
+          ...(presetId ? { id: presetId } : {}),
           stripeSessionId: session.id,
           email: buyerEmail,
           amountTotal: session.amount_total ?? 0,
           currency: session.currency ?? 'usd',
           paymentStatus: session.payment_status ?? '',
-          shippingName: shipping?.name ?? null,
-          shippingAddress: shipping?.address
-            ? `${shipping.address.line1 ?? ''}, ${shipping.address.city ?? ''}, ${shipping.address.state ?? ''} ${shipping.address.postal_code ?? ''}, ${shipping.address.country ?? ''}`
-            : null,
+          shippingName: shipping.name,
+          shippingAddress: shipping.address,
           ...(bulk ?? {}),
         },
       })
@@ -221,7 +209,7 @@ export async function POST(req: NextRequest) {
 
       // Buyer ticked "Email me when … posts new work": a confirmed follow per artist (upsert, retry-safe).
       if (!isBulk && session.metadata?.follow === "1" && session.payment_status === "paid") {
-        await followFromCheckout(buyerEmail, await artistIdsForOrder(order.id), shipping?.name)
+        await followFromCheckout(buyerEmail, await artistIdsForOrder(order.id), shipping.name)
           .catch((e) => console.error("checkout follow failed", order.id, e))
       }
 

@@ -461,7 +461,7 @@ export default function SceneAnnotator({ photos, annotations, arts, writable }: 
                     className={cn("absolute right-1 top-1 h-3 w-3 rounded-full border border-white", !a ? "bg-sticker" : a.status === "rejected" ? "bg-coral" : "bg-[#0f7a55]")}
                     aria-label={!a ? "To do" : a.status === "rejected" ? "Unusable" : "Annotated"}
                   />
-                  {p.source === "fixture" && <span className="absolute bottom-0 left-0 bg-[#ff2d6f] px-1 text-[9px] font-bold uppercase text-white">fixture</span>}
+                  {p.source === "fixture" && <span className="absolute bottom-0 left-0 bg-[#b0124a] px-1 text-[9px] font-bold uppercase text-white">fixture</span>}
                 </button>
               </li>
             );
@@ -590,7 +590,7 @@ export default function SceneAnnotator({ photos, annotations, arts, writable }: 
         {/* controls */}
         <aside className="grid content-start gap-3 text-[14px]">
           <div className="af-panel grid gap-2 p-3">
-            <h3 className="text-[15px] font-bold">Steps</h3>
+            <h2 className="text-[15px] font-bold">Steps</h2>
             <ol className="grid gap-1">
               {[
                 { k: "Q", label: "Wall region, 4 corners of a real rectangle on the wall", ok: draft.quad.length === 4, m: "quad" as Mode },
@@ -675,7 +675,7 @@ export default function SceneAnnotator({ photos, annotations, arts, writable }: 
           </div>
 
           <div className="af-panel grid gap-1.5 p-3">
-            <h3 className="text-[15px] font-bold">Scale</h3>
+            <h2 className="text-[15px] font-bold">Scale</h2>
             {solve && ppi ? (
               <>
                 <p>
@@ -697,7 +697,7 @@ export default function SceneAnnotator({ photos, annotations, arts, writable }: 
           </div>
 
           <div className="af-panel grid gap-2 p-3">
-            <h3 className="text-[15px] font-bold">Preview</h3>
+            <h2 className="text-[15px] font-bold">Preview</h2>
             <div className="grid grid-cols-4 gap-1">
               {PRINT_SIZE_KEYS.map((s) => (
                 <button key={s} type="button" onClick={() => setSize(s)} className={cn("rounded-lg border-2 px-1 py-1 text-[12.5px] font-semibold", size === s ? "border-ink bg-wall" : "border-line", solve && !usable.includes(s) && "text-coral")}>
@@ -715,7 +715,7 @@ export default function SceneAnnotator({ photos, annotations, arts, writable }: 
                 <input type="checkbox" checked={mat} onChange={(e) => setMat(e.target.checked)} /> mat
               </label>
             </div>
-            <select value={artSlug} onChange={(e) => setArtSlug(e.target.value)} className="rounded-lg border border-line px-2 py-1.5">
+            <select aria-label="Artwork to preview" value={artSlug} onChange={(e) => setArtSlug(e.target.value)} className="rounded-lg border border-line px-2 py-1.5">
               <option value="">Placeholder</option>
               {arts.map((a) => (
                 <option key={a.slug} value={a.slug}>
@@ -742,7 +742,7 @@ export default function SceneAnnotator({ photos, annotations, arts, writable }: 
           </div>
 
           <div className="af-panel grid gap-2 p-3">
-            <h3 className="text-[15px] font-bold">Light</h3>
+            <h2 className="text-[15px] font-bold">Light</h2>
             <label className="flex items-center gap-2">
               Wall tint
               <input type="color" value={draft.tint} onChange={(e) => set((d) => ({ ...d, tint: e.target.value, tintAuto: false }))} className="h-7 w-12 rounded border border-line" />
@@ -783,7 +783,7 @@ export default function SceneAnnotator({ photos, annotations, arts, writable }: 
           </div>
 
           <div className="af-panel grid gap-2 p-3">
-            <h3 className="text-[15px] font-bold">Tags</h3>
+            <h2 className="text-[15px] font-bold">Tags</h2>
             <div className="flex flex-wrap gap-1">
               {ROOM_TAGS.map((t) => (
                 <button

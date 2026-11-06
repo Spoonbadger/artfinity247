@@ -144,3 +144,52 @@ export async function refreshFromStripe(artistId: string): Promise<ConnectStatus
   }
   return connectStatus(artist);
 }
+
+/** What Stripe is waiting for, in plain words (account.requirements keys). */
+const NEEDS: [RegExp, string][] = [
+  [/external_account/, "your bank account"],
+  [/verification\.(additional_)?document/, "a photo of your ID"],
+  [/id_number|ssn_last_4/, "your Social Security number"],
+  [/dob/, "your date of birth"],
+  [/address/, "your address"],
+  [/phone/, "your phone number"],
+  [/tos_acceptance/, "you to accept Stripe's terms"],
+  [/first_name|last_name/, "your legal name"],
+];
+const needWords = (keys: string[]) => {
+  const words = Array.from(new Set(keys.map((k) => NEEDS.find(([re]) => re.test(k))?.[1]).filter(Boolean) as string[]));
+  if (!words.length) return "a few more details";
+  return words.length === 1 ? words[0] : `${words.slice(0, -1).join(", ")} and ${words[words.length - 1]}`;
+};
+
+/**
+ * Why payouts aren't on yet, for the Money page (only asked while the status is "pending"):
+ *   setup    onboarding not finished           → Finish setup
+ *   paused   was set up, Stripe now needs more  → Finish setup (Stripe's own form)
+ *   review   Stripe is reviewing or refused     → Message us
+ * Never throws: on any Stripe error it falls back to "setup".
+ */
+export type ConnectDetail = { state: "setup" | "paused" | "review"; reason: string };
+export async function connectDetail(artistId: string): Promise<ConnectDetail | null> {
+  const artist = await prisma.artist.findUnique({ where: { id: artistId }, select: { stripeAccountId: true, stripePayoutsEnabled: true } });
+  if (!artist || connectStatus(artist) !== "pending") return null;
+  if (isSimAccount(artist.stripeAccountId)) return { state: "paused", reason: "Test account: payouts are off until you finish setup. No money moves." };
+  const stripe = stripeOrNull();
+  if (!stripe) return null;
+  try {
+    const acct = await stripe.accounts.retrieve(artist.stripeAccountId!);
+    const r = acct.requirements;
+    const due = [...(r?.past_due ?? []), ...(r?.currently_due ?? [])];
+    const why = r?.disabled_reason ?? "";
+    if (why.startsWith("rejected") || why === "under_review" || why === "requirements.pending_verification") {
+      return why === "requirements.pending_verification" || why === "under_review"
+        ? { state: "review", reason: "Stripe is checking your details. This usually takes a day or two; we pay by Venmo until then." }
+        : { state: "review", reason: "Stripe couldn't approve this account. Message us and we'll sort out another way to pay you." };
+    }
+    if (!acct.details_submitted) return { state: "setup", reason: `Stripe still needs ${needWords(due)}.` };
+    return { state: "paused", reason: `Payouts are paused: Stripe needs ${needWords(due)}.` };
+  } catch (err) {
+    console.error("[stripe connect] detail failed", err);
+    return { state: "setup", reason: "Stripe needs a few more details." };
+  }
+}

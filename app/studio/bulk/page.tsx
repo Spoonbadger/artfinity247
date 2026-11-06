@@ -9,11 +9,13 @@ import { editionLabel } from "@/lib/editionFormat";
 import { BULK_SIZES, BULK_SIZE_KEY } from "@/lib/bulk";
 import { sizeAllowed } from "@/lib/printSizes";
 import { requireArtist, displayName } from "../_lib/data";
+import { TAX_ENABLED } from "@/lib/tax";
+import PaymentReturn from "@/components/payments/PaymentReturn";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Bulk prints" };
 
-export default async function BulkPage({ searchParams }: { searchParams: { placed?: string; session_id?: string } }) {
+export default async function BulkPage({ searchParams }: { searchParams: { placed?: string; session_id?: string; canceled?: string } }) {
   const artist = await requireArtist("/studio/bulk");
 
   const [rows, orders] = await Promise.all([
@@ -55,6 +57,10 @@ export default async function BulkPage({ searchParams }: { searchParams: { place
   }));
 
   const placedId = searchParams.placed || (searchParams.session_id ? orders.find((o) => o.stripeSessionId === searchParams.session_id)?.id : undefined);
+  const placedOrder = placedId ? past.find((p) => p.id === placedId) : undefined;
+  // Back from Stripe: paid but the webhook hasn't recorded it yet, or backed out without paying.
+  const returned = searchParams.canceled ? "canceled" as const : searchParams.session_id && !placedId ? "confirming" as const : null;
+  const tax = !process.env.STRIPE_SECRET_KEY ? "test" as const : TAX_ENABLED ? "added" as const : "none" as const;
 
   return (
     <StudioPage
@@ -71,7 +77,11 @@ export default async function BulkPage({ searchParams }: { searchParams: { place
           help={{ label: "How bulk prints work", href: "/help/selling/bulk-prints" }}
         />
       ) : (
-        <BulkOrder arts={arts} past={past} placedId={placedId ?? null} defaultName={displayName(artist)} />
+        <>
+          {placedOrder && <PaymentReturn kind="paid" message={placedOrder.test ? "Bulk order placed (test)" : "Bulk order placed"} description="We emailed your receipt." strip={["placed", "session_id"]} />}
+          {returned === "canceled" && <PaymentReturn kind="canceled" message="Nothing was charged" strip={["canceled"]} />}
+          <BulkOrder arts={arts} past={past} placedId={placedId ?? null} defaultName={displayName(artist)} tax={tax} returned={returned} />
+        </>
       )}
     </StudioPage>
   );

@@ -403,7 +403,8 @@ export async function createCheckout(artistId: string, interval: Interval, baseU
     client_reference_id: artistId,
     line_items: [lineItem(interval)],
     metadata,
-    subscription_data: { metadata, ...(trialEnd ? { trial_end: unix(trialEnd) } : {}) },
+    subscription_data: { metadata, description: `Artfinity ${PRO.name} plan: ${pct(PRO.split)} of profit on new sales`, ...(trialEnd ? { trial_end: unix(trialEnd) } : {}) },
+    custom_text: { submit: { message: `Cancel anytime from Manage billing in your Studio. You keep ${PRO.name} to the end of the period you paid for.` } },
     automatic_tax: { enabled: BILLING_TAX_ENABLED },
     // Stripe Tax needs an address; save what they type on the customer.
     ...(BILLING_TAX_ENABLED ? { billing_address_collection: "required" as const, customer_update: { address: "auto" as const, name: "auto" as const } } : {}),

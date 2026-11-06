@@ -163,7 +163,7 @@ export default async function AdminJobsPage() {
           <ul className="mt-3 grid gap-2">
             {setup.map((x) => (
               <li key={x.name} className="grid grid-cols-[14px_minmax(0,1fr)] gap-x-3">
-                <span aria-label={x.ok ? "Set" : "Not set"} className="mt-1.5 inline-block h-3 w-3 rounded-full" style={{ background: x.ok ? "var(--af-earned)" : "#e3b23c" }} />
+                <span role="img" aria-label={x.ok ? "Set" : "Not set"} className="mt-1.5 inline-block h-3 w-3 rounded-full" style={{ background: x.ok ? "var(--af-earned)" : "#e3b23c" }} />
                 <span className="text-[14px]"><code className="text-[12.5px] font-bold">{x.name}</code> <span className="text-ink-2">{x.ok ? "set" : "not set"}. {x.note}</span></span>
               </li>
             ))}

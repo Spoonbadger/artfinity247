@@ -24,6 +24,7 @@ export async function sendReceiptEmail(orderId: string) {
       shippingName: true,
       shippingAddress: true,
       receiptSentAt: true,
+      kind: true,
       items: {
         select: {
           title: true,
@@ -31,6 +32,7 @@ export async function sendReceiptEmail(orderId: string) {
           size: true,
           quantity: true,
           unitPrice: true,
+          lineTotal: true,
           frameChosen: true,
           frameColor: true,
           editionNumber: true,
@@ -46,14 +48,19 @@ export async function sendReceiptEmail(orderId: string) {
   if (order.receiptSentAt) return { alreadySent: true };
 
   const code = orderCode(order.id);
+  const bulk = order.kind === "bulk";
+  // amountTotal is what Stripe charged; the lines are before tax and shipping is free (bulk: handling rides as shipping).
+  const linesCents = order.items.reduce((n, it) => n + (it.lineTotal ?? (it.unitPrice ?? 0) * (it.quantity ?? 1)), 0);
   const rewards = (await rewardSettings().catch(() => null))?.enabled ?? false;
   const { data, error } = await resend.emails.send(
     {
       from,
       to: order.email,
-      subject: `Your Artfinity order ${code}`,
+      subject: bulk ? `Your bulk prints are ordered (${code})` : `Your Artfinity order ${code}`,
       react: ReceiptEmail({
         code,
+        bulk,
+        subtotalCents: linesCents,
         totalCents: order.amountTotal,
         currency: order.currency,
         shippingName: order.shippingName,

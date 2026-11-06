@@ -13,6 +13,8 @@ import { getArtistPlan } from "@/components/pro/plan.server";
 import { BILLING, FREE_SPLIT, PRO, REFERRALS, dollars, formatPlanDate, pct, planFeatures, proPrice } from "@/lib/plans";
 import { ensureReferralCode, getReferrals, referralLink, type ReferralRow, type ReferralStatus } from "@/lib/referrals";
 import { confirmCheckout, getBillingSummary } from "@/lib/billing";
+import { BILLING_TAX_ENABLED } from "@/lib/tax";
+import PaymentReturn from "@/components/payments/PaymentReturn";
 import { paysForItself, type BillingView } from "@/lib/billingStatus";
 import { calcItemProfitCents } from "@/lib/revenue";
 import { money } from "@/lib/earnings";
@@ -112,9 +114,20 @@ export default async function ProPage({ searchParams }: { searchParams?: { billi
       }
     >
       {searchParams?.billing === "success" && (
-        <p role="status" className="rounded-xl border-[1.5px] border-earned bg-earned-soft px-4 py-3 text-[15px] font-semibold">
-          {plan.active ? `You're on ${PRO.name}. New sales pay ${pct(PRO.split)}.` : `Payment received. ${PRO.name} turns on in a moment; refresh if it hasn't.`}
-        </p>
+        <>
+          <PaymentReturn kind={plan.active ? "paid" : "info"} message={plan.active ? `You're on ${PRO.name}` : "Payment received"} description={plan.active ? `${pct(PRO.split)} of profit from today.` : `${PRO.name} turns on in a moment.`} strip={["billing", "session_id"]} />
+          <p role="status" className="rounded-xl border-[1.5px] border-earned bg-earned-soft px-4 py-3 text-[15px] font-semibold">
+            {plan.active ? `You're on ${PRO.name} — ${pct(PRO.split)} from today. Receipts come by email from Stripe.` : `Payment received. ${PRO.name} turns on in a moment; refresh if it hasn't.`}
+          </p>
+        </>
+      )}
+      {searchParams?.billing === "canceled" && !plan.active && (
+        <>
+          <PaymentReturn kind="canceled" message="Nothing was charged" description={`You're still on Free: ${pct(FREE_SPLIT)} of profit.`} strip={["billing"]} />
+          <p role="status" className="rounded-xl border border-scan/30 bg-scan-soft px-4 py-3 text-[15px] font-semibold">
+            Nothing was charged. You&apos;re still on Free.
+          </p>
+        </>
       )}
 
       {/* What you get, the price and the button, in one place */}
@@ -142,14 +155,8 @@ export default async function ProPage({ searchParams }: { searchParams?: { billi
               </li>
             ))}
           </ul>
-          {!plan.active && (
-            <p className="flex items-baseline gap-1.5">
-              <b className="display num text-[40px] leading-none">{proPrice()}</b>
-              <span className="text-[14px] text-ink-2">a month</span>
-            </p>
-          )}
           <div className="relative">
-            <BillingPanel mode={billing.mode} kind={view.kind} intervals={billing.intervals} freeMonthsUntil={freeMonthsUntil} onDark={dark} autoStart={searchParams?.start === "1" && !plan.active} />
+            <BillingPanel mode={billing.mode} kind={view.kind} intervals={billing.intervals} freeMonthsUntil={freeMonthsUntil} onDark={dark} autoStart={searchParams?.start === "1" && !plan.active} tax={billing.mode === "simulated" ? "test" : BILLING_TAX_ENABLED ? "added" : "none"} />
           </div>
           <p className={dark ? "relative text-[12.5px] text-white/70" : "text-[12.5px] text-ink-2"}>
             The higher share counts for orders placed while {PRO.name} is on. Earlier orders keep theirs.

@@ -16,6 +16,7 @@ import { isProActive } from "@/lib/plans";
 import { FORMATS, type FormatKey } from "@/components/qr/card";
 import { cardWords, codeOrderNumber, FORMAT_ORDER, PRICING_DEFAULTS, quoteFor, type CodePrintPricing, type OrderStatus } from "@/lib/printQueueFormat";
 import type { Tracking } from "@/lib/tracking";
+import { statementSuffix } from "@/lib/checkoutSession";
 
 const FROM = process.env.EMAIL_FROM || "Artfinity <contact@theartfinity.com>";
 const APP_URL = () => (process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com").replace(/\/$/, "");
@@ -86,13 +87,18 @@ export async function checkoutSession(order: { id: string; email: string; items:
   const p = cleanPricing(order.pricing);
   const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = FORMAT_ORDER.filter((f) => counts[f]).map((f) => ({
     quantity: counts[f]!,
-    price_data: { currency: "usd", unit_amount: p.unit[f], product_data: { name: `${FORMATS[f].name} QR codes, printed, laminated and cut (at cost)` } },
+    price_data: { currency: "usd", unit_amount: p.unit[f], product_data: { name: `Printed QR codes — ${FORMATS[f].name}`, description: "Laminated, pre-cut and mailed to you. At cost." } },
   }));
   if (order.handlingCents > 0) line_items.push({ quantity: 1, price_data: { currency: "usd", unit_amount: order.handlingCents, product_data: { name: "Handling (at cost)" } } });
+  const no = codeOrderNumber(order.id);
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
+    submit_type: "pay",
     locale: "en",
     customer_email: order.email,
+    expires_at: Math.floor(Date.now() / 1000) + 2 * 3600,
+    payment_intent_data: { description: `Artfinity printed QR codes ${no}: ${summaryOf(items)}`, statement_descriptor_suffix: statementSuffix(no.replace(/^CP-/, "")), metadata: { codePrintOrderId: order.id } },
+    custom_text: { submit: { message: `Order ${no}. At cost: we don't make money on these. Tracking follows by email.` } },
     line_items,
     shipping_options: [{ shipping_rate_data: { display_name: order.shippingCents ? "Mail with tracking (at cost)" : "Free shipping (Infinity)", fixed_amount: { amount: order.shippingCents, currency: "usd" }, type: "fixed_amount" } }],
     metadata: { kind: "code_print", codePrintOrderId: order.id },
@@ -172,9 +178,9 @@ export async function sendCodeOrderEmail(orderId: string, kind: "paid" | "shippe
   if (kind === "paid") {
     subject = `Your QR codes are ordered (${no})`;
     body = `${hi}\n\nThanks. We're printing ${summaryOf(items)} for you: laminated, cut and ready to hang.\n\n` +
-      `Paid: ${usd(o.totalCents)} (cards ${usd(o.subtotalCents)}, shipping ${usd(o.shippingCents)}${o.handlingCents ? `, handling ${usd(o.handlingCents)}` : ""}). At cost: we don't make money on these.\n\n` +
+      `Paid: ${usd(o.totalCents)} (cards ${usd(o.subtotalCents)}, shipping ${usd(o.shippingCents)}${o.handlingCents ? `, handling ${usd(o.handlingCents)}` : ""}, no sales tax). At cost: we don't make money on these.\n\n` +
       `Mailing to:\n${o.shipName}\n${o.shipLine1}${o.shipLine2 ? `\n${o.shipLine2}` : ""}\n${o.shipCity}, ${o.shipState} ${o.shipZip}\n\n` +
-      `We'll email the tracking link when they ship. See your order: ${link}`;
+      `We'll email the tracking link when they ship. See your order: ${link}\n\nQuestions? Reply to this email with ${no}.`;
   } else if (kind === "shipped") {
     subject = `Your QR codes shipped (${no})`;
     body = `${hi}\n\nYour ${summaryOf(items)} are on the way.\n\n` +

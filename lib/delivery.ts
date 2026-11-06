@@ -35,3 +35,12 @@ export function deliveryRange(now: Date = new Date()) {
   const sameMonth = from.getUTCMonth() === to.getUTCMonth();
   return `${fmt(from, { month: "short", day: "numeric" })}–${sameMonth ? fmt(to, { day: "numeric" }) : fmt(to, { month: "short", day: "numeric" })}`;
 }
+
+/** The two steps before it arrives, for the thank-you page: "Printed by Nov 12", then "Arrives Nov 13–18". */
+export function deliverySteps(now: Date = new Date()) {
+  const today = todayIn(DELIVERY_TZ, now);
+  return {
+    printedBy: fmt(addBusinessDays(today, PRINT_BUSINESS_DAYS.max), { weekday: "short", month: "short", day: "numeric" }),
+    arrives: deliveryRange(now),
+  };
+}

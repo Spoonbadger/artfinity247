@@ -226,12 +226,11 @@ function Row({
           type="button"
           onClick={() => setEditing((v) => !v)}
           aria-expanded={editing}
-          aria-label={`Edit ${title}`}
           title={`Edit ${title}`}
           className="grid min-h-[44px] min-w-0 flex-1 rounded-lg px-1 text-left leading-tight hover:bg-wall/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-scan"
         >
           <b className={cn("flex items-center gap-1.5 truncate text-[15px]", !link.active && "text-ink-2")}>
-            <span className="truncate">{title}</span>
+            <span className="truncate"><span className="sr-only">Edit </span>{title}</span>
             <Pencil className="h-3.5 w-3.5 shrink-0 text-ink-2" aria-hidden="true" />
           </b>
           <span className="truncate text-[13px] text-ink-2">

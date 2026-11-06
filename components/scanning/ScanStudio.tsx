@@ -15,6 +15,8 @@ import {
   type Handoff, type ItemBand, type ScanBand, type ScanStatus,
 } from "@/lib/scanning";
 import { cn } from "@/lib/utils";
+import PaymentSummary from "@/components/payments/PaymentSummary";
+import ScanPayButton from "@/components/scanning/ScanPayButton";
 
 export type ScanArt = {
   id: string; slug: string; title: string; imageUrl: string; printableSizes: string[];
@@ -31,7 +33,8 @@ export type ScanBookingView = {
   receivedAt: string | null; paidAt: string | null; deliveredAt: string | null; returnedAt: string | null; cancelReason: string | null; test: boolean;
   items: { id: string; band: string; title: string | null; slug: string | null; imageUrl: string | null; printableSizes: string[]; delivered: boolean }[];
 };
-type Settings = { bands: ScanBand[]; pickupFeeCents: number | null; turnaroundDays: number; returnDays: number; care: string };
+/** testMode: no Stripe keys, so paying marks the booking paid without a card. */
+type Settings = { bands: ScanBand[]; pickupFeeCents: number | null; turnaroundDays: number; returnDays: number; care: string; testMode?: boolean };
 type Fix = { label: string; href?: string; onClick?: () => void };
 type Group = { key: string; count: number; band: ItemBand };
 
@@ -386,31 +389,6 @@ function BookingCard({ b, settings, highlight, onBookAgain }: { b: ScanBookingVi
   const best = largest(b.items.filter((i) => i.delivered).flatMap((i) => i.printableSizes));
   const n = b.items.length;
 
-  async function pay() {
-    setBusy("pay");
-    try {
-      const res = await fetch(`/api/studio/scanning/${b.id}/pay`, { method: "POST" });
-      const data = await res.clone().json().catch(() => ({}));
-      if (!res.ok || !data.url) {
-        const p = await problemFrom(res, "Checkout didn't open. Try again.");
-        failed(p.message, { fix: p.fix, retry: p.fix ? undefined : pay });
-        setBusy(null);
-        return;
-      }
-      if (data.dev) {
-        saved("Paid (test mode)", { description: "No card was charged: Stripe isn't set up here." });
-        router.push(data.url, { scroll: false });
-        router.refresh();
-        setBusy(null);
-      } else {
-        window.location.href = data.url;
-      }
-    } catch (err) {
-      failed(errorText(err, "Checkout didn't open. Try again."), { retry: pay });
-      setBusy(null);
-    }
-  }
-
   async function cancel() {
     setBusy("cancel");
     try {
@@ -445,9 +423,15 @@ function BookingCard({ b, settings, highlight, onBookAgain }: { b: ScanBookingVi
           title: `Confirmed for ${date} — pay ${usd(b.priceCents ?? 0)} to lock it in`,
           body: <>{where} Pay now and you&apos;re all set.</>,
           actions: (
-            <button type="button" onClick={pay} disabled={!!busy} className="btn btn-blue">
-              {busy === "pay" && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}Pay {usd(b.priceCents ?? 0)}
-            </button>
+            <PaymentSummary
+              title={null}
+              className="max-w-[420px] border border-line p-3 sm:p-4"
+              lines={[{ key: "scans", title: `Painting scans — ${n} ${n === 1 ? "painting" : "paintings"}`, detail: b.handoff === "pickup" ? "Pickup included" : "Drop-off in NYC", amountCents: b.priceCents ?? 0 }]}
+              tax={settings.testMode ? "test" : "none"}
+              totalCents={b.priceCents ?? 0}
+            >
+              <ScanPayButton id={b.id} priceCents={b.priceCents ?? 0} className="btn btn-blue w-full" />
+            </PaymentSummary>
           ),
         };
       case "paid":

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { errorText, failed } from "@/lib/feedback";
 import { Problem } from "@/components/studio/Problem";
-import { Check, Loader2, Plus, Trash2 } from "lucide-react";
+import { Check, Plus, Trash2 } from "lucide-react";
 import { BrushStroke } from "@/components/af/Brush";
 import EditionBadge from "@/components/art/EditionBadge";
 import QtyInput from "@/components/bulk/QtyInput";
@@ -18,6 +18,8 @@ import type { PrintSize } from "@/lib/revenue";
 import { cn } from "@/lib/utils";
 import AddressFields, { addressProblem } from "@/components/forms/AddressFields";
 import { cleanMoney } from "@/lib/smartFields";
+import PaymentSummary, { type TaxLine } from "@/components/payments/PaymentSummary";
+import PayButton from "@/components/payments/PayButton";
 
 /** sizes: the print sizes this file is sharp enough for. */
 export type BulkArt = { id: string; slug: string; title: string; imageUrl: string; sensitive: string[]; edition: Edition | null; sizes: PrintSize[] };
@@ -36,7 +38,13 @@ const FRAMES = [
 ] as const;
 const DRAFT = "af:bulk:draft";
 
-export default function BulkOrder({ arts, past, placedId, defaultName }: { arts: BulkArt[]; past: PastBulk[]; placedId: string | null; defaultName: string }) {
+export default function BulkOrder({ arts, past, placedId, defaultName, tax = "added", returned = null }: {
+  arts: BulkArt[]; past: PastBulk[]; placedId: string | null; defaultName: string;
+  /** Sales tax on bulk orders: added on Stripe's page ("added"), or none in test mode. */
+  tax?: TaxLine;
+  /** Back from Stripe: canceled (nothing charged), or paid but the order isn't recorded yet. */
+  returned?: "canceled" | "confirming" | null;
+}) {
   const router = useRouter();
   const byId = useMemo(() => new Map(arts.map((a) => [a.id, a])), [arts]);
   const [lines, setLines] = useState<Line[]>([]);
@@ -76,14 +84,14 @@ export default function BulkOrder({ arts, past, placedId, defaultName }: { arts:
   const patch = (key: string, p: Partial<Line>) => setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...p } : l)));
   const remove = (key: string) => setLines((ls) => ls.filter((l) => l.key !== key));
 
-  async function placeOrder() {
+  async function placeOrder(): Promise<boolean> {
     setError(null);
-    if (!lines.length) { setError("Pick at least one piece.", { label: "Pick work", onClick: () => window.scrollTo({ top: 0, behavior: "smooth" }) }); return; }
+    if (!lines.length) { setError("Pick at least one piece.", { label: "Pick work", onClick: () => window.scrollTo({ top: 0, behavior: "smooth" }) }); return false; }
     const bad = addressProblem(ship);
     if (bad) {
       setError(`Ship to: ${bad.message}`, { label: "Fix address", onClick: () => { toShipTo(); setTimeout(() => document.getElementById(`bulk-ship-${bad.field}`)?.focus(), 300); } });
       toShipTo();
-      return;
+      return false;
     }
     try { localStorage.setItem(DRAFT, JSON.stringify(ship)); } catch {}
     setBusy(true);
@@ -98,9 +106,9 @@ export default function BulkOrder({ arts, past, placedId, defaultName }: { arts:
       if (!res.ok || !data.url) {
         const message = data.error || "Checkout didn't open. Try again.";
         // Fixable here: a size too big for the file, a sold-out edition, the address. Everything else: try again.
-        setError(message, data.code === "address_required" ? { label: "Fill in address", onClick: toShipTo } : data.code === "size_too_big" || data.code === "sold_out" ? { label: "Change prints", onClick: () => window.scrollTo({ top: 0, behavior: "smooth" }) } : { label: "Try again", onClick: placeOrder });
+        setError(message, data.code === "address_required" ? { label: "Fill in address", onClick: toShipTo } : data.code === "size_too_big" || data.code === "sold_out" ? { label: "Change prints", onClick: () => window.scrollTo({ top: 0, behavior: "smooth" }) } : { label: "Try again", onClick: () => void placeOrder() });
         setBusy(false);
-        return;
+        return false;
       }
       if (data.dev) {
         setLines([]);
@@ -110,16 +118,28 @@ export default function BulkOrder({ arts, past, placedId, defaultName }: { arts:
       } else {
         window.location.href = data.url;
       }
+      return true;
     } catch (e) {
-      const msg = errorText(e, "Checkout didn't open. Try again.");
-      setError(msg, { label: "Try again", onClick: placeOrder });
-      failed(msg, { retry: placeOrder });
+      const msg = errorText(e, "Checkout didn't open. Nothing was charged.");
+      setError(msg, { label: "Try again", onClick: () => void placeOrder() });
+      failed(msg, { retry: () => void placeOrder() });
       setBusy(false);
+      return false;
     }
   }
 
   return (
     <div className="grid gap-8">
+      {returned === "canceled" && !placed && (
+        <Problem tone="info" title="Nothing was charged" fix={{ label: "Pick work", onClick: () => window.scrollTo({ top: 0, behavior: "smooth" }) }}>
+          You left Stripe before paying. Your address is saved; pick the prints again when you&apos;re ready.
+        </Problem>
+      )}
+      {returned === "confirming" && !placed && (
+        <Problem tone="info" title="Payment received. Confirming your order…" fix={{ label: "Refresh", onClick: () => router.refresh() }}>
+          Stripe usually tells us within a few seconds. We email the receipt either way.
+        </Problem>
+      )}
       {placed && (
         <section aria-live="polite" className="relative grid gap-3 overflow-hidden rounded-2xl border-[1.5px] border-ink bg-[#fffbe8] p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
           <div>
@@ -265,21 +285,17 @@ export default function BulkOrder({ arts, past, placedId, defaultName }: { arts:
 
         {/* Summary */}
         <aside aria-label="Order summary" className="grid gap-4 lg:sticky lg:top-6">
-          <section className="af-card grid gap-3 p-4 sm:p-5">
-            <h2 className="text-[20px] font-bold">At cost</h2>
-            <dl className="num grid gap-1.5 text-[14.5px]">
-              <div className="flex justify-between gap-3"><dt className="text-ink-2">{quote.prints} {quote.prints === 1 ? "print" : "prints"}</dt><dd>{usd(quote.subtotal)}</dd></div>
-              {quote.discount > 0 && (
-                <div className="flex justify-between gap-3"><dt><span className="rounded-full bg-sticker px-2 py-0.5 text-[12.5px] font-bold">{quote.discountPct}% off</span> <span className="text-ink-2">volume</span></dt><dd>−{usd(quote.discount)}</dd></div>
-              )}
-              <div className="flex justify-between gap-3"><dt className="text-ink-2">Handling, shipping included</dt><dd>{usd(quote.handling || (lines.length ? BULK_HANDLING_FEE_CENTS : 0))}</dd></div>
-              <div className="mt-1 flex items-baseline justify-between gap-3 border-t border-line pt-2.5">
-                <dt className="font-bold">Total</dt>
-                <dd className="font-display text-[30px] font-extrabold leading-none [font-variation-settings:'wdth'_80]">{usd(quote.total)}</dd>
-              </div>
-              {quote.prints > 0 && <div className="flex justify-between gap-3 text-[13px] text-ink-2"><dt>Each, all in</dt><dd>{usd(quote.perPrint)}</dd></div>}
-            </dl>
-
+          <PaymentSummary
+            title="At cost"
+            rows={[
+              { label: `${quote.prints} ${quote.prints === 1 ? "print" : "prints"}`, cents: quote.subtotal },
+              ...(quote.discount > 0 ? [{ label: <><span className="rounded-full bg-sticker px-2 py-0.5 text-[12.5px] font-bold text-ink">{quote.discountPct}% off</span> volume</>, cents: -quote.discount }] : []),
+              { label: "Handling, shipping included", cents: quote.handling || (lines.length ? BULK_HANDLING_FEE_CENTS : 0) },
+            ]}
+            tax={tax}
+            totalCents={quote.total}
+            footer={quote.prints > 0 ? <span className="num flex justify-between gap-3"><span>Each, all in</span><span>{usd(quote.perPrint)}</span></span> : undefined}
+          >
             {/* Volume tiers */}
             <div className="grid gap-1.5" aria-label="Volume discounts">
               <div className="flex gap-1.5">
@@ -294,7 +310,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName }: { arts:
               </div>
               {next && quote.prints > 0 && <p className="text-[13px] text-ink-2">Add {next.more} more for {next.pct}% off.</p>}
             </div>
-          </section>
+          </PaymentSummary>
 
           {/* Margin calculator */}
           <section aria-labelledby="margin-h" className="grid gap-2.5 rounded-2xl bg-wall p-4 sm:p-5">
@@ -328,11 +344,10 @@ export default function BulkOrder({ arts, past, placedId, defaultName }: { arts:
           </label>
 
           {error && <Problem tone="error" title={error.message} fix={error.fix} />}
-          <button type="button" onClick={placeOrder} disabled={busy || !lines.length} className="btn btn-blue btn-lg w-full">
-            {busy && <Loader2 className="h-5 w-5 animate-spin" aria-hidden />}
-            {lines.length ? `Pay ${usd(quote.total)}` : "Pick a piece"}
-          </button>
-          <p className="text-center text-[12.5px] text-ink-2">Bulk prints don&apos;t count as sales or earnings.</p>
+          <PayButton amountCents={quote.total} plusTax={tax === "added"} busy={busy} onPay={placeOrder} disabled={!lines.length} label={lines.length ? undefined : "Pick a piece"} lock={lines.length > 0} className="btn btn-blue btn-lg w-full" />
+          <p className="text-center text-[12.5px] text-ink-2">
+            {tax === "test" ? "Test mode: saved as paid, no card needed. " : "Secure payment by Stripe. "}Bulk prints don&apos;t count as sales or earnings.
+          </p>
         </aside>
       </div>
 
@@ -341,11 +356,9 @@ export default function BulkOrder({ arts, past, placedId, defaultName }: { arts:
         <div className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-3 border-t border-line bg-white/95 px-4 pt-3 backdrop-blur pb-[calc(12px+env(safe-area-inset-bottom))] lg:hidden">
           <span className="min-w-0 flex-1 leading-tight">
             <b className="num block font-display text-[24px] font-extrabold [font-variation-settings:'wdth'_80]">{usd(quote.total)}</b>
-            <span className="num text-[12.5px] text-ink-2">{quote.prints} prints{quote.discountPct ? ` · ${quote.discountPct}% off` : ""}</span>
+            <span className="num text-[12.5px] text-ink-2">{quote.prints} prints{quote.discountPct ? ` · ${quote.discountPct}% off` : ""}{tax === "added" ? " · + tax" : ""}</span>
           </span>
-          <button type="button" onClick={placeOrder} disabled={busy} className="btn btn-blue shrink-0 px-6">
-            {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}Pay
-          </button>
+          <PayButton amountCents={quote.total} busy={busy} onPay={placeOrder} label="Pay" busyLabel="Opening…" lock={false} className="btn btn-blue shrink-0 px-6" />
           <style>{`@media (max-width: 1023px) { body { padding-bottom: calc(84px + env(safe-area-inset-bottom)); } }`}</style>
         </div>
       )}

@@ -1,5 +1,8 @@
 import * as React from "react";
 import { SITE_URL } from "@/lib/urls";
+import { HELP_DAYS_AFTER_DELIVERY } from "@/lib/reprintFormat";
+
+const SUPPORT = "support@theartfinity.com";
 
 type Item = {
   title: string | null;
@@ -21,6 +24,8 @@ const LINE = "#e1e2da";
 
 export default function ReceiptEmail({
   code,
+  bulk = false,
+  subtotalCents,
   totalCents,
   currency = "usd",
   shippingName,
@@ -31,6 +36,10 @@ export default function ReceiptEmail({
 }: {
   /** The short order code shown on the thank-you page (e.g. "XX1KP4"). */
   code: string;
+  /** An artist's own prints at cost (/studio/bulk): no "supports the artist", no collection line. */
+  bulk?: boolean;
+  /** The prints before tax (and, for bulk, before handling). The difference to totalCents is shown as its own line. */
+  subtotalCents?: number;
   totalCents: number;
   currency?: string;
   shippingName?: string | null;
@@ -43,14 +52,22 @@ export default function ReceiptEmail({
 }) {
   const fmt = (cents?: number | null) => ((cents ?? 0) / 100).toLocaleString("en-US", { style: "currency", currency: currency.toUpperCase() });
   const artists = Array.from(new Set(items.map((i) => i.artist).filter(Boolean))) as string[];
+  const extra = subtotalCents != null ? totalCents - subtotalCents : 0;
+  const row = (label: string, value: string, bold = false) => (
+    <div style={{ display: "flex", justifyContent: "space-between", padding: bold ? "12px 0" : "4px 0", borderTop: bold ? `1px solid ${LINE}` : "none", fontWeight: bold ? 700 : 400, color: bold ? INK : INK2, fontSize: bold ? 16 : 14 }}>
+      <span>{label}</span>
+      <span>{value}</span>
+    </div>
+  );
 
   return (
     <div style={{ fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif", color: INK, maxWidth: 560 }}>
       <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: INK2 }}>Order {code}</p>
-      <h1 style={{ margin: "6px 0 4px", fontSize: 28, lineHeight: 1.1 }}>It&apos;s yours</h1>
+      <h1 style={{ margin: "6px 0 4px", fontSize: 28, lineHeight: 1.1 }}>{bulk ? "Your bulk prints are ordered" : "It\u2019s yours"}</h1>
       <p style={{ margin: "0 0 20px", fontSize: 16, color: INK2 }}>
-        We&apos;re printing it now.{arrives ? <> Arrives <strong style={{ color: INK }}>{arrives}</strong>.</> : null}
-        {artists.length ? <> Your order supports {artists.join(" and ")}.</> : null}
+        We&apos;re printing {bulk || items.length > 1 ? "them" : "it"} now.{arrives ? <> Arrives <strong style={{ color: INK }}>{arrives}</strong>.</> : null}
+        {!bulk && artists.length ? <> Your order supports {artists.join(" and ")}.</> : null}
+        {bulk ? <> At cost. Bulk prints don&apos;t count as sales.</> : null}
       </p>
 
       <div style={{ border: `1px solid ${LINE}`, borderRadius: 12, padding: "4px 16px" }}>
@@ -68,10 +85,18 @@ export default function ReceiptEmail({
             <div style={{ whiteSpace: "nowrap", fontWeight: 600 }}>{fmt((it.unitPrice ?? 0) * (it.quantity ?? 1))}</div>
           </div>
         ))}
-        <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderTop: `1px solid ${LINE}`, fontWeight: 700 }}>
-          <span>Paid</span>
-          <span>{fmt(totalCents)}</span>
-        </div>
+        {subtotalCents != null ? (
+          <div style={{ borderTop: `1px solid ${LINE}`, paddingTop: 8 }}>
+            {row("Prints", fmt(subtotalCents))}
+            {bulk ? row("Handling, shipping and tax", fmt(extra)) : (
+              <>
+                {row("Shipping", "Free")}
+                {row("Sales tax", fmt(Math.max(0, extra)))}
+              </>
+            )}
+          </div>
+        ) : null}
+        {row("Paid", fmt(totalCents), true)}
       </div>
 
       {shippingName || shippingAddressLine ? (
@@ -81,12 +106,18 @@ export default function ReceiptEmail({
       ) : null}
 
       <p style={{ margin: "16px 0 0", fontSize: 14, color: INK2 }}>
-        Arrives damaged? We reprint it free.{" "}
-        <a href={`${SITE_URL}/help/buyers`} style={{ color: BLUE, fontWeight: 600 }}>Shipping and returns</a>
+        Arrives damaged? We reprint it free within {HELP_DAYS_AFTER_DELIVERY} days of delivery.{" "}
+        <a href={`${SITE_URL}/return-policy`} style={{ color: BLUE, fontWeight: 600 }}>Returns</a>
       </p>
       <p style={{ margin: "12px 0 0", fontSize: 14, color: INK2 }}>
-        <a href={`${SITE_URL}/collector`} style={{ color: BLUE, fontWeight: 600 }}>Track your orders</a> in a free collection{rewards ? " and earn rewards" : ""}. No password.
+        Questions? Reply to this email or write to{" "}
+        <a href={`mailto:${SUPPORT}?subject=${encodeURIComponent(`Order ${code}`)}`} style={{ color: BLUE, fontWeight: 600 }}>{SUPPORT}</a> with order {code}.
       </p>
+      {!bulk ? (
+        <p style={{ margin: "12px 0 0", fontSize: 14, color: INK2 }}>
+          <a href={`${SITE_URL}/collector`} style={{ color: BLUE, fontWeight: 600 }}>Track your orders</a> in a free collection{rewards ? " and earn rewards" : ""}. No password.
+        </p>
+      ) : null}
       <p style={{ margin: "20px 0 0", fontSize: 14 }}>— Artfinity</p>
     </div>
   );

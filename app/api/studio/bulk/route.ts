@@ -13,6 +13,8 @@ import { BULK_MAX_LINES, BULK_MAX_PER_LINE, BULK_SIZE_KEY, BULK_SIZE_LABEL, bulk
 import { claimEditionNumbers, EditionSoldOutError, editionMessage, editionShortfalls } from "@/lib/editions";
 import { sizeAllowed } from "@/lib/printSizes";
 import { TAX_CODE, TAX_ENABLED } from "@/lib/tax";
+import { sendReceiptEmail } from "@/lib/email";
+import { codeOf, newOrderId, statementSuffix } from "@/lib/checkoutSession";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -83,6 +85,10 @@ export async function POST(req: Request) {
   const short = await editionShortfalls(lines.map((l) => ({ artworkId: l.art.id, title: l.art.title, editionSize: l.art.editionSize, quantity: l.quantity })));
   if (short.length) return json({ error: editionMessage(short), code: "sold_out", soldOut: short }, 409);
 
+  // Made now so its code goes on the card statement; the webhook creates the Order with it.
+  const orderId = newOrderId();
+  const code = codeOf(orderId);
+
   if (!process.env.STRIPE_SECRET_KEY) {
     if (!testCheckoutAllowed()) return checkoutUnavailable("bulk");
     return testOrder();
@@ -94,8 +100,12 @@ export async function POST(req: Request) {
     const artistName = artist.artist_name || artist.name || "";
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+      submit_type: "pay",
       locale: "en",
       customer_email: artist.email,
+      expires_at: Math.floor(Date.now() / 1000) + 2 * 3600,
+      payment_intent_data: { description: `Artfinity bulk prints ${code}: ${quote.prints} prints at cost`, statement_descriptor_suffix: statementSuffix(code), metadata: { orderId, orderCode: code } },
+      custom_text: { submit: { message: `Bulk order ${code}. At cost, shipped to ${ship.name} in ${ship.city}, ${ship.state}.` } },
       line_items: lines.map((l, i) => ({
         quantity: l.quantity,
         price_data: {
@@ -104,7 +114,9 @@ export async function POST(req: Request) {
           tax_behavior: "exclusive",
           product_data: {
             tax_code: TAX_CODE,
-            name: `${l.art.title}, ${BULK_SIZE_LABEL[l.size].name}${l.framed ? " framed" : ""} (at cost)`,
+            name: `Print — ${l.art.title}, ${BULK_SIZE_LABEL[l.size].name} ${BULK_SIZE_LABEL[l.size].inches} in${l.framed ? ", framed" : ""}`,
+            description: "Bulk print at cost. Doesn't count as a sale.",
+            images: l.art.imageUrl ? [/^https?:\/\//.test(l.art.imageUrl) ? l.art.imageUrl : `${base}${l.art.imageUrl.startsWith("/") ? "" : "/"}${l.art.imageUrl}`] : [],
             metadata: {
               artworkId: l.art.id,
               slug: l.art.slug ?? "",
@@ -122,9 +134,9 @@ export async function POST(req: Request) {
       // The handling fee rides as the shipping rate, so no extra line item reaches the webhook.
       shipping_options: [{ shipping_rate_data: { display_name: "Handling, US shipping included", fixed_amount: { amount: quote.handling, currency: "usd" }, type: "fixed_amount", tax_behavior: "exclusive" } }],
       automatic_tax: { enabled: TAX_ENABLED },
-      metadata: { kind: "bulk", bulkArtistId: artist.id, buyerEmail: artist.email, shipName: ship.name, shipAddress, tags: body?.tags ? "yes" : "" },
+      metadata: { kind: "bulk", orderId, bulkArtistId: artist.id, buyerEmail: artist.email, shipName: ship.name, shipAddress, tags: body?.tags ? "yes" : "" },
       success_url: `${base}/studio/bulk?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${base}/studio/bulk`,
+      cancel_url: `${base}/studio/bulk?canceled=1`,
     });
     return json({ url: session.url });
   } catch (err) {
@@ -141,6 +153,7 @@ export async function POST(req: Request) {
         if (shortfalls.length) throw new EditionSoldOutError(shortfalls);
         const created = await tx.order.create({
           data: {
+            id: orderId,
             stripeSessionId: sessionId,
             email: artist!.email,
             amountTotal: quote.total,
@@ -182,6 +195,8 @@ export async function POST(req: Request) {
       console.log(`[bulk:dev] order ${order.id} ${sessionId} ${quote.prints} prints $${(quote.total / 100).toFixed(2)}`);
       // Same as the webhook: the print lab gets its work order (never throws).
       await sendWorkOrder(order.id);
+      // Same receipt the webhook sends (lib/orderNotifications.ts), so test mode shows the real email in the log.
+      await sendReceiptEmail(order.id).catch((e) => console.error("[bulk:dev] receipt not sent", order.id, e));
       return json({ url: `/studio/bulk?placed=${order.id}`, dev: true });
     } catch (err) {
       if (err instanceof EditionSoldOutError) return json({ error: err.message, code: "sold_out", soldOut: err.shortfalls }, 409);

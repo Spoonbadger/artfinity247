@@ -13,6 +13,9 @@ import { sendWorkOrder } from "@/lib/printer";
 import { SHIPPING_TAX_CODE, TAX_CODE, TAX_ENABLED } from "@/lib/tax";
 import { getCollector, onOrderPaid } from "@/lib/collector";
 import { markRewardUsed, preservedSplit, rewardOffUnit, validateReward } from "@/lib/collectorRewards";
+import { codeOf, newOrderId, statementSuffix } from "@/lib/checkoutSession";
+import { deliveryRange } from "@/lib/delivery";
+import { HELP_DAYS_AFTER_DELIVERY } from "@/lib/reprintFormat";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -135,9 +138,30 @@ export async function POST(req: Request) {
   }
   const rewardMeta = reward && buyerEmail ? { rewardCode: String(body.rewardCode).trim().toUpperCase(), rewardN: String(reward.n) } : null;
 
+  // { quote: true }: the exact amounts the Pay button will charge (before tax), priced from the database, so the
+  // checkout summary never differs from Stripe's page. Nothing is created.
+  if (body?.quote === true) {
+    const listTotal = lines.reduce((n, l) => n + l.list * l.quantity, 0);
+    const beforeReward = lines.reduce((n, l) => n + (l.preRewardUnit ?? l.unit) * l.quantity, 0);
+    const total = lines.reduce((n, l) => n + l.unit * l.quantity, 0);
+    return json({
+      lines: lines.map((l) => ({ slug: l.art.slug, size: l.size, frameChosen: l.frameChosen, frameColor: l.frameColor, quantity: l.quantity, list: l.list, unit: l.unit, discountPct: l.discountPct })),
+      listTotal,
+      scanDiscount: listTotal - beforeReward,
+      reward: beforeReward - total,
+      shipping: 0,
+      total,
+      tax: !process.env.STRIPE_SECRET_KEY ? "test" : TAX_ENABLED ? "added" : "none",
+    });
+  }
+
+  // Made now so its code ("XX1KP4") can go on the card statement and the Stripe receipt; the webhook uses it.
+  const orderId = newOrderId();
+  const code = codeOf(orderId);
+
   if (!process.env.STRIPE_SECRET_KEY) {
     if (!testCheckoutAllowed()) return checkoutUnavailable("checkout");
-    return devCheckout(lines, buyerEmail, buyer, follow, rewardMeta ? { email: buyerEmail!, n: reward!.n } : null);
+    return devCheckout(orderId, lines, buyerEmail, buyer, follow, rewardMeta ? { email: buyerEmail!, n: reward!.n } : null);
   }
 
   // ---- Real Stripe Checkout (Apple Pay / Google Pay / card are offered by Stripe) ----
@@ -146,15 +170,22 @@ export async function POST(req: Request) {
     const base = baseUrlFrom(req);
     const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = lines.map((l) => ({
       quantity: l.quantity,
-      // Limited editions: no changing the quantity on Stripe's page (we checked what's left above).
-      adjustable_quantity: l.art.editionSize ? { enabled: false } : { enabled: true, minimum: 1, maximum: 10 },
+      // Quantities were set in the cart and the summary showed that exact total: no changing them on Stripe's page.
       price_data: {
         currency: "usd",
         unit_amount: l.unit,
         tax_behavior: "exclusive", // sales tax is added on top at checkout
         product_data: {
           tax_code: TAX_CODE,
-          name: [l.art.title, l.discountPct ? `(${l.discountPct}% scan discount)` : "", l.preRewardUnit ? "(collector reward)" : ""].filter(Boolean).join(" "),
+          // "Print — Night Market by Maya Chen, Medium 8 × 12 in"
+          name: `Print — ${l.art.title}${l.art.artistName ? ` by ${l.art.artistName}` : ""}, ${SIZE_LABEL[l.size]} ${sizeInches(l.size)}`.slice(0, 250),
+          description: [
+            l.frameChosen ? `${l.frameColor === "natural" ? "Natural wood" : l.frameColor === "white" ? "White" : "Black"} frame` : "Unframed",
+            l.art.editionSize ? `Limited edition of ${l.art.editionSize}` : "",
+            l.discountPct ? `${l.discountPct}% scan discount` : "",
+            l.preRewardUnit ? "Collector reward" : "",
+            "Printed in NYC",
+          ].filter(Boolean).join(" · "),
           images: l.art.imageUrl ? [abs(base, l.art.imageUrl)!] : [],
           metadata: {
             artworkId: l.art.id,
@@ -176,18 +207,33 @@ export async function POST(req: Request) {
       },
     }));
 
+    const titles = Array.from(new Set(lines.map((l) => l.art.title)));
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+      submit_type: "pay",
       line_items,
       success_url: `${base}/thank-you?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${base}/cancel`,
+      cancel_url: `${base}/cancel?order=${code}`,
+      // Long enough to find a card, short enough that a forgotten tab doesn't hold an old price.
+      expires_at: Math.floor(Date.now() / 1000) + 2 * 3600,
       locale: "en",
       customer_creation: "always",
       customer_email: buyerEmail,
-      metadata: { userId: buyer?.id || "", buyerEmail: buyerEmail ?? "", ...(follow ? { follow: "1" } : {}), ...(collector ? { collectorId: collector.id } : {}), ...(rewardMeta ?? {}) },
+      metadata: { orderId, userId: buyer?.id || "", buyerEmail: buyerEmail ?? "", ...(follow ? { follow: "1" } : {}), ...(collector ? { collectorId: collector.id } : {}), ...(rewardMeta ?? {}) },
+      payment_intent_data: {
+        description: `Artfinity order ${code}: ${titles.join(", ")}`.slice(0, 1000),
+        // Card statement: "ARTFINITY* XX1KP4" (the prefix is set in the Stripe Dashboard, BILLING_SETUP.md).
+        statement_descriptor_suffix: statementSuffix(code),
+        metadata: { orderId, orderCode: code },
+      },
       shipping_address_collection: { allowed_countries: ["US"] },
       shipping_options: [{ shipping_rate_data: { display_name: "Free US shipping", fixed_amount: { amount: 0, currency: "usd" }, type: "fixed_amount", tax_behavior: "exclusive", tax_code: SHIPPING_TAX_CODE } }],
       automatic_tax: { enabled: TAX_ENABLED },
+      custom_text: {
+        shipping_address: { message: `Printed in NYC and shipped free in the US, with tracking. Arrives ${deliveryRange()}.` },
+        // The terms and privacy links come from Stripe's Checkout settings (BILLING_SETUP.md), shown under the button.
+        submit: { message: `Order ${code}. Arrives damaged? We reprint it free within ${HELP_DAYS_AFTER_DELIVERY} days of delivery.` },
+      },
     });
     return json({ url: session.url });
   } catch (err) {
@@ -200,7 +246,7 @@ export async function POST(req: Request) {
  * No STRIPE_SECRET_KEY (localhost): record a paid order directly, with the same
  * fields and cost math as app/api/webhook/route.ts, then send the buyer to thank-you.
  */
-async function devCheckout(lines: Line[], email: string | undefined, buyer: { name?: string | null }, follow = false, reward: { email: string; n: number } | null = null) {
+async function devCheckout(orderId: string, lines: Line[], email: string | undefined, buyer: { name?: string | null }, follow = false, reward: { email: string; n: number } | null = null) {
   const sessionId = `dev_${randomBytes(12).toString("hex")}`;
   try {
     const order = await prisma.$transaction(async (tx) => {
@@ -209,6 +255,7 @@ async function devCheckout(lines: Line[], email: string | undefined, buyer: { na
       if (shortfalls.length) throw new EditionSoldOutError(shortfalls);
       const created = await tx.order.create({
         data: {
+          id: orderId,
           stripeSessionId: sessionId,
           email: email || "test-buyer@artfinity.local",
           amountTotal: lines.reduce((sum, l) => sum + l.unit * l.quantity, 0),

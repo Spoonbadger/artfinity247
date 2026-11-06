@@ -23,7 +23,7 @@ export default function RunNowButton({ job, label, disabled, reason }: { job: st
     }
   }
   return (
-    <button type="button" onClick={run} disabled={busy || disabled} title={disabled ? reason : undefined} aria-label={`Run ${label} now`} className="btn btn-ghost btn-sm min-h-[40px] shrink-0">
+    <button type="button" onClick={run} disabled={busy || disabled} title={disabled ? reason : undefined} aria-label={`Run now: ${label}`} className="btn btn-ghost btn-sm min-h-[40px] shrink-0">
       {busy ? "Running…" : "Run now"}
     </button>
   );

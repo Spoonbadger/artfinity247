@@ -18,6 +18,7 @@ import { hashForImageUrl } from "@/lib/imageHash";
 import { checkoutUnavailable, testCheckoutAllowed } from "@/lib/testCheckout";
 import { splitOriginal } from "@/lib/originalSize";
 import { SITE_URL } from "@/lib/urls";
+import { statementSuffix } from "@/lib/checkoutSession";
 import { PRINT_SIZES, SIZE_LABEL, sizeInches, type PrintSize } from "@/components/art/pricing";
 import {
   BAND_KEYS, DEFAULT_BANDS, MAX_SCAN_PIECES, SCAN_DEFAULTS, SCAN_FIELDS, bandFor, bandLabel, dayLabel, estimate, isDay, isItemBand, usd,
@@ -300,14 +301,19 @@ export async function scanCheckout(req: Request, artistId: string, id: string): 
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-08-27.basil" });
     const base = baseUrl(req);
     const n = b.items.length;
+    const ref = `SC-${b.id.slice(-6).toUpperCase()}`;
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+      submit_type: "pay",
       locale: "en",
       customer_email: artist?.email,
-      line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: b.priceCents, product_data: { name: `Painting scans, ${n} ${n === 1 ? "piece" : "pieces"}` } } }],
+      expires_at: Math.floor(Date.now() / 1000) + 2 * 3600,
+      line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: b.priceCents, product_data: { name: `Painting scans — ${n} ${n === 1 ? "painting" : "paintings"}`, description: "Scanned in NYC. The files go straight onto your artworks." } } }],
       metadata: { kind: "scan", scanBookingId: b.id },
+      payment_intent_data: { description: `Artfinity painting scans ${ref}`, statement_descriptor_suffix: statementSuffix(ref.replace(/^SC-/, "")), metadata: { scanBookingId: b.id } },
+      custom_text: { submit: { message: `Booking ${ref}. Paying locks in your scan date.` } },
       success_url: `${base}/studio/scanning?booking=${b.id}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${base}/studio/scanning?booking=${b.id}`,
+      cancel_url: `${base}/studio/scanning?booking=${b.id}&canceled=1`,
     });
     await prisma.scanBooking.update({ where: { id: b.id }, data: { stripeSessionId: session.id } });
     return Response.json({ url: session.url });
@@ -326,7 +332,7 @@ export async function markScanPaid(id: string, sessionId: string): Promise<boole
     await mailArtist(
       b.artistId,
       `Paid: your scan is booked for ${when(b.scheduledFor)}`,
-      (first) => `Hi ${first},\n\nThanks, you've paid ${usd(b.priceCents ?? 0)}. Here's what happens next.\n\n${handoffLine(b)}\n\nOnce your paintings are with us, the files go straight onto your artworks and we'll email you when they're in.\n\nYour booking: ${studioLink(b.id)}\n\nArtfinity`,
+      (first) => `Hi ${first},\n\nThanks, you've paid ${usd(b.priceCents ?? 0)} for painting scans (${b.items.length} ${b.items.length === 1 ? "painting" : "paintings"}, no sales tax). Here's what happens next.\n\n${handoffLine(b)}\n\nOnce your paintings are with us, the files go straight onto your artworks and we'll email you when they're in.\n\nYour booking: ${studioLink(b.id)}\n\nQuestions? Write to support@theartfinity.com.\n\nArtfinity`,
       `scan-paid-${b.id}`,
     );
   }

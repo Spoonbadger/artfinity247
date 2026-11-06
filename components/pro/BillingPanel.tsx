@@ -6,6 +6,9 @@ import { PRO, REFERRALS, dollars } from "@/lib/plans";
 import type { BillingView } from "@/lib/billingStatus";
 import { cn } from "@/lib/utils";
 import { failed, problemFrom, saved } from "@/lib/feedback";
+import { startInfinityCheckout } from "./StartInfinityButton";
+import PaymentSummary, { type TaxLine } from "@/components/payments/PaymentSummary";
+import PayButton from "@/components/payments/PayButton";
 
 type Mode = "live" | "simulated" | "off";
 type ViewKind = BillingView["kind"];
@@ -17,8 +20,10 @@ type SimAction = "subscribe" | "cancel" | "resume" | "payment_failed" | "payment
  * its states.
  */
 export default function BillingPanel({
-  mode, kind, intervals, freeMonthsUntil, onDark = false, autoStart = false,
+  mode, kind, intervals, freeMonthsUntil, onDark = false, autoStart = false, tax,
 }: {
+  /** Sales tax on the subscription (lib/tax.ts BILLING_TAX_ENABLED): added by Stripe from the billing address. */
+  tax?: TaxLine;
   mode: Mode;
   kind: ViewKind;
   intervals: ("month" | "year")[];
@@ -72,11 +77,19 @@ export default function BillingPanel({
   useEffect(() => {
     if (!autoStart || started.current) return;
     started.current = true;
-    // Drop ?start=1 first, so Back from Stripe or a refresh doesn't open checkout again.
+    // Drop ?start=1, and remember the start for a few minutes, so Back from Stripe or a refresh doesn't reopen it.
     const url = new URL(window.location.href);
     url.searchParams.delete("start");
     window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
-    if (!subscribed && mode !== "off") checkout("month");
+    let recent = false;
+    try {
+      recent = Date.now() - Number(sessionStorage.getItem("af-infinity-start") || 0) < 5 * 60_000;
+      sessionStorage.setItem("af-infinity-start", String(Date.now()));
+    } catch { /* storage blocked: start anyway */ }
+    if (subscribed || mode === "off" || recent) return;
+    setBusy("month");
+    // Same landing as the buttons elsewhere: Stripe, or in test mode straight to ?billing=success.
+    startInfinityCheckout(mode, "month").then((ok) => { if (!ok) setBusy(null); }).catch(() => setBusy(null));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStart]);
 
@@ -109,27 +122,38 @@ export default function BillingPanel({
           <span className={cn("text-[13px]", muted)}>Manage billing opens Stripe’s customer portal once Stripe keys are set. Use the test buttons below.</span>
         )
       ) : (
-        <>
-          <button type="button" className="btn btn-blue btn-lg" disabled={!!busy} onClick={() => checkout("month")}>
-            {busy === "month" || busy === "subscribe" ? "Starting…" : `Get ${PRO.name}`}
-          </button>
+        <PaymentSummary
+          title={null}
+          className="max-w-[420px] text-ink"
+          lines={[{ key: "infinity", title: `${PRO.name}, monthly`, detail: "Renews each month. Cancel anytime.", amountCents: PRO.priceCents }]}
+          tax={tax ?? (mode === "simulated" ? "test" : "added")}
+          totalLabel={freeMonthsUntil ? "Due today" : undefined}
+          totalCents={freeMonthsUntil ? 0 : PRO.priceCents}
+          footer={freeMonthsUntil ? `Your free months run first: the first charge is ${freeMonthsUntil}.` : mode === "simulated" ? "Test mode: no card, no money." : "Billed by Stripe. Cancel from Manage billing; you keep it to the end of the month you paid for."}
+        >
+          <PayButton
+            amountCents={PRO.priceCents}
+            label={freeMonthsUntil ? `Get ${PRO.name}` : undefined}
+            plusTax={(tax ?? (mode === "simulated" ? "test" : "added")) === "added"}
+            busy={busy === "month" || busy === "subscribe"}
+            disabled={!!busy}
+            onPay={() => checkout("month")}
+            busyLabel="Starting…"
+            className="btn btn-blue btn-lg w-full"
+          />
           {intervals.includes("year") && (
-            <button type="button" className={ghost} disabled={!!busy} onClick={() => checkout("year")}>
+            <button type="button" className={cn(ghost, "!text-ink !border-ink hover:!bg-ink hover:!text-white")} disabled={!!busy} onClick={() => checkout("year")}>
               {busy === "year" ? "Starting…" : `Or ${dollars(PRO.yearlyMonthlyCents)}/mo, billed yearly (${dollars(PRO.yearlyMonthlyCents * 12)})`}
             </button>
           )}
-          <span className={cn("text-[12.5px]", muted)}>
-            {freeMonthsUntil ? `Your free months run first: the first charge is ${freeMonthsUntil}. ` : ""}
-            Cancel anytime. Sales tax may apply.
-          </span>
-        </>
+        </PaymentSummary>
       )}
 
       {mode === "simulated" && (
         <div className={cn("grid gap-2 rounded-xl border border-dashed p-3", onDark ? "border-white/40" : "border-ink/30")}>
           <span className={cn("text-[12px] font-bold uppercase tracking-[0.06em]", muted)}>Test mode · no Stripe keys, no money</span>
           <div className="flex flex-wrap gap-2">
-            {!subscribed && <TestButton label="Subscribe (test)" busy={busy === "subscribe"} disabled={!!busy} onClick={() => sim("subscribe")} className={ghost} />}
+            {!subscribed && <span className={cn("text-[13px]", muted)}>The Pay button above subscribes (test).</span>}
             {(kind === "renews" || kind === "trial") && <TestButton label="Cancel (test)" busy={busy === "cancel"} disabled={!!busy} onClick={() => sim("cancel")} className={ghost} />}
             {kind === "cancels" && <TestButton label="Undo cancel (test)" busy={busy === "resume"} disabled={!!busy} onClick={() => sim("resume")} className={ghost} />}
             {subscribed && kind !== "payment_failed" && <TestButton label="Payment failed (test)" busy={busy === "payment_failed"} disabled={!!busy} onClick={() => sim("payment_failed")} className={ghost} />}

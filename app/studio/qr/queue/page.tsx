@@ -10,6 +10,8 @@ import { jobsByFormat, loadQueue } from "@/lib/printQueue";
 import { codePrintPricing, confirmFromSession, isInfinity, orderItems, summaryOf } from "@/lib/codePrints";
 import { PAPER, perSheet, sheetsFor, type ShipAddress } from "@/lib/printQueueFormat";
 import { requireArtist, displayName } from "../../_lib/data";
+import PaymentReturn from "@/components/payments/PaymentReturn";
+import { codeOrderNumber } from "@/lib/printQueueFormat";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Print queue" };
@@ -85,7 +87,9 @@ export default async function PrintQueuePage({ searchParams }: { searchParams: {
       sub="Line up codes, then print them at home on label sheets, or have us print, laminate and mail them."
       actions={<><HelpLink href="/help/qr-codes/print-queue" /><Link href="/studio/codes" className="btn btn-ghost btn-sm">My codes</Link><Link href="/studio/qr" className="btn btn-ghost btn-sm">QR Studio</Link></>}
     >
-      <PrintQueue groups={groups} pricing={prices} infinity={infinity} orders={history} address={address} pieces={pieces} paid={paid} canceled={canceled} />
+      {paid && paid.status !== "pending" && <PaymentReturn kind="paid" message={`Paid. Order ${codeOrderNumber(paid.id)} is in`} description="Receipt sent to your email." strip={["paid", "session_id"]} />}
+      {canceled && <PaymentReturn kind="canceled" message="Nothing was charged" description="Your codes are still in the queue." strip={["canceled"]} />}
+      <PrintQueue groups={groups} pricing={prices} infinity={infinity} orders={history} address={address} pieces={pieces} paid={paid} canceled={canceled} testMode={!process.env.STRIPE_SECRET_KEY} />
     </StudioPage>
   );
 }

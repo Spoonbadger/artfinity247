@@ -10,13 +10,16 @@ import { splitOriginal } from "@/lib/originalSize";
 import { ACTIVE, artworksFor, bookingsFor, limitedSizes, readScanSettings, verifyScanSession } from "@/lib/scanning.server";
 import { bandFor, careTextFor } from "@/lib/scanning";
 import { requireArtist } from "../_lib/data";
+import { usd } from "@/lib/scanning";
+import PaymentReturn from "@/components/payments/PaymentReturn";
+import ScanPayButton from "@/components/scanning/ScanPayButton";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Painting scans" };
 
 const HELP = "/help/selling/painting-scans";
 
-export default async function StudioScanningPage({ searchParams }: { searchParams: { art?: string; booking?: string; paid?: string; session_id?: string } }) {
+export default async function StudioScanningPage({ searchParams }: { searchParams: { art?: string; booking?: string; paid?: string; session_id?: string; canceled?: string } }) {
   const artist = await requireArtist("/studio/scanning");
   // Back from Stripe Checkout: mark it paid now if the webhook hasn't yet.
   if (searchParams.session_id) await verifyScanSession(artist.id, searchParams.session_id);
@@ -55,6 +58,10 @@ export default async function StudioScanningPage({ searchParams }: { searchParam
     }),
   }));
   const preselect = searchParams.art ? scanArts.find((a) => a.slug === searchParams.art)?.id ?? null : null;
+  // Back from Stripe: paid (the notice in ScanStudio says what's next), or left without paying.
+  const justPaid = searchParams.paid || (searchParams.session_id ? views.find((v) => v.paidAt && v.id === searchParams.booking)?.id : undefined) || null;
+  const paidView = justPaid ? views.find((v) => v.id === justPaid && v.paidAt) : undefined;
+  const canceledView = searchParams.canceled && searchParams.booking ? views.find((v) => v.id === searchParams.booking && v.status === "confirmed" && v.priceCents != null) : undefined;
 
   return (
     <StudioPage
@@ -62,6 +69,19 @@ export default async function StudioScanningPage({ searchParams }: { searchParam
       sub={s.enabled ? "We scan your originals in NYC and put the files straight onto your artworks, so every print size is sharp." : "Coming soon: we scan your originals in NYC so every print size is sharp."}
       actions={<><HelpLink href={HELP} /><Link href="/scanning" className="btn btn-ghost btn-sm">How it works</Link></>}
     >
+      {paidView && <PaymentReturn kind="paid" message={`Paid ${usd(paidView.priceCents ?? 0)}${paidView.test ? " (test)" : ""}`} description="Your scan date is locked in. We emailed the details." strip={["paid", "session_id"]} />}
+      {canceledView && (
+        <>
+          <PaymentReturn kind="canceled" message="Nothing was charged" strip={["canceled"]} />
+          <div role="status" className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-scan/30 bg-scan-soft px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[14.5px] font-bold">Nothing was charged</p>
+              <p className="text-[13.5px] text-ink-2">You left Stripe before paying. Paying locks in your date.</p>
+            </div>
+            <ScanPayButton id={canceledView.id} priceCents={canceledView.priceCents!} />
+          </div>
+        </>
+      )}
       {!s.enabled && (
         <EmptyState
           dab="var(--af-scan)"
@@ -79,8 +99,8 @@ export default async function StudioScanningPage({ searchParams }: { searchParam
         bookings={views}
         preselect={preselect}
         focus={searchParams.booking || searchParams.paid || null}
-        justPaid={searchParams.paid || (searchParams.session_id ? views.find((v) => v.paidAt && v.id === searchParams.booking)?.id : undefined) || null}
-        settings={{ bands: s.bands, pickupFeeCents: s.pickupFeeCents, turnaroundDays: s.turnaroundDays, returnDays: s.returnDays, care: careTextFor(s) }}
+        justPaid={justPaid}
+        settings={{ bands: s.bands, pickupFeeCents: s.pickupFeeCents, turnaroundDays: s.turnaroundDays, returnDays: s.returnDays, care: careTextFor(s), testMode: !process.env.STRIPE_SECRET_KEY }}
       />
     </StudioPage>
   );

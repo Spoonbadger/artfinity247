@@ -14,6 +14,8 @@ import {
   type CodePrintPricing, type ShipAddress,
 } from "@/lib/printQueueFormat";
 import { cn } from "@/lib/utils";
+import PaymentSummary from "@/components/payments/PaymentSummary";
+import PayButton from "@/components/payments/PayButton";
 
 export type QueueItem = {
   id: string; qty: number; title: string; slug: string; imageUrl: string; code: string; preset: string;
@@ -38,9 +40,11 @@ const THUMB: Record<FormatKey, string> = {
   poster: "[&>svg]:h-full [&>svg]:w-auto",
 };
 
-export default function PrintQueue({ groups, pricing, infinity, orders, address, pieces, paid, canceled }: {
+export default function PrintQueue({ groups, pricing, infinity, orders, address, pieces, paid, canceled, testMode = false }: {
   groups: QueueGroup[]; pricing: CodePrintPricing; infinity: boolean; orders: QueueOrder[]; address: ShipAddress; pieces: number;
   paid: QueueOrder | null; canceled: QueueOrder | null;
+  /** No Stripe keys: orders are saved as paid without charging. */
+  testMode?: boolean;
 }) {
   const router = useRouter();
   const fromProps = useMemo(() => Object.fromEntries(groups.flatMap((g) => g.items.map((i) => [i.id, i.qty]))), [groups]);
@@ -208,8 +212,8 @@ export default function PrintQueue({ groups, pricing, infinity, orders, address,
   const notices = (
     <>
       {paid && isOrderStatus(paid.status) && paid.status !== "pending" && paid.status !== "canceled" && (
-        <Problem tone="success" title={`Order ${codeOrderNumber(paid.id)} is in. Thank you!`} fix={{ label: "See the order", href: "#orders" }}>
-          We&apos;re printing {paid.summary}: laminated and cut. We emailed you a confirmation, and we&apos;ll email the tracking link when they ship.
+        <Problem tone="success" title={`Paid ${usd(paid.totalCents)}. Order ${codeOrderNumber(paid.id)} is in.`} fix={{ label: "See the order", href: "#orders" }}>
+          We&apos;re printing {paid.summary}: laminated and cut. Your receipt is in your email; tracking follows when they ship.
         </Problem>
       )}
       {paid && paid.status === "pending" && (
@@ -218,8 +222,8 @@ export default function PrintQueue({ groups, pricing, infinity, orders, address,
         </Problem>
       )}
       {canceled && (
-        <Problem tone="error" title="Payment didn't go through" fix={{ label: busy === `retry-${canceled.id}` ? "Opening checkout…" : "Try again", onClick: () => retry(canceled.id) }}>
-          Nothing was charged. Your codes are still in the queue.
+        <Problem tone="info" title="Nothing was charged" fix={{ label: busy === `retry-${canceled.id}` ? "Opening checkout…" : `Pay ${usd(canceled.totalCents)}`, onClick: () => retry(canceled.id) }}>
+          You left Stripe before paying. Your codes are still in the queue.
         </Problem>
       )}
     </>
@@ -361,7 +365,7 @@ export default function PrintQueue({ groups, pricing, infinity, orders, address,
         </div>
 
         <aside aria-label="Have us print them" className="grid gap-4 lg:sticky lg:top-6">
-          <MailOrder quote={quote} infinity={infinity} pricing={pricing} address={address} onOrdered={(url) => window.location.assign(url)} onPriceChange={() => router.refresh()} />
+          <MailOrder quote={quote} infinity={infinity} pricing={pricing} address={address} testMode={testMode} onOrdered={(url) => window.location.assign(url)} onPriceChange={() => router.refresh()} />
         </aside>
       </div>
 
@@ -371,8 +375,8 @@ export default function PrintQueue({ groups, pricing, infinity, orders, address,
 }
 
 // ---------------- "Have us print them" ----------------
-function MailOrder({ quote, infinity, pricing, address, onOrdered, onPriceChange }: {
-  quote: ReturnType<typeof quoteFor>; infinity: boolean; pricing: CodePrintPricing; address: ShipAddress; onOrdered: (url: string) => void; onPriceChange: () => void;
+function MailOrder({ quote, infinity, pricing, address, testMode, onOrdered, onPriceChange }: {
+  quote: ReturnType<typeof quoteFor>; infinity: boolean; pricing: CodePrintPricing; address: ShipAddress; testMode: boolean; onOrdered: (url: string) => void; onPriceChange: () => void;
 }) {
   const [a, setA] = useState<ShipAddress>(address);
   const [bad, setBad] = useState<keyof ShipAddress | null>(null);
@@ -384,6 +388,7 @@ function MailOrder({ quote, infinity, pricing, address, onOrdered, onPriceChange
 
   async function order(e: FormEvent) {
     e.preventDefault();
+    if (busy) return;
     setBusy(true);
     try {
       const r = await fetch("/api/studio/code-orders", { method: "POST", headers: JSON_HEADERS, body: JSON.stringify({ address: a, expectTotal: quote.total }) });
@@ -399,14 +404,17 @@ function MailOrder({ quote, infinity, pricing, address, onOrdered, onPriceChange
           failed(p.message, { description: `New total: ${usd(j.total ?? 0)}.` });
           onPriceChange();
         } else failed(p.message, { fix: p.fix, retry: p.fix ? undefined : () => formRef.current?.requestSubmit() });
+        setBusy(false);
         return;
       }
       const j = await r.json();
       if (j.dev) saved("Test order placed", { description: "No Stripe keys here, so it's recorded as paid without charging." });
       onOrdered(j.url);
+      return; // stays busy while the next page opens, so a second click can't order twice
     } catch (err) {
-      failed(errorText(err, "Checkout didn't open. Try again."), { retry: () => formRef.current?.requestSubmit() });
-    } finally { setBusy(false); }
+      failed(errorText(err, "Checkout didn't open. Nothing was charged."), { retry: () => formRef.current?.requestSubmit() });
+    }
+    setBusy(false);
   }
 
   const field = (k: keyof ShipAddress, label: string, opts: { auto: string; optional?: boolean; className?: string; inputMode?: "numeric" } = { auto: "" }) => (
@@ -429,26 +437,18 @@ function MailOrder({ quote, infinity, pricing, address, onOrdered, onPriceChange
         <p className="text-[14px] text-ink-2">Laminated, pre-cut and mailed to you. Every code in your queue, ready to hang.</p>
       </div>
 
-      <table className="w-full text-[14px]">
-        <caption className="sr-only">Price</caption>
-        <tbody>
-          {quote.lines.map((l) => (
-            <tr key={l.format} className="border-b border-line">
-              <td className="py-1.5">{cardWords(l.format, l.qty)} <span className="text-ink-2">× {usd(l.unit)}</span></td>
-              <td className="num py-1.5 text-right">{usd(l.total)}</td>
-            </tr>
-          ))}
-          <tr className="border-b border-line">
-            <td className="py-1.5">Shipping{quote.freeShipping && <span className="text-ink-2"> · free with Infinity</span>}</td>
-            <td className="num py-1.5 text-right">{quote.freeShipping ? "Free" : usd(quote.shipping)}</td>
-          </tr>
-          {quote.handling > 0 && (
-            <tr className="border-b border-line"><td className="py-1.5">Handling</td><td className="num py-1.5 text-right">{usd(quote.handling)}</td></tr>
-          )}
-          <tr><th scope="row" className="pt-2 text-left text-[16px]">Total</th><td className="num pt-2 text-right text-[18px] font-bold">{usd(quote.total)}</td></tr>
-        </tbody>
-      </table>
-      <p className="rounded-lg bg-earned-soft px-3 py-2 text-[13.5px] font-semibold text-ink">At cost: we don&apos;t make money on these.</p>
+      <PaymentSummary
+        title={null}
+        className="border border-line p-3 sm:p-4"
+        rows={[
+          ...quote.lines.map((l) => ({ label: <>{cardWords(l.format, l.qty)} <span className="text-ink-2">× {usd(l.unit)}</span></>, cents: l.total })),
+          { label: <>Shipping{quote.freeShipping && <span className="text-ink-2"> · free with Infinity</span>}</>, ...(quote.freeShipping ? { text: "Free" } : { cents: quote.shipping }) },
+          ...(quote.handling > 0 ? [{ label: "Handling", cents: quote.handling }] : []),
+        ]}
+        tax={testMode ? "test" : "none"}
+        totalCents={quote.total}
+        footer={<span className="font-semibold text-earned">At cost: we don&apos;t make money on these.</span>}
+      />
       {!infinity && pricing.infinityFreeShipping && <p className="text-[12.5px] text-ink-2">Shipping is free on the <Link href="/studio/infinity" className="font-semibold text-scan">Infinity plan</Link>.</p>}
 
       <form ref={formRef} id="ship" onSubmit={order} className="grid scroll-mt-24 gap-3" noValidate>
@@ -473,11 +473,8 @@ function MailOrder({ quote, infinity, pricing, address, onOrdered, onPriceChange
           {field("zip", "ZIP", { auto: "postal-code", inputMode: "numeric", className: "col-span-3 sm:col-span-2 lg:col-span-3" })}
         </fieldset>
         <p className="text-[12.5px] text-ink-2">US addresses only. We mail them with tracking.</p>
-        <button type="submit" className="btn btn-blue w-full justify-center" disabled={busy || !quote.cards}>
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
-          {busy ? "Opening checkout…" : `Order for ${usd(quote.total)}`}
-        </button>
-        <p className="text-[12px] text-ink-2">You pay on Stripe&apos;s secure checkout. We email you a confirmation, then the tracking link when they ship.</p>
+        <PayButton type="submit" amountCents={quote.total} busy={busy} disabled={!quote.cards} className="btn btn-blue w-full" />
+        <p className="text-[12px] text-ink-2">{testMode ? "Test mode: saved as paid, no card needed." : "Secure payment by Stripe: Apple Pay, Google Pay or card."} We email your receipt, then tracking when they ship.</p>
       </form>
     </section>
   );
