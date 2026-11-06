@@ -8,6 +8,7 @@ import ResendConfirmButton from "@/components/studio/ResendConfirmButton";
 import { getUserFromCookie } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { VERIFY_DAYS } from "@/lib/emailVerify";
+import { connectMode, connectStatus } from "@/lib/stripeConnect";
 
 export const metadata: Metadata = { title: "Confirm your email", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -17,7 +18,7 @@ type Status = "ok" | "expired" | "used" | "invalid";
 export default async function EmailConfirmed({ searchParams }: { searchParams: { status?: string } }) {
   const status: Status = (["ok", "expired", "used", "invalid"] as const).find((s) => s === searchParams.status) ?? "invalid";
   const user = await getUserFromCookie().catch(() => null);
-  const me = user?.id ? await prisma.artist.findUnique({ where: { id: user.id }, select: { email: true, emailVerifiedAt: true } }) : null;
+  const me = user?.id ? await prisma.artist.findUnique({ where: { id: user.id }, select: { email: true, emailVerifiedAt: true, stripeAccountId: true, stripePayoutsEnabled: true } }) : null;
   // A used link from someone who's already confirmed is good news, not an error.
   const done = status === "ok" || !!me?.emailVerifiedAt;
 
@@ -33,7 +34,14 @@ export default async function EmailConfirmed({ searchParams }: { searchParams: {
           </p>
           {me ? (
             <>
-              <Link href="/studio/money" className="btn btn-blue btn-lg w-full">Set up payouts</Link>
+              {/* Straight into Stripe's payout setup: no stop on Money to press "Connect" again. */}
+              {connectMode() !== "off" && connectStatus(me) !== "ready" ? (
+                <form method="post" action="/api/studio/stripe/connect" className="grid">
+                  <button type="submit" className="btn btn-blue btn-lg w-full">Set up payouts</button>
+                </form>
+              ) : (
+                <Link href="/studio/money" className="btn btn-blue btn-lg w-full">{connectStatus(me) === "ready" ? "See my money" : "Set up payouts"}</Link>
+              )}
               <Link href="/studio" className="btn btn-ghost btn-lg w-full">Go to my Studio</Link>
             </>
           ) : (
