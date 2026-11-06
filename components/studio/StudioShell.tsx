@@ -137,7 +137,7 @@ export default function StudioShell({ artist, children, badges }: { artist: Shel
         >
           <Menu className="h-5 w-5 shrink-0" aria-hidden="true" />
           <span className="min-w-0 flex-1 truncate">
-            {hereSection && <span className="text-ink-2">{hereSection.label} / </span>}
+            {hereSection && hereSection.label !== here?.label && <span className="text-ink-2">{hereSection.label} / </span>}
             {here?.label ?? "Menu"}
           </span>
           <span className="text-[13px] font-bold text-ink-2">Menu</span>

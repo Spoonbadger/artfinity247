@@ -3,11 +3,19 @@
 // Slim "Confirm your email — resend" bar at the top of Studio while the artist's email is unconfirmed, and a
 // one-time "Email confirmed" after the link (?verified=1). Studio stays usable; payouts and newsletters wait.
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 export default function VerifyEmailBanner({ email, verified }: { email: string; verified: boolean }) {
   const flag = useSearchParams().get("verified");
+  const path = usePathname();
+  // Full bar on the pages it blocks (home, money, newsletter, page settings). Elsewhere it can be put off for
+  // this visit, so it isn't repeated on every page.
+  const blocks = ["/studio", "/studio/money", "/studio/newsletter", "/studio/followers", "/studio/page"].includes(path);
+  const [later, setLater] = useState(false);
+  useEffect(() => {
+    try { setLater(sessionStorage.getItem("af-confirm-later") === "1"); } catch { /* storage blocked: keep showing it */ }
+  }, []);
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [error, setError] = useState("");
   // Fix links elsewhere ("Resend confirmation", lib/feedback.ts) point at /studio#confirm-email: put focus on Resend.
@@ -26,6 +34,8 @@ export default function VerifyEmailBanner({ email, verified }: { email: string; 
       </Wrap>
     );
   }
+
+  if (!blocks && later && flag !== "expired") return null;
 
   async function resend() {
     setState("sending");
@@ -52,6 +62,11 @@ export default function VerifyEmailBanner({ email, verified }: { email: string; 
           <button ref={resendRef} type="button" onClick={resend} disabled={state === "sending"} className="inline-flex min-h-[36px] items-center gap-1.5 font-semibold text-scan underline underline-offset-4">
             {state === "sending" && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
             {flag === "expired" ? "Send a new link" : "Resend"}
+          </button>
+        )}
+        {!blocks && (
+          <button type="button" onClick={() => { setLater(true); try { sessionStorage.setItem("af-confirm-later", "1"); } catch { /* ignore */ } }} className="min-h-[36px] font-semibold text-ink-2 underline underline-offset-4">
+            Later
           </button>
         )}
       </div>

@@ -117,7 +117,7 @@ export default async function ProPage({ searchParams }: { searchParams?: { billi
         <>
           <PaymentReturn kind={plan.active ? "paid" : "info"} message={plan.active ? `You're on ${PRO.name}` : "Payment received"} description={plan.active ? `${pct(PRO.split)} of profit from today.` : `${PRO.name} turns on in a moment.`} strip={["billing", "session_id"]} />
           <p role="status" className="rounded-xl border-[1.5px] border-earned bg-earned-soft px-4 py-3 text-[15px] font-semibold">
-            {plan.active ? `You're on ${PRO.name} — ${pct(PRO.split)} from today. Receipts come by email from Stripe.` : `Payment received. ${PRO.name} turns on in a moment; refresh if it hasn't.`}
+            {plan.active ? `You're on ${PRO.name} — ${pct(PRO.split)} from today.` : `Payment received. ${PRO.name} turns on in a moment; refresh if it hasn't.`}
           </p>
         </>
       )}

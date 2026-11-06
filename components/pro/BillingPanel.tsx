@@ -69,8 +69,14 @@ export default function BillingPanel({
     }
   }
 
-  const checkout = (interval: "month" | "year") =>
-    mode === "simulated" ? post("subscribe", "/api/studio/infinity/test", { action: "subscribe" }) : post(interval, "/api/studio/infinity/checkout", { interval });
+  // The same start as every "Get Infinity" button (StartInfinityButton): Stripe Checkout, or the simulated subscription,
+  // then the plan page with ?billing=success so the confirmation shows.
+  async function checkout(interval: "month" | "year") {
+    if (busy) return;
+    setBusy(interval);
+    setError(null);
+    if (!(await startInfinityCheckout(mode, interval))) setBusy(null);
+  }
   const sim = (action: SimAction) => post(action, "/api/studio/infinity/test", { action });
 
   const started = useRef(false);
@@ -135,7 +141,7 @@ export default function BillingPanel({
             amountCents={PRO.priceCents}
             label={freeMonthsUntil ? `Get ${PRO.name}` : undefined}
             plusTax={(tax ?? (mode === "simulated" ? "test" : "added")) === "added"}
-            busy={busy === "month" || busy === "subscribe"}
+            busy={busy === "month"}
             disabled={!!busy}
             onPay={() => checkout("month")}
             busyLabel="Starting…"
