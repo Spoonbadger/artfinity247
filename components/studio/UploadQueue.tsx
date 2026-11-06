@@ -111,8 +111,10 @@ function missing(it: QueueItem, owned: boolean): string | null {
 
 const published = (it: QueueItem) => it.result?.state === "live" || it.result?.state === "review";
 
-export default function UploadQueue({ handle, split, files: initialFiles, cloud: initialCloud, mock, restored, onExit }: {
+export default function UploadQueue({ handle, split, files: initialFiles, cloud: initialCloud, mock, restored, onExit, reviewNote }: {
   handle: string;
+  /** What happens after posting (review or straight live), from lib/artworkLive. */
+  reviewNote?: string;
   split?: number;
   files?: File[];
   /** Picked in Google Drive / Dropbox before the queue opened. */
@@ -516,7 +518,7 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
       {/* Progress header + queue strip */}
       <section aria-label="Upload queue" className={cn("af-card grid gap-3 p-3 sm:p-4", dragging && "outline outline-[3px] outline-scan")}>
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h2 ref={headingRef} tabIndex={-1} className="font-display text-[24px] font-bold outline-none [font-variation-settings:'wdth'_80]">
+          <h2 ref={headingRef} tabIndex={-1} className="t-section outline-none">
             Painting <span className="num">{index + 1}</span> of <span className="num">{total}</span>
           </h2>
           <p className="text-[13.5px] text-ink-2" aria-live="polite">
@@ -544,7 +546,7 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
                       {it.source ? <span className={cn("block h-full w-full bg-scan", it.upload === "uploading" ? "animate-pulse" : "opacity-30")} /> : <span className="block h-full bg-scan transition-[width]" style={{ width: `${Math.round(it.progress * 100)}%` }} />}
                     </span>
                   )}
-                  {!thumb(it) && it.source && <span className="absolute inset-0 grid place-items-center text-[10px] font-bold text-ink-2">{it.source === "drive" ? "Drive" : it.source === "dropbox" ? "Dropbox" : "Sample"}</span>}
+                  {!thumb(it) && it.source && <span className="absolute inset-0 grid place-items-center text-[12px] font-bold text-ink-2">{it.source === "drive" ? "Drive" : it.source === "dropbox" ? "Dropbox" : "Sample"}</span>}
                   <Dot it={it} needs={!!m} />
                 </button>
               </li>
@@ -665,7 +667,7 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
               setLimited={(limited) => setV({ limited }, false)} setEdition={(edition) => setV({ edition }, false)}
             />
             <SensitiveField sensitive={item.v.sensitive} setSensitive={(sensitive) => setV({ sensitive }, false)} />
-            <OwnershipField owned={owned} setOwned={setOwned} many note="Ticked once for this whole batch. New artists' first few pieces get a quick look before they go live." />
+            <OwnershipField owned={owned} setOwned={setOwned} many note={`Ticked once for this whole batch.${reviewNote ? ` ${reviewNote}` : ""}`} />
 
             {error && <p ref={errorRef} tabIndex={-1} role="alert" className="rounded-xl border-2 border-coral bg-[#fff1ed] px-3.5 py-2.5 text-[14px] font-semibold outline-none">{error}</p>}
 
@@ -816,7 +818,7 @@ function Summary({ items, handle, onMore, headingRef }: { items: QueueItem[]; ha
                 <span className="relative block aspect-[4/5] overflow-hidden rounded-[3px] bg-gallery">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={it.result?.imageUrl || it.imageUrl} alt="" className="h-full w-full object-cover transition group-hover:scale-[1.03]" />
-                  <span className={cn("absolute left-1.5 top-1.5 rounded-full border-[1.5px] border-ink px-2 py-0.5 text-[11px] font-bold", it.result?.state === "live" ? "bg-white" : "bg-sticker")}>
+                  <span className={cn("absolute left-1.5 top-1.5 rounded-full border-[1.5px] border-ink px-2 py-0.5 text-[12px] font-bold", it.result?.state === "live" ? "bg-white" : "bg-sticker")}>
                     {it.result?.state === "live" ? "Live" : "In review"}
                   </span>
                 </span>

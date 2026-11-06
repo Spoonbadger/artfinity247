@@ -137,7 +137,7 @@ export default async function SocialSetupPage() {
   return (
     <div className="grid gap-5">
       <PageHead back={{ href: "/admin/social", label: "Social" }} title="Instagram setup" sub={`${igConfigured() ? "Connected" : "Manual mode: not connected yet"} · Graph API ${s.version}`} />
-      <section aria-label="What's set" className="grid gap-2 rounded-2xl border border-line bg-white p-4">
+      <section aria-label="What's set" className="grid gap-2 rounded-2xl border border-edge bg-white p-4">
         <ul className="grid gap-1 text-[14px] sm:grid-cols-2">
           {checks.map((c) => (
             <li key={c.label} className="flex items-center gap-2">
@@ -147,7 +147,7 @@ export default async function SocialSetupPage() {
           ))}
         </ul>
       </section>
-      <article className="grid gap-3 rounded-2xl border border-line bg-white p-4 sm:p-6">
+      <article className="grid gap-3 rounded-2xl border border-edge bg-white p-4 sm:p-6">
         {md ? render(md) : <p className="text-[14.5px]">The guide is in the repository as SOCIAL_SETUP.md.</p>}
       </article>
     </div>

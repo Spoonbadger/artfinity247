@@ -63,9 +63,9 @@ export default async function VenuePage({ params }: Props) {
       </PageHead>
 
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
-        <p className="mb-6 flex items-start gap-2.5 rounded-xl bg-sticker px-4 py-3 text-[15px] font-semibold text-ink sm:w-fit">
+        <p className="box-inset mb-6 flex items-start gap-2.5 px-4 py-3 text-[15px] text-ink sm:w-fit">
           <ScanLine className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
-          Scan the code beside any piece to buy a print.
+          <span><b className="font-semibold">Scan the code beside any piece to buy a print.</b> We print it in NYC and ship it to you free.</span>
         </p>
 
         {artworks.length ? (
@@ -75,12 +75,12 @@ export default async function VenuePage({ params }: Props) {
           </section>
         ) : (
           <EmptyCanvas title="New art is on its way">
-            <p className="text-ink-2">The walls at {v.name} are between shows. Check back soon.</p>
+            <p className="t-muted">The walls at {v.name} are between shows. Check back soon.</p>
           </EmptyCanvas>
         )}
 
         {artistPages.length > 0 && (
-          <p className="mt-10 text-[15px] text-ink-2">
+          <p className="t-muted mt-10">
             Also hanging here: work by{" "}
             {artistPages.map((a, i) => (
               <span key={a.slug}>
@@ -92,7 +92,7 @@ export default async function VenuePage({ params }: Props) {
           </p>
         )}
 
-        <p className="mt-12 text-[14px] text-ink-2">
+        <p className="t-small mt-12">
           <Link href="/venues" className="font-semibold text-ink underline underline-offset-2">More places to see local art</Link>
         </p>
       </div>

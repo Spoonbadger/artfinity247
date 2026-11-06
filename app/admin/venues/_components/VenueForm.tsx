@@ -106,7 +106,7 @@ export default function VenueForm({ initial, onDone }: { initial?: VenueFormValu
             disabled={!canMoney} title={!canMoney ? cantReason("money") : undefined}
             onChange={(e) => set({ sharePct: e.target.value === "" ? 0 : Number(e.target.value) })}
           />
-          <span className="text-[12px] font-normal text-ink-2">0 = recognition only. Applies to sales from codes hanging here.</span>
+          <span className="t-small font-normal">0 = recognition only. Applies to sales from codes hanging here.</span>
         </label>
         <label className="flex min-h-[42px] items-center gap-2.5 self-end text-[14.5px] font-semibold">
           <input type="checkbox" className="h-5 w-5 accent-[#2b37f0]" checked={f.active} onChange={(e) => set({ active: e.target.checked })} />
@@ -120,7 +120,7 @@ export default function VenueForm({ initial, onDone }: { initial?: VenueFormValu
       {err && <p role="alert" className="text-[13.5px] font-semibold text-coral">{err}</p>}
       <div className="flex flex-wrap items-center gap-2">
         <button type="submit" className="btn btn-blue btn-sm" disabled={!canEdit || busy}>{busy ? "Saving…" : editing ? "Save venue" : "Add venue"}</button>
-        {!canEdit && <span className="text-[12px] text-ink-2">{cantReason("accounts")}</span>}
+        {!canEdit && <span className="t-small">{cantReason("accounts")}</span>}
       </div>
     </form>
   );

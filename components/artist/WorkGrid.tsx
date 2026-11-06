@@ -32,7 +32,7 @@ export default function WorkGrid({ works, isOwner }: { works: ArtistWork[]; isOw
                   />
                 </SensitiveImage>
                 {best && w.sensitive.length === 0 && (
-                  <span className="sticker-badge pointer-events-none absolute left-2 top-2 text-[11.5px] sm:left-3 sm:top-3">Best seller</span>
+                  <span className="sticker-badge pointer-events-none absolute left-2 top-2 text-[12px] sm:left-3 sm:top-3">Best seller</span>
                 )}
               </div>
               <div className="flex min-w-0 flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
@@ -136,7 +136,7 @@ export function WorkSalon({ works, isOwner }: { works: ArtistWork[]; isOwner?: b
                   </SensitiveImage>
                 </div>
               </div>
-              <span className="pointer-events-none absolute bottom-2 left-2 max-w-[calc(100%-16px)] truncate rounded-[2px] bg-white px-2 py-0.5 text-[11.5px] font-semibold text-ink shadow-sm transition sm:bottom-3 sm:left-3 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-visible:opacity-100">
+              <span className="pointer-events-none absolute bottom-2 left-2 max-w-[calc(100%-16px)] truncate rounded-[2px] bg-white px-2 py-0.5 text-[13px] font-semibold text-ink shadow-sm transition sm:bottom-3 sm:left-3 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-visible:opacity-100">
                 {w.title}
               </span>
             </Link>

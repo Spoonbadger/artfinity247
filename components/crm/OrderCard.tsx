@@ -72,7 +72,7 @@ export default function OrderCard({ order }: { order: OrderCardData }) {
                 <i className="paint-dab !h-5 !w-5" style={{ ["--dab" as string]: done ? STAGE_META[s].dab : "#c9c6bf" }} />
                 {done && !current && <Check className={cn("absolute h-3 w-3", s === "paid" ? "text-ink" : "text-white")} strokeWidth={3} />}
               </span>
-              <span className={cn("text-[12px] leading-tight", current ? "font-bold text-ink" : done ? "text-ink" : "text-ink-2")}>
+              <span className={cn("text-[13px] leading-tight", current ? "font-bold text-ink" : done ? "text-ink" : "text-ink-2")}>
                 {STEP_LABEL[s]}
                 <span className="sr-only">{done ? (current ? ", current" : ", done") : ", not yet"}</span>
               </span>

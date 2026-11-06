@@ -49,11 +49,11 @@ export default async function QrPage({ searchParams }: { searchParams: { art?: s
 
   if (!arts.length) {
     return (
-      <StudioPage title="QR codes" sub="A code to hang beside each piece." actions={<HelpLink href="/help/getting-started/first-qr-code" />}>
+      <StudioPage title="QR codes" sub="A code to hang beside each piece.">
         <EmptyState
           dab="#ffd43b"
           title="No paintings yet"
-          body="Upload your first and its QR code is ready to print: a gallery label, sticker, market tag or poster that opens the piece so people can buy a print."
+          body="Upload your first piece and its code is ready: a wall label, sticker, hang tag or poster. Scanning it opens the piece so people can buy a print."
           action={{ label: "Upload art", href: "/studio/art/new" }}
           help={{ label: "How QR codes work", href: "/help/getting-started/first-qr-code" }}
         />
@@ -89,7 +89,7 @@ export default async function QrPage({ searchParams }: { searchParams: { art?: s
   }
 
   return (
-    <StudioPage title="QR codes" sub="Pick a piece. Pick a look. Print. Every code here really scans." actions={<><HelpLink href="/help/qr-codes/qr-templates" /><Link href="/studio/codes" className="btn btn-ghost btn-sm">My codes</Link><QueueLink count={await queueCount(artist.id)} /></>}>
+    <StudioPage title="QR codes" sub="Every code really scans, and you can change where it goes after printing." actions={<><HelpLink href="/help/qr-codes/qr-templates" /><Link href="/studio/codes" className="btn btn-ghost btn-sm">My codes</Link><QueueLink count={await queueCount(artist.id)} /></>}>
       {inReview.length > 0 && (
         <Problem tone="info" title={inReview.length === 1 ? `${inReview[0]} is in review` : `${inReview.length} pieces are in review`} fix={{ label: "See my art", href: "/studio/art" }}>
           You can print {inReview.length === 1 ? "its code" : "their codes"} now. Scans open the piece once it&apos;s live, usually within a day.

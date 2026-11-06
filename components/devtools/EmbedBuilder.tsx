@@ -14,7 +14,7 @@ export const KIND_LABEL: Record<Kind, string> = { gallery: "Gallery", card: "One
 function Seg<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: [T, string][]; onChange: (v: T) => void }) {
   return (
     <fieldset className="grid gap-1.5">
-      <legend className="mb-1.5 text-[12px] font-semibold text-ink-2">{label}</legend>
+      <legend className="mb-1.5 text-[13px] font-semibold text-ink-2">{label}</legend>
       <div className="flex flex-wrap gap-1.5">
         {options.map(([v, l]) => (
           <button
@@ -93,7 +93,7 @@ export default function EmbedBuilder({
         </div>
         {needsArt && artworks.length > 1 && (
           <fieldset>
-            <legend className="mb-1.5 text-[12px] font-semibold text-ink-2">Piece</legend>
+            <legend className="mb-1.5 text-[13px] font-semibold text-ink-2">Piece</legend>
             <div className="flex gap-2 overflow-x-auto pb-1">
               {artworks.map((a) => (
                 <button

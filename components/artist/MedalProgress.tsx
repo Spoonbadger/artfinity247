@@ -46,7 +46,7 @@ export default function MedalProgress({ trust, verification }: { trust: Trust; v
             return (
               <span key={m.tier} className="absolute top-[34px] grid -translate-x-1/2 justify-items-center gap-0.5" style={{ left: `min(${left}%, calc(100% - 14px))` }}>
                 <Medal tier={m.tier} size={22} locked={!earned} />
-                <span className="num text-[11.5px] font-semibold text-ink-2">{m.min}</span>
+                <span className="num text-[13px] font-semibold text-ink-2">{m.min}</span>
               </span>
             );
           })}

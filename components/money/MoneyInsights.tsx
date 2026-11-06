@@ -17,12 +17,12 @@ const GROSS_SERIES: Series[] = [
 ];
 const short = (d: Date) => d.toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric" });
 
-function Stat({ label, value, note, dab, money = false }: { label: string; value: string; note?: string; dab: string; money?: boolean }) {
+function Stat({ label, value, note, money = false }: { label: string; value: string; note?: string; money?: boolean }) {
   return (
-    <div className="grid min-w-0 content-start gap-0.5 rounded-[3px] border border-line bg-white p-3 shadow-[0_2px_0_var(--af-line)]">
-      <span className="flex items-center gap-1.5 text-[13px] text-ink-2"><i className="paint-dab h-2.5 w-2.5" style={{ ["--dab" as string]: dab }} />{label}</span>
-      <b className={`display num truncate text-[24px] leading-tight sm:text-[27px] ${money ? "text-earned" : "text-ink"}`} title={value}>{value}</b>
-      {note && <span className="truncate text-[12px] text-ink-2" title={note}>{note}</span>}
+    <div className="box-inset grid min-w-0 content-start gap-0.5 p-3">
+      <span className="t-small">{label}</span>
+      <b className={`num truncate text-[22px] font-bold leading-tight ${money ? "text-earned" : "text-ink"}`} title={value}>{value}</b>
+      {note && <span className="t-small truncate" title={note}>{note}</span>}
     </div>
   );
 }
@@ -113,7 +113,7 @@ export default function MoneyInsights({ ledger, nowIso }: { ledger: LedgerLine[]
   return (
     <section aria-labelledby="insights-h" className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="insights-h" className="text-[15px] font-semibold text-ink-2">Period</h2>
+        <h2 id="insights-h" className="t-small font-semibold">Period</h2>
         <div role="radiogroup" aria-label="Period" className="flex rounded-full border-[1.5px] border-edge-strong bg-white p-0.5">
           {PERIODS.map((p) => (
             <button
@@ -127,14 +127,14 @@ export default function MoneyInsights({ ledger, nowIso }: { ledger: LedgerLine[]
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat dab="#e8743b" label="Prints sold" value={stats.prints.toLocaleString("en-US")} note={periodLabel} />
-        <Stat dab="#c8763a" label="Gross sales" value={usd(stats.gross)} note="What buyers paid" />
-        <Stat dab="#0f7a55" label="Your share" value={usd(stats.share)} note={stats.gross ? `${Math.round((stats.share / stats.gross) * 100)}% of gross` : "Of profit"} money />
-        <Stat dab="#3d9f76" label="Avg per print" value={usd(stats.prints ? Math.round(stats.share / stats.prints) : 0)} note="Your share" money />
-        <Stat dab="#ffd43b" label="Best piece" value={stats.piece ? stats.piece[0] : "None yet"} note={stats.piece ? `${usd(stats.piece[1])} · ${stats.piecePrints} sold` : periodLabel} />
-        <Stat dab="#2b37f0" label="Best size" value={stats.size ? SIZE_LABEL[stats.size[0]] : "None yet"} note={stats.size ? `${SIZE_INCH[stats.size[0]]} in · ${stats.size[1]} sold` : periodLabel} />
-        <Stat dab="#ff5a36" label="Top city" value={stats.city ? stats.city[0] : "None yet"} note={stats.city ? `${stats.city[1]} ${stats.city[1] === 1 ? "print" : "prints"}` : periodLabel} />
-        <Stat dab="#7b2d8e" label="Repeat buyers" value={String(stats.repeat)} note={`of ${stats.buyers} ${stats.buyers === 1 ? "buyer" : "buyers"}`} />
+        <Stat label="Prints sold" value={stats.prints.toLocaleString("en-US")} note={periodLabel} />
+        <Stat label="Gross sales" value={usd(stats.gross)} note="What buyers paid" />
+        <Stat label="Your share" value={usd(stats.share)} note={stats.gross ? `${Math.round((stats.share / stats.gross) * 100)}% of gross` : "Of profit"} money />
+        <Stat label="Avg per print" value={usd(stats.prints ? Math.round(stats.share / stats.prints) : 0)} note="Your share" money />
+        <Stat label="Best piece" value={stats.piece ? stats.piece[0] : "None yet"} note={stats.piece ? `${usd(stats.piece[1])} · ${stats.piecePrints} sold` : periodLabel} />
+        <Stat label="Best size" value={stats.size ? SIZE_LABEL[stats.size[0]] : "None yet"} note={stats.size ? `${SIZE_INCH[stats.size[0]]} in · ${stats.size[1]} sold` : periodLabel} />
+        <Stat label="Top city" value={stats.city ? stats.city[0] : "None yet"} note={stats.city ? `${stats.city[1]} ${stats.city[1] === 1 ? "print" : "prints"}` : periodLabel} />
+        <Stat label="Repeat buyers" value={String(stats.repeat)} note={`of ${stats.buyers} ${stats.buyers === 1 ? "buyer" : "buyers"}`} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

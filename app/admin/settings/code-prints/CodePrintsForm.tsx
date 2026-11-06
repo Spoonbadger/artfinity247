@@ -50,20 +50,20 @@ export default function CodePrintsForm({ value, placeholder }: { value: CodePrin
         <input type="number" min={0} step="0.01" inputMode="decimal" value={val} onChange={(e) => on(e.target.value)} disabled={!canEdit}
           className="min-h-[38px] w-28 rounded-lg border-[1.5px] border-line bg-white px-2 text-[14px] text-ink" />
       </span>
-      {hint && <span className="text-[12px] font-normal text-ink-2">{hint}</span>}
+      {hint && <span className="t-small font-normal">{hint}</span>}
     </label>
   );
 
   return (
-    <form onSubmit={save} className="grid gap-5 rounded-2xl border border-line bg-white p-5">
+    <form onSubmit={save} className="grid gap-5 rounded-2xl border border-edge bg-white p-5">
       <fieldset className="grid gap-3">
-        <legend className="mb-1 text-[16px] font-bold">Per card, printed, laminated and cut{placeholder && <span className="ml-2 inline-block whitespace-nowrap rounded-full bg-sticker px-2 py-0.5 text-[11.5px] font-bold">set by Craig</span>}</legend>
+        <legend className="mb-1 text-[16px] font-bold">Per card, printed, laminated and cut{placeholder && <span className="ml-2 inline-block whitespace-nowrap rounded-full bg-sticker px-2 py-0.5 text-[12px] font-bold">set by Craig</span>}</legend>
         <div className="flex flex-wrap gap-4">
           {FORMAT_ORDER.map((f) => <div key={f}>{money(`${FORMATS[f].name} (${FORMATS[f].w} × ${FORMATS[f].h} in)`, v.unit[f], (s) => setV({ ...v, unit: { ...v.unit, [f]: s } }))}</div>)}
         </div>
       </fieldset>
       <fieldset className="grid gap-3">
-        <legend className="mb-1 text-[16px] font-bold">Per order{placeholder && <span className="ml-2 inline-block whitespace-nowrap rounded-full bg-sticker px-2 py-0.5 text-[11.5px] font-bold">set by Craig</span>}</legend>
+        <legend className="mb-1 text-[16px] font-bold">Per order{placeholder && <span className="ml-2 inline-block whitespace-nowrap rounded-full bg-sticker px-2 py-0.5 text-[12px] font-bold">set by Craig</span>}</legend>
         <div className="flex flex-wrap gap-4">
           {money("Shipping (flat)", v.shipping, (s) => setV({ ...v, shipping: s }), "Postage and envelope, with tracking.")}
           {money("Handling", v.handling, (s) => setV({ ...v, handling: s }), "Optional. Leave at 0 for none.")}

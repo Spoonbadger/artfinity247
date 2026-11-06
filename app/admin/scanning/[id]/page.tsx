@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PageHead } from "../../_components/ui";
 import { notFound } from "next/navigation";
 import { adminRoleOrRedirect } from "../../_components/gate";
 import ActionButton from "../../_components/ActionButton";
@@ -49,18 +50,14 @@ export default async function ScanBookingPage({ params }: { params: { id: string
 
   return (
     <div className="grid max-w-[1100px] gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="min-w-0">
-          <p className="eyebrow"><Link href="/admin/scanning" className="text-ink-2 no-underline hover:text-ink">Scanning</Link> · booking</p>
-          <h1 className="display text-[40px] sm:text-[52px]">{name}</h1>
-          <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-ink-2">
-            <span className="inline-flex items-center gap-1.5 font-semibold text-ink"><i className="paint-dab !h-2.5 !w-2.5" style={{ ["--dab" as string]: STATUS_DAB[st] }} aria-hidden="true" />{STATUS_LABEL[st]}</span>
+      <PageHead back={{ href: "/admin/scanning", label: "Scanning" }} title={name}>
+          <p className="t-muted flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="inline-flex items-center gap-1.5 font-semibold text-ink"><i className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: STATUS_DAB[st] }} aria-hidden="true" />{STATUS_LABEL[st]}</span>
             <span>{b.items.length} {b.items.length === 1 ? "painting" : "paintings"}</span>
             <span>{HANDOFF_LABEL[b.handoff as "dropoff" | "pickup"]}</span>
             {artist && <Link href={`/admin/artists/${artist.id}`} className="font-semibold text-scan">Artist profile</Link>}
           </p>
-        </div>
-      </div>
+      </PageHead>
 
       {st !== "cancelled" && (
         <ol className="grid grid-cols-3 gap-1.5 sm:grid-cols-6" aria-label="Progress">
@@ -106,7 +103,7 @@ export default async function ScanBookingPage({ params }: { params: { id: string
           {(st === "scanning" || st === "paid") && (
             <ActionButton url={`/api/admin/scanning/${b.id}`} body={{ step: "delivered" }} need="orders" tone={missing ? "ghost" : "blue"} disabled={missing > 0 || !b.items.some((i) => i.scanUrl)} label={missing ? `Mark delivered (${missing} to upload)` : "Mark delivered"} title="Mark delivered" confirm="Emails the artist: “Your scans are in — you can now sell up to …”, with their biggest new print size." confirmLabel="Mark delivered" />
           )}
-          {st === "delivered" && <ActionButton url={`/api/admin/scanning/${b.id}`} body={{ step: "returned" }} need="orders" tone="blue" label="Mark returned" title="Paintings returned?" confirm="Closes the booking, emails the artist, and deletes the old images kept for undo (unless an order still prints from them)." confirmLabel="Mark returned" />}
+          {st === "delivered" && <ActionButton url={`/api/admin/scanning/${b.id}`} body={{ step: "returned" }} need="orders" tone="blue" label="Mark returned" title="Paintings returned?" confirm="Closes the booking and emails the artist. The old images kept for undo are deleted (unless an order still prints from them). This can't be undone." confirmLabel="Mark returned" />}
           {st !== "returned" && st !== "cancelled" && (
             <ActionButton url={`/api/admin/scanning/${b.id}`} body={{ step: "cancel" }} need="money" tone="danger" label="Cancel booking" title="Cancel this booking?" confirm={<>The artist gets an email with your reason.{b.paidAt ? " It's paid: refund it in Stripe too (the email says it will be refunded)." : ""} Scans already on artworks stay.</>} fields={[{ name: "reason", label: "Reason (the artist sees this)", type: "textarea", placeholder: "We can't take very large pieces this month." }]} confirmLabel="Cancel booking" />
           )}

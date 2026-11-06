@@ -102,8 +102,8 @@ export default async function CodePage({ params }: { params: { code: string } })
           <section aria-label="Totals" className="af-card grid grid-cols-3 gap-x-3 gap-y-4 p-4 sm:grid-cols-6 sm:p-5">
             {tiles.map(([v, l, money]) => (
               <div key={l} className="grid min-w-0 gap-0.5">
-                <b className={`display num truncate text-[26px] ${money ? "text-earned" : ""}`}>{v}</b>
-                <span className="text-[13px] text-ink-2">{l}</span>
+                <b className={`num truncate text-[26px] font-bold leading-tight tracking-[-0.01em] ${money ? "text-earned" : ""}`}>{v}</b>
+                <span className="t-small">{l}</span>
               </div>
             ))}
           </section>
@@ -111,7 +111,7 @@ export default async function CodePage({ params }: { params: { code: string } })
           <section className="af-card grid gap-3 p-4 sm:p-5" aria-labelledby="chart-h">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h2 id="chart-h" className="t-card">Scans, by day</h2>
-              <span className="num text-[13px] text-ink-2">{n(c.days.reduce((a, d) => a + d.n, 0))} in 60 days</span>
+              <span className="t-small num">{n(c.days.reduce((a, d) => a + d.n, 0))} in 60 days</span>
             </div>
             <ScanChart days={c.days} />
           </section>
@@ -119,11 +119,11 @@ export default async function CodePage({ params }: { params: { code: string } })
           <div className="grid gap-4 sm:grid-cols-2">
             <section className="af-card grid content-start gap-3 p-4 sm:p-5" aria-labelledby="where-h">
               <h2 id="where-h" className="t-card">Where</h2>
-              {c.cities.length ? <Bars rows={c.cities.slice(0, 6)} color="#2b37f0" total={scanTotal} /> : <p className="text-[14px] text-ink-2">No scans yet.</p>}
+              {c.cities.length ? <Bars rows={c.cities.slice(0, 6)} color="#2b37f0" total={scanTotal} /> : <p className="t-small">No scans yet.</p>}
             </section>
             <section className="af-card grid content-start gap-3 p-4 sm:p-5" aria-labelledby="dev-h">
               <h2 id="dev-h" className="t-card">On what</h2>
-              {c.devices.length ? <Bars rows={c.devices.map((r) => ({ ...r, name: DEVICE[r.name] || r.name }))} color="#7b2d8e" total={scanTotal} /> : <p className="text-[14px] text-ink-2">No scans yet.</p>}
+              {c.devices.length ? <Bars rows={c.devices.map((r) => ({ ...r, name: DEVICE[r.name] || r.name }))} color="#7b2d8e" total={scanTotal} /> : <p className="t-small">No scans yet.</p>}
             </section>
           </div>
 
@@ -132,15 +132,14 @@ export default async function CodePage({ params }: { params: { code: string } })
             {c.recent.length ? (
               <ul className="grid gap-2.5">
                 {c.recent.map((r) => (
-                  <li key={r.id} className="grid grid-cols-[14px_minmax(0,1fr)_auto] items-center gap-2.5 text-[14px]">
-                    <i className="paint-dab h-3 w-3" style={{ ["--dab" as string]: "#2b37f0" }} aria-hidden="true" />
+                  <li key={r.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2.5 text-[15px]">
                     <span className="truncate"><b>{r.place}</b> <span className="text-ink-2">· {DEVICE[r.device] || r.device}</span></span>
-                    <span className="text-[13px] text-ink-2">{timeAgo(new Date(r.at), now)}</span>
+                    <span className="t-small">{timeAgo(new Date(r.at), now)}</span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-[14px] text-ink-2">Nobody has scanned it yet.</p>
+              <p className="t-small">Nobody has scanned it yet.</p>
             )}
           </section>
           </>

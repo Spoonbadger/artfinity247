@@ -46,7 +46,7 @@ export default async function TeamPage() {
           <div className="min-w-0">
             <span className="flex flex-wrap items-center gap-1.5">
               <Link href={`/admin/artists/${m.id}`} className="truncate font-semibold text-ink no-underline hover:text-scan">{m.name}</Link>
-              {self && <span className="text-[12px] font-semibold text-ink-2">you</span>}
+              {self && <span className="text-[13px] font-semibold text-ink-2">you</span>}
               {!m.verified && <Pill tone="amber">Email not confirmed</Pill>}
               {m.blocked && <Pill tone="red">Suspended or closed</Pill>}
             </span>
@@ -72,7 +72,7 @@ export default async function TeamPage() {
                 confirm={<>Their account goes back to a regular artist account and they&apos;re signed out everywhere. {self ? "You lose admin access right away." : "You can invite them again later."}</>}
                 confirmLabel={self ? "Leave" : "Remove"} done="Removed"
               />
-              {lastOwner && <span className="px-2 text-[12px] text-ink-2">Last owner: make someone else an owner first.</span>}
+              {lastOwner && <span className="t-small px-2">Last owner: make someone else an owner first.</span>}
             </MoreMenu>
           </div>
         ),
@@ -152,7 +152,7 @@ export default async function TeamPage() {
             { key: "do", label: <span className="sr-only">Manage</span>, sortable: false, align: "right" },
           ]}
           rows={inviteRows}
-          empty={<EmptyState compact title="No invites yet" body="Invite someone with the button above." />}
+          empty={<EmptyState dab="var(--af-edge-strong)" compact title="No invites yet" body="Invite someone with the button above." />}
         />
       </section>
 
@@ -160,7 +160,7 @@ export default async function TeamPage() {
         <summary className="cursor-pointer text-[15px] font-bold">What each role can do</summary>
         <div className="mt-3 grid gap-2 sm:grid-cols-3">
           {ADMIN_ROLES.map((r) => (
-            <div key={r} className="rounded-xl border border-line bg-white p-3">
+            <div key={r} className="rounded-xl border border-edge bg-white p-3">
               <Pill tone={ROLE_TONE[r]}>{ROLE_LABEL[r]}</Pill>
               <p className="mt-1 text-[13px] text-ink-2">{ROLE_BLURB[r]}</p>
             </div>

@@ -6,7 +6,7 @@ import ExportCsvButton from "@/components/money/ExportCsvButton";
 import { UrlPicker } from "@/components/money/SortSelect";
 import Disclosure from "@/components/money/Disclosure";
 import { BUCKET_LABEL, bucketOf, type MoneyBucket } from "@/components/money/format";
-import { getBalance } from "@/lib/balance";
+import { getBalance, payoutDateFor } from "@/lib/balance";
 import { prisma } from "@/lib/prisma";
 import { itemBreakdown } from "@/lib/sales";
 import { artistSplitNow, requireArtist, getSales, SIZE_LABEL, STUDIO_TZ, usd } from "../_lib/data";
@@ -107,6 +107,7 @@ export default async function SalesPage({ searchParams }: { searchParams: { when
   const allHref = `/studio/sales?${new URLSearchParams({ ...(when ? { when } : {}), ...(sort !== "newest" ? { sort } : {}), all: "1" })}#orders-h`;
   const whenOptions = [{ value: "", label: "All time" }, ...Object.entries(PRESETS).map(([value, p]) => ({ value, label: p.label })), ...months.map((m) => ({ value: m.key, label: m.name }))];
   const pctNow = Math.round(splitNow * 100);
+  const holdPaid = new Date(payoutDateFor(bal.currentMonth)).toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric" });
 
   return (
     <StudioPage
@@ -119,31 +120,33 @@ export default async function SalesPage({ searchParams }: { searchParams: { when
       }
     >
       {latest && (
-        <div className="grid items-stretch gap-3 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-4">
-          {/* The newest sale, front and centre */}
+        <div className="grid items-stretch gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-4">
+          {/* The money: one hero number, the rest on one line under it. */}
+          <section aria-labelledby="earned-h" className="af-card grid content-center gap-1 p-4 sm:p-5">
+            <h2 id="earned-h" className="eyebrow">{windowName ? `Earned, ${windowName}` : "Earned this month"}</h2>
+            <p className="t-num text-earned">{usd(windowName ? windowShare : thisMonth?.share || 0)}</p>
+            <p className="t-small num">
+              {windowName ? `${prints.toLocaleString("en-US")} ${prints === 1 ? "print" : "prints"} · ` : ""}{usd(total)} earned all time · {allSales.reduce((n, s) => n + s.quantity, 0).toLocaleString("en-US")} prints sold
+            </p>
+            <Link href="/studio/money" className="mt-1 w-fit text-[15px] font-bold text-scan">Balance and payouts →</Link>
+          </section>
+
+          {/* The newest sale, next to the money */}
           <section aria-labelledby="latest-h" className="af-card grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 p-4 sm:grid-cols-[80px_minmax(0,1fr)_auto] sm:p-5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             {latest.imageUrl ? <img src={latest.imageUrl} alt="" className="h-20 w-16 rounded-[3px] object-cover sm:h-[100px] sm:w-20" /> : <span className="h-20 w-16 rounded-[3px] bg-wall sm:h-[100px] sm:w-20" />}
             <div className="min-w-0">
               <h2 id="latest-h" className="eyebrow">Latest sale · {whenSold(latest.date)}</h2>
-              <b className="mt-1 block truncate text-[19px] sm:text-[22px]">{latest.title}</b>
-              <p className="text-[13.5px] text-ink-2">
+              <b className="t-card mt-1 block truncate">{latest.title}</b>
+              <p className="t-small">
                 {SIZE_LABEL[latest.size]}{latest.framed ? ", framed" : ""}{latest.quantity > 1 ? ` ×${latest.quantity}` : ""} · {usd(latest.priceCents)}
                 {latestX && <> · <Link href={customerHref(latestX.email)} className="font-semibold text-scan">{[latestX.first, latestX.city].filter(Boolean).join(", ")}</Link></>}
               </p>
             </div>
             <div className="grid justify-items-end self-center text-right">
-              <b className="display num text-[28px] leading-none text-earned sm:text-[34px]">+{usd(latest.shareCents)}</b>
-              <span className="mt-1 text-[12px] text-ink-2">your share</span>
+              <b className="num text-[22px] font-bold leading-none text-earned">+{usd(latest.shareCents)}</b>
+              <span className="t-small mt-1">your share</span>
             </div>
-          </section>
-
-          <section aria-label="Totals" className="af-card grid grid-cols-2 content-center gap-x-4 gap-y-3 p-4 sm:p-5">
-            <Total label={windowName ? `Earned, ${windowName}` : "Earned this month"} value={usd(windowName ? windowShare : thisMonth?.share || 0)} earned />
-            <Total label="Earned, all time" value={usd(total)} earned />
-            <Total label={windowName ? `Prints sold, ${windowName}` : "Prints sold"} value={prints.toLocaleString("en-US")} />
-            <Total label={windowName ? `In sales, ${windowName}` : "In sales"} value={usd(sales.reduce((n, s) => n + s.priceCents, 0))} />
-            <Link href="/studio/money" className="col-span-2 text-[13.5px] font-bold text-scan">Balance and payouts →</Link>
           </section>
         </div>
       )}
@@ -182,7 +185,7 @@ export default async function SalesPage({ searchParams }: { searchParams: { when
             <div className="-mx-1 overflow-x-auto px-1">
             <table className="num w-full border-collapse text-[14px]">
               <thead className="sr-only sm:not-sr-only">
-                <tr className="text-left text-[12px] text-ink-2">
+                <tr className="text-left text-[13px] text-ink-2">
                   <th className="pb-2 font-semibold">Date</th>
                   <th className="pb-2 font-semibold">Piece</th>
                   <th className="pb-2 font-semibold">Size</th>
@@ -218,7 +221,7 @@ export default async function SalesPage({ searchParams }: { searchParams: { when
                     <td className="hidden py-2.5 pr-3 text-right text-ink-2 sm:table-cell">{x ? `−${usd(x.expenses)}` : "-"}</td>
                     <td className="row-span-2 text-right sm:py-2.5">
                       <b className="block text-earned">+{usd(s.shareCents)}</b>
-                      <span className="whitespace-nowrap text-[11.5px] text-ink-2">{Math.round(s.split * 100)}%{bucket.get(s.id) ? ` · ${BUCKET_LABEL[bucket.get(s.id)!]}` : ""}</span>
+                      <span className="whitespace-nowrap text-[13px] text-ink-2">{Math.round(s.split * 100)}%{bucket.get(s.id) ? ` · ${BUCKET_LABEL[bucket.get(s.id)!]}` : ""}</span>
                     </td>
                     <td className="col-start-2 text-[13px] text-ink-2 sm:hidden">
                       {shortDate(s.date)} · {SIZE_LABEL[s.size]} · {usd(s.priceCents)}{x && <> · <span className="whitespace-nowrap">−{usd(x.expenses)} costs</span></>}
@@ -230,8 +233,11 @@ export default async function SalesPage({ searchParams }: { searchParams: { when
               </tbody>
             </table>
             </div>
-            <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 border-t border-line pt-3 text-[13px] text-ink-2">
-              <span>You get {pctNow}% of profit{splitNow > 0.6 ? " with Infinity" : ""}. Orders before Oct 21, 2026 paid 50%.</span>
+            <div className="t-small mt-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 border-t border-line pt-3">
+              <span className="max-w-[68ch]">
+                You get {pctNow}% of profit{splitNow > 0.6 ? " with Infinity" : ""}. Orders before Oct 21, 2026 paid 50%.
+                {" "}On hold means this month&apos;s sales, paid by {holdPaid}.
+              </span>
               {!showAll && <Link href={allHref} scroll={false} className="text-[14px] font-bold text-scan">Show all {sales.length}</Link>}
             </div>
           </section>
@@ -242,12 +248,12 @@ export default async function SalesPage({ searchParams }: { searchParams: { when
                 <li key={m.key} className={`grid gap-1.5 ${month && month !== m.key ? "opacity-50" : ""}`}>
                   <div className="flex items-baseline justify-between gap-3">
                     <Link href={`/studio/sales?when=${m.key}`} scroll={false} className="text-[15px] font-bold text-ink underline-offset-2 hover:underline">{m.name}</Link>
-                    <b className="num text-[17px] text-earned">{usd(m.share)}</b>
+                    <b className="num text-[17px] font-bold text-earned">{usd(m.share)}</b>
                   </div>
                   <div className="h-3 overflow-hidden rounded-full bg-wall" aria-hidden="true">
                     <div className="h-full rounded-full bg-earned" style={{ width: `${Math.max(4, (m.share / maxShare) * 100)}%` }} />
                   </div>
-                  <span className="num text-[13px] text-ink-2">{m.prints} {m.prints === 1 ? "print" : "prints"} · {usd(m.gross)} in sales</span>
+                  <span className="t-small num">{m.prints} {m.prints === 1 ? "print" : "prints"} · {usd(m.gross)} in sales</span>
                 </li>
               ))}
             </ul>
@@ -255,14 +261,5 @@ export default async function SalesPage({ searchParams }: { searchParams: { when
         </>
       )}
     </StudioPage>
-  );
-}
-
-function Total({ label, value, earned = false }: { label: string; value: string; earned?: boolean }) {
-  return (
-    <div className="grid min-w-0 gap-0.5">
-      <span className="truncate text-[13px] text-ink-2">{label}</span>
-      <b className={`display num truncate text-[24px] leading-tight sm:text-[28px] ${earned ? "text-earned" : ""}`}>{value}</b>
-    </div>
   );
 }

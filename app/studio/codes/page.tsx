@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { PaintChip } from "@/components/af/Brush";
 import { StudioPage } from "@/components/studio/StudioPage";
 import { EmptyState } from "@/components/studio/EmptyState";
 import HelpLink from "@/components/help/HelpLink";
@@ -21,7 +20,18 @@ function Thumb({ c }: { c: CodeRow }) {
     // eslint-disable-next-line @next/next/no-img-element
     <img src={c.artwork.imageUrl} alt={c.artwork.title} className="h-14 w-14 shrink-0 rounded-[3px] object-cover shadow-[0_2px_0_var(--af-line)]" />
   ) : (
-    <span className="grid h-14 w-14 shrink-0 place-items-center rounded-[3px] bg-wall text-center text-[11px] font-bold leading-tight text-ink-2 shadow-[0_2px_0_var(--af-line)]">Your<br />page</span>
+    <span className="grid h-14 w-14 shrink-0 place-items-center rounded-[3px] bg-wall text-center text-[12px] font-bold leading-tight text-ink-2 shadow-[0_2px_0_var(--af-line)]">Your<br />page</span>
+  );
+}
+
+/** One headline number, the same tile as the Studio home. Paint stays in the codes themselves. */
+function Stat({ label, value, note, earned }: { label: string; value: string; note: string; earned?: boolean }) {
+  return (
+    <div className="box grid min-w-0 content-start gap-1 p-4">
+      <span className="t-small font-semibold">{label}</span>
+      <b className={`num text-[26px] font-bold leading-tight tracking-[-0.01em] sm:text-[28px] ${earned ? "text-earned" : "text-ink"}`}>{value}</b>
+      <span className="t-small truncate">{note}</span>
+    </div>
   );
 }
 
@@ -40,12 +50,12 @@ function Printed({ c }: { c: CodeRow }) {
   const p = c.printLogs?.[0];
   if (!p) return null;
   const d = p.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" });
-  return <span className="text-[12px] font-semibold text-ink-2">{p.method === "mail" ? `Printed by us, shipped ${d}` : `Printed ${d}`}</span>;
+  return <span className="text-[13px] font-semibold text-ink-2">{p.method === "mail" ? `Printed by us, shipped ${d}` : `Printed ${d}`}</span>;
 }
 
 function Deal({ c }: { c: CodeRow }) {
   return (
-    <span className="flex flex-wrap items-center gap-1.5 text-[13px] text-ink-2">
+    <span className="t-small flex flex-wrap items-center gap-1.5">
       <b className="text-ink">{c.code}</b>
       {c.venue && <span>· {c.venue}</span>}
       {c.discountPct ? <span className="rounded-full bg-sticker px-2 py-0.5 font-bold text-ink">{c.discountPct}% off</span> : null}
@@ -71,22 +81,22 @@ export default async function CodesPage() {
         <EmptyState
           dab="#2b37f0"
           title="No codes yet"
-          body="Make a code, print it and hang it beside your work. Every code you print shows up here with its scans, sales and what you earned, and you can change where it points even after printing."
+          body="Make a code, print it and hang it beside your work. Each one shows its scans, sales and earnings here, and you can change where it points after printing."
           action={{ label: "Make a code", href: "/studio/qr" }}
           help={{ label: "Where to hang codes", href: "/help/getting-started/hanging-codes" }}
         />
       ) : (
         <>
           <section aria-labelledby="totals-h" className="grid gap-2">
-            <h2 id="totals-h" className="flex flex-wrap items-baseline justify-between gap-2 text-[13px] font-bold uppercase tracking-[0.08em] text-ink-2">
-              Last {WINDOW_DAYS} days
-              <span className="num text-[13px] font-semibold normal-case tracking-normal">{n(allScans)} scans all time</span>
-            </h2>
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 id="totals-h" className="eyebrow">Last {WINDOW_DAYS} days</h2>
+              <span className="t-small num font-semibold">{n(allScans)} scans all time</span>
+            </div>
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-              <PaintChip color="#2b37f0" value={n(win.scans)} label="scans" note="Ultramarine · every scan" />
-              <PaintChip color="#7b2d8e" value={n(win.people)} label="people scanned" note="Dioxazine · unique visitors" />
-              <PaintChip color="#e8743b" value={n(win.sales)} label="sales from codes" note={`Cadmium · ${pct(win.sales, win.scans)} of scans`} />
-              <PaintChip color="#0f7a55" value={usd(win.shareCents)} label="you earned" note="Viridian · from code sales" earned />
+              <Stat label="Scans" value={n(win.scans)} note="Every scan counted" />
+              <Stat label="People" value={n(win.people)} note="Different phones" />
+              <Stat label="Sales from codes" value={n(win.sales)} note={`${pct(win.sales, win.scans)} of scans`} />
+              <Stat label="You earned" value={usd(win.shareCents)} note="From code sales" earned />
             </div>
           </section>
 
@@ -98,7 +108,7 @@ export default async function CodesPage() {
                   <div className="flex items-start gap-3">
                     <Thumb c={c} />
                     <div className="grid min-w-0 flex-1 gap-1">
-                      <b className="truncate text-[16px]">{c.label || c.artwork?.title || "Your page"}</b>
+                      <b className="t-card truncate">{c.label || c.artwork?.title || "Your page"}</b>
                       <Deal c={c} />
                       <Printed c={c} />
                     </div>
@@ -108,7 +118,7 @@ export default async function CodesPage() {
                     {([["scans", n(c.stats.scans)], ["7 days", n(c.stats.scans7)], ["sales", n(c.stats.sales)], ["earned", usd(c.stats.shareCents)]] as const).map(([l, v], i) => (
                       <div key={l} className="grid gap-0.5">
                         <dd className={`num text-[16px] font-bold ${i === 3 ? "text-earned" : ""}`}>{v}</dd>
-                        <dt className="text-[11.5px] text-ink-2">{l}</dt>
+                        <dt className="text-[13px] text-ink-2">{l}</dt>
                       </div>
                     ))}
                   </dl>
@@ -121,7 +131,7 @@ export default async function CodesPage() {
           <div className="af-card hidden overflow-x-auto md:block">
             <table className="w-full min-w-[860px] text-left text-[14px]">
               <caption className="sr-only">Your codes and what they did</caption>
-              <thead className="border-b border-line text-[12px] text-ink-2">
+              <thead className="border-b border-line text-[13px] text-ink-2">
                 <tr>
                   <th scope="col" className="px-4 py-3 font-semibold">Code</th>
                   <th scope="col" className="px-3 py-3 text-right font-semibold">Scans</th>
@@ -143,7 +153,7 @@ export default async function CodesPage() {
                         <span className="grid min-w-0 gap-0.5">
                           <b className="max-w-[260px] truncate">{c.label || c.artwork?.title || "Your page"}</b>
                           <Deal c={c} />
-                          <span className="text-[12px] text-ink-2">Made {date(c.createdAt)}</span>
+                          <span className="text-[13px] text-ink-2">Made {date(c.createdAt)}</span>
                           <Printed c={c} />
                         </span>
                       </Link>

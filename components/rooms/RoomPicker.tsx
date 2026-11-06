@@ -144,7 +144,7 @@ export default function RoomPicker({ art, arts }: { art: Art; arts: { slug: stri
                 <label key={s.key} className={cn("grid cursor-pointer justify-items-center rounded-xl border-2 px-1 py-1.5 text-center transition focus-within:ring-2 focus-within:ring-scan", on ? "border-ink bg-wall" : "border-line hover:border-ink/40")}>
                   <input type="radio" name="room-size" className="sr-only" checked={on} onChange={() => setSize(s.key)} />
                   <span className="text-[13px] font-bold leading-tight">{s.label}</span>
-                  <span className="num text-[12px] text-ink-2">{a}×{b}</span>
+                  <span className="num text-[13px] text-ink-2">{a}×{b}</span>
                 </label>
               );
             })}
@@ -191,7 +191,7 @@ export default function RoomPicker({ art, arts }: { art: Art; arts: { slug: stri
                   <button type="button" onClick={() => setFocus(i)} className={cn("block w-full overflow-hidden rounded-lg border-2 transition", focus === i ? "border-ink" : "border-transparent")} aria-label={`Show ${sceneLabel(n)}`}>
                     <RoomScene scene={n} slug={art.slug} sizes="96px" imageUrl={art.imageUrl} aspect={aspect} size={size} frame={frame} blur={blur} />
                   </button>
-                  <span className="pointer-events-none absolute left-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-sticker text-[11px] font-bold text-ink shadow-[0_0_0_1.5px_#15161b]">{i + 1}</span>
+                  <span className="pointer-events-none absolute left-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-sticker text-[12px] font-bold text-ink shadow-[0_0_0_1.5px_#15161b]">{i + 1}</span>
                   <div className="mt-1 flex justify-between">
                     <button type="button" onClick={() => move(i, -1)} disabled={i === 0} aria-label={`Move room ${i + 1} earlier`} className="grid h-7 w-7 place-items-center rounded-full text-ink-2 hover:bg-wall hover:text-ink disabled:opacity-25">
                       <svg viewBox="0 0 20 20" width="14" height="14" aria-hidden><path d="M12.5 4.5 7 10l5.5 5.5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -285,7 +285,7 @@ export default function RoomPicker({ art, arts }: { art: Art; arts: { slug: stri
                     blur={blur}
                     className="transition duration-300 group-hover:scale-[1.02]"
                   />
-                  <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/45 to-transparent truncate px-2 pb-1.5 pt-5 text-[12px] font-semibold text-white">{label}</span>
+                  <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/45 to-transparent truncate px-2 pb-1.5 pt-5 text-[13px] font-semibold text-white">{label}</span>
                   {on ? (
                     <span className="sticker-badge absolute right-1.5 top-1.5 !px-2 !py-0.5 !text-[12px]">{at + 1}</span>
                   ) : (

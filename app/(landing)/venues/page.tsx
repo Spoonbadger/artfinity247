@@ -61,9 +61,9 @@ export default async function VenuesIndex({ searchParams }: { searchParams?: Rec
                       </div>
                       <div className="grid gap-0.5">
                         <span className="eyebrow">{hood(v)}</span>
-                        <b className="text-[18px] group-hover:text-scan">{v.name}</b>
-                        {v.address && <span className="text-[13.5px] text-ink-2">{v.address}</span>}
-                        <span className="text-[13.5px] text-ink-2">
+                        <b className="t-card group-hover:text-scan">{v.name}</b>
+                        {v.address && <span className="t-small">{v.address}</span>}
+                        <span className="t-small">
                           {v.pieces ? `${v.pieces} ${v.pieces === 1 ? "piece" : "pieces"}` : "New art soon"}
                           {v.artists.length ? ` · ${v.artists.slice(0, 3).join(", ")}${v.artists.length > 3 ? ` and ${v.artists.length - 3} more` : ""}` : ""}
                         </span>
@@ -75,7 +75,7 @@ export default async function VenuesIndex({ searchParams }: { searchParams?: Rec
           </>
         ) : (
           <EmptyCanvas title="Venues coming soon">
-            <p className="text-ink-2">We&apos;re hanging art in cafés and shops around the city.</p>
+            <p className="t-muted">We&apos;re hanging art in cafés and shops around the city.</p>
           </EmptyCanvas>
         )}
       </div>

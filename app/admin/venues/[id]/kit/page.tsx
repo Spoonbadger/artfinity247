@@ -49,7 +49,7 @@ export default async function VenueKitPage({ params, searchParams }: { params: {
       </div>
 
       {/* Page 1: window sticker */}
-      <section aria-label="Window sticker" className="kit-page grid min-h-[10in] grid-cols-[minmax(0,1fr)] place-items-center rounded-2xl border border-line bg-white p-4 shadow-sm sm:p-6">
+      <section aria-label="Window sticker" className="kit-page grid min-h-[10in] grid-cols-[minmax(0,1fr)] place-items-center rounded-2xl border border-edge bg-white p-4 shadow-sm sm:p-6">
         <div className="grid w-full max-w-[6in] justify-items-center gap-4 rounded-[28px] border-[6px] border-ink bg-sticker px-5 pb-7 pt-8 text-center text-ink sm:px-8">
           <p className="display text-[44px] leading-[0.9] sm:text-[64px]">Local art here</p>
           <p className="text-[22px] font-bold">Scan to buy a print</p>
@@ -65,7 +65,7 @@ export default async function VenueKitPage({ params, searchParams }: { params: {
       </section>
 
       {/* Page 2: thank-you note */}
-      <section aria-label="Thank-you note" className="kit-page min-h-[10in] rounded-2xl border border-line bg-white p-8 shadow-sm sm:p-12">
+      <section aria-label="Thank-you note" className="kit-page min-h-[10in] rounded-2xl border border-edge bg-white p-8 shadow-sm sm:p-12">
         <div className="mx-auto grid max-w-[6.5in] gap-5 text-[16px] leading-relaxed text-ink">
           <Logo href={null} className="text-[26px]" />
           <h1 className="display text-[40px]">Thank you, {v.name}.</h1>

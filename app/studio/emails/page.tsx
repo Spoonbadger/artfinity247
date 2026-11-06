@@ -33,7 +33,6 @@ export default async function EmailsPage() {
   return (
     <StudioPage
       title="Buyer emails"
-      sub="What buyers get, in your words."
       actions={
         <Link href="/studio/customers" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />Customers

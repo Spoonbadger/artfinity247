@@ -20,6 +20,11 @@ type RunResult = {
 
 const monthsText = (ms: ReadyMonth[]) => ms.map((m) => monthLabel(m.month).split(" ")[0]).join(", ");
 const sum = (rs: Ready[]) => rs.reduce((n, r) => n + r.totalCents, 0);
+/** What pressing Pay does, in one line: shown above the button and again in the confirm. */
+const payLine = (rs: Ready[], mode?: Mode) =>
+  mode === "simulated"
+    ? `Test mode: marks ${usd(sum(rs))} to ${rs.length} ${rs.length === 1 ? "artist" : "artists"} as paid and sends the emails. No money moves.`
+    : `Sends ${usd(sum(rs))} from the Stripe balance to ${rs.length} ${rs.length === 1 ? "artist" : "artists"} now. Each is emailed. Transfers can't be undone.`;
 
 export default function PayAllPanel() {
   const router = useRouter();
@@ -46,7 +51,7 @@ export default function PayAllPanel() {
   const canPay = allowed && data?.mode !== "off" && stripe.length > 0;
 
   const run = async () => {
-    if (!confirm(`Send ${usd(sum(stripe))} to ${stripe.length} ${stripe.length === 1 ? "artist" : "artists"} through Stripe? They'll get an email.`)) return;
+    if (!confirm(`${payLine(stripe, data?.mode)}\n\nGo ahead?`)) return;
     setBusy(true);
     try {
       const r = await fetch("/api/admin/payouts/pay-all", { method: "POST" });
@@ -70,7 +75,7 @@ export default function PayAllPanel() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 id="payall-h" className="t-card">Ready to pay</h2>
-          <p className="text-[13.5px] text-ink-2">Every closed, unpaid month. Same amounts artists see.</p>
+          {canPay && <p className="t-small mt-1">{payLine(stripe, data?.mode)}</p>}
         </div>
         <button type="button" onClick={run} disabled={!canPay || busy} title={allowed ? undefined : "Payouts need the admin or owner role."} className="btn btn-blue">
           {busy ? "Sending…" : stripe.length ? `Pay ${stripe.length} by Stripe · ${usd(sum(stripe))}` : "Pay all by Stripe"}
@@ -78,16 +83,16 @@ export default function PayAllPanel() {
       </div>
 
       {data?.mode === "simulated" && (
-        <p className="rounded-[4px] bg-sticker/50 px-3 py-2 text-[13.5px]"><b>Stripe isn&apos;t set up here.</b> Transfers are simulated, so you can try the flow. No money moves.</p>
+        <p className="rounded-[4px] bg-sticker/50 px-3 py-2 text-[13.5px]"><b>Test mode.</b> Transfers are simulated. No money moves.</p>
       )}
       {data?.mode === "off" && (
-        <p className="rounded-[4px] bg-sticker/50 px-3 py-2 text-[13.5px]"><b>Stripe isn&apos;t set up.</b> Add STRIPE_SECRET_KEY to pay connected artists automatically. Venmo still works by hand.</p>
+        <p className="rounded-[4px] bg-sticker/50 px-3 py-2 text-[13.5px]"><b>Stripe isn&apos;t set up.</b> Add STRIPE_SECRET_KEY to pay by Stripe. Venmo still works by hand.</p>
       )}
 
       {result?.insufficientFunds && (
         <div role="alert" className="grid gap-1 rounded-[4px] border-2 border-coral bg-[#fff1ed] px-4 py-3 text-[14px]">
           <b>Not enough money in your Stripe balance.</b>
-          <span>Add funds in Stripe (Balance → Add to balance) or wait for recent sales to become available, then press Pay all again. Paid months are skipped.</span>
+          <span>Add funds in Stripe (Balance → Add to balance) or wait for sales to clear, then pay again. Paid months are skipped.</span>
         </div>
       )}
       {result && (result.paid.length > 0 || result.failed.length > 0) && (
@@ -106,19 +111,17 @@ export default function PayAllPanel() {
       ) : !data ? (
         <p className="text-ink-2">Loading…</p>
       ) : data.ready.length === 0 ? (
-        <p className="flex items-center gap-2 text-[14px] font-semibold"><i className="paint-dab h-3 w-3" style={{ ["--dab" as string]: "var(--af-earned)" }} />Everyone&apos;s paid.</p>
+        <p className="text-[15px] font-semibold">Everyone&apos;s paid.</p>
       ) : (
         <div className="grid items-start gap-4 md:grid-cols-2">
           <Group
             title="Stripe: automatic"
-            dab="var(--af-earned)"
             empty="No connected artists waiting."
             rows={stripe}
-            right={(r) => r.months.some((m) => m.failureReason) ? <span className="text-[12px] font-semibold text-coral">Last try failed</span> : null}
+            right={(r) => r.months.some((m) => m.failureReason) ? <span className="text-[13px] font-semibold text-coral">Last try failed</span> : null}
           />
           <Group
             title="Venmo: pay by hand"
-            dab="var(--af-sticker)"
             empty="No one to pay by hand."
             rows={venmo}
             note="Send it in Venmo, then Mark paid below."
@@ -130,11 +133,11 @@ export default function PayAllPanel() {
   );
 }
 
-function Group({ title, dab, rows, empty, note, right }: { title: string; dab: string; rows: Ready[]; empty: string; note?: string; right: (r: Ready) => React.ReactNode }) {
+function Group({ title, rows, empty, note, right }: { title: string; rows: Ready[]; empty: string; note?: string; right: (r: Ready) => React.ReactNode }) {
   return (
-    <div className="af-panel grid content-start gap-2 p-3.5">
+    <div className="box-inset grid content-start gap-2 p-3.5">
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="flex items-center gap-2 text-[15px] font-bold"><i className="paint-dab h-3 w-3" style={{ ["--dab" as string]: dab }} />{title}</h3>
+        <h3 className="text-[15px] font-bold">{title}</h3>
         <span className="num text-[13px] text-ink-2">{rows.length} · <b className="text-earned">{usd(sum(rows))}</b></span>
       </div>
       {rows.length === 0 ? (
@@ -150,7 +153,7 @@ function Group({ title, dab, rows, empty, note, right }: { title: string; dab: s
               <span className="shrink-0 text-right">
                 <b className="num block text-earned">{usd(r.totalCents)}</b>
                 {r.months.some((m) => m.adjustmentCents) && (
-                  <span className="num block text-[11.5px] font-semibold text-coral" title="A paid-out refund comes off this payout (Settings → Refunds after a payout).">
+                  <span className="num block text-[13px] font-semibold text-coral" title="A paid-out refund comes off this payout (Settings → Refunds after a payout).">
                     after {usd(r.months.reduce((n, m) => n + (m.adjustmentCents ?? 0), 0))} refund adj.
                   </span>
                 )}

@@ -22,11 +22,11 @@ export default async function RoomsPage({ searchParams }: { searchParams: { art?
 
   if (!arts.length) {
     return (
-      <StudioPage title="Rooms" sub="Your art, on real walls.">
+      <StudioPage title="Rooms">
         <EmptyState
           dab="#5bc0be"
           title="Upload art first"
-          body="Buyers see each print on a real wall. We pick the rooms, or you can."
+          body="Buyers see each print hanging in a real room. We pick the rooms, or you can."
           action={{ label: "Upload art", href: "/studio/art/new" }}
         />
       </StudioPage>

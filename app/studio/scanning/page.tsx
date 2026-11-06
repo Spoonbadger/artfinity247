@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { StudioPage } from "@/components/studio/StudioPage";
@@ -66,8 +65,8 @@ export default async function StudioScanningPage({ searchParams }: { searchParam
   return (
     <StudioPage
       title="Painting scans"
-      sub={s.enabled ? "We scan your originals in NYC and put the files straight onto your artworks, so every print size is sharp." : "Coming soon: we scan your originals in NYC so every print size is sharp."}
-      actions={<><HelpLink href={HELP} /><Link href="/scanning" className="btn btn-ghost btn-sm">How it works</Link></>}
+      sub={s.enabled ? "We scan your originals in NYC so every print size is sharp." : undefined}
+      actions={<HelpLink href={HELP} />}
     >
       {paidView && <PaymentReturn kind="paid" message={`Paid ${usd(paidView.priceCents ?? 0)}${paidView.test ? " (test)" : ""}`} description="Your scan date is locked in. We emailed the details." strip={["paid", "session_id"]} />}
       {canceledView && (
@@ -75,8 +74,8 @@ export default async function StudioScanningPage({ searchParams }: { searchParam
           <PaymentReturn kind="canceled" message="Nothing was charged" strip={["canceled"]} />
           <div role="status" className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-scan/30 bg-scan-soft px-4 py-3">
             <div className="min-w-0 flex-1">
-              <p className="text-[14.5px] font-bold">Nothing was charged</p>
-              <p className="text-[13.5px] text-ink-2">You left Stripe before paying. Paying locks in your date.</p>
+              <p className="t-card">Nothing was charged</p>
+              <p className="t-small">You left Stripe before paying. Paying locks in your date.</p>
             </div>
             <ScanPayButton id={canceledView.id} priceCents={canceledView.priceCents!} />
           </div>
@@ -85,8 +84,8 @@ export default async function StudioScanningPage({ searchParams }: { searchParam
       {!s.enabled && (
         <EmptyState
           dab="var(--af-scan)"
-          title="Coming soon — join the waitlist"
-          body={<>Phone photo too small for big prints? We&apos;ll scan the original, high-res and colour-accurate, and the file goes straight onto your artwork. Scanning isn&apos;t open yet: {waiting ? "you're on the list, and we'll email you when it opens." : "leave your email and we'll tell you the day it opens."}</>}
+          title="Painting scans are coming soon"
+          body={<>Phone photo too small for big prints? We&apos;ll scan the original in NYC and put the file straight onto your artwork. {waiting ? "You're on the list. We'll email you when it opens." : "Leave your email and we'll tell you the day it opens."}</>}
           secondary={{ label: "See how it works", href: "/scanning" }}
           help={{ label: "Getting your paintings scanned", href: HELP }}
         >

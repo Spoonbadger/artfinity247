@@ -180,7 +180,7 @@ function ShopCard({ data, theme }: { data: LinksPageData; theme: LinksTheme }) {
                 <a href={t.slug ? artPath(data.slug, t.slug) : artistPath(data.slug)} className="relative block aspect-square overflow-hidden rounded-[10px] bg-black/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={t.imageUrl} alt={t.title} loading="lazy" className={cn("h-full w-full object-cover transition group-hover:scale-105", blur && "sensitive-blur")} />
-                  {blur && <span className="absolute inset-0 grid place-items-center bg-black/25 p-1 text-center text-[11px] font-bold text-white">{t.sensitive[0]}</span>}
+                  {blur && <span className="absolute inset-0 grid place-items-center bg-black/25 p-1 text-center text-[12px] font-bold text-white">{t.sensitive[0]}</span>}
                 </a>
               </li>
             );

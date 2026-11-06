@@ -42,7 +42,7 @@ const SubscribeForm = ({
 
   return (
     <div className={cn("area-content space-y-2", className)}>
-      <div>{msg && <p className="area-text text-start text-xs">{msg}</p>}</div>
+      <div>{msg && <p className="area-text text-start text-[13px]">{msg}</p>}</div>
       <Form {...form}>
         <form
           method="POST"

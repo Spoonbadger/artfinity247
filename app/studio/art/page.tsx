@@ -45,7 +45,7 @@ export default async function MyArtPage() {
   return (
     <StudioPage
       title="My art"
-      sub={items.length ? `${live} live${inReview ? ` · ${inReview} in review` : ""}` : undefined}
+      sub={items.length ? `${live} live${inReview ? ` · ${inReview} in review, usually live within a day` : ""}` : undefined}
       actions={
         // With nothing uploaded yet the empty state below carries the one Upload button.
         items.length > 0 && (

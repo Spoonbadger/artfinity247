@@ -200,7 +200,7 @@ export default function LocationInput({
           </span>
         </li>
       ))}
-      {usingGoogle && <li role="presentation" className="px-2.5 pb-1 pt-1.5 text-right text-[11px] text-ink-2">Powered by Google</li>}
+      {usingGoogle && <li role="presentation" className="px-2.5 pb-1 pt-1.5 text-right text-[12px] text-ink-2">Powered by Google</li>}
     </ul>
   );
 
@@ -227,7 +227,7 @@ export default function LocationInput({
           inputRef.current?.focus();
         }}
       >
-        {label && <label htmlFor={fid} className="text-xs text-ink-2">{label}</label>}
+        {label && <label htmlFor={fid} className="text-[13px] text-ink-2">{label}</label>}
         <span className="flex min-w-0 items-baseline">{input}</span>
       </div>
       {list}

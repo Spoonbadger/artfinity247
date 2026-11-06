@@ -474,12 +474,12 @@ export default function SceneAnnotator({ photos, annotations, arts, writable }: 
         <section className="grid content-start gap-2">
           <div className="flex flex-wrap items-center gap-2 text-[13px]">
             <strong className="text-[15px]">{photo.id}</strong>
-            {photo.source === "fixture" ? <span className="rounded bg-[#b0124a] px-1.5 py-0.5 text-[11px] font-bold text-white">SYNTHETIC FIXTURE · not a photo</span> : null}
+            {photo.source === "fixture" ? <span className="rounded bg-[#b0124a] px-1.5 py-0.5 text-[12px] font-bold text-white">SYNTHETIC FIXTURE · not a photo</span> : null}
             {credit && <span className="text-ink-2">{credit}</span>}
             <span className="text-ink-2">
               {photo.w}×{photo.h}
             </span>
-            <span className="ml-auto rounded-full bg-ink px-2.5 py-0.5 text-[12px] font-semibold text-white">
+            <span className="ml-auto rounded-full bg-ink px-2.5 py-0.5 text-[13px] font-semibold text-white">
               {mode === "quad" ? `Click wall corner ${Math.min(4, draft.quad.length + 1)} of 4` : mode === "anchor" ? "Click the print's center" : mode === "alt" ? "Click an alternate spot (left/right)" : mode === "ref" ? (draft.ref.a && !draft.ref.b ? "Click the top of the object" : "Click the bottom (floor) of the object") : mode === "ref2" ? "Click both ends of the width reference" : "Drag handles to adjust"}
             </span>
           </div>
@@ -599,7 +599,7 @@ export default function SceneAnnotator({ photos, annotations, arts, writable }: 
               ].map((s) => (
                 <li key={s.k}>
                   <button type="button" onClick={() => setMode(s.m)} className={cn("flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left", mode === s.m ? "bg-wall" : "hover:bg-wall")}>
-                    <span className={cn("grid h-5 w-5 place-items-center rounded-full text-[11px] font-bold", s.ok ? "bg-[#0f7a55] text-white" : "bg-sticker text-ink")}>{s.ok ? "✓" : s.k}</span>
+                    <span className={cn("grid h-5 w-5 place-items-center rounded-full text-[12px] font-bold", s.ok ? "bg-[#0f7a55] text-white" : "bg-sticker text-ink")}>{s.ok ? "✓" : s.k}</span>
                     {s.label}
                   </button>
                 </li>
@@ -661,7 +661,7 @@ export default function SceneAnnotator({ photos, annotations, arts, writable }: 
                   Draw (H)
                 </button>
                 {draft.ref2.a && (
-                  <button type="button" className="text-[12px] underline" onClick={() => set((d) => ({ ...d, ref2: { ...d.ref2, a: null, b: null } }))}>
+                  <button type="button" className="text-[13px] underline" onClick={() => set((d) => ({ ...d, ref2: { ...d.ref2, a: null, b: null } }))}>
                     clear
                   </button>
                 )}

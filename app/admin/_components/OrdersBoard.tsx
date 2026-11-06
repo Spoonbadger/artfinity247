@@ -65,7 +65,8 @@ const FILTERS: { id: Filter; label: string; test: (o: AdminOrder) => boolean }[]
   { id: "done", label: "Shipped", test: (o) => o.shippingStatus !== "pending" },
 ];
 
-const SHIP_DAB: Record<string, string> = { pending: "var(--af-sticker)", shipped: "var(--af-scan)", delivered: "var(--af-earned)" };
+// Status dot in the shipping select (a plain dot: admin keeps paint for the logo and the active nav item).
+const SHIP_DOT: Record<string, string> = { pending: "#e3b23c", shipped: "var(--af-scan)", delivered: "var(--af-earned)" };
 
 /** Full-resolution original for the printer (private, admin-only route). Without an artwork, the public file is all there is. */
 function downloadUrl(item: AdminOrderItem) {
@@ -126,7 +127,7 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
   const bulkSent = async () => {
     const ids = shownSelected.filter((o) => !o.sentToPrinter).map((o) => o.id);
     if (!ids.length) return toast.message("Those are already marked as at the printer.");
-    if (!confirm(`Mark ${ids.length} order${ids.length === 1 ? "" : "s"} as sent to the printer?`)) return;
+    if (!confirm(`Marks ${ids.length} order${ids.length === 1 ? "" : "s"} as sent to the printer. This only records it: the lab isn't contacted and nobody is emailed.`)) return;
     setBusy("bulk");
     try {
       const r = await fetch("/api/admin/orders/bulk", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids, action: "sent" }) });
@@ -185,6 +186,8 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
       return;
     }
     const prev = o.shippingStatus;
+    // Delivered emails the buyer and asks for a review: say so before it goes.
+    if (status === "delivered" && prev !== "delivered" && !confirm(`Marks the order delivered. ${o.shippingName || o.email} gets ${prev === "shipped" ? "the delivered email and " : ""}a review request now. Emails can't be unsent.`)) return;
     setBusy(o.id);
     patch(o.id, { shippingStatus: status });
     try {
@@ -215,7 +218,7 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
             onClick={() => setFilter(f.id)}
             className={cn(
               "min-h-[40px] rounded-full border-[1.5px] px-3.5 text-[14px] font-semibold transition",
-              filter === f.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"
+              filter === f.id ? "border-ink bg-ink text-white" : "border-edge-strong bg-white text-ink hover:border-ink"
             )}
           >
             {f.label} <span className="num ml-1 opacity-70">{counts[f.id]}</span>
@@ -239,14 +242,13 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
         </div>
       )}
 
-      <div className="overflow-hidden rounded-2xl border border-line bg-white">
+      <div className="overflow-hidden rounded-2xl border border-edge bg-white">
         <div className="hidden grid-cols-[120px_minmax(0,1.3fr)_minmax(0,1fr)_100px_150px_150px] gap-4 border-b border-line bg-wall/60 px-4 py-2.5 text-[12px] font-bold uppercase tracking-[0.06em] text-ink-2 lg:grid">
           <span>Prints</span>{sortHead("date", "Order date", "desc")}<span>Items</span>{sortHead("total", "Total", "desc", true)}<span>Printer</span><span>Shipping</span>
         </div>
 
         {shown.length === 0 && (
           <div className="grid justify-items-center gap-2 px-4 py-14 text-center">
-            <span className="paint-dab h-6 w-6" style={{ ["--dab" as string]: "var(--af-sticker)" }} />
             <p className="font-semibold">{filter === "print" && !t.active ? "Nothing to print" : "Nothing here"}</p>
             <p className="text-[14px] text-ink-2">{t.active ? <button type="button" onClick={t.clear} className="font-semibold text-scan underline">Clear filters</button> : "Try another month or filter."}</p>
           </div>
@@ -266,7 +268,7 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={i.imageUrl} alt={i.title} className={cn("h-full w-full object-cover", i.sensitive.length > 0 && "blur-[3px]")} loading="lazy" />
                         )}
-                        {i.quantity > 1 && <span className="num absolute bottom-0.5 right-0.5 rounded-full bg-ink px-1.5 text-[10.5px] font-bold text-white">×{i.quantity}</span>}
+                        {i.quantity > 1 && <span className="num absolute bottom-0.5 right-0.5 rounded-full bg-ink px-1.5 text-[12px] font-bold text-white">×{i.quantity}</span>}
                       </div>
                     ))}
                     {o.items.length > 3 && <span className="self-center text-[13px] font-semibold text-ink-2">+{o.items.length - 3}</span>}
@@ -277,13 +279,13 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
                     <div className="flex flex-wrap items-baseline gap-x-2">
                       <input type="checkbox" checked={selected.has(o.id)} onChange={() => toggleSelect(o.id)} aria-label={`Select order from ${o.shippingName || o.email}`} className="h-4 w-4 self-center accent-[var(--af-ink)]" />
                       <Link href={`/admin/orders/${o.id}`} className="truncate text-[15px] font-bold text-ink hover:text-scan">{o.shippingName || o.email}</Link>
-                      {!!o.refundedItems && <span className="rounded-full bg-coral/15 px-2 text-[11.5px] font-bold text-coral">{o.refundedItems === o.items.length ? "Refunded" : "Part refunded"}</span>}
+                      {!!o.refundedItems && <span className="rounded-full bg-coral/15 px-2 text-[12px] font-bold text-coral">{o.refundedItems === o.items.length ? "Refunded" : "Part refunded"}</span>}
                       {o.kind === "reprint" ? (
-                        <span className="rounded-full bg-[#f3dcc8] px-2 text-[11.5px] font-bold text-ink" title="Free reprint for a damaged or wrong print. Artfinity pays. Not a sale, no payout.">Free reprint</span>
-                      ) : o.paymentStatus !== "paid" && <span className="rounded-full bg-coral/15 px-2 text-[11.5px] font-bold text-coral">{o.paymentStatus}</span>}
-                      {o.kind === "bulk" && <span className="rounded-full bg-sticker px-2 text-[11.5px] font-bold text-ink" title="Artist's own prints at cost. Not a sale, no payout.">Bulk</span>}
+                        <span className="rounded-full bg-[#f3dcc8] px-2 text-[12px] font-bold text-ink" title="Free reprint for a damaged or wrong print. Artfinity pays. Not a sale, no payout.">Free reprint</span>
+                      ) : o.paymentStatus !== "paid" && <span className="rounded-full bg-coral/15 px-2 text-[12px] font-bold text-coral">{o.paymentStatus}</span>}
+                      {o.kind === "bulk" && <span className="rounded-full bg-sticker px-2 text-[12px] font-bold text-ink" title="Artist's own prints at cost. Not a sale, no payout.">Bulk</span>}
                       {!!o.parcelNotes?.length && (
-                        <a href={`/admin/orders/${o.id}/slip`} target="_blank" rel="noopener" className="rounded-full bg-[#e6dcff] px-2 text-[11.5px] font-bold text-ink no-underline hover:underline" title="The artist wrote a note to print and put in the parcel">Parcel note</a>
+                        <a href={`/admin/orders/${o.id}/slip`} target="_blank" rel="noopener" className="rounded-full bg-[#e6dcff] px-2 text-[12px] font-bold text-ink no-underline hover:underline" title="The artist wrote a note to print and put in the parcel">Parcel note</a>
                       )}
                     </div>
                     <div className="truncate text-[13px] text-ink-2">
@@ -322,7 +324,7 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
                   {/* printer + shipping (one row on phones, two columns on desktop) */}
                   <div className="flex flex-wrap gap-1.5 lg:contents">
                   <div>
-                    <label className={cn("inline-flex cursor-pointer items-center gap-1.5 rounded-full border-[1.5px] px-2.5 py-1.5 text-[13px] sm:gap-2 sm:px-3 sm:text-[13.5px] font-semibold transition", o.sentToPrinter ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>
+                    <label className={cn("inline-flex cursor-pointer items-center gap-1.5 rounded-full border-[1.5px] px-2.5 py-1.5 text-[13px] sm:gap-2 sm:px-3 sm:text-[13.5px] font-semibold transition", o.sentToPrinter ? "border-ink bg-ink text-white" : "border-edge-strong bg-white text-ink hover:border-ink")}>
                       <input type="checkbox" className="sr-only" checked={o.sentToPrinter} disabled={busy === o.id} onChange={() => toggleSent(o)} />
                       <span aria-hidden="true" className={cn("grid h-4 w-4 place-items-center rounded-[4px] border-[1.5px]", o.sentToPrinter ? "border-white bg-white text-ink" : "border-ink-2")}>
                         {o.sentToPrinter && <svg viewBox="0 0 16 16" className="h-3 w-3"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg>}
@@ -335,7 +337,7 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
                   <div>
                     <label className="relative inline-flex items-center">
                       <span className="sr-only">Shipping status for {o.shippingName || o.email}</span>
-                      <span className="paint-dab pointer-events-none absolute left-3" style={{ ["--dab" as string]: SHIP_DAB[o.shippingStatus] ?? "var(--af-line)" }} />
+                      <span aria-hidden="true" className="pointer-events-none absolute left-3.5 h-2.5 w-2.5 rounded-full" style={{ background: SHIP_DOT[o.shippingStatus] ?? "var(--af-edge-strong)" }} />
                       <select
                         value={o.shippingStatus || "pending"}
                         disabled={busy === o.id}
@@ -379,7 +381,7 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
                     </div>
                     <div className="overflow-x-auto">
                       <table className="num w-full min-w-[460px] text-left">
-                        <thead className="text-[11.5px] uppercase tracking-[0.06em] text-ink-2">
+                        <thead className="text-[12px] uppercase tracking-[0.06em] text-ink-2">
                           <tr><th className="pb-1.5 font-bold">Print</th><th className="pb-1.5 text-right font-bold">Paid</th><th className="pb-1.5 text-right font-bold">Costs</th><th className="pb-1.5 text-right font-bold">Profit</th><th className="pb-1.5 text-right font-bold">Artist</th><th className="pb-1.5 text-right font-bold">Artfinity</th><th><span className="sr-only">Actions</span></th></tr>
                         </thead>
                         <tbody>
@@ -387,7 +389,7 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
                             <tr key={i.id} className="border-t border-line">
                               <td className="py-1.5 pr-2">
                                 {i.slug ? <Link href={i.artistSlug ? artPath(i.artistSlug, i.slug) : `/art/${encodeURIComponent(i.slug)}`} className="font-semibold text-ink hover:text-scan">{i.title}</Link> : <b>{i.title}</b>}
-                                <div className="text-[12px] text-ink-2">{i.artistName}{i.quantity > 1 ? ` · ×${i.quantity}` : ""}</div>
+                                <div className="t-small">{i.artistName}{i.quantity > 1 ? ` · ×${i.quantity}` : ""}</div>
                               </td>
                               <td className="py-1.5 text-right">{usd(i.lineTotal)}</td>
                               <td className="py-1.5 text-right text-ink-2">{usd(i.expenses)}</td>
@@ -429,15 +431,15 @@ export default function OrdersBoard({ orders: initial, printerAuto = false, init
 function PrinterLine({ o, busy, onRetry }: { o: AdminOrder; busy: boolean; onRetry: () => void }) {
   const p = o.printer;
   if (!p || p.status === "none") return null;
-  if (p.status === "sending") return <p className="mt-1 text-[12px] text-ink-2">Sending to printer…</p>;
+  if (p.status === "sending") return <p className="t-small mt-1">Sending to printer…</p>;
   if (p.status === "failed") {
     return (
-      <button type="button" disabled={busy} onClick={onRetry} title={p.error || undefined} className="mt-1 block text-left text-[12px] font-semibold text-coral hover:underline">
+      <button type="button" disabled={busy} onClick={onRetry} title={p.error || undefined} className="mt-1 block text-left text-[13px] font-semibold text-coral hover:underline">
         Couldn&apos;t send to printer — Retry
       </button>
     );
   }
-  return <p className="mt-1 text-[12px] leading-snug text-ink-2" title={p.at ? `Sent automatically ${when(p.at)}` : undefined}>Auto-sent{p.at ? ` ${new Date(p.at).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" })}` : ""}</p>;
+  return <p className="t-small mt-1" title={p.at ? `Sent automatically ${when(p.at)}` : undefined}>Auto-sent{p.at ? ` ${new Date(p.at).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" })}` : ""}</p>;
 }
 
 function ShipForm({ busy, onSubmit, onCancel }: { busy: boolean; onSubmit: (t: { carrier: Carrier; trackingNumber: string; trackingUrl?: string }) => void; onCancel: () => void }) {

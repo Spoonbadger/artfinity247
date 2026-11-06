@@ -15,7 +15,7 @@ export default async function EventsPage() {
   });
   const events = rows.map((e) => ({ ...e, createdAt: e.createdAt.toISOString() }));
   return (
-    <StudioPage title="Events" sub="Markets, shows, open studios.">
+    <StudioPage title="Events" sub={<>Markets, shows, open studios. Buyers see them on your page under &ldquo;See it in person&rdquo;.</>}>
       <EventsBoard initial={events} />
     </StudioPage>
   );

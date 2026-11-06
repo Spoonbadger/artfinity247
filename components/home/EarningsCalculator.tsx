@@ -6,6 +6,7 @@ import { Swatch } from "@/components/af/Brush";
 import { cn } from "@/lib/utils";
 import PaintBar from "@/components/motion/PaintBar";
 import { useTween } from "@/components/motion/useTween";
+import { FREE_SPLIT, pct } from "@/lib/plans";
 
 const SIZES: SizeKey[] = ["small", "medium", "large", "xl"];
 const SWATCH: Record<SizeKey, string> = { small: "#f3c969", medium: "#e98a5b", large: "#5b74c9", xl: "#2f3a68" };
@@ -37,7 +38,7 @@ export default function EarningsCalculator({ compact = false }: { compact?: bool
               >
                 <Swatch color={SWATCH[s]} className="h-7 sm:h-9" />
                 <b className="px-0.5 text-[14px] leading-tight sm:text-[15px]">{SIZE_NAME[s]}</b>
-                <span className="num px-0.5 text-[11.5px] leading-tight text-ink-2">{SIZE_INCHES[s]}</span>
+                <span className="num px-0.5 text-[13px] leading-tight text-ink-2">{SIZE_INCHES[s]}</span>
               </button>
             ))}
           </div>
@@ -54,16 +55,16 @@ export default function EarningsCalculator({ compact = false }: { compact?: bool
 
       <div className="af-card relative grid gap-1 p-6 shadow-[8px_8px_0_var(--af-ink)] sm:p-7">
         <span className="sr-only" aria-live="polite">{`About ${moneyRound(month)} a month, ${money(b.artist)} a print.`}</span>
-        <span className="text-[15px] text-ink-2" aria-hidden="true">You’d earn about</span>
-        <b className="display num text-[64px] text-earned sm:text-[84px]" aria-hidden="true">{moneyRound(shownMonth)}</b>
-        <span className="text-[15px] text-ink-2" aria-hidden="true">a month · <b className="num text-earned">{money(Math.round(shownPrint))}</b> a print</span>
+        <span className="t-muted" aria-hidden="true">You’d earn about</span>
+        <b className="t-num text-earned" aria-hidden="true">{moneyRound(shownMonth)}</b>
+        <span className="t-muted" aria-hidden="true">a month · <b className="num text-earned">{money(Math.round(shownPrint))}</b> a print</span>
         <PaintBar
           className="mt-4 h-9"
           segs={[
             { label: "Printing and shipping", value: b.cost, color: "#cfc9bc" },
             { label: "Card fee and hosting", value: b.fee + b.hosting, color: "#a9a397" },
-            { label: "Artfinity 40%", value: b.company, color: "var(--af-ink)" },
-            { label: "You 60%", value: b.artist, color: "var(--af-earned)" },
+            { label: `Artfinity ${pct(1 - FREE_SPLIT)}`, value: b.company, color: "var(--af-ink)" },
+            { label: `You ${pct(FREE_SPLIT)}`, value: b.artist, color: "var(--af-earned)" },
           ]}
         />
         <table className="num mt-4 w-full border-collapse text-[14px]">
@@ -71,8 +72,8 @@ export default function EarningsCalculator({ compact = false }: { compact?: bool
             <tr className="border-t border-line"><td className="py-1.5">{SIZE_NAME[size]} print price</td><td className="py-1.5 text-right">{money(b.price)}</td></tr>
             <tr className="border-t border-line"><td className="py-1.5 text-ink-2">Printing and shipping</td><td className="py-1.5 text-right text-ink-2">−{money(b.cost)}</td></tr>
             <tr className="border-t border-line"><td className="py-1.5 text-ink-2">Card fee and hosting</td><td className="py-1.5 text-right text-ink-2">−{money(b.fee + b.hosting)}</td></tr>
-            <tr className="border-t border-line"><td className="py-1.5">Profit, split 60/40</td><td className="py-1.5 text-right">{money(b.profit)}</td></tr>
-            <tr className="border-t-2 border-ink font-bold text-earned"><td className="pt-2">Your 60%</td><td className="pt-2 text-right">{money(b.artist)}</td></tr>
+            <tr className="border-t border-line"><td className="py-1.5">Profit, split {pct(FREE_SPLIT).replace("%", "")}/{pct(1 - FREE_SPLIT).replace("%", "")}</td><td className="py-1.5 text-right">{money(b.profit)}</td></tr>
+            <tr className="border-t-2 border-ink font-bold text-earned"><td className="pt-2">Your {pct(FREE_SPLIT)}</td><td className="pt-2 text-right">{money(b.artist)}</td></tr>
           </tbody>
         </table>
       </div>

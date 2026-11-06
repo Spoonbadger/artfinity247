@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Check } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -23,7 +24,7 @@ const STATUS_COPY: Record<VerificationStatus, { label: string; dab: string }> = 
   REJECTED: { label: "Not approved", dab: "var(--af-coral)" },
 };
 
-export default function VerifyPanel({ initial, name, slug }: { initial: State; name: string; slug: string }) {
+export default function VerifyPanel({ initial, name, slug, skipsReview = false }: { initial: State; name: string; slug: string; /** Still in the first-pieces review (lib/artworkLive.ts): verifying skips it. */ skipsReview?: boolean }) {
   const router = useRouter();
   const [s, setS] = useState(initial);
   const [editing, setEditing] = useState(initial.status === "NONE" || initial.status === "REJECTED");
@@ -110,7 +111,7 @@ export default function VerifyPanel({ initial, name, slug }: { initial: State; n
 
           {s.status === "PENDING" && (
             <>
-              <p className="text-[14.5px] text-ink-2">A person on our team will check it. Usually within two days.</p>
+              <p className="t-muted">A person on our team will check it. Usually within two days.</p>
               <EvidenceSummary e={s.evidence} />
               {!editing && (
                 <button type="button" className="btn btn-ghost btn-sm w-fit" onClick={() => setEditing(true)}>
@@ -128,7 +129,7 @@ export default function VerifyPanel({ initial, name, slug }: { initial: State; n
                   {s.note}
                 </blockquote>
               )}
-              <p className="text-[14.5px] text-ink-2">Fix what the note says and send it again.</p>
+              <p className="t-muted">Fix what the note says and send it again.</p>
             </>
           )}
 
@@ -140,14 +141,14 @@ export default function VerifyPanel({ initial, name, slug }: { initial: State; n
           <form onSubmit={submit} className="af-card grid gap-4 p-4 sm:p-5" aria-labelledby="ev-h" noValidate>
             <div className="grid gap-1">
               <h2 id="ev-h" className="t-card">{s.status === "NONE" ? "Show us it's you" : s.status === "PENDING" ? "Update evidence" : "Send it again"}</h2>
-              {s.status === "NONE" && <p className="text-[14px] text-ink-2">A link and a photo. Takes a minute.</p>}
+              {s.status === "NONE" && <p className="t-muted">A link and a photo. Takes a minute.</p>}
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
               <HandleInput ref={igRef} platform="instagram" name="instagram" label="Instagram" value={instagram} onChange={setInstagram} placeholder="yourhandle" />
               <HandleInput platform="website" name="website" label="Website" value={website} onChange={setWebsite} placeholder="yourname.com" />
             </div>
-            <p className="-mt-2 text-[13px] text-ink-2">One is enough. It should show the name <b className="text-ink">{name}</b>.</p>
+            <p className="t-small -mt-2">One is enough. It should show the name <b className="text-ink">{name}</b>.</p>
 
             <div className="grid gap-2">
               <span id="photo-l" className="text-[15px] font-bold">Photo of you with your work, or your studio</span>
@@ -231,18 +232,15 @@ export default function VerifyPanel({ initial, name, slug }: { initial: State; n
         </div>
         <h2 className="eyebrow">What we check</h2>
         <ul className="grid gap-3 text-[15px]">
-          {[
-            ["#b8c4ff", "Your name matches your link"],
-            ["#f7c8a8", "The work on your page is yours"],
-            ["var(--af-sticker)", "A real photo, not a stock one"],
-          ].map(([c, t]) => (
+          {["Your name matches your link", "The work on your page is yours", "A real photo, not a stock one"].map((t) => (
             <li key={t} className="flex items-center gap-3">
-              <span className="paint-dab" style={{ ["--dab" as string]: c }} aria-hidden="true" />
+              <Check className="h-4 w-4 shrink-0 text-earned" aria-hidden="true" />
               {t}
             </li>
           ))}
         </ul>
-        <p className="border-t border-dashed border-line pt-3 text-[13px] text-ink-2">Medals come from sales. The seal comes from us.</p>
+        {skipsReview && s.status !== "VERIFIED" && <p className="t-small">Once you&apos;re verified, new pieces go live right away, without our review.</p>}
+        <p className="t-small border-t border-line pt-3">Medals come from sales. The seal comes from us.</p>
       </aside>
     </div>
   );

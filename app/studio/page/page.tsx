@@ -6,9 +6,11 @@ import { enabledProviders } from "@/lib/oauth/providers";
 import { StudioPage } from "@/components/studio/StudioPage";
 import { prisma } from "@/lib/prisma";
 import { VENMO_CONFIRM_HOURS } from "@/lib/venmo";
+import { PAYOUT_DAY_OF_MONTH } from "@/lib/balance";
 import { requireArtist, displayName } from "../_lib/data";
 
 export const dynamic = "force-dynamic";
+const ordinal = (n: number) => `${n}${n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th"}`;
 export const metadata = { title: "My page" };
 
 export default async function MyPageEditor() {
@@ -41,6 +43,7 @@ export default async function MyPageEditor() {
         venmoPending={venmoPending}
         slug={artist.slug}
         art={art}
+        payoutDay={ordinal(PAYOUT_DAY_OF_MONTH)}
         account={
           <>
             <AccountDetails

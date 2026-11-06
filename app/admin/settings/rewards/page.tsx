@@ -12,8 +12,8 @@ export default async function RewardsSettingsPage() {
   const s = await rewardSettings();
   return (
     <div className="grid max-w-[720px] gap-5">
-      <PageHead title="Collector rewards" sub="Every Nth print, the buyer gets a one-time discount code.">
-        <details className="text-[13px] text-ink-2">
+      <PageHead level={2} title="Collector rewards" sub="Every Nth print, the buyer gets a one-time discount code.">
+        <details className="t-small">
           <summary className="cursor-pointer font-semibold">How it works</summary>
           <ul className="mt-1 grid list-disc gap-1 pl-5">
             <li>For buyers with a free collection. The code fills in at checkout when they&apos;re signed in.</li>

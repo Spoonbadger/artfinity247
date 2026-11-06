@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { failed, saved } from "@/lib/feedback";
 import { cn } from "@/lib/utils";
 import { passes, sortRows, SortTh, TableToolbar, Th, useTable } from "../_components/table";
-import { StatusPill } from "../_components/ui";
+import { StatusPill, THEAD } from "../_components/ui";
 import { EmptyState } from "@/components/studio/EmptyState";
 
 export type AlertRow = { id: string; severity: string; kind: string; kindLabel: string; title: string; href: string; at: string; meta: string; state: "open" | "snoozed" | "resolved" };
@@ -53,7 +53,7 @@ export default function AlertsTable({ rows, tab }: { rows: AlertRow[]; tab: stri
   };
 
   if (rows.length === 0) {
-    return <EmptyState title={tab === "open" ? "Nothing needs you" : tab === "snoozed" ? "Nothing snoozed" : "No resolved alerts yet"} body={tab === "open" ? "New alerts show up here and on Home." : undefined} dab="var(--af-earned)" action={tab === "open" ? undefined : { label: "Open alerts", href: "/admin/alerts" }} />;
+    return <EmptyState dab="var(--af-edge-strong)" title={tab === "open" ? "Nothing needs you" : tab === "snoozed" ? "Nothing snoozed" : "No resolved alerts yet"} body={tab === "open" ? "New alerts show up here and on Home." : undefined} action={tab === "open" ? undefined : { label: "Open alerts", href: "/admin/alerts" }} />;
   }
 
   return (
@@ -74,10 +74,10 @@ export default function AlertsTable({ rows, tab }: { rows: AlertRow[]; tab: stri
           <button type="button" onClick={() => setSel(new Set())} className="ml-auto min-h-[40px] text-[13px] font-semibold text-ink-2 underline">Clear</button>
         </div>
       )}
-      <div className="relative overflow-x-auto rounded-2xl border border-line bg-white">
+      <div className="relative overflow-x-auto rounded-2xl border border-edge bg-white">
         <table className="w-full text-[14px]">
           <caption className="sr-only">Alerts</caption>
-          <thead className="border-b border-line bg-wall/60 text-[12px] text-ink-2">
+          <thead className={THEAD}>
             <tr>
               <th scope="col" className="w-10 px-3 py-2"><input type="checkbox" checked={all} onChange={() => setSel(all ? new Set() : new Set(shown.map((r) => r.id)))} aria-label="Select all shown" className="h-4 w-4 accent-[var(--af-ink)]" /></th>
               <SortTh k="severity" label="Level" sort={t.sort} onSort={t.toggleSort} className="hidden sm:table-cell" />

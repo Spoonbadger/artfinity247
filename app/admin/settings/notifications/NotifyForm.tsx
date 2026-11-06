@@ -51,7 +51,7 @@ export default function NotifyForm({ rows }: { rows: Row[] }) {
               {CHOICES.map((c) => {
                 const on = vals[r.kind] === c.v;
                 return (
-                  <label key={c.label} className={cn("flex min-h-[38px] cursor-pointer items-center rounded-full border-[1.5px] px-3 text-[13.5px] font-semibold transition", on ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>
+                  <label key={c.label} className={cn("flex min-h-[38px] cursor-pointer items-center rounded-full border-[1.5px] px-3 text-[13.5px] font-semibold transition", on ? "border-ink bg-ink text-white" : "border-edge-strong bg-white text-ink hover:border-ink")}>
                     <input type="radio" className="sr-only" name={r.kind} checked={on} onChange={() => setVals((x) => ({ ...x, [r.kind]: c.v }))} />
                     {c.label}
                   </label>

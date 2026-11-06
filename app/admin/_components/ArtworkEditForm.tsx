@@ -101,7 +101,7 @@ export default function ArtworkEditForm({ artwork }: { artwork: AdminArtwork }) 
   const toggle = (l: string) => setLabels((x) => (x.includes(l) ? x.filter((y) => y !== l) : [...x, l]));
 
   return (
-    <form onSubmit={save} className="grid items-start gap-6 rounded-2xl border border-line bg-white p-4 sm:p-6 lg:grid-cols-[280px_minmax(0,1fr)]" noValidate>
+    <form onSubmit={save} className="grid items-start gap-6 rounded-2xl border border-edge bg-white p-4 sm:p-6 lg:grid-cols-[280px_minmax(0,1fr)]" noValidate>
       <div className="overflow-hidden rounded-[4px] bg-gallery">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={artwork.imageUrl} alt={saved.title} className="max-h-[360px] w-full object-contain" />
@@ -163,7 +163,7 @@ export default function ArtworkEditForm({ artwork }: { artwork: AdminArtwork }) 
                     aria-describedby={`${s.key}-price`}
                     className="num"
                   />
-                  <span id={`${s.key}-price`} className="num text-[12px] text-ink-2">{price !== null ? `Sells at $${price.toFixed(2)}` : "Check the amount"}</span>
+                  <span id={`${s.key}-price`} className="num t-small">{price !== null ? `Sells at $${price.toFixed(2)}` : "Check the amount"}</span>
                 </label>
               );
             })}

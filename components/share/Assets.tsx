@@ -110,7 +110,7 @@ export function ImageAssets({ art }: { art: ShareArt }) {
         {(Object.keys(IMAGE_FORMATS) as ImageFormat[]).map((f) => (
           <button key={f} type="button" role="tab" aria-selected={format === f} onClick={() => setFormat(f)}
             className={cn("rounded-full border-2 px-4 py-2 text-[14px] font-bold leading-tight", format === f ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>
-            {IMAGE_FORMATS[f].name} <span className={cn("ml-1 text-[12px] font-normal", format === f ? "text-white/70" : "text-ink-2")}>{IMAGE_FORMATS[f].sub}</span>
+            {IMAGE_FORMATS[f].name} <span className={cn("ml-1 text-[13px] font-normal", format === f ? "text-white/70" : "text-ink-2")}>{IMAGE_FORMATS[f].sub}</span>
           </button>
         ))}
       </div>
@@ -193,7 +193,7 @@ export function ShareLinks({ art, base }: { art: ShareArt; base: string }) {
               <span className="paint-dab" style={{ ["--dab" as string]: c.dab }} />
               <span className="grid leading-tight">
                 <b className="text-[15px]">{c.name}</b>
-                <span className="text-[12px] text-ink-2">{HINT[c.key]}</span>
+                <span className="text-[13px] text-ink-2">{HINT[c.key]}</span>
               </span>
               <label className="col-span-2 min-w-0 sm:col-span-1">
                 <span className="sr-only">{c.name} link</span>

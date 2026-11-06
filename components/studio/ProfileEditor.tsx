@@ -31,7 +31,7 @@ async function post(url: string, body: unknown) {
   return res.json();
 }
 
-export default function ProfileEditor({ initial, venmoPending = null, slug, art, account }: { initial: Profile; venmoPending?: string | null; slug: string; art: Art[]; account?: ReactNode }) {
+export default function ProfileEditor({ initial, venmoPending = null, slug, art, account, payoutDay }: { initial: Profile; venmoPending?: string | null; slug: string; art: Art[]; account?: ReactNode; /** "5th": the monthly payout day (lib/balance.ts). */ payoutDay?: string }) {
   const router = useRouter();
   const { refreshUser } = useUser();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -180,9 +180,10 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
         </label>
         <div id="venmo" className="grid scroll-mt-24 gap-2">
           <label className="af-field">
-            <span className="label">Venmo for payouts · private</span>
-            <input value={p.venmoHandle} onChange={(e) => setP({ ...p, venmoHandle: e.target.value.replace(/\s/g, "") })} maxLength={30} placeholder="@yourname" />
+            <span className="label">{payoutDay ? "Venmo for payouts" : "Venmo for payouts · private"}</span>
+            <input value={p.venmoHandle} onChange={(e) => setP({ ...p, venmoHandle: e.target.value.replace(/\s/g, "") })} maxLength={30} placeholder="@yourname" aria-describedby={payoutDay ? "venmo-help" : undefined} />
           </label>
+          {payoutDay && <p id="venmo-help" className="t-small">Never shown on your page. Each month&apos;s sales are paid here by the {payoutDay} of the next month.</p>}
           {pending !== null && (
             <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border-[1.5px] border-sticker bg-sticker/30 px-3 py-2 text-[13.5px]">
               <b className="min-w-0 flex-1">
@@ -194,7 +195,7 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
           )}
           {!saved.venmoHandle && pending === null && (
             <p role="status" className="flex items-center gap-2 rounded-xl bg-sticker/40 px-3 py-2 text-[13.5px] font-semibold">
-              <span className="sticker-badge text-[11px]">Heads up</span>Add your Venmo to get paid.
+              <span className="sticker-badge text-[12px]">Heads up</span>Add your Venmo to get paid.
             </p>
           )}
         </div>
@@ -286,8 +287,8 @@ function AccountDrawer({ children }: { children: ReactNode }) {
     <details ref={ref} id="account" className="group scroll-mt-24 border-t border-dashed border-line pt-4">
       <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
         <span className="grid">
-          <b className="text-[17px]">Account and sign-in</b>
-          <span className="text-[13.5px] text-ink-2">Legal name, email, phone, password. Never shown on your page.</span>
+          <b className="t-card">Account and sign-in</b>
+          <span className="t-small">Legal name, email, phone, password. Never shown on your page.</span>
         </span>
         <ChevronDown className="h-5 w-5 shrink-0 transition group-open:rotate-180" aria-hidden="true" />
       </summary>

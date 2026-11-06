@@ -41,18 +41,13 @@ export default async function StudioDevelopersPage() {
             artworks={arts}
             initialSlug={first?.slug}
             footer={
-              <ol className="grid gap-2 text-[14px] text-ink-2">
-                {[
-                  ["var(--af-scan)", "Pick an embed, copy it."],
-                  ["var(--af-sticker)", "Paste it into an HTML or code block on your site."],
-                  ["var(--af-earned)", "Squarespace: Code block. Wix: Embed HTML. WordPress: Custom HTML."],
-                ].map(([c, t], i) => (
-                  <li key={i} className="flex gap-2.5">
-                    <span className="paint-dab mt-1" style={{ ["--dab" as string]: c }} aria-hidden="true" />
-                    <span>{t}</span>
-                  </li>
-                ))}
-              </ol>
+              <div className="grid gap-2">
+                <ol className="t-muted grid list-decimal gap-1 pl-5 marker:font-semibold">
+                  <li>Pick an embed, copy it.</li>
+                  <li>Paste it into an HTML or code block on your site. Squarespace: Code block. Wix: Embed HTML. WordPress: Custom HTML.</li>
+                </ol>
+                <p className="t-small">Buyers check out on Artfinity, so each sale pays your usual share.</p>
+              </div>
             }
           />
         </section>
@@ -80,7 +75,7 @@ export default async function StudioDevelopersPage() {
         <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
           <section className="grid min-w-0 content-start gap-3" aria-labelledby="json-h">
             <h2 id="json-h" className="t-card">Your data, as JSON</h2>
-            <p className="text-[14px] text-ink-2">Public and read-only. No key needed. Approved pieces only.</p>
+            <p className="t-muted">Public and read-only. No key needed. Approved pieces only.</p>
             <Code
               lang="shell"
               title="Your endpoints"
@@ -88,13 +83,13 @@ export default async function StudioDevelopersPage() {
             />
           </section>
 
-          <section className="grid min-w-0 content-start gap-3 rounded-2xl border-[1.5px] border-dashed border-ink/40 bg-wall p-4" aria-labelledby="keys-h">
+          <section className="box-inset grid min-w-0 content-start gap-3 p-4" aria-labelledby="keys-h">
             <span className="sticker-badge justify-self-start">Coming with webhooks</span>
             <div className="flex items-center gap-2.5">
               <KeyRound className="h-5 w-5 text-ink-2" aria-hidden="true" />
               <h2 id="keys-h" className="t-card">API keys</h2>
             </div>
-            <p className="text-[14px] text-ink-2">Private keys come with sale webhooks, so your site can react when a print sells. Need one sooner? Tell us.</p>
+            <p className="t-muted">Private keys come with sale webhooks, so your site can react when a print sells. Need one sooner? Tell us.</p>
             <div className="flex flex-wrap gap-2">
               <Link href="/contact" className="btn btn-ghost btn-sm">Ask for early access</Link>
               <Link href="/developers" className="btn btn-ghost btn-sm">Read the docs</Link>

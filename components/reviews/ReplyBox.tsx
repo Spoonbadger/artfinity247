@@ -35,7 +35,7 @@ export default function ReplyBox({ reviewId, initial, buyerFirst }: { reviewId: 
     return (
       <div className="rounded-xl border-l-[3px] border-sticker bg-wall px-3.5 py-2.5">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-ink-2">Your reply</p>
+          <p className="eyebrow">Your reply</p>
           <button type="button" onClick={() => setOpen(true)} className="text-[13px] font-semibold underline underline-offset-4 hover:text-scan">Edit</button>
         </div>
         <p className="mt-1 whitespace-pre-line text-[15px] leading-relaxed">{reply}</p>
@@ -50,7 +50,7 @@ export default function ReplyBox({ reviewId, initial, buyerFirst }: { reviewId: 
   return (
     <div className="grid gap-2">
       <label className="af-field">
-        <span className="label">Your reply, shown under the review</span>
+        <span className="label">Your reply</span>
         <textarea
           rows={3}
           maxLength={500}
@@ -59,8 +59,10 @@ export default function ReplyBox({ reviewId, initial, buyerFirst }: { reviewId: 
           onChange={(e) => setDraft(e.target.value)}
           placeholder={`Thanks ${buyerFirst}! That spot by the window is perfect.`}
           className="resize-none text-[16px] leading-snug"
+          aria-describedby={`reply-help-${reviewId}`}
         />
       </label>
+      <p id={`reply-help-${reviewId}`} className="t-small">Public. Buyers see it under the review on your page, labeled as your reply. We don&apos;t email it to {buyerFirst}.</p>
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" disabled={busy || !draft.trim()} onClick={() => save(draft)} className="btn btn-sm">{reply ? "Save reply" : "Post reply"}</button>
         <button type="button" disabled={busy} onClick={() => { setDraft(reply); setOpen(false); }} className="btn btn-ghost btn-sm">Cancel</button>

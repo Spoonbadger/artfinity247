@@ -7,7 +7,7 @@ import ArtworkForm from "./ArtworkForm";
 import UploadQueue, { readDraft, type QueueDraft } from "./UploadQueue";
 import type { CloudFile } from "./cloudImport";
 
-export default function NewArtwork({ handle, split, canQueue, mockImport }: { handle: string; split?: number; canQueue: boolean; mockImport?: boolean }) {
+export default function NewArtwork({ handle, split, canQueue, mockImport, reviewNote }: { handle: string; split?: number; canQueue: boolean; mockImport?: boolean; reviewNote?: string }) {
   const [queue, setQueue] = useState<{ files?: File[]; cloud?: CloudFile[]; restored?: { draft: QueueDraft; dropped: number } } | null>(null);
   // Bumped when a queue ends, so the single form starts fresh.
   const [round, setRound] = useState(0);
@@ -21,14 +21,14 @@ export default function NewArtwork({ handle, split, canQueue, mockImport }: { ha
   if (queue) {
     return (
       <UploadQueue
-        handle={handle} split={split} files={queue.files} cloud={queue.cloud} restored={queue.restored} mock={mockImport}
+        handle={handle} split={split} reviewNote={reviewNote} files={queue.files} cloud={queue.cloud} restored={queue.restored} mock={mockImport}
         onExit={() => { setQueue(null); setRound((r) => r + 1); }}
       />
     );
   }
   return (
     <ArtworkForm
-      key={round} split={split} handle={handle} mock={mockImport}
+      key={round} split={split} handle={handle} mock={mockImport} reviewNote={reviewNote}
       onManyFiles={canQueue ? (files) => setQueue({ files }) : undefined}
       onCloudFiles={canQueue ? (cloud) => setQueue({ cloud }) : undefined}
     />

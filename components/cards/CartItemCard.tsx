@@ -32,9 +32,9 @@ const CartItemCard = ({ item, className, readOnly = false }: { item: CartItemTyp
       </Link>
 
       <div className="grid min-w-0 gap-0.5">
-        <Link href={href} className="truncate text-[16px] font-bold text-ink no-underline hover:underline">{p.title}</Link>
-        {p.artist && <span className="truncate text-[13px] text-ink-2">{p.artist}</span>}
-        <span className="text-[13.5px]">
+        <Link href={href} className="t-card truncate no-underline hover:underline">{p.title}</Link>
+        {p.artist && <span className="t-small truncate">{p.artist}</span>}
+        <span className="t-small text-ink">
           {sizeText(p.selectedSize)}
           {p.frameChosen ? ` · ${p.frameColor ?? ""} frame`.replace("natural", "natural wood") : ""}
         </span>
@@ -63,7 +63,7 @@ const CartItemCard = ({ item, className, readOnly = false }: { item: CartItemTyp
 
       <div className="num text-right leading-tight">
         <b className="block text-[16px]">{usd(p.unitPrice * q)}</b>
-        {p.listPrice && p.listPrice > p.unitPrice ? <s className="text-[13px] text-ink-2">{usd(p.listPrice * q)}</s> : null}
+        {p.listPrice && p.listPrice > p.unitPrice ? <s className="t-small">{usd(p.listPrice * q)}</s> : null}
         {readOnly && q > 1 && <span className="block text-[13px] text-ink-2">{q} × {usd(p.unitPrice)}</span>}
       </div>
     </div>

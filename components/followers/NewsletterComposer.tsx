@@ -161,12 +161,12 @@ export default function NewsletterComposer({
           <span className="label">What you&apos;ve been painting</span>
           <textarea ref={bodyRef} rows={9} value={body} maxLength={MAX_BODY} onChange={(e) => { setBody(e.target.value); if (blocker === "content") setBlocker(null); }} placeholder={"Hi,\n\nThis one started on a cold morning by the river…"} className="resize-y leading-relaxed" />
         </label>
-        <p className="-mt-3 px-1 text-[13px] text-ink-2">Blank line for a new paragraph. **bold**, - lists and links work.</p>
+        <p className="t-small -mt-3 px-1">Blank line for a new paragraph. **bold**, - lists and links work.</p>
 
         <section aria-labelledby="pick-h" className="grid gap-2.5">
           <div className="flex items-baseline justify-between gap-2">
             <h2 id="pick-h" className="t-card">Add up to {MAX_ARTWORKS} of your artworks</h2>
-            <span className="num text-[13px] text-ink-2">{picked.length}/{MAX_ARTWORKS}</span>
+            <span className="t-small num">{picked.length}/{MAX_ARTWORKS}</span>
           </div>
           {artworks.length === 0 ? (
             <EmptyState
@@ -198,7 +198,7 @@ export default function NewsletterComposer({
             </ul>
           )}
           {artworks.length > 10 && (
-            <button type="button" onClick={() => setShowAll((v) => !v)} aria-expanded={showAll} className="justify-self-start text-[13.5px] font-semibold text-ink-2 underline hover:text-ink">
+            <button type="button" onClick={() => setShowAll((v) => !v)} aria-expanded={showAll} className="min-h-[40px] justify-self-start text-[13.5px] font-semibold text-ink-2 underline hover:text-ink">
               {showAll ? "Show fewer" : `Show all ${artworks.length}`}
             </button>
           )}
@@ -254,10 +254,10 @@ export default function NewsletterComposer({
               </button>
             </div>
           )}
-          <p className="text-[13px] text-ink-2">
+          <p className="t-small">
             {recipients === 0
               ? `No confirmed followers yet. Tests go to ${artist.email}.`
-              : `Goes to confirmed followers only. Tests go to ${artist.email}.`}
+              : `Goes to followers who confirmed by email. Each copy has an unsubscribe link. Tests go to ${artist.email}.`}
           </p>
         </div>
 
@@ -280,7 +280,7 @@ export default function NewsletterComposer({
         <section aria-labelledby="past-h" className="grid gap-2">
           <h2 id="past-h" className="t-card">Sent</h2>
           {sent.length === 0 ? (
-            <p className="af-panel p-4 text-[14px] text-ink-2">Your first newsletter will show up here.</p>
+            <p className="af-panel t-muted p-4">Your first newsletter will show up here.</p>
           ) : (
             <ul className="af-panel grid divide-y divide-line">
               {sent.map((n) => (

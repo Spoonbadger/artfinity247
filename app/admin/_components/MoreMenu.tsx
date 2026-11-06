@@ -21,7 +21,7 @@ export default function MoreMenu({ label = "More", children, align = "right", cl
         {label}
         <svg aria-hidden="true" viewBox="0 0 12 12" className="h-3 w-3 transition group-open:rotate-180"><path d="M2.5 4.5l3.5 3.5 3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
       </summary>
-      <div className={cn("absolute z-30 mt-1.5 grid min-w-[220px] gap-1 rounded-xl border border-line bg-white p-2 shadow-lg [&_.btn]:w-full [&_.btn]:justify-start [&_.btn]:border-transparent", align === "right" ? "right-0" : "left-0")}>
+      <div className={cn("absolute z-30 mt-1.5 grid min-w-[220px] gap-1 rounded-xl border border-edge bg-white p-2 shadow-lg [&_.btn]:w-full [&_.btn]:justify-start [&_.btn]:border-transparent", align === "right" ? "right-0" : "left-0")}>
         {children}
       </div>
     </details>

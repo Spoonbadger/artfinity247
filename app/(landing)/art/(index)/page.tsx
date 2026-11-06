@@ -44,7 +44,7 @@ export default async function ArtPage({ searchParams }: { searchParams: Record<s
       <PageHead
         eyebrow={cityName ? `Art from ${cityName}` : "Prints, made to order"}
         title="Browse art"
-        sub={<><span className="num">{total}</span> {total === 1 ? "piece" : "pieces"}{q ? <> matching “{q}”</> : null}.</>}
+        sub={<><span className="num">{total}</span> {total === 1 ? "piece" : "pieces"}{q ? <> matching “{q}”</> : null}. Printed to order in NYC, free US shipping.</>}
       >
         <ArtFilters q={q} filters artists={artists.map((a) => ({ slug: a.slug, name: a.name }))} />
       </PageHead>
@@ -63,7 +63,7 @@ export default async function ArtPage({ searchParams }: { searchParams: Record<s
           <ArtGrid art={art} />
         ) : (
           <EmptyCanvas title="Nothing on this wall yet">
-            <p className="text-ink-2">Try fewer filters or a shorter search.</p>
+            <p className="t-muted">Try fewer filters or a shorter search.</p>
             {filtered && <Link href="/art" className="btn btn-ghost">Clear filters</Link>}
           </EmptyCanvas>
         )}
@@ -81,7 +81,7 @@ function CityChip({ href, active, label, count }: { href: string; active: boolea
       className={`inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-full border-[1.5px] px-4 py-1.5 text-[14px] md:min-h-0 md:px-3.5 font-semibold no-underline transition ${active ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}
     >
       {label}
-      {count != null && <span className={`num text-[12px] ${active ? "text-white/70" : "text-ink-2"}`}>{count}</span>}
+      {count != null && <span className={`num text-[13px] ${active ? "text-white/70" : "text-ink-2"}`}>{count}</span>}
     </Link>
   );
 }

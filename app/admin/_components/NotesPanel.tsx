@@ -44,13 +44,13 @@ export default function NotesPanel({ targetType, targetId, notes: initial }: { t
         <button type="submit" disabled={busy || !body.trim()} className="btn btn-ghost btn-sm justify-self-start">Add note</button>
       </form>
       {notes.length === 0 ? (
-        <p className="text-[13.5px] text-ink-2">No notes yet. Only admins see these.</p>
+        <p className="t-small">No notes yet. Only admins see these.</p>
       ) : (
         <ul className="grid gap-2">
           {notes.map((n) => (
             <li key={n.id} className="rounded-lg bg-wall/70 px-3 py-2">
               <p className="whitespace-pre-wrap text-[14px] leading-relaxed">{n.body}</p>
-              <p className="mt-1 text-[12px] text-ink-2">{n.adminEmail || "admin"} · {when(n.createdAt)}</p>
+              <p className="t-small mt-1">{n.adminEmail || "admin"} · {when(n.createdAt)}</p>
             </li>
           ))}
         </ul>

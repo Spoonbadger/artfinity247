@@ -45,7 +45,7 @@ export default async function AdminArtworksPage({ searchParams }: { searchParams
           <img src={w.imageUrl} alt="" loading="lazy" className="h-[50px] w-[40px] shrink-0 rounded-[3px] object-cover" />
           <div className="min-w-0">
             <Link href={`/admin/artworks/${w.id}/edit`} className="block truncate font-semibold text-ink hover:text-scan">{w.title}</Link>
-            {w.flaggedReason && <span className="block truncate text-[12px] text-coral">{w.flaggedReason}</span>}
+            {w.flaggedReason && <span className="block truncate text-[13px] text-coral">{w.flaggedReason}</span>}
           </div>
         </div>
       ),
@@ -79,7 +79,7 @@ export default async function AdminArtworksPage({ searchParams }: { searchParams
           { key: "date", label: "Uploaded", align: "right" },
         ]}
         rows={tableRows}
-        empty={<EmptyState title="No artworks yet" body="Uploads from artists show up here." />}
+        empty={<EmptyState dab="var(--af-edge-strong)" title="No artworks yet" body="Uploads from artists show up here." />}
       />
     </div>
   );

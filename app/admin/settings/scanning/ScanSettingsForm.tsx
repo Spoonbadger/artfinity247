@@ -92,7 +92,7 @@ export default function ScanSettingsForm({ value }: { value: ScanSettings }) {
   const mark = (f: ScanField) =>
     placeholder(f) && !changed[f] ? (
       <span className="flex flex-wrap items-center gap-2">
-        <span className="rounded-full bg-sticker px-2 py-0.5 text-[11.5px] font-bold text-ink">Placeholder · set by Craig</span>
+        <span className="rounded-full bg-sticker px-2 py-0.5 text-[12px] font-bold text-ink">Placeholder · set by Craig</span>
         <label className="flex cursor-pointer items-center gap-1.5 text-[13px] font-semibold text-ink-2">
           <input type="checkbox" checked={confirm.has(f)} onChange={(e) => setConfirm((c) => { const n = new Set(c); if (e.target.checked) n.add(f); else n.delete(f); return n; })} className="h-4 w-4 accent-[rgb(var(--af-scan-rgb))]" />
           Confirm as is
@@ -178,7 +178,7 @@ export default function ScanSettingsForm({ value }: { value: ScanSettings }) {
         {v.careText !== DEFAULT_CARE_TEXT && <button type="button" onClick={() => setV({ ...v, careText: DEFAULT_CARE_TEXT })} className="justify-self-start text-[13px] font-semibold text-scan">Reset to the default wording</button>}
       </Section>
 
-      <div className="sticky bottom-3 z-10 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-white/95 p-3 shadow-sm backdrop-blur">
+      <div className="sticky bottom-3 z-10 flex flex-wrap items-center gap-3 rounded-2xl border border-edge bg-white/95 p-3 shadow-sm backdrop-blur">
         <button type="submit" disabled={busy || !dirty || !canEdit} title={canEdit ? undefined : "Only an owner can change settings."} className="btn btn-blue btn-sm">{busy ? "Saving…" : "Save"}</button>
         <span className="text-[13px] text-ink-2">{dirty ? "Unsaved changes." : value.placeholders.length ? `${value.placeholders.length} still placeholders.` : "All set."}</span>
         {err && <span role="alert" className="text-[13px] font-semibold text-coral">{err}</span>}
@@ -189,7 +189,7 @@ export default function ScanSettingsForm({ value }: { value: ScanSettings }) {
 
 function Section({ title, mark, children }: { title: string; mark?: ReactNode; children: ReactNode }) {
   return (
-    <section className="grid gap-2.5 rounded-2xl border border-line bg-white p-4 sm:p-5">
+    <section className="grid gap-2.5 rounded-2xl border border-edge bg-white p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="t-card">{title}</h2>
         {mark}

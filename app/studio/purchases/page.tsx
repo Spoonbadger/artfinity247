@@ -55,8 +55,8 @@ export default async function PurchasesPage({ searchParams }: { searchParams: { 
                     <b className="num">{codeOrderNumber(o.id)}</b>
                     <b className="num">{usd(o.totalCents)}</b>
                   </div>
-                  <p className="text-[14px]">{summaryOf(orderItems(o.items))}</p>
-                  <p className="text-[13px] text-ink-2">
+                  <p className="t-body">{summaryOf(orderItems(o.items))}</p>
+                  <p className="t-small">
                     Ordered {day(o.createdAt)}{o.shippedAt ? ` · shipped ${day(o.shippedAt)}` : ""}{o.deliveredAt ? ` · delivered ${day(o.deliveredAt)}` : ""}
                   </p>
                   <div className="flex flex-wrap items-center gap-2">
@@ -90,13 +90,13 @@ export default async function PurchasesPage({ searchParams }: { searchParams: { 
               {i.imageUrl ? <img src={i.imageUrl} alt={i.title || "Artwork"} className="h-16 w-14 shrink-0 rounded object-cover" /> : <span className="h-16 w-14 shrink-0 rounded bg-wall" />}
               <div className="min-w-0 flex-1">
                 {i.artwork?.slug ? <Link href={artPath(i.artwork.artist.slug, i.artwork.slug)} className="font-bold text-ink no-underline hover:text-scan">{i.title}</Link> : <b>{i.title}</b>}
-                <div className="text-[13.5px] text-ink-2">
+                <div className="t-small">
                   {i.artistName} · {SIZE[i.size || ""] || i.size} · ×{i.quantity || 1} · {i.order.createdAt.toLocaleDateString("en-US", { timeZone: STUDIO_TZ, month: "short", day: "numeric", year: "numeric" })}
                 </div>
               </div>
               <div className="grid justify-items-end gap-1">
                 <b className="num">{usd(i.lineTotal || 0)}</b>
-                <span className="rounded-full bg-wall px-2 py-0.5 text-[11.5px] font-bold capitalize text-ink-2">{i.order.shippingStatus}</span>
+                <span className="rounded-full bg-wall px-2 py-0.5 text-[12px] font-bold capitalize text-ink-2">{i.order.shippingStatus}</span>
               </div>
             </li>
           ))}

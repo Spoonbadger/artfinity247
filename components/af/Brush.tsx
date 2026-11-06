@@ -36,7 +36,7 @@ export function PaintChip({ color, value, label, note, earned = false }: { color
       <Swatch color={color} className="mb-2" />
       <b className={cn("display num px-1 text-[30px] [overflow-wrap:anywhere]", earned ? "text-earned" : "text-ink")}>{value}</b>
       <span className="px-1 text-[13px] text-ink-2">{label}</span>
-      {note && <em className="mt-1.5 border-t border-dashed border-line px-1 pt-1.5 text-[11.5px] text-ink-2">{note}</em>}
+      {note && <em className="mt-1.5 border-t border-dashed border-line px-1 pt-1.5 text-[13px] text-ink-2">{note}</em>}
     </div>
   );
 }

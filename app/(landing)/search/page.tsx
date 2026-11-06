@@ -47,13 +47,13 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
 
         {(artists.length > 0 || matchCities.length > 0) && (
           <section className="mt-10" aria-label="Artists and neighborhoods">
-            <h2 className="display mb-4 text-[30px]">Artists</h2>
+            <h2 className="t-section mb-4">Artists</h2>
             <ul className="flex flex-wrap gap-2.5">
               {artists.map((a) => (
                 <li key={a.slug}>
                   <Link href={`/@${a.slug}`} className="flex items-center gap-2.5 rounded-full border-[1.5px] border-line bg-white py-1 pl-1 pr-4 text-ink no-underline hover:border-ink">
                     <Avatar src={a.avatar} name={a.name} className="h-9 w-9 ring-0" />
-                    <span className="grid leading-tight"><b className="text-[15px]">{a.name}</b><span className="text-[13px] text-ink-2">{a.city}</span></span>
+                    <span className="grid leading-tight"><b className="text-[15px]">{a.name}</b><span className="t-small">{a.city}</span></span>
                   </Link>
                 </li>
               ))}
@@ -73,7 +73,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
             {art.length ? (
               <>
                 <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="display text-[30px]">Art</h2>
+                  <h2 className="t-section">Art</h2>
                   {total > 1 && <UrlSort storageKey="search.art" options={ART_SORTS} fallback="newest" />}
                 </div>
                 <ArtGrid art={art} />
@@ -81,7 +81,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
               </>
             ) : (
               <EmptyCanvas title="Nothing on this wall">
-                <p className="text-ink-2">Try fewer words, or browse everything.</p>
+                <p className="t-muted">Try fewer words, or browse everything.</p>
                 <Link href="/art" className="btn btn-ghost">Browse all art</Link>
               </EmptyCanvas>
             )}

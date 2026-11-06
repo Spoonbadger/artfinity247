@@ -10,7 +10,6 @@ import { MAX_NOTE, MAX_PHOTOS, REPRINT_REASONS, type ReprintReason } from "@/lib
 
 export type HelpItem = { id: string; title: string; imageUrl: string; detail: string; quantity: number };
 
-const DAB = ["var(--af-coral)", "var(--af-sticker)", "var(--af-scan)"];
 
 export default function HelpForm({ orderId, token, items }: { orderId: string; token: string; items: HelpItem[] }) {
   const [picked, setPicked] = useState<Record<string, number>>(() => (items.length === 1 ? { [items[0].id]: 1 } : {}));
@@ -82,11 +81,11 @@ export default function HelpForm({ orderId, token, items }: { orderId: string; t
     return (
       <section aria-live="polite" className="relative grid justify-items-center gap-3 rounded-2xl bg-sticker/40 px-5 py-9 text-center">
         <span className="grid h-12 w-12 place-items-center rounded-full bg-earned text-white"><Check className="h-6 w-6" aria-hidden="true" /></span>
-        <h2 className="display relative text-[36px] leading-none">
+        <h2 className="t-section relative">
           Got it, thank you
           <BrushStroke className="mx-auto mt-1 h-2.5 w-40" color="var(--af-coral)" />
         </h2>
-        <p className="max-w-[34ch] text-[16px] text-ink-2">We&apos;ll look today or tomorrow and email you. If it&apos;s on us, we reprint it free. No need to send anything back.</p>
+        <p className="t-body max-w-[34ch] text-ink-2">We&apos;ll look today or tomorrow and email you. If it&apos;s on us, we reprint it free. No need to send anything back.</p>
         <Link href="/" className="btn btn-ghost mt-1">Back to Artfinity</Link>
       </section>
     );
@@ -96,7 +95,7 @@ export default function HelpForm({ orderId, token, items }: { orderId: string; t
     <div className="grid gap-6">
       {/* 1. Which print */}
       <fieldset className="grid gap-2.5">
-        <legend className="mb-2 flex items-center gap-2 text-[19px] font-bold"><i className="paint-dab" style={{ ["--dab" as string]: DAB[0] }} />{items.length > 1 ? "Which prints?" : "Your print"}</legend>
+        <legend className="t-card mb-2">{items.length > 1 ? "Which prints?" : "Your print"}</legend>
         <ul className="grid gap-2.5">
           {items.map((it) => {
             const on = !!picked[it.id];
@@ -107,8 +106,8 @@ export default function HelpForm({ orderId, token, items }: { orderId: string; t
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={it.imageUrl} alt="" className="h-[68px] w-[54px] shrink-0 rotate-[-2deg] rounded-[2px] border-[3px] border-white object-cover shadow-[0_6px_14px_-8px_rgba(21,22,27,.6)]" />
                   <span className="min-w-0 flex-1 leading-tight">
-                    <b className="block truncate text-[16.5px]">{it.title}</b>
-                    <span className="block truncate text-[13.5px] text-ink-2">{it.detail}{it.quantity > 1 ? ` · ${it.quantity} prints` : ""}</span>
+                    <b className="t-card block truncate">{it.title}</b>
+                    <span className="t-small block truncate">{it.detail}{it.quantity > 1 ? ` · ${it.quantity} prints` : ""}</span>
                   </span>
                   <span aria-hidden="true" className={cn("grid h-7 w-7 shrink-0 place-items-center rounded-full border-2", on ? "border-ink bg-ink text-white" : "border-ink/30")}>
                     {on && <Check className="h-4 w-4" />}
@@ -132,7 +131,7 @@ export default function HelpForm({ orderId, token, items }: { orderId: string; t
 
       {/* 2. What went wrong */}
       <fieldset className="grid gap-2.5">
-        <legend className="mb-2 flex items-center gap-2 text-[19px] font-bold"><i className="paint-dab" style={{ ["--dab" as string]: DAB[1] }} />What went wrong?</legend>
+        <legend className="t-card mb-2">What went wrong?</legend>
         <div className="grid gap-2">
           {REPRINT_REASONS.map((r) => (
             <label key={r.id} className={cn("flex min-h-[52px] cursor-pointer items-center gap-3 rounded-xl border-2 bg-white px-3.5 transition has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-scan", reason === r.id ? "border-ink bg-[#fffbe8]" : "border-line hover:border-ink-2")}>
@@ -146,8 +145,8 @@ export default function HelpForm({ orderId, token, items }: { orderId: string; t
 
       {/* 3. Photos */}
       <section className="grid gap-2.5" aria-labelledby="photos-h">
-        <h2 id="photos-h" className="flex items-center gap-2 t-card"><i className="paint-dab" style={{ ["--dab" as string]: DAB[2] }} />Photos <span className="text-[14px] font-normal text-ink-2">1 to {MAX_PHOTOS}</span></h2>
-        <p className="-mt-1 text-[14.5px] text-ink-2">Show the problem up close. For shipping damage, a photo of the box helps too.</p>
+        <h2 id="photos-h" className="t-card flex items-baseline gap-2">Photos <span className="t-small font-normal">1 to {MAX_PHOTOS}</span></h2>
+        <p className="t-small -mt-1">Show the problem up close. For shipping damage, a photo of the box helps too.</p>
         <div className="flex flex-wrap gap-3">
           {photos.map((p) => (
             <div key={p} className="relative">
@@ -188,7 +187,7 @@ export default function HelpForm({ orderId, token, items }: { orderId: string; t
         <button type="button" onClick={send} disabled={sending || uploading > 0} className="btn btn-blue btn-lg w-full sm:w-fit">
           {sending ? "Sending…" : "Send to Artfinity"}
         </button>
-        <p className="text-[13px] text-ink-2">No need to send the print back. Artfinity pays for reprints, not the artist.</p>
+        <p className="t-small">A person looks at every request. No need to send the print back. Artfinity pays for reprints, not the artist.</p>
       </div>
     </div>
   );

@@ -43,8 +43,8 @@ export default function ContactForm() {
     return (
       <div className="af-card grid justify-items-start gap-3 p-7" role="status">
         <span className="grid h-11 w-11 place-items-center rounded-full bg-scan text-white"><Check className="h-6 w-6" strokeWidth={3} aria-hidden="true" /></span>
-        <h2 className="display text-[36px]">Got it.</h2>
-        <p className="text-[16px] text-ink-2">We’ll reply by email, usually within a day.</p>
+        <h2 className="t-section">Got it.</h2>
+        <p className="t-body text-ink-2">We’ll reply by email, usually within a day.</p>
         <button type="button" className="btn btn-ghost btn-sm mt-1" onClick={() => setState("idle")}>Send another</button>
       </div>
     );
@@ -67,7 +67,7 @@ export default function ContactForm() {
 
   return (
     <form onSubmit={submit} className="af-card grid gap-4 p-5 sm:p-7" noValidate>
-      <h2 className="display text-[34px]">Send a message</h2>
+      <h2 className="t-card">Send a message</h2>
       <fieldset>
         <legend className="mb-2 text-[14px] font-semibold">It’s about</legend>
         <div className="flex flex-wrap gap-2">

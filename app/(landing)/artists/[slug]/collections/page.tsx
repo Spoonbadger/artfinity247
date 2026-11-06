@@ -46,7 +46,7 @@ export default async function ArtistCollectionsPage({ params }: Props) {
       <ViewBeacon artistId={artist.id} />
     <div className="mx-auto grid max-w-[1240px] gap-8 px-4 pb-20 pt-8 sm:px-6 sm:pt-14">
       <header>
-        <h1 className="display text-[52px] sm:text-[80px]">Collections</h1>
+        <h1 className="display text-[44px] sm:text-[64px]">Collections</h1>
         <BrushStroke className="mt-1 h-3 w-44" />
       </header>
       <CollectionsTab artistSlug={artist.slug} collections={collections} />

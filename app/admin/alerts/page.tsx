@@ -54,14 +54,14 @@ export default async function AlertsPage({ searchParams }: { searchParams: { tab
       <nav aria-label="Alert lists" className="flex flex-wrap gap-1.5">
         {TABS.map((t) => (
           <Link key={t.id} href={`/admin/alerts?tab=${t.id}`} aria-current={tab === t.id ? "page" : undefined}
-            className={cn("flex min-h-[40px] items-center gap-1.5 rounded-full border-[1.5px] px-3.5 text-[14px] font-semibold no-underline", tab === t.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>
+            className={cn("flex min-h-[40px] items-center gap-1.5 rounded-full border-[1.5px] px-3.5 text-[14px] font-semibold no-underline", tab === t.id ? "border-ink bg-ink text-white" : "border-edge-strong bg-white text-ink hover:border-ink")}>
             {t.label}{counts[t.id] != null && <span className="num opacity-70">{counts[t.id]}</span>}
           </Link>
         ))}
       </nav>
 
       <AlertsTable key={tab} rows={rows} tab={tab} />
-      {tab === "history" && <p className="text-[13px] text-ink-2">Latest 150. Who did what is in <Link href="/admin/activity" className="font-semibold text-scan">Activity</Link>.</p>}
+      {tab === "history" && <p className="t-small">Latest 150. Who did what is in <Link href="/admin/activity" className="font-semibold text-scan">Activity</Link>.</p>}
     </div>
   );
 }

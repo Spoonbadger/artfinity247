@@ -121,10 +121,9 @@ export default function AutomationsPanel({ pro, storageKey, recent, server: init
 
   const row = (dab: string, name: string, note: string | null, control: React.ReactNode, extra?: React.ReactNode) => (
     <li className="flex items-center gap-3 py-3">
-      <i className="paint-dab" style={{ ["--dab" as string]: dab }} aria-hidden="true" />
       <span className="grid min-w-0 flex-1">
-        <span className="text-[15.5px] font-semibold">{name}</span>
-        {note && <span className="text-[13px] text-ink-2">{note}</span>}
+        <span className="text-[16px] font-semibold">{name}</span>
+        {note && <span className="t-small">{note}</span>}
         {extra}
       </span>
       {control}
@@ -148,7 +147,7 @@ export default function AutomationsPanel({ pro, storageKey, recent, server: init
 
       <section aria-labelledby="social-h" className="af-panel grid gap-1 p-4 sm:p-5">
         <h2 id="social-h" className="t-card">With Infinity</h2>
-        <p className="text-[13.5px] text-ink-2">
+        <p className="t-small">
           Auto-posting goes live soon. Until then, the <Link href="/studio/share" className="font-semibold text-ink underline underline-offset-2">Share kit</Link> has every post ready.
         </p>
         <ul className="grid divide-y divide-line">
@@ -168,8 +167,8 @@ export default function AutomationsPanel({ pro, storageKey, recent, server: init
       <details className="group grid gap-3">
         <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
           <span className="grid">
-            <b className="text-[17px]">What would run for your latest uploads</b>
-            <span className="text-[13px] text-ink-2">A preview. Nothing is posted yet.</span>
+            <b className="t-card">What would run for your latest uploads</b>
+            <span className="t-small">A preview. Nothing is posted yet.</span>
           </span>
           <ChevronDown className="h-5 w-5 shrink-0 transition group-open:rotate-180" aria-hidden="true" />
         </summary>
@@ -188,8 +187,8 @@ export default function AutomationsPanel({ pro, storageKey, recent, server: init
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={r.imageUrl} alt={r.title} className="h-12 w-12 shrink-0 rounded-[3px] object-cover" />
                 <span className="grid min-w-0 flex-1">
-                  <b className="truncate text-[14.5px]">{r.title}</b>
-                  <span className="text-[13px] text-ink-2">
+                  <b className="truncate text-[15px]">{r.title}</b>
+                  <span className="t-small">
                     {new Date(r.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })} ·{" "}
                     {[...(pro ? actions : []), ...serverActions].length ? `Would: ${[...(pro ? actions : []), ...serverActions].join(" · ")}` : pro ? "Nothing switched on" : "Infinity only"}
                   </span>

@@ -86,7 +86,7 @@ export default function VerificationQueue({ rows: initial, tab }: { rows: VerRow
   }
 
   if (!rows.length) {
-    return <EmptyState title={EMPTY[tab]} dab="var(--af-earned)" />;
+    return <EmptyState dab="var(--af-edge-strong)" title={EMPTY[tab]} />;
   }
 
   const toolbar = (
@@ -94,7 +94,7 @@ export default function VerificationQueue({ rows: initial, tab }: { rows: VerRow
       <TableToolbar filters={t.filters} setFilter={t.setFilter} clear={t.clear} active={t.active} search="Name, email or city" dates count={shown.length} total={rows.length}>
         <SortSelect options={SORTS} sort={t.sort} onChange={t.setSort} />
       </TableToolbar>
-      {shown.length === 0 && <EmptyState compact title="Nothing matches" action={{ label: "Clear filters", onClick: t.clear }} />}
+      {shown.length === 0 && <EmptyState dab="var(--af-edge-strong)" compact title="Nothing matches" action={{ label: "Clear filters", onClick: t.clear }} />}
     </>
   );
 

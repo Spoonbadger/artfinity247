@@ -64,14 +64,13 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
 
   const how = [
     {
-      dab: "#0f7a55",
       text: pro
         ? <>You keep <b>{pct(PRO.split)}</b> of each sale&apos;s profit on {PRO.name}. Sales from before your plan keep the split they were made at.</>
         : <>You keep <b>{pct(FREE_SPLIT)}</b> of each sale&apos;s profit. <b>{pct(PRO.split)}</b> on the {PRO.name} plan.</>,
     },
-    { dab: "#a9d8c1", text: <>Sales clear after a <b>{RETURN_WINDOW_DAYS}-day</b> return window.</> },
-    { dab: "#3d9f76", text: <>Each month is paid by the <b>{ordinal(PAYOUT_DAY_OF_MONTH)}</b> of the next, {viaStripe ? "to your bank via Stripe" : "to your Venmo"}.</> },
-    { dab: "#15161b", text: <>Bulk orders of your own prints don&apos;t count.</> },
+    { text: <>Each month&apos;s sales are paid together, by the <b>{ordinal(PAYOUT_DAY_OF_MONTH)}</b> of the next month, {viaStripe ? "to your bank via Stripe" : "to your Venmo"}.</> },
+    { text: <>Each sale clears after a <b>{RETURN_WINDOW_DAYS}-day</b> return window. Late-month sales still in it are paid on time.</> },
+    { text: <>Bulk orders of your own prints don&apos;t count.</> },
   ];
 
   return (
@@ -80,10 +79,9 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
       actions={<><HelpLink href="/help/getting-paid/when-paid" label="How payouts work" /><Link href="/studio/sales" className="btn btn-ghost">Sales</Link></>}
     >
       {b.lateMonths.length > 0 && (
-        <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[4px] border-2 border-coral bg-[#fff1ed] px-4 py-3 text-[14.5px]">
-          <i className="paint-dab h-3.5 w-3.5" style={{ ["--dab" as string]: "var(--af-coral)" }} aria-hidden="true" />
-          <b className="min-w-0 flex-1">Your {lateText} late. We&apos;re on it — or message us.</b>
-          <Link href="/help/getting-paid/payout-late" className="text-[13.5px] font-semibold text-ink-2 underline underline-offset-2">Why payouts run late</Link>
+        <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-coral bg-[#fff1ed] px-4 py-3 text-[15px]">
+          <b className="min-w-0 flex-1">Your {lateText} late. We&apos;re on it.</b>
+          <Link href="/help/getting-paid/payout-late" className="t-small font-semibold underline underline-offset-2">Why payouts run late</Link>
           <Link href="/contact" className="btn btn-sm border-coral bg-coral text-white">Message us</Link>
         </div>
       )}
@@ -94,8 +92,8 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
       {payoutDetail && (payoutDetail.state !== "setup" || searchParams.stripe === "pending") ? (
         <div role={payoutDetail.state === "paused" ? "alert" : "status"} className={`flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border px-4 py-3 ${payoutDetail.state === "paused" ? "border-coral/50 bg-coral/10" : "border-sticker bg-sticker/20"}`}>
           <div className="min-w-0 flex-1">
-            <p className="text-[14.5px] font-bold">{payoutDetail.state === "review" ? "Stripe is reviewing your account" : payoutDetail.state === "paused" ? "Bank payouts are paused" : "Almost there"}</p>
-            <p className="text-[13.5px] text-ink-2">{payoutDetail.reason} We pay by Venmo until then.</p>
+            <p className="text-[15px] font-bold">{payoutDetail.state === "review" ? "Stripe is reviewing your account" : payoutDetail.state === "paused" ? "Bank payouts are paused" : "Almost there"}</p>
+            <p className="t-small">{payoutDetail.reason} We pay by Venmo until then.</p>
           </div>
           {payoutDetail.state === "review" ? (
             payoutDetail.reason.startsWith("Stripe couldn't") && <Link href="/contact" className="btn btn-sm shrink-0">Message us</Link>
@@ -114,9 +112,9 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
       )}
 
       {venmoPending !== null && (
-        <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[4px] border-[1.5px] border-sticker bg-sticker/30 px-4 py-3 text-[14.5px]">
+        <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-sticker bg-sticker/30 px-4 py-3 text-[15px]">
           <b className="min-w-0 flex-1">Waiting for you to confirm by email: {venmoPending || "remove your Venmo"}</b>
-          <Link href="/studio/page#venmo" className="text-[13.5px] font-semibold text-ink-2 underline underline-offset-2">Change or cancel</Link>
+          <Link href="/studio/page#venmo" className="t-small font-semibold underline underline-offset-2">Change or cancel</Link>
         </div>
       )}
 
@@ -152,13 +150,8 @@ export default async function MoneyPage({ searchParams }: { searchParams: { venm
       )}
 
       <Disclosure title="How payouts work" hint={<>{pct(pro ? PRO.split : FREE_SPLIT)} of profit · paid by the {ordinal(PAYOUT_DAY_OF_MONTH)}</>}>
-        <ul className="grid gap-2.5 text-[14.5px]">
-          {how.map((h, i) => (
-            <li key={i} className="grid grid-cols-[14px_minmax(0,1fr)] items-start gap-2.5">
-              <i className="paint-dab mt-1 h-3 w-3" style={{ ["--dab" as string]: h.dab }} />
-              <span>{h.text}</span>
-            </li>
-          ))}
+        <ul className="t-body grid max-w-[68ch] list-disc gap-2 pl-5 marker:text-ink-2">
+          {how.map((h, i) => <li key={i}>{h.text}</li>)}
         </ul>
       </Disclosure>
     </StudioPage>

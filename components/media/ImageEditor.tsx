@@ -431,7 +431,7 @@ export default function ImageEditor({ source, sourceSize, initial, previous, ori
       <div className="flex min-h-0 flex-1 flex-col" onKeyDown={onKeys}>
         {/* Top: title and the two tools */}
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-2.5">
-          <h2 className="font-display text-[22px] font-bold [font-variation-settings:'wdth'_80]">Edit photo</h2>
+          <h2 className="t-card">Edit photo</h2>
           <div role="tablist" aria-label="Tool" className="flex rounded-full border-[1.5px] border-edge-strong p-0.5">
             {([["crop", "Crop"], ["angle", "Fix angle"]] as const).map(([m, label]) => (
               <button
@@ -510,6 +510,8 @@ export default function ImageEditor({ source, sourceSize, initial, previous, ori
 
         {/* Tool controls */}
         <div className="grid gap-2.5 border-t border-line px-4 py-3">
+          {/* Opened by itself after an upload: say why, once, so Skip feels safe. */}
+          {auto && mode === "crop" && <p className="t-small">Trim off the wall and frame so buyers see only the painting. Looks right already? Tap Looks good.</p>}
           {mode === "crop" ? (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
               <button type="button" onClick={rotate} className="btn btn-ghost btn-sm min-h-[40px]"><RotateCw className="h-4 w-4" aria-hidden="true" />Rotate</button>
@@ -538,15 +540,15 @@ export default function ImageEditor({ source, sourceSize, initial, previous, ori
             </div>
           ) : (
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <p className="min-w-0 flex-1 text-[13.5px] font-semibold" role="status">Drag the dots onto the painting&apos;s corners.{origRatio ? <span className="font-normal text-ink-2"> Shaped to {originalSize!.w} × {originalSize!.h} in.</span> : null}</p>
+              <p className="t-small min-w-0 flex-1 font-semibold !text-ink" role="status">Drag the dots onto the painting&apos;s corners.{origRatio ? <span className="font-normal text-ink-2"> Shaped to {originalSize!.w} × {originalSize!.h} in.</span> : null}</p>
               {edits.corners && !near(edits.corners, FULL_QUAD) && (
                 <button type="button" onClick={() => { setEdits((e) => ({ ...e, corners: FULL_QUAD })); }} className="btn btn-ghost btn-sm min-h-[40px]"><Undo2 className="h-4 w-4" aria-hidden="true" />Undo fix</button>
               )}
             </div>
           )}
-          {blocked && mode === "crop" && edits.corners && <p className="text-[13px] text-ink-2">The flattened preview isn&apos;t available for this photo. It&apos;s applied when you save.</p>}
-          {impact && <p className={cn("text-[13px]", impact.tone === "warn" ? "font-semibold text-coral" : "text-ink-2")} aria-live="polite">{impact.text}</p>}
-          {full && full.original === false && <p className="text-[13px] text-ink-2">No full-size original on file for this one, so edits use the web copy.</p>}
+          {blocked && mode === "crop" && edits.corners && <p className="t-small">The flattened preview isn&apos;t available for this photo. It&apos;s applied when you save.</p>}
+          {impact && <p className={cn("t-small", impact.tone === "warn" && "font-semibold !text-coral")} aria-live="polite">{impact.text}</p>}
+          {full && full.original === false && <p className="t-small">No full-size original on file for this one, so edits use the web copy.</p>}
           {error && <Problem tone="error" title={error.message} fix={error.fix ?? { label: "Try again", onClick: save }} />}
         </div>
 

@@ -43,7 +43,7 @@ export default function CartPage() {
         <Link href="/art" className="mb-3 inline-flex items-center gap-1.5 text-[14px] font-semibold text-ink-2 no-underline hover:text-ink">
           <ArrowLeft className="h-4 w-4" aria-hidden /> Keep looking
         </Link>
-        <h1 className="display mb-6 text-[44px] md:text-[60px]">
+        <h1 className="t-page mb-6">
           Your cart{count > 0 && <span className="text-ink-2"> · {count}</span>}
         </h1>
 
@@ -62,8 +62,9 @@ export default function CartPage() {
               <button type="button" onClick={onCheckout} disabled={busy} className="btn btn-blue btn-lg w-full">
                 {busy ? "Opening checkout…" : `Check out · ${usd(total)}`}
               </button>
-              <p className="text-center text-[13px] leading-snug text-ink-2">
-                Printed to order, arrives {deliveryRange()} · free US shipping · tax added at checkout
+              <p className="t-small text-center">
+                Printed in NYC, arrives {deliveryRange()} · tax added at checkout ·{" "}
+                <Link href="/help/buyers/damaged-print" className="underline underline-offset-2 hover:text-ink">damaged? free reprint</Link>
               </p>
             </CartPricingInfo>
           </div>

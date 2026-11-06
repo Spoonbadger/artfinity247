@@ -20,7 +20,7 @@ export default function SettingsTabs({ owner }: { owner: boolean }) {
         const on = pathname === t.href;
         return (
           <Link key={t.href} href={t.href} aria-current={on ? "page" : undefined}
-            className={cn("inline-flex min-h-[40px] items-center rounded-full border-[1.5px] px-3.5 text-[14px] font-semibold no-underline", on ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>
+            className={cn("inline-flex min-h-[40px] items-center rounded-full border-[1.5px] px-3.5 text-[14px] font-semibold no-underline", on ? "border-ink bg-ink text-white" : "border-edge-strong bg-white text-ink hover:border-ink")}>
             {t.label}
           </Link>
         );

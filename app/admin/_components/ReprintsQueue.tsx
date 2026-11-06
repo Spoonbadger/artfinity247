@@ -47,7 +47,7 @@ function Card({ r }: { r: AdminReprint }) {
 
   const act = async (action: "approve" | "refund" | "decline") => {
     if (action === "decline" && !note.trim()) { setNoteOpen(true); failed("Add a short note for the buyer first.", { description: "Declining needs a reason." }); return; }
-    if (action === "refund" && !confirm("Refund the buyer in Stripe yourself. This only marks it refunded and emails them. Go on?")) return;
+    if (action === "refund" && !confirm("Marks this refunded and emails the buyer. It doesn't move money: refund them in Stripe yourself.")) return;
     setBusy(action);
     try {
       const res = await fetch(`/api/admin/reprints/${r.id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, note }) });
@@ -83,7 +83,7 @@ function Card({ r }: { r: AdminReprint }) {
       <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <ul className="grid content-start gap-2">
           {r.items.map((i) => (
-            <li key={i.id} className="flex items-center gap-3 rounded-xl border border-line bg-wall/50 p-2">
+            <li key={i.id} className="flex items-center gap-3 rounded-xl border border-edge bg-wall/50 p-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {i.imageUrl ? <img src={i.imageUrl} alt="" className="h-[60px] w-[48px] shrink-0 rounded-[2px] object-cover shadow-[0_4px_10px_-6px_rgba(21,22,27,.5)]" /> : <span className="h-[60px] w-[48px] shrink-0 rounded-[2px] bg-gallery" />}
               <div className="min-w-0 text-[14px] leading-tight">
@@ -130,6 +130,7 @@ function Card({ r }: { r: AdminReprint }) {
             <button type="button" disabled={!!busy || !canRefund} title={canRefund ? undefined : "Refunds need the admin or owner role."} onClick={() => act("refund")} className="btn btn-ghost btn-sm">{busy === "refund" ? "Saving…" : "Refund instead"}</button>
             <button type="button" disabled={!!busy} onClick={() => act("decline")} className="btn btn-ghost btn-sm">{busy === "decline" ? "Saving…" : "Decline"}</button>
           </div>
+          <p className="t-small">Approve sends a free print to the lab now; Artfinity pays. Every choice emails the buyer.</p>
         </div>
       ) : (
         r.decision && (
@@ -155,7 +156,7 @@ const SORTS: { key: string; dir: SortDir; label: string }[] = [
 export default function ReprintsQueue({ requests, tab = "open" }: { requests: AdminReprint[]; tab?: string }) {
   const t = useTable(`reprints-${tab}`, { sort: { key: "date", dir: tab === "open" ? "asc" : "desc" } });
   if (!requests.length) {
-    return <EmptyState title={tab === "open" ? "No reprint requests" : "Nothing decided yet"} body={tab === "open" ? "Every print arrived happy." : undefined} dab="var(--af-earned)" />;
+    return <EmptyState dab="var(--af-edge-strong)" title={tab === "open" ? "No reprint requests" : "Nothing decided yet"} body={tab === "open" ? "Every print arrived happy." : undefined} />;
   }
   const reasons = Array.from(new Set(requests.map((r) => r.reason))).map((r) => ({ value: r, label: reasonLabel(r) }));
   const shown = sortRows(
@@ -168,7 +169,7 @@ export default function ReprintsQueue({ requests, tab = "open" }: { requests: Ad
       <TableToolbar filters={t.filters} setFilter={t.setFilter} clear={t.clear} active={t.active} search="Buyer, order or print" statuses={reasons.length > 1 ? reasons : undefined} statusLabel="Reason" dates count={shown.length} total={requests.length}>
         <SortSelect options={SORTS} sort={t.sort} onChange={t.setSort} />
       </TableToolbar>
-      {shown.length === 0 && <EmptyState compact title="Nothing matches" action={{ label: "Clear filters", onClick: t.clear }} />}
+      {shown.length === 0 && <EmptyState dab="var(--af-edge-strong)" compact title="Nothing matches" action={{ label: "Clear filters", onClick: t.clear }} />}
       <ul className="grid gap-4">{shown.map((r) => <Card key={r.id} r={r} />)}</ul>
     </div>
   );

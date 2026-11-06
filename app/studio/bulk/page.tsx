@@ -6,7 +6,7 @@ import HelpLink from "@/components/help/HelpLink";
 import BulkOrder, { type BulkArt, type PastBulk } from "@/components/bulk/BulkOrder";
 import { editionsFor } from "@/lib/editions";
 import { editionLabel } from "@/lib/editionFormat";
-import { BULK_SIZES, BULK_SIZE_KEY } from "@/lib/bulk";
+import { BULK_SIZES, BULK_SIZE_KEY, BULK_TIERS } from "@/lib/bulk";
 import { sizeAllowed } from "@/lib/printSizes";
 import { requireArtist, displayName } from "../_lib/data";
 import { TAX_ENABLED } from "@/lib/tax";
@@ -60,6 +60,7 @@ export default async function BulkPage({ searchParams }: { searchParams: { place
   const placedOrder = placedId ? past.find((p) => p.id === placedId) : undefined;
   // Back from Stripe: paid but the webhook hasn't recorded it yet, or backed out without paying.
   const returned = searchParams.canceled ? "canceled" as const : searchParams.session_id && !placedId ? "confirming" as const : null;
+  const firstTier = [...BULK_TIERS].sort((a, b) => a.min - b.min)[0];
   const tax = !process.env.STRIPE_SECRET_KEY ? "test" as const : TAX_ENABLED ? "added" as const : "none" as const;
 
   return (
@@ -72,7 +73,7 @@ export default async function BulkPage({ searchParams }: { searchParams: { place
         <EmptyState
           dab="#ff5a36"
           title="Upload art first"
-          body="Then order your own prints at cost. 10 or more get 5% off."
+          body={`Then order your own prints at cost to sell in person and keep what you charge.${firstTier ? ` ${firstTier.min} or more get ${firstTier.pct}% off.` : ""}`}
           action={{ label: "Upload art", href: "/studio/art/new" }}
           help={{ label: "How bulk prints work", href: "/help/selling/bulk-prints" }}
         />

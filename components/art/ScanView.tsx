@@ -35,6 +35,10 @@ const MORE_SORTS: { value: MoreSort; label: string }[] = [
   { value: "az", label: "A–Z" },
 ];
 
+/** One line on how big a size looks, against a sheet of letter paper (8.5 × 11 in, the help center's yardstick). */
+const onTheWall = (s: PrintSize) =>
+  ({ small: "Smaller than a sheet of printer paper", medium: "About a sheet of printer paper", large: "About two sheets of printer paper side by side", xl: "About four sheets of printer paper" })[s];
+
 const canOptimize = (src: string) => src.startsWith("/") || src.includes("res.cloudinary.com");
 
 const cartKey = (p: { id: string; selectedSize: string; frameChosen: boolean; frameColor: string | null }) =>
@@ -230,7 +234,7 @@ export default function ScanView({
 
           <div className="grid gap-1.5">
             <div className="flex items-start justify-between gap-3">
-              <h1 className="display min-w-0 text-[34px] leading-[0.95] sm:text-[40px] lg:text-[46px]">{art.title}</h1>
+              <h1 className="t-page min-w-0">{art.title}</h1>
               <WishlistHeart artworkId={art.id} title={art.title} variant="inline" className="shrink-0" />
             </div>
             {reviews && reviews.summary.count > 0 && <ReviewStars average={reviews.summary.average} count={reviews.summary.count} size="sm" href="#reviews" className="w-fit" />}
@@ -238,7 +242,7 @@ export default function ScanView({
 
           <div className="grid gap-1">
             <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-              <span className="num font-display text-[36px] font-extrabold leading-none [font-variation-settings:'wdth'_80]">{usd(price.now)}</span>
+              <span className="t-section num">{usd(price.now)}</span>
               {pct > 0 && (
                 <s className="num text-[16px] text-ink-2">
                   <span className="sr-only">was </span>
@@ -248,7 +252,7 @@ export default function ScanView({
               {pct > 0 && <span className="rounded-full bg-sticker px-2.5 py-1 text-[13px] font-bold leading-none text-ink">{pct}% off for scanning</span>}
               <EditionBadge edition={art.edition} compact />
             </div>
-            {discountEnded && <p className="text-[13.5px] text-ink-2">This card&apos;s discount has ended.</p>}
+            {discountEnded && <p className="t-small">This card&apos;s discount has ended.</p>}
           </div>
 
           {/* Size */}
@@ -268,7 +272,7 @@ export default function ScanView({
                   >
                     <input type="radio" name="size" value={s} checked={on} onChange={() => setSize(s)} className="sr-only" aria-describedby={s === closest ? "size-note" : undefined} />
                     {s === closest && (
-                      <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border-[1.5px] border-ink bg-sticker px-1.5 text-[10.5px] font-bold leading-[16px]">
+                      <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border-[1.5px] border-ink bg-sticker px-1.5 text-[12px] font-bold leading-[16px]">
                         ≈ original
                       </span>
                     )}
@@ -279,8 +283,8 @@ export default function ScanView({
                 );
               })}
             </div>
-            <p id="size-note" className="text-[13px] leading-snug text-ink-2">
-              {original && closest ? <>Original {originalText(original)} · </> : <>Not sure? </>}
+            <p id="size-note" className="t-small">
+              {original && closest ? <>Original {originalText(original)} · </> : <>{onTheWall(size)} · </>}
               <button type="button" onClick={seeInRoom} className="font-semibold text-scan underline decoration-scan/40 underline-offset-2 hover:decoration-scan">
                 see it in a room
               </button>
@@ -324,11 +328,10 @@ export default function ScanView({
           </div>
 
           {/* One trust line */}
-          <p className="-mt-1 hidden text-[13px] leading-relaxed text-ink-2 md:block">
+          <p className="t-small -mt-1 hidden md:block">
             {arrives ? <><b className="font-semibold text-ink">Arrives {arrives}</b> · free US shipping</> : <b className="font-semibold text-ink">Free US shipping</b>}
             {" · "}
             <Link href="/return-policy" className="underline decoration-line underline-offset-2 hover:text-ink">damaged? free reprint</Link>
-            {" · secure checkout"}
           </p>
         </section>
       </div>
@@ -337,8 +340,8 @@ export default function ScanView({
       <div className="mx-auto mt-10 grid max-w-[1240px] gap-8 border-t border-line px-4 pt-8 sm:px-6 md:mt-14 md:grid-cols-2 md:gap-12 md:pt-10">
         <section aria-labelledby="about-h" className="grid content-start gap-3">
           <h2 id="about-h" className="t-card">About this piece</h2>
-          {aboutText.trim() && <p className="whitespace-pre-line text-[15px] leading-relaxed text-ink-2">{aboutText}</p>}
-          {original && <p className="text-[15px] text-ink-2">Original: {originalText(original)}</p>}
+          {aboutText.trim() && <p className="t-muted whitespace-pre-line">{aboutText}</p>}
+          {original && <p className="t-muted">Original: {originalText(original)}</p>}
           <Link href={artistPath(artist.slug)} className="group mt-1 flex w-fit items-center gap-3 text-ink no-underline">
             <span className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full bg-wall">
               {artist.avatar ? (
@@ -353,22 +356,22 @@ export default function ScanView({
                 {artist.name}
                 <InlineBadges trust={trust} size={16} className="ml-0.5" />
               </span>
-              <span className="block text-[13.5px] text-ink-2">{[artist.place, artistLine].filter(Boolean).join(" · ")}</span>
+              <span className="t-small block">{[artist.place, artistLine].filter(Boolean).join(" · ")}</span>
             </span>
           </Link>
         </section>
 
         <section aria-labelledby="print-h" className="grid content-start gap-3">
           <h2 id="print-h" className="t-card">The print{framed ? " and frame" : ""}</h2>
-          <ul className="grid list-disc gap-1.5 pl-5 text-[15px] leading-snug text-ink-2 marker:text-line">
+          <ul className="t-muted grid list-disc gap-1.5 pl-5 marker:text-line">
             <li>
               {SIZE_LABEL[size]}, {sizeInches(size)}. Giclée on 310gsm archival matte paper, ½-inch border.
             </li>
             {frame && <li>{FRAME_COLORS.find((f) => f.key === frame)?.label} frame, ready to hang.</li>}
-            <li>Printed and shipped by Artfinity. {firstName} gets {pctOf(artistSplit)} of the profit.</li>
-            <li>Size is final sale. Arrives damaged? <Link href="/return-policy" className="font-semibold text-ink underline decoration-line underline-offset-2">We reprint it free.</Link></li>
+            <li>Printed in NYC and shipped by Artfinity. {firstName} gets {pctOf(artistSplit)} of the profit.</li>
+            <li>Size is final sale. Arrives damaged? <Link href="/return-policy" className="font-semibold text-ink underline decoration-line underline-offset-2">We reprint it free</Link>, no need to send it back.</li>
           </ul>
-          <Link href="/help/buyers" className="w-fit text-[14px] text-ink-2 underline decoration-line underline-offset-2 hover:text-ink">Shipping, frames and returns</Link>
+          <Link href="/help/buyers" className="t-small w-fit underline decoration-line underline-offset-2 hover:text-ink">Shipping, frames and returns</Link>
         </section>
       </div>
 
@@ -376,7 +379,7 @@ export default function ScanView({
         <section id="reviews" aria-labelledby="reviews-h" className="mx-auto mt-12 max-w-[1240px] scroll-mt-20 px-4 sm:px-6 md:mt-16">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
             <div className="grid gap-1.5">
-              <h2 id="reviews-h" className="display text-[28px] md:text-[36px]">{reviews.scope === "art" ? "What buyers say" : `Buyers of ${firstName}'s prints`}</h2>
+              <h2 id="reviews-h" className="t-section">{reviews.scope === "art" ? "What buyers say" : `Buyers of ${firstName}'s prints`}</h2>
               <ReviewStars average={reviews.summary.average} count={reviews.summary.count} />
             </div>
             {reviews.reviews.length > 1 && <ReviewSortPill value={reviewSort} onChange={setReviewSort} />}
@@ -387,7 +390,7 @@ export default function ScanView({
 
       <section aria-labelledby="more-h" className="mx-auto mt-12 max-w-[1240px] px-4 sm:px-6 md:mt-16">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <h2 id="more-h" className="display text-[28px] md:text-[36px]">More by {firstName}</h2>
+          <h2 id="more-h" className="t-section">More by {firstName}</h2>
           <div className="flex items-center gap-2">
             {more.length > 1 && <SortMenu label="Sort artworks" value={moreSort} onChange={setMoreSort} options={MORE_SORTS} />}
             <Link href={artistPath(artist.slug)} className="btn btn-ghost btn-sm min-h-[40px] px-4">See all</Link>
@@ -413,14 +416,14 @@ export default function ScanView({
                   </div>
                   <span className="leading-tight">
                     <b className="block text-[15px] group-hover:underline">{m.title}</b>
-                    <span className="num text-[13px] text-ink-2">from {usd(m.fromCents)}</span>
+                    <span className="t-small num">from {usd(m.fromCents)}</span>
                   </span>
                 </Link>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-ink-2">This is {firstName}&apos;s first piece here.</p>
+          <p className="t-muted">This is {firstName}&apos;s first piece here.</p>
         )}
       </section>
 

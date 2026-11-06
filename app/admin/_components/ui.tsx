@@ -3,14 +3,17 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-/** Title, an optional one-line sub (12 words max), and at most one primary action on the right. */
-export function PageHead({ title, sub, action, back, children }: { title: ReactNode; sub?: ReactNode; action?: ReactNode; back?: { href: string; label: string }; children?: ReactNode }) {
+/**
+ * Title, an optional one-line sub (12 words max), and at most one primary action on the right.
+ * `level={2}`: a section title under a shared page title (the settings tabs), so each page keeps one h1.
+ */
+export function PageHead({ title, sub, action, back, children, level = 1 }: { title: ReactNode; sub?: ReactNode; action?: ReactNode; back?: { href: string; label: string }; children?: ReactNode; level?: 1 | 2 }) {
   return (
     <div className="grid gap-2">
       {back && <Link href={back.href} className="justify-self-start text-[13.5px] font-semibold text-ink-2 no-underline hover:text-ink">← {back.label}</Link>}
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
         <div className="min-w-0">
-          <h1 className="t-page break-words">{title}</h1>
+          {level === 1 ? <h1 className="t-page break-words">{title}</h1> : <h2 className="t-section break-words">{title}</h2>}
           {sub && <p className="t-muted mt-1">{sub}</p>}
         </div>
         {action && <div className="flex flex-wrap items-center gap-2">{action}</div>}
@@ -19,6 +22,9 @@ export function PageHead({ title, sub, action, back, children }: { title: ReactN
     </div>
   );
 }
+
+/** Every admin table header row: 12px bold uppercase labels on a faint tint (the one place 12px is used for words). */
+export const THEAD = "border-b border-line bg-wall/60 text-[12px] font-bold uppercase tracking-[0.06em] text-ink-2";
 
 export type Tone = "red" | "amber" | "green" | "blue" | "grey" | "ink";
 const TONE: Record<Tone, string> = {

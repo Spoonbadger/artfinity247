@@ -25,8 +25,8 @@ export default function ResetPasswordForm({ status = "ok" }: { status?: "ok" | k
     return (
       <AuthCard className="mx-auto w-full max-w-[460px]">
         <div className="grid gap-5">
-          <h1 className="display text-[clamp(40px,9vw,54px)]">{dead.title}</h1>
-          <p className="text-[16px] text-ink-2">{dead.body}</p>
+          <h1 className="t-page">{dead.title}</h1>
+          <p className="t-body text-ink-2">{dead.body}</p>
           <Link href="/recover-password" className="btn btn-blue btn-lg w-full">Send a new link</Link>
           <Link href="/login" className="text-center text-[15px] font-semibold text-ink-2 underline underline-offset-4 hover:text-scan">Back to log in</Link>
         </div>
@@ -62,7 +62,7 @@ export default function ResetPasswordForm({ status = "ok" }: { status?: "ok" | k
   return (
     <AuthCard className="mx-auto w-full max-w-[460px]">
       <form onSubmit={onSubmit} className="grid gap-5" noValidate>
-        <h1 className="display text-[clamp(40px,9vw,54px)]">
+        <h1 className="t-page">
           Pick a new <Brushed>password</Brushed>
         </h1>
         <FormAlert>

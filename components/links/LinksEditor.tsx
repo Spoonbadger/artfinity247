@@ -237,7 +237,7 @@ function Row({
             {link.active ? prettyUrl(link.url) : `Hidden · ${prettyUrl(link.url)}`}
           </span>
         </button>
-        <span className="grid shrink-0 text-right text-[12px] leading-tight text-ink-2">
+        <span className="grid shrink-0 text-right text-[13px] leading-tight text-ink-2">
           <b className="num text-[15px] text-ink">{num(link.clicks)}</b>
           {link.clicks === 1 ? "click" : "clicks"}
         </span>
@@ -469,12 +469,11 @@ function AddButton({ onAdd }: { onAdd: (p: { url: string; label: string; display
 
 /* ---------------- Panels ---------------- */
 
-function Panel({ title, dab, aside, children, id }: { title: string; dab: string; aside?: ReactNode; children: ReactNode; id?: string }) {
+function Panel({ title, aside, children, id }: { title: string; aside?: ReactNode; children: ReactNode; id?: string }) {
   return (
     <section aria-labelledby={id} className="af-panel grid gap-4 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id={id} className="flex items-center gap-2.5 font-display text-[24px] font-extrabold [font-variation-settings:'wdth'_80]">
-          <i className="paint-dab h-4 w-5" style={{ ["--dab" as string]: dab }} />
+        <h2 id={id} className="t-card">
           {title}
         </h2>
         {aside}
@@ -690,7 +689,7 @@ export default function LinksEditor({
         <section aria-label="Your link" className="af-card relative grid gap-4 overflow-hidden p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-5">
           <div className="grid min-w-0 gap-2.5">
             <span className="eyebrow">Your link for bios</span>
-            <a href={`/@${page.slug}/links`} target="_blank" rel="noreferrer" className="font-display text-[clamp(22px,3.4vw,30px)] [overflow-wrap:anywhere] font-extrabold leading-[1.05] text-ink no-underline [font-variation-settings:'wdth'_80] hover:text-scan">
+            <a href={`/@${page.slug}/links`} target="_blank" rel="noreferrer" className="text-[20px] font-bold leading-tight text-ink no-underline [overflow-wrap:anywhere] hover:text-scan sm:text-[22px]">
               theartfinity.com/<wbr />@{page.slug}/<wbr />links
             </a>
             <div className="flex flex-wrap gap-2">
@@ -702,7 +701,7 @@ export default function LinksEditor({
                 <Download className="h-4 w-4" aria-hidden="true" /> QR code
               </button>
             </div>
-            <p className="num text-[13px] text-ink-2">
+            <p className="t-small num">
               <b className="text-ink">{num(totalClicks)}</b> {totalClicks === 1 ? "click" : "clicks"} so far
               {totalClicks === 0 && <span>. Put it in your Instagram or TikTok bio.</span>}
             </p>
@@ -712,7 +711,7 @@ export default function LinksEditor({
           </div>
         </section>
 
-        <Panel id="socials-h" title="Socials" dab="#5bc0be" aside={<span className="text-[13px] text-ink-2">Icons at the top. Also on your artist page.</span>}>
+        <Panel id="socials-h" title="Socials" aside={<span className="t-small">Icons at the top. Also on your artist page.</span>}>
           <AddSocial onAdd={add} have={new Set(socials.map((s) => s.kind))} />
           {socials.length > 0 ? (
             renderRows("social", socials)
@@ -721,16 +720,15 @@ export default function LinksEditor({
           )}
         </Panel>
 
-        <Panel id="links-h" title="Links" dab="#ffd43b" aside={<span className="text-[13px] text-ink-2">Big buttons. Any link you like.</span>}>
+        <Panel id="links-h" title="Links" aside={<span className="t-small">Big buttons, any link you like.</span>}>
           {buttons.length > 0 ? (
             renderRows("button", buttons)
           ) : (
             <EmptyState compact title="No links yet" body="Big buttons for anything, like this weekend's market or a commission form." />
           )}
           <AddButton onAdd={add} />
-          <p className="flex items-center gap-2 rounded-lg bg-wall px-3 py-2.5 text-[13px] text-ink-2">
-            <i className="paint-dab" style={{ ["--dab" as string]: "#2b37f0" }} />
-            Shop my prints is always last, linked to your page.
+          <p className="box-inset t-small px-3 py-2.5">
+            Shop my prints always comes after your links, linked to your page.
           </p>
         </Panel>
 
@@ -738,11 +736,8 @@ export default function LinksEditor({
         <details className="af-panel group p-4 sm:p-5">
           <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
             <span className="grid">
-              <span className="flex items-center gap-2.5 font-display text-[24px] font-extrabold [font-variation-settings:'wdth'_80]">
-                <i className="paint-dab h-4 w-5" style={{ ["--dab" as string]: "#e8743b" }} />
-                Look
-              </span>
-              <span className="text-[13px] text-ink-2">Background, buttons, colors and fonts</span>
+              <span className="t-card">Look</span>
+              <span className="t-small">Background, buttons, colors and fonts</span>
             </span>
             <span className="flex items-center gap-3">
               <span aria-live="polite" className={cn("text-[13px] font-semibold", saveState === "error" ? "text-coral" : "text-ink-2")}>

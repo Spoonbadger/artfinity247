@@ -52,7 +52,7 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
 
   return (
     <div className="grid gap-5">
-      <PageHead title="Reviews" sub={flaggedCount === 0 ? "Nothing held" : `${flaggedCount} held: a link or a rough word`} />
+      <PageHead title="Reviews" sub={flaggedCount === 0 ? "Nothing held" : `${flaggedCount} held`} />
       <nav aria-label="Review views" className="flex flex-wrap gap-2">
         {TABS.map((t) => (
           <Link
@@ -61,11 +61,11 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
             aria-current={tab === t.id ? "page" : undefined}
             className={cn(
               "inline-flex min-h-[40px] items-center rounded-full border-[1.5px] px-3.5 text-[14px] font-semibold no-underline transition",
-              tab === t.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"
+              tab === t.id ? "border-ink bg-ink text-white" : "border-edge-strong bg-white text-ink hover:border-ink"
             )}
           >
             {t.label}
-            {t.id === "hidden" ? <span className="num ml-1.5 opacity-70">{hiddenCount}</span> : flaggedCount > 0 ? <span className="num ml-1.5 rounded-full bg-coral px-1.5 text-[12px] text-white">{flaggedCount}</span> : null}
+            {t.id === "hidden" ? <span className="num ml-1.5 opacity-70">{hiddenCount}</span> : flaggedCount > 0 ? <span className="num ml-1.5 rounded-full bg-coral px-1.5 text-[12px] font-bold text-white">{flaggedCount}</span> : null}
           </Link>
         ))}
       </nav>

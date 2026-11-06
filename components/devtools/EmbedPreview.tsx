@@ -46,7 +46,7 @@ export default function EmbedPreview({ attrs, className, label = "your-site.com"
   if (bare) return embed;
   return (
     <figure className={cn("min-w-0 overflow-hidden rounded-2xl border border-line bg-white shadow-[0_2px_0_var(--af-line)]", className)}>
-      <figcaption className="flex items-center gap-2 border-b border-line bg-wall px-3 py-2 text-[12px] text-ink-2">
+      <figcaption className="flex items-center gap-2 border-b border-line bg-wall px-3 py-2 text-[13px] text-ink-2">
         <span className="flex gap-1" aria-hidden="true">
           <i className="h-2.5 w-2.5 rounded-full bg-coral/70" />
           <i className="h-2.5 w-2.5 rounded-full bg-sticker" />

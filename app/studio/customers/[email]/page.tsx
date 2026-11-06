@@ -78,15 +78,15 @@ export default async function CustomerPage({ params }: { params: { email: string
         </Link>
       }
     >
-      <dl className="grid grid-cols-3 gap-2 rounded-2xl border border-line bg-white p-3 text-center sm:max-w-[520px] sm:gap-4 sm:p-4">
+      <dl className="box grid grid-cols-3 gap-2 p-3 text-center sm:max-w-[520px] sm:gap-4 sm:p-4">
         {[
           { k: customer.orders.length === 1 ? "order" : "orders", v: customer.orders.length },
           { k: customer.prints === 1 ? "print" : "prints", v: customer.prints },
           { k: "spent with you", v: usd(customer.spentCents) },
         ].map((s) => (
           <div key={s.k} className="grid min-w-0 gap-0.5">
-            <dt className="order-2 text-[12px] text-ink-2">{s.k}</dt>
-            <dd className="display num order-1 text-[24px] [overflow-wrap:anywhere] sm:text-[28px]">{s.v}</dd>
+            <dt className="t-small order-2">{s.k}</dt>
+            <dd className="num order-1 text-[22px] font-bold [overflow-wrap:anywhere]">{s.v}</dd>
           </div>
         ))}
       </dl>
@@ -99,7 +99,7 @@ export default async function CustomerPage({ params }: { params: { email: string
           {customer.orders.slice(0, SHOW_ORDERS).map(card)}
           {customer.orders.length > SHOW_ORDERS && (
             <details className="group grid gap-3">
-              <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-2 text-[14px] font-semibold text-ink-2 hover:text-ink [&::-webkit-details-marker]:hidden">
+              <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-2 text-[15px] font-semibold text-ink-2 hover:text-ink [&::-webkit-details-marker]:hidden">
                 <ChevronDown className="h-4 w-4 transition group-open:rotate-180" aria-hidden="true" />
                 {customer.orders.length - SHOW_ORDERS} earlier {customer.orders.length - SHOW_ORDERS === 1 ? "order" : "orders"}
               </summary>

@@ -130,7 +130,7 @@ export default function ArtGrid({ items, handle }: { items: GridArt[]; handle: s
       <EmptyState
         dab="#e8743b"
         title="No paintings yet"
-        body="Upload one and its QR code is ready to print."
+        body="Upload one and its QR code is ready to print. Your first few pieces get a quick look from a person, usually within a day."
         action={{ label: "Upload art", href: "/studio/art/new" }}
         help={{ label: "How uploading works", href: "/help/getting-started/upload-art" }}
       />
@@ -144,7 +144,7 @@ export default function ArtGrid({ items, handle }: { items: GridArt[]; handle: s
       <div className="flex flex-wrap items-center gap-2">
         {selecting ? (
           <>
-            <span className="mr-auto text-[14px] font-semibold text-ink-2">Pick pieces to print codes for</span>
+            <span className="t-muted mr-auto font-semibold">Pick pieces to print codes for</span>
             <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPicked(allPicked ? new Set() : new Set(selectable.map((a) => a.slug)))}>
               <Check className="h-4 w-4" aria-hidden="true" />
               {allPicked ? "Clear all" : `All (${selectable.length})`}
@@ -220,7 +220,7 @@ export default function ArtGrid({ items, handle }: { items: GridArt[]; handle: s
                 </div>
                 <div className="min-w-0 px-0.5">
                   <Link href={`/studio/art/${a.slug}`} className="block truncate text-[15px] font-bold text-ink no-underline hover:underline" tabIndex={-1}>{a.title}</Link>
-                  <span className={cn("num block truncate text-[13px]", hidden ? "text-coral" : "text-ink-2")} title={meta}>{meta}</span>
+                  <span className={cn("t-small num block truncate", hidden && "!text-coral")} title={meta}>{meta}</span>
                 </div>
                 {!hidden && !selecting && (
                   <div className="-mt-1 hidden items-center justify-between gap-1 text-[13px] font-semibold text-scan [@media(hover:none)]:flex">

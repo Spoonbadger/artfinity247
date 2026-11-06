@@ -72,8 +72,8 @@ export default function ReportForm({ art, mode = "report" }: { art: ReportArt | 
     return (
       <div className="af-card grid justify-items-start gap-3 p-7" role="status">
         <span className="grid h-11 w-11 place-items-center rounded-full bg-scan text-white"><Check className="h-6 w-6" strokeWidth={3} aria-hidden="true" /></span>
-        <h2 className="display text-[36px]">{counter ? "Counter-notice received." : "Thank you."}</h2>
-        <p className="text-[16px] text-ink-2">
+        <h2 className="t-section">{counter ? "Counter-notice received." : "Thank you."}</h2>
+        <p className="t-body text-ink-2">
           {counter
             ? "We’ve emailed you a copy. We’ll pass it on and let you know when your work is back up."
             : "We review every report within 2 business days. If it’s infringing, we take it down. We’ll email you either way."}
@@ -123,9 +123,9 @@ export default function ReportForm({ art, mode = "report" }: { art: ReportArt | 
           </div>
           <div className="grid min-w-0 gap-0.5">
             <span className="eyebrow">{counter ? "Removed work" : "You’re reporting"}</span>
-            <b className="truncate text-[17px]">{art.title}</b>
-            <span className="truncate text-[14px] text-ink-2">by {art.artist}</span>
-            <span className="truncate text-[13px] text-ink-2">{SITE_URL.replace(/^https?:\/\//, "")}/art/{art.slug}</span>
+            <b className="t-card truncate">{art.title}</b>
+            <span className="t-small truncate">by {art.artist}</span>
+            <span className="t-small truncate">{SITE_URL.replace(/^https?:\/\//, "")}/art/{art.slug}</span>
           </div>
         </div>
       ) : (

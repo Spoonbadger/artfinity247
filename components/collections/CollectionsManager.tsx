@@ -162,7 +162,7 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
             <Plus className="h-5 w-5" aria-hidden /><span className="hidden sm:inline">Add</span>
           </button>
         </form>
-        {nameHint && <p id="new-collection-hint" role="alert" className="-mt-1 text-[13px] font-semibold text-coral">Type a name first, like &ldquo;East River series&rdquo;.</p>}
+        {nameHint && <p id="new-collection-hint" role="alert" className="t-small -mt-1 font-semibold !text-coral">Type a name first, like &ldquo;East River series&rdquo;.</p>}
 
         {/* No collections yet: the editor side says what they are and how to start, so this list stays quiet. */}
         {cols.length === 0 ? null : (
@@ -188,7 +188,7 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
                     </span>
                     <span className="min-w-0 leading-tight">
                       <b className="block truncate text-[15px]">{c.title}</b>
-                      <span className="num text-[13px] text-ink-2">{c.artworkIds.length} {c.artworkIds.length === 1 ? "piece" : "pieces"}</span>
+                      <span className="t-small num">{c.artworkIds.length} {c.artworkIds.length === 1 ? "piece" : "pieces"}</span>
                     </span>
                   </button>
                   <span className="flex shrink-0 flex-col">
@@ -204,7 +204,7 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
             })}
           </ol>
         )}
-        <p className="text-[13px] text-ink-2" aria-live="polite">
+        <p className="t-small" aria-live="polite">
           {saving ? "Saving…" : lastSave === "saved" ? "All changes saved. " : lastSave === "failed" ? "Last change didn't save. " : ""}
           {!saving && cols.length > 1 ? "Drag or use the arrows to sort." : ""}
         </p>
@@ -230,7 +230,7 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
                   <input
                     defaultValue={active.title}
                     maxLength={80}
-                    className="font-display !text-[26px] font-bold [font-variation-settings:'wdth'_80]"
+                    className="font-bold"
                     onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
                     onBlur={(e) => {
                       const t = e.target.value.replace(/\s+/g, " ").trim();
@@ -260,8 +260,8 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
 
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="flex items-baseline gap-2 t-card">
-                <i className="paint-dab" style={{ ["--dab" as string]: "var(--af-scan)" }} />On the wall
-                <span className="num text-[14px] font-semibold text-ink-2">{active.artworkIds.length}</span>
+                On the wall
+                <span className="t-small num font-semibold">{active.artworkIds.length}</span>
               </h2>
               <button type="button" onClick={() => setPicking((p) => !p)} aria-expanded={picking} className={cn("btn btn-sm", picking ? "btn-ghost" : "btn-blue")}>
                 {picking ? "Done adding" : <><Plus className="h-4 w-4" aria-hidden />Add pieces</>}
@@ -286,7 +286,7 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={a.imageUrl} alt="" className="max-h-full max-w-full bg-white object-contain" />
                           </span>
-                          <span className="truncate px-0.5 text-[12px] font-semibold">{a.title}</span>
+                          <span className="truncate px-0.5 text-[13px] font-semibold">{a.title}</span>
                           <span className={cn("absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full border-2 text-[12px] font-bold", inIt ? "border-white bg-sticker text-ink" : "border-ink/30 bg-white/90")}>
                             {inIt ? active.artworkIds.indexOf(a.id) + 1 : <Plus className="h-3.5 w-3.5" aria-hidden />}
                           </span>
@@ -325,7 +325,7 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={a.imageUrl} alt={a.title} draggable={false} className="max-h-full max-w-full bg-white object-contain shadow-[0_10px_20px_-8px_rgba(21,22,27,.45)]" />
                         <span className="num absolute left-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-white text-[13px] font-bold shadow-sm">{i + 1}</span>
-                        {isCover && <span className="sticker-badge absolute bottom-2 left-2 text-[11.5px]">Cover</span>}
+                        {isCover && <span className="sticker-badge absolute bottom-2 left-2 text-[12px]">Cover</span>}
                         <button type="button" onClick={() => takeOut(active, id, a.title)} className="absolute right-1.5 top-1.5 grid h-8 w-8 place-items-center rounded-full bg-white/90 text-ink-2 shadow-sm hover:text-coral" aria-label={`Take ${a.title} out`}>
                           <X className="h-4 w-4" aria-hidden />
                         </button>
@@ -356,7 +356,7 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
               </ol>
             )}
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
-              <p className="text-[13px] text-ink-2">Drag or use the arrows to sort. Saves as you go.</p>
+              <p className="t-small">Drag or use the arrows to sort. Saves as you go.</p>
               <button type="button" onClick={() => remove(active)} className="btn btn-ghost btn-sm text-coral" aria-label={`Delete collection ${active.title}`}>
                 <Trash2 className="h-4 w-4" aria-hidden />Delete collection
               </button>

@@ -4,6 +4,7 @@ import { ChangeEvent, DragEvent, FormEvent, type ReactNode, useCallback, useEffe
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Brushed, BrushStroke } from "@/components/af/Brush";
+import { FREE_SPLIT, pct } from "@/lib/plans";
 import QRCode from "@/components/af/QRCode";
 import { useUser } from "@/components/contexts";
 import { scanUrl } from "@/lib/qr/render";
@@ -417,7 +418,7 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
               {busy && <Spinner />}
               Continue
             </button>
-            <p className="text-center text-[14px] text-ink-2">Free, and no card needed.</p>
+            <p className="t-small text-center">Free, no card. You keep {pct(FREE_SPLIT)} of the profit on every print you sell.</p>
           </form>
         )}
 
@@ -457,6 +458,7 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
                 {busy ? "Making your page" : "Create my page"}
               </button>
             </div>
+            <p className="t-small -mt-2 text-center">Next: add one piece and get its QR code. You can skip it.</p>
           </form>
         )}
 
@@ -478,7 +480,7 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
               >
                 <svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 15v5h16v-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                 <b className="text-[17px]">Drop a photo of your painting</b>
-                <span className="text-[14px] text-ink-2">JPG or PNG. A phone photo is fine.</span>
+                <span className="t-small">JPG or PNG. A phone photo is fine.</span>
                 <span className="btn btn-blue btn-sm mt-2">Choose a photo</span>
                 {upload?.error && <span className="mt-1 text-[14px] font-semibold text-coral" role="alert">{upload.error}</span>}
               </label>
@@ -623,7 +625,7 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
                   </p>
                   <Link href={`/studio/qr?art=${encodeURIComponent(artwork.slug)}`} className="btn btn-blue btn-lg">Style and print it</Link>
                   <Link href={home} className="btn btn-ghost btn-lg">Go to my Studio</Link>
-                  <p className="text-[13.5px] text-ink-2">{!oauth?.emailVerified && <>Confirm your email with the link we sent to <b className="text-ink">{email.trim()}</b>. </>}We&apos;ll ask where to send money after your first sale.</p>
+                  <p className="t-small">{!oauth?.emailVerified && <>Confirm your email with the link we sent to <b className="text-ink">{email.trim()}</b>. </>}We&apos;ll ask where to send money after your first sale.</p>
                 </div>
               </div>
             ) : (
@@ -632,7 +634,7 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
                   You&apos;re at <b className="text-ink">theartfinity.com/@{handle}</b>. Add a piece to get its code.
                 </p>
                 {!oauth?.emailVerified && (
-                  <p className="text-[14px] text-ink-2">Confirm your email with the link we sent to <b className="text-ink">{email.trim()}</b>. Payouts wait for it.</p>
+                  <p className="t-small">Confirm your email with the link we sent to <b className="text-ink">{email.trim()}</b>. Payouts wait for it.</p>
                 )}
                 <Link href="/studio/art/new" className="btn btn-blue btn-lg">Add your first piece</Link>
                 <Link href={home} className="btn btn-ghost btn-lg">Go to my Studio</Link>
@@ -669,7 +671,7 @@ function StepHead({ n, refEl, children }: { n: Step; refEl: React.RefObject<HTML
   return (
     <div className="grid gap-2">
       <span className="eyebrow">{n === 4 ? "Done" : `Step ${n} of 4`}</span>
-      <h1 ref={refEl} tabIndex={-1} className="display text-[clamp(38px,4.6vw,56px)] outline-none">
+      <h1 ref={refEl} tabIndex={-1} className="t-page outline-none">
         {children}
       </h1>
     </div>

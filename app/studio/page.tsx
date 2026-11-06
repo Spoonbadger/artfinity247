@@ -27,9 +27,9 @@ const DAY = 86400000;
 function Stat({ href, label, value, note, tone }: { href: string; label: string; value: string; note: string; tone?: "earned" | "late" }) {
   return (
     <Link href={href} className="af-card grid min-w-0 content-start gap-1 p-4 text-ink no-underline transition-colors hover:border-ink">
-      <span className="text-[14px] font-semibold text-ink-2">{label}</span>
+      <span className="t-small font-semibold">{label}</span>
       <b className={`num text-[26px] font-bold leading-tight tracking-[-0.01em] sm:text-[28px] ${tone === "earned" ? "text-earned" : "text-ink"}`}>{value}</b>
-      <span className={`truncate text-[13px] ${tone === "late" ? "font-semibold text-coral" : "text-ink-2"}`}>{note}</span>
+      <span className={`t-small truncate ${tone === "late" ? "font-semibold !text-coral" : ""}`}>{note}</span>
     </Link>
   );
 }
@@ -100,16 +100,18 @@ export default async function StudioHome() {
   return (
     <StudioPage
       title={<><Greeting initial={serverGreeting(now)} />, {firstName(artist)}</>}
-      actions={<Link href="/studio/art/new" className="btn btn-blue"><Upload className="h-4 w-4" aria-hidden="true" />Upload art</Link>}
+      // Before the first upload, the checklist's Upload step is the one main button.
+      actions={hasArt && <Link href="/studio/art/new" className="btn btn-blue"><Upload className="h-4 w-4" aria-hidden="true" />Upload art</Link>}
     >
 
       {/* What to do next. Hides itself once everything is done. */}
       <NextSteps hasProfile={!!artist.profileImage && !!artist.bio?.trim()} hasArt={hasArt} hasSold={hasSold} hasVenmo={!!artist.venmoHandle || balance.payoutVia === "stripe"} hasEvent={eventCount > 0} slug={artist.slug} suggestion={scanSuggestion} />
+      {!hasArt && <p className="t-muted">After your first upload, your sales, scans and balance show up here.</p>}
 
       {/* How it's going: four numbers, each a link to the full story. Nothing to count before the first upload. */}
       {hasArt && (
         <section aria-labelledby="stats-h" className="grid gap-3">
-          <h2 id="stats-h" className="text-[13px] font-bold uppercase tracking-[0.08em] text-ink-2">Last 30 days</h2>
+          <h2 id="stats-h" className="eyebrow">Last 30 days</h2>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
             <Stat href="/studio/sales" label="You earned" value={usd(earned)} note={sales.length ? `${sales.length} ${sales.length === 1 ? "order" : "orders"}` : `Your ${pct(split)} of each sale's profit`} tone="earned" />
             <Stat href="/studio/sales" label="Prints sold" value={prints.toLocaleString("en-US")} note={best ? `Best: ${best.title}` : "None yet"} />
@@ -124,7 +126,7 @@ export default async function StudioHome() {
           <section className="af-card grid content-start gap-3 p-4 sm:p-5" aria-labelledby="chart-h">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h2 id="chart-h" className="t-card">Prints sold, by day</h2>
-              <Link href="/studio/analytics" className="-my-3 inline-flex min-h-[44px] items-center text-[13.5px] font-semibold text-ink-2 hover:text-ink">
+              <Link href="/studio/analytics" className="t-small -my-3 inline-flex min-h-[44px] items-center font-semibold hover:text-ink">
                 {viewsWeek ? `${viewsWeek.toLocaleString("en-US")} page views this week` : "Analytics"}
               </Link>
             </div>
@@ -142,10 +144,10 @@ export default async function StudioHome() {
             </div>
             <ul className="grid gap-3">
               {allSales.slice(0, 5).map((s) => (
-                <li key={s.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 text-[14px]">
+                <li key={s.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 text-[15px]">
                   <div className="min-w-0">
                     <b className="block truncate">{s.title}</b>
-                    <span className="block truncate text-[13px] text-ink-2">{SIZE_LABEL[s.size]}{s.quantity > 1 ? ` ×${s.quantity}` : ""} · {timeAgo(s.date, now)}</span>
+                    <span className="t-small block truncate">{SIZE_LABEL[s.size]}{s.quantity > 1 ? ` ×${s.quantity}` : ""} · {timeAgo(s.date, now)}</span>
                   </div>
                   <em className="num not-italic font-bold text-earned">+{usd(s.shareCents)}</em>
                 </li>
@@ -173,13 +175,13 @@ export default async function StudioHome() {
               </div>
               <ol className="grid gap-2.5">
                 {top.slice(0, 4).map((p, i) => (
-                  <li key={p.slug || p.title} className="flex items-center gap-3 text-[14px]">
-                    <span className="num w-4 text-[13px] font-bold text-ink-2">{i + 1}</span>
+                  <li key={p.slug || p.title} className="flex items-center gap-3 text-[15px]">
+                    <span className="t-small num w-4 font-bold">{i + 1}</span>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     {p.imageUrl && <img src={p.imageUrl} alt="" className="h-11 w-11 shrink-0 rounded-md object-cover" />}
                     <div className="min-w-0 flex-1">
                       <b className="block truncate">{p.title}</b>
-                      <span className="num block text-[13px] text-ink-2">{p.prints} sold</span>
+                      <span className="t-small num block">{p.prints} sold</span>
                     </div>
                     <span className="num font-bold text-earned">{usd(p.earned)}</span>
                   </li>

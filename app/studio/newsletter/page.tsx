@@ -48,7 +48,7 @@ export default async function NewsletterPage({ searchParams }: { searchParams: {
   }
 
   return (
-    <StudioPage title="Newsletter" sub="Show new work to the people who asked for it.">
+    <StudioPage title="Newsletter">
       <FollowersTabs active="/studio/newsletter" />
       <NewsletterComposer
         key={initial?.id ?? searchParams.from ?? "blank"}

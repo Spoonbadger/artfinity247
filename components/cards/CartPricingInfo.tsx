@@ -26,7 +26,7 @@ const CartPricingInfo = ({
   const f = (n: number) => `${currency}${n.toFixed(decimalPrecision)}`;
   return (
     <div className={cn("box w-full p-5", className)}>
-      <h2 className="mb-3 text-[22px] font-extrabold">{title}</h2>
+      <h2 className="t-card mb-3">{title}</h2>
       <dl className="num grid gap-1.5 text-[15px]">
         <div className="flex justify-between"><dt className="text-ink-2">Prints</dt><dd>{f(subtotal + savings)}</dd></div>
         {savings > 0 && (
@@ -35,7 +35,7 @@ const CartPricingInfo = ({
         <div className="flex justify-between"><dt className="text-ink-2">Shipping</dt><dd>{shipping ? f(shipping) : "Free"}</dd></div>
         <div className="mt-2 flex items-baseline justify-between border-t border-line pt-3">
           <dt className="font-bold">Total</dt>
-          <dd className="font-display text-[30px] font-extrabold leading-none [font-variation-settings:'wdth'_80]">{f(total)}</dd>
+          <dd className="t-section num">{f(total)}</dd>
         </div>
       </dl>
       {children && <div className="mt-4 grid gap-2">{children}</div>}

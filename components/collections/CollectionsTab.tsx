@@ -35,8 +35,8 @@ export default async function CollectionsTab({ artistSlug, collections }: { arti
               )}
             </div>
             <div className="flex items-baseline justify-between gap-3 px-0.5">
-              <b className="truncate font-display text-[24px] leading-none [font-variation-settings:'wdth'_80] group-hover:underline">{c.title}</b>
-              <span className="num shrink-0 text-[13px] text-ink-2">{c.count} {c.count === 1 ? "work" : "works"}</span>
+              <b className="t-card truncate group-hover:underline">{c.title}</b>
+              <span className="t-small num shrink-0">{c.count} {c.count === 1 ? "work" : "works"}</span>
             </div>
           </Link>
         </li>

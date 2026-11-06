@@ -95,7 +95,7 @@ export default function LoginForm({ providers = [] }: { providers?: ProviderId[]
   return (
     <AuthCard className="mx-auto w-full max-w-[460px]">
       <form onSubmit={onSubmit} className="grid gap-5" noValidate>
-        <h1 className="display text-[clamp(40px,9vw,54px)]">
+        <h1 className="t-page">
           Welcome <Brushed>back</Brushed>
         </h1>
         <FormAlert tone="ok">{notice}</FormAlert>

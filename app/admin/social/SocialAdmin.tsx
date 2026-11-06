@@ -36,7 +36,7 @@ function Section({ id, title, sub, children, action, fold }: { id: string; title
   );
   if (fold) {
     return (
-      <details id={id} aria-labelledby={`${id}-h`} className="group scroll-mt-24 rounded-2xl border border-line bg-white p-4 sm:p-6">
+      <details id={id} aria-labelledby={`${id}-h`} className="group scroll-mt-24 rounded-2xl border border-edge bg-white p-4 sm:p-6">
         <summary className="flex cursor-pointer list-none flex-wrap items-end justify-between gap-3 [&::-webkit-details-marker]:hidden">
           {head}
           <span aria-hidden="true" className="text-ink-2 transition group-open:rotate-180">▾</span>
@@ -46,7 +46,7 @@ function Section({ id, title, sub, children, action, fold }: { id: string; title
     );
   }
   return (
-    <section id={id} aria-labelledby={`${id}-h`} className="grid scroll-mt-24 gap-4 rounded-2xl border border-line bg-white p-4 sm:p-6">
+    <section id={id} aria-labelledby={`${id}-h`} className="grid scroll-mt-24 gap-4 rounded-2xl border border-edge bg-white p-4 sm:p-6">
       <header className="flex flex-wrap items-end justify-between gap-3">{head}</header>
       {children}
     </section>
@@ -141,7 +141,7 @@ function Promote({ options, canEdit }: { options: PromoteOptions; canEdit: boole
   const [preset, setPreset] = useState("");
   const [busy, setBusy] = useState(false);
   const a = options.find((o) => o.id === artistId);
-  if (!options.length) return <EmptyState compact title="No art to promote yet" body="Promote needs an approved piece from an artist who allows features." action={{ label: "Review new art", href: "/admin/moderation" }} />;
+  if (!options.length) return <EmptyState dab="var(--af-edge-strong)" compact title="No art to promote yet" body="Promote needs an approved piece from an artist who allows features." action={{ label: "Review new art", href: "/admin/moderation" }} />;
   const items = kind === "artwork" ? a?.artworks.map((x) => ({ id: x.id, label: x.title })) : kind === "collection" ? a?.collections.map((x) => ({ id: x.id, label: `${x.title} (${x.count})` })) : kind === "event" ? a?.events.map((x) => ({ id: x.id, label: `${x.name} · ${x.start}` })) : [];
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -219,7 +219,7 @@ function History({ posts, render }: { posts: AdminPost[]; render: (p: AdminPost)
       <TableToolbar filters={t.filters} setFilter={t.setFilter} clear={t.clear} active={t.active} search="Caption or error" statuses={statuses.length > 1 ? statuses : undefined} dates count={shown.length} total={posts.length}>
         <SortSelect options={HISTORY_SORTS} sort={t.sort} onChange={t.setSort} />
       </TableToolbar>
-      {shown.length === 0 ? <EmptyState compact title="Nothing matches" action={{ label: "Clear filters", onClick: t.clear }} /> : <ol className="grid gap-3">{shown.map(render)}</ol>}
+      {shown.length === 0 ? <EmptyState dab="var(--af-edge-strong)" compact title="Nothing matches" action={{ label: "Clear filters", onClick: t.clear }} /> : <ol className="grid gap-3">{shown.map(render)}</ol>}
     </div>
   );
 }
@@ -275,8 +275,7 @@ export default function SocialAdmin({
 
       <Section id="queue" title="Queue" sub={`${settings.maxPerDay === 1 ? "Once a day" : `Up to ${settings.maxPerDay} a day`} at ${settings.times.join(", ")}`}>
         {queue.length === 0 ? (
-          <EmptyState
-            title="Nothing in the queue"
+          <EmptyState dab="var(--af-edge-strong)"             title="Nothing in the queue"
             body={settings.autoQueue ? "New art shows up here as drafts once it's approved. Or promote a piece, a collection, an event or an artist now." : "Auto-queue is off. Promote something, or turn auto-queue on in Settings."}
             action={{ label: "Promote something", href: "#promote" }}
             secondary={settings.autoQueue ? { label: "Review new art", href: "/admin/moderation" } : { label: "Settings", href: "#settings" }}
@@ -309,7 +308,7 @@ export default function SocialAdmin({
 
       <Section id="history" title={`History (${history.length})`} sub="Posted, failed and skipped." fold>
         {history.length === 0 ? (
-          <EmptyState compact title="No posts yet" body="Posted, failed and skipped posts show up here." action={{ label: "Go to the queue", href: "#queue" }} />
+          <EmptyState dab="var(--af-edge-strong)" compact title="No posts yet" body="Posted, failed and skipped posts show up here." action={{ label: "Go to the queue", href: "#queue" }} />
         ) : (
           <History posts={history} render={(p) => <PostCard key={p.id} post={p} base={base} connected={ig.connected} canEdit={canEdit} scale={scale} season={season} focus={focus === p.id} />} />
         )}

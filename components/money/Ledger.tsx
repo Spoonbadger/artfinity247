@@ -37,7 +37,7 @@ function StatusTag({ l, currentMonth, compact = false }: { l: Pick<LedgerLine, "
 function RefundTag({ l }: { l: LedgerLine }) {
   if (!l.refunded) return null;
   return (
-    <span className="ml-1.5 rounded-full bg-coral/15 px-1.5 text-[11px] font-bold text-coral" title={l.refunded === "reversed" ? "The buyer was refunded, so this sale doesn't count toward your payout." : "The buyer was refunded after this was paid out. You keep it."}>
+    <span className="ml-1.5 rounded-full bg-coral/15 px-1.5 text-[12px] font-bold text-coral" title={l.refunded === "reversed" ? "The buyer was refunded, so this sale doesn't count toward your payout." : "The buyer was refunded after this was paid out. You keep it."}>
       Refunded
     </span>
   );
@@ -59,7 +59,7 @@ function AdjustmentRow({ a, currentMonth }: { a: AdjustmentLine; currentMonth: s
         <span aria-hidden="true" className="row-span-2 grid h-10 w-10 place-items-center rounded-[3px] bg-coral/15 text-[18px] font-bold text-coral">↩</span>
         <b className="min-w-0 truncate font-semibold" title={title}>Refund adjustment</b>
         <b className="text-right text-coral">{usd(a.amountCents)}</b>
-        <span className="min-w-0 truncate text-[12px] text-ink-2">Order #{a.orderRef} · {a.title} · {dayUTC(a.date)}</span>
+        <span className="min-w-0 truncate text-[13px] text-ink-2">Order #{a.orderRef} · {a.title} · {dayUTC(a.date)}</span>
         <span className="text-right"><StatusTag l={a} currentMonth={currentMonth} compact /></span>
       </td>
       <td className="hidden whitespace-nowrap py-2.5 pr-3 text-ink-2 lg:table-cell">{dayUTC(a.date)}</td>
@@ -68,7 +68,7 @@ function AdjustmentRow({ a, currentMonth }: { a: AdjustmentLine; currentMonth: s
           <span aria-hidden="true" className="grid h-8 w-8 shrink-0 place-items-center rounded-[3px] bg-coral/15 font-bold text-coral">↩</span>
           <span className="min-w-0">
             <b className="block truncate font-semibold" title={title}>Refund adjustment</b>
-            <span className="block truncate text-[12px] text-ink-2">Order #{a.orderRef} · {a.title}</span>
+            <span className="block truncate text-[13px] text-ink-2">Order #{a.orderRef} · {a.title}</span>
           </span>
         </span>
       </td>
@@ -152,7 +152,7 @@ export default function Ledger({ ledger, adjustments = [], currentMonth }: { led
         <div className="min-w-0">
           <table className="num w-full border-collapse text-[13.5px]">
             <thead className="sr-only lg:not-sr-only">
-              <tr className="border-b border-line text-left text-[12px] text-ink-2">
+              <tr className="border-b border-line text-left text-[13px] text-ink-2">
                 <th className="pb-2 pr-3 font-semibold">Date</th>
                 <th className="pb-2 pr-3 font-semibold">Artwork</th>
                 <th className="pb-2 pr-3 font-semibold">Buyer</th>
@@ -177,9 +177,9 @@ export default function Ledger({ ledger, adjustments = [], currentMonth }: { led
                       {l.imageUrl ? <img src={l.imageUrl} alt="" className="row-span-3 h-10 w-10 rounded-[3px] object-cover" /> : <span className="row-span-3 block h-10 w-10 rounded-[3px] bg-gallery" />}
                       <b className="min-w-0 truncate font-semibold">{l.title}<RefundTag l={l} /></b>
                       <b className="text-right text-earned">+{usd(l.shareCents)}</b>
-                      <span className="min-w-0 truncate text-[12px] text-ink-2">{SIZE_LABEL[l.size]}{l.quantity > 1 ? ` ×${l.quantity}` : ""} · {dayUTC(l.date)} · {buyer}</span>
+                      <span className="min-w-0 truncate text-[13px] text-ink-2">{SIZE_LABEL[l.size]}{l.quantity > 1 ? ` ×${l.quantity}` : ""} · {dayUTC(l.date)} · {buyer}</span>
                       <span className="text-right"><StatusTag l={l} currentMonth={currentMonth} compact /></span>
-                      <span className="col-span-2 text-[11.5px] text-ink-2">{usd(l.grossCents)} − {usd(l.printingCents)} printing − {usd(l.feesCents)} fees · {Math.round(l.split * 100)}%</span>
+                      <span className="col-span-2 text-[13px] text-ink-2">{usd(l.grossCents)} − {usd(l.printingCents)} printing − {usd(l.feesCents)} fees · {Math.round(l.split * 100)}%</span>
                     </td>
                     <td className="hidden whitespace-nowrap py-2.5 pr-3 text-ink-2 lg:table-cell">{dayUTC(l.date)}</td>
                     <td className="hidden max-w-[240px] py-2.5 pr-3 lg:table-cell">
@@ -188,7 +188,7 @@ export default function Ledger({ ledger, adjustments = [], currentMonth }: { led
                         {l.imageUrl && <img src={l.imageUrl} alt="" className="h-8 w-8 shrink-0 rounded-[3px] object-cover" />}
                         <span className="min-w-0">
                           <b className="block truncate font-semibold">{l.title}<RefundTag l={l} /></b>
-                          <span className="block text-[12px] text-ink-2">{SIZE_LABEL[l.size]}{l.framed ? ", framed" : ""}{l.quantity > 1 ? ` ×${l.quantity}` : ""}</span>
+                          <span className="block text-[13px] text-ink-2">{SIZE_LABEL[l.size]}{l.framed ? ", framed" : ""}{l.quantity > 1 ? ` ×${l.quantity}` : ""}</span>
                         </span>
                       </span>
                     </td>
@@ -199,7 +199,7 @@ export default function Ledger({ ledger, adjustments = [], currentMonth }: { led
                     <td className="hidden py-2.5 pr-3 text-right lg:table-cell">{usd(l.profitCents)}</td>
                     <td className="hidden py-2.5 pr-3 text-right lg:table-cell">
                       <b className="block text-earned">+{usd(l.shareCents)}</b>
-                      <span className="text-[11.5px] text-ink-2">{Math.round(l.split * 100)}%</span>
+                      <span className="text-[13px] text-ink-2">{Math.round(l.split * 100)}%</span>
                     </td>
                     <td className="hidden whitespace-nowrap py-2.5 lg:table-cell"><StatusTag l={l} currentMonth={currentMonth} /></td>
                   </tr>

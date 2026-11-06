@@ -61,7 +61,7 @@ export default async function VenueStatementPage({ params, searchParams }: { par
           <div className="overflow-x-auto">
             <table className="w-full min-w-[620px] text-left text-[14px]">
               <caption className="sr-only">Sales from codes at {v.name} in {label}</caption>
-              <thead className="border-b border-line text-[12px] text-ink-2">
+              <thead className="border-b border-line text-[12px] font-bold uppercase tracking-[0.06em] text-ink-2">
                 <tr>
                   <th scope="col" className="py-2 pr-3 font-semibold">Date</th>
                   <th scope="col" className="py-2 pr-3 font-semibold">Artwork</th>

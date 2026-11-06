@@ -28,7 +28,6 @@ export default async function AutomationsPage() {
   return (
     <StudioPage
       title="Automations"
-      sub="Set it once. It runs every time you upload."
       actions={plan.active ? <Link href="/studio/infinity" className="btn btn-ghost btn-sm min-h-[44px] md:min-h-0">Plan</Link> : undefined}
     >
       <AutomationsPanel

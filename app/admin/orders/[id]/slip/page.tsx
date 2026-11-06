@@ -45,7 +45,7 @@ export default async function PackingSlipPage({ params }: { params: { id: string
         <PageHead back={{ href: `/admin/orders/${order.id}`, label: `Order ${orderNumber(order.id)}` }} title="Packing slip" sub={order.shippingName || order.email} action={<PrintSlipButton />} />
       </div>
 
-      <section className="grid max-w-[7.3in] gap-5 rounded-2xl border border-line bg-white p-6 text-[14px] print:max-w-none print:border-0 print:p-0">
+      <section className="grid max-w-[7.3in] gap-5 rounded-2xl border border-edge bg-white p-6 text-[14px] print:max-w-none print:border-0 print:p-0">
         <div className="flex flex-wrap justify-between gap-4">
           <div className="grid gap-0.5">
             <span className="eyebrow">Ship to</span>
@@ -60,7 +60,7 @@ export default async function PackingSlipPage({ params }: { params: { id: string
         </div>
 
         <table className="w-full text-left">
-          <thead className="text-[11.5px] uppercase tracking-[0.06em] text-ink-2">
+          <thead className="text-[12px] uppercase tracking-[0.06em] text-ink-2">
             <tr><th className="pb-1.5 font-bold">Print</th><th className="pb-1.5 font-bold">Size</th><th className="pb-1.5 text-right font-bold">Qty</th></tr>
           </thead>
           <tbody>
@@ -68,7 +68,7 @@ export default async function PackingSlipPage({ params }: { params: { id: string
               const size = normalizeSize(i.size);
               return (
                 <tr key={i.id} className="border-t border-line">
-                  <td className="py-1.5 pr-2"><b>{i.title || i.artwork?.title || "Untitled"}</b><div className="text-[12px] text-ink-2">{i.artistName || i.artwork?.artist.artist_name || i.artwork?.artist.name}</div></td>
+                  <td className="py-1.5 pr-2"><b>{i.title || i.artwork?.title || "Untitled"}</b><div className="text-[13px] text-ink-2">{i.artistName || i.artwork?.artist.artist_name || i.artwork?.artist.name}</div></td>
                   <td className="py-1.5">{SIZE_LABEL[size] ?? size}{i.frameChosen ? `, framed${i.frameColor ? ` ${i.frameColor}` : ""}` : ""}</td>
                   <td className="num py-1.5 text-right">{i.quantity ?? 1}</td>
                 </tr>

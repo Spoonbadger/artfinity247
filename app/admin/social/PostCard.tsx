@@ -182,12 +182,12 @@ export default function PostCard({
   const fits = PRESETS.filter((p) => p.pieces === "one" || m.pieces.length > 1);
 
   return (
-    <li id={`post-${post.id}`} className={cn("grid gap-4 rounded-2xl border bg-white p-4", focus ? "border-ink ring-2 ring-scan" : "border-line")}>
+    <li id={`post-${post.id}`} className={cn("grid gap-4 rounded-2xl border bg-white p-4", focus ? "border-ink ring-2 ring-scan" : "border-edge")}>
       <div className="flex flex-wrap items-start gap-4">
         {thumb ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={thumb} alt="" className="h-20 w-20 shrink-0 rounded-md border-[3px] border-white object-cover shadow-[0_1px_4px_rgba(21,22,27,.25)]" />
-        ) : <span className="grid h-20 w-20 shrink-0 place-items-center rounded-md bg-wall text-[12px] text-ink-2">No art</span>}
+        ) : <span className="grid h-20 w-20 shrink-0 place-items-center rounded-md bg-wall text-[13px] text-ink-2">No art</span>}
         <div className="grid min-w-0 flex-1 gap-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className={cn("rounded-full px-2 py-0.5 text-[12px] font-bold", st.cls)}>{st.label}</span>
@@ -242,7 +242,7 @@ export default function PostCard({
             <>
               {!connected && <a href={post.mediaUrl} download={`artfinity-${post.id}.${fileExt}`} className="btn btn-sm" onClick={() => saved("Video downloading", { description: "Post it on Instagram, then press Mark as posted." })}><Download size={14} aria-hidden="true" /> Download video</a>}
               <button type="button" className="btn btn-ghost btn-sm" onClick={async () => (await copy(post.caption)) ? saved("Caption copied", { description: "Paste it in Instagram." }) : failed("Couldn't copy", { description: "Select the caption and copy it by hand.", fix: { label: "Show caption", href: `#post-${post.id}` } })}><Copy size={14} aria-hidden="true" /> Copy caption</button>
-              {connected && <button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => act({ action: "publish_now" })}>Publish now</button>}
+              {connected && <button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => { if (confirm("Posts it to our Instagram now. Deleting it later has to be done in Instagram.")) act({ action: "publish_now" }); }}>Publish now</button>}
               <button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => act({ action: "unschedule" })}>Back to draft</button>
             </>
           )}
@@ -259,7 +259,7 @@ export default function PostCard({
         </form>
       )}
       {post.status === "approved" && post.mediaUrl && (
-        <video src={post.mediaUrl} controls muted playsInline className="max-h-[320px] w-auto max-w-full justify-self-start rounded-xl border border-line" aria-label={`Rendered video for ${m.title}`} />
+        <video src={post.mediaUrl} controls muted playsInline className="max-h-[320px] w-auto max-w-full justify-self-start rounded-xl border border-edge" aria-label={`Rendered video for ${m.title}`} />
       )}
       {open && post.status === "draft" && canEdit && <RenderPanel post={post} base={base} scale={scale} season={season} onDone={() => { setOpen(false); refresh(); }} />}
     </li>

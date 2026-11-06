@@ -86,7 +86,7 @@ export default function DesignEditor({ slug, initial, works, hasMedal }: { slug:
                 role="radio"
                 aria-checked={theme.banner.kind === "auto"}
                 onClick={() => set("banner", { kind: "auto" })}
-                className={cn("grid h-[68px] w-[92px] shrink-0 place-items-center rounded-lg border-2 bg-wall px-2 text-center text-[12px] font-bold leading-tight", theme.banner.kind === "auto" ? "border-ink ring-2 ring-ink ring-offset-2" : "border-line hover:border-ink")}
+                className={cn("grid h-[68px] w-[92px] shrink-0 place-items-center rounded-lg border-2 bg-wall px-2 text-center text-[13px] font-bold leading-tight", theme.banner.kind === "auto" ? "border-ink ring-2 ring-ink ring-offset-2" : "border-line hover:border-ink")}
               >
                 Best seller
               </button>
@@ -151,7 +151,7 @@ export default function DesignEditor({ slug, initial, works, hasMedal }: { slug:
                   <LayoutSketch layout={l.id} color={accent.color} />
                   <span className="grid leading-tight">
                     <b className="text-[14px]">{l.name}</b>
-                    <span className="text-[12px] text-ink-2">{l.note}</span>
+                    <span className="text-[13px] text-ink-2">{l.note}</span>
                   </span>
                 </button>
               );
@@ -169,6 +169,8 @@ export default function DesignEditor({ slug, initial, works, hasMedal }: { slug:
               action={{ label: "Add your first piece", href: "/studio/art/new" }}
             />
           ) : (
+            <>
+            <p className="t-small -mt-1">Pinned pieces show first on your page, in the order you tap them.</p>
             <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
               {works.map((w) => {
                 const i = theme.pinned.indexOf(w.id);
@@ -194,13 +196,14 @@ export default function DesignEditor({ slug, initial, works, hasMedal }: { slug:
                 );
               })}
             </div>
+            </>
           )}
         </Section>
 
         {/* Stats toggle */}
         <Section title="Medals and sales count">
           <label className="flex cursor-pointer items-center justify-between gap-4">
-            <span className="flex items-center gap-2.5 text-[14.5px]">
+            <span className="flex items-center gap-2.5 text-[15px]">
               {hasMedal ? <Medal tier="gold" size={22} /> : <Medal tier="bronze" size={22} locked />}
               Show them on my page
             </span>
@@ -232,7 +235,7 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
     <section className="af-panel grid gap-3 p-4">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="t-card">{title}</h2>
-        {hint && <span className="truncate text-[13px] text-ink-2">{hint}</span>}
+        {hint && <span className="t-small truncate">{hint}</span>}
       </div>
       {children}
     </section>

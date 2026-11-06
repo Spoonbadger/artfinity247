@@ -8,7 +8,7 @@ export function AuthCard({ children, className }: { children: ReactNode; classNa
   return (
     <div
       className={cn(
-        "relative min-w-0 rounded-[22px] border-2 border-ink bg-paper p-6 shadow-[8px_8px_0_var(--af-ink)] sm:p-9 sm:shadow-[10px_10px_0_var(--af-ink)]",
+        "relative min-w-0 rounded-[22px] border border-edge bg-paper p-6 shadow-[0_24px_48px_-28px_rgba(21,22,27,.45)] sm:p-9",
         className,
       )}
     >
@@ -36,7 +36,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field({ l
           (e.currentTarget.querySelector("input") as HTMLInputElement | null)?.focus();
         }}
       >
-        <label htmlFor={fid} className="text-xs text-ink-2">{label}</label>
+        <label htmlFor={fid} className="text-[13px] text-ink-2">{label}</label>
         <span className="flex min-w-0 items-baseline">
           {prefix && <span className="shrink-0 text-[17px] text-ink-2">{prefix}</span>}
           <input ref={ref} id={fid} aria-invalid={error ? true : undefined} aria-describedby={error || hint ? msgId : undefined} {...rest} />

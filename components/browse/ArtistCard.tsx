@@ -46,13 +46,13 @@ export default function ArtistCard({ artist, trust }: { artist: DirArtist; trust
         <Avatar src={artist.avatar} name={artist.name} />
         <div className="min-w-0 flex-1">
           <span className="flex min-w-0 items-center gap-1.5">
-            <b className="truncate text-[17px] leading-tight group-hover:text-scan">{artist.name}</b>
+            <b className="t-card truncate group-hover:text-scan">{artist.name}</b>
             <InlineBadges trust={trust} size={17} />
           </span>
-          <span className="block truncate text-[14px] text-ink-2">{artist.city}{artist.city ? " · " : ""}<span className="num">{artist.count}</span> {artist.count === 1 ? "piece" : "pieces"}</span>
+          <span className="t-small block truncate">{artist.city}{artist.city ? " · " : ""}<span className="num">{artist.count}</span> {artist.count === 1 ? "piece" : "pieces"}</span>
         </div>
       </div>
-      {artist.bio && <p className="line-clamp-2 text-[14.5px] leading-snug text-ink-2">{artist.bio}</p>}
+      {artist.bio && <p className="t-muted line-clamp-2">{artist.bio}</p>}
     </Link>
   );
 }
@@ -70,8 +70,8 @@ export function YourSpotCard({ className }: { className?: string }) {
       <div className="flex items-center gap-3">
         <span className="h-11 w-11 shrink-0 rounded-full border-2 border-dashed border-ink/30" aria-hidden="true" />
         <div>
-          <b className="block text-[17px] leading-tight group-hover:text-scan">Start selling free</b>
-          <span className="block text-[14px] text-ink-2">Takes about a minute.</span>
+          <b className="t-card block group-hover:text-scan">Start selling free</b>
+          <span className="t-small block">Takes about a minute.</span>
         </div>
       </div>
     </Link>

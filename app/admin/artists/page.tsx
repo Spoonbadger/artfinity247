@@ -66,7 +66,7 @@ export default async function AdminArtistsPage({ searchParams }: { searchParams:
           <>
             <ActionButton
               url="/api/admin/artists" need="accounts" tone="blue" label="Create account" title="Create an artist account"
-              confirm="For an artist you met in person. They get an email to set a password."
+              confirm="Creates the account now and emails them a link to set a password."
               fields={[
                 { name: "artist_name", label: "Artist name (shown on their page)", required: true },
                 { name: "handle", label: "Handle", required: true, placeholder: "e.g. maya.paints", hint: "3–30 letters, numbers, dots or underscores. Their page is /@handle." },
@@ -154,7 +154,7 @@ export default async function AdminArtistsPage({ searchParams }: { searchParams:
           { key: "unpaid", label: "Unpaid", align: "right" },
         ]}
         rows={tableRows}
-        empty={<EmptyState title="No artists match" action={{ label: "Clear filters", href: "/admin/artists" }} />}
+        empty={<EmptyState dab="var(--af-edge-strong)" title="No artists match" action={{ label: "Clear filters", href: "/admin/artists" }} />}
       />
       {rows.length > PAGE && (
         <div className="flex gap-2">

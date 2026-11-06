@@ -75,10 +75,10 @@ export default function ActionButton({
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-[60] bg-ink/40" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-[61] grid max-h-[90svh] w-[min(460px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-2xl border border-line bg-white p-5 shadow-xl">
-          <Dialog.Title className="text-[19px] font-bold">{title}</Dialog.Title>
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-[61] grid max-h-[90svh] w-[min(460px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-2xl border border-edge bg-white p-5 shadow-xl">
+          <Dialog.Title className="t-card">{title}</Dialog.Title>
           <Dialog.Description asChild>
-            <div className="text-[14.5px] leading-relaxed text-ink-2">{confirm}</div>
+            <div className="t-muted">{confirm}</div>
           </Dialog.Description>
           <form onSubmit={submit} className="grid gap-3" noValidate>
             {fields.map((f) => (
@@ -93,7 +93,7 @@ export default function ActionButton({
                 ) : (
                   <input name={f.name} type={f.type === "number" ? "number" : "text"} defaultValue={f.defaultValue} placeholder={f.placeholder} className="min-h-[42px] rounded-lg border-[1.5px] border-line px-3 text-[15px] font-normal text-ink focus:border-ink" />
                 )}
-                {f.hint && <span className="text-[12px] font-normal text-ink-2">{f.hint}</span>}
+                {f.hint && <span className="t-small font-normal">{f.hint}</span>}
               </label>
             ))}
             {err && <p role="alert" className="text-[13.5px] font-semibold text-coral">{err}</p>}

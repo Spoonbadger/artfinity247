@@ -34,8 +34,8 @@ export default function RoomsIndex({ arts }: { arts: RoomsArt[] }) {
                 <RoomScene scene={scenes[0]} slug={a.slug} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" imageUrl={a.imageUrl} size="large" frame="black" blur={a.sensitive.length > 0} />
                 <div className="flex items-center justify-between gap-3 px-4 py-3">
                   <span className="min-w-0">
-                    <span className="block truncate text-[16px] font-bold">{a.title}</span>
-                    <span className="text-[13px] text-ink-2">{a.roomScenes.length ? `${a.roomScenes.length} ${a.roomScenes.length === 1 ? "room" : "rooms"} picked` : "We pick for you"}</span>
+                    <span className="t-card block truncate">{a.title}</span>
+                    <span className="t-small">{a.roomScenes.length ? `${a.roomScenes.length} ${a.roomScenes.length === 1 ? "room" : "rooms"} picked` : "We pick for you"}</span>
                   </span>
                   <span className="text-[13.5px] font-bold text-scan">{a.roomScenes.length ? "Edit" : "Pick"}</span>
                 </div>

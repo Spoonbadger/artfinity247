@@ -70,7 +70,7 @@ export default function ReviewsAdmin({ reviews: initial, tab = "all" }: { review
   };
 
   const remove = async (r: AdminReview) => {
-    if (!confirm(`Delete ${r.buyerName}'s review for good? They could write a new one from their link.`)) return;
+    if (!confirm(`Deletes ${r.buyerName}'s review for good. They can write a new one from their link. This can't be undone.`)) return;
     setBusy(r.id);
     try {
       const res = await fetch(`/api/admin/reviews/${r.id}`, { method: "DELETE" });
@@ -86,7 +86,7 @@ export default function ReviewsAdmin({ reviews: initial, tab = "all" }: { review
   };
 
   if (!items.length) {
-    return <EmptyState title={tab === "hidden" ? "Nothing hidden" : "No reviews yet"} dab="var(--af-earned)" />;
+    return <EmptyState dab="var(--af-edge-strong)" title={tab === "hidden" ? "Nothing hidden" : "No reviews yet"} />;
   }
 
   return (
@@ -94,14 +94,14 @@ export default function ReviewsAdmin({ reviews: initial, tab = "all" }: { review
     <TableToolbar filters={t.filters} setFilter={t.setFilter} clear={t.clear} active={t.active} search="Buyer, words or artist" statuses={tab === "hidden" ? undefined : [{ value: "flagged", label: "Held" }, { value: "published", label: "Live" }, { value: "hidden", label: "Hidden" }]} dates count={shown.length} total={items.length}>
       <SortSelect options={SORTS} sort={t.sort} onChange={t.setSort} />
     </TableToolbar>
-    {shown.length === 0 && <EmptyState compact title="Nothing matches" action={{ label: "Clear filters", onClick: t.clear }} />}
+    {shown.length === 0 && <EmptyState dab="var(--af-edge-strong)" compact title="Nothing matches" action={{ label: "Clear filters", onClick: t.clear }} />}
     <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       {shown.map((r) => {
         const st = STATUS[r.status] ?? STATUS.published;
         return (
           <li key={r.id} className={cn("grid content-start gap-2.5 rounded-2xl border bg-white p-4", r.status === "flagged" ? "border-coral" : "border-line")}>
             <div className="flex items-center gap-2">
-              <span className={cn("rounded-full px-2 py-0.5 text-[11.5px] font-bold", st.cls)}>{st.label}</span>
+              <span className={cn("rounded-full px-2 py-0.5 text-[12px] font-bold", st.cls)}>{st.label}</span>
               <Dabs value={r.rating} size="sm" />
               <span className="ml-auto text-[13px] text-ink-2">{new Date(r.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" })}</span>
             </div>

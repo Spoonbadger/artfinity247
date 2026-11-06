@@ -62,7 +62,7 @@ export default function AuditList({ rows, compact = false, empty = "Nothing logg
           <li key={r.id} className={compact ? "grid gap-1 py-2.5" : "grid gap-x-4 gap-y-1 py-2.5 sm:grid-cols-[130px_minmax(0,1fr)_auto] sm:items-baseline"}>
             <span className="num text-[13px] text-ink-2">{when(r.createdAt)}{compact ? ` · ${r.adminEmail}` : ""}</span>
             <div className="min-w-0">
-              <span className={`mr-2 inline-block rounded-full px-2 py-px text-[11.5px] font-bold ${tone(r.action)}`}>{r.action}</span>
+              <span className={`mr-2 inline-block rounded-full px-2 py-px text-[12px] font-bold ${tone(r.action)}`}>{r.action}</span>
               <span className="text-[14px]">{r.summary || "—"}</span>
               {!compact && href && (
                 <Link href={href} className="ml-2 whitespace-nowrap text-[13px] font-semibold text-scan hover:underline">

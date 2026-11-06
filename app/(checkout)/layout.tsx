@@ -14,7 +14,7 @@ export default function CheckoutLayout({ children }: { children: ReactNode }) {
         </div>
       </header>
       <main className="flex-1">{children}</main>
-      <footer className="px-4 py-6 text-center text-[13px] text-ink-2">
+      <footer className="t-small px-4 py-6 text-center">
         Questions? <Link href="/contact" className="font-semibold text-ink">Contact us</Link> · <Link href="/return-policy" className="font-semibold text-ink">Returns</Link>
       </footer>
     </div>

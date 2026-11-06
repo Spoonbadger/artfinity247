@@ -26,7 +26,7 @@ export default function GetPaidCard({ status, mode, venmoHandle, nextDate, verif
         </span>
       </div>
 
-      <p className="text-[14.5px]">
+      <p className="text-[15px]">
         {status === "ready"
           ? <>Straight to your bank via Stripe. Next one: <b>{nextDate}</b>.</>
           : status === "pending"

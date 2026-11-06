@@ -42,7 +42,7 @@ function MessageItem({ m, titleFor, onDelete }: { m: ThreadMessage; titleFor: (i
   if (m.direction === "note") {
     return (
       <li className="relative grid gap-1.5 rounded-[4px] border border-[#eadb9a] bg-[#fff7cf] p-3 pr-10 shadow-[0_2px_0_#eadb9a]">
-        <span className="flex flex-wrap items-center gap-x-2 text-[12px] font-semibold text-ink-2">
+        <span className="flex flex-wrap items-center gap-x-2 text-[13px] font-semibold text-ink-2">
           <Lock className="h-3.5 w-3.5" aria-hidden="true" />Private note · {when(m.createdAt)}{piece ? ` · ${piece}` : ""}
         </span>
         <p className="whitespace-pre-wrap text-[14.5px] text-ink">{m.body}</p>
@@ -62,11 +62,11 @@ function MessageItem({ m, titleFor, onDelete }: { m: ThreadMessage; titleFor: (i
   const inbound = m.direction === "in";
   return (
     <li className={cn("grid gap-1.5 rounded-[4px] border border-line bg-white p-3 shadow-[0_2px_0_var(--af-line)]", inbound ? "border-l-[3px] border-l-[#c98a5a]" : "border-l-[3px] border-l-scan")}>
-      <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] font-semibold text-ink-2">
+      <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-semibold text-ink-2">
         {inbound ? <Mail className="h-3.5 w-3.5" aria-hidden="true" /> : <Heart className="h-3.5 w-3.5 text-scan" aria-hidden="true" />}
         {inbound ? "From them" : "Emailed"} · {when(m.sentAt || m.createdAt)}
         {parcel && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-sticker px-2 py-px text-[11px] font-bold text-ink">
+          <span className="inline-flex items-center gap-1 rounded-full bg-sticker px-2 py-px text-[12px] font-bold text-ink">
             <Package className="h-3 w-3" aria-hidden="true" />In the parcel
           </span>
         )}
@@ -274,7 +274,7 @@ export default function Conversation({
             </button>
           </div>
         </div>
-        {mode === "thank_you" && <p className="-mt-1 text-[12px] text-ink-2">Replies go to your inbox.</p>}
+        {mode === "thank_you" && <p className="t-small -mt-1">Sent by email. Replies go to your inbox.</p>}
       </form>
     </section>
   );

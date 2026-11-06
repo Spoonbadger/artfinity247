@@ -236,7 +236,7 @@ export default function PrintQueue({ groups, pricing, infinity, orders, address,
         <EmptyState
           dab="#ffd43b"
           title="Your print queue is empty"
-          body="Add codes from QR Studio, from My art, or right after you upload. Then print them all at once on label sheets, or have us print, laminate and mail them to you."
+          body="Add codes from QR Studio or My art, then print them together on label sheets. Or we print, laminate and mail them."
           action={{ label: "Make a code", href: "/studio/qr" }}
           secondary={pieces ? { label: busy === "all" ? "Adding…" : `Add all my pieces (${pieces})`, onClick: addAll } : { label: "Upload art", href: "/studio/art/new" }}
           help={{ label: "How the print queue works", href: "/help/qr-codes/print-queue" }}
@@ -249,7 +249,7 @@ export default function PrintQueue({ groups, pricing, infinity, orders, address,
   return (
     <div className="grid gap-6">
       {notices}
-      <p className="num text-[14px] font-semibold text-ink-2" aria-live="polite">
+      <p className="t-small num font-semibold" aria-live="polite">
         {quote.cards} {quote.cards === 1 ? "card" : "cards"} · {totalCodes} {totalCodes === 1 ? "code" : "codes"} · {totalSheets} {totalSheets === 1 ? "sheet" : "sheets"} to print at home
       </p>
 
@@ -262,7 +262,7 @@ export default function PrintQueue({ groups, pricing, infinity, orders, address,
             return (
               <section key={g.format} aria-labelledby={`grp-${g.format}`} className="af-card grid gap-4 p-4 sm:p-5">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <h2 id={`grp-${g.format}`} className="t-card">{g.name}s <span className="text-[14px] font-semibold text-ink-2">· {g.size}</span></h2>
+                  <h2 id={`grp-${g.format}`} className="t-card">{g.name}s <span className="t-small font-semibold">· {g.size}</span></h2>
                   <span className="num text-[13.5px] font-semibold text-ink-2">{cardWords(g.format, n)} · {sheets} {sheets === 1 ? "sheet" : "sheets"}{free ? ` · ${free} spot${free === 1 ? "" : "s"} left on the last` : ""}</span>
                 </div>
 
@@ -325,12 +325,12 @@ export default function PrintQueue({ groups, pricing, infinity, orders, address,
 
                 {g.sheets.length > 0 && (
                   <div className="grid gap-2">
-                    <h3 className="text-[13px] font-bold uppercase tracking-[0.08em] text-ink-2">Your sheets, as they&apos;ll print</h3>
+                    <h3 className="eyebrow">Your sheets, as they&apos;ll print</h3>
                     <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
                       {g.sheets.map((svg, i) => (
                         <figure key={i} className="grid shrink-0 gap-1">
                           <div className="w-[132px] overflow-hidden rounded border border-line bg-white shadow-[0_2px_0_var(--af-line)] [&>svg]:h-auto [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: svg }} />
-                          <figcaption className="text-center text-[12px] text-ink-2">Sheet {i + 1} of {g.sheetCount}</figcaption>
+                          <figcaption className="text-center text-[13px] text-ink-2">Sheet {i + 1} of {g.sheetCount}</figcaption>
                         </figure>
                       ))}
                       {g.sheetCount > g.sheets.length && <p className="self-center text-[13px] text-ink-2">+{g.sheetCount - g.sheets.length} more</p>}
@@ -434,7 +434,7 @@ function MailOrder({ quote, infinity, pricing, address, testMode, onOrdered, onP
     <section aria-labelledby="mail-h" className="af-card grid gap-4 p-4 sm:p-5">
       <div className="grid gap-1">
         <h2 id="mail-h" className="flex items-center gap-2 t-card"><Truck className="h-5 w-5" aria-hidden="true" />Have us print them</h2>
-        <p className="text-[14px] text-ink-2">Laminated, pre-cut and mailed to you. Every code in your queue, ready to hang.</p>
+        <p className="t-muted">Laminated, pre-cut and mailed to you, ready to hang.</p>
       </div>
 
       <PaymentSummary
@@ -474,7 +474,7 @@ function MailOrder({ quote, infinity, pricing, address, testMode, onOrdered, onP
         </fieldset>
         <p className="text-[13px] text-ink-2">US addresses only. We mail them with tracking.</p>
         <PayButton type="submit" amountCents={quote.total} busy={busy} disabled={!quote.cards} className="btn btn-blue w-full" />
-        <p className="text-[12px] text-ink-2">{testMode ? "Test mode: saved as paid, no card needed." : "Secure payment by Stripe: Apple Pay, Google Pay or card."} We email your receipt, then tracking when they ship.</p>
+        <p className="text-[13px] text-ink-2">{testMode ? "Test mode: saved as paid, no card needed." : "Secure payment by Stripe: Apple Pay, Google Pay or card."} We email your receipt, then tracking when they ship.</p>
       </form>
     </section>
   );

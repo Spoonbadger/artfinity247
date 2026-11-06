@@ -25,8 +25,8 @@ function Note({ title, children, items }: { title: string; children: React.React
           ))}
         </div>
       )}
-      <h1 className="display text-[38px] leading-[1.02] sm:text-[48px]">{title}</h1>
-      <div className="text-[17px] text-ink-2">{children}</div>
+      <h1 className="t-page">{title}</h1>
+      <div className="t-body text-ink-2">{children}</div>
     </div>
   );
 }
@@ -91,15 +91,15 @@ export default async function ReviewPage({ params, searchParams }: Props) {
     <div className="bg-wall">
       <div className="mx-auto grid max-w-[620px] gap-6 px-4 pb-20 pt-8 sm:pt-12">
         <header className="grid gap-2">
-          <span className="sticker-badge w-fit">{reviewed && reviewed === items.length ? "Thanks for reviewing" : "Verified buyer"}</span>
-          <h1 className="display text-[42px] leading-[1.0] sm:text-[56px]">
+          <span className="eyebrow">{reviewed && reviewed === items.length ? "Thanks for reviewing" : "Verified buyer"}</span>
+          <h1 className="t-page">
             {first ? `${first}, how` : "How"} does it look on your{" "}
             <span className="relative z-0 whitespace-nowrap">
               wall?
               <BrushStroke className="absolute -bottom-1 -left-1 -z-10 h-3 w-[calc(100%+8px)]" />
             </span>
           </h1>
-          <p className="text-[16.5px] text-ink-2">
+          <p className="t-body mt-1 text-ink-2">
             {items.length > 1 ? "Rate each print. " : ""}A few words or a photo helps the artist more than you&apos;d think.
           </p>
         </header>

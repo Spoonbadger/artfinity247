@@ -95,7 +95,7 @@ export default function StudioShell({ artist, children, badges }: { artist: Shel
     <span className="flex items-center gap-2">
       <Logo href="/" className={cn("py-2.5", size)} />
       <Link href="/studio" className="group flex min-h-[44px] items-center no-underline">
-        <span className="rounded-full border border-line bg-white/70 px-2 py-0.5 text-[11.5px] font-bold uppercase tracking-[0.08em] text-ink-2 group-hover:text-ink">Studio</span>
+        <span className="rounded-full border border-line bg-white/70 px-2 py-0.5 text-[12px] font-bold uppercase tracking-[0.08em] text-ink-2 group-hover:text-ink">Studio</span>
       </Link>
     </span>
   );

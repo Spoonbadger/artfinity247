@@ -6,7 +6,7 @@ export default function ProChip({ className, title = "the Infinity plan" }: { cl
     <span
       title={title}
       className={cn(
-        "inline-flex shrink-0 -rotate-2 items-center gap-1 rounded-full bg-ink px-2 py-[1px] align-middle font-display text-[11px] font-extrabold uppercase leading-[18px] tracking-[0.06em] text-white",
+        "inline-flex shrink-0 -rotate-2 items-center gap-1 rounded-full bg-ink px-2 py-[1px] align-middle font-display text-[12px] font-extrabold uppercase leading-[18px] tracking-[0.06em] text-white",
         className,
       )}
     >

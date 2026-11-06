@@ -28,6 +28,7 @@ import { activeFollowerCount } from "@/lib/followers";
 import ViewBeacon from "@/components/analytics/ViewBeacon";
 import { UrlSort } from "@/components/browse/UrlSort";
 import type { ArtistWork } from "@/components/artist/data";
+import { FREE_SPLIT, pct } from "@/lib/plans";
 
 const WORK_SORTS = [
   { value: "newest", label: "Newest" },
@@ -74,12 +75,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-function Stat({ value, label, dab }: { value: string | number; label: string; dab: string }) {
+function Stat({ value, label }: { value: string | number; label: string }) {
   return (
-    <div className="grid min-w-0 gap-1">
-      <span className="paint-dab h-3 w-5" style={{ ["--dab" as string]: dab }} />
-      <b className="display num truncate text-[30px] text-ink">{value}</b>
-      <span className="text-[13px] text-ink-2">{label}</span>
+    <div className="grid min-w-0 gap-0.5">
+      <b className="t-card num truncate">{value}</b>
+      <span className="t-small">{label}</span>
     </div>
   );
 }
@@ -118,9 +118,9 @@ export default async function ArtistPage({ params, searchParams }: Props) {
   const about = (
     <div className="grid max-w-[620px] gap-6">
       {artist.bio ? (
-        <p className="font-display text-[26px] font-semibold leading-[1.2] text-ink [font-variation-settings:'wdth'_85] sm:text-[30px]">{artist.bio}</p>
+        <p className="t-body text-[17px] leading-[1.7]">{artist.bio}</p>
       ) : (
-        <p className="text-ink-2">{isOwner ? "Add a line about your work in Edit page." : "No bio yet."}</p>
+        <p className="t-muted">{isOwner ? "Add a line about your work in Edit page." : "No bio yet."}</p>
       )}
       <dl className="grid grid-cols-2 gap-4 border-t border-line pt-5 text-[15px] sm:max-w-[420px]">
         {artist.city && (
@@ -176,29 +176,31 @@ export default async function ArtistPage({ params, searchParams }: Props) {
           {/* Left column. On phones it drops below the work, so the art is on the first screen. */}
           <aside className="grid content-start gap-7 max-lg:order-last">
             <div className="grid grid-cols-[auto_auto_minmax(0,1fr)] gap-x-7 gap-y-4">
-              <Stat value={artist.works.length} label={artist.works.length === 1 ? "work" : "works"} dab="#f7c8a8" />
-              {theme.showStats && artist.sales > 0 ? <Stat value={artist.sales} label={artist.sales === 1 ? "print sold" : "prints sold"} dab="var(--accent)" /> : null}
-              {cityShort ? <Stat value={cityShort} label={stateShort || "city"} dab="#b8c4ff" /> : null}
+              <Stat value={artist.works.length} label={artist.works.length === 1 ? "work" : "works"} />
+              {theme.showStats && artist.sales > 0 ? <Stat value={artist.sales} label={artist.sales === 1 ? "print sold" : "prints sold"} /> : null}
+              {cityShort ? <Stat value={cityShort} label={stateShort || "city"} /> : null}
             </div>
             {/* Follower count, quietly, once it's worth showing */}
             {theme.showStats && followers >= 10 && (
-              <p className="-mt-3 text-[13.5px] text-ink-2"><b className="num font-semibold text-ink">{followers.toLocaleString("en-US")}</b> followers</p>
+              <p className="t-small -mt-3"><b className="num font-semibold text-ink">{followers.toLocaleString("en-US")}</b> followers</p>
             )}
 
             <TrustBlock trust={trust} />
 
-            {artist.bio && <p className="text-[15px] leading-relaxed text-ink-2">{artist.bio}</p>}
+            {artist.bio && <p className="t-muted">{artist.bio}</p>}
+
+            <p className="t-small">Every print is made in NYC and ships free in the US. {artist.firstName || artist.name} gets at least {pct(FREE_SPLIT)} of the profit.</p>
 
             {venues.length > 0 && (
               <section aria-labelledby="in-person" className="grid gap-2.5">
-                <h2 id="in-person" className="font-body text-[15px] font-bold [font-variation-settings:normal]">
+                <h2 id="in-person" className="t-card">
                   See it in person
                 </h2>
-                <ul className="grid gap-0 rounded-xl border-[1.5px] border-line bg-wall/50 px-3.5 py-1.5">
+                <ul className="box-inset grid gap-0 px-3.5 py-1.5">
                   {venues.map((v, i) => (
                     <li key={i} className="flex items-baseline justify-between gap-3 border-b border-dashed border-line py-2 text-[14px] last:border-0">
                       <span className="min-w-0 text-ink">{v.name}</span>
-                      <span className="shrink-0 text-[13px] font-semibold text-ink-2">{v.when}</span>
+                      <span className="t-small shrink-0 font-semibold">{v.when}</span>
                     </li>
                   ))}
                 </ul>
@@ -208,7 +210,7 @@ export default async function ArtistPage({ params, searchParams }: Props) {
             {isOwner && (
               <section aria-label="Your page" className="relative grid gap-3 rounded-2xl border border-edge bg-white p-4">
                 <span className="sticker-badge absolute -top-3 left-4 text-[12px]">Your page</span>
-                <p className="pt-1 text-[14px] text-ink-2">Only you see this.</p>
+                <p className="t-small pt-1">Only you see this.</p>
                 <div className="flex flex-wrap gap-2">
                   <Link href="/studio/page" className="btn btn-sm">Edit page</Link>
                   <Link href="/studio/design" className="btn btn-ghost btn-sm">Design</Link>

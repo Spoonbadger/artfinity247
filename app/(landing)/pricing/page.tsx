@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Check, Minus } from "lucide-react";
+import { Check, ChevronDown, Minus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Brushed, BrushStroke } from "@/components/af/Brush";
 import { DabRow } from "@/components/browse/PageHead";
@@ -72,7 +72,7 @@ export default async function PricingPage() {
         <div>
           <div className="mb-4 flex items-center gap-2.5"><DabRow /><span className="eyebrow">Pricing</span></div>
           <h1 className="display max-w-[12ch] text-[52px] sm:text-[84px]">Free to sell. <Brushed>Infinity</Brushed> to grow.</h1>
-          <p className="mt-5 max-w-[34ch] text-[18px] text-ink-2 sm:text-[20px]">
+          <p className="mt-5 max-w-[34ch] text-[17px] text-ink-2">
             Keep {pct(FREE_SPLIT)} of the profit on Free, or {pct(PRO.split)} on {PRO.name} for {proPrice()} a month.
           </p>
         </div>
@@ -95,9 +95,9 @@ export default async function PricingPage() {
       <section aria-label="Plans" className="mx-auto grid max-w-[1240px] gap-4 px-4 pb-16 sm:px-6 md:grid-cols-2 md:gap-6">
         <div className="af-card grid content-start gap-5 p-5 sm:p-7">
           <div className="grid gap-1">
-            <h2 className="display text-[36px] leading-none">Free</h2>
-            <p className="display num text-[56px] leading-none">$0</p>
-            <p className="text-[15px] text-ink-2">Everything you need to sell.</p>
+            <h2 className="t-card">Free</h2>
+            <p className="t-num">$0</p>
+            <p className="t-muted">Everything you need to sell.</p>
           </div>
           <Link href="/register" className="btn btn-blue btn-lg w-full">Start selling free</Link>
           <FeatureList which="free" />
@@ -106,13 +106,13 @@ export default async function PricingPage() {
         <div className="relative grid content-start gap-5 overflow-hidden rounded-2xl border-[1.5px] border-ink bg-ink p-5 text-white sm:p-7">
           <BrushStroke className="pointer-events-none absolute -right-10 top-6 h-12 w-72 rotate-[-4deg]" color="var(--af-sticker)" />
           <div className="relative grid gap-1">
-            <h2 className="display flex items-center gap-3 text-[36px] leading-none !text-white">Infinity plan</h2>
-            <p className="display num text-[56px] leading-none !text-white">{proPrice()}<span className="text-[20px] text-white/70">/mo</span></p>
-            <p className="text-[15px] text-white/75">{pct(PRO.split)} of profit, plus auto videos and automations.</p>
+            <h2 className="t-card !text-white">Infinity plan</h2>
+            <p className="t-num !text-white">{proPrice()}<span className="font-body text-[17px] font-bold text-white/70 [font-variation-settings:normal]">/mo</span></p>
+            <p className="t-muted !text-white/75">{pct(PRO.split)} of profit, plus auto videos and automations.</p>
           </div>
           <div className="relative grid gap-2">
             <StartInfinityButton label={<>Get {PRO.name} · {proPrice()}/month</>} className="btn btn-sticker btn-lg w-full" activeClassName="btn btn-ghost btn-lg w-full !border-white !text-white hover:!bg-white hover:!text-ink" />
-            <span className="text-center text-[13px] text-white/70">Billed monthly by Stripe. Cancel anytime.</span>
+            <span className="t-small text-center !text-white/75">Billed monthly by Stripe. Cancel anytime.</span>
             <Link href="/studio/infinity#referrals" className="text-center text-[14px] font-bold text-white underline-offset-2 hover:underline">Or share Artfinity, get {REFERRALS.rewardMonths} months free</Link>
           </div>
           <div className="relative"><FeatureList which="pro" dark /></div>
@@ -123,10 +123,9 @@ export default async function PricingPage() {
       <section id="calculator" aria-labelledby="calc-h" className="scroll-mt-20 border-y border-line bg-wall">
         <div className="mx-auto grid max-w-[1240px] gap-8 px-4 py-14 sm:px-6 md:py-20">
           <header className="grid gap-2">
-            <h2 id="calc-h" className="display text-[40px] sm:text-[56px]">Is Infinity worth it for you?</h2>
-            <p className="text-[16px] text-ink-2">Slide to your numbers.</p>
+            <h2 id="calc-h" className="t-feature">Is Infinity worth it for you?</h2>
           </header>
-          <div className="rounded-2xl border border-line bg-white p-4 sm:p-7">
+          <div className="box p-4 sm:p-7">
             <ProCalculator />
           </div>
         </div>
@@ -134,15 +133,15 @@ export default async function PricingPage() {
 
       {/* faq */}
       <section aria-labelledby="faq-h" className="mx-auto grid max-w-[880px] gap-6 px-4 py-14 sm:px-6 md:py-20">
-        <h2 id="faq-h" className="display text-[40px] sm:text-[52px]">Questions</h2>
+        <h2 id="faq-h" className="t-feature">Questions</h2>
         <div className="grid divide-y divide-line border-y border-line">
           {FAQ.map(([q, a]) => (
             <details key={q} className="group py-1">
-              <summary className="flex min-h-[52px] cursor-pointer list-none items-center justify-between gap-4 text-[17px] font-bold [&::-webkit-details-marker]:hidden">
+              <summary className="flex min-h-[52px] cursor-pointer list-none items-center justify-between gap-4 t-card [&::-webkit-details-marker]:hidden">
                 {q}
-                <span aria-hidden="true" className="paint-dab transition group-open:rotate-90" style={{ ["--dab" as string]: "var(--af-scan)" }} />
+                <ChevronDown className="h-5 w-5 shrink-0 transition group-open:rotate-180" aria-hidden="true" />
               </summary>
-              <p className="pb-4 text-[16px] text-ink-2">{a}</p>
+              <p className="t-body pb-4 text-ink-2">{a}</p>
             </details>
           ))}
         </div>

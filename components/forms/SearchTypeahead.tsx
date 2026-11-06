@@ -143,7 +143,7 @@ export default function SearchTypeahead({
             const head = it.group && items[i - 1]?.group !== it.group;
             return (
               <li key={it.key} {...cb.optionProps(i)} aria-label={it.group ? `${it.label}${it.sub ? `, ${it.sub}` : ""}` : it.label} className={cn("cursor-pointer rounded-xl", !it.group && "mt-1 border-t border-line pt-1")}>
-                {head && <span aria-hidden="true" className="eyebrow block px-2.5 pb-1 pt-2 text-[11px]">{it.group}</span>}
+                {head && <span aria-hidden="true" className="eyebrow block px-2.5 pb-1 pt-2">{it.group}</span>}
                 <span className={cn("flex min-h-[44px] items-center gap-2.5 rounded-xl px-2.5 py-1.5", i === cb.active ? "bg-scan-soft" : "hover:bg-wall")}>
                   {it.group === "" ? (
                     <Search className="h-4 w-4 shrink-0 text-ink-2" aria-hidden="true" />

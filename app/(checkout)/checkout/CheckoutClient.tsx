@@ -6,6 +6,7 @@ import { useCart, useUser } from "@/components/contexts";
 import { CartItemCard } from "@/components/cards";
 import { cartArtistNames, lineSavings, startCheckout } from "@/components/art/checkout";
 import { checks, emailTypo } from "@/lib/smartFields";
+import { deliveryRange } from "@/lib/delivery";
 import { failed } from "@/lib/feedback";
 import { Problem } from "@/components/studio/Problem";
 import PaymentSummary, { type PayRow, type TaxLine } from "@/components/payments/PaymentSummary";
@@ -98,7 +99,7 @@ export default function CheckoutClient({ tax, collectorEmail = null, reward = nu
     return (
       <div className="mx-auto grid max-w-md justify-items-center gap-3 px-4 py-20 text-center">
         <title>Checkout · Artfinity</title>
-        <h1 className="display text-[40px]">Your cart is empty</h1>
+        <h1 className="t-page">Your cart is empty</h1>
         <Link href="/art" className="btn btn-blue">Browse art</Link>
       </div>
     );
@@ -111,7 +112,7 @@ export default function CheckoutClient({ tax, collectorEmail = null, reward = nu
     <form onSubmit={(e) => { e.preventDefault(); void pay(); }} className="mx-auto grid max-w-[1040px] items-start gap-6 px-4 pb-32 pt-6 sm:px-6 md:grid-cols-[minmax(0,1fr)_360px] md:gap-10 md:py-10">
       <div className="grid gap-5">
         <div className="flex items-end justify-between gap-3">
-          <h1 className="display text-[40px] md:text-[52px]">Checkout</h1>
+          <h1 className="t-page">Checkout</h1>
           <Link href="/cart" className="pb-1.5 text-[14px] font-semibold text-ink-2 hover:text-ink">Edit cart</Link>
         </div>
         <div className="divide-y divide-line rounded-2xl border border-line bg-white px-4">
@@ -125,7 +126,7 @@ export default function CheckoutClient({ tax, collectorEmail = null, reward = nu
             It won&apos;t be charged. The total shows the rest.
           </Problem>
         )}
-        {repriced && <p className="text-[13.5px] text-ink-2" role="status">Prices changed since you added these. The total shows today&apos;s price.</p>}
+        {repriced && <p className="t-small" role="status">Prices changed since you added these. The total shows today&apos;s price.</p>}
         <div className="grid gap-1.5">
           <label className={`af-field${emailErr ? " !border-coral" : ""}`}>
             <span className="label">Email for your receipt</span>
@@ -143,7 +144,7 @@ export default function CheckoutClient({ tax, collectorEmail = null, reward = nu
               {emailTypo(email) && <button type="button" onClick={() => { setEmail(emailTypo(email)!); setEmailErr(null); }} className="ml-2 font-bold text-scan underline underline-offset-2">Use it</button>}
             </p>
           ) : (
-            <p id="receipt-email-hint" className="px-1 text-[13px] text-ink-2">No account needed. You can also add it on the next screen.</p>
+            <p id="receipt-email-hint" className="t-small px-1">No account needed. You can add it on the next screen too.</p>
           )}
         </div>
         <label className="flex cursor-pointer items-start gap-2.5 text-left text-[14px] leading-snug text-ink">
@@ -164,12 +165,13 @@ export default function CheckoutClient({ tax, collectorEmail = null, reward = nu
         <span className="hidden md:contents">
           <PayButton type="button" amountCents={total} plusTax={taxLine === "added"} onPay={pay} disabled={payDisabled} className="btn btn-blue btn-lg w-full" />
         </span>
+        <p className="t-small">Printed in NYC, arrives <b className="font-semibold text-ink">{deliveryRange()}</b>. We email tracking when it ships.</p>
         {taxLine === "test" && (
-          <p className="rounded-xl bg-sticker/60 px-3 py-2 text-[13px]">
+          <p className="t-small rounded-xl bg-sticker/60 px-3 py-2 text-ink">
             <b>Test mode.</b> No card needed: the order is saved as paid.
           </p>
         )}
-        {taxLine === "added" && <p className="text-[13px] text-ink-2">Address and payment on the next screen, where Stripe adds the sales tax for your address.</p>}
+        {taxLine === "added" && <p className="t-small">Address and payment on the next screen, where Stripe adds the sales tax for your address.</p>}
         <div className="border-t border-line pt-3"><TrustStrip artist={who} /></div>
       </PaymentSummary>
 

@@ -18,7 +18,7 @@ export type ScanItemView = {
 
 function Sizes({ sizes, label }: { sizes: string[]; label: string }) {
   return (
-    <span className="flex flex-wrap items-center gap-1 text-[12px]">
+    <span className="flex flex-wrap items-center gap-1 text-[13px]">
       <span className="text-ink-2">{label}</span>
       {PRINT_SIZES.map((s) => {
         const ok = !sizes.length || sizes.includes(s);

@@ -5,8 +5,8 @@ import { useId } from "react";
 type Props = { imageUrl: string; title: string; artistFirstName: string };
 
 const CARD = "grid content-start gap-2";
-const LABEL = "text-[14px] font-bold leading-tight";
-const SUB = "text-[13px] text-ink-2";
+const LABEL = "text-[15px] font-bold leading-tight";
+const SUB = "t-small";
 
 function Tote({ src, id }: { src: string; id: string }) {
   return (
@@ -88,8 +88,8 @@ export default function MerchPreview({ imageUrl, title, artistFirstName }: Props
     <section aria-labelledby={`${id}-h`} className="mx-auto mt-10 max-w-[1240px] border-t border-line px-4 pt-8 sm:px-6 md:mt-16 md:pt-12">
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 id={`${id}-h`} className="display text-[30px] md:text-[40px]">More ways to keep it</h2>
-          <p className="mt-1 text-[15px] text-ink-2">
+          <h2 id={`${id}-h`} className="t-section">More ways to keep it</h2>
+          <p className="t-muted mt-1">
             <i>{title}</i> on everyday things. {artistFirstName} earns on these too.
           </p>
         </div>
@@ -98,7 +98,7 @@ export default function MerchPreview({ imageUrl, title, artistFirstName }: Props
       <ul className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {ITEMS.map(({ key, name, sub, Art }) => (
           <li key={key} className={CARD}>
-            <div className="aspect-square overflow-hidden rounded-2xl border border-line">
+            <div className="aspect-square overflow-hidden rounded-2xl border border-edge">
               <Art src={imageUrl} id={`${id}-${key}`} />
             </div>
             <div>

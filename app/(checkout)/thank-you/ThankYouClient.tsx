@@ -87,15 +87,15 @@ export default function ThankYouClient({ sessionId, collector = { signedIn: fals
   }, [order, cartItems, removeFromCart]);
 
   if (state === "loading") {
-    return <div className="grid min-h-[50vh] place-items-center px-4 text-[17px] text-ink-2" role="status">Confirming your order…</div>;
+    return <div className="grid min-h-[50vh] place-items-center px-4" role="status"><h1 className="t-body font-normal text-ink-2">Confirming your order…</h1></div>;
   }
   if (state === "failed") {
     // The cart is only emptied once an order is paid, so it's all still there for Try again.
     return (
       <div className="mx-auto grid max-w-md justify-items-center gap-3 px-4 py-16 text-center md:py-24">
         <title>Payment didn&apos;t go through · Artfinity</title>
-        <h1 className="display text-[40px] leading-[1.02]">Payment didn&apos;t go through</h1>
-        <p className="text-[17px] text-ink-2">Nothing was charged. {cartItems.length ? "Your cart is saved." : "Your cart is empty now, so pick your print again."}</p>
+        <h1 className="t-page">Payment didn&apos;t go through</h1>
+        <p className="t-body text-ink-2">Nothing was charged. {cartItems.length ? "Your cart is saved." : "Your cart is empty now, so pick your print again."}</p>
         <div className="flex flex-wrap justify-center gap-2">
           <Link href={cartItems.length ? "/checkout" : "/art"} className="btn btn-blue">{cartItems.length ? "Try again" : "Browse art"}</Link>
           <a href={supportMailto("Payment didn't go through")} className="btn btn-ghost">Contact us</a>
@@ -107,8 +107,8 @@ export default function ThankYouClient({ sessionId, collector = { signedIn: fals
     return (
       <div className="mx-auto grid max-w-md justify-items-center gap-3 px-4 py-20 text-center">
         <title>Confirming your payment · Artfinity</title>
-        <h1 className="display text-[40px] leading-[1.02]">Confirming your payment</h1>
-        <p className="text-[17px] text-ink-2">Stripe is still telling us. Refresh in a minute; the receipt email confirms it too.</p>
+        <h1 className="t-page">Confirming your payment</h1>
+        <p className="t-body text-ink-2">Stripe is still telling us. Refresh in a minute; the receipt email confirms it too.</p>
         <div className="flex flex-wrap justify-center gap-2">
           <button type="button" onClick={() => window.location.reload()} className="btn btn-blue">Refresh</button>
           <a href={supportMailto("Checking on my order")} className="btn btn-ghost">Contact us</a>
@@ -141,12 +141,12 @@ export default function ThankYouClient({ sessionId, collector = { signedIn: fals
 
       {/* phones: "It's yours" and the arrival date come first, above the picture */}
       <div className="order-first md:order-none md:col-start-2 md:row-start-1 md:self-end">
-          <span className="sticker-badge">Order {code}</span>
-          <h1 className="display relative mt-3 text-[48px] md:text-[64px]">
+          <span className="eyebrow">Order {code}</span>
+          <h1 className="t-page relative mt-2">
             It&apos;s yours
             <BrushStroke className="mt-1 h-3 w-40" />
           </h1>
-          <p className="mt-2 text-[17px] text-ink-2">
+          <p className="t-body mt-3 text-ink-2">
             {count > 1 ? "We're printing them now." : "We're printing it now."} Arrives {steps.arrives}.
           </p>
       </div>
@@ -154,7 +154,7 @@ export default function ThankYouClient({ sessionId, collector = { signedIn: fals
       <div className="grid content-start gap-5 md:col-start-2 md:row-start-2">
 
         {/* What happens next, with dates (lib/delivery.ts) */}
-        <ol className="grid gap-2 rounded-2xl bg-white p-4 text-[14.5px]" aria-label="What happens next">
+        <ol className="box grid gap-2 p-4 text-[15px]" aria-label="What happens next">
           {[
             { done: true, label: "Paid", when: new Date(order.createdAt).toDateString() === new Date().toDateString() ? "Today" : new Date(order.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) },
             { done: false, label: "Printed in NYC", when: `By ${steps.printedBy}` },
@@ -173,7 +173,7 @@ export default function ThankYouClient({ sessionId, collector = { signedIn: fals
 
         <PaymentSummary
           title="Your order"
-          className="border border-line"
+          className="border border-edge"
           lines={order.items.map((it) => ({
             key: it.id,
             title: it.artwork?.title || it.title,
@@ -188,7 +188,7 @@ export default function ThankYouClient({ sessionId, collector = { signedIn: fals
                   <span className="mt-1 block w-fit rounded-full bg-sticker px-2 py-0.5 text-[12px] font-bold text-ink">{editionLabel(it.editionNumber, it.quantity, it.artwork.editionSize)}</span>
                 ) : null}
                 {it.certPath && (
-                  <a href={it.certPath} target="_blank" rel="noopener" className="mt-1 block w-fit text-[13px] font-semibold text-scan underline-offset-2 hover:underline">
+                  <a href={it.certPath} target="_blank" rel="noopener" className="mt-1 block w-fit text-[13.5px] font-semibold text-scan underline-offset-2 hover:underline">
                     Certificate of authenticity
                   </a>
                 )}
@@ -201,7 +201,7 @@ export default function ThankYouClient({ sessionId, collector = { signedIn: fals
           totalCents={order.amountTotal}
         />
 
-        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-[14.5px]">
+        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-[15px]">
           {order.email && (
             <><dt className="whitespace-nowrap text-ink-2">Receipt sent to</dt><dd className="break-words font-semibold">{order.email}</dd></>
           )}
@@ -215,13 +215,14 @@ export default function ThankYouClient({ sessionId, collector = { signedIn: fals
           <Link href="/art" className="btn btn-ghost">Browse art</Link>
         </div>
         {/* Small print, one line each. The collection is a soft offer, never needed to buy (lib/collector.ts). */}
-        <ul className="grid gap-1.5 border-t border-line pt-4 text-[14px] text-ink-2">
+        <ul className="t-small grid gap-1.5 border-t border-line pt-4">
           {artist?.name && <li>{artist.name.split(" ")[0]} gets at least {pct(FREE_SPLIT)} of the profit.</li>}
           <li>
             {order.helpPath
               ? <>Something wrong when it arrives? <Link href={order.helpPath} className="font-semibold text-ink underline underline-offset-4">Tell us</Link></>
-              : <>Questions about order {code}? <a href={supportMailto(`Order ${code}`)} className="font-semibold text-ink underline underline-offset-4">Email us</a></>}
+              : <>Arrives damaged? We reprint it free. The link is in your shipping email.</>}
           </li>
+          {!order.helpPath && <li>Questions about order {code}? <a href={supportMailto(`Order ${code}`)} className="font-semibold text-ink underline underline-offset-4">Email us</a></li>}
           <li>
             {collector.signedIn ? (
               <Link href="/collector" className="font-semibold text-ink underline underline-offset-4">Your orders</Link>

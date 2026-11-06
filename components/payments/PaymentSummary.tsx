@@ -96,7 +96,7 @@ export default function PaymentSummary({
         ))}
         <div className="mt-1 flex items-baseline justify-between gap-3 border-t border-line pt-3">
           <dt className="font-bold">{label}</dt>
-          <dd className="font-display text-[30px] font-extrabold leading-none [font-variation-settings:'wdth'_80]">{money(totalCents)}</dd>
+          <dd className="t-section leading-none">{money(totalCents)}</dd>
         </div>
       </dl>
 

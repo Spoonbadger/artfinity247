@@ -30,7 +30,7 @@ export default function RewardsForm({ value }: { value: V }) {
     }
   };
   return (
-    <form onSubmit={save} className="grid gap-4 rounded-2xl border border-line bg-white p-5">
+    <form onSubmit={save} className="grid gap-4 rounded-2xl border border-edge bg-white p-5">
       <label className="flex cursor-pointer items-center gap-2.5 text-[15px] font-semibold">
         <input type="checkbox" checked={v.enabled} onChange={(e) => setV({ ...v, enabled: e.target.checked })} className="h-[18px] w-[18px] accent-[rgb(var(--af-scan-rgb))]" />
         Rewards on

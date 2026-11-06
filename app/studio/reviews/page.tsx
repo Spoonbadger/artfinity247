@@ -131,16 +131,16 @@ export default async function StudioReviewsPage({ searchParams }: { searchParams
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <Dabs value={r.rating} size="sm" />
-                        <span className="text-[13px] font-semibold text-ink-2">{RATING_WORDS[r.rating]}</span>
+                        <span className="t-small font-semibold">{RATING_WORDS[r.rating]}</span>
                       </div>
-                      <p className="mt-1 truncate text-[13.5px] text-ink-2">
+                      <p className="t-small mt-1 truncate">
                         <b className="font-semibold text-ink">{r.buyerName}</b>
                         {r.buyerCity ? ` · ${r.buyerCity}` : ""} · {reviewMonth(r.createdAt)}
                         {r.artwork ? <> · {r.artwork.slug ? <Link href={artPath(artist.slug, r.artwork.slug)} className="text-ink-2 hover:text-scan">{r.artwork.title}</Link> : r.artwork.title}</> : null}
                       </p>
                     </div>
                   </div>
-                  {r.body ? <p className="whitespace-pre-line text-[16px] leading-relaxed">{r.body}</p> : <p className="text-[14px] italic text-ink-2">Just the rating, no words.</p>}
+                  {r.body ? <p className="whitespace-pre-line text-[16px] leading-relaxed">{r.body}</p> : <p className="t-muted italic">Just the rating, no words.</p>}
                   {r.photoUrl && (
                     <a href={r.photoUrl} target="_blank" rel="noopener" className="block w-fit">
                       {/* eslint-disable-next-line @next/next/no-img-element */}

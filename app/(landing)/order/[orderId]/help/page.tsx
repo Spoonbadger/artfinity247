@@ -30,8 +30,8 @@ function Note({ title, children, thumbs, badge }: { title: string; children: Rea
         </div>
       )}
       {badge && <span className="sticker-badge">{badge}</span>}
-      <h1 className="display text-[38px] leading-[1.02] sm:text-[48px]">{title}</h1>
-      <div className="grid gap-3 text-[17px] text-ink-2">{children}</div>
+      <h1 className="t-page">{title}</h1>
+      <div className="t-body grid gap-3 text-ink-2">{children}</div>
     </div>
   );
 }
@@ -76,8 +76,8 @@ export default async function HelpPage({ params, searchParams }: Props) {
     return (
       <Note title={copy.title} badge={copy.badge} thumbs={thumbs}>
         {copy.body}
-        {d?.note && latest.status !== "open" && <p className="af-panel mx-auto w-fit max-w-full whitespace-pre-line px-4 py-3 text-left text-[15.5px] text-ink">{d.note}</p>}
-        <p className="text-[14px]">{reasonLabel(latest.body.reason)} · sent {fmt(latest.createdAt)}</p>
+        {d?.note && latest.status !== "open" && <p className="af-panel mx-auto w-fit max-w-full whitespace-pre-line px-4 py-3 text-left text-[16px] text-ink">{d.note}</p>}
+        <p className="t-small">{reasonLabel(latest.body.reason)} · sent {fmt(latest.createdAt)}</p>
       </Note>
     );
   }
@@ -114,15 +114,14 @@ export default async function HelpPage({ params, searchParams }: Props) {
     <div className="bg-wall">
       <div className="mx-auto grid max-w-[620px] gap-6 px-4 pb-20 pt-8 sm:pt-12">
         <header className="grid gap-2">
-          <span className="sticker-badge w-fit">Free reprint</span>
-          <h1 className="display text-[40px] leading-[1.0] sm:text-[54px]">
+          <h1 className="t-page">
             {first ? `Sorry, ${first}. ` : "Sorry. "}Let&apos;s{" "}
             <span className="relative z-0 whitespace-nowrap">
               fix it.
               <BrushStroke className="absolute -bottom-1 -left-1 -z-10 h-3 w-[calc(100%+8px)]" />
             </span>
           </h1>
-          <p className="text-[16.5px] text-ink-2">
+          <p className="t-body mt-1 text-ink-2">
             Send a photo and we&apos;ll reprint it free. Open until {fmt(helpDeadline(order, shippedAt))}.
           </p>
         </header>

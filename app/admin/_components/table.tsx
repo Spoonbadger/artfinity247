@@ -7,6 +7,7 @@
 //   - DataTable: a ready-made sortable, filterable table for server pages (cells are rendered on the server)
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { THEAD } from "./ui";
 
 export type SortDir = "asc" | "desc";
 export type Sort = { key: string; dir: SortDir } | null;
@@ -285,10 +286,10 @@ export function DataTable({
       {rows.length === 0 ? (
         empty ?? null
       ) : (
-        <div className="relative overflow-x-auto rounded-2xl border border-line bg-white">
+        <div className="relative overflow-x-auto rounded-2xl border border-edge bg-white">
           <table className="num w-full text-[14px]" style={{ minWidth }}>
             {caption && <caption className="sr-only">{caption}</caption>}
-            <thead className="border-b border-line bg-wall/60 text-[12px] text-ink-2">
+            <thead className={THEAD}>
               <tr>
                 {columns.map((c) =>
                   c.sortable === false || !rows.some((r) => r.sort && c.key in r.sort) ? (

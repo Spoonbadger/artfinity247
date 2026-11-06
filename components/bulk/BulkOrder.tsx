@@ -161,7 +161,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName, tax = "ad
           {/* 1. Pick work */}
           <section aria-labelledby="pick-h" className="grid gap-3">
             <h2 id="pick-h" className="flex items-baseline gap-2 t-card">
-              <i className="paint-dab" style={{ ["--dab" as string]: "var(--af-scan)" }} />Pick work
+              Pick work
             </h2>
             <ul className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0 xl:grid-cols-5">
               {arts.map((a) => {
@@ -198,7 +198,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName, tax = "ad
           {/* 2. Lines */}
           <section aria-labelledby="lines-h" className="grid gap-3">
             <h2 id="lines-h" className="flex items-baseline gap-2 t-card">
-              <i className="paint-dab" style={{ ["--dab" as string]: "var(--af-sticker)" }} />Size, frame, how many
+              Size, frame, how many
             </h2>
             {lines.length === 0 ? (
               <p className="rounded-xl border-2 border-dashed border-line bg-wall px-4 py-8 text-center text-[15px] text-ink-2">Tap a piece above to add it.</p>
@@ -236,8 +236,8 @@ export default function BulkOrder({ arts, past, placedId, defaultName, tax = "ad
                               <label key={s} title={ok ? undefined : "This file would print soft at this size"} className={cn("grid justify-items-center rounded-xl border-2 px-1 py-1.5 text-center leading-tight has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-scan", !ok ? "cursor-not-allowed border-dashed border-line bg-wall opacity-50" : l.size === s ? "cursor-pointer border-ink bg-white" : "cursor-pointer border-line bg-white hover:border-ink-2")}>
                                 <input type="radio" className="sr-only" name={`size-${l.key}`} checked={l.size === s} disabled={!ok} onChange={() => patch(l.key, { size: s })} />
                                 <span className="text-[14px] font-bold">{BULK_SIZE_LABEL[s].name}</span>
-                                <span className="num text-[11.5px] text-ink-2">{BULK_SIZE_LABEL[s].inches}</span>
-                                <span className="num text-[12px] font-semibold">{usd0(bulkUnitCost(s, l.framed))}</span>
+                                <span className="num text-[13px] text-ink-2">{BULK_SIZE_LABEL[s].inches}</span>
+                                <span className="num text-[13px] font-semibold">{usd0(bulkUnitCost(s, l.framed))}</span>
                               </label>
                             );
                           })}
@@ -277,7 +277,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName, tax = "ad
           {/* 3. Ship to */}
           <section id="ship-to" aria-labelledby="ship-h" className="grid gap-3">
             <h2 id="ship-h" className="flex items-baseline gap-2 t-card">
-              <i className="paint-dab" style={{ ["--dab" as string]: "var(--af-coral)" }} />Ship to you
+              Ship to you
             </h2>
             <AddressFields idPrefix="bulk-ship" value={ship} onChange={(a) => setShip({ ...a, name: a.name ?? "" })} />
           </section>
@@ -308,7 +308,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName, tax = "ad
                   );
                 })}
               </div>
-              {next && quote.prints > 0 && <p className="text-[13px] text-ink-2">Add {next.more} more for {next.pct}% off.</p>}
+              {next && quote.prints > 0 && <p className="t-small">Add {next.more} more for {next.pct}% off.</p>}
             </div>
           </PaymentSummary>
 
@@ -325,11 +325,11 @@ export default function BulkOrder({ arts, past, placedId, defaultName, tax = "ad
             </label>
             {quote.prints > 0 ? (
               <p className="text-[15px] leading-snug">
-                You keep <b className={cn("num font-display text-[26px] font-extrabold [font-variation-settings:'wdth'_80]", keep > 0 ? "text-earned" : "text-coral")}>{keep >= 0 ? usd(keep) : `−${usd(-keep)}`}</b> per print
-                {keep > 0 && <span className="num block text-[13px] text-ink-2">{usd(keep * quote.prints)} if all {quote.prints} sell</span>}
+                You keep <b className={cn("t-card num", keep > 0 ? "!text-earned" : "!text-coral")}>{keep >= 0 ? usd(keep) : `−${usd(-keep)}`}</b> per print
+                {keep > 0 && <span className="t-small num block">{usd(keep * quote.prints)} if all {quote.prints} sell</span>}
               </p>
             ) : (
-              <p className="text-[14px] text-ink-2">Add prints to see what you keep.</p>
+              <p className="t-small">Add prints to see what you keep.</p>
             )}
           </section>
 
@@ -337,7 +337,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName, tax = "ad
             <input type="checkbox" checked={tags} onChange={(e) => setTags(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0 accent-[#2b37f0]" />
             <span className="grid gap-0.5">
               <b className="text-[15px]">Include matching QR hang tags</b>
-              <span className="text-[13px] text-ink-2">
+              <span className="t-small">
                 Print them yourself, free. <Link href={`/studio/qr?preset=market&art=${byId.get(lines[0]?.artworkId ?? "")?.slug ?? arts[0].slug}`} className="font-semibold text-scan underline-offset-2 hover:underline">Market tags</Link>
               </span>
             </span>
@@ -345,7 +345,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName, tax = "ad
 
           {error && <Problem tone="error" title={error.message} fix={error.fix} />}
           <PayButton amountCents={quote.total} plusTax={tax === "added"} busy={busy} onPay={placeOrder} disabled={!lines.length} label={lines.length ? undefined : "Pick a piece"} lock={lines.length > 0} className="btn btn-blue btn-lg w-full" />
-          <p className="text-center text-[13px] text-ink-2">
+          <p className="t-small text-center">
             {tax === "test" ? "Test mode: saved as paid, no card needed. " : "Secure payment by Stripe. "}Bulk prints don&apos;t count as sales or earnings.
           </p>
         </aside>

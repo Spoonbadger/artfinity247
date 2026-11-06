@@ -176,7 +176,7 @@ export default function SiteHeader({ brand = null, inPage = false }: { brand?: H
   const cart = (
     <Link href="/cart" className="relative grid h-11 w-11 place-items-center rounded-full text-ink hover:bg-wall" aria-label={`Cart, ${count} items`}>
       <ShoppingBag className="h-5 w-5" aria-hidden="true" />
-      {count > 0 && <span className="num absolute right-0.5 top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-scan px-1 text-[11px] font-bold text-white">{count}</span>}
+      {count > 0 && <span className="num absolute right-0.5 top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-scan px-1 text-[12px] font-bold text-white">{count}</span>}
     </Link>
   );
 
@@ -212,7 +212,7 @@ export default function SiteHeader({ brand = null, inPage = false }: { brand?: H
           {currentUser ? null : <Link href="/login" className="text-ink no-underline hover:text-scan">Log in</Link>}
         </nav>
         <form onSubmit={search} role="search" aria-label="Search Artfinity" className="hidden lg:block">
-          <div className="relative flex h-10 w-44 items-center gap-2 rounded-full border-[1.5px] border-line bg-white pl-3 pr-1 transition-[width,border-color] focus-within:w-60 focus-within:border-ink">
+          <div className="relative flex h-10 w-44 items-center gap-2 rounded-full border-[1.5px] border-[color:var(--af-field-edge)] bg-white pl-3 pr-1 transition-[width,border-color] focus-within:w-60 focus-within:border-ink">
             <Search className="h-4 w-4 shrink-0 text-ink-2" aria-hidden="true" />
             <SearchTypeahead value={q} onChange={setQ} onNavigate={() => setQ("")} placeholder="Search" listClassName="left-auto w-[min(380px,calc(100vw-32px))]" inputClassName="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-2" />
           </div>

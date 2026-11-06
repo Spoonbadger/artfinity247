@@ -72,20 +72,20 @@ export default function AdminNav({ counts = {}, role }: { counts?: Record<string
             return (
               <Link
                 key={l.href} href={l.href} aria-current={on ? "page" : undefined}
-                className={cn("flex min-h-[40px] items-center gap-1.5 whitespace-nowrap rounded-full border-[1.5px] px-3 text-[14px] font-semibold no-underline", on ? "border-ink bg-ink text-white" : "border-line bg-white text-ink")}
+                className={cn("flex min-h-[40px] items-center gap-1.5 whitespace-nowrap rounded-full border-[1.5px] px-3 text-[14px] font-semibold no-underline", on ? "border-ink bg-ink text-white" : "border-edge-strong bg-white text-ink")}
               >
                 {l.label}
                 <Badge n={counts[l.href]} />
               </Link>
             );
           })}
-          <button type="button" aria-expanded={more} aria-controls="admin-more" onClick={() => setMore(!more)} className={cn("flex min-h-[40px] cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border-[1.5px] px-3 text-[14px] font-semibold", restOn ? "border-ink bg-ink text-white" : "border-line bg-white text-ink")}>
+          <button type="button" aria-expanded={more} aria-controls="admin-more" onClick={() => setMore(!more)} className={cn("flex min-h-[40px] cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border-[1.5px] px-3 text-[14px] font-semibold", restOn ? "border-ink bg-ink text-white" : "border-edge-strong bg-white text-ink")}>
               {restOn ? restOn.label : "More"}
               <Badge n={restCount} />
               <svg aria-hidden="true" viewBox="0 0 12 12" className={cn("h-3 w-3 transition", more && "rotate-180")}><path d="M2.5 4.5l3.5 3.5 3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
             </button>
         </div>
-        <div id="admin-more" className={cn(more ? "grid" : "hidden", "grid-cols-2 gap-x-4 gap-y-3 rounded-2xl border border-line bg-white p-3 sm:grid-cols-3")}>
+        <div id="admin-more" className={cn(more ? "grid" : "hidden", "grid-cols-2 gap-x-4 gap-y-3 rounded-2xl border border-edge bg-white p-3 sm:grid-cols-3")}>
               {rest.map((s) => (
                 <div key={s.title} className="grid content-start gap-0.5">
                   <p className="eyebrow pb-1">{s.title}</p>

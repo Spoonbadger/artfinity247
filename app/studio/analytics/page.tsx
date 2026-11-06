@@ -14,10 +14,6 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Analytics" };
 
 const n = (v: number) => v.toLocaleString("en-US");
-const DAB: Record<string, string> = {
-  qr: "#2b37f0", instagram: "#c13584", tiktok: "#15161b", facebook: "#1877f2", pinterest: "#e60023",
-  email: "#0f7a55", search: "#ffd43b", share: "#ff5a36", embed: "#9aa0ff", direct: "#5a5d6b",
-};
 const DEVICE: Record<string, string> = { mobile: "Phone", desktop: "Computer", tablet: "Tablet", unknown: "Unknown" };
 const SRC_SORTS = [{ value: "views", label: "Most views" }, { value: "visitors", label: "Most visitors" }, { value: "sales", label: "Most sales" }];
 const ART_SORTS = [{ value: "views", label: "Most views" }, { value: "scans", label: "Most scans" }, { value: "sales", label: "Most sales" }];
@@ -53,7 +49,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
           const on = r === range;
           return (
             <Link key={r} href={r === 30 ? "/studio/analytics" : `/studio/analytics?range=${r}`} aria-current={on ? "page" : undefined} scroll={false}
-              className={`rounded-full border-2 px-3.5 py-1.5 text-[13.5px] font-semibold no-underline ${on ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"}`}>
+              className={`inline-flex min-h-[40px] items-center rounded-full border-[1.5px] px-3.5 text-[14px] font-semibold no-underline ${on ? "border-ink bg-ink text-white" : "border-edge-strong bg-white text-ink hover:border-ink"}`}>
               {r} days
             </Link>
           );
@@ -104,7 +100,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
           <section className="af-card grid content-start gap-3 p-4 sm:p-5" aria-labelledby="views-h">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h2 id="views-h" className="t-card">Views by day</h2>
-              <span className="num text-[13px] text-ink-2">{n(a.views)} in {range} days</span>
+              <span className="t-small num">{n(a.views)} in {range} days</span>
             </div>
             <ViewsChart days={a.days} />
           </section>
@@ -121,7 +117,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
               ) : (
                 <table className="num w-full border-collapse text-[14px]">
                   <thead>
-                    <tr className="text-left text-[12px] text-ink-2">
+                    <tr className="text-left text-[13px] text-ink-2">
                       <th className="pb-2 font-semibold">Source</th>
                       <th className="pb-2 pl-3 text-right font-semibold">Views</th>
                       <th className="pb-2 pl-3 text-right font-semibold">Visitors</th>
@@ -133,7 +129,6 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
                       <tr key={s.source} className="border-t border-line">
                         <td className="w-full py-2.5 pr-3">
                           <span className="flex min-w-0 items-center gap-2.5">
-                            <i className="paint-dab shrink-0" style={{ ["--dab" as string]: DAB[s.source] || "#c98a5a" }} />
                             <span className="min-w-0 flex-1">
                               <b className="block truncate font-semibold">{sourceLabel(s.source)}</b>
                               <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-wall" aria-hidden="true">
@@ -150,7 +145,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
                   </tbody>
                 </table>
               )}
-              <p className="mt-3 text-[13px] text-ink-2">
+              <p className="t-small mt-3">
                 Sales are counted for QR codes only.{otherSales > 0 ? ` ${n(otherSales)} more came in without a code.` : ""}
               </p>
               {sources.length > SOURCES_SHOWN && (
@@ -161,7 +156,6 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
                   <ul className="num grid text-[14px]">
                     {sources.slice(SOURCES_SHOWN).map((s) => (
                       <li key={s.source} className="flex items-center gap-3 border-t border-line py-2">
-                        <i className="paint-dab shrink-0" style={{ ["--dab" as string]: DAB[s.source] || "#c98a5a" }} aria-hidden="true" />
                         <b className="min-w-0 flex-1 truncate font-semibold">{sourceLabel(s.source)}</b>
                         <span className="text-ink-2">{n(s.views)} views · {n(s.visitors)} visitors</span>
                       </li>
@@ -209,7 +203,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
             ) : (
               <table className="num w-full border-collapse text-[14px]">
                 <thead>
-                  <tr className="text-left text-[12px] text-ink-2">
+                  <tr className="text-left text-[13px] text-ink-2">
                     <th className="pb-2 font-semibold">Piece</th>
                     <th className="pb-2 pl-3 text-right font-semibold">Views</th>
                     <th className="pb-2 pl-3 text-right font-semibold">Scans</th>
@@ -242,7 +236,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
             )}
           </section>
 
-          <p className="text-[13px] text-ink-2">
+          <p className="t-small">
             One visit per person per page every 30 minutes. Your own visits, bots and do-not-track visitors don&apos;t count.
           </p>
         </>
@@ -254,8 +248,8 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: { 
 function Stat({ label, value, earned = false }: { label: string; value: string; earned?: boolean }) {
   return (
     <div className="grid min-w-0 gap-0.5 last:col-span-2 sm:last:col-span-1">
-      <span className="truncate text-[13px] text-ink-2">{label}</span>
-      <b className={`display num truncate text-[26px] leading-tight sm:text-[30px] ${earned ? "text-earned" : ""}`}>{value}</b>
+      <span className="t-small truncate">{label}</span>
+      <b className={`num truncate text-[24px] font-bold leading-tight ${earned ? "text-earned" : ""}`}>{value}</b>
     </div>
   );
 }

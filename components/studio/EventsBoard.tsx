@@ -9,7 +9,6 @@ import { eventsApi, migrateLocalEvents, todayKey, type StudioEvent } from "./eve
 import LocationInput from "@/components/forms/LocationInput";
 import { recall, remember } from "@/lib/smartFields";
 
-const DABS = ["#7b2d8e", "#e8743b", "#2b37f0", "#0f7a55", "#ffd43b"];
 
 function fmt(key: string) {
   const [y, m, d] = key.split("-").map(Number);
@@ -109,7 +108,7 @@ export default function EventsBoard({ initial }: { initial: StudioEvent[] }) {
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-10">
       <form ref={formRef} onSubmit={submit} className="af-card grid gap-3 p-4 sm:p-5" noValidate>
-        <h2 className="text-[22px] font-bold">{editing ? "Edit event" : "New event"}</h2>
+        <h2 className="t-card">{editing ? "Edit event" : "New event"}</h2>
         <label className="af-field">
           <span className="label">Event name</span>
           <input id="event-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} placeholder="Brooklyn Flea" required />
@@ -147,15 +146,12 @@ export default function EventsBoard({ initial }: { initial: StudioEvent[] }) {
           </button>
           {editing && <button type="button" className="btn btn-ghost" onClick={reset}>Cancel</button>}
         </div>
-        <p className="border-t border-dashed border-line pt-3 text-[13px] text-ink-2">
-          Shows on your page under &ldquo;See it in person&rdquo;.
-        </p>
       </form>
 
       {/* With events on the calendar, phones see them first; with none, the form leads. */}
       <section className={upcoming.length ? "grid gap-4 max-lg:order-first" : "grid gap-4"} aria-labelledby="up-h">
         <div className="flex items-center justify-between gap-3">
-          <h2 id="up-h" className="text-[22px] font-bold">Coming up</h2>
+          <h2 id="up-h" className="t-section">Coming up</h2>
           {upcoming.length > 0 && (
             <button type="button" onClick={startNew} className="inline-flex min-h-[40px] items-center gap-1 text-[14px] font-bold text-scan lg:hidden">
               <Plus className="h-4 w-4" aria-hidden="true" />Add event
@@ -172,13 +168,13 @@ export default function EventsBoard({ initial }: { initial: StudioEvent[] }) {
           />
         )}
         <ul className="grid gap-3">
-          {upcoming.map((e, i) => <EventRow key={e.id} e={e} dab={DABS[i % DABS.length]} onEdit={() => edit(e)} onDelete={() => remove(e)} live={e.start <= today} />)}
+          {upcoming.map((e) => <EventRow key={e.id} e={e} onEdit={() => edit(e)} onDelete={() => remove(e)} live={e.start <= today} />)}
         </ul>
         {past.length > 0 && (
           <details className="text-[14px]">
             <summary className="inline-flex min-h-[40px] cursor-pointer items-center font-semibold text-ink-2">Past ({past.length})</summary>
             <ul className="mt-3 grid gap-2 opacity-70">
-              {past.map((e) => <EventRow key={e.id} e={e} dab="#c9cbc0" onEdit={() => edit(e)} onDelete={() => remove(e)} />)}
+              {past.map((e) => <EventRow key={e.id} e={e} onEdit={() => edit(e)} onDelete={() => remove(e)} />)}
             </ul>
           </details>
         )}
@@ -187,13 +183,12 @@ export default function EventsBoard({ initial }: { initial: StudioEvent[] }) {
   );
 }
 
-function EventRow({ e, dab, onEdit, onDelete, live = false }: { e: StudioEvent; dab: string; onEdit: () => void; onDelete: () => void; live?: boolean }) {
+function EventRow({ e, onEdit, onDelete, live = false }: { e: StudioEvent; onEdit: () => void; onDelete: () => void; live?: boolean }) {
   return (
-    <li className="flex items-start gap-3 rounded-2xl border border-line bg-white p-4 shadow-[0_2px_0_var(--af-line)]">
-      <i className="paint-dab mt-1.5 h-4 w-4" style={{ ["--dab" as string]: dab }} />
+    <li className="box flex items-start gap-3 p-4">
       <div className="min-w-0 flex-1">
-        <b className="block text-[16px]">{e.name} {live && <span className="sticker-badge ml-1 text-[11px]">On now</span>}</b>
-        <span className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[13.5px] text-ink-2">
+        <b className="t-card block">{e.name} {live && <span className="sticker-badge ml-1 text-[12px]">On now</span>}</b>
+        <span className="t-small mt-1 flex flex-wrap gap-x-4 gap-y-1">
           <span className="flex items-center gap-1.5"><CalendarDays className="h-4 w-4" aria-hidden="true" />{range(e)}</span>
           {e.venue && <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" aria-hidden="true" />{e.venue}</span>}
         </span>

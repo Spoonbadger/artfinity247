@@ -98,6 +98,8 @@ a readable column (about 68 characters) and clear steps between title, section a
 | `.t-muted` | Secondary text, the line under a title | 15px ink-2 |
 | `.t-small` | Small print, help text, notes | 13.5px ink-2 |
 | `.t-num` | The one hero number on a page (a balance, a total) | Display font, 40 to 56px |
+| `.t-hero` | Public pages only: the hero title (home, sell, pricing, about, help, legal) | Display font, 44 to 64px |
+| `.t-feature` | Public pages only: section headings on home, sell, pricing and about, so the painted voice stays big | Display font, 32 to 52px |
 
 - The condensed display font is for page titles, section titles and the single hero number. Not for card titles,
   stat tiles, labels or buttons. Headings `h2` to `h6` use the body font unless they have `.t-section`, `.display`

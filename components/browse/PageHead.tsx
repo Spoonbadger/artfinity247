@@ -21,7 +21,7 @@ export default function PageHead({ eyebrow, title, sub, children, className, str
       <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-5">
         <div className="min-w-0">
           {eyebrow && <div className="mb-3 flex items-center gap-2.5"><DabRow /><span className="eyebrow">{eyebrow}</span></div>}
-          <h1 className="display relative inline-block text-[44px] sm:text-[64px] md:text-[76px]">
+          <h1 className="display relative inline-block text-[44px] sm:text-[64px]">
             <span className="relative z-10">{title}</span>
             <BrushStroke className="absolute -bottom-1 left-0 z-0 h-[0.32em] w-[min(100%,5.5em)] opacity-90" color={stroke} />
           </h1>
@@ -58,7 +58,7 @@ export function EmptyCanvas({ title, children }: { title: string; children?: Rea
         <BrushStroke className="absolute left-2 top-10 h-4 w-16 -rotate-6" color="var(--af-line)" />
         <span className="paint-dab absolute bottom-4 right-3" style={{ ["--dab" as string]: "var(--af-sticker)" }} />
       </div>
-      <h2 className="display text-[32px]">{title}</h2>
+      <h2 className="t-section">{title}</h2>
       {children}
     </div>
   );

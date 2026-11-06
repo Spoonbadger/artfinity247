@@ -129,7 +129,7 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
           <>
             {o.shippingStatus === "pending" && (
               <ActionButton url={statusUrl} body={{ shippingStatus: "shipped" }} label="Mark shipped" tone="blue" title="Mark shipped"
-                confirm="The buyer gets an email with this tracking link."
+                confirm="Marks it shipped and emails the buyer this tracking link."
                 fields={[
                   { name: "carrier", label: "Carrier", type: "select", defaultValue: "USPS", options: CARRIERS.map((c) => ({ value: c, label: c })) },
                   { name: "trackingNumber", label: "Tracking number", required: true, placeholder: "9400 1000 0000 0000 0000 00" },
@@ -138,18 +138,18 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
             )}
             {o.shippingStatus === "shipped" && (
               <ActionButton url={statusUrl} body={{ shippingStatus: "delivered" }} label="Mark delivered" tone="blue" title="Mark delivered?"
-                confirm="The buyer gets the delivered email, then a review request." confirmLabel="Mark delivered" done="Marked delivered" />
+                confirm="Emails the buyer that it was delivered, then asks for a review." confirmLabel="Mark delivered" done="Marked delivered" />
             )}
             <a href={`/admin/orders/${o.id}/slip`} target="_blank" rel="noopener" className="btn btn-ghost btn-sm">Packing slip</a>
             <MoreMenu>
               {(paid || o.kind === "reprint") && printerAuto() && (
                 <ActionButton url={`/api/admin/orders/${o.id}/work-order`} label={printer.status === "sent" ? "Resend work order" : "Send work order"} title="Send the work order to the print lab?"
-                  confirm={printer.status === "sent" ? `It went out ${at(o.printerSentAt)}. Make sure the lab doesn't print it twice.` : "The lab gets links to the original files and the packing slip."}
+                  confirm={printer.status === "sent" ? `It went out ${at(o.printerSentAt)}. Sending again can get it printed twice.` : "Sends the lab the original files and packing slip. They start printing."}
                   confirmLabel="Send" done="Work order sent" />
               )}
               {paid && o.kind !== "bulk" && (
                 <ActionButton url={url} body={{ action: "reprint" }} label="Create reprint" title="Create a free reprint"
-                  confirm="A zero-charge order goes to the lab and the buyer is emailed. No sale, no payout."
+                  confirm="Sends a free order to the print lab now and emails the buyer. Artfinity pays for the print. No sale, no payout."
                   fields={[
                     { name: "itemId", label: "What to reprint", type: "select", defaultValue: "all", options: itemOptions },
                     { name: "reason", label: "Why", type: "select", defaultValue: "damaged", options: REPRINT_REASONS.map((r) => ({ value: r.id, label: r.label })) },
@@ -208,13 +208,13 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
                     {paid && o.kind !== "bulk" && !refund && (
                       <ActionButton url={url} body={{ action: "refund", itemId: it.id }} need="money" label="Mark refunded" tone="danger" title={`Record a refund for “${it.title || "this print"}”?`}
                         confirm={<>
-                          <p>This only records it. Refund the buyer <b>{usd(b.lineTotal)}</b> (plus any tax) in the Stripe dashboard yourself.</p>
-                          <p className="mt-2">If the artist hasn&apos;t been paid for this month yet, their share of <b>{usd(b.artistShare)}</b> is taken off their balance.</p>
+                          <p className="font-semibold text-ink">Records the refund only. Refund the buyer {usd(b.lineTotal)} plus tax in Stripe yourself.</p>
+                          <p className="mt-2">The artist&apos;s <b>{usd(b.artistShare)}</b> comes off their balance if this month isn&apos;t paid yet.</p>
                           <p className="mt-2">
-                            If it was already paid out:{" "}
+                            Already paid out:{" "}
                             {policy.policy === "deduct_next_payout"
-                              ? <>for a <b>buyer return</b> or <b>chargeback</b> it comes off their next payout as a Refund adjustment; a damaged print or other reason is absorbed by Artfinity.</>
-                              : <>Artfinity absorbs it and the artist keeps their share.</>}{" "}
+                              ? <>returns and chargebacks come off their next payout; Artfinity absorbs anything else.</>
+                              : <>Artfinity absorbs it.</>}{" "}
                             <Link href="/admin/settings" className="font-semibold text-scan">Refund setting</Link>
                           </p>
                         </>}
@@ -225,7 +225,7 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
                     )}
                     {refund && (
                       <ActionButton url={url} body={{ action: "refund_undo", itemId: it.id }} need="money" label="Undo refund" title="Cancel this refund record?"
-                        confirm="Use this if it was recorded by mistake. The artist's share counts again. It doesn't touch Stripe." confirmLabel="Undo refund" done="Refund cancelled" />
+                        confirm="For a refund recorded by mistake. The artist's share counts again. Stripe isn't touched." confirmLabel="Undo refund" done="Refund cancelled" />
                     )}
                   </div>
                 </li>
@@ -277,7 +277,7 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
           <NotesPanel targetType="order" targetId={o.id} notes={notes.map((n) => ({ id: n.id, adminEmail: n.adminEmail, body: n.body, createdAt: n.createdAt.toISOString() }))} />
 
           <details className="af-panel p-4">
-            <summary className="cursor-pointer text-[16px] font-bold">Audit trail <span className="num text-[13px] font-normal text-ink-2">{audit.length}</span></summary>
+            <summary className="t-card cursor-pointer">Audit trail <span className="num text-[13px] font-normal text-ink-2">{audit.length}</span></summary>
             <div className="mt-2"><AuditList rows={audit} compact empty="No admin actions on this order yet." /></div>
           </details>
         </div>

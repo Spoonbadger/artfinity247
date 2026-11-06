@@ -183,22 +183,22 @@ function BookingForm({ arts, preselect, settings, first, onClose }: {
     <form onSubmit={submit} noValidate className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-10" aria-labelledby="book-h">
       <div className="grid min-w-0 gap-7">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="book-h" className="display text-[34px]">Book a scan</h2>
-          {onClose && <button type="button" onClick={onClose} className="text-[14px] font-semibold text-ink-2 underline-offset-2 hover:text-ink hover:underline">Close</button>}
+          <h2 id="book-h" className="t-section">Book a scan</h2>
+          {onClose && <button type="button" onClick={onClose} className="t-small font-semibold underline-offset-2 hover:text-ink hover:underline">Close</button>}
         </div>
         {first && (
-          <p className="-mt-4 text-[15px] text-ink-2">
-            Free to book. We confirm the date and price, then you pay.{" "}
+          <p className="t-muted -mt-4">
+            Free to book. Files are on your artworks within {settings.turnaroundDays} days of drop-off.{" "}
             <Link href="/scanning#prices" className="font-semibold text-scan underline-offset-2 hover:underline">See prices</Link>
           </p>
         )}
 
         {/* 1. Paintings */}
         <section id="scan-pick" aria-labelledby="pick-h" className="grid gap-3 scroll-mt-24">
-          <h3 id="pick-h" className="flex items-baseline gap-2 t-card"><i className="paint-dab" style={{ ["--dab" as string]: "var(--af-scan)" }} />Which paintings?</h3>
+          <h3 id="pick-h" className="t-card">Which paintings?</h3>
           {sorted.length ? (
             <>
-              <p className="-mt-1 text-[13.5px] text-ink-2">Tap to add. Pieces that can&apos;t print at {SIZE_LABEL.xl} yet come first.</p>
+              <p className="t-small -mt-1">Tap to add. Pieces that can&apos;t print at {SIZE_LABEL.xl} yet come first.</p>
               <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-6">
                 {sorted.map((a) => {
                   const on = picked.has(a.id);
@@ -217,7 +217,7 @@ function BookingForm({ arts, preselect, settings, first, onClose }: {
                           </span>
                         </span>
                         <span className="truncate px-0.5 text-[13.5px] font-semibold">{a.title}</span>
-                        <span className={cn("px-0.5 text-[12px] font-semibold", a.busy ? "text-ink-2" : a.limited ? "text-coral" : "text-ink-2")}>
+                        <span className={cn("px-0.5 text-[13px] font-semibold", a.busy ? "text-ink-2" : a.limited ? "text-coral" : "text-ink-2")}>
                           {a.busy ? "Already booked" : a.limited ? `Prints up to ${top ? SIZE_LABEL[top] : "—"} only` : a.printableSizes.length ? "Prints every size" : "Sizes not checked"}
                         </span>
                       </button>
@@ -279,7 +279,7 @@ function BookingForm({ arts, preselect, settings, first, onClose }: {
 
         {/* 2. Handoff */}
         <section aria-labelledby="handoff-h" className="grid gap-3">
-          <h3 id="handoff-h" className="flex items-baseline gap-2 t-card"><i className="paint-dab" style={{ ["--dab" as string]: "var(--af-sticker)" }} />Drop-off or pickup</h3>
+          <h3 id="handoff-h" className="t-card">Drop-off or pickup</h3>
           <div className="grid gap-2.5 sm:grid-cols-2" role="radiogroup" aria-label="Drop-off or pickup">
             {(["dropoff", "pickup"] as Handoff[]).map((h) => (
               <label key={h} className={cn("grid cursor-pointer gap-1 rounded-xl border-2 bg-white p-3.5 has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-scan", handoff === h ? "border-ink" : "border-line hover:border-ink-2")}>
@@ -287,7 +287,7 @@ function BookingForm({ arts, preselect, settings, first, onClose }: {
                   <span className="flex items-center gap-2 font-bold"><input type="radio" name="handoff" checked={handoff === h} onChange={() => setHandoff(h)} className="h-4 w-4 accent-[#2b37f0]" />{HANDOFF_LABEL[h]}</span>
                   <span className="num text-[13.5px] font-semibold">{h === "dropoff" ? "Free" : settings.pickupFeeCents != null ? (settings.pickupFeeCents ? `+${usd(settings.pickupFeeCents)}` : "Free") : "Fee quoted"}</span>
                 </span>
-                <span className="text-[13px] text-ink-2">{h === "dropoff" ? "Bring them to our NYC studio. We send the address when we confirm." : "We collect from anywhere in the five boroughs."}</span>
+                <span className="t-small">{h === "dropoff" ? "Bring them to our NYC studio. We send the address when we confirm." : "We collect from anywhere in the five boroughs."}</span>
               </label>
             ))}
           </div>
@@ -301,8 +301,8 @@ function BookingForm({ arts, preselect, settings, first, onClose }: {
 
         {/* 3. Dates */}
         <section aria-labelledby="dates-h" className="grid gap-3">
-          <h3 id="dates-h" className="flex items-baseline gap-2 t-card"><i className="paint-dab" style={{ ["--dab" as string]: "var(--af-coral)" }} />Days that work</h3>
-          <p className="-mt-1 text-[13.5px] text-ink-2">Up to three. We confirm one of them, or suggest another.</p>
+          <h3 id="dates-h" className="t-card">Days that work</h3>
+          <p className="t-small -mt-1">Up to three. We confirm one of them, or suggest another.</p>
           <div className="grid gap-2.5 sm:grid-cols-3">
             {dates.map((d, i) => (
               <label key={i} className="af-field">
@@ -341,17 +341,17 @@ function BookingForm({ arts, preselect, settings, first, onClose }: {
               <dd className="text-right font-display text-[26px] font-extrabold leading-tight [font-variation-settings:'wdth'_80]">{pieces ? estimateText(est) : "—"}</dd>
             </div>
           </dl>
-          <p className="text-[13px] text-ink-2">Nothing is charged now. We confirm the date and final price first, then you pay from here.</p>
+          <p className="t-small">Nothing is charged now. We confirm the date and final price, then you pay here.</p>
           {error && <Problem tone="error" title={error.message} fix={error.fix} />}
           <button type="submit" disabled={busy} className="btn btn-blue btn-lg relative z-0 w-full">
             {busy && <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />}
             Request booking{pieces ? ` · ${pieces} ${pieces === 1 ? "painting" : "paintings"}` : ""}
           </button>
         </section>
-        <section className="grid gap-1.5 rounded-2xl bg-wall p-4 text-[13.5px] text-ink-2">
-          <b className="text-[14.5px] text-ink">While we have them</b>
+        <section className="box-inset t-small grid gap-1.5 p-4">
+          <h3 className="t-card">While we have them</h3>
+          {!first && <p>Files on your artworks within {settings.turnaroundDays} days of drop-off.</p>}
           <p>{settings.care}</p>
-          <p>Files on your artworks within {settings.turnaroundDays} days of drop-off.</p>
         </section>
       </aside>
     </form>
@@ -369,8 +369,8 @@ function BandPicker({ id, name, label, value, onChange, settings }: { id: string
           <label key={k} className={cn("grid cursor-pointer justify-items-center rounded-xl border-2 bg-white px-1 py-1.5 text-center leading-tight has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-scan", value === k ? "border-ink" : "border-line hover:border-ink-2")}>
             <input type="radio" className="sr-only" name={name} checked={value === k} onChange={() => onChange(k)} />
             <span className="text-[14px] font-bold">{bandLabel(k, settings.bands)}</span>
-            <span className="num text-[11.5px] text-ink-2">{b ? bandRange(b) : oversizedRange(settings.bands)}</span>
-            <span className="num text-[12px] font-semibold">{price != null ? usd(price) : "Quote"}</span>
+            <span className="num text-[13px] text-ink-2">{b ? bandRange(b) : oversizedRange(settings.bands)}</span>
+            <span className="num text-[13px] font-semibold">{price != null ? usd(price) : "Quote"}</span>
           </label>
         );
       })}
@@ -474,7 +474,7 @@ function BookingCard({ b, settings, highlight, onBookAgain }: { b: ScanBookingVi
           {STATUS_STEPS.map((s, i) => (
             <li key={s} className="grid gap-1">
               <span className="relative h-2 overflow-hidden rounded-full bg-wall">{i <= step && <BrushStroke className="absolute inset-0 h-full w-full" color={i === step ? "var(--af-scan)" : "var(--af-earned)"} />}</span>
-              <span className={cn("hidden truncate text-[11.5px] sm:block", i === step ? "font-bold text-ink" : "text-ink-2")}>{STATUS_LABEL[s].split(" ·")[0]}</span>
+              <span className={cn("hidden truncate text-[13px] sm:block", i === step ? "font-bold text-ink" : "text-ink-2")}>{STATUS_LABEL[s].split(" ·")[0]}</span>
               <span className="sr-only">{STATUS_LABEL[s]}{i < step ? " (done)" : i === step ? " (now)" : ""}</span>
             </li>
           ))}
@@ -494,7 +494,7 @@ function BookingCard({ b, settings, highlight, onBookAgain }: { b: ScanBookingVi
             )}
             <span className="grid leading-tight">
               {i.slug ? <Link href={`/studio/art/${i.slug}`} className="font-semibold text-ink">{i.title}</Link> : <b>{i.title || "Not uploaded yet"}</b>}
-              <span className="text-[12px] text-ink-2">
+              <span className="text-[13px] text-ink-2">
                 {bandLabel((ITEM_BANDS as string[]).includes(i.band) ? (i.band as ItemBand) : "oversized", settings.bands)}
                 {i.delivered ? ` · scanned, prints up to ${SIZE_LABEL[largest(i.printableSizes) ?? "small"]}` : ""}
               </span>

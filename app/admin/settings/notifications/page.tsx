@@ -17,8 +17,8 @@ export default async function NotificationSettingsPage() {
   const rows = ALERT_KINDS.map((k) => ({ kind: k.kind, label: k.label, defaultLabel: defaultLabel(k.kind, admin.adminRole), value: prefs[k.kind] ?? null }));
   return (
     <div className="grid max-w-[880px] gap-5">
-      <PageHead title="Alert emails" sub={<>Sent to <b className="text-ink">{me?.email}</b> ({ROLE_LABEL[admin.adminRole]})</>}>
-        <p className="text-[13.5px] text-ink-2">
+      <PageHead level={2} title="Alert emails" sub={<>Sent to <b className="text-ink">{me?.email}</b> ({ROLE_LABEL[admin.adminRole]})</>}>
+        <p className="t-small">
           <b className="text-ink">Right away:</b> one email per alert. <b className="text-ink">Digest:</b> one email at 8am, skipped on quiet days.
           Everything is on <Link href="/admin/alerts" className="font-semibold text-scan">Alerts</Link> either way.
         </p>

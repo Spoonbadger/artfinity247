@@ -184,7 +184,7 @@ export default async function AdminDashboard() {
 
       <section aria-label="To do, most urgent first" className="af-panel overflow-hidden">
         {queue.length === 0 ? (
-          <div className="p-4"><EmptyState compact title="Nothing waiting" body="Every queue is clear." dab="var(--af-earned)" /></div>
+          <div className="p-4"><EmptyState dab="var(--af-edge-strong)" compact title="Nothing waiting" body="Every queue is clear." /></div>
         ) : (
           <ol className="divide-y divide-line">
             {queue.map((t, i) => (
@@ -225,14 +225,12 @@ export default async function AdminDashboard() {
               </tbody>
             </table>
           </div>
-          <details className="text-[13px] text-ink-2">
+          <details className="t-small">
             <summary className="cursor-pointer font-semibold text-ink">How these are counted</summary>
             <ul className="mt-2 grid list-disc gap-1 pl-5">
-              <li>Paid buyer orders only. Bulk, free reprints and refunded lines are left out.</li>
-              <li>Sales = print prices before tax and shipping.</li>
-              <li>Profit = after printing, fees and the artist&apos;s share.</li>
-              <li>Scans → orders = orders from a scanned code ÷ scans.</li>
-              <li>Today starts at midnight New York time.</li>
+              <li>Paid buyer orders only: no bulk, free reprints or refunds.</li>
+              <li>Sales: print prices before tax and shipping. Profit: after printing, fees and the artist&apos;s share.</li>
+              <li>Today starts at midnight in New York.</li>
             </ul>
           </details>
           {infinity && (
@@ -242,12 +240,12 @@ export default async function AdminDashboard() {
                 {infinity.failing ? <Pill tone="red">{infinity.failing} failed payment{infinity.failing === 1 ? "" : "s"}</Pill> : null}
               </summary>
               <dl className="mt-3 grid grid-cols-2 gap-3 text-[14px] sm:grid-cols-4">
-                <div><dt className="text-[12px] text-ink-2">Paying</dt><dd className="num text-[18px] font-bold">{infinity.paying}{infinity.yearly ? <span className="text-[12px] font-normal text-ink-2"> ({infinity.yearly} yearly)</span> : null}</dd></div>
-                <div><dt className="text-[12px] text-ink-2">Free months first</dt><dd className="num text-[18px] font-bold">{infinity.trialing}</dd></div>
-                <div><dt className="text-[12px] text-ink-2">On {PRO.name} (any way)</dt><dd className="num text-[18px] font-bold">{infinity.infinityNow}</dd></div>
-                <div><dt className="text-[12px] text-ink-2">Cancelling</dt><dd className="num text-[18px] font-bold">{infinity.cancelling}</dd></div>
+                <div><dt className="t-small">Paying</dt><dd className="num text-[18px] font-bold">{infinity.paying}{infinity.yearly ? <span className="text-[13px] font-normal text-ink-2"> ({infinity.yearly} yearly)</span> : null}</dd></div>
+                <div><dt className="t-small">Free months first</dt><dd className="num text-[18px] font-bold">{infinity.trialing}</dd></div>
+                <div><dt className="t-small">On {PRO.name} (any way)</dt><dd className="num text-[18px] font-bold">{infinity.infinityNow}</dd></div>
+                <div><dt className="t-small">Cancelling</dt><dd className="num text-[18px] font-bold">{infinity.cancelling}</dd></div>
               </dl>
-              <p className="mt-2 text-[12px] text-ink-2">
+              <p className="t-small mt-2">
                 MRR = paying × {usd(PRO.priceCents)} ({usd(PRO.yearlyMonthlyCents)}/mo yearly). Referral months not counted.{infinity.simulated ? " Test mode." : ""}
               </p>
             </details>
@@ -256,7 +254,7 @@ export default async function AdminDashboard() {
 
         <Panel title="90-day test">
           <div className="flex items-baseline gap-2">
-            <b className="display num text-[44px] leading-none">{sold}</b>
+            <b className="t-num">{sold}</b>
             <span className="text-[15px] text-ink-2">of {TEST_TARGET} prints</span>
             <Pill tone={onTrack ? "green" : "amber"} className="ml-auto">{onTrack ? "On track" : "Behind"}</Pill>
           </div>
@@ -267,12 +265,12 @@ export default async function AdminDashboard() {
             <span aria-hidden="true" className="absolute -top-1 h-5 w-0.5 bg-ink/50" style={{ left: `${(elapsed / TEST_DAYS) * 100}%` }} title="Even pace" />
           </div>
           <dl className="num grid grid-cols-2 gap-x-4 gap-y-2 text-[14px]">
-            <div><dt className="text-[12px] text-ink-2">Day</dt><dd className="font-semibold">{Math.min(elapsed + 1, TEST_DAYS)} of {TEST_DAYS}</dd></div>
-            <div><dt className="text-[12px] text-ink-2">Need per week</dt><dd className="font-semibold">{remaining === 0 ? "Target hit" : pace == null ? `Ended ${remaining} short` : `${pace} prints`}</dd></div>
-            <div><dt className="text-[12px] text-ink-2">Pace</dt><dd className="font-semibold">{currentPace == null ? "—" : `${currentPace} / week`}</dd></div>
-            <div><dt className="text-[12px] text-ink-2">Started</dt><dd className="font-semibold">{day(startAt)}</dd></div>
+            <div><dt className="t-small">Day</dt><dd className="font-semibold">{Math.min(elapsed + 1, TEST_DAYS)} of {TEST_DAYS}</dd></div>
+            <div><dt className="t-small">Need per week</dt><dd className="font-semibold">{remaining === 0 ? "Target hit" : pace == null ? `Ended ${remaining} short` : `${pace} prints`}</dd></div>
+            <div><dt className="t-small">Pace</dt><dd className="font-semibold">{currentPace == null ? "—" : `${currentPace} / week`}</dd></div>
+            <div><dt className="t-small">Started</dt><dd className="font-semibold">{day(startAt)}</dd></div>
           </dl>
-          <details className="text-[13px] text-ink-2">
+          <details className="t-small">
             <summary className="cursor-pointer font-semibold text-ink">Start date</summary>
             <p className="mt-2">
               From {start.source === "env" ? "TEST_START_DATE" : start.source === "file" ? "a saved setting" : "the first order"}. The tick marks an even pace.
@@ -300,7 +298,6 @@ export default async function AdminDashboard() {
             </li>
           ))}
         </ul>
-        <p className="mt-2 text-[12px] text-ink-2">From the server&apos;s settings. Values are never shown.</p>
       </details>
     </div>
   );

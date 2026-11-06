@@ -88,7 +88,7 @@ export default async function AdminJobsPage() {
 
   return (
     <div className="grid gap-5">
-      <PageHead title="Jobs" sub={<>What runs by itself. Failures show up in <Link href="/admin/alerts" className="font-semibold text-scan">Alerts</Link>.</>} />
+      <PageHead title="Jobs" sub={<>Failures show up in <Link href="/admin/alerts" className="font-semibold text-scan">Alerts</Link>.</>} />
 
       <section aria-labelledby="jobs-h" className="af-panel grid gap-1 p-4 sm:p-5">
         <h2 id="jobs-h" className="sr-only">Scheduled jobs</h2>
@@ -206,7 +206,7 @@ export default async function AdminJobsPage() {
               },
             };
           })}
-          empty={<EmptyState compact title="Nothing has run yet" body="Press Run now on a job above." />}
+          empty={<EmptyState dab="var(--af-edge-strong)" compact title="Nothing has run yet" body="Press Run now on a job above." />}
         />
       </section>
     </div>

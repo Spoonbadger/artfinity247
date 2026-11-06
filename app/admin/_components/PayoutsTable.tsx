@@ -6,6 +6,7 @@ import { passes, sortRows, SortSelect, SortTh, TableToolbar, useTable, type Sort
 import { cn } from "@/lib/utils";
 import { monthLabel, usd } from "./util";
 import { useAdminCan } from "./AdminRole";
+import { THEAD } from "./ui";
 
 type Row = {
   artistId: string;
@@ -56,7 +57,7 @@ export default function PayoutsTable({ month }: { month: string }) {
 
   const toggle = async (r: Row) => {
     const paid = r.payout.status === "PAID";
-    if (!paid && !confirm(`Mark ${usd(r.artistShare)} to ${r.artistName} as paid? They'll get an email.`)) return;
+    if (!paid && !confirm(`Records ${usd(r.artistShare)} to ${r.artistName} as paid by hand. Send the money first: this doesn't move any.\n\n${r.artistName} is emailed now, and the email can't be unsent.`)) return;
     setBusy(r.artistId);
     try {
       const res = await fetch("/api/admin/payouts/mark-paid", {
@@ -107,21 +108,18 @@ export default function PayoutsTable({ month }: { month: string }) {
         </TableToolbar>
       )}
 
-      <div className="overflow-hidden rounded-2xl border border-line bg-white">
+      <div className="overflow-hidden rounded-2xl border border-edge bg-white">
         {rows === null ? (
           <p className="px-4 py-14 text-center text-ink-2">Loading {monthLabel(month)}…</p>
         ) : error ? (
           <p className="px-4 py-14 text-center text-coral">Couldn&apos;t load payouts. <button type="button" onClick={load} className="font-semibold underline">Try again</button></p>
         ) : list.length === 0 ? (
-          <div className="grid justify-items-center gap-2 px-4 py-14 text-center">
-            <span className="paint-dab h-6 w-6" style={{ ["--dab" as string]: "var(--af-sticker)" }} />
-            <p className="font-semibold">No paid sales in {monthLabel(month)}.</p>
-          </div>
+          <p className="px-4 py-14 text-center font-semibold">No paid sales in {monthLabel(month)}.</p>
         ) : (
           <>
             {/* desktop table */}
             <table className="num hidden w-full text-left text-[14px] md:table">
-              <thead className="border-b border-line bg-wall/60 text-[12px] text-ink-2">
+              <thead className={THEAD}>
                 <tr>
                   <SortTh k="artist" label="Artist" sort={t.sort} onSort={t.toggleSort} className="pl-4" />
                   <SortTh k="to" label="Paid to" sort={t.sort} onSort={t.toggleSort} />
@@ -180,7 +178,7 @@ export default function PayoutsTable({ month }: { month: string }) {
 function AdjustNote({ r }: { r: Row }) {
   const cents = (r.refundAdjustments ?? 0) + (r.carriedIn ?? 0);
   if (!cents) return null;
-  return <span className="block text-[11.5px] font-semibold text-coral" title="A refund on a sale that was already paid out comes off this payout. It never goes below $0; the rest carries to next month.">after {usd(cents)} refund adj.</span>;
+  return <span className="block text-[13px] font-semibold text-coral" title="A refund on a sale that was already paid out comes off this payout. It never goes below $0; the rest carries to next month.">after {usd(cents)} refund adj.</span>;
 }
 
 /** Where the money goes: Stripe when connected and ready, else Venmo by hand. */
@@ -190,7 +188,7 @@ function PaidTo({ r }: { r: Row }) {
   return (
     <span>
       {venmo ?? <span className="text-coral">No Venmo</span>}
-      {r.stripe === "pending" && <span className="block text-[12px] text-ink-2">Stripe setup unfinished</span>}
+      {r.stripe === "pending" && <span className="t-small block">Stripe setup unfinished</span>}
     </span>
   );
 }
@@ -209,7 +207,7 @@ function PayButton({ r, busy, onClick }: { r: Row; busy: boolean; onClick: () =>
         </span>
       )}
       {!paid && r.payout.failureReason && (
-        <span className="max-w-[260px] text-left text-[12px] font-semibold text-coral" title={r.payout.failureReason}>Stripe failed: {r.payout.failureReason}</span>
+        <span className="max-w-[260px] text-left text-[13px] font-semibold text-coral" title={r.payout.failureReason}>Stripe failed: {r.payout.failureReason}</span>
       )}
       {!realTransfer && (
         <button type="button" disabled={busy || !canPay} title={canPay ? undefined : "Payouts need the admin or owner role."} onClick={onClick} className={cn("btn btn-sm", paid && "btn-ghost")}>
@@ -223,8 +221,8 @@ function PayButton({ r, busy, onClick }: { r: Row; busy: boolean; onClick: () =>
 function Badges({ r }: { r: Row }) {
   return (
     <>
-      {r.late && <span className="rounded-full bg-coral px-2 py-px text-[11.5px] font-bold text-white" title="Unpaid more than 3 days after the 5th">Late</span>}
-      {r.closed && <span className="rounded-full bg-wall px-2 py-px text-[11.5px] font-bold text-ink-2" title="Account closed. Still owed what they earned.">Closed</span>}
+      {r.late && <span className="rounded-full bg-coral px-2 py-px text-[12px] font-bold text-white" title="Unpaid more than 3 days after the 5th">Late</span>}
+      {r.closed && <span className="rounded-full bg-wall px-2 py-px text-[12px] font-bold text-ink-2" title="Account closed. Still owed what they earned.">Closed</span>}
     </>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PageHead, THEAD } from "../_components/ui";
 import { adminRoleOrRedirect } from "../_components/gate";
 import { prisma } from "@/lib/prisma";
 import { readScanSettings } from "@/lib/scanning.server";
@@ -54,20 +55,16 @@ export default async function AdminScanningPage({ searchParams }: { searchParams
 
   return (
     <div className="grid gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="eyebrow">Painting scans · NYC</p>
-          <h1 className="display text-[44px] sm:text-[56px]">Scanning</h1>
-          <p className="mt-1 max-w-[62ch] text-[14.5px] text-ink-2">
-            Artists book, you confirm a date and price, they pay, you scan and put the files on their artworks. The service is{" "}
-            <b className={s.enabled ? "text-earned" : "text-coral"}>{s.enabled ? "on" : "off"}</b>{s.enabled ? "" : ` (Studio and /scanning show the waitlist: ${waitlist} signed up)`}.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/scanning" className="btn btn-ghost btn-sm">Public page</Link>
-          <Link href="/admin/settings/scanning" className="btn btn-ghost btn-sm">Settings</Link>
-        </div>
-      </div>
+      <PageHead
+        title="Scanning"
+        sub={<>Service is <b className={s.enabled ? "text-earned" : "text-coral"}>{s.enabled ? "on" : "off"}</b>{s.enabled ? "" : ` · ${waitlist} on the waitlist`}</>}
+        action={
+          <>
+            <Link href="/scanning" className="btn btn-ghost btn-sm">Public page</Link>
+            <Link href="/admin/settings/scanning" className="btn btn-ghost btn-sm">Settings</Link>
+          </>
+        }
+      />
 
       <section aria-labelledby="cal-h" className="af-card grid gap-3 p-4 sm:p-5">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -79,7 +76,7 @@ export default async function AdminScanningPage({ searchParams }: { searchParams
         </div>
         <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Calendar, scrolls sideways">
           <div className="grid min-w-[760px] grid-cols-7 gap-1.5">
-            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => <span key={d} className="px-1 text-[12px] font-semibold text-ink-2">{d}</span>)}
+            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => <span key={d} className="px-1 text-[13px] font-semibold text-ink-2">{d}</span>)}
             {days.map((d) => {
               const list = byDay.get(d) ?? [];
               return (
@@ -88,7 +85,7 @@ export default async function AdminScanningPage({ searchParams }: { searchParams
                   {list.map((e) => (
                     <Link
                       key={`${e.id}-${e.asked}`} href={`/admin/scanning/${e.id}`}
-                      className={cn("truncate rounded px-1.5 py-0.5 text-[11.5px] font-semibold no-underline", e.asked ? "border border-dashed border-ink-2 text-ink" : "bg-scan text-white")}
+                      className={cn("truncate rounded px-1.5 py-0.5 text-[13px] font-semibold no-underline", e.asked ? "border border-dashed border-ink-2 text-ink" : "bg-scan text-white")}
                       title={`${e.label} · ${HANDOFF_LABEL[e.handoff as "dropoff" | "pickup"] ?? e.handoff} · ${STATUS_LABEL[e.status as ScanStatus] ?? e.status}`}
                     >
                       {e.handoff === "pickup" ? "⇢ " : ""}{e.label}
@@ -104,8 +101,8 @@ export default async function AdminScanningPage({ searchParams }: { searchParams
       <nav aria-label="Filter bookings" className="flex flex-wrap gap-1.5">
         {FILTERS.map((f) => (
           <Link key={f} href={f === "open" ? "/admin/scanning" : `/admin/scanning?status=${f}`} aria-current={filter === f ? "page" : undefined}
-            className={cn("flex min-h-[36px] items-center gap-1.5 rounded-full border-[1.5px] px-3 text-[13.5px] font-semibold no-underline", filter === f ? "border-ink bg-ink text-white" : "border-line bg-white text-ink")}>
-            {FILTER_LABEL[f]}<span className={cn("num text-[12px]", filter === f ? "text-white/80" : "text-ink-2")}>{countOf(f)}</span>
+            className={cn("flex min-h-[36px] items-center gap-1.5 rounded-full border-[1.5px] px-3 text-[13.5px] font-semibold no-underline", filter === f ? "border-ink bg-ink text-white" : "border-edge-strong bg-white text-ink")}>
+            {FILTER_LABEL[f]}<span className={cn("num text-[13px]", filter === f ? "text-white/80" : "text-ink-2")}>{countOf(f)}</span>
           </Link>
         ))}
       </nav>
@@ -115,7 +112,7 @@ export default async function AdminScanningPage({ searchParams }: { searchParams
         {rows.length ? (
           <table className="w-full min-w-[820px] text-left text-[14px]">
             <caption className="sr-only">Scan bookings, {FILTER_LABEL[filter]}</caption>
-            <thead className="border-b border-line text-[12px] text-ink-2">
+            <thead className={THEAD}>
               <tr>
                 <th scope="col" className="px-4 py-2.5 font-semibold">Artist</th>
                 <th scope="col" className="px-3 py-2.5 font-semibold">Status</th>
@@ -134,8 +131,8 @@ export default async function AdminScanningPage({ searchParams }: { searchParams
                 return (
                   <tr key={r.id} className="border-b border-line last:border-0 hover:bg-wall/60">
                     <td className="px-4 py-3"><Link href={`/admin/scanning/${r.id}`} className="font-bold text-ink underline-offset-2 hover:underline">{who.get(r.artistId) ?? "Unknown artist"}</Link></td>
-                    <td className="px-3 py-3"><span className="inline-flex items-center gap-1.5 whitespace-nowrap font-semibold"><i className="paint-dab !h-2.5 !w-2.5" style={{ ["--dab" as string]: STATUS_DAB[st] }} aria-hidden="true" />{STATUS_LABEL[st] ?? r.status}</span></td>
-                    <td className="num px-3 py-3 text-right">{r.items.length}{(st === "scanning" || st === "paid" || st === "delivered") && <span className="block text-[12px] text-ink-2">{done} scanned</span>}</td>
+                    <td className="px-3 py-3"><span className="inline-flex items-center gap-1.5 whitespace-nowrap font-semibold"><i className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: STATUS_DAB[st] }} aria-hidden="true" />{STATUS_LABEL[st] ?? r.status}</span></td>
+                    <td className="num px-3 py-3 text-right">{r.items.length}{(st === "scanning" || st === "paid" || st === "delivered") && <span className="t-small block">{done} scanned</span>}</td>
                     <td className="px-3 py-3">{HANDOFF_LABEL[r.handoff as "dropoff" | "pickup"] ?? r.handoff}</td>
                     <td className="px-3 py-3">{r.scheduledFor ? dayLabel(r.scheduledFor) : <span className="text-ink-2">asked {r.preferredDates.map((d) => dayLabel(d, { month: "short", day: "numeric" })).join(", ") || "—"}</span>}</td>
                     <td className="num px-3 py-3 text-right">{r.priceCents != null ? usd(r.priceCents) : <span className="text-ink-2">est. {estimateText(live)}</span>}</td>

@@ -104,7 +104,7 @@ export default async function ModerationPage({ searchParams }: { searchParams: {
 
   return (
     <div className="grid gap-5">
-      <PageHead title="Moderation" sub={queue === 0 ? "All clear" : `${queue} waiting · approve to put it live`} />
+      <PageHead title="Moderation" sub={queue === 0 ? "All clear" : `${queue} waiting`} />
 
       <nav aria-label="Moderation views" className="flex flex-wrap gap-2">
         {TABS.map((t) => (
@@ -114,7 +114,7 @@ export default async function ModerationPage({ searchParams }: { searchParams: {
             aria-current={tab === t.id ? "page" : undefined}
             className={cn(
               "flex min-h-[40px] items-center rounded-full border-[1.5px] px-3.5 text-[14px] font-semibold no-underline transition",
-              tab === t.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"
+              tab === t.id ? "border-ink bg-ink text-white" : "border-edge-strong bg-white text-ink hover:border-ink"
             )}
           >
             {t.label} <span className="num ml-1 opacity-70">{counts[t.id]}</span>

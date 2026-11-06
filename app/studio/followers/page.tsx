@@ -127,7 +127,10 @@ export default async function FollowersPage({ searchParams }: { searchParams: { 
               })}
             />
           )}
-          {total > SHOW && <p className="text-[13px] text-ink-2">Showing the newest {SHOW} of {total}. Export CSV for all of them.</p>}
+          {counts.pending > 0 && rows.length > 0 && show !== "unsubscribed" && show !== "confirmed" && (
+            <p className="t-small">Pending means they haven&apos;t clicked our confirm email yet. Newsletters skip them until they do.</p>
+          )}
+          {total > SHOW && <p className="t-small">Showing the newest {SHOW} of {total}. Export CSV for all of them.</p>}
         </section>
       )}
 

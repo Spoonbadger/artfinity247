@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Swatch } from "@/components/af/Brush";
 import { DabRow } from "@/components/browse/PageHead";
 import { prisma } from "@/lib/prisma";
 import { getUserFromCookie } from "@/lib/auth";
@@ -48,8 +47,8 @@ export default async function ReportPage({ searchParams }: { searchParams: { art
     <div className="pb-24">
       <section className="mx-auto max-w-[1240px] px-4 pb-8 pt-10 sm:px-6 md:pt-16">
         <div className="mb-4 flex items-center gap-2.5"><DabRow /><span className="eyebrow">{counter ? "Counter-notice" : "Report art"}</span></div>
-        <h1 className="display text-[48px] sm:text-[80px]">{counter ? "Taken down by mistake?" : "Something not right?"}</h1>
-        <p className="mt-4 max-w-[48ch] text-[18px] text-ink-2">
+        <h1 className="display text-[44px] sm:text-[64px]">{counter ? "Taken down by mistake?" : "Something not right?"}</h1>
+        <p className="mt-3 max-w-[48ch] text-[17px] text-ink-2">
           {counter
             ? "If your work was removed after a copyright notice and it’s yours, you can file a counter-notice."
             : "Tell us what you saw. A person reviews every report."}
@@ -57,24 +56,23 @@ export default async function ReportPage({ searchParams }: { searchParams: { art
       </section>
       <section className="mx-auto grid max-w-[1240px] items-start gap-8 px-4 sm:px-6 lg:grid-cols-[1fr_1.3fr] lg:gap-12">
         <ol className="order-last grid gap-5 lg:order-none">
-          {steps.map(([color, title, sub]) => (
-            <li key={title} className="grid grid-cols-[56px_1fr] gap-4 border-t-[3px] border-ink pt-4">
-              <Swatch color={color} className="h-10" />
+          {steps.map(([, title, sub]) => (
+            <li key={title} className="border-t border-line pt-4">
               <div className="grid min-w-0 gap-1">
-                <h2 className="display text-[26px]">{title}</h2>
-                <p className="text-[15.5px] text-ink-2">{sub}</p>
+                <h2 className="t-card">{title}</h2>
+                <p className="t-muted">{sub}</p>
               </div>
             </li>
           ))}
-          <p className="border-t border-line pt-4 text-[14.5px] text-ink-2">
+          <p className="t-small border-t border-line pt-4">
             {counter ? "Only file this if you truly believe the takedown was wrong. False statements can carry legal penalties." : "Reports go to our team, not the artist. If we take something down, the artist hears why and can reply."}{" "}
             <Link href="/dmca" className="font-semibold text-ink underline-offset-2 hover:underline">How DMCA works here</Link>
           </p>
         </ol>
         {counter && !art ? (
           <div className="af-card grid justify-items-start gap-3 p-5 sm:p-7">
-            <h2 className="display text-[32px]">{user ? "We couldn’t find that work" : "Log in first"}</h2>
-            <p className="text-[16px] text-ink-2">
+            <h2 className="t-card">{user ? "We couldn’t find that work" : "Log in first"}</h2>
+            <p className="t-muted">
               {user
                 ? "Open the link from your takedown email, or write to us from the contact page."
                 : "Counter-notices come from the artist’s account. Log in and we’ll bring you back here."}

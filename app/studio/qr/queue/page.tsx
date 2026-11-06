@@ -84,7 +84,7 @@ export default async function PrintQueuePage({ searchParams }: { searchParams: {
   return (
     <StudioPage
       title="Print queue"
-      sub="Line up codes, then print them at home on label sheets, or have us print, laminate and mail them."
+      sub="Print your codes at home on label sheets, or we mail them laminated."
       actions={<><HelpLink href="/help/qr-codes/print-queue" /><Link href="/studio/codes" className="btn btn-ghost btn-sm">My codes</Link><Link href="/studio/qr" className="btn btn-ghost btn-sm">QR Studio</Link></>}
     >
       {paid && paid.status !== "pending" && <PaymentReturn kind="paid" message={`Paid. Order ${codeOrderNumber(paid.id)} is in`} description="Receipt sent to your email." strip={["paid", "session_id"]} />}

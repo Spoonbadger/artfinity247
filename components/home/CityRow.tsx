@@ -27,8 +27,8 @@ export default function CityRow({ cities }: { cities: CityCard[] }) {
               <span className="absolute inset-x-0 bottom-0 h-[12%] bg-[#dcd6ca]" aria-hidden="true" />
             </span>
             <span className="flex items-baseline justify-between gap-3 px-0.5">
-              <b className="display truncate text-[26px] group-hover:text-scan">{c.name}</b>
-              <span className="num shrink-0 text-[13px] text-ink-2">{c.pieces} pieces <ArrowRight className="inline h-3.5 w-3.5" aria-hidden="true" /></span>
+              <b className="t-section truncate group-hover:text-scan">{c.name}</b>
+              <span className="t-small num shrink-0">{c.pieces} pieces <ArrowRight className="inline h-3.5 w-3.5" aria-hidden="true" /></span>
             </span>
           </Link>
         </li>

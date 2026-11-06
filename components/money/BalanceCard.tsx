@@ -63,7 +63,8 @@ export default function BalanceCard({ b }: { b: Balance }) {
   const adjInNext = b.payouts.filter((p) => np.months.includes(p.month) && p.status !== "paid").reduce((n, p) => n + p.adjustmentCents + p.carryInCents, 0);
 
   const segs = [
-    { k: "pending" as const, label: <>On hold <span className="font-normal text-ink-2">({RETURN_WINDOW_DAYS}-day returns)</span></>, value: holdCents, note: `${thisMonth} sales. Paid ${holdDate}.` },
+    // "Why is this on hold?" It's this month's sales: each month is paid as one payout, after the month ends.
+    { k: "pending" as const, label: <>On hold</>, value: holdCents, note: holdCents > 0 ? `${thisMonth} sales. Paid together by ${holdDate}, after the month ends.` : `${thisMonth} sales land here, paid by ${holdDate}.` },
     { k: "available" as const, label: <>Ready for next payout</>, value: readyCents, note: readyCents > 0 ? `${monthsText} sales.` : `Empty until ${thisMonth} ends.` },
     { k: "paid" as const, label: <>Paid out</>, value: b.paidTotalCents, note: "All time." },
   ];
@@ -73,20 +74,20 @@ export default function BalanceCard({ b }: { b: Balance }) {
       <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] md:items-end md:gap-6">
         <div className="min-w-0">
           <h2 id="balance-h" className="eyebrow">Your balance</h2>
-          <p className="display num mt-1 text-[clamp(44px,9vw,72px)] leading-none text-earned">{usd(b.pendingCents + b.availableCents)}</p>
-          <p className="mt-1.5 text-[13.5px] text-ink-2">{fresh ? "Your first sale shows up here." : `Not paid out yet · ${usd(b.lifetimeCents)} earned all time`}</p>
+          <p className="t-num mt-1 text-earned">{usd(b.pendingCents + b.availableCents)}</p>
+          <p className="t-small mt-1.5">{fresh ? "Your first sale shows up here." : `Not paid out yet · ${usd(b.lifetimeCents)} earned all time`}</p>
         </div>
 
         {/* Next payout and where it goes: the two things people open this page for. */}
         <div className="grid gap-1 rounded-[4px] bg-wall p-3.5 sm:p-4">
-          <span className="text-[13px] font-semibold text-ink-2">Next payout</span>
+          <span className="t-small font-semibold">Next payout</span>
           <p className="text-[19px] leading-tight sm:text-[21px]">
             <b className={late ? "text-coral" : undefined}>{late ? "Overdue" : dayUTC(np.date)}</b>
             {np.late && !late && <span className="text-[14px] text-ink-2"> (on its way)</span>}
             <span className="text-ink-2"> · </span>
             <b className="num text-earned">{usd(np.amountCents)}</b>
           </p>
-          <p className="flex flex-wrap items-center gap-x-2 text-[14px]">
+          <p className="flex flex-wrap items-center gap-x-2 text-[15px]">
             {stripe ? (
               <><Tick />Your bank, via Stripe</>
             ) : handle ? (
@@ -96,19 +97,19 @@ export default function BalanceCard({ b }: { b: Balance }) {
             )}
           </p>
           {!fresh && (
-            <p className="text-[13px] text-ink-2">
+            <p className="t-small">
               {np.projected
                 ? `${monthsText} so far. Grows with each sale.`
-                : `${lateDue}${monthsText} sales${clearing.length ? ` · ${usd(np.clearingCents)} still in the return window, paid anyway` : ""}`}
+                : `${lateDue}${monthsText} sales${clearing.length ? `, including ${usd(np.clearingCents)} still in the ${RETURN_WINDOW_DAYS}-day return window` : ""}.`}
               {adjInNext < 0 && <> · after {usd(adjInNext)} in refund adjustments</>}
             </p>
           )}
           {b.carryForwardCents > 0 && (
-            <p className="text-[13px] font-semibold text-coral">
+            <p className="t-small font-semibold !text-coral">
               {usd(-b.carryForwardCents)} in refunds comes off your next payouts. A payout never goes below $0; the rest carries over.
             </p>
           )}
-          {!late && <p className="text-[13px] text-ink-2">Sent automatically. Nothing to do.</p>}
+          {!late && <p className="t-small">Sent automatically. Nothing to do.</p>}
         </div>
       </div>
 
@@ -118,7 +119,7 @@ export default function BalanceCard({ b }: { b: Balance }) {
           <dl className="grid gap-3 sm:grid-cols-3 sm:gap-5">
             {segs.map((s) => (
               <div key={s.k} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-2.5 sm:grid-cols-1 sm:gap-y-0.5">
-                <dt className="flex items-center gap-2.5 text-[14px] font-semibold">
+                <dt className="flex items-center gap-2.5 text-[15px] font-semibold">
                   <i
                     aria-hidden="true"
                     className="paint-dab h-3 w-3 shrink-0"
@@ -127,7 +128,7 @@ export default function BalanceCard({ b }: { b: Balance }) {
                   {s.label}
                 </dt>
                 <dd className="num text-right text-[18px] font-bold sm:pl-[22px] sm:text-left sm:text-[24px]">{usd(s.value)}</dd>
-                <dd className="col-span-2 pl-[22px] text-[13px] text-ink-2 sm:col-span-1">{s.note}</dd>
+                <dd className="t-small col-span-2 pl-[22px] sm:col-span-1">{s.note}</dd>
               </div>
             ))}
           </dl>

@@ -9,7 +9,7 @@ import ActionButton from "../../_components/ActionButton";
 import { usd } from "../../_components/util";
 import VenueForm from "../_components/VenueForm";
 import MoreMenu from "../../_components/MoreMenu";
-import { PageHead, Pill, StatusPill } from "../../_components/ui";
+import { PageHead, Pill, StatusPill, THEAD } from "../../_components/ui";
 import { DataTable, type Row } from "../../_components/table";
 import { EmptyState } from "@/components/studio/EmptyState";
 import { monthLabel, pctLabel, venueReport } from "@/lib/venues";
@@ -77,7 +77,7 @@ export default async function AdminVenuePage({ params }: { params: { id: string 
         {months.length ? (
           <table className="mt-2 w-full min-w-[760px] text-left text-[14px]">
             <caption className="sr-only">Venue share owed by month</caption>
-            <thead className="border-b border-line text-[12px] text-ink-2">
+            <thead className={THEAD}>
               <tr>
                 <th scope="col" className="px-4 py-2.5 font-semibold">Month</th>
                 <th scope="col" className="px-3 py-2.5 text-right font-semibold">Sales</th>
@@ -179,7 +179,7 @@ export default async function AdminVenuePage({ params }: { params: { id: string 
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={c.artwork.imageUrl} alt="" className="h-11 w-11 shrink-0 rounded-[3px] object-cover" />
                   ) : (
-                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[3px] bg-wall text-[10.5px] font-bold leading-tight text-ink-2" aria-hidden="true">Page</span>
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[3px] bg-wall text-[12px] font-bold leading-tight text-ink-2" aria-hidden="true">Page</span>
                   )}
                   <span className="grid min-w-0">
                     {c.artwork?.slug ? (
@@ -199,7 +199,7 @@ export default async function AdminVenuePage({ params }: { params: { id: string 
               profit: usd(c.artfinityCents),
             },
           }))}
-          empty={<EmptyState compact title="No codes linked yet" body="Artists pick this venue in My codes, or link a name from Venues." action={{ label: "Unlinked names", href: "/admin/venues#merge-h" }} />}
+          empty={<EmptyState dab="var(--af-edge-strong)" compact title="No codes linked yet" body="Artists pick this venue in My codes, or link a name from Venues." action={{ label: "Unlinked names", href: "/admin/venues#merge-h" }} />}
         />
       </section>
 
@@ -222,7 +222,7 @@ export default async function AdminVenuePage({ params }: { params: { id: string 
               {activity.map((a) => (
                 <li key={a.id} className="grid gap-0.5">
                   <span>{a.summary}</span>
-                  <span className="text-[12px] text-ink-2">{day(a.createdAt)} · {a.adminEmail}</span>
+                  <span className="t-small">{day(a.createdAt)} · {a.adminEmail}</span>
                 </li>
               ))}
             </ul>

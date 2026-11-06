@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PageHead, THEAD } from "../_components/ui";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { adminRoleOrRedirect } from "../_components/gate";
@@ -40,20 +41,16 @@ export default async function CodeOrdersPage({ searchParams }: { searchParams: {
 
   return (
     <div className="grid gap-6">
-      <div>
-        <p className="eyebrow">Orders</p>
-        <h1 className="display text-[44px] sm:text-[56px]">Code orders</h1>
-        <p className="mt-1 max-w-[64ch] text-[14.5px] text-ink-2">
-          Artists&apos; QR codes we print, laminate, cut and mail, at cost. Download the print-ready PDF from each order, then mark it printing and shipped (the artist gets the tracking link).
-          Prices are in <Link href="/admin/settings/code-prints" className="font-semibold text-scan">Code print prices</Link>.
-        </p>
-      </div>
+      <PageHead
+        title="Code orders"
+        sub={<>QR codes we print and mail at cost. <Link href="/admin/settings/code-prints" className="font-semibold text-scan">Prices</Link></>}
+      />
 
       <form className="flex flex-wrap items-center gap-2" role="search">
         <nav aria-label="Filter by status" className="flex flex-wrap gap-1.5">
           {FILTERS.map((f) => (
             <Link key={f.v} href={`/admin/code-orders?status=${f.v}${q ? `&q=${encodeURIComponent(q)}` : ""}`} aria-current={status === f.v ? "page" : undefined}
-              className={cn("rounded-full border-[1.5px] px-3 py-1.5 text-[13px] font-semibold no-underline", status === f.v ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>
+              className={cn("rounded-full border-[1.5px] px-3 py-1.5 text-[13px] font-semibold no-underline", status === f.v ? "border-ink bg-ink text-white" : "border-edge-strong bg-white text-ink hover:border-ink")}>
               {f.label} <span className="num opacity-70">{n(f.v)}</span>
             </Link>
           ))}
@@ -61,7 +58,7 @@ export default async function CodeOrdersPage({ searchParams }: { searchParams: {
         <input type="hidden" name="status" value={status} />
         <label className="ml-auto flex items-center gap-2">
           <span className="sr-only">Search code orders</span>
-          <input name="q" defaultValue={q} placeholder="Artist, email or CP-number" className="min-h-[38px] w-60 rounded-lg border-[1.5px] border-line bg-white px-2.5 text-[14px]" />
+          <input name="q" defaultValue={q} placeholder="Artist, email or CP-number" className="min-h-[40px] w-60 rounded-lg border-[1.5px] border-line bg-white px-2.5 text-[14px]" />
         </label>
         <button type="submit" className="btn btn-ghost btn-sm">Search</button>
       </form>
@@ -70,7 +67,7 @@ export default async function CodeOrdersPage({ searchParams }: { searchParams: {
         {orders.length ? (
           <table className="w-full min-w-[760px] text-left text-[14px]">
             <caption className="sr-only">Code print orders</caption>
-            <thead className="border-b border-line text-[12px] text-ink-2">
+            <thead className={THEAD}>
               <tr>
                 <th scope="col" className="px-4 py-2.5 font-semibold">Order</th>
                 <th scope="col" className="px-3 py-2.5 font-semibold">Artist</th>
@@ -98,9 +95,9 @@ export default async function CodeOrdersPage({ searchParams }: { searchParams: {
                     <td className="px-3 py-3 text-[13px]">{o.shipCity}, {o.shipState}</td>
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center gap-1.5 text-[13px] font-bold">
-                        <i className="paint-dab h-2.5 w-2.5" style={{ ["--dab" as string]: STATUS_DAB[st] }} aria-hidden="true" />{STATUS_LABEL[st]}
+                        <i className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: STATUS_DAB[st] }} aria-hidden="true" />{STATUS_LABEL[st]}
                       </span>
-                      {o.refundNote && <span className="block text-[12px] text-coral">Refund noted</span>}
+                      {o.refundNote && <span className="block text-[13px] text-coral">Refund noted</span>}
                     </td>
                   </tr>
                 );

@@ -12,6 +12,7 @@ type Step = { label: string; done: boolean; href?: string; act?: string; onClick
 /** An extra, optional idea under the checklist (not counted in the progress), e.g. "Book a scan". */
 export type Suggestion = { label: string; note?: string; href: string; act: string };
 
+/** Before the first upload the page has no header button, so the Upload step is the blue one. */
 export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true, hasEvent: serverHasEvent = false, slug, suggestion }: { hasProfile: boolean; hasArt: boolean; hasSold: boolean; hasVenmo?: boolean; hasEvent?: boolean; slug: string; suggestion?: Suggestion | null }) {
   const [shared, setShared] = useState(false);
   const [hasEvent, setHasEvent] = useState(serverHasEvent);
@@ -59,7 +60,7 @@ export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true
         <h2 id="next-h" className="t-card">Next up</h2>
         {todo.length > 0 && (
           <div className="flex items-center gap-2.5">
-            <span className="num text-[13px] font-semibold text-ink-2">{done} of {steps.length} done</span>
+            <span className="t-small num font-semibold">{done} of {steps.length} done</span>
             <div className="relative h-2.5 w-24 overflow-hidden rounded-full bg-wall" role="progressbar" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={done} aria-label="Steps done">
               {done > 0 && <span className="absolute inset-y-0 left-0 rounded-full bg-scan transition-[width]" style={{ width: `${(done / steps.length) * 100}%` }} />}
             </div>
@@ -69,7 +70,7 @@ export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true
       {todo.length > 0 && (
         <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {todo.map((s, i) => {
-            const cls = cn("inline-flex min-h-[40px] shrink-0 items-center text-[14px] font-bold", i === 0 ? "btn btn-sm" : "px-1 text-scan underline-offset-2 hover:underline");
+            const cls = cn("inline-flex min-h-[40px] shrink-0 items-center text-[14px] font-bold", i === 0 ? cn("btn btn-sm", !hasArt && "btn-blue") : "px-1 text-scan underline-offset-2 hover:underline");
             return (
               <li key={s.label} className={cn("box-inset flex items-center gap-2.5 px-3 py-2 text-[15px]", i > 0 && "bg-wall/40")}>
                 <span aria-hidden="true" className="h-[18px] w-[18px] shrink-0 rounded-md border-[1.5px] border-ink-2" />
@@ -86,7 +87,7 @@ export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true
           <i aria-hidden="true" className="paint-dab h-[18px] w-[18px] shrink-0" style={{ ["--dab" as string]: "var(--af-scan)" }} />
           <span className="min-w-0 flex-1">
             <b className="block">{suggestion.label}</b>
-            {suggestion.note && <span className="block text-[13px] text-ink-2">{suggestion.note}</span>}
+            {suggestion.note && <span className="t-small block">{suggestion.note}</span>}
           </span>
           <Link href={suggestion.href} className="-my-3 inline-flex min-h-[44px] shrink-0 items-center px-1 text-[14px] font-bold text-scan underline-offset-2 hover:underline">{suggestion.act}</Link>
         </div>

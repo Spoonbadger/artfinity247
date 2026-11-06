@@ -40,10 +40,10 @@ export default function RecoverPasswordForm() {
     <AuthCard className="mx-auto w-full max-w-[460px]">
       {sent ? (
         <div className="grid gap-5" role="status">
-          <h1 className="display text-[clamp(40px,9vw,54px)]">
+          <h1 className="t-page">
             Check your <Brushed>email</Brushed>
           </h1>
-          <p className="text-[16px] text-ink-2">
+          <p className="t-body text-ink-2">
             If <b className="text-ink">{email.trim()}</b> has a page, a reset link is on its way. It works for 30 minutes.
           </p>
           <Link href={withNext("/login", next)} className="btn btn-ghost w-full">Back to log in</Link>
@@ -53,10 +53,10 @@ export default function RecoverPasswordForm() {
         </div>
       ) : (
         <form onSubmit={onSubmit} className="grid gap-5" noValidate>
-          <h1 className="display text-[clamp(40px,9vw,54px)]">
+          <h1 className="t-page">
             Forgot your <Brushed>password?</Brushed>
           </h1>
-          <p className="-mt-2 text-[16px] text-ink-2">We’ll email you a link to set a new one.</p>
+          <p className="t-body -mt-2 text-ink-2">We’ll email you a link to set a new one.</p>
           <FormAlert>
             {error && (
               <>

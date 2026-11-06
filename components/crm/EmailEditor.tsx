@@ -12,7 +12,6 @@ import {
 
 export type EditorTemplate = { subject: string; body: string; enabled: boolean; custom: boolean };
 
-const KIND_DAB: Record<EmailKind, string> = { receipt: "#ffd43b", shipped: "#2b37f0", delivered: "#15161b", thank_you: "#e8743b" };
 
 export default function EmailEditor({
   initial, artistName, sampleTitle,
@@ -155,15 +154,14 @@ export default function EmailEditor({
               onClick={() => { setKind(k); setStatus(null); }}
               className={cn(
                 "grid min-w-[132px] shrink-0 gap-0.5 rounded-xl border-2 px-3.5 py-2.5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-scan",
-                on ? "border-ink bg-white shadow-[3px_3px_0_var(--af-ink)]" : "border-line bg-white/70 hover:border-ink"
+                on ? "border-ink bg-white" : "border-edge bg-white/70 hover:border-ink"
               )}
             >
               <span className="flex items-center gap-2 text-[15px] font-bold text-ink">
-                <i className="paint-dab" style={{ ["--dab" as string]: KIND_DAB[k] }} aria-hidden="true" />
                 {EMAIL_KIND_LABEL[k]}
                 {dirty(k) && <span className="h-1.5 w-1.5 rounded-full bg-coral" aria-label="unsaved" />}
               </span>
-              <span className={cn("text-[12px]", st === "Yours" ? "font-semibold text-scan" : "text-ink-2")}>{st}</span>
+              <span className={cn("text-[13px]", st === "Yours" ? "font-semibold text-scan" : "text-ink-2")}>{st}</span>
             </button>
           );
         })}
@@ -194,12 +192,12 @@ export default function EmailEditor({
           </div>
 
           {!draft.enabled ? (
-            <p className="-mt-2 text-[13px] text-ink-2">{offNote}</p>
+            <p className="t-small -mt-2">{offNote}</p>
           ) : !saved[kind].custom && kind !== "thank_you" ? (
-            <p className="-mt-2 text-[13px] text-ink-2">Buyers get Artfinity&apos;s standard email until you save.</p>
+            <p className="t-small -mt-2">Buyers get Artfinity&apos;s standard email until you save.</p>
           ) : null}
           {kind === "thank_you" && (
-            <p className="-mt-2 rounded-lg bg-wall px-3 py-2 text-[13px] text-ink-2">Your note saves now. Automatic sending is coming soon.</p>
+            <p className="box-inset t-small -mt-2 px-3 py-2">Your note saves now. Automatic sending is coming soon.</p>
           )}
 
           <label className="af-field">
@@ -227,7 +225,7 @@ export default function EmailEditor({
           </label>
 
           <div className="grid gap-1.5">
-            <span className="text-[12px] font-semibold text-ink-2">Tap to insert</span>
+            <span className="t-small font-semibold">Tap to insert</span>
             <div className="flex flex-wrap gap-1.5">
               {EMAIL_VARIABLES.map((v) => (
                 <button
@@ -273,7 +271,7 @@ export default function EmailEditor({
             </div>
             <div className="[&_a]:break-all" dangerouslySetInnerHTML={{ __html: preview.html }} />
           </div>
-          <p className="text-[12px] text-ink-2">Sample buyer: Sam. Real emails fill in each order.</p>
+          <p className="t-small">Sample buyer: Sam. Real emails fill in each order.</p>
         </section>
       </div>
     </div>

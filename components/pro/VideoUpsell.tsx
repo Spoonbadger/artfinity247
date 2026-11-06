@@ -14,7 +14,7 @@ export default function VideoUpsell({ imageUrl, title }: { imageUrl: string; tit
             <svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 5v14l11-7z" fill="#15161b" /></svg>
           </span>
         </span>
-        <span className="absolute left-2 top-2 rounded-full bg-ink px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-[0.06em] text-white">Infinity</span>
+        <span className="absolute left-2 top-2 rounded-full bg-ink px-2 py-0.5 text-[12px] font-extrabold uppercase tracking-[0.06em] text-white">Infinity</span>
       </div>
       <div className="grid justify-items-start gap-3">
         <h3 className="display text-[28px] leading-none">Videos are an Infinity tool</h3>

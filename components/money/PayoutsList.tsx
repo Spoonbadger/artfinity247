@@ -40,7 +40,7 @@ export default function PayoutsList({ payouts, ledger, adjustments = [], lateMon
         <>
         <div className="grid gap-0.5">
           <h2 id="payouts-h" className="t-card">Payouts</h2>
-          <span className="text-[13px] text-ink-2">One a month. Tap one to see its sales.</span>
+          <span className="t-small">One a month. Tap one to see its sales.</span>
         </div>
         <EmptyState
           compact
@@ -56,10 +56,10 @@ export default function PayoutsList({ payouts, ledger, adjustments = [], lateMon
           className="grid"
           toolbar={<div className="grid gap-0.5">
           <h2 id="payouts-h" className="t-card">Payouts</h2>
-          <span className="text-[13px] text-ink-2">One a month. Tap one to see its sales.</span>
+          <span className="t-small">One a month. Tap one to see its sales.</span>
         </div>}
           head={
-          <div className="hidden grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_20px] gap-3 border-b border-line pb-2 text-[12px] font-semibold text-ink-2 md:grid">
+          <div className="hidden grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_20px] gap-3 border-b border-line pb-2 text-[13px] font-semibold text-ink-2 md:grid">
             <span>Month</span><span className="text-right">Amount</span><span>Status</span><span>Date</span><span />
           </div>
           }

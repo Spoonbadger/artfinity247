@@ -14,13 +14,13 @@ export default async function NotFound() {
           <b className="display text-[52px] text-scan sm:text-[60px]">404</b>
         </CrookedFrame>
         <div className="grid justify-items-center gap-3">
-          <h1 className="display text-[44px] sm:text-[60px]">This wall is empty.</h1>
-          <p className="max-w-[44ch] text-[17px] text-ink-2">The page moved, or never existed.</p>
+          <h1 className="t-page">This wall is empty.</h1>
+          <p className="t-body max-w-[44ch] text-ink-2">The page moved, or never existed.</p>
           <div className="mt-3 flex flex-wrap justify-center gap-2">
             {user ? <Link href="/studio" className="btn btn-blue">Go to my Studio</Link> : <Link href="/" className="btn btn-blue">Go home</Link>}
             <Link href="/art" className="btn btn-ghost">Browse art</Link>
           </div>
-          <p className="mt-2 text-[14.5px] text-ink-2">
+          <p className="t-small mt-2">
             {user ? <Link href="/" className="inline-flex min-h-[40px] items-center whitespace-nowrap font-semibold text-ink underline underline-offset-4">Home</Link> : <Link href="/artists" className="inline-flex min-h-[40px] items-center whitespace-nowrap font-semibold text-ink underline underline-offset-4">Find an artist</Link>}
             <span aria-hidden="true"> · </span>
             <Link href="/help" className="inline-flex min-h-[40px] items-center whitespace-nowrap font-semibold text-ink underline underline-offset-4">Help center</Link>

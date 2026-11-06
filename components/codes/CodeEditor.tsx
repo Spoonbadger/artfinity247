@@ -87,9 +87,10 @@ export default function CodeEditor({ initial, arts, look, base, venues = [] }: {
   return (
     <div className="grid content-start gap-4">
       <form ref={formRef} onSubmit={save} className="af-card grid gap-4 p-4 sm:p-5" aria-labelledby="edit-h">
-        <h2 id="edit-h" className="flex items-center gap-2 t-card">
-          <span className="paint-dab h-3 w-5" style={{ ["--dab" as string]: "#ffd43b" }} aria-hidden="true" />Behind the code
-        </h2>
+        <div className="grid gap-1">
+          <h2 id="edit-h" className="t-card">Behind the code</h2>
+          <p className="t-small">Changes reach the printed code as soon as you save. No reprint needed.</p>
+        </div>
 
         <label className="af-field">
           <span className="label">Name</span>
@@ -104,7 +105,7 @@ export default function CodeEditor({ initial, arts, look, base, venues = [] }: {
           </select>
         </label>
         {art && (
-          <div className="flex items-center gap-3 text-[13px] text-ink-2">
+          <div className="t-small flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={art.imageUrl} alt={art.title} className="h-12 w-12 rounded-[3px] object-cover" />
             Scans land on {art.title}.
@@ -112,7 +113,7 @@ export default function CodeEditor({ initial, arts, look, base, venues = [] }: {
         )}
 
         <VenuePicker venues={venues} value={{ venueId: f.venueId, venue: f.venue }} onChange={(v) => set(v)} />
-        {venueWarn && <p className="-mt-2 text-[13px] text-ink-2">The card itself still says {look.printedVenue}.</p>}
+        {venueWarn && <p className="t-small -mt-2">The card itself still says {look.printedVenue}.</p>}
 
         <label className="af-field">
           <span className="label">Discount</span>
@@ -121,13 +122,13 @@ export default function CodeEditor({ initial, arts, look, base, venues = [] }: {
             {STEPS.map((v) => <option key={v} value={v}>{v}% off</option>)}
           </select>
         </label>
-        {tagWarn && <p className="-mt-2 text-[13px] text-ink-2">The printed tag still says {look.printedDisc}% off. Buyers get {f.discountPct ? `${f.discountPct}%` : "full price"}.</p>}
+        {tagWarn && <p className="t-small -mt-2">The printed tag still says {look.printedDisc}% off. Buyers get {f.discountPct ? `${f.discountPct}%` : "full price"}.</p>}
 
         <label className="af-field">
           <span className="label">Stops working after</span>
           <input type="date" value={f.expires} onChange={(e) => set({ expires: e.target.value })} />
         </label>
-        <div className="-mt-2 flex items-center justify-between gap-2 text-[13px] text-ink-2">
+        <div className="t-small -mt-2 flex items-center justify-between gap-2">
           <span>{f.expires ? "Then it opens your page with a short note." : "Never ends."}</span>
           {f.expires && <button type="button" className="font-bold text-scan" onClick={() => set({ expires: "" })}>Never end</button>}
         </div>
@@ -143,9 +144,7 @@ export default function CodeEditor({ initial, arts, look, base, venues = [] }: {
       </form>
 
       <section className="af-card grid gap-3 p-4 sm:p-5" aria-labelledby="dl-h">
-        <h2 id="dl-h" className="flex items-center gap-2 t-card">
-          <span className="paint-dab h-3 w-5" style={{ ["--dab" as string]: "#2b37f0" }} aria-hidden="true" />The code
-        </h2>
+        <h2 id="dl-h" className="t-card">The code</h2>
         <div className="mx-auto w-full max-w-[220px] rounded-[4px] p-3 shadow-[0_2px_0_var(--af-line)]" style={{ background: look.bg }} dangerouslySetInnerHTML={{ __html: svg }} />
         <div className="flex flex-wrap gap-2">
           {initial.artworkId && (

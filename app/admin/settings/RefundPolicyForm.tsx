@@ -45,7 +45,7 @@ export default function RefundPolicyForm({ value }: { value: Policy }) {
         {CHOICES.map((c) => {
           const on = v === c.v;
           return (
-            <label key={c.v} className={cn("flex cursor-pointer gap-3 rounded-xl border-[1.5px] p-3", on ? "border-ink bg-wall" : "border-line bg-white hover:border-ink", !canEdit && "cursor-not-allowed opacity-70")}>
+            <label key={c.v} className={cn("flex cursor-pointer gap-3 rounded-xl border-[1.5px] p-3", on ? "border-ink bg-wall" : "border-edge-strong bg-white hover:border-ink", !canEdit && "cursor-not-allowed opacity-70")}>
               <input type="radio" name="refundPaidOutPolicy" value={c.v} checked={on} disabled={!canEdit} onChange={() => setV(c.v)} className="mt-1 h-4 w-4 accent-ink" />
               <span className="grid gap-0.5">
                 <b className="text-[15px]">{c.title}{c.v === "absorb" && <span className="ml-1.5 text-[13px] font-semibold text-ink-2">(default)</span>}</b>
@@ -59,7 +59,7 @@ export default function RefundPolicyForm({ value }: { value: Policy }) {
         <button type="submit" disabled={busy || v === value || !canEdit} title={canEdit ? undefined : "Only an owner can change settings."} className="btn btn-blue btn-sm">
           {busy ? "Saving…" : "Save"}
         </button>
-        {!canEdit && <span className="text-[13px] text-ink-2">Only an owner can change this.</span>}
+        {canEdit ? <span className="t-small">Applies to refunds recorded from now on. Past ones don&apos;t change.</span> : <span className="t-small">Only an owner can change this.</span>}
       </div>
     </form>
   );

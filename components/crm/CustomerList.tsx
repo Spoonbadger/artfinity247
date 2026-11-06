@@ -49,7 +49,7 @@ export function StageDot({ stage, className }: { stage: Stage; className?: strin
 }
 
 export function RepeatChip() {
-  return <span className="inline-block -rotate-2 whitespace-nowrap rounded-full border-[1.5px] border-ink bg-sticker px-2 py-px text-[11.5px] font-bold text-ink">Repeat buyer</span>;
+  return <span className="inline-block whitespace-nowrap rounded-full bg-sticker/50 px-2 py-px text-[12px] font-bold text-ink">Repeat buyer</span>;
 }
 
 function Thumb({ row, size = 48 }: { row: CustomerRow; size?: number }) {
@@ -165,7 +165,7 @@ export default function CustomerList({ rows }: { rows: CustomerRow[] }) {
           <div className="hidden overflow-hidden rounded-2xl border border-edge bg-white md:block">
             <table className="w-full border-collapse text-[14px]">
               <thead>
-                <tr className="border-b border-line bg-wall text-left text-[12px] text-ink-2">
+                <tr className="border-b border-line bg-wall text-left text-[13px] text-ink-2">
                   <th scope="col" className="px-4 py-2.5 font-semibold">Customer</th>
                   <th scope="col" className="px-3 py-2.5 font-semibold">City</th>
                   <th scope="col" className="px-3 py-2.5 font-semibold">First</th>

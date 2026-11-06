@@ -160,16 +160,16 @@ export default function RoomCarousel({ artwork, size, frame, mat = true, landsca
 
       {/* caption: room + true size */}
       <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-2.5 sm:p-3">
-        <span className="rounded-full bg-white/90 px-2.5 py-1 text-[12px] font-semibold text-ink shadow-[0_1px_3px_rgba(21,22,27,.18)] backdrop-blur sm:text-[13px]" aria-live="polite">
+        <span className="rounded-full bg-white/90 px-2.5 py-1 text-[13px] font-semibold text-ink shadow-[0_1px_3px_rgba(21,22,27,.18)] backdrop-blur" aria-live="polite">
           {label}
         </span>
-        <span className="num rounded-full bg-ink/80 px-2.5 py-1 text-[12px] font-semibold text-white sm:text-[13px]">
+        <span className="num rounded-full bg-ink/80 px-2.5 py-1 text-[13px] font-semibold text-white">
           {dims}
           {frame ? " · framed" : ""}
         </span>
       </figcaption>
       {photo?.credit && (
-        <p className="absolute bottom-11 left-2.5 max-w-[70%] truncate rounded-full bg-white/95 px-2 py-0.5 text-[12px] leading-tight text-ink-2 shadow-[0_1px_3px_rgba(21,22,27,.18)] sm:left-3">
+        <p className="absolute bottom-11 left-2.5 max-w-[70%] truncate rounded-full bg-white/95 px-2 py-0.5 text-[13px] leading-tight text-ink-2 shadow-[0_1px_3px_rgba(21,22,27,.18)] sm:left-3">
           {photo.url ? (
             <a href={photo.url} target="_blank" rel="noopener noreferrer" className="underline decoration-ink-2/40 underline-offset-2 hover:text-ink">
               {photo.credit}

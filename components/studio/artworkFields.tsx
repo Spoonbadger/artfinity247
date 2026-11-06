@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { SENSITIVE_LABELS } from "./sensitive";
 import { EDITION_MAX, EDITION_MIN } from "@/lib/editionFormat";
 import { SIZE_IN } from "@/components/art/pricing";
+import { PIXELS_NEEDED } from "@/lib/printSizes";
 import { joinOriginal } from "@/lib/originalSize";
 import type { StoredEdits } from "@/lib/imageEdits";
 import { problemFrom } from "@/lib/feedback";
@@ -214,7 +215,7 @@ export function PrintSizes({ imageUrl, printable, dims, shape, scanSlug }: { ima
                 {ok ? (
                   <span className="mt-0.5 flex items-center gap-1 text-[13px] font-semibold text-earned"><Check className="h-3.5 w-3.5" aria-hidden="true" />Sharp</span>
                 ) : (
-                  <span className="mt-0.5 block text-[12px] font-semibold text-coral">Too small for this size — hidden from buyers</span>
+                  <span className="mt-0.5 block text-[13px] font-semibold text-coral">Too small, hidden from buyers</span>
                 )}
               </div>
             </li>
@@ -222,10 +223,10 @@ export function PrintSizes({ imageUrl, printable, dims, shape, scanSlug }: { ima
         })}
       </ul>
       {printable.length === 0
-        ? <p className="text-[13px] font-semibold text-coral">Too small to print. Try the original photo or a bigger scan.</p>
-        : <p className="text-[13px] text-ink-2">{printable.length < SIZES.length && "Bigger file, bigger prints. "}Each crop shows how that size trims the edges.</p>}
+        ? <p className="t-small font-semibold !text-coral">Too small to print. Try the original photo or a bigger scan.</p>
+        : <p className="t-small">{printable.length < SIZES.length && `XL needs ${PIXELS_NEEDED.xl[0].toLocaleString("en-US")} × ${PIXELS_NEEDED.xl[1].toLocaleString("en-US")} px. `}Each crop shows how that size trims the edges.</p>}
       {scanSlug !== undefined && !printable.includes("xl") && (
-        <p className="text-[13px] text-ink-2">
+        <p className="t-small">
           Only have phone photos? We scan the original in NYC so every size prints sharp.{" "}
           <Link href={scanHref(scanSlug)} className="font-semibold text-scan underline-offset-2 hover:underline">Book a scan</Link>
         </p>
@@ -256,7 +257,7 @@ export function DetailsFields({ v, set }: { v: Pick<ArtworkValues, "title" | "de
           <input inputMode="decimal" value={v.origH} onChange={(e) => set({ origH: e.target.value.replace(/[^0-9.]/g, "").slice(0, 5) })} placeholder="30" aria-label="Original height in inches" className="num !w-[64px] !border-b-2 !border-line text-center focus:!border-scan" />
           <span className="text-[14px] text-ink-2">in</span>
         </div>
-        <span className="text-[13px] text-ink-2">Buyers see which print size is closest to the real thing.</span>
+        <span className="t-small">Buyers see which print size is closest to the real thing.</span>
       </div>
     </div>
   );
@@ -267,8 +268,8 @@ export function PriceFields({ prices, setPrices, ready, split, guide, note }: { 
   return (
     <fieldset className="grid gap-3">
       <legend className="mb-1 flex w-full items-baseline justify-between gap-2">
-        <span className="font-display text-[22px] font-bold [font-variation-settings:'wdth'_80]">Prices</span>
-        <span className="text-[13px] text-ink-2">{note ?? "Set your price. We print and ship."}</span>
+        <span className="t-card">Prices</span>
+        <span className="t-small">{note ?? "Set your price. We print and ship."}</span>
       </legend>
       <ul className="grid gap-2">
         {SIZES.map((s) => {
@@ -279,7 +280,7 @@ export function PriceFields({ prices, setPrices, ready, split, guide, note }: { 
             <li key={s} className={cn("grid grid-cols-[minmax(0,1fr)_118px] items-center gap-x-3 gap-y-1 rounded-xl border bg-white p-3 sm:grid-cols-[minmax(0,1fr)_130px_minmax(0,1fr)]", tooLow ? "border-coral" : "border-line", !ready(s) && "opacity-60")}>
               <div className="min-w-0">
                 <b className="block text-[15px]">{SIZE_NAME[s]} <span className="font-normal text-ink-2">{SIZE_INCHES[s]}</span></b>
-                <span className="num text-[13px] text-ink-2">Min {money(basePrices[s])}</span>
+                <span className="t-small num">Min {money(basePrices[s])}</span>
               </div>
               <label className="flex items-center gap-1 rounded-lg border-2 border-ink px-2 py-1 focus-within:border-scan">
                 <span className="text-[14px] text-ink-2">$</span>
@@ -297,8 +298,7 @@ export function PriceFields({ prices, setPrices, ready, split, guide, note }: { 
                   : <>you earn <b className="num text-[16px] text-earned">{money(b.artist)}</b> per print</>}
               </p>
               {guide?.[s] && (
-                <p className="col-span-2 flex items-center gap-1.5 text-[13px] text-ink-2 sm:col-span-3">
-                  <i className="paint-dab !h-2.5 !w-2.5" style={{ ["--dab" as string]: "#ffd43b" }} aria-hidden="true" />
+                <p className="t-small col-span-2 sm:col-span-3">
                   Similar work on Artfinity sells at <b className="num font-semibold text-ink">${guide[s]!.lo / 100}–${guide[s]!.hi / 100}</b>
                 </p>
               )}
@@ -318,8 +318,8 @@ export function EditionField({ limited, edition, setLimited, setEdition, locked,
   return (
     <fieldset className="grid gap-2">
       <legend className="mb-1">
-        <span className="font-display text-[22px] font-bold [font-variation-settings:'wdth'_80]">Print run</span>
-        {note && <span className="ml-2 text-[13px] text-ink-2">{note}</span>}
+        <span className="t-card">Print run</span>
+        {note && <span className="t-small ml-2">{note}</span>}
       </legend>
       {locked ? (
         <div className="flex items-start gap-3 rounded-xl border-2 border-line bg-wall/60 p-3">
@@ -334,7 +334,7 @@ export function EditionField({ limited, edition, setLimited, setEdition, locked,
           <label className={cn("flex cursor-pointer items-center gap-3 rounded-xl border-2 bg-white p-3 transition has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-scan", !limited ? "border-ink" : "border-line hover:border-ink-2")}>
             <input type="radio" name="edition" className="sr-only" checked={!limited} onChange={() => setLimited(false)} />
             <span aria-hidden="true" className={cn("grid h-5 w-5 shrink-0 place-items-center rounded-full border-2", !limited ? "border-ink" : "border-ink/40")}>{!limited && <span className="h-2.5 w-2.5 rounded-full bg-ink" />}</span>
-            <span className="leading-tight"><b className="block text-[15px]">Open edition</b><span className="text-[13px] text-ink-2">Print forever</span></span>
+            <span className="leading-tight"><b className="block text-[15px]">Open edition</b><span className="t-small">Print forever</span></span>
           </label>
           <div className={cn("flex items-center gap-3 rounded-xl border-2 bg-white p-3 transition has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-scan", limited ? "border-ink bg-[#fffbe8]" : "border-line hover:border-ink-2")}>
             <label className="flex cursor-pointer items-center gap-3">
@@ -352,7 +352,7 @@ export function EditionField({ limited, edition, setLimited, setEdition, locked,
             />
           </div>
         </div>
-        {limited && <p className="text-[13px] text-ink-2">Numbered 1 to {parseInt(edition, 10) || "N"}, all sizes. Then sold out. Locked once the first print sells.</p>}
+        {limited && <p className="t-small">Numbered 1 to {parseInt(edition, 10) || "N"}, all sizes. Then sold out. Locked once the first print sells.</p>}
       </>)}
     </fieldset>
   );
@@ -363,8 +363,8 @@ export function SensitiveField({ sensitive, setSensitive }: { sensitive: string[
   return (
     <fieldset className="grid gap-2">
       <legend className="mb-1">
-        <span className="font-display text-[22px] font-bold [font-variation-settings:'wdth'_80]">Sensitive?</span>
-        <span className="ml-2 text-[13px] text-ink-2">Buyers see it blurred until they tap.</span>
+        <span className="t-card">Sensitive?</span>
+        <span className="t-small ml-2">Buyers see it blurred until they tap.</span>
       </legend>
       <div className="flex flex-wrap gap-2">
         {SENSITIVE_LABELS.map((l) => {
@@ -390,7 +390,7 @@ export function OwnershipField({ owned, setOwned, many, note }: { owned: boolean
       <span aria-hidden="true" className={cn("mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-[5px] border-2", owned ? "border-ink bg-sticker" : "border-ink/40")}>{owned && <Check className="h-3.5 w-3.5" />}</span>
       <span className="text-[14.5px] leading-snug">
         <b>{many ? "These are all my original works and I hold the rights to sell prints of them." : "This is my original work and I hold the rights to sell prints of it."}</b>
-        {note && <span className="block text-[13px] text-ink-2">{note}</span>}
+        {note && <span className="t-small block">{note}</span>}
       </span>
     </label>
   );

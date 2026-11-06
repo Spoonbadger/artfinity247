@@ -12,11 +12,11 @@ import { dollars, type ShareArt } from "./shareData";
 
 // One tab at a time keeps the page short. Tabs follow the URL hash, so links like #images still land right.
 const SECTIONS = [
-  { id: "video", label: "Videos", sub: "6 to 15 seconds for Reels, TikTok and Shorts.", dab: "#ff5a36" },
-  { id: "images", label: "Images", sub: "Story and post images, each with a QR code.", dab: "#ffd43b" },
-  { id: "captions", label: "Captions", sub: "Copy, paste, post.", dab: "#2b37f0" },
-  { id: "links", label: "Links", sub: "One link per channel, so you can see what sells.", dab: "#0f7a55" },
-  { id: "embed", label: "Embed", sub: "For your site or email signature.", dab: "#7b2d8e" },
+  { id: "video", label: "Videos", sub: "6 to 15 seconds for Reels, TikTok and Shorts." },
+  { id: "images", label: "Images", sub: "Story and post images, each with a QR code." },
+  { id: "captions", label: "Captions", sub: "Copy, paste, post." },
+  { id: "links", label: "Links", sub: "One link per channel, so you can see what sells." },
+  { id: "embed", label: "Embed", sub: "For your site or email signature." },
 ] as const;
 type SectionId = (typeof SECTIONS)[number]["id"];
 const isSection = (v: string): v is SectionId => SECTIONS.some((s) => s.id === v);
@@ -97,11 +97,11 @@ export default function ShareKit({ arts, initialSlug, base, pro = true }: { arts
       {/* chosen piece */}
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
         <div className="min-w-0">
-          <p className="display relative w-max max-w-full text-[24px] sm:text-[28px]">
+          <p className="t-section relative w-max max-w-full">
             <span className="relative z-10">{art.title}</span>
             <BrushStroke className="absolute -bottom-1 -left-2 z-0 h-3 w-[calc(100%+16px)]" />
           </p>
-          <p className="mt-1 text-[13.5px] text-ink-2">
+          <p className="t-small mt-1">
             Prints from {dollars(art.fromCents)}{art.editionSize ? ` · Limited edition of ${art.editionSize}` : ""}
           </p>
         </div>
@@ -123,7 +123,7 @@ export default function ShareKit({ arts, initialSlug, base, pro = true }: { arts
                 tab === s.id ? "border-ink text-ink" : "border-transparent text-ink-2 hover:text-ink",
               )}
             >
-              <span className="paint-dab !h-2.5 !w-2.5" style={{ ["--dab" as string]: s.dab }} aria-hidden="true" /> {s.label}
+              {s.label}
             </button>
           ))}
         </div>
@@ -137,7 +137,7 @@ export default function ShareKit({ arts, initialSlug, base, pro = true }: { arts
               <Link href="/studio/links" className="group flex items-center justify-between gap-3 rounded-2xl border-2 border-dashed border-ink/30 px-4 py-3 hover:border-ink">
                 <span className="grid leading-tight">
                   <b className="text-[15px]">Add it to your links page</b>
-                  <span className="text-[13px] text-ink-2">One link in bio for everything you sell.</span>
+                  <span className="t-small">One link in bio for everything you sell.</span>
                 </span>
                 <ArrowRight size={18} className="shrink-0 transition group-hover:translate-x-0.5" aria-hidden="true" />
               </Link>
@@ -152,8 +152,8 @@ export default function ShareKit({ arts, initialSlug, base, pro = true }: { arts
 
 function Panel({ id, labelledBy, sub, children }: { id: string; labelledBy: string; sub: string; children: ReactNode }) {
   return (
-    <section id="share-panel" role="tabpanel" aria-labelledby={labelledBy} data-section={id} className="grid min-w-0 gap-4 rounded-2xl border border-line bg-white p-4 sm:p-6">
-      <p className="text-[14px] text-ink-2">{sub}</p>
+    <section id="share-panel" role="tabpanel" aria-labelledby={labelledBy} data-section={id} className="grid min-w-0 gap-4 box p-4 sm:p-6">
+      <p className="t-muted">{sub}</p>
       {children}
     </section>
   );

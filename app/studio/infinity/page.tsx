@@ -18,6 +18,7 @@ import PaymentReturn from "@/components/payments/PaymentReturn";
 import { paysForItself, type BillingView } from "@/lib/billingStatus";
 import { calcItemProfitCents } from "@/lib/revenue";
 import { money } from "@/lib/earnings";
+import { EXAMPLE } from "@/content/help/facts";
 import { requireArtist, getSales } from "../_lib/data";
 
 export const dynamic = "force-dynamic";
@@ -144,7 +145,9 @@ export default async function ProPage({ searchParams }: { searchParams?: { billi
           ) : (
             <div className="grid gap-1">
               <h2 id="plan-h" className="t-card">What you get</h2>
-              <p className="text-[14px] text-ink-2">You&apos;re on Free: {pct(FREE_SPLIT)} of profit.</p>
+              <p className="t-muted">
+                You&apos;re on Free: {pct(FREE_SPLIT)} of profit. On a {EXAMPLE.price} {EXAMPLE.size.split(" (")[0]} print you get <b className="text-ink">{EXAMPLE.free}</b>. On {PRO.name}, <b className="text-earned">{EXAMPLE.pro}</b>.
+              </p>
             </div>
           )}
           <ul className="relative grid gap-2">
@@ -158,7 +161,7 @@ export default async function ProPage({ searchParams }: { searchParams?: { billi
           <div className="relative">
             <BillingPanel mode={billing.mode} kind={view.kind} intervals={billing.intervals} freeMonthsUntil={freeMonthsUntil} onDark={dark} autoStart={searchParams?.start === "1" && !plan.active} tax={billing.mode === "simulated" ? "test" : BILLING_TAX_ENABLED ? "added" : "none"} />
           </div>
-          <p className={dark ? "relative text-[13px] text-white/70" : "text-[13px] text-ink-2"}>
+          <p className={dark ? "relative text-[13.5px] text-white/70" : "t-small"}>
             The higher share counts for orders placed while {PRO.name} is on. Earlier orders keep theirs.
           </p>
         </div>
@@ -167,7 +170,7 @@ export default async function ProPage({ searchParams }: { searchParams?: { billi
         <div className="af-panel grid content-start gap-3 p-5 sm:p-6" aria-labelledby="worth-h" role="region">
           <h2 id="worth-h" className="t-card">Does it pay for itself?</h2>
           {worth.prints === 0 ? (
-            <p className="text-[15px] text-ink-2">No sales in the last 30 days. It pays for itself once the extra {pct(PRO.split - FREE_SPLIT)} passes {proPrice()} a month.</p>
+            <p className="t-muted">No sales in the last 30 days. It pays for itself once the extra {pct(PRO.split - FREE_SPLIT)} passes {proPrice()} a month.</p>
           ) : (
             <>
               <p className={worth.pays ? "rounded-xl border-[1.5px] border-earned bg-earned-soft px-4 py-3 text-[16px] font-semibold" : "rounded-xl border border-line bg-wall px-4 py-3 text-[16px] font-semibold"}>
@@ -176,10 +179,10 @@ export default async function ProPage({ searchParams }: { searchParams?: { billi
                   : `Not yet. Your last 30 days would leave you ${money(-worth.netCents)} short. Referral months cost nothing.`}
               </p>
               <dl className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl bg-white p-3"><dt className="text-[13px] text-ink-2">Prints, last 30 days</dt><dd className="num text-[20px] font-bold">{worth.prints}</dd></div>
-                <div className="rounded-xl bg-white p-3"><dt className="text-[13px] text-ink-2">Profit on them</dt><dd className="num text-[20px] font-bold">{money(worth.profitCents)}</dd></div>
-                <div className="rounded-xl bg-white p-3"><dt className="text-[13px] text-ink-2">Extra {pct(PRO.split - FREE_SPLIT)}</dt><dd className="num text-[20px] font-bold text-earned">+{money(worth.extraCents)}</dd></div>
-                <div className="rounded-xl bg-white p-3"><dt className="text-[13px] text-ink-2">{PRO.name} costs</dt><dd className="num text-[20px] font-bold">−{money(worth.priceCents)}</dd></div>
+                <div className="box-inset p-3"><dt className="t-small">Prints, last 30 days</dt><dd className="num text-[20px] font-bold">{worth.prints}</dd></div>
+                <div className="box-inset p-3"><dt className="t-small">Profit on them</dt><dd className="num text-[20px] font-bold">{money(worth.profitCents)}</dd></div>
+                <div className="box-inset p-3"><dt className="t-small">Extra {pct(PRO.split - FREE_SPLIT)}</dt><dd className="num text-[20px] font-bold text-earned">+{money(worth.extraCents)}</dd></div>
+                <div className="box-inset p-3"><dt className="t-small">{PRO.name} costs</dt><dd className="num text-[20px] font-bold">−{money(worth.priceCents)}</dd></div>
               </dl>
             </>
           )}
@@ -191,7 +194,7 @@ export default async function ProPage({ searchParams }: { searchParams?: { billi
       <section id="referrals" aria-labelledby="ref-h" className="scroll-mt-20 grid gap-5 rounded-2xl border border-line bg-wall p-4 sm:p-6">
         <header className="grid gap-1">
           <span className="eyebrow">Or get it free</span>
-          <h2 id="ref-h" className="display text-[30px] sm:text-[40px]">Bring an artist, get <Brushed>{REFERRALS.rewardMonths} months</Brushed> free</h2>
+          <h2 id="ref-h" className="t-section">Bring an artist, get <Brushed>{REFERRALS.rewardMonths} months</Brushed> free</h2>
         </header>
 
         <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_180px] md:items-start">
@@ -222,9 +225,9 @@ export default async function ProPage({ searchParams }: { searchParams?: { billi
           <span className="block h-3 overflow-hidden rounded-full bg-wall" role="progressbar" aria-label="Months of Infinity banked" aria-valuemin={0} aria-valuemax={REFERRALS.maxBankedMonths} aria-valuenow={Math.round(bankedMonths * 10) / 10}>
             <span className="block h-full rounded-full bg-earned" style={{ width: `${(bankedMonths / REFERRALS.maxBankedMonths) * 100}%` }} />
           </span>
-          <h3 className="mt-2 text-[15px] font-bold">Artists you brought</h3>
+          <h3 className="t-card mt-2">Artists you brought</h3>
           {referrals.length === 0 ? (
-            <p className="text-[14px] text-ink-2">No one yet. Send your link to an artist friend.</p>
+            <p className="t-muted">No one yet. Send your link to an artist friend.</p>
           ) : (
             <ul className="grid divide-y divide-line">
               {referrals.map((r) => (
@@ -266,11 +269,11 @@ export default async function ProPage({ searchParams }: { searchParams?: { billi
       </section>
 
       <Disclosure id="calc" title={`Is ${PRO.name} worth it for you?`} hint="Calculator">
-        <p className="mb-4 text-[14px] text-ink-2">Starts from your last 30 days: {prints} {prints === 1 ? "print" : "prints"}.</p>
+        <p className="t-muted mb-4">Starts from your last 30 days: {prints} {prints === 1 ? "print" : "prints"}.</p>
         <ProCalculator initialPrints={Math.min(100, prints)} initialPrice={Math.max(45, Math.min(200, avg))} />
       </Disclosure>
 
-      <p className="text-[13px] text-ink-2">
+      <p className="t-small">
         {billing.mode === "off"
           ? `Card billing is coming soon. Until then ${PRO.name} comes from referrals.`
           : `Billed by Stripe. Cancel anytime from Manage billing; you keep ${PRO.name} to the end of the period you paid for.`}

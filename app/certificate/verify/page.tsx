@@ -20,8 +20,8 @@ export default async function VerifyPage({ searchParams }: { searchParams: { n?:
       <main className="mx-auto grid max-w-[560px] gap-6 px-4 py-10 sm:py-14">
         <div>
           <p className="eyebrow">Certificate of authenticity</p>
-          <h1 className="display mt-1 text-[40px] leading-none sm:text-[48px]">Verify a print</h1>
-          <p className="mt-2 text-[15px] text-ink-2">The number is at the bottom right of the certificate.</p>
+          <h1 className="t-page mt-1">Verify a print</h1>
+          <p className="t-muted mt-2">The number is at the bottom right of the certificate.</p>
         </div>
 
         {n && c && (
@@ -34,10 +34,10 @@ export default async function VerifyPage({ searchParams }: { searchParams: { n?:
               <p className="flex items-center gap-1.5 text-[14px] font-bold text-earned">
                 <BadgeCheck className="h-[18px] w-[18px]" aria-hidden /> Genuine Artfinity edition
               </p>
-              <h2 className="text-[22px] font-bold leading-tight">{c.title}</h2>
+              <h2 className="t-card">{c.title}</h2>
               <p className="text-ink-2">by {c.artist}</p>
               <p className="num mt-1 w-fit rounded-full bg-sticker px-2.5 py-0.5 text-[14px] font-bold">Print {c.printNo} of {c.editionSize}</p>
-              <p className="num text-[13px] text-ink-2">Certificate {c.number}</p>
+              <p className="t-small num">Certificate {c.number}</p>
               {c.artistHandle && c.slug && (
                 <Link href={artPath(c.artistHandle, c.slug)} className="mt-1 text-[14px] font-semibold text-scan underline-offset-2 hover:underline">See the piece</Link>
               )}

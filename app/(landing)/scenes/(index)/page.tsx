@@ -42,8 +42,8 @@ export default async function ScenesPage() {
                   <div className="absolute inset-x-0 bottom-0 h-[12%] bg-[#dcd6ca]" aria-hidden="true" />
                 </div>
                 <div className="flex items-baseline justify-between gap-3">
-                  <h2 className="display truncate text-[34px] group-hover:text-scan">{c.name}</h2>
-                  <span className="num shrink-0 text-[14px] text-ink-2">{c.pieces} pieces · {c.artists} {c.artists === 1 ? "artist" : "artists"}</span>
+                  <h2 className="t-section truncate group-hover:text-scan">{c.name}</h2>
+                  <span className="t-small num shrink-0">{c.pieces} pieces · {c.artists} {c.artists === 1 ? "artist" : "artists"}</span>
                 </div>
               </Link>
             ))}

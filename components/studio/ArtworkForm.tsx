@@ -7,7 +7,8 @@ import { errorText, failed, saved as savedToast } from "@/lib/feedback";
 import { Problem } from "./Problem";
 import AddToQueueButton from "@/components/qr/AddToQueueButton";
 import { Crop, FolderOpen, ImagePlus, Loader2, RotateCcw } from "lucide-react";
-import type { SizeKey } from "@/lib/earnings";
+import { SIZE_INCHES, type SizeKey } from "@/lib/earnings";
+import { PIXELS_NEEDED } from "@/lib/printSizes";
 import { BrushStroke } from "@/components/af/Brush";
 import { cn } from "@/lib/utils";
 import { artPath } from "@/lib/urls";
@@ -52,8 +53,10 @@ export type ArtworkInput = {
  * New uploads can also come from Google Drive or Dropbox (./cloudImport.tsx): several picked files go to the queue
  * through `onCloudFiles`; one (or the first, for an artist's very first upload) is imported straight into this form.
  */
-export default function ArtworkForm({ artwork, split, handle, onManyFiles, onCloudFiles, mock }: {
+export default function ArtworkForm({ artwork, split, handle, onManyFiles, onCloudFiles, mock, reviewNote }: {
   artwork?: ArtworkInput;
+  /** New uploads: what happens after posting (review or straight live), from lib/artworkLive. */
+  reviewNote?: string;
   split?: number;
   handle: string;
   onManyFiles?: (files: File[]) => void;
@@ -296,7 +299,7 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
           <div>
             <h2 className="display text-[40px]">It&apos;s live.</h2>
             <p className="mt-2 text-ink-2">{done.title} is on your page. Next: hang its code.</p>
-            {done.notice && <p className="mt-2 text-[13.5px] text-ink-2">{done.notice}</p>}
+            {done.notice && <p className="t-small mt-2">{done.notice}</p>}
           </div>
         )}
         <div className="flex flex-wrap justify-center gap-2">
@@ -344,9 +347,10 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
                 <i className="paint-dab absolute inset-0 h-16 w-16 opacity-90" style={{ ["--dab" as string]: "#ffd43b" }} />
                 <ImagePlus className="relative h-7 w-7" aria-hidden="true" />
               </span>
-              <b className="font-display text-[22px] [font-variation-settings:'wdth'_80]">Drop your art here</b>
-              <span className="text-[13.5px] text-ink-2">or tap to pick {many ? "files" : "a file"} · JPG, PNG, HEIC · up to 25 MB</span>
-              {many && <span className="max-w-[300px] text-[13px] font-semibold text-ink">Several at once? Drop them all, or a whole folder.</span>}
+              <b className="t-card">Drop your art here</b>
+              <span className="t-small">or tap to pick {many ? "files" : "a file"} · JPG, PNG, HEIC · up to 25 MB</span>
+              <span className="t-small max-w-[320px]">Bigger files print bigger. XL ({SIZE_INCHES.xl}) needs {PIXELS_NEEDED.xl[0].toLocaleString("en-US")} × {PIXELS_NEEDED.xl[1].toLocaleString("en-US")} px.</span>
+              {many && <span className="t-small max-w-[320px] font-semibold !text-ink">Several at once? Drop them all, or a whole folder.</span>}
             </span>
           )}
           {uploading && (
@@ -359,14 +363,14 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
           <div className="flex flex-wrap items-center gap-2">
             <input ref={folderRef} type="file" accept="image/*" multiple className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => { const fs = Array.from(e.target.files || []); e.target.value = ""; if (fs.length) take(fs); }} />
             <button type="button" onClick={() => folderRef.current?.click()} className="btn btn-ghost btn-sm"><FolderOpen className="h-4 w-4" aria-hidden="true" />Choose a folder</button>
-            <Link href="/help/getting-started/upload-several" target="_blank" className="text-[13px] text-scan underline-offset-2 hover:underline">How it works</Link>
+            <Link href="/help/getting-started/upload-several" target="_blank" className="t-small !text-scan underline-offset-2 hover:underline">How it works</Link>
           </div>
         )}
         {!editing && !imageUrl && cloudImportAvailable(mock) && (
           <div className="grid gap-1.5">
-            <span className="text-[13px] font-semibold text-ink-2">Or import from</span>
+            <span className="t-small font-semibold">Or import from</span>
             <CloudImportButtons onPick={takeCloud} mock={mock} max={many ? undefined : 1} disabled={!!uploading} />
-            {!many && <p className="text-[13px] text-ink-2">Start with one piece. Import more once it&apos;s live.</p>}
+            {!many && <p className="t-small">Start with one piece. Import more once it&apos;s live.</p>}
           </div>
         )}
         {cloudNote && <p role="status" className="rounded-lg bg-wall px-3 py-2 text-[13px]">{cloudNote}</p>}
@@ -403,7 +407,7 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
         <SensitiveField sensitive={v.sensitive} setSensitive={(sensitive) => set({ sensitive })} />
 
         {needsOwnership && (
-          <OwnershipField owned={owned} setOwned={setOwned} note={!editing ? <>New artists&apos; first few pieces get a quick look before they go live.</> : undefined} />
+          <OwnershipField owned={owned} setOwned={setOwned} note={!editing ? reviewNote : undefined} />
         )}
 
         {error && <Problem tone="error" title={error.message} fix={error.fix} secondary={error.message === TOO_SMALL ? { label: "Book a scan", href: scanHref(artwork?.slug) } : undefined} />}
@@ -415,7 +419,7 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
           </button>
           <Link href="/studio/art" className="btn btn-ghost">Cancel</Link>
           {!editing && (
-            <span className="relative z-0 text-[13px] text-ink-2">
+            <span className="t-small relative z-0">
               Free to list. <span className="relative inline-block font-semibold text-ink">You keep {pct(split ?? FREE_SPLIT)} of profit<BrushStroke className="absolute -bottom-1 left-0 -z-10 h-2 w-full" /></span>
             </span>
           )}

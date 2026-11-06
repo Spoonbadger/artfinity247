@@ -65,7 +65,7 @@ export function PaintPicker({ label, value, onChange }: { label: string; value: 
 
 function ButtonSample({ style, theme }: { style: LinksTheme["button"]; theme: LinksTheme }) {
   const solid = { background: theme.buttonColor, color: theme.textColor };
-  const base = "relative z-0 flex h-9 w-full items-center justify-center text-[12px] font-bold";
+  const base = "relative z-0 flex h-9 w-full items-center justify-center text-[13px] font-bold";
   if (style === "brush")
     return (
       <span className={base} style={{ color: theme.textColor }}>
@@ -93,7 +93,7 @@ export default function ThemeControls({ theme, set, art }: { theme: LinksTheme; 
         <div className="grid grid-cols-4 gap-2 sm:grid-cols-5" role="radiogroup" aria-label="Background painting">
           <label className="relative cursor-pointer">
             <input type="radio" name="bgart" checked={!theme.bgArtworkId} onChange={() => set("bgArtworkId", null)} className="peer sr-only" />
-            <span className="grid aspect-[3/4] place-items-center rounded-lg border-2 border-dashed border-line bg-wall p-1 text-center text-[12px] font-semibold leading-tight text-ink-2 peer-checked:border-solid peer-checked:border-ink peer-checked:text-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-scan">
+            <span className="grid aspect-[3/4] place-items-center rounded-lg border-2 border-dashed border-line bg-wall p-1 text-center text-[13px] font-semibold leading-tight text-ink-2 peer-checked:border-solid peer-checked:border-ink peer-checked:text-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-scan">
               Newest piece
             </span>
           </label>
@@ -104,7 +104,7 @@ export default function ThemeControls({ theme, set, art }: { theme: LinksTheme; 
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={a.imageUrl} alt="" className={cn("h-full w-full object-cover", a.sensitive.length > 0 && "blur-[3px]")} />
               </span>
-              {a.sensitive.length > 0 && <span className="absolute inset-x-1 bottom-1 rounded bg-[rgba(21,22,27,.8)] px-1 text-center text-[10.5px] font-bold text-white">Sensitive</span>}
+              {a.sensitive.length > 0 && <span className="absolute inset-x-1 bottom-1 rounded bg-[rgba(21,22,27,.8)] px-1 text-center text-[12px] font-bold text-white">Sensitive</span>}
             </label>
           ))}
         </div>
@@ -172,7 +172,7 @@ export default function ThemeControls({ theme, set, art }: { theme: LinksTheme; 
                     Aa
                   </span>
                   <span className="text-[13px] font-bold text-ink" style={{ fontFamily: pair.body }}>{f.label}</span>
-                  <span className="text-[11.5px] leading-tight text-ink-2">{f.display} + {f.body}</span>
+                  <span className="text-[13px] leading-tight text-ink-2">{f.display} + {f.body}</span>
                 </span>
               </label>
             );

@@ -15,7 +15,6 @@ import { frameText, friendlySize, orderCode } from "@/lib/orderText";
 import { PRINT_SIZES, priceFor, usd } from "@/components/art/pricing";
 import { sizeAllowed } from "@/lib/printSizes";
 import { artistPath, artPath } from "@/lib/urls";
-import { DabRow } from "@/components/browse/PageHead";
 import { BrushStroke } from "@/components/af/Brush";
 import { FollowToggle, RemoveSaved, SignOutButton } from "@/components/collector/CollectorActions";
 import { cn } from "@/lib/utils";
@@ -30,14 +29,13 @@ export const metadata: Metadata = { title: "Your collection", robots: { index: f
 const day = (d: Date | null | undefined) => (d ? d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" }) : null);
 const displayName = (a: { artist_name: string | null; name: string }) => a.artist_name?.trim() || a.name;
 
-function Section({ id, title, count, children, dab, action }: { id: string; title: string; count?: number; children: React.ReactNode; dab: string; action?: React.ReactNode }) {
+function Section({ id, title, count, children, action }: { id: string; title: string; count?: number; children: React.ReactNode; dab?: string; action?: React.ReactNode }) {
   return (
     <section id={id} aria-labelledby={`${id}-h`} className="scroll-mt-24 grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id={`${id}-h`} className="flex items-center gap-2.5 text-[24px] font-extrabold tracking-[-0.01em] sm:text-[28px]">
-          <span className="paint-dab" style={{ ["--dab" as string]: dab }} aria-hidden />
+        <h2 id={`${id}-h`} className="t-section flex items-baseline gap-2.5">
           {title}
-          {count ? <span className="num text-[16px] font-semibold text-ink-2">{count}</span> : null}
+          {count ? <span className="num font-body text-[16px] font-semibold text-ink-2">{count}</span> : null}
         </h2>
         {action}
       </div>
@@ -49,7 +47,7 @@ function Section({ id, title, count, children, dab, action }: { id: string; titl
 function Empty({ children, cta }: { children: React.ReactNode; cta?: { href: string; label: string } }) {
   return (
     <div className="grid justify-items-start gap-3 rounded-2xl border border-dashed border-line bg-wall/60 p-6">
-      <p className="text-[16px] text-ink-2">{children}</p>
+      <p className="t-body text-ink-2">{children}</p>
       {cta && <Link href={cta.href} className="btn btn-ghost btn-sm min-h-[44px] px-4">{cta.label}</Link>}
     </div>
   );
@@ -69,14 +67,14 @@ function Timeline({ step, dates, tracking }: { step: number; dates: (string | nu
               {label}
               <span className="sr-only">{done ? " (done)" : " (not yet)"}</span>
             </span>
-            {done && dates[i] && <span className="num text-[12px] leading-tight text-ink-2">{dates[i]}</span>}
+            {done && dates[i] && <span className="num text-[13px] leading-tight text-ink-2">{dates[i]}</span>}
             {i === 2 && done && tracking && (
               tracking.url ? (
                 <a href={tracking.url} target="_blank" rel="noopener" className="text-[13px] font-semibold text-scan underline underline-offset-2">
                   Track<span className="sr-only"> package ({tracking.carrier} {tracking.number})</span>
                 </a>
               ) : (
-                <span className="num break-all text-[12px] text-ink-2">{tracking.carrier} {tracking.number}</span>
+                <span className="num break-all text-[13px] text-ink-2">{tracking.carrier} {tracking.number}</span>
               )
             )}
           </li>
@@ -150,7 +148,7 @@ export default async function CollectorPage({ searchParams }: { searchParams: { 
   return (
     <div className="mx-auto grid max-w-[980px] gap-10 px-4 pb-16 pt-8 sm:px-6 md:gap-14 md:pt-12">
       <header className="grid gap-4">
-        <div className="flex items-center gap-2.5"><DabRow /><span className="eyebrow">Signed in as {me.email}</span></div>
+        <span className="eyebrow">Signed in as {me.email}</span>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <h1 className="display relative inline-block text-[46px] sm:text-[64px]">
             <span className="relative z-10">{firstName ? `${firstName}'s collection` : "Your collection"}</span>

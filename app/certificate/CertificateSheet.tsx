@@ -50,20 +50,20 @@ export default function CertificateSheet({ c }: { c: Certificate }) {
         <p className="mt-2 text-[13px] text-ink-2">Limited edition. No more than {c.editionSize} prints will ever be made, in any size.</p>
 
         <dl className="mt-6 grid w-full max-w-[6.2in] grid-cols-2 gap-x-8 gap-y-3 border-y border-ink/20 py-4 text-left text-[13px] leading-snug">
-          <div><dt className="eyebrow !text-[10px]">Size</dt><dd className="num mt-0.5">{SIZE_LABEL[c.size]} · {sizeInches(c.size)}</dd></div>
-          <div><dt className="eyebrow !text-[10px]">Ordered</dt><dd className="num mt-0.5">{longDate(c.orderDate)}</dd></div>
-          <div className="col-span-2"><dt className="eyebrow !text-[10px]">Print</dt><dd className="mt-0.5">12-color giclée on smooth matte, FSC-certified 310gsm archival paper, with a ½-inch border</dd></div>
+          <div><dt className="eyebrow !text-[11px]">Size</dt><dd className="num mt-0.5">{SIZE_LABEL[c.size]} · {sizeInches(c.size)}</dd></div>
+          <div><dt className="eyebrow !text-[11px]">Ordered</dt><dd className="num mt-0.5">{longDate(c.orderDate)}</dd></div>
+          <div className="col-span-2"><dt className="eyebrow !text-[11px]">Print</dt><dd className="mt-0.5">12-color giclée on smooth matte, FSC-certified 310gsm archival paper, with a ½-inch border</dd></div>
         </dl>
 
         <div className="mt-auto flex w-full max-w-[6.2in] items-end justify-between gap-6 pt-6 text-left">
           <div className="min-w-0">
             <p className={`${script.className} -mb-1 truncate text-[46px] leading-none`}>{c.artist}</p>
             <div className="h-px w-[2.6in] bg-ink" />
-            <p className="mt-1 text-[11px] text-ink-2">Artist</p>
+            <p className="mt-1 text-[13px] text-ink-2">Artist</p>
           </div>
           <div className="flex items-end gap-3">
-            <div className="text-right text-[11px] leading-snug text-ink-2">
-              <p className="eyebrow !text-[10px]">Certificate no.</p>
+            <div className="text-right text-[13px] leading-snug text-ink-2">
+              <p className="eyebrow !text-[11px]">Certificate no.</p>
               <p className="num mt-0.5 text-[14px] font-bold tracking-wide text-ink">{c.number}</p>
               <p className="mt-1.5">Verify at <span className="font-semibold text-ink">{VERIFY_HOST}/certificate/verify</span></p>
             </div>

@@ -87,7 +87,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: { ta
             aria-current={tab.id === t.id ? "page" : undefined}
             className={cn(
               "inline-flex min-h-[40px] items-center rounded-full border-[1.5px] px-3.5 text-[14px] font-semibold no-underline transition",
-              tab.id === t.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink"
+              tab.id === t.id ? "border-ink bg-ink text-white" : "border-edge-strong bg-white text-ink hover:border-ink"
             )}
           >
             {t.label} <span className="num ml-1 opacity-70">{counts[t.id]}</span>

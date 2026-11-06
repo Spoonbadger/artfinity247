@@ -27,5 +27,5 @@ export function Can({ need, children, fallback = null }: { need: Capability | Ad
 export function CantNote({ need }: { need: Capability | AdminRole }) {
   const can = useAdminCan(need);
   if (can) return null;
-  return <span className="text-[12px] text-ink-2">{cantReason(need)}</span>;
+  return <span className="t-small">{cantReason(need)}</span>;
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PageHead } from "../../_components/ui";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { adminRoleOrRedirect } from "../../_components/gate";
@@ -39,15 +40,13 @@ export default async function CodeOrderPage({ params }: { params: { id: string }
 
   return (
     <div className="grid max-w-[980px] gap-6">
-      <div>
-        <Link href="/admin/code-orders" className="text-[13.5px] font-semibold text-scan">← Code orders</Link>
-        <h1 className="display mt-1 text-[40px] sm:text-[52px]">{no}</h1>
-        <p className="flex flex-wrap items-center gap-2 text-[14.5px] text-ink-2">
-          <span className="inline-flex items-center gap-1.5 font-bold text-ink"><i className="paint-dab h-2.5 w-2.5" style={{ ["--dab" as string]: STATUS_DAB[st] }} aria-hidden="true" />{STATUS_LABEL[st]}</span>
+      <PageHead back={{ href: "/admin/code-orders", label: "Code orders" }} title={no}>
+        <p className="t-muted flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 font-bold text-ink"><i className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: STATUS_DAB[st] }} aria-hidden="true" />{STATUS_LABEL[st]}</span>
           · {o.cards} cards · {usd(o.totalCents)} ·{" "}
           {o.artistId ? <Link href={`/admin/artists/${o.artistId}`} className="font-semibold text-scan">{o.artistName || o.email}</Link> : (o.artistName || o.email)}
         </p>
-      </div>
+      </PageHead>
 
       <section aria-labelledby="todo-h" className="af-card grid gap-4 p-4 sm:p-5">
         <h2 id="todo-h" className="t-card">Print and ship</h2>
@@ -119,7 +118,7 @@ export default async function CodeOrderPage({ params }: { params: { id: string }
         <h2 id="items-h" className="t-card">Cards</h2>
         <ul className="grid gap-3 sm:grid-cols-2">
           {items.map((i, k) => (
-            <li key={`${i.qrCodeId}-${i.format}`} className="flex items-center gap-3 rounded-xl border border-line p-3">
+            <li key={`${i.qrCodeId}-${i.format}`} className="flex items-center gap-3 rounded-xl border border-edge p-3">
               <div className="grid h-20 w-20 shrink-0 place-items-center [&>svg]:max-h-full [&>svg]:max-w-full" dangerouslySetInnerHTML={{ __html: thumbs[k] }} />
               <div className="grid min-w-0 gap-0.5 text-[14px]">
                 <b className="truncate">{i.art.title}</b>

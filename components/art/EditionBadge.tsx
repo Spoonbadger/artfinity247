@@ -10,7 +10,7 @@ export default function EditionBadge({ edition, className, compact = false }: { 
     <span
       className={cn(
         "num inline-flex w-fit items-center gap-1.5 whitespace-nowrap rounded-full font-bold leading-none",
-        compact ? "px-2 py-1 text-[11.5px]" : "px-3 py-1.5 text-[13.5px]",
+        compact ? "px-2 py-1 text-[12px]" : "px-3 py-1.5 text-[13.5px]",
         soldOut ? "bg-ink text-white" : lastFew ? "bg-coral text-white" : "bg-sticker text-ink",
         className,
       )}

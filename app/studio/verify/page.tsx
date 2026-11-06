@@ -4,6 +4,7 @@ import HelpLink from "@/components/help/HelpLink";
 import VerifyPanel from "@/components/artist/VerifyPanel";
 import { readEvidence } from "@/components/artist/verification";
 import { prisma } from "@/lib/prisma";
+import { AUTO_APPROVE_AFTER } from "@/lib/artworkLive";
 import { requireArtist, displayName } from "../_lib/data";
 
 export const dynamic = "force-dynamic";
@@ -18,12 +19,14 @@ export default async function VerifyPage() {
     }),
     prisma.artwork.count({ where: { artistId: artist.id, status: { not: "REJECTED" } } }),
   ]);
+  // lib/artworkLive.ts initialStatus: pieces are reviewed until an artist has this many (any status), unless verified.
+  const allArt = await prisma.artwork.count({ where: { artistId: artist.id } });
   const status = v?.verification ?? "NONE";
 
   return (
     <StudioPage
       title={status === "VERIFIED" ? "Verified" : "Get verified"}
-      sub="Buyers see a blue seal next to your name."
+      sub="A blue seal by your name tells buyers a person checked you."
       actions={<HelpLink href="/help/trust/verification-badge" label="How verification works" />}
     >
       {liveArt === 0 && status !== "VERIFIED" && (
@@ -34,6 +37,7 @@ export default async function VerifyPage() {
       <VerifyPanel
         name={displayName(artist)}
         slug={artist.slug}
+        skipsReview={allArt < AUTO_APPROVE_AFTER}
         initial={{
           status,
           verifiedAt: v?.verifiedAt?.toISOString() ?? null,

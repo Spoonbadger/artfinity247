@@ -29,7 +29,7 @@ export default async function CollectionsPage() {
         <EmptyState
           dab="#c98a5a"
           title="Upload art first"
-          body="Then group it into series, places or seasons."
+          body="Then group it into series, places or seasons. Each collection gets its own page buyers can browse."
           action={{ label: "Upload art", href: "/studio/art/new" }}
           help={{ label: "How collections work", href: "/help/selling/collections" }}
         />

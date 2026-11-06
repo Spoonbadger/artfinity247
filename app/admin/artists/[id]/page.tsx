@@ -111,7 +111,7 @@ export default async function AdminArtistPage({ params }: { params: { id: string
       search: `${orderNumber(o.id)} ${o.shippingName ?? ""} ${o.email}`,
       sort: { date: o.createdAt.toISOString(), buyer: (o.shippingName || o.email).toLowerCase(), total: o.amountTotal, status: st },
       cells: {
-        date: <><Link href={`/admin/orders/${o.id}`} className="font-semibold text-scan">{orderNumber(o.id)}</Link><span className="block text-[12px] text-ink-2">{day(o.createdAt)}</span></>,
+        date: <><Link href={`/admin/orders/${o.id}`} className="font-semibold text-scan">{orderNumber(o.id)}</Link><span className="t-small block">{day(o.createdAt)}</span></>,
         buyer: <span className="block max-w-[200px] truncate">{o.shippingName || o.email}</span>,
         total: usd(o.amountTotal),
         status: <span className="flex flex-wrap gap-1">{o.kind !== "retail" && <Pill tone="amber">{o.kind}</Pill>}<StatusPill status={st} /></span>,
@@ -123,7 +123,7 @@ export default async function AdminArtistPage({ params }: { params: { id: string
     search: `${c.code} ${c.artwork?.title ?? ""} ${c.label ?? ""} ${c.venue ?? ""}`,
     sort: { code: c.code, to: c.artwork?.title || "Artist page", where: [c.label, c.venue].filter(Boolean).join(" · "), scans: c._count.scans },
     cells: {
-      code: <span className="font-semibold">{c.code}{!c.active && <span className="ml-1 text-[11.5px] font-normal text-ink-2">(off)</span>}</span>,
+      code: <span className="font-semibold">{c.code}{!c.active && <span className="ml-1 text-[13px] font-normal text-ink-2">(off)</span>}</span>,
       to: <span className="block max-w-[180px] truncate">{c.artwork?.title || "Artist page"}</span>,
       where: <span className="block max-w-[180px] truncate text-ink-2">{[c.label, c.venue].filter(Boolean).join(" · ") || "—"}{c.discountPct ? ` · ${c.discountPct}% off` : ""}</span>,
       scans: c._count.scans,
@@ -198,7 +198,7 @@ export default async function AdminArtistPage({ params }: { params: { id: string
       {a.suspendedAt && (
         <Problem tone="error" title={`Suspended: ${a.suspendedReason || "no reason given"}`}>Pages 404, codes go nowhere, checkout is blocked.</Problem>
       )}
-      {teammate && <p className="text-[13px] text-ink-2">Another admin&apos;s account: only an owner can change its sign-in, email or profile.</p>}
+      {teammate && <p className="t-small">Another admin: only an owner can change their sign-in, email or profile.</p>}
 
       <section aria-label="Money" className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="Ready to pay" value={usd(balance.availableCents)} earned />
@@ -211,7 +211,7 @@ export default async function AdminArtistPage({ params }: { params: { id: string
         <div className="grid content-start gap-6">
           <Card title="Payouts" sub={`${balance.payoutVia === "stripe" ? "Stripe" : "Venmo"} · Stripe ${STRIPE_LABEL[balance.stripeStatus].toLowerCase()} · Venmo ${a.venmoHandle ? `@${a.venmoHandle.replace(/^@/, "")}` : "none"}${a.venmoPending ? ` (@${a.venmoPending} unconfirmed)` : ""}`}>
             {balance.lateMonths.length > 0 && <p className="mb-2 rounded-lg bg-coral/10 px-3 py-2 text-[13.5px] font-semibold text-coral">Late: {balance.lateMonths.map((m) => monthLabel(m)).join(", ")}</p>}
-            {balance.adjustmentCents !== 0 && <p className="mb-2 text-[13px] text-ink-2">Paid months differ from today&apos;s recompute by {usd(balance.adjustmentCents)} (a refund or change after payout).</p>}
+            {balance.adjustmentCents !== 0 && <p className="t-small mb-2">Paid months differ from today&apos;s numbers by {usd(balance.adjustmentCents)} (a refund or change after payout).</p>}
             <DataTable id="artist-payouts" caption="Payouts" minWidth={480} defaultSort={{ key: "month", dir: "desc" }}
               columns={[{ key: "month", label: "Month", firstDir: "desc" }, { key: "amount", label: "Amount", align: "right" }, { key: "status", label: "Status" }, { key: "method", label: "Method", sortable: false }, { key: "sales", label: "Sales", align: "right" }]}
               rows={payoutRows} empty={<Empty>No sales yet.</Empty>} />
@@ -232,12 +232,12 @@ export default async function AdminArtistPage({ params }: { params: { id: string
                     <img src={w.imageUrl} alt="" className="h-[55px] w-[44px] rounded-[3px] object-cover" loading="lazy" />
                     <div className="min-w-0 text-[13.5px]">
                       <Link href={`/admin/artworks/${w.id}/edit`} className="block truncate font-semibold text-ink hover:text-scan">{w.title}</Link>
-                      <span className="flex flex-wrap items-center gap-1.5 text-[12px] text-ink-2">
+                      <span className="t-small flex flex-wrap items-center gap-1.5">
                         <Chip c={ART_STATUS[w.status]}>{w.status === "APPROVED" ? "Live" : w.status === "PENDING" ? "In review" : "Rejected"}</Chip>
                         {w._count.OrderItem} sold{w.editionSize ? ` · edition of ${w.editionSize}` : ""}
                         {w.slug && w.status === "APPROVED" && <a href={artPath(a.slug, w.slug)} target="_blank" rel="noopener" className="font-semibold text-scan">View</a>}
                       </span>
-                      {w.flaggedReason && <span className="block truncate text-[11.5px] text-coral">{w.flaggedReason}</span>}
+                      {w.flaggedReason && <span className="block truncate text-[13px] text-coral">{w.flaggedReason}</span>}
                     </div>
                   </li>
                 ))}
@@ -265,7 +265,7 @@ export default async function AdminArtistPage({ params }: { params: { id: string
             ) : (
               <ul className="grid gap-1.5">
                 {a.oauthAccounts.map((o) => (
-                  <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line px-3 py-2 text-[13.5px]">
+                  <li key={o.id} className="box-inset flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-[13.5px]">
                     <span className="min-w-0">
                       <b>{isProviderId(o.provider) ? PROVIDER_LABEL[o.provider] : o.provider}</b>
                       <span className="text-ink-2">{o.email ? ` · ${o.email}` : ""} · added {day(o.createdAt)}{o.lastUsedAt ? ` · last used ${day(o.lastUsedAt)}` : ""}</span>
@@ -322,11 +322,11 @@ export default async function AdminArtistPage({ params }: { params: { id: string
                     confirm={`No more charges. They keep Infinity until ${sub.periodEnd ? day(sub.periodEnd) : "the period ends"}, then go to Free.`} confirmLabel="Cancel renewal" done="Cancels at period end" />
                 )}
                 <ActionButton url={billingTarget} body={{ action: "cancel_now" }} need="money" tone="danger" label="Cancel now" title={`End ${name}'s subscription now?`}
-                  confirm="The subscription and Infinity end today, with no refund (refund in Stripe if one is owed). New sales use the free plan's split; past orders keep theirs." confirmLabel="Cancel now" done="Cancelled" />
+                  confirm="Ends the subscription and Infinity today, with no refund (refund in Stripe if one is owed). New sales use the free split. This can't be undone." confirmLabel="Cancel now" done="Cancelled" />
                 {billing.mode === "live" && <ActionButton url={billingTarget} body={{ action: "sync" }} need="money" label="Sync from Stripe" title="Re-read the subscription from Stripe?" confirm="Updates the status, period and Infinity date from Stripe." confirmLabel="Sync" done="Synced" />}
               </div>
             )}
-            {subLive && infinity && <p className="mt-2 text-[13px] text-ink-2">To take Infinity away from a paying artist, cancel the subscription here first; End Infinity is blocked while it&apos;s live.</p>}
+            {subLive && infinity && <p className="t-small mt-2">End Infinity is blocked while they pay. Cancel the subscription first.</p>}
           </Card>
 
           <Card fold title="Referrals">
@@ -371,7 +371,7 @@ export default async function AdminArtistPage({ params }: { params: { id: string
       </div>
 
       <details className="af-panel border-coral/40 p-4">
-        <summary className="cursor-pointer text-[15px] font-bold text-coral">Suspend, close or delete</summary>
+        <summary className="t-card cursor-pointer text-coral">Suspend, close or delete</summary>
         <div className="mt-3 flex flex-wrap gap-2">
         {a.suspendedAt ? (
           <ActionButton url={target} body={{ action: "unsuspend" }} need="suspend" label="Unsuspend" title={`Unsuspend ${name}?`}
@@ -396,20 +396,20 @@ export default async function AdminArtistPage({ params }: { params: { id: string
               fields={blocker ? [] : [{ name: "confirm", label: `Type ${a.slug}`, required: true }]} confirmLabel="Delete forever" done="Deleted" />
           )}
         </div>
-        {blocker && roleCan(me.adminRole, "deleteAccount") && <p className="mt-2 text-[13px] text-ink-2">Can&apos;t delete permanently: {blocker}</p>}
+        {blocker && roleCan(me.adminRole, "deleteAccount") && <p className="t-small mt-2">Can&apos;t delete permanently: {blocker}</p>}
       </details>
     </div>
   );
 }
 
 function Chip({ c, children }: { c: string; children: React.ReactNode }) {
-  return <span className={cn("inline-block rounded-full px-2 py-px text-[11.5px] font-bold", c)}>{children}</span>;
+  return <span className={cn("inline-block rounded-full px-2 py-px text-[12px] font-bold", c)}>{children}</span>;
 }
 function Stat({ label, value, earned }: { label: string; value: string; earned?: boolean }) {
   return (
-    <div className="rounded-xl border border-line bg-white p-3">
+    <div className="rounded-xl border border-edge bg-white p-3">
       <b className={cn("num block text-[22px]", earned && "text-earned")}>{value}</b>
-      <span className="text-[13px] text-ink-2">{label}</span>
+      <span className="t-small">{label}</span>
     </div>
   );
 }
@@ -440,7 +440,7 @@ function Table({ head, children }: { head: string[]; children: React.ReactNode }
   return (
     <div className="-mx-1 overflow-x-auto px-1">
       <table className="num w-full min-w-[420px] text-left text-[13.5px]">
-        <thead className="text-[11.5px] uppercase tracking-[0.06em] text-ink-2">
+        <thead className="text-[12px] uppercase tracking-[0.06em] text-ink-2">
           <tr>{head.map((h, i) => <th key={h} className={cn("pb-1.5 pr-3 font-bold last:pr-0", i > 0 && ["Amount", "Total", "Sales", "Scans"].includes(h) && "text-right")}>{h}</th>)}</tr>
         </thead>
         <tbody>{children}</tbody>

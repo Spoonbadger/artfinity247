@@ -6,7 +6,6 @@ import { DabRow } from "@/components/browse/PageHead";
 import { PUBLIC_ART, displayName } from "@/components/browse/data";
 import { basePrices } from "@/lib/artwork_price";
 import SalonStrip from "@/components/home/SalonStrip";
-import Splat from "@/components/motion/Splat";
 import BrushWipe from "@/components/motion/BrushWipe";
 import { Dabs } from "@/components/reviews/ReviewStars";
 import { breakdown, money, moneyRound } from "@/lib/earnings";
@@ -85,7 +84,7 @@ export default async function AboutPage() {
       <section className="mx-auto max-w-[1240px] px-4 pb-10 pt-10 sm:px-6 md:pt-16">
         <div className="mb-4 flex items-center gap-2.5"><DabRow /><span className="eyebrow">About Artfinity</span></div>
         <h1 className="display max-w-[12ch] text-[56px] sm:text-[88px]">Local art, on <Brushed>every wall.</Brushed></h1>
-        <p className="mt-5 max-w-[40ch] text-[19px] text-ink-2 sm:text-[21px]">
+        <p className="mt-5 max-w-[40ch] text-[17px] text-ink-2">
           New York artists hang a code by their work. We print, ship and pay them.
         </p>
       </section>
@@ -96,13 +95,13 @@ export default async function AboutPage() {
           {numbers.map(([n, label]) => (
             <div key={label}>
               <dt className="sr-only">{label}</dt>
-              <dd className="num display text-[44px] sm:text-[56px]">{n}</dd>
-              <dd className="text-[15px] text-ink-2">{label}</dd>
+              <dd className="t-section num">{n}</dd>
+              <dd className="t-muted">{label}</dd>
             </div>
           ))}
         </dl>
         {stats.reviewCount > 0 && (
-          <p className="mt-6 flex items-center gap-2 text-[15px] text-ink-2">
+          <p className="t-muted mt-6 flex items-center gap-2">
             <Dabs value={stats.rating} size="sm" />
             <span><b className="text-ink">{stats.rating.toFixed(1)}</b> from {stats.reviewCount} verified buyer reviews</span>
           </p>
@@ -112,13 +111,13 @@ export default async function AboutPage() {
       {/* Story + people */}
       <section className="mx-auto grid max-w-[1240px] gap-12 px-4 py-16 sm:px-6 md:grid-cols-[1.1fr_1fr] md:gap-16 md:py-24">
         <div>
-          <h2 className="display text-[40px] sm:text-[52px]">Why we built it</h2>
-          <div className="mt-5 grid max-w-[52ch] gap-4 text-[18px] text-ink-2">
+          <h2 className="t-feature">Why we built it</h2>
+          <div className="t-body mt-5 grid max-w-[60ch] gap-4 text-[17px] text-ink-2">
             {STORY.map((p) => <p key={p}>{p}</p>)}
           </div>
         </div>
         <div>
-          <h2 className="display text-[40px] sm:text-[52px]">Who we are</h2>
+          <h2 className="t-feature">Who we are</h2>
           <ul className="mt-5 grid gap-4">
             {TEAM.map((m) => (
               <li key={m.name} className="af-card flex gap-4 p-5">
@@ -131,9 +130,9 @@ export default async function AboutPage() {
                   )}
                 </span>
                 <div className="grid content-start gap-1">
-                  <p className="text-[19px] font-bold leading-tight">{m.name}</p>
+                  <p className="t-card">{m.name}</p>
                   <p className="eyebrow">{m.role}</p>
-                  <p className="mt-1 text-[15.5px] text-ink-2">{m.note}</p>
+                  <p className="t-muted mt-1">{m.note}</p>
                 </div>
               </li>
             ))}
@@ -155,19 +154,18 @@ export default async function AboutPage() {
       {/* How a sale works, with real numbers */}
       <section className="border-y border-line bg-wall">
         <div className="mx-auto max-w-[1240px] px-4 py-16 sm:px-6 md:py-20">
-          <h2 className="display text-[40px] sm:text-[52px]">Where your money goes</h2>
-          <p className="mt-2 text-[17px] text-ink-2">A Medium print at {money(example.price)}:</p>
+          <h2 className="t-feature">Where your money goes</h2>
+          <p className="t-muted mt-2">A Medium print at {money(example.price)}:</p>
           <ol className="mt-8 grid gap-6 md:grid-cols-4">
             {[
-              ["var(--af-ink-2)", money(example.cost), "Printing, paper and shipping"],
-              ["var(--af-line)", money(example.fee + example.hosting), "Card fees and hosting"],
-              ["var(--af-earned)", money(example.artist), `To the artist (${pct(split)} of profit)`],
-              ["var(--af-scan)", money(example.company), "To Artfinity, to keep the lights on"],
-            ].map(([c, amount, label]) => (
+              [money(example.cost), "Printing in NYC, paper and shipping"],
+              [money(example.fee + example.hosting), "Card fees and hosting"],
+              [money(example.artist), `To the artist (${pct(split)} of profit)`],
+              [money(example.company), "To Artfinity, to keep the lights on"],
+            ].map(([amount, label]) => (
               <li key={label} className="grid content-start gap-1 border-t-[3px] border-ink pt-4">
-                <span className="paint-dab mb-1 h-4 w-4" style={{ ["--dab" as string]: c }} aria-hidden="true" />
-                <span className="num display text-[36px]">{amount}</span>
-                <span className="text-[15px] text-ink-2">{label}</span>
+                <span className="t-section num">{amount}</span>
+                <span className="t-muted">{label}</span>
               </li>
             ))}
           </ol>
@@ -176,13 +174,12 @@ export default async function AboutPage() {
 
       {/* Promises */}
       <section className="mx-auto max-w-[1240px] px-4 py-16 sm:px-6 md:py-24">
-        <h2 className="display text-[40px] sm:text-[52px]">What we promise</h2>
+        <h2 className="t-feature">What we promise</h2>
         <ul className="mt-8 grid gap-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
           {promises.map((p) => (
             <li key={p.title} className="grid content-start gap-2 border-t-[3px] border-ink pt-5">
-              <Splat><span className="paint-dab mb-1 h-5 w-5" style={{ ["--dab" as string]: p.color }} aria-hidden="true" /></Splat>
-              <h3 className="display text-[30px]">{p.title}</h3>
-              <p className="text-[16.5px] text-ink-2">{p.text}</p>
+              <h3 className="t-card">{p.title}</h3>
+              <p className="t-muted">{p.text}</p>
               {p.href && <Link href={p.href} className="text-[15px] font-bold underline underline-offset-2">{p.link}</Link>}
             </li>
           ))}
@@ -193,8 +190,8 @@ export default async function AboutPage() {
       <section className="border-t border-line bg-wall">
         <div className="mx-auto grid max-w-[1240px] gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.2fr_1fr] md:items-center">
           <div>
-            <h2 className="display relative inline-block text-[40px] sm:text-[52px]"><span className="relative z-10">Made in Brooklyn, NY.</span><BrushWipe className="absolute -bottom-1 -left-2 z-0 h-[0.34em] w-[calc(100%+16px)]" color="var(--af-coral)" style={{ opacity: 0.45 }} /></h2>
-            <p className="mt-1 text-[17px] text-ink-2">Shipped across the US.</p>
+            <h2 className="t-feature relative inline-block"><span className="relative z-10">Made in Brooklyn, NY.</span><BrushWipe className="absolute -bottom-1 -left-2 z-0 h-[0.34em] w-[calc(100%+16px)]" color="var(--af-coral)" style={{ opacity: 0.45 }} /></h2>
+            <p className="t-muted mt-2">Shipped across the US.</p>
             <div className="mt-6 flex flex-wrap gap-2">
               <Link href="/art" className="btn btn-ghost btn-lg">Browse art</Link>
               <Link href="/register" className="btn btn-blue btn-lg">Start selling free</Link>

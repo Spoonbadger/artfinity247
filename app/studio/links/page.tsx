@@ -23,7 +23,6 @@ export default async function LinksStudioPage() {
   return (
     <StudioPage
       title="Links"
-      sub="One link for your bio."
       actions={
         <Link href={`/@${artist.slug}/links`} target="_blank" className="btn btn-ghost btn-sm gap-1.5">
           Open my links <ArrowUpRight className="h-4 w-4" aria-hidden="true" />

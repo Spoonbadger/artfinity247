@@ -86,8 +86,8 @@ function Hung({ w, i, edition, handle }: { w: PublicWork; i: number; edition: Ed
         {/* museum label */}
         <div className="mx-auto mt-4 flex w-fit max-w-full items-center gap-3 rounded-[2px] bg-white/80 px-3 py-1.5 shadow-[0_1px_0_rgba(21,22,27,.08)]">
           <span className="min-w-0 leading-tight">
-            <b className="block truncate text-[14.5px] group-hover:underline">{w.title}</b>
-            <span className="num text-[13px] text-ink-2">Prints from {money(w.fromCents)}</span>
+            <b className="block truncate text-[15px] group-hover:underline">{w.title}</b>
+            <span className="t-small num">Prints from {money(w.fromCents)}</span>
           </span>
           <EditionBadge edition={edition} compact />
         </div>
@@ -100,7 +100,7 @@ function Neighbor({ dir, artistSlug, c }: { dir: "prev" | "next"; artistSlug: st
   return (
     <Link
       href={collectionPath(artistSlug, c.slug)}
-      className={cn("group flex min-w-0 items-center gap-3 rounded-2xl border border-line bg-white p-2.5 text-ink no-underline transition hover:border-ink", dir === "next" && "flex-row-reverse text-right")}
+      className={cn("group flex min-w-0 items-center gap-3 rounded-2xl border border-edge bg-white p-2.5 text-ink no-underline transition hover:border-ink", dir === "next" && "flex-row-reverse text-right")}
     >
       {c.cover && (
         <span className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-lg bg-gallery p-1.5">
@@ -114,7 +114,7 @@ function Neighbor({ dir, artistSlug, c }: { dir: "prev" | "next"; artistSlug: st
         <span className="flex items-center gap-1 text-[13px] font-semibold text-ink-2 [justify-content:inherit]">
           {dir === "prev" ? <><ArrowLeft className="h-3.5 w-3.5" aria-hidden />Previous</> : <>Next<ArrowRight className="h-3.5 w-3.5" aria-hidden /></>}
         </span>
-        <b className="block truncate font-display text-[20px] [font-variation-settings:'wdth'_80] group-hover:underline">{c.title}</b>
+        <b className="t-card block truncate group-hover:underline">{c.title}</b>
       </span>
     </Link>
   );
@@ -140,7 +140,7 @@ export default async function CollectionPage({ params, searchParams }: Props) {
         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,380px)] md:items-end md:gap-10">
           <div>
             <p className="eyebrow">Collection · {n} {n === 1 ? "work" : "works"}</p>
-            <h1 className="display relative mt-2 text-[52px] leading-[0.9] [overflow-wrap:anywhere] sm:text-[80px] lg:text-[104px]">
+            <h1 className="display relative mt-2 text-[44px] [overflow-wrap:anywhere] sm:text-[64px]">
               {collection.title}
             </h1>
             <BrushStroke className="mt-2 h-3 w-48 sm:w-64" />

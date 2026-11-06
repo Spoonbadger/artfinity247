@@ -101,7 +101,7 @@ export default function ReportsQueue({ rows: initial, tab }: { rows: ReportRow[]
   }
 
   if (!rows.length) {
-    return <EmptyState title={EMPTY[tab]} body={tab === "queue" ? "Reports from /report and DMCA counter-notices land here." : undefined} dab="var(--af-earned)" />;
+    return <EmptyState dab="var(--af-edge-strong)" title={EMPTY[tab]} body={tab === "queue" ? "Reports from /report and DMCA counter-notices land here." : undefined} />;
   }
 
   return (
@@ -109,7 +109,7 @@ export default function ReportsQueue({ rows: initial, tab }: { rows: ReportRow[]
     <TableToolbar filters={t.filters} setFilter={t.setFilter} clear={t.clear} active={t.active} search="Reporter, art or artist" statuses={reasons.length > 1 ? reasons : undefined} statusLabel="Reason" dates count={shown.length} total={rows.length}>
       <SortSelect options={SORTS} sort={t.sort} onChange={t.setSort} />
     </TableToolbar>
-    {shown.length === 0 && <EmptyState compact title="Nothing matches" action={{ label: "Clear filters", onClick: t.clear }} />}
+    {shown.length === 0 && <EmptyState dab="var(--af-edge-strong)" compact title="Nothing matches" action={{ label: "Clear filters", onClick: t.clear }} />}
     <ul className="grid gap-4">
       {shown.map((r) => {
         const counter = r.reason === "counter";

@@ -40,7 +40,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, Props>(function Passwo
   return (
     <div className={cn("grid gap-1.5", className)}>
       <div className={cn("af-field", error && "!border-coral")}>
-        <label htmlFor={fid} className="text-xs text-ink-2">{label}</label>
+        <label htmlFor={fid} className="text-[13px] text-ink-2">{label}</label>
         <span className="flex min-w-0 items-center">
           <input
             ref={ref}

@@ -203,7 +203,7 @@ export default function VideoStudio({ art, arts, base, pro }: { art: ShareArt; a
         ) : (
           <VideoStage spec={spec} assets={v.assets} problem={v.problem} retry={v.retry} result={v.result} busy={busy} title={pieceList.map((p) => p.title).join(", ")} />
         )}
-        <p className="text-center text-[13px] text-ink-2">
+        <p className="t-small text-center">
           {FORMATS[format].w} × {FORMATS[format].h} · {Math.round(v.seconds * 10) / 10} s · {v.result ? v.result.type.label : busy ? "recording" : "live preview"}
         </p>
       </div>
@@ -216,7 +216,6 @@ export default function VideoStudio({ art, arts, base, pro }: { art: ShareArt; a
             {free.map((p) => (
               <button key={p.id} type="button" aria-pressed={preset === p.id} disabled={busy} onClick={() => setPreset(p.id)}
                 className={cn("flex items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left transition sm:block", preset === p.id ? "border-ink bg-ink text-white" : "border-line bg-white hover:border-ink")}>
-                <span className="paint-dab sm:mb-2" style={{ ["--dab" as string]: p.dab }} aria-hidden="true" />
                 <span className="grid">
                   <b className="text-[15px] leading-tight">{p.name}</b>
                   <span className={cn("text-[13px]", preset === p.id ? "text-white/75" : "text-ink-2")}>{p.sub}</span>
@@ -226,7 +225,6 @@ export default function VideoStudio({ art, arts, base, pro }: { art: ShareArt; a
             {pro && extra.map((p) => (
               <button key={p.id} type="button" aria-pressed={preset === p.id} disabled={busy} onClick={() => setPreset(p.id)}
                 className={cn("flex items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left transition sm:block", preset === p.id ? "border-ink bg-ink text-white" : "border-line bg-white hover:border-ink")}>
-                <span className="paint-dab sm:mb-2" style={{ ["--dab" as string]: p.dab }} aria-hidden="true" />
                 <span className="grid">
                   <b className="text-[15px] leading-tight">{p.name}</b>
                   <span className={cn("text-[13px]", preset === p.id ? "text-white/75" : "text-ink-2")}>{p.sub}</span>
@@ -385,10 +383,7 @@ export default function VideoStudio({ art, arts, base, pro }: { art: ShareArt; a
               {extra.map((p) => (
               <button key={p.id} type="button" aria-pressed={preset === p.id} disabled={busy} onClick={() => setPreset(p.id)}
                 className={cn("flex items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left transition sm:block", preset === p.id ? "border-ink bg-ink text-white" : "border-line bg-white hover:border-ink", !pro && preset !== p.id && "bg-wall")}>
-                <span className="flex items-center gap-2 sm:mb-2">
-                  <span className="paint-dab" style={{ ["--dab" as string]: p.dab }} aria-hidden="true" />
-                  {!pro && <Lock size={13} aria-hidden="true" />}
-                </span>
+                {!pro && <Lock size={13} className="shrink-0 sm:mb-2" aria-hidden="true" />}
                 <span className="grid">
                   <b className="text-[15px] leading-tight">{p.name}{!pro && <span className="sr-only"> (Infinity)</span>}</b>
                   <span className={cn("text-[13px]", preset === p.id ? "text-white/75" : "text-ink-2")}>{p.sub}</span>
@@ -397,7 +392,7 @@ export default function VideoStudio({ art, arts, base, pro }: { art: ShareArt; a
             ))}
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <p className="min-w-0 flex-1 text-[13.5px] text-ink-2">Free presets stay free. Videos are silent: add trending audio when you post.</p>
+              <p className="t-small min-w-0 flex-1">Free presets stay free. Videos are silent: add trending audio when you post.</p>
               <Unlock />
             </div>
           </Fold>

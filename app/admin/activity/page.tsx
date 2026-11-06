@@ -54,7 +54,7 @@ export default async function ActivityPage({ searchParams }: { searchParams: SP 
   const more_ = !!(sp.target || sp.id || sp.from || sp.to);
   return (
     <div className="grid gap-5">
-      <PageHead title="Activity" sub={`Every admin action. ${total.toLocaleString()} ${total === 1 ? "entry" : "entries"}${filtered ? " match" : ""}${sp.before ? " (older page)" : ""}`} />
+      <PageHead title="Activity" sub={`${total.toLocaleString()} ${total === 1 ? "entry" : "entries"}${filtered ? " match" : ""}${sp.before ? " (older page)" : ""}`} />
 
       <form className="grid gap-2" method="get">
         <div className="flex flex-wrap items-end gap-2">

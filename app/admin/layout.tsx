@@ -48,7 +48,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
             <Logo href="/admin" />
-            <span className="sticker-badge text-[11.5px]">Admin</span>
+            <span className="sticker-badge text-[12px]">Admin</span>
           </div>
           <div className="order-last w-full sm:order-none sm:ml-4 sm:w-auto">
             <AdminSearch />
@@ -58,10 +58,10 @@ export default async function AdminLayout({ children }: { children: ReactNode })
               href="/admin/alerts"
               aria-label={openAlerts ? `${openAlerts} open alerts` : "Alerts, none open"}
               title={openAlerts ? `${openAlerts} open alerts` : "No open alerts"}
-              className="relative grid h-10 w-10 place-items-center rounded-full border-[1.5px] border-line bg-white text-ink no-underline transition hover:border-ink"
+              className="relative grid h-10 w-10 place-items-center rounded-full border-[1.5px] border-edge-strong bg-white text-ink no-underline transition hover:border-ink"
             >
               <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
-              {openAlerts > 0 && <span className="num absolute -right-1 -top-1 min-w-[20px] rounded-full bg-coral px-1 text-center text-[11.5px] font-bold leading-[20px] text-white">{openAlerts > 99 ? "99+" : openAlerts}</span>}
+              {openAlerts > 0 && <span className="num absolute -right-1 -top-1 min-w-[20px] rounded-full bg-coral px-1 text-center text-[12px] font-bold leading-[20px] text-white">{openAlerts > 99 ? "99+" : openAlerts}</span>}
             </Link>
             <span className="hidden text-ink-2 xl:inline">{admin.email} · {ROLE_LABEL[admin.adminRole]}</span>
             <Link href="/" className="btn btn-ghost btn-sm hidden sm:inline-flex">View site</Link>

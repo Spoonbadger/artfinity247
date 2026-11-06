@@ -16,14 +16,14 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
         </svg>
       </CrookedFrame>
       <div className="grid justify-items-center gap-3">
-        <h1 className="display text-[44px] sm:text-[60px]">Paint spilled.</h1>
-        <p className="max-w-[44ch] text-[17px] text-ink-2">Something broke on our side. Nothing you saved is lost.</p>
-        {error?.digest && <p className="text-[13px] text-ink-2">Ref {error.digest}</p>}
+        <h1 className="t-page">Paint spilled.</h1>
+        <p className="t-body max-w-[44ch] text-ink-2">Something broke on our side. Nothing you saved is lost.</p>
+        {error?.digest && <p className="t-small">Ref {error.digest}</p>}
         <div className="mt-3 flex flex-wrap justify-center gap-2">
           <button type="button" onClick={() => reset()} className="btn btn-blue">Try again</button>
           {currentUser ? <Link href="/studio" className="btn btn-ghost">Go to my Studio</Link> : <Link href="/" className="btn btn-ghost">Go home</Link>}
         </div>
-        <p className="mt-2 text-[14.5px] text-ink-2">
+        <p className="t-small mt-2">
           Keeps happening? <Link href="/contact" className="inline-flex min-h-[40px] items-center font-semibold text-ink underline underline-offset-4">Tell us</Link>
           {error?.digest ? " and mention the ref above" : ""}
           <span aria-hidden="true"> · </span>

@@ -115,14 +115,14 @@ function ItemCard({ item, orderId, token, name, city, onSaved }: {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={item.imageUrl} alt="" className="h-[72px] w-[58px] shrink-0 rotate-[-2deg] rounded-[2px] border-[3px] border-white object-cover shadow-[0_6px_14px_-8px_rgba(21,22,27,.6)]" />
         <div className="min-w-0 leading-tight">
-          <b className="block truncate text-[17px]">{item.title}</b>
-          <span className="block truncate text-[14px] text-ink-2">by {item.artistName}{item.sizeLabel ? ` · ${item.sizeLabel}` : ""}</span>
+          <b className="t-card block truncate">{item.title}</b>
+          <span className="t-small block truncate">by {item.artistName}{item.sizeLabel ? ` · ${item.sizeLabel}` : ""}</span>
         </div>
       </div>
 
       <div className="grid gap-4 p-4">
         {!item.listed ? (
-          <p className="text-[15px] text-ink-2">This piece isn&apos;t listed anymore, so it can&apos;t take reviews.</p>
+          <p className="t-muted">This piece isn&apos;t listed anymore, so it can&apos;t take reviews.</p>
         ) : saved && !editing ? (
           <div className="grid gap-3">
             <div className="flex items-center gap-2.5">
@@ -215,7 +215,7 @@ export default function ReviewForm({ orderId, token, items, defaultName, default
 
   return (
     <div className="grid gap-5">
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-2 rounded-xl border border-line bg-white px-3.5 py-2.5 text-[14.5px]">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-2 rounded-xl border border-edge bg-white px-3.5 py-2.5 text-[15px]">
         {editingName ? (
           <div className="grid w-full gap-2 sm:grid-cols-2">
             <label className="af-field">
@@ -254,11 +254,11 @@ export default function ReviewForm({ orderId, token, items, defaultName, default
 
       {allDone && justSaved && (
         <section aria-live="polite" className="relative grid justify-items-center gap-3 rounded-2xl bg-sticker/40 px-5 py-8 text-center">
-          <h2 className="display relative text-[38px] leading-none">
+          <h2 className="t-section relative">
             Thank you
             <BrushStroke className="mx-auto mt-1 h-2.5 w-36" color="var(--af-coral)" />
           </h2>
-          <p className="max-w-[34ch] text-[16px] text-ink-2">
+          <p className="t-body max-w-[34ch] text-ink-2">
             {artists.length === 1 ? `${artists[0][1]} gets an email about it. It really does make their week.` : "The artists get an email about it. It really does make their week."}
           </p>
           <div className="flex flex-wrap justify-center gap-2">

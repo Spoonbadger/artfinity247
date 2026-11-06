@@ -37,7 +37,7 @@ export default async function SharePage({ searchParams }: { searchParams: { art?
   if (!arts.length) {
     const pending = await prisma.artwork.count({ where: { artistId: artist.id, status: "PENDING" } });
     return (
-      <StudioPage title="Share kit" sub="Everything here links back to the print.">
+      <StudioPage title="Share kit">
         <EmptyState
           title={pending ? "Your share kit is almost ready" : "No approved art yet"}
           body={
@@ -58,7 +58,7 @@ export default async function SharePage({ searchParams }: { searchParams: { art?
   const plan = await getArtistPlan(artist.id);
 
   return (
-    <StudioPage title="Share kit" sub="Everything here links back to the print.">
+    <StudioPage title="Share kit">
       <ShareKit arts={arts} initialSlug={slug} base={base} pro={plan.active} />
     </StudioPage>
   );
