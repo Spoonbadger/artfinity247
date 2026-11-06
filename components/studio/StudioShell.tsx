@@ -8,6 +8,7 @@ import Logo from "@/components/af/Logo";
 import { useUser } from "@/components/contexts";
 import { cn } from "@/lib/utils";
 import ProChip from "@/components/pro/ProChip";
+import ProMark from "@/components/pro/ProMark";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
 import { useFocusTrap } from "@/lib/a11y/useFocusTrap";
 
@@ -78,13 +79,13 @@ export default function StudioShell({ artist, children, badges }: { artist: Shel
   }
 
   const userRow = (
-    <div className="flex items-center gap-2.5 border-t border-line pt-4 text-[13px]">
+    <div className="flex min-w-0 items-center gap-2.5 border-t border-line pt-4 text-[13px]">
       <Avatar src={artist.profileImage} name={artist.name} />
       <div className="min-w-0 flex-1 leading-tight">
-        <b className="flex min-w-0 items-center gap-1.5"><span className="truncate">{artist.name}</span>{artist.pro && <ProChip />}</b>
+        <b className="flex min-w-0 items-center gap-1"><span className="truncate">{artist.name}</span>{artist.pro && <ProMark />}</b>
         <span className="block truncate text-ink-2">@{artist.slug}</span>
       </div>
-      <button type="button" onClick={logout} disabled={leaving} className="grid h-11 w-11 place-items-center rounded-full text-ink-2 hover:bg-white hover:text-ink" aria-label="Log out" title="Log out">
+      <button type="button" onClick={logout} disabled={leaving} className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink-2 hover:bg-white hover:text-ink" aria-label="Log out" title="Log out">
         <LogOut className="h-4 w-4" aria-hidden="true" />
       </button>
     </div>
