@@ -86,6 +86,11 @@ a readable column (about 68 characters) and clear steps between title, section a
   printed things (QR cards, link-page and video previews, the certificate).
 - Notices use their tone's colour for the edge (`border-sticker`, `border-coral`), never ink.
 - Borders are 1px for boxes and 1.5px for buttons and chips. No `border-2 border-ink` on a box.
+- One exception, on purpose: **statement cards**. The sign-up, login and password cards (`AuthCard`) and other
+  single hero cards on entry pages keep the bold look: 2px ink border with a hard 8–10px ink offset shadow. Use it
+  for one focal card on a page, never for lists or dashboards. (Thomas, Nov 2026 review.)
+- Brand paint stays where it carries the fun: the home page sticker badge, brush strokes and the dabs on artist
+  cards; the yellow sticker "Print all" button and the brush under the earnings number in QR codes.
 
 ### Type scale
 
