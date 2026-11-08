@@ -122,6 +122,7 @@
 .warn i { background: var(--af-sticker); color: var(--af-ink) !important; }
 .bad i { background: var(--af-coral); color: var(--af-ink) !important; }
 .big { position: relative; justify-self: start; font-family: var(--font-display); font-variation-settings: "wdth" 78; font-weight: 800; font-size: 44px; line-height: .95; color: var(--af-earned); isolation: isolate; }
+.bigStroke { position: absolute; left: -8px; right: -10px; bottom: -2px; height: 22px; width: calc(100% + 18px); z-index: -1; }
 
 .earn { width: 100%; border-collapse: collapse; font-size: 13.5px; font-variant-numeric: tabular-nums; color: var(--af-ink); }
 .earn th { text-align: right; font-weight: 600; font-size: 13px; color: var(--af-ink-2); padding: 0 0 6px 8px; }

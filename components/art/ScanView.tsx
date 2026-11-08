@@ -35,9 +35,6 @@ const MORE_SORTS: { value: MoreSort; label: string }[] = [
   { value: "az", label: "A–Z" },
 ];
 
-/** One line on how big a size looks, against a sheet of letter paper (8.5 × 11 in, the help center's yardstick). */
-const onTheWall = (s: PrintSize) =>
-  ({ small: "Smaller than a sheet of printer paper", medium: "About a sheet of printer paper", large: "About two sheets of printer paper side by side", xl: "About four sheets of printer paper" })[s];
 
 const canOptimize = (src: string) => src.startsWith("/") || src.includes("res.cloudinary.com");
 
@@ -284,7 +281,7 @@ export default function ScanView({
               })}
             </div>
             <p id="size-note" className="t-small">
-              {original && closest ? <>Original {originalText(original)} · </> : <>{onTheWall(size)} · </>}
+              {original && closest ? <>Original {originalText(original)} · </> : <>Not sure? </>}
               <button type="button" onClick={seeInRoom} className="font-semibold text-scan underline decoration-scan/40 underline-offset-2 hover:decoration-scan">
                 see it in a room
               </button>
@@ -332,6 +329,7 @@ export default function ScanView({
             {arrives ? <><b className="font-semibold text-ink">Arrives {arrives}</b> · free US shipping</> : <b className="font-semibold text-ink">Free US shipping</b>}
             {" · "}
             <Link href="/return-policy" className="underline decoration-line underline-offset-2 hover:text-ink">damaged? free reprint</Link>
+            {" · secure checkout"}
           </p>
         </section>
       </div>
@@ -368,8 +366,8 @@ export default function ScanView({
               {SIZE_LABEL[size]}, {sizeInches(size)}. Giclée on 310gsm archival matte paper, ½-inch border.
             </li>
             {frame && <li>{FRAME_COLORS.find((f) => f.key === frame)?.label} frame, ready to hang.</li>}
-            <li>Printed in NYC and shipped by Artfinity. {firstName} gets {pctOf(artistSplit)} of the profit.</li>
-            <li>Size is final sale. Arrives damaged? <Link href="/return-policy" className="font-semibold text-ink underline decoration-line underline-offset-2">We reprint it free</Link>, no need to send it back.</li>
+            <li>Printed and shipped by Artfinity. {firstName} gets {pctOf(artistSplit)} of the profit.</li>
+            <li>Size is final sale. Arrives damaged? <Link href="/return-policy" className="font-semibold text-ink underline decoration-line underline-offset-2">We reprint it free.</Link></li>
           </ul>
           <Link href="/help/buyers" className="t-small w-fit underline decoration-line underline-offset-2 hover:text-ink">Shipping, frames and returns</Link>
         </section>

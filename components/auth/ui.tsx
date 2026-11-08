@@ -8,7 +8,7 @@ export function AuthCard({ children, className }: { children: ReactNode; classNa
   return (
     <div
       className={cn(
-        "relative min-w-0 rounded-[22px] border border-edge bg-paper p-6 shadow-[0_24px_48px_-28px_rgba(21,22,27,.45)] sm:p-9",
+        "relative min-w-0 rounded-[22px] border-2 border-ink bg-paper p-6 shadow-[8px_8px_0_var(--af-ink)] sm:p-9 sm:shadow-[10px_10px_0_var(--af-ink)]",
         className,
       )}
     >

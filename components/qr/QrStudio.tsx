@@ -9,6 +9,7 @@ import { qrSVG } from "@/lib/qr/render";
 import { breakdown, money, SIZE_NAME, SIZE_INCHES, type SizeKey } from "@/lib/earnings";
 import { getArtistSplit } from "@/lib/revenue";
 import { PAPER } from "@/lib/printQueueFormat";
+import { BrushStroke } from "@/components/af/Brush";
 import { PLACEHOLDER_CODE, shortLabel, shortUrl } from "@/lib/shortcode";
 import {
   BG, COLOR_NAMES, CTAS, DISCOUNTS, DOTS, EYE, EYES, FG, FORMATS, PRESETS, TAG,
@@ -386,7 +387,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
           {arts.length > 1 && (
             <div className={s.printAll}>
               <span>Every piece, this look:</span>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => downloadPdf(true)} disabled={!!busy}>
+              <button type="button" className="btn btn-sticker btn-sm" onClick={() => downloadPdf(true)} disabled={!!busy}>
                 {busy === "all" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Layers className="h-4 w-4" aria-hidden="true" />}
                 Print all my codes ({arts.length})
               </button>
@@ -545,6 +546,7 @@ function Earnings({ d, art, split }: { d: Design; art: ArtInfo; split?: number }
       <h2 id="qs-earn-h"><span className="paint-dab" style={{ ["--dab" as string]: "#0f7a55" }} aria-hidden="true" />Each sale pays you</h2>
       <div className={s.big}>
         <span className="num">{money(sale.artist)}</span>
+        <BrushStroke className={s.bigStroke} color="var(--af-earned-soft)" />
       </div>
       <p className={s.note}>per {SIZE_NAME[d.size]} print ({SIZE_INCHES[d.size]}) sold through this code.</p>
       <table className={s.earn}>

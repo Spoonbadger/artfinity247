@@ -4,6 +4,7 @@ import QRCode from "@/components/af/QRCode";
 import QRDraw from "@/components/motion/QRDraw";
 import Stage from "@/components/motion/Stage";
 import Odometer from "@/components/motion/Odometer";
+import BrushWipe from "@/components/motion/BrushWipe";
 import { money } from "@/lib/earnings";
 import { scanUrl } from "@/lib/qr/render";
 import { cn } from "@/lib/utils";
@@ -47,7 +48,10 @@ export default function HowItWorks({ art, perPrint, smallPerPrint, monthBefore }
   return (
     <section id="how" className="scroll-mt-20 border-t border-line">
       <div className="mx-auto max-w-[1240px] px-4 py-16 sm:px-6 md:py-24">
-        <h2 className="t-feature mb-8 md:mb-10">Three steps.</h2>
+        <h2 className="t-feature relative mb-8 inline-block md:mb-10">
+          <span className="relative z-10">Three steps.</span>
+          <BrushWipe className="absolute -bottom-1 -left-2 z-0 h-[0.34em] w-[calc(100%+16px)]" color="var(--af-sticker)" />
+        </h2>
         <Stage as="ol" className={cn(s.stage, "grid gap-12 md:grid-cols-3 md:gap-8")} threshold={0.25}>
           <Step n={1} color="var(--af-sticker)" title="Upload a photo" className={s.s1}>
             <div className="relative">

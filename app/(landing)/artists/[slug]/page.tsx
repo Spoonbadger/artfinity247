@@ -28,7 +28,6 @@ import { activeFollowerCount } from "@/lib/followers";
 import ViewBeacon from "@/components/analytics/ViewBeacon";
 import { UrlSort } from "@/components/browse/UrlSort";
 import type { ArtistWork } from "@/components/artist/data";
-import { FREE_SPLIT, pct } from "@/lib/plans";
 
 const WORK_SORTS = [
   { value: "newest", label: "Newest" },
@@ -189,7 +188,7 @@ export default async function ArtistPage({ params, searchParams }: Props) {
 
             {artist.bio && <p className="t-muted">{artist.bio}</p>}
 
-            <p className="t-small">Every print is made in NYC and ships free in the US. {artist.firstName || artist.name} gets at least {pct(FREE_SPLIT)} of the profit.</p>
+            <p className="t-small">Every print you buy supports {artist.firstName || artist.name}.</p>
 
             {venues.length > 0 && (
               <section aria-labelledby="in-person" className="grid gap-2.5">
