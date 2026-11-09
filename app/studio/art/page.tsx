@@ -5,6 +5,7 @@ import { StudioPage } from "@/components/studio/StudioPage";
 import { MoreMenu, type MoreItem } from "@/components/studio/MoreMenu";
 import { prisma } from "@/lib/prisma";
 import { requireArtist } from "../_lib/data";
+import { currentHangings, partnerChoices, placeOptions } from "@/lib/artistPlaces";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "My art" };
@@ -20,6 +21,7 @@ export default async function MyArtPage() {
     // All-time scans per piece, for the "Most scanned" sort.
     prisma.qrCode.findMany({ where: { artistId: artist.id, artworkId: { not: null } }, select: { artworkId: true, _count: { select: { scans: true } } } }),
   ]);
+  const [places, partners, hanging] = await Promise.all([placeOptions(artist.id), partnerChoices(artist.id), currentHangings(artist.id)]);
   const scans = new Map<string, number>();
   for (const c of codes) if (c.artworkId) scans.set(c.artworkId, (scans.get(c.artworkId) ?? 0) + c._count.scans);
   const items = art
@@ -30,6 +32,7 @@ export default async function MyArtPage() {
       createdAt: createdAt.toISOString(),
       scans: scans.get(a.id) ?? 0,
       sold: OrderItem.reduce((n, o) => n + (o.quantity ?? 1), 0),
+      hangingAt: hanging.get(a.id)?.name ?? null,
     }));
   const live = items.filter((a) => a.status === "APPROVED").length;
   const inReview = items.filter((a) => a.status === "PENDING").length;
@@ -56,7 +59,7 @@ export default async function MyArtPage() {
         )
       }
     >
-      <ArtGrid items={items} handle={artist.slug} />
+      <ArtGrid items={items} handle={artist.slug} places={places} partners={partners} />
     </StudioPage>
   );
 }

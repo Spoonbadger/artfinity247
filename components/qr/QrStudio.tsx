@@ -13,28 +13,33 @@ import { BrushStroke } from "@/components/af/Brush";
 import { startInfinityCheckout } from "@/components/pro/StartInfinityButton";
 import { PLACEHOLDER_CODE, shortLabel, shortUrl } from "@/lib/shortcode";
 import {
-  ACCENT, BG, COLOR_NAMES, DISCOUNTS, DOTS, EXTRAS, EYE, EYES, FG, FORMATS, INKS, MSG_MAX, PRESETS, STYLES, TAG,
-  applyExtra, applyInk, cardColors, cardSVG, contrast, fmtDist, inkMatches, lum, messageLines, presetLook, qrValue, renderCard,
+  ACCENT, BG, COLOR_NAMES, DISCOUNTS, DOTS, EXTRAS, EYE, EYES, FG, FORMATS, INKS, MSG_MAX, PRESETS, SEASONS, STYLES, TAG,
+  applyExtra, applyInk, applySeason, cardColors, seasonFor, cardSVG, contrast, fmtDist, inkMatches, lum, messageLines, presetLook, qrValue, renderCard,
   scanNumbers, sheetSVG, styleOf, stylesFor,
-  type ArtInfo, type Card, type Design, type ExtraKey, type FormatKey, type InkKey, type PresetKey, type StyleKey,
+  type ArtInfo, type Card, type Design, type ExtraKey, type FormatKey, type InkKey, type PresetKey, type SeasonKey, type StyleKey,
 } from "./card";
 import { loadFonts, type Fonts } from "./text";
 import ArtPicker from "./ArtPicker";
-import VenuePicker, { type VenueChoice } from "@/components/codes/VenuePicker";
+import type { VenueChoice } from "@/components/codes/VenuePicker";
+// Places hook (lib/artistPlaces.ts): where the code hangs.
+import PlacePicker, { placeInput, type PartnerChoice, type PlaceChoice } from "@/components/codes/PlacePicker";
 import s from "./qr-studio.module.css";
 
 type View = "card" | "wall" | "sheet";
 type Billing = "live" | "simulated" | "off";
 /** A short link code already saved for one artwork (opened from My codes). */
-export type SavedCode = { code: string; slug: string; label: string; expiresAt: string | null; venueId?: string | null };
+export type SavedCode = { code: string; slug: string; label: string; expiresAt: string | null; venueId?: string | null; placeId?: string | null };
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 const thumbOf = (c: Card) => cardSVG(c).replace(/ role="img" aria-label="[^"]*"/, "").replace(/width="[^"]*in" height="[^"]*in"/, "");
 const plainMsg = (d: Design, art: ArtInfo) => messageLines({ ...d, msg: "" }, art, styleOf(d) === "pill" ? "pill" : "two").map((l) => l.map((x) => x.t).join("")).join(" ");
 
-export default function QrStudio({ arts, initialSlug, initialDesign, initialCard, base, initialSaved = null, split, pro = false, billing = "live", handle, venues = [] }: {
+export default function QrStudio({ arts, initialSlug, initialDesign, initialCard, base, initialSaved = null, split, pro = false, billing = "live", handle, venues = [], places = [], partners }: {
   /** Partner venues for the venue picker (lib/venues.ts). */
   venues?: VenueChoice[];
+  /** The artist's Places, and partner venues none of them link to yet, for the Place picker (lib/artistPlaces.ts). */
+  places?: PlaceChoice[];
+  partners?: PartnerChoice[];
   /** The artist's handle, for the full artwork link. */
   handle?: string;
   /** The artist's current share of profit (Infinity pays more). */
@@ -54,7 +59,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
   const [d, setD] = useState<Design>(initialDesign);
   const [view, setView] = useState<View>("card");
   const [fonts, setFonts] = useState<Fonts | null>(null);
-  const [busy, setBusy] = useState<"" | "pdf" | "all" | "png" | "svg" | "save" | "queue" | ExtraKey>("");
+  const [busy, setBusy] = useState<"" | "pdf" | "all" | "png" | "svg" | "save" | "queue" | ExtraKey | SeasonKey>("");
   const router = useRouter();
   // "Add to print queue": how many cards of this piece, in this look.
   const [queueQty, setQueueQty] = useState(1);
@@ -63,11 +68,12 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
   const [codes, setCodes] = useState<Record<string, string>>(initialSaved ? { [initialSaved.slug]: initialSaved.code } : {});
   const [label, setLabel] = useState(initialSaved?.label || "");
   const [venueId, setVenueId] = useState<string | null>(initialSaved?.venueId ?? null);
+  const [placeId, setPlaceId] = useState<string | null>(initialSaved?.placeId ?? null);
   // Match your art: colours pulled from each piece, by slug.
   const [palettes, setPalettes] = useState<Record<string, string[]>>({});
   // What each saved code was last saved with, to tell "Saved" from "Save changes".
   const [snaps, setSnaps] = useState<Record<string, string>>(() =>
-    initialSaved ? { [initialSaved.slug]: JSON.stringify([initialSaved.label || "", initialDesign, initialSaved.venueId ?? null]) } : {});
+    initialSaved ? { [initialSaved.slug]: JSON.stringify([initialSaved.label || "", initialDesign, initialSaved.venueId ?? null, initialSaved.placeId ?? null]) } : {});
   const stageRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const [stageHidden, setStageHidden] = useState(false);
@@ -112,7 +118,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
     const out: Partial<Record<PresetKey, string>> = {};
     if (!fonts) return out;
     for (const k of Object.keys(PRESETS) as PresetKey[]) {
-      try { out[k] = thumbOf(renderCard({ ...d, ...presetLook(k), preset: k, extras: [] }, art, fonts, qrText, `pt-${k}`)); } catch { /* the button falls back to its name */ }
+      try { out[k] = thumbOf(renderCard({ ...d, ...presetLook(k), preset: k, extras: [], season: "" }, art, fonts, qrText, `pt-${k}`)); } catch { /* the button falls back to its name */ }
     }
     return out;
   }, [fonts, art, qrText, d]);
@@ -126,6 +132,17 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
     }
     return out;
   }, [fonts, art, qrText, d, palette]);
+
+  // Seasonal looks, this season's first.
+  const seasons = useMemo(() => { const now = seasonFor(); return [now, ...(Object.keys(SEASONS) as SeasonKey[]).filter((k) => k !== now)]; }, []);
+  const seasonThumbs = useMemo(() => {
+    const out: Partial<Record<SeasonKey, string>> = {};
+    if (!fonts) return out;
+    for (const k of Object.keys(SEASONS) as SeasonKey[]) {
+      try { out[k] = thumbOf(renderCard(applySeason(d, k), art, fonts, qrText, `ps-${k}`)); } catch { /* falls back to its name */ }
+    }
+    return out;
+  }, [fonts, art, qrText, d]);
 
   const set = (patch: Partial<Design>) => setD((o) => ({ ...o, preset: "custom", ...patch }));
   const pick = (a: ArtInfo) => {
@@ -143,6 +160,13 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
     try { if (!(await startInfinityCheckout(billing))) setBusy(""); } catch { setBusy(""); failed("Couldn't reach Artfinity. Check your connection.", { retry: () => void chooseExtra(k) }); }
   }
 
+  /** A seasonal look: on Infinity it switches on (or off again); on Free it starts checkout. */
+  async function chooseSeason(k: SeasonKey) {
+    if (pro) { setD((o) => ({ ...applySeason(o, o.season === k ? "" : k), preset: "custom" })); return; }
+    setBusy(k);
+    try { if (!(await startInfinityCheckout(billing))) setBusy(""); } catch { setBusy(""); failed("Couldn't reach Artfinity. Check your connection.", { retry: () => void chooseSeason(k) }); }
+  }
+
   // ---------------- short link code ----------------
   const defaultLabel = d.ev.trim() || `${art.title} · ${FORMATS[d.format].name}`;
   function expiresAt() {
@@ -150,9 +174,9 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
     if (d.end === "event" && d.evDate) return new Date(`${d.evDate}T23:59:59`).toISOString();
     return null;
   }
-  const snapshot = JSON.stringify([label, d, venueId]);
+  const snapshot = JSON.stringify([label, d, venueId, placeId]);
   const dirty = !!code && snaps[art.slug] !== undefined && snaps[art.slug] !== snapshot;
-  const codeMeta = () => ({ label: label.trim() || defaultLabel, venue: d.ev.trim() || null, venueId, discountPct: d.disc || null, expiresAt: expiresAt(), design: d });
+  const codeMeta = () => ({ label: label.trim() || defaultLabel, venue: d.ev.trim() || null, venueId, place: placeInput({ placeId, venueId, name: d.ev }), discountPct: d.disc || null, expiresAt: expiresAt(), design: d });
   /** Save (or update) this piece's code with the current look, venue, deal and end date. */
   async function ensureCode(): Promise<string | null> {
     const existing = codes[art.slug];
@@ -203,7 +227,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
       let body: Record<string, unknown>;
       if (all) {
         const m = codeMeta();
-        body = { all: true, design: d, venue: m.venue, venueId: m.venueId, discountPct: m.discountPct, expiresAt: m.expiresAt };
+        body = { all: true, design: d, venue: m.venue, venueId: m.venueId, place: m.place, discountPct: m.discountPct, expiresAt: m.expiresAt };
       } else {
         const c = await ensureCode();
         if (!c) return;
@@ -256,6 +280,8 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
       }
       const out = renderCard(d, a, fonts, shortUrl(c, base));
       save(new Blob([`<?xml version="1.0" encoding="UTF-8"?>\n${cardSVG(out)}`], { type: "image/svg+xml" }), `${fileBase}.svg`);
+      // Printed-labels hook: remember what this card says (its price), like the PDF does on the server.
+      void fetch("/api/studio/code-prints", { method: "POST", headers: JSON_HEADERS, body: JSON.stringify({ code: c, design: d }) }).catch(() => undefined);
       savedToast("SVG downloaded", { description: `Code ${c} is saved in My codes.` });
     } catch (e) {
       failed(errorText(e, "The SVG didn't download. Try again."), { retry: () => { void downloadSvg(); } });
@@ -310,7 +336,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
               {(Object.keys(PRESETS) as PresetKey[]).map((k) => {
                 const p = PRESETS[k];
                 return (
-                  <button key={k} type="button" aria-pressed={d.preset === k} onClick={() => setD((o) => ({ ...o, ...presetLook(k), preset: k, extras: [] }))}>
+                  <button key={k} type="button" aria-pressed={d.preset === k} onClick={() => setD((o) => ({ ...o, ...presetLook(k), preset: k, extras: [], season: "" }))}>
                     <span className={s.mini} aria-hidden="true" dangerouslySetInnerHTML={{ __html: presetThumbs[k] || "" }} />
                     <span>{p.name}<small>{p.sub}</small></span>
                   </button>
@@ -339,6 +365,37 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
             </div>
           </Group>
 
+          <Group title="Seasonal" dab="#0f7a55">
+            <small className={cx(s.hint, "-mt-1")}>{pro ? "For openings and markets. Tap again to turn it off." : "Infinity looks for the holidays and markets."}</small>
+            {[seasons.slice(0, 1), seasons.slice(1)].map((list, li) => {
+              const tiles = (
+            <div className={s.presets} role="group" aria-label={li ? "More seasonal looks" : "Seasonal looks"}>
+              {list.map((k) => {
+                const x = SEASONS[k], on = pro && d.season === k;
+                return (
+                  <button key={k} type="button" aria-pressed={pro ? on : undefined} onClick={() => void chooseSeason(k)} disabled={!!busy && busy === k}
+                    title={pro ? undefined : `${x.name} is an Infinity look. Starts Infinity checkout.`}>
+                    <span className={s.mini} aria-hidden="true" dangerouslySetInnerHTML={{ __html: seasonThumbs[k] || "" }} />
+                    <span>
+                      {x.name}
+                      {!pro && <span className={s.inf}>{busy === k ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" /> : <Lock className="h-3 w-3" aria-hidden="true" />}Infinity</span>}
+                      <small>{x.sub}</small>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+              );
+              // This season shows; the rest fold away (open when one of them is on).
+              return li ? (
+                <details key="more" className={s.moreSeasons} open={!!d.season && d.season !== seasons[0]}>
+                  <summary>{list.length} more seasons<ChevronDown className="h-4 w-4" aria-hidden="true" /></summary>
+                  {tiles}
+                </details>
+              ) : <div key="now">{tiles}</div>;
+            })}
+          </Group>
+
           <Group title="What it says" dab="#2b37f0">
             <Toggle checked={d.showTitle} onChange={(v) => set({ showTitle: v })}>Title and artist</Toggle>
             <Toggle checked={d.showPrice} onChange={(v) => set({ showPrice: v })}>Price</Toggle>
@@ -362,10 +419,10 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
               <input type="text" maxLength={60} value={label} placeholder={defaultLabel} onChange={(e) => setLabel(e.target.value)} />
               <small>Only you see this, in My codes.</small>
             </label>
-            <VenuePicker
-              venues={venues} value={{ venueId, venue: d.ev }} maxLength={32} label="Event or venue" fieldClass={s.field} labelClass={null}
-              hint={<>Shows in your stats and on the buyer&rsquo;s page.</>}
-              onChange={(v) => { setVenueId(v.venueId); set({ ev: v.venue }); }}
+            <PlacePicker
+              places={places} partners={partners ?? venues} value={{ placeId, venueId, name: d.ev }} maxLength={32} label="Hangs at" fieldClass={s.field} labelClass={null}
+              hint={<>Shows in your stats and on the buyer&rsquo;s page. <Link href="/studio/places" className="font-semibold text-scan">Places</Link></>}
+              onChange={(v) => { setPlaceId(v.placeId); setVenueId(v.venueId); set({ ev: v.name }); }}
             />
             <Toggle checked={d.evPrint || (pro && d.extras.includes("event"))} disabled={!d.ev.trim()} onChange={(v) => set({ evPrint: v })}>Print it on the card too</Toggle>
             {!d.ev.trim() && <small className="-mt-1 block text-[13px] text-ink-2">Pick a venue or event above to print its name on the card.</small>}
@@ -497,7 +554,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
                 <dt>Venue</dt><dd>{d.ev.trim() ? <>{d.ev.trim()}{d.evPrint || (pro && d.extras.includes("event")) ? "" : " (not printed)"}</> : "None"}</dd>
                 <dt>Discount</dt><dd>{d.disc ? <>{d.disc}% off at checkout</> : "None"}</dd>
                 <dt>Ends</dt><dd>{d.end === "never" ? "Never" : d.end === "30" ? "30 days after printing" : d.evDate ? new Date(`${d.evDate}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "When the event ends"}</dd>
-                <dt>Look</dt><dd>{F.name} · {STYLES[style].name} · {inkOn ? INKS[inkOn].name : "Your colors"}{pro && d.extras.length ? ` · ${d.extras.map((k) => EXTRAS[k].name).join(", ")}` : ""}</dd>
+                <dt>Look</dt><dd>{F.name} · {STYLES[style].name} · {inkOn ? INKS[inkOn].name : "Your colors"}{pro && d.extras.length ? ` · ${d.extras.map((k) => EXTRAS[k].name).join(", ")}` : ""}{pro && d.season ? ` · ${SEASONS[d.season].name}` : ""}</dd>
               </dl>
               <p className={s.soon}>
                 <span className="sticker-badge">Editable any time</span>

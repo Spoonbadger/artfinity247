@@ -11,9 +11,11 @@ export const SHARED_KEY = "af-studio-shared";
 type Step = { label: string; done: boolean; href?: string; act?: string; onClick?: () => void };
 /** An extra, optional idea under the checklist (not counted in the progress), e.g. "Book a scan". */
 export type Suggestion = { label: string; note?: string; href: string; act: string };
+/** Something to fix now, on top of the list and not counted in the progress, e.g. "2 printed labels show an old price". */
+export type Alert = { label: string; href: string; act: string };
 
 /** Before the first upload the page has no header button, so the Upload step is the blue one. */
-export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true, hasEvent: serverHasEvent = false, slug, suggestion }: { hasProfile: boolean; hasArt: boolean; hasSold: boolean; hasVenmo?: boolean; hasEvent?: boolean; slug: string; suggestion?: Suggestion | null }) {
+export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true, hasEvent: serverHasEvent = false, slug, suggestion, alerts = [] }: { hasProfile: boolean; hasArt: boolean; hasSold: boolean; hasVenmo?: boolean; hasEvent?: boolean; slug: string; suggestion?: Suggestion | null; alerts?: Alert[] }) {
   const [shared, setShared] = useState(false);
   const [hasEvent, setHasEvent] = useState(serverHasEvent);
   const [copied, setCopied] = useState(false);
@@ -52,7 +54,7 @@ export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true
   const done = steps.filter((s) => s.done).length;
   const todo = steps.filter((s) => !s.done);
   // All done: the card goes away (bar an optional suggestion), so the dashboard leads with the numbers.
-  if (!todo.length && !suggestion) return null;
+  if (!todo.length && !suggestion && !alerts.length) return null;
 
   return (
     <section className="af-card grid content-start gap-3 p-4 sm:p-5" aria-labelledby="next-h">
@@ -67,6 +69,17 @@ export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true
           </div>
         )}
       </div>
+      {alerts.length > 0 && (
+        <ul className="grid gap-2">
+          {alerts.map((a) => (
+            <li key={a.label} className="flex items-center gap-2.5 rounded-xl border border-sticker bg-sticker/20 px-3 py-2 text-[15px]">
+              <i aria-hidden="true" className="paint-dab h-[18px] w-[18px] shrink-0" style={{ ["--dab" as string]: "var(--af-sticker)" }} />
+              <span className="min-w-0 flex-1 font-semibold">{a.label}</span>
+              <Link href={a.href} className="btn btn-sm inline-flex min-h-[40px] shrink-0 items-center text-[14px] font-bold">{a.act}</Link>
+            </li>
+          ))}
+        </ul>
+      )}
       {todo.length > 0 && (
         <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {todo.map((s, i) => {

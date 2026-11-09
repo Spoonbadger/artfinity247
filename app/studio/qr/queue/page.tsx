@@ -12,6 +12,15 @@ import { PAPER, perSheet, sheetsFor, type ShipAddress } from "@/lib/printQueueFo
 import { requireArtist, displayName } from "../../_lib/data";
 import PaymentReturn from "@/components/payments/PaymentReturn";
 import { codeOrderNumber } from "@/lib/printQueueFormat";
+import QueuePlaceTag from "@/components/places/QueuePlaceTag";
+import { partnerChoices, placeOptions } from "@/lib/artistPlaces";
+
+/** The Place every queued item is tagged to, when they all share one. */
+async function queuePlace(artistId: string, ids: string[]) {
+  const tags = await prisma.printQueueItem.findMany({ where: { artistId, id: { in: ids } }, select: { place: { select: { id: true, name: true } } } });
+  const first = tags[0]?.place;
+  return first && tags.every((t) => t.place?.id === first.id) ? first : null;
+}
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Print queue" };
@@ -90,6 +99,10 @@ export default async function PrintQueuePage({ searchParams }: { searchParams: {
     >
       {paid && paid.status !== "pending" && <PaymentReturn kind="paid" message={`Paid. Order ${codeOrderNumber(paid.id)} is in`} description="Receipt sent to your email." strip={["paid", "session_id"]} />}
       {canceled && <PaymentReturn kind="canceled" message="Nothing was charged" description="Your codes are still in the queue." strip={["canceled"]} />}
+      {/* Places hook: tag the whole batch to one Place (lib/artistPlaces.ts). */}
+      {rows.length > 0 && (
+        <QueuePlaceTag places={await placeOptions(artist.id)} partners={await partnerChoices(artist.id)} current={await queuePlace(artist.id, rows.map((r) => r.id))} />
+      )}
       <PrintQueue groups={groups} pricing={prices} infinity={infinity} orders={history} address={address} pieces={pieces} paid={paid} canceled={canceled} testMode={!process.env.STRIPE_SECRET_KEY} />
     </StudioPage>
   );

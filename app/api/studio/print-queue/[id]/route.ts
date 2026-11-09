@@ -35,7 +35,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
     if (isPreset(body.preset)) {
       const d = sanitizeDesign(item.design);
-      const next = { ...d, ...presetLook(body.preset), preset: body.preset };
+      const next = { ...d, ...presetLook(body.preset), preset: body.preset, extras: [], season: "" as const };
       const other = next.format !== item.format
         ? await prisma.printQueueItem.findUnique({ where: { artistId_qrCodeId_format: { artistId: user.id, qrCodeId: item.qrCodeId, format: next.format } } })
         : null;

@@ -1,5 +1,5 @@
 import type { HelpArticle } from "../types";
-import { LEGACY_MAX_PCT, LEGACY_UNTIL_TEXT, QR_DISCOUNTS, QR_FORMATS, QR_PAPER_TABLE, QR_PRESETS, QUEUE_MAX_QTY } from "../facts";
+import { LEGACY_MAX_PCT, LEGACY_UNTIL_TEXT, QR_DISCOUNTS, QR_EXTRAS, QR_FORMATS, QR_PAPER_TABLE, QR_PRESETS, QR_SEASONS, QUEUE_MAX_QTY } from "../facts";
 
 const section = "qr-codes" as const;
 
@@ -16,20 +16,35 @@ export const qrCodes: HelpArticle[] = [
     section,
     audience: "artist",
     title: "QR code looks and templates",
-    summary: `Start from one of ${QR_PRESETS.length} looks, then change the colors, dots, corners and wording. The Will it scan? panel checks every change.`,
+    summary: `Pick a format, a style and an ink, or start from one of ${QR_PRESETS.length} looks. The Will it scan? panel checks every change.`,
     link: { href: "/studio/qr", label: "Open QR codes" },
     related: ["first-qr-code", "printing-sheets", "hanging-codes"],
     body: `
+## How a card is laid out
+The painting's title is the headline. Under it: your name, and the edition if there is one. The code is as big as the card allows, with the Artfinity "a" in the middle. One solid shape carries the message and the price.
+
+## Format, style and ink
+- **Style:** Pill ("Prints from $55" in a solid pill) or Panel (the code on a solid panel, "Scan for prints from $55" beside it). Wall labels also have Clean (no shape) and Brush (the price on a paint stroke).
+- **Ink:** Black ink is pure black on white, so it prints sharp on an office laser printer. Color uses a blue pill and blue code corners.
+- New cards start as Pill in black ink.
+
 ## The starting looks
 ${presetList}
 
 ## What you can change
-- The call to action printed on the card
-- Title and artist, and whether the Artfinity name shows
-- Dot style, corner style, and the colors of the code, corners, card and price tag
-- The Artfinity logo in the middle of the code
+- Title and artist, and the price
+- Your own words in the pill or panel, up to 20 letters (the price stays)
+- A scan discount, shown in the same message: "10% off · prints from $49"
 - The venue or event name, printed on the card or kept for your stats only
-- Which print size the buyer sees first
+- Under **Colors and code style**: the pill or panel color, code, card and corner colors, dots, corners and the "a" in the code
+
+## Infinity looks
+With [Infinity](/studio/infinity) you can add:
+${QR_EXTRAS}
+
+Seasonal looks: ${QR_SEASONS}. Each one comes in Pill or Panel, black ink or color, with small motifs in the margins. The code's clear area is never touched.
+
+On Free you see each one on your own card. Tap it to start Infinity.
 
 ## Will it scan?
 Every change is checked as you make it. The panel warns you when:
@@ -63,7 +78,7 @@ Your QR code doesn't contain the painting's address. It holds a short link, and 
 
 Open [My codes](/studio/codes), pick the code and save your changes. They apply to the next scan.
 
-> If you change the discount on a code whose card shows a price tag, the printed tag won't change. Print a fresh card, or pick a code without a printed discount.
+> If you change the discount on a code whose card shows a discount, the printed card won't change. Print a fresh card, or pick a code without a printed discount.
 
 Need a second code for the same piece, say for a different café? In QR Studio, use **New code for this piece**. Each code keeps its own stats.
 `,
@@ -104,7 +119,7 @@ We record the device type, a rough location (city, region, country) and a random
     link: { href: "/studio/qr", label: "Open QR codes" },
     related: ["what-you-earn", "change-after-printing", "discount-didnt-apply"],
     body: `
-A discount is a nice reason to scan at a market like Smorgasburg or the Union Square Holiday Market. Pick ${QR_DISCOUNTS} in QR Studio and the card can show a price tag. When someone scans, the buy page says "Your discount is applied", and checkout takes it off.
+A discount is a nice reason to scan at a market like Smorgasburg or the Union Square Holiday Market. Pick ${QR_DISCOUNTS} in QR Studio and the card shows it next to the lower price. When someone scans, the buy page says "Your discount is applied", and checkout takes it off.
 
 ## Who pays for it
 The discount lowers the sale price. Costs stay the same, so the profit is smaller, and your share and Artfinity's share both shrink. The QR Studio's **Each sale pays you** panel shows your earnings with the discount included. See [What you earn per sale](/help/selling/what-you-earn) for a worked example.
@@ -202,6 +217,8 @@ Lots of QR codes break when a website changes. Ours hold only a short link like 
 - **The piece is no longer live.** The scan opens your artist page.
 - **You close your account.** Codes stop opening anything, because your page is offline.
 
+Closing a [place](/help/qr-codes/places) never breaks its codes either. You pick what its scans do: open the painting, open your page, or pause.
+
 ## Keeping old codes useful
 Sold out of a limited edition, or took a piece down? Point its code at another piece or at your page in [My codes](/studio/codes). The label on the wall keeps selling.
 `,
@@ -219,10 +236,10 @@ Partner venues are places around New York that hang local art and work with Artf
 
 ## Pick the venue on your code
 1. Open the code in [My codes](/studio/codes), or make a new one in [QR codes](/studio/qr).
-2. Under **Venue**, pick the place from the list of partner venues (it shows the name and neighborhood).
+2. Under **Hangs at**, pick the place from the list of partner venues (it shows the name and neighborhood). It becomes one of your [Places](/studio/places).
 3. Save. That's it: the printed code doesn't change.
 
-Not on the list? Choose **Other place** and type the name. It shows in your stats and on the buyer's page, just like before. If we later sign that place up as a partner, we link your code to it for you.
+Not on the list? Choose **New place…** and type the name. It shows in your stats and on the buyer's page, just like before. If we later sign that place up as a partner, we link your code to it for you.
 
 ## What picking a venue does
 - **Buyers see where they found it.** The buy page says "Scanned at" the venue, linked to the venue's page.
@@ -238,6 +255,69 @@ No. Your share of each sale is the same with or without a venue. Some venues get
 - One code, one place. If the same piece hangs in two spots, make a second code so each venue's scans are counted on their own.
 - Ask before you hang. Partner venues have agreed to host art, but check with the staff where your piece should go.
 - Venues get a window sticker that says "Local art here — scan to buy", so people know to look for your code.
+`,
+  },
+  {
+    slug: "old-price-on-label",
+    section,
+    audience: "artist",
+    title: "When your printed label shows an old price",
+    summary: "Change a price, discount or title after printing and Artfinity tells you which labels on the wall now say something different, so you can reprint or mark them replaced.",
+    link: { href: "/studio/codes?show=stale", label: "See labels out of date" },
+    related: ["change-after-printing", "print-queue", "places"],
+    body: `
+Every time a card with a price is printed (a PDF or SVG download, Print all, the print queue, or codes we mail you), we remember what it says: the "Prints from" price, the discount and the title.
+
+## When you change something
+Change a piece's prices or title, or a code's discount, and you'll see a note before it saves: "2 printed labels show 'Prints from $55'. After this change scans show $65." Pick one:
+- **Save and reprint:** saves, and puts those codes back in your [print queue](/studio/qr/queue) with the same look and the new price.
+- **Save anyway:** saves. The labels stay as they are.
+- **Cancel:** nothing changes.
+
+Lowering a price is the gentle case. Buyers pay less than the label says, so it can wait.
+
+## Afterwards
+- [My codes](/studio/codes) marks each one **Label out of date**. The **Show** menu lists just those.
+- The code's page shows what the label says next to what scans show now.
+- Your Studio home lists them under **Next up**.
+
+## Done reprinting?
+Hang the new labels, then tap **Mark old labels as replaced** on the code (or **Mark all replaced** in My codes). Took the old label down without reprinting? Same button.
+
+> Scans always show today's price. The printed label is the only thing that can be out of date.
+`,
+  },
+  {
+    slug: "places",
+    section,
+    audience: "artist",
+    title: "Places: where your art hangs",
+    summary: "A place is a café, gallery, market stall or show where your work hangs. Put paintings, codes and print jobs there, then move or close everything in one go.",
+    link: { href: "/studio/places", label: "Open Places" },
+    related: ["partner-venues", "codes-never-break", "old-price-on-label"],
+    body: `
+[Places](/studio/places) keeps track of where each painting and code is. Each place shows its paintings, codes, scans and sales, for the last 30 days and all time.
+
+## Add a place
+Tap **Add a place** and give it a name. Add the neighborhood, and dates for a show or pop-up. A place you pick on a code or type as a new name is added for you. Your Studio events get one too.
+
+## Put things there
+- **Codes:** pick the place under **Hangs at** on a code, or select several in [My codes](/studio/codes) and tap **Move**. Buyers see "You scanned this at" the place.
+- **Paintings:** on [My art](/studio/art) tap **Hang at a place**, or set **Currently hanging at** on the piece. A painting hangs in one place at a time; past places stay in its history.
+- **Print jobs:** on the place, **Print all codes for this place** puts every code there in your print queue, and makes a code for any painting that hasn't got one.
+
+## When things change
+- **Move everything to another place:** codes, paintings and queued prints, in one step.
+- **Back home:** a painting came back to the studio.
+- **This place closed / show ended:** pick what scans of its codes do now:
+  - open the painting as usual, without the "scanned at" line
+  - send scans to your artist page
+  - pause the codes (scans open your page with a short note)
+
+You get a few seconds to undo. A show also ends on its last day; scans then open the painting without the "scanned at" line, unless you pick something else. Printed codes never land on an error page.
+
+## Partner venues
+If the place is an Artfinity [partner venue](/help/qr-codes/partner-venues), pick it under **Details**. Its codes then count toward the venue's share. What you earn doesn't change.
 `,
   },
 ];

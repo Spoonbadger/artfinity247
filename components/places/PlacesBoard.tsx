@@ -76,7 +76,7 @@ export default function PlacesBoard({ places }: { places: PlaceCard[] }) {
               <Link href={`/studio/places/${p.id}`} className="box grid h-full content-start gap-3 p-4 text-ink no-underline transition-colors hover:border-ink">
                 <div className="flex items-start justify-between gap-3">
                   <div className="grid min-w-0 gap-0.5">
-                    <b className="t-card truncate">{p.name}</b>
+                    <b className="t-card line-clamp-2 break-words">{p.name}</b>
                     <span className="t-small truncate">
                       {[PLACE_KINDS[p.kind as PlaceKind] ?? "Place", p.area, p.dates].filter(Boolean).join(" · ")}
                     </span>

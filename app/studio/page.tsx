@@ -15,6 +15,7 @@ import { EmptyState } from "@/components/studio/EmptyState";
 import { StudioPage } from "@/components/studio/StudioPage";
 import { Upload } from "lucide-react";
 import { readScanSettings } from "@/lib/scanning.server";
+import { staleLabels } from "@/lib/labelStatus";
 import { pct } from "@/lib/plans";
 import { artistSplitNow, requireArtist, firstName, getSales, getArtworks, dayKey, serverGreeting, timeAgo, SIZE_LABEL, STUDIO_TZ, usd } from "./_lib/data";
 
@@ -49,6 +50,12 @@ export default async function StudioHome() {
     prisma.qrCode.count({ where: { artistId: artist.id } }),
   ]);
   const sales = allSales.filter((s) => s.date >= since);
+  // Printed labels that show an old price, discount or title (lib/labelStatus.ts).
+  const stale = await staleLabels(artist.id).catch(() => []);
+  const staleOnPrice = stale.filter((l) => l.diffs.includes("price") || l.diffs.includes("discount")).length;
+  const labelAlerts = stale.length
+    ? [{ label: `${stale.length} printed ${stale.length === 1 ? "label shows" : "labels show"} ${staleOnPrice ? "an old price" : "an old title"}`, href: "/studio/codes?show=stale", act: "See them" }]
+    : [];
   const split = await artistSplitNow(artist.id);
   // Painting scans: suggest one when more than one piece can't print at the biggest size (lib/scanning.server.ts).
   const [scanOn, limitedCount, scanOpen] = await Promise.all([
@@ -105,7 +112,7 @@ export default async function StudioHome() {
     >
 
       {/* What to do next. Hides itself once everything is done. */}
-      <NextSteps hasProfile={!!artist.profileImage && !!artist.bio?.trim()} hasArt={hasArt} hasSold={hasSold} hasVenmo={!!artist.venmoHandle || balance.payoutVia === "stripe"} hasEvent={eventCount > 0} slug={artist.slug} suggestion={scanSuggestion} />
+      <NextSteps hasProfile={!!artist.profileImage && !!artist.bio?.trim()} hasArt={hasArt} hasSold={hasSold} hasVenmo={!!artist.venmoHandle || balance.payoutVia === "stripe"} hasEvent={eventCount > 0} slug={artist.slug} suggestion={scanSuggestion} alerts={labelAlerts} />
       {!hasArt && <p className="t-muted">After your first upload, your sales, scans and balance show up here.</p>}
 
       {/* How it's going: four numbers, each a link to the full story. Nothing to count before the first upload. */}

@@ -180,3 +180,7 @@
 .more summary::-webkit-details-marker { display: none; }
 .more[open] summary svg { transform: rotate(180deg); }
 .more[open] .groupBody { margin-top: 8px; }
+.moreSeasons summary { display: flex; align-items: center; gap: 6px; cursor: pointer; list-style: none; font-size: 14px; font-weight: 600; color: var(--af-ink); min-height: 40px; }
+.moreSeasons summary::-webkit-details-marker { display: none; }
+.moreSeasons[open] summary svg { transform: rotate(180deg); }
+.moreSeasons[open] .presets { margin-top: 4px; }

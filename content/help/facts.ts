@@ -14,7 +14,7 @@ import { AUTO_APPROVE_AFTER } from "@/lib/artworkLive";
 import { VENMO_CONFIRM_HOURS } from "@/lib/venmo";
 import { MAX_ARTWORKS as NEWSLETTER_MAX_ART, SEND_GAP_MS } from "@/lib/newsletter";
 import { HELP_DAYS_AFTER_DELIVERY, MAX_PHOTOS, REPRINT_REASONS } from "@/lib/reprintFormat";
-import { DISCOUNTS, FORMATS, PRESETS } from "@/components/qr/card";
+import { DISCOUNTS, EXTRAS, FORMATS, PRESETS, SEASONS } from "@/components/qr/card";
 import { FORMAT_ORDER, PAPER, QUEUE_MAX_QTY } from "@/lib/printQueueFormat";
 import { LAYOUTS, MAX_PINNED, PAINTS } from "@/components/artist/theme";
 import { EDIT_WINDOW_DAYS } from "@/lib/reviews";
@@ -86,6 +86,9 @@ export const EXAMPLE = {
 // ---------- QR Studio ----------
 export const QR_PRESETS = Object.values(PRESETS).map((p) => ({ name: p.name, sub: p.sub, format: FORMATS[p.format] }));
 export const QR_FORMATS = Object.values(FORMATS);
+/** "- **Match your art:** color from the painting." lines for the Infinity looks. */
+export const QR_EXTRAS = Object.values(EXTRAS).map((x) => `- **${x.name}:** ${x.sub.toLowerCase()}.`).join("\n");
+export const QR_SEASONS = list(Object.values(SEASONS).map((x) => x.name));
 export const QR_DISCOUNTS = list(DISCOUNTS.filter(Boolean).map((d) => `${d}%`));
 /** | Format | Buy | Per sheet | for the print queue article. */
 export const QR_PAPER_TABLE = [

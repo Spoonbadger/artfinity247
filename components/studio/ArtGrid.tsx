@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { Check, Eye, Printer, QrCode, Share2, X } from "lucide-react";
+import { Check, Eye, MapPin, Printer, QrCode, Share2, X } from "lucide-react";
 import { errorText, failed, problemFrom, saved } from "@/lib/feedback";
+import PlacePicker, { NO_PLACE, placeInput, type PartnerChoice, type PlaceChoice, type PlaceValue } from "@/components/codes/PlacePicker";
 import { EmptyState } from "./EmptyState";
 import { SortMenu, useSortPref, type SortOption } from "./SortMenu";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,8 @@ export type GridArt = {
   scans: number;
   /** ISO date, for Newest / Oldest. */
   createdAt: string;
+  /** The Place it hangs at now (lib/artistPlaces.ts), if any. */
+  hangingAt?: string | null;
 };
 
 type SortKey = "newest" | "oldest" | "title" | "sold" | "scans";
@@ -71,14 +74,17 @@ function sortArt(list: GridArt[], sort: SortKey) {
   return out;
 }
 
-export default function ArtGrid({ items, handle }: { items: GridArt[]; handle: string }) {
+export default function ArtGrid({ items, handle, places = [], partners = [] }: { items: GridArt[]; handle: string; places?: PlaceChoice[]; partners?: PartnerChoice[] }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [sort, setSort] = useSortPref<SortKey>("studio-art", "newest", SORT_KEYS);
   const [show, setShow] = useSortPref<ShowKey>("studio-art-status", "all", SHOW_KEYS);
 
-  // "Add codes to print queue": pick pieces, pick a look.
-  const [selecting, setSelecting] = useState(false);
+  // Pick pieces, then either "Add codes to print queue" (pick a look) or "Hang at a place".
+  const [mode, setMode] = useState<"print" | "place" | null>(null);
+  const selecting = mode !== null;
+  const setSelecting = (on: boolean) => setMode(on ? "print" : null);
+  const [target, setTarget] = useState<PlaceValue>(NO_PLACE);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [look, setLook] = useState("last");
   const selectable = items.filter((a) => a.status !== "REJECTED");
@@ -125,6 +131,30 @@ export default function ArtGrid({ items, handle }: { items: GridArt[]; handle: s
     }
   }
 
+  async function hangPicked() {
+    const ids = items.filter((a) => picked.has(a.slug)).map((a) => a.id);
+    if (!ids.length) return;
+    setBusy("hang");
+    try {
+      const res = await fetch("/api/studio/hangings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ artworkIds: ids, place: placeInput(target) }) });
+      if (!res.ok) {
+        const p = await problemFrom(res, "Couldn't save that. Try again.");
+        failed(p.message, { fix: p.fix, retry: p.fix ? undefined : hangPicked });
+        return;
+      }
+      const j = await res.json().catch(() => ({}));
+      saved(j.place ? `${ids.length} ${ids.length === 1 ? "piece hangs" : "pieces hang"} at ${j.place.name}` : `${ids.length} ${ids.length === 1 ? "piece is" : "pieces are"} back home`, j.place ? { description: "Print their codes from the place's page.", next: { label: `Open ${j.place.name}`, href: `/studio/places/${j.place.id}` } } : undefined);
+      setPicked(new Set());
+      setMode(null);
+      setTarget(NO_PLACE);
+      router.refresh();
+    } catch (e) {
+      failed(errorText(e, "Couldn't save that. Try again."), { retry: hangPicked });
+    } finally {
+      setBusy(null);
+    }
+  }
+
   if (!items.length) {
     return (
       <EmptyState
@@ -144,7 +174,7 @@ export default function ArtGrid({ items, handle }: { items: GridArt[]; handle: s
       <div className="flex flex-wrap items-center gap-2">
         {selecting ? (
           <>
-            <span className="t-muted mr-auto font-semibold">Pick pieces to print codes for</span>
+            <span className="t-muted mr-auto font-semibold">{mode === "place" ? "Pick pieces to hang somewhere" : "Pick pieces to print codes for"}</span>
             <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPicked(allPicked ? new Set() : new Set(selectable.map((a) => a.slug)))}>
               <Check className="h-4 w-4" aria-hidden="true" />
               {allPicked ? "Clear all" : `All (${selectable.length})`}
@@ -158,9 +188,14 @@ export default function ArtGrid({ items, handle }: { items: GridArt[]; handle: s
             <SortMenu label="Sort" value={sort} onChange={setSort} options={SORTS} />
             {showOptions.length > 2 && <SortMenu label="Show" kind="filter" value={show} onChange={setShow} options={showOptions} />}
             {selectable.length > 0 && (
-              <button type="button" className="btn btn-ghost btn-sm ml-auto min-h-[40px]" onClick={() => setSelecting(true)} title="Pick pieces and add their codes to your print queue">
-                <Printer className="h-4 w-4" aria-hidden="true" />Print codes
-              </button>
+              <span className="ml-auto flex flex-wrap gap-2">
+                <button type="button" className="btn btn-ghost btn-sm min-h-[40px]" onClick={() => setMode("place")} title="Pick pieces and say where they hang: a café, gallery, market or show">
+                  <MapPin className="h-4 w-4" aria-hidden="true" />Hang at a place
+                </button>
+                <button type="button" className="btn btn-ghost btn-sm min-h-[40px]" onClick={() => setMode("print")} title="Pick pieces and add their codes to your print queue">
+                  <Printer className="h-4 w-4" aria-hidden="true" />Print codes
+                </button>
+              </span>
             )}
           </>
         )}
@@ -184,7 +219,7 @@ export default function ArtGrid({ items, handle }: { items: GridArt[]; handle: s
               ? a.flaggedReason || "Hidden from buyers. Open to see why."
               : a.status === "PENDING"
                 ? "In review, usually within a day"
-                : [a.sold ? `${a.sold} sold` : "No sales yet", a.scans ? `${a.scans} ${a.scans === 1 ? "scan" : "scans"}` : ""].filter(Boolean).join(" · ");
+                : [a.hangingAt ? `At ${a.hangingAt}` : "", a.sold ? `${a.sold} sold` : "No sales yet", a.scans ? `${a.scans} ${a.scans === 1 ? "scan" : "scans"}` : ""].filter(Boolean).join(" · ");
             const actions = [
               { href: `/studio/qr?art=${a.slug}`, icon: QrCode, short: "QR", label: "QR code", tip: "Print its QR code", aria: `QR code for ${a.title}` },
               { href: live, icon: Eye, short: "Page", label: "Live page", tip: "View live page", aria: `View live page for ${a.title}`, external: true },
@@ -195,7 +230,7 @@ export default function ArtGrid({ items, handle }: { items: GridArt[]; handle: s
                 <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-gallery ring-1 ring-inset ring-black/5">
                   {canPick ? (
                     <label className="absolute inset-0 z-[1] cursor-pointer">
-                      <input type="checkbox" checked={picked.has(a.slug)} onChange={() => toggle(a.slug)} className="absolute right-2.5 top-2.5 h-6 w-6 accent-[rgb(var(--af-scan-rgb))]" aria-label={`Print ${a.title}'s code`} />
+                      <input type="checkbox" checked={picked.has(a.slug)} onChange={() => toggle(a.slug)} className="absolute right-2.5 top-2.5 h-6 w-6 accent-[rgb(var(--af-scan-rgb))]" aria-label={mode === "place" ? `Pick ${a.title}` : `Print ${a.title}'s code`} />
                     </label>
                   ) : (
                     <Link href={`/studio/art/${a.slug}`} className="absolute inset-0 z-[1] rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-scan" aria-label={`Edit ${a.title}`} title="Edit" />
@@ -242,7 +277,20 @@ export default function ArtGrid({ items, handle }: { items: GridArt[]; handle: s
         </ul>
       )}
 
-      {selecting && (
+      {mode === "place" && (
+        <div className="sticky bottom-3 z-20 grid gap-2 rounded-2xl border border-edge bg-white p-3 shadow-[0_10px_30px_-10px_rgba(21,22,27,.35)] sm:flex sm:flex-wrap sm:items-end" role="region" aria-label="Hang at a place">
+          <b className="num text-[15px] sm:self-center" aria-live="polite">{picked.size} selected</b>
+          <div className="grid min-w-0 gap-2 sm:w-[280px]">
+            <PlacePicker places={places} partners={partners} value={target} onChange={setTarget} label="Hanging at" noneLabel="At home" />
+          </div>
+          <button type="button" className="btn btn-blue btn-sm sm:ml-auto" disabled={!picked.size || busy === "hang"} onClick={hangPicked}>
+            <MapPin className="h-4 w-4" aria-hidden="true" />
+            {busy === "hang" ? "Saving…" : placeInput(target) ? "Hang them there" : "Mark as back home"}
+          </button>
+        </div>
+      )}
+
+      {mode === "print" && (
         <div className="sticky bottom-3 z-20 flex flex-wrap items-center gap-2 rounded-2xl border border-edge bg-white p-3 shadow-[0_10px_30px_-10px_rgba(21,22,27,.35)]" role="region" aria-label="Add codes to print queue">
           <b className="num text-[15px]" aria-live="polite">{picked.size} selected</b>
           <label className="flex items-center gap-1.5 text-[13.5px] font-semibold">

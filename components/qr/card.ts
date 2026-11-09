@@ -23,6 +23,8 @@ export type InkKey = "black" | "color";
 export type PresetKey = "gallery" | "sticker" | "market" | "poster";
 /** Infinity extras. Each one is shown as a look of its own; on Infinity they can be combined. */
 export type ExtraKey = "match" | "thumb" | "painted" | "tape" | "event" | "initials";
+/** Seasonal looks (Infinity): flat motifs in the free space around the content, plus a season colour in Color ink. */
+export type SeasonKey = "winter" | "newyear" | "valentine" | "spring" | "summer" | "fall";
 export type EndKey = "never" | "event" | "30";
 
 type Sheet = { cols: number; rows: number; gx: number; gy: number; note: string };
@@ -53,6 +55,24 @@ export const EXTRAS: Record<ExtraKey, { name: string; sub: string; formats: Form
   event: { name: "Event edition", sub: "Show name, date and a deal", formats: ALL },
   initials: { name: "Your initials", sub: "In the middle of the code", formats: ALL },
 };
+export const SEASONS: Record<SeasonKey, { name: string; sub: string; accent: string; motif: string[]; shape: "flake" | "confetti" | "heart" | "bloom" | "sun" | "leaf" }> = {
+  winter: { name: "Winter holidays", sub: "Evergreen and snowflakes", accent: "#14633f", motif: ["#7fb6d9"], shape: "flake" },
+  newyear: { name: "New Year", sub: "Confetti", accent: "#15161b", motif: ["#ffd43b", "#ff5a36", "#2b37f0"], shape: "confetti" },
+  valentine: { name: "Valentine's", sub: "Hearts", accent: "#c8234a", motif: ["#ff8fa8", "#c8234a"], shape: "heart" },
+  spring: { name: "Spring", sub: "Blooms", accent: "#2f7d4f", motif: ["#ff9ec4", "#ffd43b"], shape: "bloom" },
+  summer: { name: "Summer market", sub: "Sunshine", accent: "#ff5a36", motif: ["#ffc21a"], shape: "sun" },
+  fall: { name: "Fall", sub: "Leaves for Halloween", accent: "#a4431c", motif: ["#e0892b", "#c0392b", "#d9a521"], shape: "leaf" },
+};
+/** The season for a date, so the editor can show this season's look first. */
+export function seasonFor(at = new Date()): SeasonKey {
+  const md = (at.getMonth() + 1) * 100 + at.getDate();
+  if (md >= 1227 || md <= 110) return "newyear";
+  if (md >= 125 && md <= 214) return "valentine";
+  if (md >= 301 && md <= 531) return "spring";
+  if (md >= 601 && md <= 831) return "summer";
+  if (md >= 901 && md <= 1115) return "fall";
+  return "winter";
+}
 export const DOTS: Record<DotStyle, string> = { square: "Square", rounded: "Soft", dots: "Dots", liquid: "Liquid", lines: "Lines", diamond: "Diamond" };
 export const EYES: Record<EyeStyle, string> = { frame: "Frame mark", square: "Square", rounded: "Rounded", circle: "Circle" };
 export const FG = ["#000000", "#15161b", "#2b37f0", "#0f7a55", "#7b2d8e", "#b8321c"];
@@ -97,6 +117,8 @@ export type Design = Look & {
   /** Up to 3 colours pulled from the painting (Match your art), and the piece they came from. */
   palette: string[];
   paletteOf: string;
+  /** A seasonal look (Infinity), "" = none. */
+  season: SeasonKey | "";
 };
 
 export function presetLook(k: PresetKey): Look {
@@ -108,7 +130,7 @@ export const DEFAULT_DESIGN: Design = {
   preset: "gallery", ...presetLook("gallery"),
   msg: "", showTitle: true, showPrice: true, logo: true,
   disc: 0, coupon: "", ev: "", evPrint: false, evDate: "", size: "medium", end: "never",
-  extras: [], palette: [], paletteOf: "",
+  extras: [], palette: [], paletteOf: "", season: "",
 };
 
 /** `thumb`: a data: URI (or URL) of a small copy of the painting, for the thumbnail extra. Falls back to imageUrl. */
@@ -159,6 +181,7 @@ export function sanitizeDesign(input: unknown): Design {
     extras,
     palette: Array.isArray(i.palette) ? i.palette.filter((c): c is string => typeof c === "string" && HEX.test(c)).slice(0, 3).map((c) => c.toLowerCase()) : [],
     paletteOf: str(i.paletteOf, 120),
+    season: oneOf(i.season, ["", ...(Object.keys(SEASONS) as SeasonKey[])] as const, ""),
   };
 }
 
@@ -189,7 +212,19 @@ export function applyExtra(d: Design, k: ExtraKey, on = true): Design {
 /** Infinity extras this design uses. */
 export const extrasOf = (d: Pick<Design, "extras">) => d.extras;
 /** The closest free design: the same format, style, ink and colours without the Infinity extras. */
-export const freeDesign = (d: Design): Design => (d.extras.length ? { ...d, extras: [] } : d);
+export const freeDesign = (d: Design): Design => (d.extras.length || d.season ? { ...d, extras: [], season: "" } : d);
+/** Does this design use anything from Infinity? */
+export const usesInfinity = (d: Pick<Design, "extras" | "season">) => d.extras.length > 0 || !!d.season;
+
+/** A seasonal look on the current format and style. In Color ink the pill or panel takes the season's colour. */
+export function applySeason(d: Design, k: SeasonKey | ""): Design {
+  if (!k) return { ...d, season: "" };
+  const S = SEASONS[k];
+  // The code corners take the season's colour too, darkened until phones read it easily (4.5:1 on the card).
+  let eye = S.accent === "#15161b" ? "#2b37f0" : S.accent;
+  for (let i = 0; i < 40 && contrast(eye, d.bg) < 4.5; i++) eye = mix(eye, "#000000", 0.06);
+  return { ...d, season: k, ...(d.ink === "color" ? { accent: S.accent, eye } : {}), extras: d.extras.filter((e) => e !== "match") };
+}
 
 export function lum(hex: string) {
   const h = hex.replace("#", "");
@@ -555,6 +590,82 @@ const plateSvg = (c: Ctx, x: number, y: number, s: number, r: number) => { c.box
 /** Code size on a plate of side `s` that leaves 2.2 modules of quiet zone all round. */
 const onPlate = (s: number, n: number) => (s * n) / (n + 4.4);
 
+// ---------------- seasonal motifs ----------------
+/** One motif centred on (0, 0), about 2 units across. Flat shapes only (print safe). */
+function motifPath(shape: (typeof SEASONS)[SeasonKey]["shape"], fill: string, accent: string) {
+  switch (shape) {
+    case "flake": {
+      let d = "";
+      for (let i = 0; i < 3; i++) {
+        const a = (i * Math.PI) / 3, ux = Math.cos(a), uy = Math.sin(a);
+        d += `M${n2(-ux)} ${n2(-uy)}L${n2(ux)} ${n2(uy)}`;
+        for (const sgn of [-1, 1]) {
+          const bx = ux * 0.55 * sgn, by = uy * 0.55 * sgn;
+          for (const t of [-0.5, 0.5]) { const b = a + (sgn > 0 ? 0 : Math.PI) + t * 1.6; d += `M${n2(bx)} ${n2(by)}L${n2(bx + Math.cos(b) * 0.38)} ${n2(by + Math.sin(b) * 0.38)}`; }
+        }
+      }
+      return `<path d="${d}" fill="none" stroke="${fill}" stroke-width=".2" stroke-linecap="round"/>`;
+    }
+    case "confetti": return `<rect x="-.9" y="-.35" width="1.8" height=".7" rx=".2" fill="${fill}"/>`;
+    case "heart": return `<path fill="${fill}" d="M0 .9C-.2.7-1 .2-1-.3-1-.8-.55-1-.3-1-.12-1 0-.85 0-.7 0-.85.12-1 .3-1 .55-1 1-.8 1-.3 1 .2.2.7 0 .9Z"/>`;
+    case "bloom": {
+      let d = "";
+      for (let i = 0; i < 5; i++) { const a = (i * 2 * Math.PI) / 5; d += `M${n2(Math.cos(a) * 0.52 + 0.42)} ${n2(Math.sin(a) * 0.52)}a.42 .42 0 1 0-.84 0a.42 .42 0 1 0 .84 0Z`; }
+      return `<path fill="${fill}" d="${d}"/><circle r=".3" fill="${accent}"/>`;
+    }
+    case "sun": {
+      let d = "";
+      for (let i = 0; i < 8; i++) { const a = (i * Math.PI) / 4; d += `M${n2(Math.cos(a) * 0.7)} ${n2(Math.sin(a) * 0.7)}L${n2(Math.cos(a) * 1)} ${n2(Math.sin(a) * 1)}`; }
+      return `<circle r=".48" fill="${fill}"/><path d="${d}" stroke="${fill}" stroke-width=".18" stroke-linecap="round"/>`;
+    }
+    case "leaf": return `<path fill="${fill}" d="M0-1C.55-.55.6.35 0 .75-.6.35-.55-.55 0-1Z"/><path d="M0 .7V1" stroke="${fill}" stroke-width=".14" stroke-linecap="round"/>`;
+  }
+}
+
+/**
+ * The season's motifs as a garland along the margin band, evenly spaced, skipping any spot within 2.2 modules of the
+ * code (its clear area stays untouched) or near words, the plate, the hole or the tape. Deterministic per card.
+ */
+function seasonSvg(c: Ctx, out: Out, d: Design): string {
+  const S = SEASONS[d.season as SeasonKey];
+  const W = out.W, H = out.H, round = d.format === "sticker";
+  const r = round ? 3.1 : d.format === "poster" ? 12 : 2.9;
+  const code = c.boxes.find((b) => b.k === "code")!;
+  const qz = 2.2 * (code.w / c.n);
+  const panel = c.boxes.find((b) => b.k === "panel");
+  if (panel && round) return ""; // the round Panel is one solid circle: nothing goes on it
+  const black = d.ink === "black" && lum(d.accent) < 0.02;
+  const gap = d.format === "poster" ? 18 : 3;
+  const near = (b: Box, x: number, y: number, pad: number) => x > b.x - pad && x < b.x + b.w + pad && y > b.y - pad && y < b.y + b.h + pad;
+  const hash = (i: number) => { const v = Math.sin(i * 12.9898 + (c.art.slug.length + 3) * 78.233) * 43758.5453; return v - Math.floor(v); };
+  // Points along a line inset `e` from the edge (a rectangle, or a circle for the sticker).
+  const e = round ? 9.5 : Math.max(r + 2.4, (out.m || 11.2) / 2), step = r * (round ? 4.6 : 6.2);
+  const pts: [number, number][] = [];
+  if (round) {
+    const R = W / 2 - e, n = Math.floor((2 * Math.PI * R) / step);
+    for (let k = 0; k < n; k++) { const t = (k / n) * 2 * Math.PI; pts.push([W / 2 + R * Math.cos(t), H / 2 + R * Math.sin(t)]); }
+  } else {
+    const run = (x0: number, y0: number, x1: number, y1: number) => { const L = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.round(L / step)); for (let k = 0; k < n; k++) pts.push([x0 + ((x1 - x0) * k) / n, y0 + ((y1 - y0) * k) / n]); };
+    run(e, e, W - e, e); run(W - e, e, W - e, H - e); run(W - e, H - e, e, H - e); run(e, H - e, e, e);
+  }
+  let s = "";
+  pts.forEach(([x, y], i) => {
+    if (near(code, x, y, qz + r)) return;
+    if (c.boxes.some((b) => b !== code && b.k !== "panel" && (b.pts ? near(b, x, y, r + 1) : near(b, x, y, b.k === "plate" ? r + 2 : gap + r)))) return;
+    if (d.format === "tag" && Math.hypot(x - W / 2, y - 12.4) < 5.2 + r + 3) return;
+    let fill = black ? "#000000" : S.motif[i % S.motif.length], accent = black ? "#ffffff" : S.motif[S.motif.length - 1];
+    if (panel) {
+      const inside = near(panel, x, y, 0);
+      if (!(inside ? near(panel, x, y, -(r + 4)) : !near(panel, x, y, r + 4))) return;
+      if (inside) { fill = c.C.onAccent; accent = c.C.accent; }
+    }
+    const k = r * (0.85 + hash(i) * 0.3), rot = Math.round(hash(i + 11) * 360);
+    s += `<g transform="translate(${n2(x)} ${n2(y)}) rotate(${rot}) scale(${n2(k)})">${motifPath(S.shape, fill, accent)}</g>`;
+    c.boxes.push({ k: "motif", x: x - k, y: y - k, w: 2 * k, h: 2 * k });
+  });
+  return s;
+}
+
 export type Card = { inner: string; w: number; h: number; qrPt: number; ctaPt: number; label: string; mods: number; boxes: Box[]; m: number };
 
 // ---------------- faces ----------------
@@ -564,6 +675,7 @@ export function renderCard(d: Design, art: ArtInfo, f: Fonts, qrText: string, ui
   if (style !== "panel" || d.format === "sticker") fx.delete("painted");
   const c: Ctx = { d, art, f, qrText, uid, n: codeModules(d, qrText), C: cardColors(d), style, fx, boxes: [], defs: [] };
   const out = d.format === "label" ? label(c) : d.format === "tag" ? tag(c) : d.format === "sticker" ? sticker(c) : poster(c);
+  if (d.season) out.svg += seasonSvg(c, out, d);
   const msg = messageLines(d, art, style === "pill" ? "pill" : "two").map(plain).join(" ");
   const lbl = `${FORMATS[d.format].name}: ${d.showTitle ? `${art.title} by ${art.artist}. ` : ""}${msg}.`;
   const inner = (c.defs.length ? `<defs>${c.defs.join("")}</defs>` : "") + out.svg;
