@@ -1,133 +1,104 @@
 // Recorded refunds, per order line. Server only.
 //
-// The money itself goes back to the buyer in Stripe (dashboard). This records it so the books match:
-// the ledger is the admin audit log. An "order.refund" AdminAction (details.orderItemId) refunds a line,
-// a later "order.refund_undo" for the same line cancels it; the newest row per line wins.
+// The money itself goes back to the buyer in Stripe (dashboard). This records it so the books match: one Refund row
+// per recorded refund (prisma/schema.prisma). A line is refunded while it has a row with undoneAt null; undoing a
+// refund stamps undoneAt on it. Recording and undoing also write an "order.refund" / "order.refund_undo" AdminAction
+// (the audit log says who did what), but everything that computes money reads only Refund rows.
 //
 // The artist's share is reversed only when the line's payout month wasn't paid yet at refund time
-// (details.reversed). A reversed line counts as 0 for the artist everywhere money is computed
+// (reversed). A reversed line counts as 0 for the artist everywhere money is computed
 // (lib/balance.ts, admin payouts summary, mark-paid, CSV). If the month was already paid, what happens depends on
 // the owner's setting and the refund reason (lib/refundPolicy.ts):
 //   - absorbed: the artist keeps that share and Artfinity absorbs the refund (the default; always for damaged prints).
-//   - deducted (details.deducted): the line keeps its paid share, and a negative "Refund adjustment" of that share
-//     is booked to the artist's next unpaid payout month at refund time (details.adjustMonth, lib/balance.ts
+//   - deducted: the line keeps its paid share, and a negative "Refund adjustment" of that share
+//     is booked to the artist's next unpaid payout month at refund time (adjustMonth, lib/balance.ts
 //     nextUnpaidMonth), so it lowers the very next payout. lib/balance.ts
 //     adds it to that month's total; a month can't be paid below $0, so the rest carries forward.
+// The pure rules live in lib/refundMath.ts.
 import { prisma } from "@/lib/prisma";
 import { isRefundReason, type RefundReason } from "@/lib/refundPolicy";
+import { adjustmentsFrom, refundInfoFromRow, refundsByLine, totalsByArtist, type RefundAdjustment, type RefundInfo, type RefundRow } from "@/lib/refundMath";
 
+export { orderRefOf, shareAfterRefund, type RefundAdjustment, type RefundInfo } from "@/lib/refundMath";
+
+/** Audit-log actions (lib/audit.ts) written when an admin records or undoes a refund. Not read for money. */
 export const REFUND_ACTION = "order.refund";
 export const REFUND_UNDO_ACTION = "order.refund_undo";
 
-export type RefundInfo = {
-  orderItemId: string;
+const reasonOf = (raw: string): RefundReason => (isRefundReason(raw) ? raw : "other");
+
+const REFUND_SELECT = {
+  id: true, orderId: true, orderItemId: true, artistId: true, amountCents: true, shareCents: true, reversed: true,
+  deducted: true, adjustMonth: true, reason: true, title: true, note: true, createdAt: true, createdByEmail: true,
+} as const;
+
+/** Every line that is refunded right now, by orderItemId. Optionally only these orders, or only one artist's lines. */
+export async function activeRefunds(orderIds?: string[], opts: { artistId?: string } = {}): Promise<Map<string, RefundInfo>> {
+  if (orderIds && !orderIds.length) return new Map();
+  const rows: RefundRow[] = await prisma.refund.findMany({
+    where: {
+      undoneAt: null,
+      ...(orderIds ? { orderId: { in: orderIds } } : {}),
+      ...(opts.artistId ? { artistId: opts.artistId } : {}),
+    },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    select: REFUND_SELECT,
+  });
+  return refundsByLine(rows, reasonOf);
+}
+
+export type NewRefund = {
   orderId: string;
-  actionId: string;
-  at: Date;
-  adminEmail: string;
-  /** Line total refunded to the buyer, cents (ex-tax). */
-  amountCents: number;
-  /** Artist share on the line at refund time, cents. */
-  shareCents: number;
-  /** True when the artist's share was taken back (its payout month was still unpaid). */
-  reversed: boolean;
-  /** True when it was already paid out and the share comes off a later payout (a Refund adjustment). */
-  deducted: boolean;
-  /** UTC month the Refund adjustment is booked to ("YYYY-MM"); only when deducted. */
-  adjustMonth: string | null;
+  orderItemId: string;
   artistId: string | null;
-  /** Older refunds have none ("other"). */
+  amountCents: number;
+  shareCents: number;
+  reversed: boolean;
+  deducted: boolean;
+  adjustMonth: string | null;
   reason: RefundReason;
   title: string;
   note: string;
+  /** The admin who recorded it. */
+  createdByEmail: string;
 };
 
-type Details = {
-  orderItemId?: unknown; amountCents?: unknown; shareCents?: unknown; reversed?: unknown; deducted?: unknown; adjustMonth?: unknown;
-  artistId?: unknown; reason?: unknown; title?: unknown; note?: unknown;
-};
-
-/** Every line that is refunded right now, by orderItemId. Optionally only these orders. */
-export async function activeRefunds(orderIds?: string[], opts: { artistId?: string } = {}): Promise<Map<string, RefundInfo>> {
-  if (orderIds && !orderIds.length) return new Map();
-  const rows = await prisma.adminAction.findMany({
-    where: {
-      action: { in: [REFUND_ACTION, REFUND_UNDO_ACTION] }, targetType: "order",
-      ...(orderIds ? { targetId: { in: orderIds } } : {}),
-      // Refund and undo rows both carry details.artistId.
-      ...(opts.artistId ? { details: { path: ["artistId"], equals: opts.artistId } } : {}),
+/** Records a refund on one line. The caller checks the line isn't refunded already, and writes the audit row. */
+export async function recordRefund(r: NewRefund): Promise<RefundInfo> {
+  const deducted = r.deducted && !r.reversed;
+  const row = await prisma.refund.create({
+    data: {
+      orderId: r.orderId,
+      orderItemId: r.orderItemId,
+      artistId: r.artistId,
+      amountCents: Math.round(r.amountCents) || 0,
+      shareCents: Math.round(r.shareCents) || 0,
+      reversed: r.reversed,
+      deducted,
+      adjustMonth: deducted ? r.adjustMonth : null,
+      reason: reasonOf(r.reason),
+      title: r.title,
+      note: r.note,
+      createdByEmail: r.createdByEmail,
     },
-    orderBy: { createdAt: "asc" },
-    select: { id: true, action: true, targetId: true, details: true, createdAt: true, adminEmail: true },
+    select: REFUND_SELECT,
   });
-  const out = new Map<string, RefundInfo>();
-  for (const r of rows) {
-    const d = (r.details ?? {}) as Details;
-    const itemId = typeof d.orderItemId === "string" ? d.orderItemId : null;
-    if (!itemId || !r.targetId) continue;
-    if (r.action === REFUND_UNDO_ACTION) {
-      out.delete(itemId);
-      continue;
-    }
-    out.set(itemId, {
-      orderItemId: itemId,
-      orderId: r.targetId,
-      actionId: r.id,
-      at: r.createdAt,
-      adminEmail: r.adminEmail,
-      amountCents: Number(d.amountCents) || 0,
-      shareCents: Number(d.shareCents) || 0,
-      reversed: d.reversed === true,
-      deducted: d.deducted === true && d.reversed !== true,
-      adjustMonth: d.deducted === true && typeof d.adjustMonth === "string" ? d.adjustMonth : null,
-      artistId: typeof d.artistId === "string" ? d.artistId : null,
-      reason: isRefundReason(d.reason) ? d.reason : "other",
-      title: typeof d.title === "string" ? d.title : "",
-      note: typeof d.note === "string" ? d.note : "",
-    });
-  }
-  return out;
+  return refundInfoFromRow(row, reasonOf(row.reason));
 }
 
-/** A paid-out refund taken off a later payout. cents is negative. */
-export type RefundAdjustment = {
-  id: string;
-  artistId: string;
-  orderId: string;
-  /** Order number as shown everywhere (lib/printer.ts orderNumber). */
-  orderRef: string;
-  orderItemId: string;
-  title: string;
-  /** Payout month it lowers ("YYYY-MM"): the artist's next unpaid month when the refund was recorded. */
-  month: string;
-  cents: number;
-  at: Date;
-  reason: RefundReason;
-};
-
-export const orderRefOf = (orderId: string) => orderId.slice(-8).toUpperCase();
+/** Cancels the refund on a line: every live row for it is marked undone. Returns how many rows that was. */
+export async function undoRefund(orderItemId: string, undoneByEmail: string, now = new Date()): Promise<number> {
+  const { count } = await prisma.refund.updateMany({ where: { orderItemId, undoneAt: null }, data: { undoneAt: now, undoneByEmail } });
+  return count;
+}
 
 /** Every live Refund adjustment, oldest first. Optionally one artist's, or one month's. */
 export async function refundAdjustments(opts: { artistId?: string; month?: string } = {}): Promise<RefundAdjustment[]> {
   const refunds = await activeRefunds(undefined, { artistId: opts.artistId });
-  const out: RefundAdjustment[] = [];
-  for (const r of Array.from(refunds.values())) {
-    if (!r.deducted || !r.adjustMonth || !r.artistId || r.shareCents <= 0) continue;
-    if (opts.month && r.adjustMonth !== opts.month) continue;
-    out.push({
-      id: r.actionId, artistId: r.artistId, orderId: r.orderId, orderRef: orderRefOf(r.orderId), orderItemId: r.orderItemId,
-      title: r.title || "Print", month: r.adjustMonth, cents: -r.shareCents, at: r.at, reason: r.reason,
-    });
-  }
-  return out.sort((a, b) => a.at.getTime() - b.at.getTime());
+  return adjustmentsFrom(refunds.values(), { month: opts.month });
 }
 
 /** Refund adjustments summed per artist (cents, ≤ 0), optionally for one month. */
 export async function adjustmentTotals(opts: { month?: string } = {}): Promise<Map<string, number>> {
-  const out = new Map<string, number>();
-  for (const a of await refundAdjustments(opts)) out.set(a.artistId, (out.get(a.artistId) || 0) + a.cents);
-  return out;
+  return totalsByArtist(await refundAdjustments(opts));
 }
-
-/** The artist's share after any refund: 0 when the refund reversed it. */
-export const shareAfterRefund = (shareCents: number, r: RefundInfo | undefined) => (r?.reversed ? 0 : shareCents);

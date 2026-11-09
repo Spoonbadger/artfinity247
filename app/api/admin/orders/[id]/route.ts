@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { logAdminAction } from "@/lib/audit";
 import { itemBreakdown } from "@/lib/sales";
-import { activeRefunds, REFUND_ACTION, REFUND_UNDO_ACTION } from "@/lib/refunds";
+import { activeRefunds, recordRefund, undoRefund, REFUND_ACTION, REFUND_UNDO_ACTION } from "@/lib/refunds";
 import { nextUnpaidMonth, utcMonth } from "@/lib/balance";
 import { REFUND_REASON_LABEL, isRefundReason, refundEffect, refundPolicy } from "@/lib/refundPolicy";
 import { decideRequest, requestsForOrder, ReprintError } from "@/lib/reprints";
@@ -70,9 +70,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       const outcome = reversed ? `artist share ${money(b.artistShare)} reversed`
         : deducted ? `${month} already paid out: ${money(b.artistShare)} comes off the artist's next payout (Refund adjustment)`
         : artistId ? `${month} already paid out: artist keeps ${money(b.artistShare)}` : "";
+      const refund = await recordRefund({
+        orderId: order.id, orderItemId: item.id, artistId, amountCents: b.lineTotal, shareCents: b.artistShare,
+        reversed, deducted, adjustMonth, reason, title, note, createdByEmail: admin.email || "",
+      });
       await logAdminAction(admin, REFUND_ACTION, { type: "order", id: order.id },
         `Refunded “${title}” (${money(b.lineTotal)}, ${REFUND_REASON_LABEL[reason].toLowerCase()})${outcome ? `, ${outcome}` : ""}`,
-        { orderItemId: item.id, artistId, amountCents: b.lineTotal, shareCents: b.artistShare, reversed, deducted, adjustMonth, reason, policy, title, month, note });
+        { refundId: refund.id, orderItemId: item.id, artistId, amountCents: b.lineTotal, shareCents: b.artistShare, reversed, deducted, adjustMonth, reason, policy, title, month, note });
       return NextResponse.json({
         ok: true, reversed, deducted, shareCents: b.artistShare,
         message: reversed ? `Refund recorded. ${money(b.artistShare)} taken off the artist's balance.`
@@ -89,8 +93,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         const p = await prisma.payout.findUnique({ where: { artistId_month: { artistId: r.artistId, month: r.adjustMonth } }, select: { paidAt: true } });
         if (p?.paidAt) return fail(`The refund adjustment already came off the artist's ${r.adjustMonth} payout. Unmark that payout first, or settle it with the artist by hand.`, 409);
       }
+      await undoRefund(item.id, admin.email || "");
       await logAdminAction(admin, REFUND_UNDO_ACTION, { type: "order", id: order.id }, `Cancelled the refund on “${item.title || "print"}”`,
-        { orderItemId: item.id, artistId: item.artwork?.artistId ?? null, refundActionId: r.actionId, note });
+        { orderItemId: item.id, artistId: item.artwork?.artistId ?? null, refundId: r.id, note });
       return NextResponse.json({ ok: true });
     }
     case "reprint": {
