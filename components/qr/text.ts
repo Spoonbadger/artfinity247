@@ -80,15 +80,34 @@ export function wrap(f: Font, s: string, size: number, maxW: number): string[] |
   return best;
 }
 
-/** Largest size (stepping down) whose balanced wrap fits the box. */
-export function fitBlock(f: Font, s: string, o: { max: number; min: number; maxW: number; maxH: number; lh: number; maxLines: number }) {
+/**
+ * Largest size (stepping down) whose balanced wrap fits the box. `fits` can add a check of its own (say, what sits
+ * under the block). Nothing fits at `min`: the words fill `maxLines` and the last line ends in an ellipsis.
+ */
+export function fitBlock(f: Font, s: string, o: { max: number; min: number; maxW: number; maxH: number; lh: number; maxLines: number; fits?: (size: number, lines: number) => boolean }) {
   for (let size = o.max; size >= o.min; size *= 0.96) {
     const lines = wrap(f, s, size, o.maxW);
-    if (lines && lines.length <= o.maxLines && blockH(f, lines.length, size, o.lh) <= o.maxH) return { lines, size };
+    if (lines && lines.length <= o.maxLines && blockH(f, lines.length, size, o.lh) <= o.maxH && (!o.fits || o.fits(size, lines.length))) return { lines, size };
   }
   const size = o.min;
-  const lines = (wrap(f, s, size, o.maxW) || [fit(f, s, size, o.maxW)]).slice(0, o.maxLines);
-  return { lines, size };
+  return { lines: clampLines(f, s, size, o.maxW, o.maxLines), size };
+}
+
+/** Greedy lines, at most `max`; the last one takes the rest of the words and ends in an ellipsis if it overflows. */
+export function clampLines(f: Font, s: string, size: number, maxW: number, max: number): string[] {
+  const words = s.trim().split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let i = 0;
+  while (i < words.length && lines.length < max - 1) {
+    let line = words[i];
+    if (width(f, line, size) > maxW) break;
+    let j = i + 1;
+    while (j < words.length && width(f, line + " " + words[j], size) <= maxW) line += " " + words[j++];
+    lines.push(line);
+    i = j;
+  }
+  if (i < words.length) lines.push(fit(f, words.slice(i).join(" "), size, maxW));
+  return lines;
 }
 /** Visual height of a block: cap height of the first line plus line gaps. */
 export const blockH = (f: Font, n: number, size: number, lh: number) => (n ? capHeight(f) * size + (n - 1) * size * lh : 0);
