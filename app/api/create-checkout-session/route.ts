@@ -6,14 +6,15 @@ import { prisma } from "@/lib/prisma";
 import { checkoutUnavailable, testCheckoutAllowed } from "@/lib/testCheckout";
 import { artistSplitsForOrder, calcItemProfitCents, type PrintSize as RevenueSize } from "@/lib/revenue";
 import { claimEditionNumbers, EditionSoldOutError, editionMessage, editionShortfalls } from "@/lib/editions";
-import { applyDiscount, isPrintSize, parseDiscount, parseVenue, priceFor, SIZE_LABEL, sizeInches, type PrintSize } from "@/components/art/pricing";
+import { parseDiscount, parseVenue, SIZE_LABEL, sizeInches, type PrintSize } from "@/components/art/pricing";
 import { sizeAllowed } from "@/lib/printSizes";
 import { followFromCheckout } from "@/lib/followers";
 import { sendWorkOrder } from "@/lib/printer";
-import { SHIPPING_TAX_CODE, TAX_CODE, TAX_ENABLED } from "@/lib/tax";
+import { SHIPPING_TAX_CODE, TAX_ENABLED } from "@/lib/tax";
 import { getCollector, onOrderPaid } from "@/lib/collector";
 import { markRewardUsed, preservedSplit, rewardOffUnit, validateReward } from "@/lib/collectorRewards";
 import { codeOf, newOrderId, statementSuffix } from "@/lib/checkoutSession";
+import { priceLine, readCartItem, stripeLineItem, type Line } from "@/lib/checkoutLines";
 import { deliveryRange } from "@/lib/delivery";
 import { HELP_DAYS_AFTER_DELIVERY } from "@/lib/reprintFormat";
 
@@ -28,26 +29,6 @@ function baseUrlFrom(req: Request) {
   try { return new URL(req.url).origin; } catch { return "https://theartfinity.com"; }
 }
 
-function abs(base: string, url?: string | null) {
-  if (!url) return undefined;
-  if (/^https?:\/\//.test(url)) return url;
-  return url.startsWith("/") ? base + url : `${base}/${url}`;
-}
-
-type Line = {
-  art: { id: string; slug: string; title: string; imageUrl: string; artistId: string; artistName: string; editionSize: number | null };
-  size: PrintSize;
-  frameChosen: boolean;
-  frameColor: string | null;
-  quantity: number;
-  list: number; // cents, before discount
-  unit: number; // cents, what the buyer pays per print
-  discountPct: number;
-  venue: string | null;
-  qrCodeId: string | null; // the short link code this sale came through (OrderItem.qrCodeId)
-  preRewardUnit?: number; // collector reward: the unit price before it (the artist's share is kept at this price)
-};
-
 /** A size the artwork's file is too small to print sharply. */
 class SizeUnavailableError extends Error {}
 
@@ -55,12 +36,10 @@ class SizeUnavailableError extends Error {}
 async function buildLines(items: any[]): Promise<Line[]> {
   const lines = await Promise.all(
     items.map(async (item: any): Promise<Line | null> => {
-      const p = item?.product ?? item ?? {};
-      const slug = String(p.slug ?? "").trim();
-      const size = String(p.selectedSize ?? "").toLowerCase();
-      if (!slug || !isPrintSize(size)) return null;
-      const frameChosen = Boolean(p.frameChosen);
-      const frameColor = frameChosen && ["black", "white", "natural"].includes(String(p.frameColor)) ? String(p.frameColor) : null;
+      // Slug, size, frame and quantity from the cart (lib/checkoutLines.ts); prices and titles in it are ignored.
+      const pick = readCartItem(item);
+      if (!pick) return null;
+      const { slug, size, p } = pick;
 
       const art = await prisma.artwork.findUnique({
         where: { slug },
@@ -85,14 +64,7 @@ async function buildLines(items: any[]): Promise<Line[]> {
       const offRaw = parseDiscount(p.discountPct);
       const discountPct = byCode ? parseDiscount(byCode.discountPct) || 0 : scanDiscount(slug, offRaw, parseVenue(p.venue), p.discountSig).pct;
       const venue = byCode ? scanVenue(byCode) : parseVenue(p.venue);
-      const { list } = priceFor(art, size, frameChosen, 0);
-      const unit = applyDiscount(list, discountPct);
-      const quantity = Math.max(1, Math.min(10, Math.round(Number(item?.quantity ?? p.quantity ?? 1)) || 1));
-
-      return {
-        art: { id: art.id, slug: art.slug!, title: art.title, imageUrl: art.imageUrl, artistId: art.artistId, artistName: art.artist?.artist_name || art.artist?.name || "", editionSize: art.editionSize ?? null },
-        size, frameChosen, frameColor, quantity, list, unit, discountPct, venue, qrCodeId: byCode?.id ?? null,
-      };
+      return priceLine(art, pick, { discountPct, venue, qrCodeId: byCode?.id ?? null });
     }),
   );
   return lines.filter(Boolean) as Line[];
@@ -168,44 +140,7 @@ export async function POST(req: Request) {
   try {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-08-27.basil" });
     const base = baseUrlFrom(req);
-    const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = lines.map((l) => ({
-      quantity: l.quantity,
-      // Quantities were set in the cart and the summary showed that exact total: no changing them on Stripe's page.
-      price_data: {
-        currency: "usd",
-        unit_amount: l.unit,
-        tax_behavior: "exclusive", // sales tax is added on top at checkout
-        product_data: {
-          tax_code: TAX_CODE,
-          // "Print — Night Market by Maya Chen, Medium 8 × 12 in"
-          name: `Print — ${l.art.title}${l.art.artistName ? ` by ${l.art.artistName}` : ""}, ${SIZE_LABEL[l.size]} ${sizeInches(l.size)}`.slice(0, 250),
-          description: [
-            l.frameChosen ? `${l.frameColor === "natural" ? "Natural wood" : l.frameColor === "white" ? "White" : "Black"} frame` : "Unframed",
-            l.art.editionSize ? `Limited edition of ${l.art.editionSize}` : "",
-            l.discountPct ? `${l.discountPct}% scan discount` : "",
-            l.preRewardUnit ? "Collector reward" : "",
-            "Printed in NYC",
-          ].filter(Boolean).join(" · "),
-          images: l.art.imageUrl ? [abs(base, l.art.imageUrl)!] : [],
-          metadata: {
-            artworkId: l.art.id,
-            slug: l.art.slug,
-            size: l.size,
-            title: l.art.title,
-            artistName: l.art.artistName,
-            imageUrl: l.art.imageUrl ?? "",
-            artistId: l.art.artistId,
-            frameChosen: l.frameChosen ? "true" : "false",
-            frameColor: l.frameColor ?? "",
-            discountPct: String(l.discountPct || 0),
-            listPrice: String(l.list),
-            venue: l.venue ?? "",
-            qrCodeId: l.qrCodeId ?? "",
-            ...(l.preRewardUnit ? { rewardFromUnit: String(l.preRewardUnit) } : {}),
-          },
-        },
-      },
-    }));
+    const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = lines.map((l) => stripeLineItem(l, base));
 
     const titles = Array.from(new Set(lines.map((l) => l.art.title)));
     const session = await stripe.checkout.sessions.create({
