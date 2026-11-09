@@ -4,6 +4,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { Camera, X } from "lucide-react";
+import { uploadImage } from "@/components/media/uploadImage";
 import { BrushStroke } from "@/components/af/Brush";
 import { cn } from "@/lib/utils";
 import { RATING_WORDS, shortName } from "./format";
@@ -72,13 +73,7 @@ function ItemCard({ item, orderId, token, name, city, onSaved }: {
   const upload = async (file: File) => {
     setUploading(true); setError("");
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("reviewOrder", orderId);
-      fd.append("reviewToken", token);
-      const r = await fetch("/api/uploads", { method: "POST", body: fd });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok || !j.url) throw new Error(j.error || "That photo didn't upload.");
+      const j = await uploadImage(file, { reviewOrder: orderId, reviewToken: token });
       setPhoto(j.url);
     } catch (e: any) {
       setError(e?.message || "That photo didn't upload.");
