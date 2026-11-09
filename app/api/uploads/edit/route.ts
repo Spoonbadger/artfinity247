@@ -13,7 +13,7 @@
 // through the normal pipeline (lib/uploadPipeline.ts): a new private original, a 1600px public preview, print sizes.
 // The source upload is left alone, so "Reset edits" can go back to it.
 import { NextRequest, NextResponse } from "next/server";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard, getUserFromCookie } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rateLimit";
 import { deleteUpload, inArtistFolder, readOriginalImage } from "@/lib/storage";
@@ -64,8 +64,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const user = await getUserFromCookie();
-  if (!user?.id) return err("Log in to edit photos.", "not_logged_in", 401);
+  const { user, denied } = await activeUserGuard("Log in to edit photos.");
+  if (denied) return denied;
   if (!rateLimit(`photo-edit:${user.id}`, 40, 10 * 60_000)) return err("That's a lot of edits. Wait a minute and save again.", "rate_limited", 429);
   const body = await req.json().catch(() => null);
   const source = typeof body?.source === "string" ? body.source : "";

@@ -8,7 +8,7 @@
 // printableSig lets the artwork routes trust that list (lib/printSign.ts).
 // The work itself is lib/uploadPipeline.ts processUpload, shared with POST /api/uploads/import (Google Drive, Dropbox).
 import { NextRequest, NextResponse } from "next/server";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard } from "@/lib/auth";
 import { verifyReview } from "@/lib/reviews";
 import { verifyHelp } from "@/lib/reprints";
 import { rateLimit } from "@/lib/rateLimit";
@@ -18,7 +18,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const user = await getUserFromCookie();
+  const { user, denied } = await activeUserGuard("Log in to upload."); // a paused or closed artist is treated as signed out
   const form = await req.formData();
   // Buyers aren't logged in: a signed review link (lib/reviews.ts) lets them add a photo of the print on their wall.
   const reviewOrder = !user?.id ? String(form.get("reviewOrder") || "") : "";
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   // Same for a photo of a damaged print, from the signed "Problem with your print?" link (lib/reprints.ts).
   const helpOrder = !user?.id && !reviewer ? String(form.get("helpOrder") || "") : "";
   const helper = !!helpOrder && verifyHelp(helpOrder, form.get("helpToken")) && rateLimit(`help-upload:${helpOrder}`, 15, 10 * 60_000);
-  if (!user?.id && !reviewer && !helper) return NextResponse.json({ error: "Log in to upload.", code: "not_logged_in" }, { status: 401 });
+  if (!user?.id && !reviewer && !helper) return denied!; // 401 "Log in to upload." or 403 paused/closed
 
   const file = form.get("file");
   if (!(file instanceof File)) return NextResponse.json({ error: "No file came through. Pick it again.", code: "no_file" }, { status: 400 });

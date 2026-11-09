@@ -3,14 +3,16 @@
 // → { moved, place }
 import { NextResponse } from "next/server";
 import { hangArtworks, resolvePlace } from "@/lib/artistPlaces";
-import { body, err, fail, me, strings } from "../places/_lib";
+import { body, err, fail, strings } from "../places/_lib";
+import { activeUserGuard } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  const artistId = await me();
-  if (!artistId) return err("Log in to keep going.", "not_logged_in", 401);
+  const { user, denied } = await activeUserGuard("Log in to keep going."); // signed in, not paused or closed
+  if (denied) return denied;
+  const artistId = user.id;
   const b = await body(req);
   const ids = strings(b?.artworkIds);
   if (!b || !ids.length) return err("Pick at least one painting.", "missing_art", 400);

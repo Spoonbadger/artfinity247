@@ -4,14 +4,16 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { normalizeCode } from "@/lib/shortcode";
 import { markupsOf, recordPrints } from "@/lib/labelStatus";
-import { body, err, me } from "../places/_lib";
+import { body, err } from "../places/_lib";
+import { activeUserGuard } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  const artistId = await me();
-  if (!artistId) return err("Log in to keep going.", "not_logged_in", 401);
+  const { user, denied } = await activeUserGuard("Log in to keep going."); // signed in, not paused or closed
+  if (denied) return denied;
+  const artistId = user.id;
   const b = await body(req);
   const code = normalizeCode(b?.code);
   if (!b || !code) return err("Something was missing from that request. Refresh and try again.", "bad_request", 400);

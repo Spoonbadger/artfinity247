@@ -3,7 +3,7 @@
 // GET returns the current status.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard, getUserFromCookie } from "@/lib/auth";
 import { resend } from "@/lib/resend";
 import { parseEvidence, readEvidence } from "@/components/artist/verification";
 import { raiseAlert } from "@/lib/alerts";
@@ -22,8 +22,8 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
+  const { user, denied } = await activeUserGuard();
+  if (denied) return denied;
 
   const body = await req.json().catch(() => null);
   const parsed = parseEvidence(body);

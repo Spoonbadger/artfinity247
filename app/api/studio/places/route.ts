@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { MAX_PLACES, parsePlace, placeOptions, type PlaceFields } from "@/lib/artistPlaces";
 import { body, err, fail, me } from "./_lib";
+import { activeUserGuard } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -15,8 +16,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const artistId = await me();
-  if (!artistId) return err("Log in to keep going.", "not_logged_in", 401);
+  const { user, denied } = await activeUserGuard("Log in to keep going."); // signed in, not paused or closed
+  if (denied) return denied;
+  const artistId = user.id;
   const b = await body(req);
   if (!b) return err("Something was missing from that request. Refresh and try again.", "bad_request", 400);
   const f = await parsePlace(b, true);

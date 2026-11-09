@@ -1,7 +1,7 @@
 // POST /api/studio/code-orders/:id { action: "retry" } → a fresh checkout for an order that wasn't paid (→ { url })
 // POST /api/studio/code-orders/:id { action: "cancel" } → give up on an unpaid order (its codes stay in the queue)
 import { NextRequest, NextResponse } from "next/server";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard, getUserFromCookie } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkoutUnavailable, testCheckoutAllowed } from "@/lib/testCheckout";
 import { checkoutSession, markCodeOrderPaid } from "@/lib/codePrints";
@@ -25,6 +25,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ ok: true });
   }
   if (body.action === "retry") {
+    // Cancelling stays open to a paused or closed account; paying for a new print run doesn't.
+    const { denied } = await activeUserGuard();
+    if (denied) return denied;
     if (!["pending", "canceled"].includes(order.status)) return err("That order is already paid.", "bad_request", 409);
     try {
       await prisma.codePrintOrder.update({ where: { id: order.id }, data: { status: "pending", canceledAt: null } });

@@ -2,7 +2,7 @@
 // an empty reply removes it. Only on the artist's own published reviews.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard } from "@/lib/auth";
 import { moderate } from "@/lib/reviews";
 
 export const dynamic = "force-dynamic";
@@ -10,8 +10,8 @@ export const dynamic = "force-dynamic";
 const MAX_REPLY = 500;
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
+  const { user, denied } = await activeUserGuard();
+  if (denied) return denied;
   const input = await req.json().catch(() => ({}));
   const reply = String(input?.reply ?? "").replace(/\r\n/g, "\n").trim().slice(0, MAX_REPLY);
 

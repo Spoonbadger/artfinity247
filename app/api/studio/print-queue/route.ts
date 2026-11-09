@@ -6,7 +6,7 @@
 //   POST { all: true, look? }                    every live or in-review piece
 // Adding the same code in the same format again adds to its quantity. → { added, cards }
 import { NextRequest, NextResponse } from "next/server";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard, getUserFromCookie } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ensureArtworkCode, normalizeCode } from "@/lib/shortlinks";
 import { FORMATS, sanitizeDesign } from "@/components/qr/card";
@@ -28,8 +28,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const user = await getUserFromCookie();
-  if (!user?.id) return err("Log in to add codes to your print queue.", "not_logged_in", 401);
+  const { user, denied } = await activeUserGuard("Log in to add codes to your print queue.");
+  if (denied) return denied;
   const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
   if (!body) return err("Something was missing from that request. Refresh and try again.", "bad_request", 400);
 

@@ -2,14 +2,14 @@
 // DELETE /api/studio/links/:id : removes it.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard } from "@/lib/auth";
 import { LINK_SELECT, linkInput, normalizeUrl, resolveKind } from "@/components/links/model";
 
 export const dynamic = "force-dynamic";
 
 async function own(id: string) {
-  const user = await getUserFromCookie();
-  if (!user?.id) return { error: NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 }) };
+  const { user, denied } = await activeUserGuard(); // signed in, not paused or closed
+  if (denied) return { error: denied };
   const link = await prisma.artistLink.findFirst({ where: { id, artistId: user.id }, select: LINK_SELECT });
   if (!link) return { error: NextResponse.json({ error: "That link is gone. Refresh the page.", code: "not_found" }, { status: 404 }) };
   return { link };

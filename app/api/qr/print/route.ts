@@ -5,7 +5,7 @@
 //   of the logged-in artist, same look, as many sheets as needed. X-Af-Codes says how many codes were made.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard } from "@/lib/auth";
 import { generateQrPdf } from "@/lib/generateQrPdf";
 import { artistIsPro } from "@/lib/qr/plan";
 import { sanitizeDesign, FORMATS } from "@/components/qr/card";
@@ -18,8 +18,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Log in to print codes.", code: "not_logged_in" }, { status: 401 });
+  const { user, denied } = await activeUserGuard("Log in to print codes.");
+  if (denied) return denied;
 
   const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
   const base = baseUrl(req);

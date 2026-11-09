@@ -7,7 +7,7 @@
 import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard, getUserFromCookie } from "@/lib/auth";
 import { UNVERIFIED_MESSAGE } from "@/lib/emailVerify";
 import { resend } from "@/lib/resend";
 import { emailHtml } from "@/lib/artistEmails";
@@ -29,6 +29,9 @@ async function me() {
 }
 
 export async function POST(req: Request) {
+  // Payout details can't be changed while the account is paused or closed (DELETE, cancelling a pending change, still can).
+  const { denied } = await activeUserGuard();
+  if (denied) return denied;
   const artist = await me();
   if (!artist) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
   // Payout details wait for a confirmed email (lib/emailVerify.ts).

@@ -2,7 +2,8 @@
 // DELETE /api/studio/events/:id : remove it.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { cleanEvent, currentArtistId, eventSelect, placeForEvent } from "../_lib";
+import { cleanEvent, eventSelect, placeForEvent } from "../_lib";
+import { activeUserGuard } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -14,8 +15,9 @@ async function own(id: string, artistId: string) {
 
 export async function PATCH(req: Request, { params }: Ctx) {
   try {
-    const artistId = await currentArtistId();
-    if (!artistId) return NextResponse.json({ error: "Log in to keep going.", code: "not_logged_in" }, { status: 401 });
+    const { user, denied } = await activeUserGuard("Log in to keep going."); // signed in, not paused or closed
+    if (denied) return denied;
+    const artistId = user.id;
     const current = await own(params.id, artistId);
     if (!current) return NextResponse.json({ error: "That event is gone. Refresh to see your list.", code: "event_not_found" }, { status: 404 });
     const body = await req.json().catch(() => null);
@@ -33,8 +35,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
 export async function DELETE(_req: Request, { params }: Ctx) {
   try {
-    const artistId = await currentArtistId();
-    if (!artistId) return NextResponse.json({ error: "Log in to keep going.", code: "not_logged_in" }, { status: 401 });
+    const { user, denied } = await activeUserGuard("Log in to keep going."); // signed in, not paused or closed
+    if (denied) return denied;
+    const artistId = user.id;
     const { count } = await prisma.studioEvent.deleteMany({ where: { id: params.id, artistId } });
     if (!count) return NextResponse.json({ error: "That event is gone. Refresh to see your list.", code: "event_not_found" }, { status: 404 });
     return NextResponse.json({ ok: true });

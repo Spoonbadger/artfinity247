@@ -1,14 +1,14 @@
 // PUT /api/studio/links/theme { theme } : saves the look of your /@handle/links page.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard } from "@/lib/auth";
 import { themeSchema } from "@/components/links/model";
 
 export const dynamic = "force-dynamic";
 
 export async function PUT(req: Request) {
-  const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
+  const { user, denied } = await activeUserGuard();
+  if (denied) return denied;
   const body = await req.json().catch(() => ({}));
   const parsed = themeSchema.strict().safeParse(body?.theme ?? body);
   if (!parsed.success) {

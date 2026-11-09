@@ -3,7 +3,7 @@
 // when STRIPE_SECRET_KEY is set (→ { url } to Stripe), otherwise a paid test order right away (→ { url, dev: true }).
 // expectTotal is the total the artist saw; if the price changed since, nothing is charged and the new total comes back.
 import { NextRequest, NextResponse } from "next/server";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkoutUnavailable, testCheckoutAllowed } from "@/lib/testCheckout";
 import { checkoutSession, codePrintPricing, countsOf, isInfinity, markCodeOrderPaid, type OrderItemSnap } from "@/lib/codePrints";
@@ -17,8 +17,8 @@ export const runtime = "nodejs";
 const err = (error: string, code: string, status: number, extra: Record<string, unknown> = {}) => NextResponse.json({ error, code, ...extra }, { status });
 
 export async function POST(req: NextRequest) {
-  const user = await getUserFromCookie();
-  if (!user?.id) return err("Log in to order printed codes.", "not_logged_in", 401);
+  const { user, denied } = await activeUserGuard("Log in to order printed codes.");
+  if (denied) return denied;
   const artist = await prisma.artist.findUnique({ where: { id: user.id }, select: { id: true, email: true, name: true, artist_name: true } });
   if (!artist) return err("Log in to order printed codes.", "not_logged_in", 401);
   const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
