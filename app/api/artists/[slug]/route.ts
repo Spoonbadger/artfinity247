@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma"
 import { ArtworkStatus } from "@prisma/client"
 import { getArtistManager } from "@/lib/admin"
-import { activeUserGuard } from "@/lib/auth"
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
@@ -96,59 +95,5 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: { slug: string } }
-) {
-  try {
-    const target = await prisma.artist.findUnique({
-      where: { slug: params.slug },
-      select: { id: true },
-    })
-    if (!target) return NextResponse.json({ error: "Artist not found" }, { status: 404 })
-
-    const { user, denied } = await activeUserGuard("Not authenticated") // signed in, not paused or closed
-    if (denied) return denied
-    if (user.id !== target.id && user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-
-    const body = await req.json().catch(() => ({}))
-    let { venmoHandle } = body
-
-    if (!venmoHandle || typeof venmoHandle !== "string") {
-      return NextResponse.json({ error: "Invalid venmoHandle" }, { status: 400 })
-    }
-
-    if (!venmoHandle.startsWith("@")) {
-      venmoHandle = "@" + venmoHandle
-    }
-
-    venmoHandle = venmoHandle.replace(/\s+/g, "")
-
-    // Only letters, numbers, underscores, dashes after "@"
-    if (!/^@[A-Za-z0-9_-]+$/.test(venmoHandle)) {
-      return NextResponse.json(
-        { error: "Venmo handle can only contain letters, numbers, dashes and underscores" },
-        { status: 400 }
-      )
-    }
-
-    const artist = await prisma.artist.update({
-      where: { id: target.id },
-      data: { venmoHandle },
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        venmoHandle: true,
-      },
-    })
-
-    return NextResponse.json(artist)
-  } catch (err: any) {
-    if (err.code === "P2002") {
-      return NextResponse.json({ error: "That Venmo handle is already in use." }, { status: 400 })
-    }
-    console.error("Error updating venmoHandle:", err)
-    return NextResponse.json({ error: "Server error" }, { status: 500 })
-  }
-}
+// No PUT here: artists change their Venmo handle in Studio (/api/studio/venmo), which emails a confirmation
+// so a stolen login can't redirect payouts. Admins don't edit handles from this route.
