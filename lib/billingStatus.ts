@@ -4,7 +4,7 @@
 // whether Infinity is on.
 import { FREE_SPLIT, PRO, isProActive } from "@/lib/plans";
 
-/** Stored per artist in one Message row (lib/billing.ts). Dates are ISO strings. */
+/** Stored on the Artist row (lib/billing.ts: subscription columns + Artist.billing). Dates are ISO strings. */
 export type BillingState = {
   customerId: string | null;
   subscriptionId: string | null;

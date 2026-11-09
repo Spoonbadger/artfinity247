@@ -14,9 +14,10 @@
 //     subscription's next charge (trial_end, no proration) to the new proUntil minus the grace days.
 //   • A later proUntil than the subscription's own (state.subProUntil) is never cut back by a subscription event.
 //
-// State without schema changes: one Message row per artist, direction "billing", email "billing:infinity", body =
-// BillingState JSON (customer id, subscription id, status, period end, failure). The Stripe Customer also carries
-// metadata.artistId, so it can be found again by search if the row is ever lost.
+// State lives on the Artist row (prisma/schema.prisma): stripeCustomerId (unique, so webhooks find the artist with an
+// indexed lookup), stripeSubscriptionId, subscriptionStatus / Interval / PeriodEnd / TrialEnd / CancelAtPeriodEnd /
+// PaymentFailedAt, and Artist.billing (JSON) for the rest of the bookkeeping (BillingExtra). The Stripe Customer also
+// carries metadata.artistId, so it can be found again by search if the stored id is ever lost.
 //
 // Without STRIPE_SECRET_KEY, on localhost or a staging site (same gate as test checkout, lib/testCheckout.ts, and
 // never on a Vercel production deploy) billing is SIMULATED: simulate() runs fake subscription objects through the
@@ -36,8 +37,6 @@ import { emailHtml, firstNameOf } from "@/lib/artistEmails";
 
 export type { BillingState, BillingView } from "@/lib/billingStatus";
 
-const DIRECTION = "billing";
-const STATE_EMAIL = "billing:infinity";
 const FROM = "Artfinity <notifications@theartfinity.com>";
 const APP_URL = () => (process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com").replace(/\/$/, "");
 const SIM_PREFIX = "sim_";
@@ -93,51 +92,97 @@ function stripe(): Stripe {
   return s;
 }
 
-// ---------- State (one Message row per artist) ----------
+// ---------- State (columns on the Artist row) ----------
 
-function parseState(body: string | null | undefined): BillingState {
-  try {
-    return { ...EMPTY_BILLING, ...JSON.parse(body || "{}") };
-  } catch {
-    return { ...EMPTY_BILLING };
-  }
+const BILLING_SELECT = {
+  stripeCustomerId: true,
+  stripeSubscriptionId: true,
+  subscriptionStatus: true,
+  subscriptionInterval: true,
+  subscriptionPeriodEnd: true,
+  subscriptionTrialEnd: true,
+  subscriptionCancelAtPeriodEnd: true,
+  subscriptionPaymentFailedAt: true,
+  billing: true,
+} satisfies Prisma.ArtistSelect;
+type BillingRow = Prisma.ArtistGetPayload<{ select: typeof BILLING_SELECT }>;
+
+/** What Artist.billing (JSON) holds: the bookkeeping nobody queries or shows. Dates are ISO strings. */
+type BillingExtra = Pick<BillingState, "endedAt" | "failedInvoiceId" | "subProUntil" | "simulated" | "eventAt" | "updatedAt">;
+
+const str = (v: unknown) => (typeof v === "string" ? v : null);
+
+function stateFromRow(row: BillingRow | null): BillingState {
+  if (!row) return { ...EMPTY_BILLING };
+  const x = (row.billing && typeof row.billing === "object" && !Array.isArray(row.billing) ? row.billing : {}) as Record<string, unknown>;
+  return {
+    customerId: row.stripeCustomerId,
+    subscriptionId: row.stripeSubscriptionId,
+    status: row.subscriptionStatus,
+    interval: row.subscriptionInterval === "year" ? "year" : row.subscriptionInterval === "month" ? "month" : null,
+    periodEnd: iso(row.subscriptionPeriodEnd),
+    trialEnd: iso(row.subscriptionTrialEnd),
+    cancelAtPeriodEnd: row.subscriptionCancelAtPeriodEnd,
+    endedAt: str(x.endedAt),
+    paymentFailedAt: iso(row.subscriptionPaymentFailedAt),
+    failedInvoiceId: str(x.failedInvoiceId),
+    subProUntil: str(x.subProUntil),
+    simulated: x.simulated === true,
+    eventAt: typeof x.eventAt === "number" ? x.eventAt : null,
+    updatedAt: str(x.updatedAt),
+  };
+}
+
+const dateOrNull = (v: string | null) => (v ? new Date(v) : null);
+
+function rowFromState(s: BillingState) {
+  const extra: BillingExtra = { endedAt: s.endedAt, failedInvoiceId: s.failedInvoiceId, subProUntil: s.subProUntil, simulated: s.simulated, eventAt: s.eventAt, updatedAt: s.updatedAt };
+  return {
+    stripeCustomerId: s.customerId,
+    stripeSubscriptionId: s.subscriptionId,
+    subscriptionStatus: s.status,
+    subscriptionInterval: s.interval,
+    subscriptionPeriodEnd: dateOrNull(s.periodEnd),
+    subscriptionTrialEnd: dateOrNull(s.trialEnd),
+    subscriptionCancelAtPeriodEnd: !!s.cancelAtPeriodEnd,
+    subscriptionPaymentFailedAt: dateOrNull(s.paymentFailedAt),
+    billing: extra as Prisma.InputJsonObject,
+  } satisfies Prisma.ArtistUpdateInput;
 }
 
 type Db = typeof prisma | Prisma.TransactionClient;
 
+/** The artist's stored billing state, as is (no live/simulated check). */
+async function storedBillingState(artistId: string, db: Db = prisma): Promise<BillingState> {
+  return stateFromRow(await db.artist.findUnique({ where: { id: artistId }, select: BILLING_SELECT }));
+}
+
 /** The artist's billing state. A simulated state reads as empty once real keys are set (and the other way round). */
 export async function getBillingState(artistId: string, db: Db = prisma): Promise<BillingState> {
-  const row = await db.message.findFirst({ where: { artistId, direction: DIRECTION, email: STATE_EMAIL }, select: { body: true } });
-  const s = parseState(row?.body);
+  const s = await storedBillingState(artistId, db);
   const mode = billingMode();
   if (s.subscriptionId && s.simulated !== (mode === "simulated")) return { ...EMPTY_BILLING, customerId: s.simulated ? null : s.customerId };
   return s;
 }
 
 async function saveBillingState(artistId: string, patch: Partial<BillingState>, db: Db = prisma): Promise<BillingState> {
-  const row = await db.message.findFirst({ where: { artistId, direction: DIRECTION, email: STATE_EMAIL }, select: { id: true, body: true } });
-  const next: BillingState = { ...parseState(row?.body), ...patch, updatedAt: new Date().toISOString() };
-  const body = JSON.stringify(next);
-  if (row) await db.message.update({ where: { id: row.id }, data: { body } });
-  else await db.message.create({ data: { artistId, email: STATE_EMAIL, direction: DIRECTION, subject: "Infinity billing", body } });
+  const next: BillingState = { ...(await storedBillingState(artistId, db)), ...patch, updatedAt: new Date().toISOString() };
+  await db.artist.update({ where: { id: artistId }, data: rowFromState(next) });
   return next;
 }
 
-/** The artist whose billing row has this Stripe customer id, or null. */
+/** The artist with this Stripe customer id, or null (unique index on Artist.stripeCustomerId). */
 async function artistForCustomer(customerId: string | null): Promise<string | null> {
   if (!customerId) return null;
-  const row = await prisma.message.findFirst({
-    where: { direction: DIRECTION, email: STATE_EMAIL, body: { contains: `"customerId":${JSON.stringify(customerId)}` } },
-    select: { artistId: true },
-  });
-  return row?.artistId ?? null;
+  const row = await prisma.artist.findUnique({ where: { stripeCustomerId: customerId }, select: { id: true } });
+  return row?.id ?? null;
 }
 
 /** Every artist's billing state (admin: MRR and lists). */
 export async function allBillingStates(): Promise<{ artistId: string; state: BillingState }[]> {
-  const rows = await prisma.message.findMany({ where: { direction: DIRECTION, email: STATE_EMAIL }, select: { artistId: true, body: true } });
+  const rows = await prisma.artist.findMany({ where: { stripeSubscriptionId: { not: null } }, select: { id: true, ...BILLING_SELECT } });
   const sim = billingMode() === "simulated";
-  return rows.map((r) => ({ artistId: r.artistId, state: parseState(r.body) })).filter((r) => r.state.subscriptionId && r.state.simulated === sim);
+  return rows.map((r) => ({ artistId: r.id, state: stateFromRow(r) })).filter((r) => r.state.subscriptionId && r.state.simulated === sim);
 }
 
 // ---------- Applying a subscription (webhooks, checkout return, simulation) ----------
@@ -546,8 +591,7 @@ function simSub(artistId: string, state: BillingState, o: { status: string; peri
  */
 export async function simulate(artistId: string, action: SimAction, now = new Date()): Promise<{ proUntil: Date | null; message: string }> {
   if (billingMode() !== "simulated") throw new BillingError("Test billing is only on without Stripe keys, outside production.", 403);
-  const raw = await prisma.message.findFirst({ where: { artistId, direction: DIRECTION, email: STATE_EMAIL }, select: { body: true } });
-  const state = parseState(raw?.body);
+  const state = await storedBillingState(artistId);
   const live = state.simulated && hasLiveSubscription(state);
   const periodEnd = state.periodEnd ? new Date(state.periodEnd) : now;
   const need = (ok: boolean, msg: string) => { if (!ok) throw new BillingError(msg, 409); };
