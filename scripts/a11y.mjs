@@ -63,6 +63,9 @@ const PAGES = [
   { id: "studio-analytics", path: "/studio/analytics", as: "artist" },
   { id: "studio-followers", path: "/studio/followers", as: "artist" },
   { id: "studio-share", path: "/studio/share", as: "artist" },
+  { id: "studio-places", path: "/studio/places", as: "artist" },
+  { id: "studio-place", path: "/studio/places", as: "artist", setup: openFirstPlace },
+  { id: "studio-code", path: "/studio/codes/US4E", as: "artist" },
   { id: "admin", path: "/admin", as: "admin" },
   { id: "admin-scanning", path: "/admin/scanning", as: "admin" },
   { id: "admin-scanning-settings", path: "/admin/settings/scanning", as: "admin" },
@@ -91,6 +94,15 @@ async function fillCart(page) {
   const add = page.getByRole("button", { name: /add to cart/i }).first();
   await add.click({ timeout: 30_000 });
   await page.waitForTimeout(500);
+}
+
+/** A Place's own page (/studio/places/<id>): the first one on the list. */
+async function openFirstPlace(page) {
+  await goto(page, "/studio/places");
+  const href = await page.locator('a[href^="/studio/places/"]').first().getAttribute("href", { timeout: 30_000 });
+  if (!href) return null;
+  await goto(page, href);
+  return "skip-goto";
 }
 
 async function payTestOrder(page) {
