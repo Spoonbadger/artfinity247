@@ -1,7 +1,7 @@
 // POST /api/admin/scenes/preview { annotation, size, frame, mat, art, anchor } : the real compositor on an unsaved
 // annotation, full photo, as a JPEG. Admin only.
 import { NextResponse } from "next/server";
-import { adminGuard } from "@/lib/admin";
+import { adminRoleGuard } from "@/lib/adminRoles";
 import { findPhoto } from "@/lib/scenes/catalog";
 import { composite } from "@/lib/scenes/composite";
 import { readArtImage } from "@/lib/scenes/server";
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  const denied = await adminGuard();
+  const { denied } = await adminRoleGuard("admin"); // the Scenes tool: admin or owner
   if (denied) return denied;
   const body = (await req.json().catch(() => null)) as { annotation?: SceneAnnotation; size?: string; frame?: string; mat?: boolean; art?: string; anchor?: number } | null;
   const a = body?.annotation;

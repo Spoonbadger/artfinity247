@@ -1,7 +1,7 @@
 // POST /api/admin/scenes/annotation { annotation } : writes scenes/annotations/<id>.json. Admin only; dev only
 // unless SCENES_ADMIN_WRITE=1 (the files live in the repo).
 import { NextResponse } from "next/server";
-import { getAdmin } from "@/lib/admin";
+import { adminRoleGuard } from "@/lib/adminRoles";
 import { logAdminAction } from "@/lib/audit";
 import { findPhoto, writeAnnotation } from "@/lib/scenes/catalog";
 import { scenesWritable } from "@/lib/scenes/server";
@@ -13,8 +13,9 @@ export const runtime = "nodejs";
 const isPt = (p: unknown): p is [number, number] => Array.isArray(p) && p.length === 2 && p.every((v) => Number.isFinite(v));
 
 export async function POST(req: Request) {
-  const admin = await getAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  // Scenes tooling changes the room previews every buyer sees: admin or owner.
+  const { admin, denied } = await adminRoleGuard("admin");
+  if (denied) return denied;
   if (!scenesWritable()) return NextResponse.json({ error: "Annotations are saved in development only (or set SCENES_ADMIN_WRITE=1)." }, { status: 403 });
   const body = (await req.json().catch(() => null)) as { annotation?: SceneAnnotation } | null;
   const a = body?.annotation;

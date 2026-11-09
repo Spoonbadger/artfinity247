@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { adminOrRedirect } from "../_components/gate";
+import { adminRoleOrRedirect } from "../_components/gate";
+import { roleCan } from "@/lib/adminCaps";
 import { itemBreakdown, normalizeSize } from "@/lib/sales";
 import MonthPicker from "../_components/MonthPicker";
 import { PageHead } from "../_components/ui";
@@ -18,7 +19,7 @@ export const metadata: Metadata = { title: "Orders" };
 const FILTERS: Record<string, Filter> = { print: "print", ship: "ship", shipped: "done", done: "done" };
 
 export default async function AdminOrdersPage({ searchParams }: { searchParams: { month?: string; filter?: string } }) {
-  await adminOrRedirect("/admin/orders");
+  const admin = await adminRoleOrRedirect("/admin/orders");
   const monthRows = await prisma.$queryRaw<{ m: string }[]>`
     SELECT DISTINCT to_char("createdAt" AT TIME ZONE 'UTC', 'YYYY-MM') AS m FROM "Order" ORDER BY m DESC`;
   const months = Array.from(new Set([currentMonth(), ...monthRows.map((r) => r.m)])).sort().reverse();
@@ -126,7 +127,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
         action={
           <>
             <MonthPicker months={months} value={month} />
-            {month !== "all" && <a href={`/api/admin/payouts?month=${month}`} className="btn btn-ghost btn-sm">Export CSV</a>}
+            {month !== "all" && roleCan(admin.adminRole, "money") && <a href={`/api/admin/payouts?month=${month}`} className="btn btn-ghost btn-sm">Export CSV</a>}
           </>
         }
       />

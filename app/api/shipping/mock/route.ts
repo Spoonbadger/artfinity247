@@ -3,7 +3,7 @@
 // real Shippo webhook. Returns 404 in production, whatever the env.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAdmin } from "@/lib/admin";
+import { adminRoleGuard } from "@/lib/adminRoles";
 import { applyTrackingEvent } from "@/lib/shipping";
 import { getTracking } from "@/lib/shipping/store";
 import { mockAllowed, parseWebhook } from "@/lib/shipping/providers";
@@ -15,7 +15,8 @@ const STATUS = { in_transit: "TRANSIT", delivered: "DELIVERED", problem: "FAILUR
 
 export async function POST(req: NextRequest) {
   if (!mockAllowed()) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (!(await getAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const { denied } = await adminRoleGuard("orders");
+  if (denied) return denied;
   const input = await req.json().catch(() => ({}));
   const orderId = String(input?.orderId ?? "");
   const status = STATUS[input?.status as keyof typeof STATUS];

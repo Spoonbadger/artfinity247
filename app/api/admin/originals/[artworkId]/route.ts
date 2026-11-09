@@ -2,15 +2,16 @@
 // ?src=<image url> picks the file an order was placed with, in case the artist has since replaced the image.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { adminRoleGuard } from "@/lib/adminRoles";
 import { originalResponse } from "@/lib/storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest, { params }: { params: { artworkId: string } }) {
-  const admin = await requireAdmin().catch(() => null);
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  // Printing and moderation both need the full-res file, and support does both ("orders" = "moderation" = support).
+  const { denied } = await adminRoleGuard("orders");
+  if (denied) return denied;
   const art = await prisma.artwork.findUnique({ where: { id: params.artworkId }, select: { imageUrl: true, slug: true, id: true } });
   if (!art) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const src = req.nextUrl.searchParams.get("src");

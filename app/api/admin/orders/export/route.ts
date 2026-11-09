@@ -1,7 +1,7 @@
 // GET /api/admin/orders/export?ids=a,b,c  One CSV row per print, for the lab: ship-to, size, frame, edition and
 // signed links to the original file and packing slip (valid LINK_DAYS days, lib/printer.ts).
 import { NextRequest, NextResponse } from "next/server";
-import { getAdmin } from "@/lib/admin";
+import { adminRoleGuard } from "@/lib/adminRoles";
 import { prisma } from "@/lib/prisma";
 import { normalizeSize } from "@/lib/sales";
 import { SIZE_LABEL } from "@/app/admin/_components/util";
@@ -16,8 +16,9 @@ const cell = (v: unknown) => {
 };
 
 export async function GET(req: NextRequest) {
-  const admin = await getAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  // The lab sheet (ship-to and signed original links) is order fulfilment: support handles that.
+  const { admin, denied } = await adminRoleGuard("orders");
+  if (denied) return denied;
   const ids = (req.nextUrl.searchParams.get("ids") || "").split(",").map((s) => s.trim()).filter(Boolean).slice(0, 200);
   if (!ids.length) return NextResponse.json({ error: "Pick some orders." }, { status: 400 });
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAdmin } from "@/lib/admin"
+import { adminRoleGuard } from "@/lib/adminRoles"
 import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
 import { getBalance, isPayoutLate, type PayoutRow } from "@/lib/balance"
 import { connectMode, connectStatus } from "@/lib/stripeConnect"
@@ -26,8 +26,9 @@ function normalizeSize(raw: string | null): PrintSize {
 }
 
 export async function GET(req: NextRequest) {
-  const admin = await getAdmin()
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  // Read-only: the payouts table support sees (its buttons are money-only). Paying and marking paid check "money".
+  const { admin, denied } = await adminRoleGuard("view")
+  if (denied) return denied
 
   try {
     const { searchParams } = new URL(req.url);

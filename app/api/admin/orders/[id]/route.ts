@@ -6,7 +6,6 @@
 //   { action: "reprint", items: [{ id, qty }] | itemId: id | "all", reason, note? }  free reprint (same flow as a buyer's request)
 //   { action: "resend_receipt" } | { action: "resend_shipped" }
 import { NextRequest, NextResponse } from "next/server";
-import { getAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import { logAdminAction } from "@/lib/audit";
 import { itemBreakdown } from "@/lib/sales";
@@ -26,8 +25,8 @@ const fail = (error: string, status = 400) => NextResponse.json({ error }, { sta
 const money = (c: number) => `$${(c / 100).toFixed(2)}`;
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const admin = await getAdmin();
-  if (!admin) return fail("Forbidden", 403);
+  const { admin, denied } = await adminRoleGuard("orders");
+  if (denied) return denied;
   const input = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const note = typeof input.note === "string" ? input.note.trim().slice(0, 600) : "";
 

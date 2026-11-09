@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import path from "node:path";
 import fsp from "node:fs/promises";
 import sharp from "sharp";
-import { adminGuard } from "@/lib/admin";
+import { adminRoleGuard } from "@/lib/adminRoles";
 import { findPhoto } from "@/lib/scenes/catalog";
 import { sceneCacheDir } from "@/lib/scenes/server";
 
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(req: Request) {
-  const denied = await adminGuard();
+  const { denied } = await adminRoleGuard("admin"); // the Scenes tool: admin or owner
   if (denied) return denied;
   const q = new URL(req.url).searchParams;
   const photo = await findPhoto(q.get("id") || "");

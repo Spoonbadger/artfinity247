@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { adminOrRedirect } from "../_components/gate";
+import { adminRoleOrRedirect } from "../_components/gate";
 import { usd } from "../_components/util";
 import { ARTIST_FILTER_KEYS, listArtists, type ArtistFilters } from "@/lib/adminArtists";
 import ActionButton from "../_components/ActionButton";
-import { ROLE_LABEL, asAdminRole } from "@/lib/adminCaps";
+import { ROLE_LABEL, asAdminRole, roleCan } from "@/lib/adminCaps";
 import { cn } from "@/lib/utils";
 import { PageHead, Pill } from "../_components/ui";
 import { DataTable, type Row } from "../_components/table";
@@ -16,7 +16,7 @@ export const metadata: Metadata = { title: "Artists" };
 const PAGE = 500;
 
 export default async function AdminArtistsPage({ searchParams }: { searchParams: ArtistFilters & { page?: string } }) {
-  await adminOrRedirect("/admin/artists");
+  const admin = await adminRoleOrRedirect("/admin/artists");
   const f: ArtistFilters = Object.fromEntries(ARTIST_FILTER_KEYS.map((k) => [k, searchParams[k]]));
   const rows = await listArtists(f);
   const page = Math.max(1, Number(searchParams.page) || 1);
@@ -76,7 +76,7 @@ export default async function AdminArtistsPage({ searchParams }: { searchParams:
               ]}
               confirmLabel="Create and send invite" done="Account created"
             />
-            <a href={`/api/admin/artists/export?${qs}`} className="btn btn-ghost btn-sm" download>Export CSV</a>
+            {roleCan(admin.adminRole, "accounts") && <a href={`/api/admin/artists/export?${qs}`} className="btn btn-ghost btn-sm" download>Export CSV</a>}
           </>
         }
       />
