@@ -1,6 +1,7 @@
 "use client";
 // Several paintings at once, inside the normal upload flow (/studio/art/new). The artist picks several files or a
-// folder; they upload in the background through POST /api/uploads (a few at a time) while the artist fills in each
+// folder; they upload in the background (a few at a time, components/media/uploadImage.ts: straight to Cloudinary in
+// production, else POST /api/uploads) while the artist fills in each
 // painting in the familiar single form and publishes it through POST /api/artworks/upload, one by one.
 // Prices, print run and labels carry over from the previous painting; the ownership box is ticked once for the batch.
 // The queue is kept in sessionStorage so a refresh doesn't lose the titles typed so far.
@@ -14,6 +15,7 @@ import { Problem } from "./Problem";
 import { DragEvent, useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { AlertCircle, ArrowLeft, ArrowRight, Check, Crop, FolderOpen, Loader2, Plus, RotateCcw, Trash2 } from "lucide-react";
 import ImageEditor from "@/components/media/ImageEditor";
+import { UploadFailed, uploadImage } from "@/components/media/uploadImage";
 import type { StoredEdits } from "@/lib/imageEdits";
 import type { SizeKey } from "@/lib/earnings";
 import { cn } from "@/lib/utils";
@@ -253,26 +255,16 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
       const file = files.current.get(id);
       if (!file) { patch(id, { upload: "error", uploadError: "Add this image again." }); continue; }
       active.current.add(id);
-      const xhr = new XMLHttpRequest();
-      xhrs.current.set(id, xhr);
+      const ctrl = new AbortController();
+      xhrs.current.set(id, ctrl);
       patch(id, { upload: "uploading", progress: 0, uploadError: undefined });
-      xhr.upload.onprogress = (e) => { if (e.lengthComputable) patch(id, { progress: e.loaded / e.total }); };
-      xhr.onload = () => {
-        let data: any = {};
-        try { data = JSON.parse(xhr.responseText); } catch {}
-        if (xhr.status >= 200 && xhr.status < 300 && data.url) {
-          done(data);
-        } else {
-          end({ upload: "error", uploadError: data.error || (xhr.status === 401 ? "You're logged out. Log in and add it again." : "Upload failed. Try again.") });
-        }
-      };
-      xhr.onerror = () => end({ upload: "error", uploadError: "Upload failed. Check your connection and try again." });
-      xhr.onabort = () => { active.current.delete(id); xhrs.current.delete(id); };
-      const fd = new FormData();
-      fd.append("file", file);
-      xhr.open("POST", "/api/uploads");
-      xhr.withCredentials = true;
-      xhr.send(fd);
+      uploadImage(file, {}, { signal: ctrl.signal, onProgress: (progress) => patch(id, { progress }) }).then(
+        (data) => done({ ...data, printable: data.printable as SizeKey[] }),
+        (e) => {
+          if (ctrl.signal.aborted) { active.current.delete(id); xhrs.current.delete(id); return; }
+          end({ upload: "error", uploadError: e instanceof UploadFailed ? e.message : "Upload failed. Try again." });
+        },
+      );
     }
   }, [items, patch]);
 

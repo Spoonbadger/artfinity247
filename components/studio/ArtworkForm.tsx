@@ -16,6 +16,7 @@ import { splitOriginal } from "@/lib/originalSize";
 import { FREE_SPLIT, pct } from "@/lib/plans";
 import { useUnsavedChanges } from "@/components/forms/useUnsavedChanges";
 import ImageEditor, { type EditResult } from "@/components/media/ImageEditor";
+import { UploadFailed, uploadImage } from "@/components/media/uploadImage";
 import { parseStored, type StoredEdits } from "@/lib/imageEdits";
 import LabelWarning, { queueReprint, type LabelWarningText } from "@/components/codes/LabelWarning";
 import { describeChange, nowFacts, type PrintedLabel } from "@/lib/labelFacts";
@@ -184,14 +185,9 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
     if (!isImageFile(file)) { setError("Pick an image file: JPG, PNG, WEBP or HEIC.", pickFile()); return; }
     setUploading("Uploading");
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/api/uploads", { method: "POST", body: fd, credentials: "include" });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "Upload failed. Try again.");
-      applyImage(data, file.name);
+      applyImage(await uploadImage(file), file.name);
     } catch (e) {
-      const offline = e instanceof TypeError;
+      const offline = e instanceof TypeError || (e instanceof UploadFailed && e.code === "offline");
       setError(errorText(e, "Upload failed. Try again."), offline ? { label: "Try again", onClick: () => upload(file) } : pickFile());
     } finally {
       setUploading(null);

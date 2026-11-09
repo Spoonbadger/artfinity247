@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, DragEvent, FormEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { uploadImage } from "@/components/media/uploadImage";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Brushed, BrushStroke } from "@/components/af/Brush";
@@ -271,11 +272,7 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
     setUpload({ preview, uploading: true });
     if (!title) setTitle(prettyTitle(file.name));
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/api/uploads", { method: "POST", body: fd });
-      const d = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(d.error || "Upload failed. Try again.");
+      const d = await uploadImage(file);
       setUpload({ preview, uploading: false, url: d.url, width: d.width, height: d.height, printable: d.printable || [], printableSig: d.printableSig || "" });
       setPhotoEditor("auto");
     } catch (err: any) {

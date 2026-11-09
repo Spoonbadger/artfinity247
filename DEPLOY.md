@@ -239,7 +239,12 @@ A wrong signing secret shows up as a Sentry warning ("stripe-signature") and as 
 
 1. Cloudinary → **Dashboard**: copy Cloud name, API key, API secret into the three `CLOUDINARY_*` variables.
 2. Nothing else to configure: public previews are normal uploads, and the full-resolution originals are stored as
-   private ("authenticated") assets that only the print lab's signed links can open.
+   private ("authenticated") assets that only the print lab's signed links can open. No upload preset is needed.
+3. Images go from the artist's browser straight to Cloudinary (Vercel refuses uploads over 4.5 MB), using a signature
+   from the site that only lets them into that artist's folder. So Cloudinary's own plan limits apply: check
+   Cloudinary → **Settings → Account** (or your plan page) for the **maximum image file size** and **megapixels**.
+   The site takes files up to 25 MB; on a plan with a lower cap, bigger files are refused with
+   "That file is over N MB." (N = the plan's cap). The free plan caps images at 10 MB.
 
 ---
 
@@ -348,7 +353,8 @@ Takes 10 minutes. Do it after the first deploy and after big changes.
 
 - [ ] `https://theartfinity.com/api/health` shows `"status":"ok"` and `"db":"ok"`.
 - [ ] Home page, an artist page (`/@handle`) and a painting page load with images.
-- [ ] Log in, open Studio, upload a test piece: the preview image appears (Cloudinary works).
+- [ ] Log in, open Studio, upload a test piece over 5 MB (a phone photo or scan): the preview image appears
+      (Cloudinary works, and big files go straight to it).
 - [ ] /admin dashboard: the **Integrations** panel shows green for Stripe, email, crons and the print lab.
 - [ ] Buy a print with a real card (refund it after in Stripe): the thank-you page shows, the receipt email arrives,
       the order is in /admin/orders, and the work order reached the lab.
@@ -368,6 +374,6 @@ Takes 10 minutes. Do it after the first deploy and after big changes.
 | "Nobody can log in" after a change | `JWT_SECRET` changed. Put the old one back. |
 | Orders paid in Stripe but not in /admin | Wrong `STRIPE_WEBHOOK_SECRET`, or the endpoint URL is wrong. Check the endpoint's attempts in Stripe. |
 | No emails | Resend domain not verified, or `RESEND_API_KEY` missing. |
-| Uploads fail | `CLOUDINARY_*` missing. |
+| Uploads fail | `CLOUDINARY_*` missing. Big files only: the Cloudinary plan's max image size (section 7). |
 | Jobs never run | `CRON_SECRET` missing, or the deploy was rejected for the cron schedule on Hobby (section 6). |
 | An admin setting won't save on Vercel ("couldn't save the settings file") | That setting lives in a file; set its env var instead (`TEST_START_DATE`, `COLLECTOR_REWARDS…`). |
