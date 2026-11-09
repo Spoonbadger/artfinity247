@@ -26,7 +26,7 @@
     /* Box edges (see PAGE_RULES "Visual style"): soft gray for cards, panels and boxes;
        a stronger gray for secondary buttons and unselected chips. Inputs and selected states keep ink. */
     --af-edge: #d9dad2;        /* 1.41:1 on white, 1.26:1 on wall: separates, doesn't shout */
-    --af-edge-strong: #b4b6ab; /* secondary buttons; darkens to ink on hover */
+    --af-edge-strong: #8a8c81; /* secondary buttons and chips; darkens to ink on hover. 3.4:1 on white, 3.1:1 on wall (controls need 3:1) */
     --af-field-edge: #85877c;  /* text inputs, selects, textareas: 3.65:1 on white, 3.27:1 on wall (see "Form fields" below) */
 
     /* RGB channels so Tailwind opacity modifiers (bg-ink/25) work */
@@ -44,7 +44,7 @@
     --af-earned-soft-rgb: 225 242 234;
     --af-gallery-rgb: 233 230 223;
     --af-edge-rgb: 217 218 210;
-    --af-edge-strong-rgb: 180 182 171;
+    --af-edge-strong-rgb: 138 140 129;
 
     /* shadcn/ui variables mapped onto the palette (HSL triplets) */
     --background: 0 0% 100%;
@@ -179,3 +179,13 @@ html body[data-scroll-locked] {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
+
+/* Toasts (sonner, richColors): its default text colours sit at 4.3:1 (warning 3.1:1) on their tinted grounds.
+   Darker text keeps every toast at 5.9:1 or more. Higher specificity than sonner's own injected rules. */
+:root [data-sonner-toaster][data-theme="light"] {
+  --success-text: #0b6b43;
+  --error-text: #b3261e;
+  --info-text: #1d4fb8;
+  --warning-text: #8a4a00;
+}
+:root [data-sonner-toaster] [data-sonner-toast]:not([data-rich-colors="true"]) [data-description] { color: var(--af-ink-2); }
