@@ -1,5 +1,5 @@
 import { scanDiscount } from "@/lib/scanSign";
-import { codeAppliesTo, resolveCode } from "@/lib/shortlinks";
+import { codeAppliesTo, resolveCode, scanVenue } from "@/lib/shortlinks";
 import Stripe from "stripe";
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
@@ -84,7 +84,7 @@ async function buildLines(items: any[]): Promise<Line[]> {
       const byCode = qr && codeAppliesTo(qr, art) ? qr : null;
       const offRaw = parseDiscount(p.discountPct);
       const discountPct = byCode ? parseDiscount(byCode.discountPct) || 0 : scanDiscount(slug, offRaw, parseVenue(p.venue), p.discountSig).pct;
-      const venue = byCode ? byCode.venue : parseVenue(p.venue);
+      const venue = byCode ? scanVenue(byCode) : parseVenue(p.venue);
       const { list } = priceFor(art, size, frameChosen, 0);
       const unit = applyDiscount(list, discountPct);
       const quantity = Math.max(1, Math.min(10, Math.round(Number(item?.quantity ?? p.quantity ?? 1)) || 1));

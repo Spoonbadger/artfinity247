@@ -3,11 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { isLive, statsFor, type CodeStats } from "@/lib/shortlinks";
 import { calcItemProfitCents } from "@/lib/revenue";
 import { dayKey, STUDIO_TZ } from "../_lib/data";
+import { scanRoute, type PlaceLike } from "@/lib/placeRules";
 
 const DAY = 86400000;
 
 const codeSelect = {
   id: true, code: true, label: true, venue: true, venueId: true, discountPct: true, active: true, expiresAt: true, createdAt: true, design: true, artworkId: true,
+  placeId: true, place: { select: { id: true, name: true, venueId: true, active: true, endsOn: true, afterEnd: true } },
   artwork: { select: { id: true, title: true, slug: true, imageUrl: true, status: true } },
   // Last time it was printed (print queue "Mark as printed", or a mailed code order shipping).
   printLogs: { orderBy: { createdAt: "desc" as const }, take: 1, select: { createdAt: true, method: true } },
@@ -61,7 +63,11 @@ export async function getCode(artistId: string, code: string) {
 
 export const pct = (a: number, b: number) => (b ? `${((a / b) * 100).toFixed(a / b < 0.1 ? 1 : 0)}%` : "None yet");
 
-export function status(c: { active: boolean; expiresAt: Date | null; live: boolean }) {
+export function status(c: { active: boolean; expiresAt: Date | null; live: boolean; place?: PlaceLike | null }) {
+  // Its Place has ended: say what scans do now (lib/placeRules.ts).
+  const route = c.live ? scanRoute(c.place) : "open";
+  if (route === "pause") return { text: "Paused (place closed)", on: false };
+  if (route === "page") return { text: "Opens your page", on: true };
   if (c.live) return { text: "Active", on: true };
   if (!c.active) return { text: "Paused", on: false };
   return { text: "Ended", on: false };

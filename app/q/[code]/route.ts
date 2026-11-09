@@ -3,9 +3,13 @@
 //   unknown code       → 302 /?code=unknown
 //   ended or inactive  → 302 /@handle?expired=1
 //   live               → record the scan (in the background), 302 /@handle/art/<slug>?c=<CODE> or /@handle?c=<CODE>
+//   at a Place that has ended (closed, or past its last day; lib/placeRules.ts), its afterEnd choice:
+//     art   → the painting as usual (the art page leaves out "You scanned this at …")
+//     page  → /@handle?c=<CODE> (scan counted)
+//     pause → /@handle?expired=1, like a paused code
 import { NextRequest, NextResponse } from "next/server";
 import { artistPath, artPath } from "@/lib/urls";
-import { CODE_COOKIE, isLive, newVisitorId, recordScanLater, resolveCode, scanContext, validVisitorId, VISITOR_COOKIE } from "@/lib/shortlinks";
+import { CODE_COOKIE, codeRoute, newVisitorId, recordScanLater, resolveCode, scanContext, validVisitorId, VISITOR_COOKIE } from "@/lib/shortlinks";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -23,9 +27,10 @@ export async function GET(req: NextRequest, { params }: { params: { code: string
   if (!qr || qr.artist.closedAt || qr.artist.suspendedAt) return go(req, "/?code=unknown");
 
   const handle = qr.artist.slug;
-  if (!isLive(qr)) return go(req, `${artistPath(handle)}?expired=1`);
+  const route = codeRoute(qr);
+  if (route === "ended" || route === "pause") return go(req, `${artistPath(handle)}?expired=1`);
 
-  const art = qr.artwork && qr.artwork.status === "APPROVED" && qr.artwork.slug ? qr.artwork : null;
+  const art = route !== "page" && qr.artwork && qr.artwork.status === "APPROVED" && qr.artwork.slug ? qr.artwork : null;
   // Straight to the artist-handle URL (no second hop through /art/<slug>).
   const res = go(req, art ? `${artPath(handle, art.slug!)}?c=${qr.code}` : `${artistPath(handle)}?c=${qr.code}`);
 
@@ -50,6 +55,7 @@ export async function HEAD(req: NextRequest, { params }: { params: { code: strin
   const qr = await resolveCode(params.code).catch(() => null);
   if (!qr || qr.artist.closedAt || qr.artist.suspendedAt) return go(req, "/?code=unknown");
   const handle = qr.artist.slug;
-  if (!isLive(qr)) return go(req, `${artistPath(handle)}?expired=1`);
-  return go(req, qr.artwork?.slug ? `${artPath(handle, qr.artwork.slug)}?c=${qr.code}` : `${artistPath(handle)}?c=${qr.code}`);
+  const route = codeRoute(qr);
+  if (route === "ended" || route === "pause") return go(req, `${artistPath(handle)}?expired=1`);
+  return go(req, route !== "page" && qr.artwork?.slug ? `${artPath(handle, qr.artwork.slug)}?c=${qr.code}` : `${artistPath(handle)}?c=${qr.code}`);
 }

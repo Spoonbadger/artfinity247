@@ -2,7 +2,7 @@
 // DELETE /api/studio/events/:id : remove it.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { cleanEvent, currentArtistId, eventSelect } from "../_lib";
+import { cleanEvent, currentArtistId, eventSelect, placeForEvent } from "../_lib";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +21,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
     const body = await req.json().catch(() => null);
     const r = cleanEvent(body, current);
     if ("error" in r) return NextResponse.json({ error: r.error, code: "invalid_event" }, { status: 400 });
-    const event = await prisma.studioEvent.update({ where: { id: current.id }, data: r.data, select: eventSelect });
+    // A new name can mean a different Place.
+    const placeId = r.data.name !== current.name ? await placeForEvent(artistId, r.data) : undefined;
+    const event = await prisma.studioEvent.update({ where: { id: current.id }, data: { ...r.data, ...(placeId !== undefined ? { placeId } : {}) }, select: eventSelect });
     return NextResponse.json({ event });
   } catch (e) {
     console.error("[studio/events]", e);

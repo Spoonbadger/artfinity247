@@ -4,7 +4,7 @@
 //   before they moved to the server. Only runs while the artist has no events yet.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { cleanEvent, currentArtistId, eventSelect, MAX_EVENTS, type EventInput } from "./_lib";
+import { cleanEvent, currentArtistId, eventSelect, MAX_EVENTS, placeForEvent, type EventInput } from "./_lib";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     if ("error" in r) return NextResponse.json({ error: r.error, code: "invalid_event" }, { status: 400 });
     const count = await prisma.studioEvent.count({ where: { artistId } });
     if (count >= MAX_EVENTS) return NextResponse.json({ error: "That's a lot of events. Remove some old ones first.", code: "event_limit" }, { status: 400 });
-    const event = await prisma.studioEvent.create({ data: { ...r.data, artistId }, select: eventSelect });
+    const event = await prisma.studioEvent.create({ data: { ...r.data, artistId, placeId: await placeForEvent(artistId, r.data) }, select: eventSelect });
     return NextResponse.json({ event }, { status: 201 });
   } catch (e) {
     console.error("[studio/events]", e);

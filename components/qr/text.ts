@@ -137,3 +137,10 @@ export function arcText(f: Font, s: string, cx: number, cy: number, r: number, s
 export function arcWidth(f: Font, s: string, size: number, spacing = 0) {
   return width(f, s, size) + spacing * Math.max(0, s.length - 1);
 }
+
+/** The ink box of one line drawn at (0, 0) on its baseline: x1 is the left side bearing, y1 < 0 the top, y2 the bottom. */
+export function ink(f: Font, s: string, size: number) {
+  if (!s.trim()) return { x1: 0, y1: 0, x2: 0, y2: 0 };
+  const b = f.getPath(s, 0, 0, size).getBoundingBox();
+  return { x1: b.x1, y1: b.y1, x2: b.x2, y2: b.y2 };
+}

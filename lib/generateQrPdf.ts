@@ -2,17 +2,46 @@
 // rasterised at print resolution with sharp, then tiled on US Letter with pdf-lib.
 import sharp from "sharp";
 import { PDFDocument, StandardFonts, rgb, type PDFImage } from "pdf-lib";
-import { cardSVG, renderCard, sheetLayout, FORMATS, type ArtInfo, type Design, type FormatKey } from "@/components/qr/card";
+import { cardSVG, freeDesign, renderCard, sheetLayout, FORMATS, type ArtInfo, type Design, type FormatKey } from "@/components/qr/card";
 import { loadFonts } from "@/components/qr/text";
+import { artPalette, artThumb } from "@/lib/qr/palette";
 
 export type CardJob = { design: Design; art: ArtInfo; qrText: string };
+/**
+ * pro: the artist's plan. false = a Free artist: Infinity extras fall back to the closest free look (same format,
+ * style, ink and colours) instead of failing, e.g. an old link to an Infinity design. Leave it out only where the
+ * designs are known to be free.
+ */
+export type PdfPlan = { pro?: boolean };
+
+/**
+ * Ready a job to print: the plan fallback, Match your art's palette for THIS piece (Print all shares one design across
+ * pieces), and the thumbnail as an embedded image (the rasteriser can't fetch URLs).
+ */
+export async function prepareJob(job: CardJob, plan: PdfPlan = {}): Promise<CardJob> {
+  let design = plan.pro === false ? freeDesign(job.design) : job.design;
+  let art = job.art;
+  if (design.extras.includes("match") && (design.paletteOf !== art.slug || !design.palette.length)) {
+    const p = await artPalette(art.imageUrl).catch(() => null);
+    design = { ...design, palette: p?.palette ?? [], paletteOf: art.slug };
+  }
+  if (design.extras.includes("thumb") && !art.thumb?.startsWith("data:")) {
+    const t = await artThumb(art).catch(() => null);
+    art = { ...art, thumb: t ?? "" };
+  }
+  return design === job.design && art === job.art ? job : { ...job, design, art };
+}
 
 /**
  * One job + fill: a full sheet of the same card (the Studio's "Download PDF").
  * Several jobs: one card each, as many sheets as needed. All jobs use the first job's format.
  */
-export async function generateQrPdf(jobs: CardJob[], opts: { fill?: boolean; hint?: string | ((sheet: number, sheets: number) => string); title?: string } = {}): Promise<Uint8Array> {
-  if (!jobs.length) throw new Error("No cards to print");
+export async function generateQrPdf(rawJobs: CardJob[], opts: PdfPlan & { fill?: boolean; hint?: string | ((sheet: number, sheets: number) => string); title?: string } = {}): Promise<Uint8Array> {
+  if (!rawJobs.length) throw new Error("No cards to print");
+  // Same job object in, same prepared job out, so repeated cards are still rasterised once.
+  const ready = new Map<CardJob, CardJob>();
+  for (const j of rawJobs) if (!ready.has(j)) ready.set(j, await prepareJob(j, opts));
+  const jobs = rawJobs.map((j) => ready.get(j)!);
   const fonts = await loadFonts();
   const fmt = jobs[0].design.format;
   const L = sheetLayout(fmt);
@@ -69,7 +98,7 @@ export async function generateQrPdf(jobs: CardJob[], opts: { fill?: boolean; hin
  * (3 labels of piece A and 7 of piece B fill one 10-up sheet). Every job must be in `fmt`; others are skipped.
  * Each distinct card is rasterised once.
  */
-export async function generateMixedQrPdf(items: { job: CardJob; qty: number }[], fmt: FormatKey, opts: { title?: string; footer?: string } = {}): Promise<Uint8Array> {
+export async function generateMixedQrPdf(items: { job: CardJob; qty: number }[], fmt: FormatKey, opts: PdfPlan & { title?: string; footer?: string } = {}): Promise<Uint8Array> {
   const list: CardJob[] = [];
   for (const it of items) {
     if (it.job.design.format !== fmt) continue;
@@ -78,6 +107,7 @@ export async function generateMixedQrPdf(items: { job: CardJob; qty: number }[],
   if (!list.length) throw new Error("No cards to print");
   return generateQrPdf(list, {
     title: opts.title,
+    pro: opts.pro,
     hint: (sheet, sheets) => `${opts.footer ? `${opts.footer} · ` : ""}Sheet ${sheet} of ${sheets} · Print at 100% (actual size). Cut on the marks.`,
   });
 }

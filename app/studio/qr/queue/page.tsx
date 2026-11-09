@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { StudioPage } from "@/components/studio/StudioPage";
 import HelpLink from "@/components/help/HelpLink";
 import PrintQueue, { type QueueGroup, type QueueOrder } from "@/components/qr/PrintQueue";
-import { FORMATS, cardSVG, mixedSheetSVG, renderCard, sanitizeDesign, sheetLayout, type Card } from "@/components/qr/card";
+import { FORMATS, cardSVG, freeDesign, mixedSheetSVG, renderCard, sanitizeDesign, sheetLayout, type Card } from "@/components/qr/card";
 import { loadFonts } from "@/components/qr/text";
 import { jobsByFormat, loadQueue } from "@/lib/printQueue";
 import { codePrintPricing, confirmFromSession, isInfinity, orderItems, summaryOf } from "@/lib/codePrints";
@@ -46,7 +46,8 @@ export default async function PrintQueuePage({ searchParams }: { searchParams: {
       let svg = "";
       if (fonts) {
         try {
-          const c = renderCard(g.job.design, g.job.art, fonts, g.job.qrText, `q-${format}-${i}`);
+          // Same as the PDF: on Free, an Infinity look shows (and prints) as the closest free look.
+          const c = renderCard(infinity ? g.job.design : freeDesign(g.job.design), g.job.art, fonts, g.job.qrText, `q-${format}-${i}`);
           cards.set(g.row.id, c);
           svg = thumb(cardSVG(c));
         } catch (e) { console.error("print queue: card failed", e); }

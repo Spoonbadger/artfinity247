@@ -6,7 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { adminRoleOrRedirect } from "../../_components/gate";
 import ActionButton from "../../_components/ActionButton";
 import { usd } from "../../_components/util";
-import { FORMATS, cardSVG, renderCard, sanitizeDesign, type ArtInfo } from "@/components/qr/card";
+import { FORMATS, cardSVG, freeDesign, renderCard, sanitizeDesign, type ArtInfo } from "@/components/qr/card";
+import { artistIsPro } from "@/lib/qr/plan";
 import { loadFonts } from "@/components/qr/text";
 import { countsOf, orderItems } from "@/lib/codePrints";
 import { CARRIERS } from "@/lib/tracking";
@@ -31,9 +32,11 @@ export default async function CodeOrderPage({ params }: { params: { id: string }
 
   let fonts: Awaited<ReturnType<typeof loadFonts>> | null = null;
   try { fonts = await loadFonts(); } catch { /* thumbnails fall back to the painting */ }
+  const pro = await artistIsPro(o.artistId);
   const thumbs = items.map((i, k) => {
     if (!fonts) return "";
-    try { return thumb(cardSVG(renderCard({ ...sanitizeDesign(i.design), format: i.format }, i.art as ArtInfo, fonts, i.qrText, `a${k}`))); } catch { return ""; }
+    const d = { ...sanitizeDesign(i.design), format: i.format };
+    try { return thumb(cardSVG(renderCard(pro ? d : freeDesign(d), i.art as ArtInfo, fonts, i.qrText, `a${k}`))); } catch { return ""; }
   });
 
   const steps: [string, Date | null][] = [["Ordered", o.createdAt], ["Paid", o.paidAt], ["Printing", o.printingAt], ["Shipped", o.shippedAt], ["Delivered", o.deliveredAt]];

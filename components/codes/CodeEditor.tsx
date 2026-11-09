@@ -7,56 +7,88 @@ import { errorText, failed, problemFrom, saved } from "@/lib/feedback";
 import { Download, ImageIcon, Loader2, Pencil } from "lucide-react";
 import { qrSVG, type DotStyle, type EyeStyle } from "@/lib/qr/render";
 import { shortUrl } from "@/lib/shortcode";
-import VenuePicker, { type VenueChoice } from "./VenuePicker";
+import PlacePicker, { placeInput, samePlace, type PartnerChoice, type PlaceChoice, type PlaceValue } from "./PlacePicker";
+import LabelWarning, { queueReprint, type LabelWarningText } from "./LabelWarning";
+import { describeChange, nowFacts, type PrintedLabel } from "@/lib/labelFacts";
 
 export type EditableCode = {
   code: string;
   label: string;
-  venue: string;
-  venueId: string | null;
+  /** Where it hangs (its Place). */
+  place: PlaceValue;
   discountPct: number | null;
   active: boolean;
   expiresAt: string | null; // ISO
   artworkId: string | null;
 };
-export type CodeArt = { id: string; title: string; imageUrl: string };
+/** smallCents: the artwork's small print markup, for the "Prints from" price a reprint would show. */
+export type CodeArt = { id: string; title: string; imageUrl: string; smallMarkup?: number };
 export type CodeLook = { fg: string; bg: string; dots: DotStyle; eyes: EyeStyle; eye: string | null; logo: boolean; printedDisc: number; printedVenue: string | null };
 
 const STEPS = [5, 10, 15, 20, 25, 30];
 const dayOf = (iso: string | null) => (iso ? iso.slice(0, 10) : "");
 
 /** Edit what's behind a printed code, and download the code again. */
-export default function CodeEditor({ initial, arts, look, base, venues = [] }: { initial: EditableCode; arts: CodeArt[]; look: CodeLook; base: string; venues?: VenueChoice[] }) {
+export default function CodeEditor({ initial, arts, look, base, places = [], partners = [], label = null }: {
+  initial: EditableCode; arts: CodeArt[]; look: CodeLook; base: string;
+  places?: PlaceChoice[]; partners?: PartnerChoice[];
+  /** This code's latest printed label (lib/labelStatus.ts), to warn before a change makes it wrong. */
+  label?: PrintedLabel | null;
+}) {
   const router = useRouter();
   const [f, setF] = useState({ ...initial, expires: dayOf(initial.expiresAt) });
   const [busy, setBusy] = useState(false);
   const set = (p: Partial<typeof f>) => setF((o) => ({ ...o, ...p }));
-  const dirty = f.label !== initial.label || f.venue !== initial.venue || f.venueId !== initial.venueId || f.discountPct !== initial.discountPct || f.active !== initial.active || f.expires !== dayOf(initial.expiresAt) || f.artworkId !== initial.artworkId;
+  const dirty = f.label !== initial.label || !samePlace(f.place, initial.place) || f.discountPct !== initial.discountPct || f.active !== initial.active || f.expires !== dayOf(initial.expiresAt) || f.artworkId !== initial.artworkId;
+  // Asked before saving a change that makes the printed label disagree with what scans show.
+  const [warn, setWarn] = useState<LabelWarningText | null>(null);
+  const [warnBusy, setWarnBusy] = useState<"reprint" | "save" | null>(null);
   const art = arts.find((a) => a.id === f.artworkId) || null;
 
   const formRef = useRef<HTMLFormElement>(null);
-  async function save(e: React.FormEvent) {
+  /** What this code's card would say after the change: the picked artwork's title and price, the new discount. */
+  function after(l: PrintedLabel) {
+    const a = arts.find((x) => x.id === f.artworkId);
+    if (!a) return { priceCents: l.priceCents, discountPct: f.discountPct || 0, title: l.showsTitle ? "Your page" : "" };
+    return nowFacts({ design: {}, discountPct: f.discountPct }, { title: a.title.replace(/ \(in review\)$/, ""), markups: { small: a.smallMarkup ?? 0, medium: 0, large: 0, xl: 0 } }, l.showsTitle);
+  }
+
+  function save(e: React.FormEvent) {
     e.preventDefault();
+    const w = label ? describeChange([label], after) : null;
+    if (w) { setWarn(w); return; }
+    void persist(false);
+  }
+
+  async function persist(reprint: boolean) {
     setBusy(true);
     try {
       const r = await fetch(`/api/qr/codes/${initial.code}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          label: f.label, venue: f.venue, venueId: f.venueId, discountPct: f.discountPct, active: f.active, artworkId: f.artworkId,
+          label: f.label, place: placeInput(f.place), discountPct: f.discountPct, active: f.active, artworkId: f.artworkId,
           expiresAt: f.expires ? new Date(`${f.expires}T23:59:59`).toISOString() : null,
         }),
       });
       if (!r.ok) {
         const p = await problemFrom(r, "Couldn't save. Try again.");
-        failed(p.message, { fix: p.fix, retry: p.fix ? undefined : () => formRef.current?.requestSubmit() });
+        failed(p.message, { fix: p.fix, retry: p.fix ? undefined : () => { void persist(reprint); } });
         return;
       }
-      saved("Saved", { description: "The printed code opens the new version now." });
+      if (reprint) {
+        try {
+          const q = await queueReprint([initial.code]);
+          saved("Saved and added to your print queue", { description: `${q.cards} ${q.cards === 1 ? "card" : "cards"} waiting to print.`, next: { label: "Open print queue", href: "/studio/qr/queue" } });
+        } catch (err) {
+          failed(errorText(err, "Saved, but it didn't go in the print queue."), { retry: () => { void queueReprint([initial.code]).then(() => saved("Added to your print queue")); } });
+        }
+      } else saved("Saved", { description: "The printed code opens the new version now." });
+      setWarn(null);
       router.refresh();
     } catch (err) {
-      failed(errorText(err, "Couldn't save. Try again."), { retry: () => formRef.current?.requestSubmit() });
-    } finally { setBusy(false); }
+      failed(errorText(err, "Couldn't save. Try again."), { retry: () => { void persist(reprint); } });
+    } finally { setBusy(false); setWarnBusy(null); }
   }
 
   const url = shortUrl(initial.code, base);
@@ -81,8 +113,8 @@ export default function CodeEditor({ initial, arts, look, base, venues = [] }: {
     c.toBlob((b) => b && saveBlob(b, `artfinity-${initial.code}.png`), "image/png");
   }
 
-  const tagWarn = look.printedDisc > 0 && f.discountPct !== look.printedDisc;
-  const venueWarn = !!look.printedVenue && f.venue.trim() !== look.printedVenue;
+  const tagWarn = !label && look.printedDisc > 0 && f.discountPct !== look.printedDisc;
+  const venueWarn = !!look.printedVenue && f.place.name.trim() !== look.printedVenue;
 
   return (
     <div className="grid content-start gap-4">
@@ -112,7 +144,7 @@ export default function CodeEditor({ initial, arts, look, base, venues = [] }: {
           </div>
         )}
 
-        <VenuePicker venues={venues} value={{ venueId: f.venueId, venue: f.venue }} onChange={(v) => set(v)} />
+        <PlacePicker places={places} partners={partners} value={f.place} onChange={(place) => set({ place })} label="Hangs at" hint={<>Buyers see &ldquo;You scanned this at …&rdquo;. <Link href="/studio/places" className="font-semibold text-scan">Places</Link></>} />
         {venueWarn && <p className="t-small -mt-2">The card itself still says {look.printedVenue}.</p>}
 
         <label className="af-field">
@@ -142,6 +174,15 @@ export default function CodeEditor({ initial, arts, look, base, venues = [] }: {
           {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}{dirty ? "Save changes" : "Saved"}
         </button>
       </form>
+
+      {warn && (
+        <LabelWarning
+          warning={warn} busy={warnBusy}
+          onReprint={() => { setWarnBusy("reprint"); void persist(true); }}
+          onSave={() => { setWarnBusy("save"); void persist(false); }}
+          onCancel={() => setWarn(null)}
+        />
+      )}
 
       <section className="af-card grid gap-3 p-4 sm:p-5" aria-labelledby="dl-h">
         <h2 id="dl-h" className="t-card">The code</h2>

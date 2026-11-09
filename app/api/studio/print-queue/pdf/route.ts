@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserFromCookie } from "@/lib/auth";
 import { generateMixedQrPdf } from "@/lib/generateQrPdf";
+import { artistIsPro } from "@/lib/qr/plan";
 import { FORMATS } from "@/components/qr/card";
 import { isFormat, jobsByFormat, loadQueue } from "@/lib/printQueue";
 import { baseUrl, pdfHeaders } from "../../../qr/art";
@@ -19,7 +20,7 @@ export async function GET(req: NextRequest) {
   const list = groups.get(format) || [];
   if (!list.length) return NextResponse.json({ error: `No ${FORMATS[format].name.toLowerCase()}s in your queue.`, code: "queue_empty" }, { status: 404 });
   try {
-    const pdf = await generateMixedQrPdf(list.map((g) => ({ job: g.job, qty: g.qty })), format, { title: `Artfinity print queue · ${FORMATS[format].name}` });
+    const pdf = await generateMixedQrPdf(list.map((g) => ({ job: g.job, qty: g.qty })), format, { title: `Artfinity print queue · ${FORMATS[format].name}`, pro: await artistIsPro(user.id) });
     return new NextResponse(Buffer.from(pdf), { status: 200, headers: { ...pdfHeaders(`artfinity-queue-${format}.pdf`), "X-Af-Cards": String(list.reduce((n, g) => n + g.qty, 0)) } });
   } catch (e) {
     console.error("[print-queue] pdf failed", e);

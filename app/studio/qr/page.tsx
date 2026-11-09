@@ -6,7 +6,9 @@ import { EmptyState } from "@/components/studio/EmptyState";
 import { Problem } from "@/components/studio/Problem";
 import HelpLink from "@/components/help/HelpLink";
 import QrStudio from "@/components/qr/QrStudio";
-import { DEFAULT_DESIGN, DISCOUNTS, PRESETS, cardSVG, presetLook, qrValue, renderCard, sanitizeDesign, sheetSVG, type ArtInfo, type Design, type PresetKey } from "@/components/qr/card";
+import { DEFAULT_DESIGN, DISCOUNTS, PRESETS, cardSVG, freeDesign, presetLook, qrValue, renderCard, sanitizeDesign, sheetSVG, type ArtInfo, type Design, type PresetKey } from "@/components/qr/card";
+import { isProActive } from "@/lib/plans";
+import { billingMode } from "@/lib/billing";
 import { PLACEHOLDER_CODE, normalizeCode } from "@/lib/shortcode";
 import { loadFonts } from "@/components/qr/text";
 import { requireArtist, displayName } from "../_lib/data";
@@ -37,6 +39,8 @@ export default async function QrPage({ searchParams }: { searchParams: { art?: s
   // Each sale pays the artist's real split today (70% on Infinity).
   const plan = await prisma.artist.findUnique({ where: { id: artist.id }, select: { plan: true, proUntil: true } });
   const split = getArtistSplitFor({ orderDate: new Date(), plan: plan?.plan, proUntil: plan?.proUntil });
+  // Infinity looks are locked on Free: shown with their real preview, and choosing one starts checkout.
+  const pro = isProActive(plan);
   const arts: ArtInfo[] = rows.map((r) => ({
     slug: r.slug as string,
     title: r.title,
@@ -74,8 +78,10 @@ export default async function QrPage({ searchParams }: { searchParams: { art?: s
     const d = saved.design ? sanitizeDesign(saved.design) : design;
     // The record is the truth for venue and deal; the card's tag can only show the Studio's discount steps.
     const disc = saved.discountPct && DISCOUNTS.includes(saved.discountPct) ? saved.discountPct : saved.discountPct ? d.disc : 0;
-    design = { ...d, ev: saved.venue || "", disc };
+    design = { ...d, ev: saved.venue || "", disc, evDate: d.evDate || (saved.expiresAt ? saved.expiresAt.toISOString().slice(0, 10) : "") };
   }
+  // A Free artist reopening an Infinity look gets the closest free look (that's also what prints).
+  if (!pro) design = freeDesign(design);
 
   // First paint: the server draws the default card so there's no empty stage while fonts load.
   let initialCard: { svg: string; sheet: string } | null = null;
@@ -95,7 +101,7 @@ export default async function QrPage({ searchParams }: { searchParams: { art?: s
           You can print {inReview.length === 1 ? "its code" : "their codes"} now. Scans open the piece once it&apos;s live, usually within a day.
         </Problem>
       )}
-      <QrStudio arts={arts} initialSlug={slug} initialDesign={design} initialCard={initialCard} base={base} initialSaved={savedCode} split={split} handle={artist.slug} venues={await venueOptions(savedCode?.venueId)} />
+      <QrStudio arts={arts} initialSlug={slug} initialDesign={design} initialCard={initialCard} base={base} initialSaved={savedCode} split={split} pro={pro} billing={billingMode()} handle={artist.slug} venues={await venueOptions(savedCode?.venueId)} />
     </StudioPage>
   );
 }

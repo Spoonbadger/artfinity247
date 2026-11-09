@@ -2,11 +2,16 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { StudioPage } from "@/components/studio/StudioPage";
 import { EmptyState } from "@/components/studio/EmptyState";
+import { Problem } from "@/components/studio/Problem";
 import HelpLink from "@/components/help/HelpLink";
 import { requireArtist, usd } from "../_lib/data";
 import QueueLink from "@/components/qr/QueueLink";
 import { queueCount } from "@/lib/printQueue";
 import { getCodes, pct, status, windowTotals, WINDOW_DAYS, type CodeRow } from "./_lib";
+import CodesList, { type CodeListRow } from "@/components/codes/CodesList";
+import { partnerChoices, placeOptions } from "@/lib/artistPlaces";
+import { latestLabels } from "@/lib/labelStatus";
+import { priceWords } from "@/lib/labelFacts";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "My codes" };
@@ -14,15 +19,6 @@ export const metadata = { title: "My codes" };
 const DAY = 86400000;
 const n = (v: number) => v.toLocaleString("en-US");
 const date = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-
-function Thumb({ c }: { c: CodeRow }) {
-  return c.artwork ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={c.artwork.imageUrl} alt={c.artwork.title} className="h-14 w-14 shrink-0 rounded-[3px] object-cover shadow-[0_2px_0_var(--af-line)]" />
-  ) : (
-    <span className="grid h-14 w-14 shrink-0 place-items-center rounded-[3px] bg-wall text-center text-[12px] font-bold leading-tight text-ink-2 shadow-[0_2px_0_var(--af-line)]">Your<br />page</span>
-  );
-}
 
 /** One headline number, the same tile as the Studio home. Paint stays in the codes themselves. */
 function Stat({ label, value, note, earned }: { label: string; value: string; note: string; earned?: boolean }) {
@@ -35,38 +31,28 @@ function Stat({ label, value, note, earned }: { label: string; value: string; no
   );
 }
 
-function Status({ c }: { c: CodeRow }) {
-  const s = status(c);
-  return (
-    <span className={`inline-flex items-center gap-1.5 text-[13px] font-bold ${s.on ? "text-ink" : "text-ink-2"}`}>
-      <i className="paint-dab h-2.5 w-2.5" style={{ ["--dab" as string]: s.on ? "#0f7a55" : "#b9bcc4" }} aria-hidden="true" />
-      {s.text}
-    </span>
-  );
-}
-
 /** "Printed Nov 5" (or "Mailed Nov 5" for codes we printed), from the print queue's log. */
-function Printed({ c }: { c: CodeRow }) {
+function printedText(c: CodeRow) {
   const p = c.printLogs?.[0];
   if (!p) return null;
   const d = p.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" });
-  return <span className="text-[13px] font-semibold text-ink-2">{p.method === "mail" ? `Printed by us, shipped ${d}` : `Printed ${d}`}</span>;
+  return p.method === "mail" ? `Printed by us, shipped ${d}` : `Printed ${d}`;
 }
 
-function Deal({ c }: { c: CodeRow }) {
-  return (
-    <span className="t-small flex flex-wrap items-center gap-1.5">
-      <b className="text-ink">{c.code}</b>
-      {c.venue && <span>· {c.venue}</span>}
-      {c.discountPct ? <span className="rounded-full bg-sticker px-2 py-0.5 font-bold text-ink">{c.discountPct}% off</span> : null}
-    </span>
-  );
-}
-
-export default async function CodesPage() {
+export default async function CodesPage({ searchParams }: { searchParams: { show?: string } }) {
   const artist = await requireArtist("/studio/codes");
   const now = new Date();
   const codes = await getCodes(artist.id);
+  const [places, partners, labels] = await Promise.all([placeOptions(artist.id), partnerChoices(artist.id), latestLabels(artist.id)]);
+  const rows: CodeListRow[] = codes.map((c) => {
+    const l = labels.get(c.id);
+    return {
+      id: c.id, code: c.code, title: c.label || c.artwork?.title || "Your page", imageUrl: c.artwork?.imageUrl ?? null, artTitle: c.artwork?.title ?? null,
+      createdAt: c.createdAt.toISOString(), made: date(c.createdAt), place: c.place ? { id: c.place.id, name: c.place.name } : null, venue: c.venue, discountPct: c.discountPct,
+      status: status(c), printed: printedText(c), stale: l && l.diffs.length ? priceWords(l) : null, stats: c.stats,
+    };
+  });
+  const stale = rows.filter((r) => r.stale).length;
   // Every headline tile uses the same window; the table below is all-time per code.
   const win = await windowTotals(codes.map((c) => c.id), new Date(now.getTime() - WINDOW_DAYS * DAY));
   const allScans = codes.reduce((n, c) => n + c.stats.scans, 0);
@@ -100,77 +86,12 @@ export default async function CodesPage() {
             </div>
           </section>
 
-          {/* Phones: cards */}
-          <ul className="grid gap-3 md:hidden" aria-label="Codes">
-            {codes.map((c) => (
-              <li key={c.id}>
-                <Link href={`/studio/codes/${c.code}`} className="af-card grid gap-3 p-4 text-ink no-underline">
-                  <div className="flex items-start gap-3">
-                    <Thumb c={c} />
-                    <div className="grid min-w-0 flex-1 gap-1">
-                      <b className="t-card truncate">{c.label || c.artwork?.title || "Your page"}</b>
-                      <Deal c={c} />
-                      <Printed c={c} />
-                    </div>
-                    <Status c={c} />
-                  </div>
-                  <dl className="grid grid-cols-4 gap-2 border-t border-line pt-3 text-center">
-                    {([["scans", n(c.stats.scans)], ["7 days", n(c.stats.scans7)], ["sales", n(c.stats.sales)], ["earned", usd(c.stats.shareCents)]] as const).map(([l, v], i) => (
-                      <div key={l} className="grid gap-0.5">
-                        <dd className={`num text-[16px] font-bold ${i === 3 ? "text-earned" : ""}`}>{v}</dd>
-                        <dt className="text-[13px] text-ink-2">{l}</dt>
-                      </div>
-                    ))}
-                  </dl>
-                </Link>
-              </li>
-            ))}
-          </ul>
-
-          {/* Wider: a table */}
-          <div className="af-card hidden overflow-x-auto md:block">
-            <table className="w-full min-w-[860px] text-left text-[14px]">
-              <caption className="sr-only">Your codes and what they did</caption>
-              <thead className="border-b border-line text-[13px] text-ink-2">
-                <tr>
-                  <th scope="col" className="px-4 py-3 font-semibold">Code</th>
-                  <th scope="col" className="px-3 py-3 text-right font-semibold">Scans</th>
-                  <th scope="col" className="px-3 py-3 text-right font-semibold">7 days</th>
-                  <th scope="col" className="px-3 py-3 text-right font-semibold">People</th>
-                  <th scope="col" className="px-3 py-3 text-right font-semibold">Sales</th>
-                  <th scope="col" className="px-3 py-3 text-right font-semibold">Revenue</th>
-                  <th scope="col" className="px-3 py-3 text-right font-semibold">You earned</th>
-                  <th scope="col" className="px-3 py-3 text-right font-semibold">Converts</th>
-                  <th scope="col" className="px-4 py-3 font-semibold">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {codes.map((c) => (
-                  <tr key={c.id} className="border-b border-line last:border-0 hover:bg-wall/60">
-                    <td className="px-4 py-3">
-                      <Link href={`/studio/codes/${c.code}`} className="flex items-center gap-3 text-ink no-underline">
-                        <Thumb c={c} />
-                        <span className="grid min-w-0 gap-0.5">
-                          <b className="max-w-[260px] truncate">{c.label || c.artwork?.title || "Your page"}</b>
-                          <Deal c={c} />
-                          <span className="text-[13px] text-ink-2">Made {date(c.createdAt)}</span>
-                          <Printed c={c} />
-                        </span>
-                      </Link>
-                    </td>
-                    <td className="num px-3 py-3 text-right font-bold">{n(c.stats.scans)}</td>
-                    <td className="num px-3 py-3 text-right">{n(c.stats.scans7)}</td>
-                    <td className="num px-3 py-3 text-right">{n(c.stats.visitors)}</td>
-                    <td className="num px-3 py-3 text-right">{n(c.stats.sales)}</td>
-                    <td className="num px-3 py-3 text-right">{usd(c.stats.revenueCents)}</td>
-                    <td className="num px-3 py-3 text-right font-bold text-earned">{usd(c.stats.shareCents)}</td>
-                    <td className="num px-3 py-3 text-right">{pct(c.stats.sales, c.stats.scans)}</td>
-                    <td className="px-4 py-3"><Status c={c} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {stale > 0 && searchParams.show !== "stale" && (
+            <Problem title={`${stale} printed ${stale === 1 ? "label shows" : "labels show"} an old price`} fix={{ label: "Show them", href: "/studio/codes?show=stale" }}>
+              Scans show today&apos;s price. Reprint, or mark the old labels replaced.
+            </Problem>
+          )}
+          <CodesList rows={rows} places={places} partners={partners} initialShow={searchParams.show ?? null} />
         </>
       )}
     </StudioPage>

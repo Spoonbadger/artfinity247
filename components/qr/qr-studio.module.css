@@ -169,3 +169,14 @@
   .presets small { font-size: 13px; }
   .downloads :global(.btn-sm) { min-height: 44px; padding-left: 16px; padding-right: 16px; }
 }
+
+/* ---------- Nov 2026 card styles ---------- */
+.hint { font-size: 13px; color: var(--af-ink-2); line-height: 1.35; }
+/* "Infinity" on a locked look: its real preview stays visible; choosing it starts checkout. */
+.inf { display: inline-flex; align-items: center; gap: 3px; margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: var(--af-ink); color: #fff; font-size: 12px; font-weight: 700; line-height: 1.5; vertical-align: 1px; }
+.presets button[aria-pressed="true"] .inf { background: #fff; color: var(--af-ink); }
+.more { padding: 14px 0 4px; min-width: 0; }
+.more summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; list-style: none; font-family: var(--font-body); font-weight: 700; font-size: 17px; line-height: 1.3; color: var(--af-ink); min-height: 40px; }
+.more summary::-webkit-details-marker { display: none; }
+.more[open] summary svg { transform: rotate(180deg); }
+.more[open] .groupBody { margin-top: 8px; }

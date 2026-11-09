@@ -6,6 +6,7 @@ import { randomBytes, randomInt } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { calcItemProfitCents } from "@/lib/revenue";
 import { CODE_ALPHABET, normalizeCode } from "@/lib/shortcode";
+import { placeEnded, scanRoute, type PlaceLike } from "@/lib/placeRules";
 
 export { normalizeCode, shortUrl, shortLabel, PLACEHOLDER_CODE } from "@/lib/shortcode";
 
@@ -38,6 +39,8 @@ export type CodeInput = {
   expiresAt?: Date | null;
   /** Partner venue it hangs at (lib/venues.ts). */
   venueId?: string | null;
+  /** The artist's Place it hangs at (lib/artistPlaces.ts); venue / venueId should mirror it. */
+  placeId?: string | null;
 };
 
 /** Create a QrCode row with a new code. Retries if two creates race for the same code. */
@@ -56,6 +59,7 @@ export async function createQrCode(input: CodeInput) {
           design: (input.design ?? undefined) as never,
           expiresAt: input.expiresAt ?? null,
           venueId: input.venueId ?? null,
+          placeId: input.placeId ?? null,
         },
       });
     } catch (e: unknown) {
@@ -72,7 +76,7 @@ export async function createQrCode(input: CodeInput) {
  */
 export async function ensureArtworkCode(artistId: string, artworkId: string, label: string, design?: unknown) {
   const found = await prisma.qrCode.findFirst({
-    where: { artistId, artworkId, active: true, venue: null, discountPct: null, expiresAt: null },
+    where: { artistId, artworkId, active: true, venue: null, placeId: null, discountPct: null, expiresAt: null },
     orderBy: { createdAt: "asc" },
     select: { code: true },
   });
@@ -84,6 +88,8 @@ const resolveSelect = {
   artist: { select: { slug: true, closedAt: true, suspendedAt: true } },
   artwork: { select: { id: true, slug: true, status: true } },
   venuePartner: { select: { slug: true, active: true } },
+  // The artist's Place it hangs at (lib/artistPlaces.ts): once the Place has ended, scans follow its afterEnd choice.
+  place: { select: { id: true, name: true, active: true, endsOn: true, afterEnd: true, venue: { select: { slug: true, active: true } } } },
 } as const;
 
 /** Case-insensitive lookup. null for anything that isn't a known code. */
@@ -100,9 +106,26 @@ export function isLive(c: { active: boolean; expiresAt: Date | null }, now = new
   return c.active && (!c.expiresAt || c.expiresAt.getTime() > now.getTime());
 }
 
+/**
+ * Where a scan of this code goes now, taking its Place into account (lib/placeRules.ts scanRoute):
+ *   "open" as usual · "art" the painting without the venue line · "page" the artist's page · "pause" paused (page + note).
+ */
+export function codeRoute(qr: { active: boolean; expiresAt: Date | null; place?: PlaceLike | null }, now = new Date()) {
+  if (!isLive(qr, now)) return "ended" as const;
+  return scanRoute(qr.place, now);
+}
+
+/** The buyer's "You scanned this at …" line: the Place's name while it's open, nothing once it has ended. */
+export function scanVenue(qr: { venue: string | null; place?: (PlaceLike & { name: string }) | null }, now = new Date()) {
+  if (qr.place) return placeEnded(qr.place, now) ? null : qr.place.name;
+  return qr.venue;
+}
+
 /** A code counts for an artwork when it's live and points at that artwork, or at the artwork's artist (artist-page codes). */
-export function codeAppliesTo(qr: { active: boolean; expiresAt: Date | null; artworkId: string | null; artistId: string }, art: { id: string; artistId: string }) {
+export function codeAppliesTo(qr: { active: boolean; expiresAt: Date | null; artworkId: string | null; artistId: string; place?: PlaceLike | null }, art: { id: string; artistId: string }) {
   if (!isLive(qr)) return false;
+  // A Place that ended with "Pause the codes": no discount either.
+  if (scanRoute(qr.place) === "pause") return false;
   return qr.artworkId ? qr.artworkId === art.id : qr.artistId === art.artistId;
 }
 

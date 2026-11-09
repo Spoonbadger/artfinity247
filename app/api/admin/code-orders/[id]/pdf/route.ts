@@ -6,6 +6,7 @@ import { adminRoleGuard } from "@/lib/adminRoles";
 import { logAdminAction } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { generateMixedQrPdf } from "@/lib/generateQrPdf";
+import { artistIsPro } from "@/lib/qr/plan";
 import { FORMATS, sanitizeDesign, type ArtInfo } from "@/components/qr/card";
 import { orderItems } from "@/lib/codePrints";
 import { codeOrderNumber } from "@/lib/printQueueFormat";
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   if (denied) return denied;
   const format = req.nextUrl.searchParams.get("format");
   if (!isFormat(format)) return NextResponse.json({ error: "Pick a format." }, { status: 400 });
-  const order = await prisma.codePrintOrder.findUnique({ where: { id: params.id }, select: { id: true, items: true, artistName: true } });
+  const order = await prisma.codePrintOrder.findUnique({ where: { id: params.id }, select: { id: true, items: true, artistName: true, artistId: true } });
   if (!order) return NextResponse.json({ error: "That order doesn't exist." }, { status: 404 });
   const items = orderItems(order.items).filter((i) => i.format === format);
   if (!items.length) return NextResponse.json({ error: `No ${FORMATS[format].name.toLowerCase()}s in this order.` }, { status: 404 });
@@ -29,7 +30,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const pdf = await generateMixedQrPdf(
       items.map((i) => ({ qty: i.qty, job: { design: { ...sanitizeDesign(i.design), format }, art: i.art as ArtInfo, qrText: i.qrText } })),
       format,
-      { title: `${no} · ${FORMATS[format].name} · ${order.artistName || ""}`.trim(), footer: no },
+      { title: `${no} · ${FORMATS[format].name} · ${order.artistName || ""}`.trim(), footer: no, pro: await artistIsPro(order.artistId) },
     );
     await logAdminAction(admin, "code_order.pdf", { type: "code_order", id: order.id }, `${no}: downloaded the ${FORMATS[format].name.toLowerCase()} PDF`);
     return new NextResponse(Buffer.from(pdf), { status: 200, headers: pdfHeaders(`${no}-${format}.pdf`, req.nextUrl.searchParams.get("inline") ? "inline" : "attachment") });

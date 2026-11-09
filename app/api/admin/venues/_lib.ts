@@ -45,13 +45,23 @@ export function parseVenue(body: Record<string, unknown>, creating: boolean): Ve
   return out;
 }
 
-/** Links matching unlinked codes; returns how many. */
+/**
+ * Links matching unlinked codes; returns how many. Artists' Places with that name (lib/artistPlaces.ts) link to the
+ * venue too, and every code in them follows (keeping the artist's own name for the place).
+ */
 export async function linkVenueText(text: string, venueId: string, venueName: string) {
   const key = venueKey(text);
   if (!key) return 0;
-  const rows = await prisma.qrCode.findMany({ where: { venueId: null, venue: { not: null } }, select: { id: true, venue: true } });
+  const places = (await prisma.place.findMany({ where: { venueId: null }, select: { id: true, name: true } })).filter((p) => venueKey(p.name) === key);
+  let placed = 0;
+  if (places.length) {
+    const ids = places.map((p) => p.id);
+    await prisma.place.updateMany({ where: { id: { in: ids } }, data: { venueId } });
+    placed = (await prisma.qrCode.updateMany({ where: { placeId: { in: ids } }, data: { venueId } })).count;
+  }
+  const rows = await prisma.qrCode.findMany({ where: { venueId: null, venue: { not: null }, placeId: null }, select: { id: true, venue: true } });
   const ids = rows.filter((r) => venueKey(r.venue || "") === key).map((r) => r.id);
-  if (!ids.length) return 0;
+  if (!ids.length) return placed;
   const res = await prisma.qrCode.updateMany({ where: { id: { in: ids } }, data: { venueId, venue: venueName.slice(0, 60) } });
-  return res.count;
+  return placed + res.count;
 }

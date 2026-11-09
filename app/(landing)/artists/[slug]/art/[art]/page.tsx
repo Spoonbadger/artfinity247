@@ -1,6 +1,6 @@
 import { scanDiscount } from "@/lib/scanSign";
 import { cookies } from "next/headers";
-import { codeForArt, CODE_COOKIE } from "@/lib/shortlinks";
+import { codeForArt, CODE_COOKIE, scanVenue } from "@/lib/shortlinks";
 import type { Metadata, Viewport } from "next";
 import { previewImage, sharePreview } from "@/lib/og";
 import { notFound, permanentRedirect } from "next/navigation";
@@ -85,7 +85,9 @@ export default async function ArtPage({ params, searchParams }: Props) {
   // Short link (?c=K7P2 from /q/K7P2): venue and discount come from the code's DB record, so they're trusted.
   // An artist-page code scanned earlier (cookie) still counts on that artist's other pieces.
   const qr = await codeForArt(searchParams.c, cookies().get(CODE_COOKIE)?.value, art);
-  const venue = qr ? qr.venue : parseVenue(searchParams.at);
+  // The line follows the code's Place: its name while open, nothing once it has closed or ended.
+  const venue = qr ? scanVenue(qr) : parseVenue(searchParams.at);
+  const partner = qr ? (qr.place ? (venue ? qr.place.venue : null) : qr.venuePartner) : null;
   const pct = qr ? qr.discountPct ?? 0 : scanPct;
 
   const trustP = getArtistTrust(art.artistId);
@@ -148,7 +150,7 @@ export default async function ArtPage({ params, searchParams }: Props) {
         fromCents: priceFor(m, PRINT_SIZES.find((sz) => m.printableSizes?.includes(sz)) ?? "small").list, // cheapest printable size
       }))}
       venue={venue}
-      venueHref={qr?.venuePartner?.active ? `/venues/${qr.venuePartner.slug}` : null}
+      venueHref={partner?.active ? `/venues/${partner.slug}` : null}
       pct={pct}
       sig={!qr && scanPct && !scan.legacy ? String(searchParams.s) : null}
       discountEnded={!qr && scan.ended}

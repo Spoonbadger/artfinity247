@@ -1,6 +1,7 @@
 // Shared bits for /api/studio/events: who is asking, and checking an event's fields.
 import { prisma } from "@/lib/prisma";
 import { getUserFromCookie } from "@/lib/auth";
+import { ensurePlace } from "@/lib/artistPlaces";
 
 export const MAX_EVENTS = 200;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -35,4 +36,18 @@ export function cleanEvent(raw: any, base?: EventInput): { error: string } | { d
   if (!validDate(end)) return { error: "That end date looks off." };
   if (end < src.start) return { error: "End date is before the start." };
   return { data: { name, venue, start: src.start, end } };
+}
+
+/**
+ * The Place an event happens at (lib/artistPlaces.ts): the artist's Place with the event's name, or a new one with the
+ * event's dates. Never blocks saving the event.
+ */
+export async function placeForEvent(artistId: string, e: EventInput): Promise<string | null> {
+  try {
+    const p = await ensurePlace(artistId, { name: e.name, area: e.venue || null, kind: "popup", startsOn: e.start, endsOn: e.end });
+    return p.id;
+  } catch (err) {
+    console.error("[studio/events] place link failed", err);
+    return null;
+  }
 }

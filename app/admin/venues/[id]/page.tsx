@@ -13,6 +13,7 @@ import { PageHead, Pill, StatusPill, THEAD } from "../../_components/ui";
 import { DataTable, type Row } from "../../_components/table";
 import { EmptyState } from "@/components/studio/EmptyState";
 import { monthLabel, pctLabel, venueReport } from "@/lib/venues";
+import { placeEnded } from "@/lib/placeRules";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Venue" };
@@ -32,6 +33,12 @@ export default async function AdminVenuePage({ params }: { params: { id: string 
     select: { id: true, summary: true, adminEmail: true, createdAt: true },
   });
   const share = pctLabel(v.sharePct);
+  // Artists' own Places that link to this partner venue (lib/artistPlaces.ts). Their codes carry this venue's share.
+  const places = await prisma.place.findMany({
+    where: { venueId: v.id },
+    orderBy: [{ active: "desc" }, { name: "asc" }],
+    select: { id: true, name: true, active: true, endsOn: true, artist: { select: { id: true, name: true, artist_name: true } }, _count: { select: { codes: true } } },
+  });
 
   const tiles: [string, string, boolean?][] = [
     [`${n(totals.liveCodes)}/${n(totals.codes)}`, "codes on"],
@@ -201,6 +208,23 @@ export default async function AdminVenuePage({ params }: { params: { id: string 
           }))}
           empty={<EmptyState dab="var(--af-edge-strong)" compact title="No codes linked yet" body="Artists pick this venue in My codes, or link a name from Venues." action={{ label: "Unlinked names", href: "/admin/venues#merge-h" }} />}
         />
+      </section>
+
+      <section aria-labelledby="places-h" className="af-panel grid content-start gap-3 p-4 sm:p-5">
+        <h2 id="places-h" className="t-card">Artists&apos; places linked here</h2>
+        {places.length ? (
+          <ul className="grid gap-2 text-[14px]">
+            {places.map((p) => (
+              <li key={p.id} className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                <Link href={`/admin/artists/${p.artist.id}`} className="font-semibold text-ink underline-offset-2 hover:underline">{p.artist.artist_name || p.artist.name}</Link>
+                <span className="text-ink-2">· {p.name} · {n(p._count.codes)} {p._count.codes === 1 ? "code" : "codes"}</span>
+                {!placeEnded(p) ? <StatusPill status="active" label="Open" /> : <StatusPill status="paused" label={p.active ? "Ended" : "Closed"} />}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-[13.5px] text-ink-2">No artist has linked one of their places to this venue yet. They pick it on Places in their Studio.</p>
+        )}
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start">

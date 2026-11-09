@@ -122,6 +122,7 @@ model Artist {
   qrCodes          QrCode[]
   printQueueItems  PrintQueueItem[]
   codePrintOrders  CodePrintOrder[]
+  places           Place[]
 
   // Legal: when the artist accepted the Artist Terms and Terms & Conditions
   termsAcceptedAt  DateTime?
@@ -186,6 +187,8 @@ model Artwork {
   collectionItems CollectionItem[]
   qrCodes         QrCode[]
   printQueueItems PrintQueueItem[]
+  hangings        Hanging[]
+  codePrints      CodePrint[]
   flaggedReason String?
   flaggedBy     String?
   // Print sizes this file is sharp enough for (small/medium/large/xl). Empty = not checked (older uploads).
@@ -335,13 +338,18 @@ model QrCode {
   // The venue partner this code hangs at (cafe, shop, market), for venue revenue share
   venueId     String?
   venuePartner Venue?     @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  // The artist's Place it hangs at (lib/artistPlaces.ts). venue / venueId above mirror the Place's name and partner venue.
+  placeId     String?
+  place       Place?      @relation(fields: [placeId], references: [id], onDelete: SetNull)
   artist      Artist      @relation(fields: [artistId], references: [id], onDelete: Cascade)
   artwork     Artwork?    @relation(fields: [artworkId], references: [id], onDelete: SetNull)
   scans       ScanEvent[]
   printQueueItems PrintQueueItem[]
   printLogs   QrPrintLog[]
+  codePrints  CodePrint[]
 
   @@index([artistId])
+  @@index([placeId])
 }
 
 // One scan of a printed code. No personal data: coarse device and place only.
@@ -369,6 +377,9 @@ model StudioEvent {
   start     String   // YYYY-MM-DD
   end       String   // YYYY-MM-DD
   createdAt DateTime @default(now())
+  // The Place it happens at (found or made from the event's name when it's saved)
+  placeId   String?
+  place     Place?   @relation(fields: [placeId], references: [id], onDelete: SetNull)
 
   @@index([artistId, start])
 }
@@ -585,6 +596,7 @@ model Venue {
   notes        String?
   createdAt    DateTime  @default(now())
   codes        QrCode[]
+  places       Place[]
 }
 
 // A post for Artfinity's own Instagram (/admin/social). draft -> approved -> posting -> posted | failed; or skipped.
@@ -649,6 +661,9 @@ model PrintQueueItem {
   qty       Int      @default(1)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  // Printing for a Place ("Print all codes for this place"): "Mark as printed" tags the code to it.
+  placeId   String?
+  place     Place?   @relation(fields: [placeId], references: [id], onDelete: SetNull)
   artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
   artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
   qrCode    QrCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
@@ -776,4 +791,80 @@ model ScanWaitlist {
   artistId  String?
   source    String   @default("public") // public | studio
   createdAt DateTime @default(now())
+}
+
+// Places (/studio/places): where an artist's work hangs. A café, gallery, market stall, pop-up or show. Artist-owned.
+// Codes, print queue items, paintings (Hanging) and Studio events belong to one. An optional partner Venue (admin-run,
+// revenue share) is mirrored onto the Place's codes as QrCode.venueId, and the Place's name as QrCode.venue, so
+// checkout, revenue share and admin keep working (lib/artistPlaces.ts).
+// Closed (active false) or past endsOn: scans of its codes follow afterEnd and never land on an error page.
+model Place {
+  id         String    @id @default(cuid())
+  artistId   String
+  name       String
+  kind       String    @default("cafe") // cafe | gallery | market | shop | popup | studio | other
+  area       String?   // neighborhood or address
+  venueId    String?   // partner Venue, for revenue share
+  startsOn   String?   // YYYY-MM-DD
+  endsOn     String?   // YYYY-MM-DD; after this day the place counts as ended
+  active     Boolean   @default(true) // false: closed, or the show ended
+  closedAt   DateTime?
+  afterEnd   String    @default("art") // once ended, scans: art (the painting, no venue line) | page (artist page) | pause
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  artist     Artist    @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  venue      Venue?    @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  codes      QrCode[]
+  hangings   Hanging[]
+  events     StudioEvent[]
+  queueItems PrintQueueItem[]
+  prints     CodePrint[]
+
+  @@index([artistId])
+  @@index([venueId])
+}
+
+// A painting hanging at a Place: one open row (endedAt null) per painting at a time; ended rows are its history.
+model Hanging {
+  id        String    @id @default(cuid())
+  artistId  String
+  artworkId String
+  placeId   String
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+  artwork   Artwork   @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  place     Place     @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@index([artworkId, endedAt])
+  @@index([placeId, endedAt])
+  @@index([artistId, endedAt])
+}
+
+// What a printed card says, recorded each time one is produced (downloads, Print all, the queue's "Mark as printed",
+// a paid "we print them for you" order). Only cards that show a price. A code's label is out of date when its latest
+// unreplaced print shows a different price, discount or title than the code would print now (lib/labelStatus.ts).
+model CodePrint {
+  id              String    @id @default(cuid())
+  qrCodeId        String
+  artworkId       String?
+  artistId        String
+  placeId         String?
+  format          String    // label | sticker | tag | poster
+  style           String    // QR Studio preset (gallery | sticker | market | poster | custom)
+  ink             String    // code color
+  qty             Int       @default(1)
+  priceShownCents Int       // the "Prints from" price on the card
+  discountPct     Int       @default(0) // the "% off when you scan" badge, 0 = none
+  title           String    @default("") // the title on the card ("" when the card doesn't show it)
+  design          Json?     // the look it printed with, for "Reprint"
+  source          String    // download | print_all | queue | order
+  printedAt       DateTime  @default(now())
+  replacedAt      DateTime? // "Mark old labels as replaced"
+  qrCode          QrCode    @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+  artwork         Artwork?  @relation(fields: [artworkId], references: [id], onDelete: SetNull)
+  place           Place?    @relation(fields: [placeId], references: [id], onDelete: SetNull)
+
+  @@index([qrCodeId, printedAt])
+  @@index([artistId, replacedAt])
+  @@index([artworkId])
 }

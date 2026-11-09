@@ -6,11 +6,13 @@ import { prisma } from "@/lib/prisma";
 import { StudioPage } from "@/components/studio/StudioPage";
 import ScanChart from "@/components/codes/ScanChart";
 import CodeEditor, { type CodeLook } from "@/components/codes/CodeEditor";
-import { DEFAULT_DESIGN, sanitizeDesign } from "@/components/qr/card";
+import { DEFAULT_DESIGN, FORMATS, sanitizeDesign } from "@/components/qr/card";
 import { normalizeCode, shortLabel } from "@/lib/shortcode";
 import { requireArtist, usd, timeAgo } from "../../_lib/data";
 import { getCode, pct, status } from "../_lib";
-import { venueOptions } from "@/lib/venues";
+import { partnerChoices, placeOptions } from "@/lib/artistPlaces";
+import { formLabels, latestLabels } from "@/lib/labelStatus";
+import LabelCard from "@/components/codes/LabelCard";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Code" };
@@ -46,10 +48,12 @@ export default async function CodePage({ params }: { params: { code: string } })
   // Pieces in review count too: a code printed before approval must keep pointing at its piece when edited here.
   const arts = (await prisma.artwork.findMany({
     where: { artistId: artist.id, status: { in: ["APPROVED", "PENDING"] }, slug: { not: null } },
-    select: { id: true, title: true, imageUrl: true, status: true },
+    select: { id: true, title: true, imageUrl: true, status: true, markupSmall: true },
     orderBy: { createdAt: "desc" },
-  })).map(({ status: st, ...a }) => (st === "PENDING" ? { ...a, title: `${a.title} (in review)` } : a));
-  const venues = await venueOptions(c.venueId);
+  })).map(({ status: st, markupSmall, ...a }) => ({ ...a, smallMarkup: markupSmall || 0, title: st === "PENDING" ? `${a.title} (in review)` : a.title }));
+  const [places, partners, labels] = await Promise.all([placeOptions(artist.id), partnerChoices(artist.id), latestLabels(artist.id, { qrCodeIds: [c.id] })]);
+  const labelState = labels.get(c.id) ?? null;
+  const label = labelState ? formLabels(labels)[0] : null;
   const base = process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com";
   const d = c.design ? sanitizeDesign(c.design) : { ...DEFAULT_DESIGN, disc: 0 };
   const look: CodeLook = {
@@ -88,6 +92,8 @@ export default async function CodePage({ params }: { params: { code: string } })
     >
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)] lg:items-start">
         <div className="grid min-w-0 gap-4">
+          {/* What the printed label says vs what scans show; first when it's out of date. */}
+          {labelState && label && labelState.diffs.length > 0 && <LabelCard label={label} diffs={labelState.diffs} format={(FORMATS[labelState.format as keyof typeof FORMATS]?.name || "card").toLowerCase()} />}
           {s.scans === 0 ? (
             <EmptyState
               dab="#2b37f0"
@@ -144,14 +150,21 @@ export default async function CodePage({ params }: { params: { code: string } })
           </section>
           </>
           )}
+          {labelState && label && labelState.diffs.length === 0 && <LabelCard label={label} diffs={[]} format={(FORMATS[labelState.format as keyof typeof FORMATS]?.name || "card").toLowerCase()} />}
         </div>
 
         <CodeEditor
-          initial={{ code: c.code, label: c.label || "", venue: c.venue || "", venueId: c.venueId, discountPct: c.discountPct, active: c.active, expiresAt: c.expiresAt ? c.expiresAt.toISOString() : null, artworkId: c.artworkId }}
+          initial={{
+            code: c.code, label: c.label || "", discountPct: c.discountPct, active: c.active, expiresAt: c.expiresAt ? c.expiresAt.toISOString() : null, artworkId: c.artworkId,
+            // A code with venue text but no Place yet (older codes) shows it as a new Place to save.
+            place: c.place ? { placeId: c.place.id, venueId: c.place.venueId, name: c.place.name } : { placeId: null, venueId: c.venueId, name: c.venue || "" },
+          }}
           arts={arts}
           look={look}
           base={base}
-          venues={venues}
+          places={places}
+          partners={c.venueId && !c.place ? [...partners, ...(partners.some((v) => v.id === c.venueId) ? [] : [{ id: c.venueId, name: c.venue || "Partner venue", neighborhood: null }])] : partners}
+          label={label}
         />
       </div>
     </StudioPage>

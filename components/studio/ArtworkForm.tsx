@@ -17,9 +17,12 @@ import { FREE_SPLIT, pct } from "@/lib/plans";
 import { useUnsavedChanges } from "@/components/forms/useUnsavedChanges";
 import ImageEditor, { type EditResult } from "@/components/media/ImageEditor";
 import { parseStored, type StoredEdits } from "@/lib/imageEdits";
+import LabelWarning, { queueReprint, type LabelWarningText } from "@/components/codes/LabelWarning";
+import { describeChange, nowFacts, type PrintedLabel } from "@/lib/labelFacts";
+import { basePrices } from "@/lib/artwork_price";
 import {
   artworkFormData, checkArtwork, DetailsFields, EditionField, filesFromDrop, isImageFile, OwnershipField, PriceFields,
-  pricesFrom, PrintSizes, REVIEW_NOTE, scanHref, SensitiveField, saveProblem, titleFromFile, TOO_SMALL, useLastPrices, usePriceGuide, type ArtworkValues, type Prices,
+  pricesFrom, PrintSizes, REVIEW_NOTE, scanHref, SensitiveField, saveProblem, titleFromFile, toCents, TOO_SMALL, useLastPrices, usePriceGuide, type ArtworkValues, type Prices,
 } from "./artworkFields";
 import {
   Cancelled, cloudImportAvailable, CloudImportButtons, ImportFailed, importCloudFile, importFix, importingLabel, isCloudImage, pickCloud,
@@ -53,8 +56,10 @@ export type ArtworkInput = {
  * New uploads can also come from Google Drive or Dropbox (./cloudImport.tsx): several picked files go to the queue
  * through `onCloudFiles`; one (or the first, for an artist's very first upload) is imported straight into this form.
  */
-export default function ArtworkForm({ artwork, split, handle, onManyFiles, onCloudFiles, mock, reviewNote }: {
+export default function ArtworkForm({ artwork, split, handle, onManyFiles, onCloudFiles, mock, reviewNote, printedLabels = [] }: {
   artwork?: ArtworkInput;
+  /** Editing: this piece's printed labels (lib/labelStatus.ts), to warn before a price or title change makes them wrong. */
+  printedLabels?: PrintedLabel[];
   /** New uploads: what happens after posting (review or straight live), from lib/artworkLive. */
   reviewNote?: string;
   split?: number;
@@ -113,6 +118,9 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
   // Once a print sells, the edition is a promise to buyers: no resizing, no open/limited switch (server enforces it too).
   const editionLocked = editing && sold > 0;
   const [saving, setSaving] = useState(false);
+  // "3 printed labels show ‘Prints from $55’…": asked before saving a change a printed label shows.
+  const [warn, setWarn] = useState<LabelWarningText | null>(null);
+  const [warnBusy, setWarnBusy] = useState<"reprint" | "save" | null>(null);
   // The error under the form, with the button that fixes it (pick another file, try again, the page that fixes it).
   const [error, setErrorState] = useState<{ message: string; fix?: ProblemFix } | null>(null);
   const setError = (message: string | null, fix?: ProblemFix) => setErrorState(message ? { message, fix } : null);
@@ -254,6 +262,17 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
       if (focus) document.getElementById(focus)?.focus();
       return;
     }
+    if (editing && printedLabels.length) {
+      // What each printed label's code will show after this save: the new title and "from" price, its own discount.
+      const small = Math.max(0, toCents(v.prices.small) - basePrices.small);
+      const w = describeChange(printedLabels, (l) => nowFacts({ design: {}, discountPct: l.codeDiscount }, { title: v.title.trim(), markups: { small, medium: 0, large: 0, xl: 0 } }, l.showsTitle));
+      if (w) { setWarn(w); return; }
+    }
+    await persist(null);
+  }
+
+  /** Save the piece; with `reprint`, then put those codes back in the print queue. */
+  async function persist(reprint: string[] | null) {
     setSaving(true);
     try {
       const fd = artworkFormData(v, { imageUrl, fresh, editionLocked, ownership: needsOwnership && owned, edits: !editing || fresh ? edits : undefined });
@@ -263,10 +282,22 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
         const retry: ProblemFix = { label: "Try again", onClick: () => formRef.current?.requestSubmit() };
         const fix: ProblemFix | undefined = p.code === "image_too_small" ? pickFile("Pick a bigger file") : p.code === "reupload" ? pickFile("Upload it again") : p.fix ?? (res.status >= 500 || res.status === 429 ? retry : undefined);
         setError(p.message, fix);
+        setWarn(null);
         return;
       }
       const saved = await res.json();
-      if (editing) {
+      if (editing && reprint?.length) {
+        setWarn(null);
+        try {
+          const q = await queueReprint(reprint);
+          savedToast(`Saved. ${q.queued} ${q.queued === 1 ? "code" : "codes"} added to your print queue`, { next: { label: "Open print queue", href: "/studio/qr/queue" } });
+        } catch (err) {
+          failed(errorText(err, "Saved, but the codes didn't go in the print queue."), { retry: () => { void queueReprint(reprint).then(() => savedToast("Added to your print queue")); } });
+        }
+        router.push("/studio/art");
+        router.refresh();
+      } else if (editing) {
+        setWarn(null);
         if (saved.duplicate === "review") savedToast(saved.notice);
         else savedToast(saved.status === "PENDING" && fresh ? `Saved. New image ${REVIEW_NOTE.toLowerCase()}.` : saved.notice ? `Saved. ${saved.notice}` : "Saved", { next: { label: "Print code", href: `/studio/qr?art=${saved.slug || artwork!.slug}` } });
         router.push("/studio/art");
@@ -276,11 +307,13 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     } catch (e) {
+      setWarn(null);
       const msg = errorText(e, "Could not save. Try again.");
       setError(msg, { label: "Try again", onClick: () => formRef.current?.requestSubmit() });
       failed(msg, { retry: () => formRef.current?.requestSubmit() });
     } finally {
       setSaving(false);
+      setWarnBusy(null);
     }
   }
 
@@ -411,6 +444,14 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
         )}
 
         {error && <Problem tone="error" title={error.message} fix={error.fix} secondary={error.message === TOO_SMALL ? { label: "Book a scan", href: scanHref(artwork?.slug) } : undefined} />}
+        {warn && (
+          <LabelWarning
+            warning={warn} busy={warnBusy}
+            onReprint={() => { setWarnBusy("reprint"); void persist(warn.codes); }}
+            onSave={() => { setWarnBusy("save"); void persist(null); }}
+            onCancel={() => setWarn(null)}
+          />
+        )}
 
         <div className="flex flex-wrap items-center gap-3">
           <button type="submit" className="btn btn-blue btn-lg relative z-0" disabled={saving || !!uploading}>

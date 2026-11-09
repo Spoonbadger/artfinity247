@@ -17,6 +17,8 @@ import { FORMATS, type FormatKey } from "@/components/qr/card";
 import { cardWords, codeOrderNumber, FORMAT_ORDER, PRICING_DEFAULTS, quoteFor, type CodePrintPricing, type OrderStatus } from "@/lib/printQueueFormat";
 import type { Tracking } from "@/lib/tracking";
 import { statementSuffix } from "@/lib/checkoutSession";
+import { recordPrints } from "@/lib/labelStatus";
+import type { SizeKey } from "@/lib/earnings";
 
 const FROM = process.env.EMAIL_FROM || "Artfinity <contact@theartfinity.com>";
 const APP_URL = () => (process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com").replace(/\/$/, "");
@@ -121,6 +123,8 @@ export async function markCodeOrderPaid(orderId: string): Promise<boolean> {
   if (o.artistId && o.queueItemIds.length) await prisma.printQueueItem.deleteMany({ where: { id: { in: o.queueItemIds }, artistId: o.artistId } }).catch(() => null);
   const items = orderItems(o.items);
   const no = codeOrderNumber(o.id);
+  // What each card we print says, from the order's snapshot (lib/labelStatus.ts).
+  if (o.artistId) await recordPrints(items.map((i) => ({ qrCodeId: i.qrCodeId, artistId: o.artistId!, artworkId: i.artworkId, design: { ...(i.design as object), format: i.format }, art: { title: i.art.title, markups: i.art.markups as Record<SizeKey, number> }, qty: i.qty, source: "order" as const })));
   await raiseAlert({ kind: "code_print_order", key: codeOrderAlertKey(o.id), title: `New code print order ${no}: ${summaryOf(items)} for ${o.artistName || o.email}`, link: `/admin/code-orders/${o.id}` });
   await sendCodeOrderEmail(o.id, "paid").catch((e) => console.error("[code-prints] confirmation email failed", o.id, e));
   return true;

@@ -29,6 +29,7 @@ export const STUDIO_SECTIONS: StudioSection[] = [
       { href: "/studio/qr", label: "QR codes", dab: "#ffd43b" },
       { href: "/studio/qr/queue", label: "Print queue", dab: "#ff5a36" },
       { href: "/studio/codes", label: "My codes", dab: "#2b37f0" },
+      { href: "/studio/places", label: "Places", dab: "#0f7a55" },
       { href: "/studio/events", label: "Events", dab: "#7b2d8e" },
     ],
   },

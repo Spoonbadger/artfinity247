@@ -50,14 +50,13 @@ export async function lastLook(artistId: string): Promise<Design> {
 /** A look without venue, discount or end date: those live on the code record, and a plain code has none. */
 export const plainDesign = (d: Design): Design => ({ ...d, disc: 0, coupon: "", ev: "", evPrint: false, end: "never" });
 
-/** The look for "Gallery label" etc., or the last-used one. */
+/** The look for "Gallery label" etc., or the last-used one. A format with no look of its own: Pill in black ink. */
 export async function lookFor(artistId: string, look: unknown): Promise<Design> {
   if (isPreset(look)) return plainDesign({ ...DEFAULT_DESIGN, ...presetLook(look), preset: look });
   if (isFormat(look)) {
     const last = await lastLook(artistId);
     if (last.format === look) return last;
-    const k = (Object.keys(PRESETS) as PresetKey[]).find((p) => PRESETS[p].format === look)!;
-    return plainDesign({ ...DEFAULT_DESIGN, ...presetLook(k), preset: k });
+    return plainDesign({ ...DEFAULT_DESIGN, format: look, preset: "custom" });
   }
   return lastLook(artistId);
 }

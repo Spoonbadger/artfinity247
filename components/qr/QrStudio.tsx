@@ -3,18 +3,20 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Download, FileText, ImageIcon, Layers, ListPlus, Loader2, Plus } from "lucide-react";
+import { Check, ChevronDown, Download, FileText, ImageIcon, Layers, ListPlus, Loader2, Lock, Plus } from "lucide-react";
 import { errorText, failed, problemFrom, saved as savedToast } from "@/lib/feedback";
 import { qrSVG } from "@/lib/qr/render";
 import { breakdown, money, SIZE_NAME, SIZE_INCHES, type SizeKey } from "@/lib/earnings";
 import { getArtistSplit } from "@/lib/revenue";
 import { PAPER } from "@/lib/printQueueFormat";
 import { BrushStroke } from "@/components/af/Brush";
+import { startInfinityCheckout } from "@/components/pro/StartInfinityButton";
 import { PLACEHOLDER_CODE, shortLabel, shortUrl } from "@/lib/shortcode";
 import {
-  BG, COLOR_NAMES, CTAS, DISCOUNTS, DOTS, EYE, EYES, FG, FORMATS, PRESETS, TAG,
-  cardSVG, contrast, eyeColor, fmtDist, lum, presetLook, qrValue, renderCard, scanNumbers, sheetSVG,
-  type ArtInfo, type Card, type Design, type FormatKey, type PresetKey,
+  ACCENT, BG, COLOR_NAMES, DISCOUNTS, DOTS, EXTRAS, EYE, EYES, FG, FORMATS, INKS, MSG_MAX, PRESETS, STYLES, TAG,
+  applyExtra, applyInk, cardColors, cardSVG, contrast, fmtDist, inkMatches, lum, messageLines, presetLook, qrValue, renderCard,
+  scanNumbers, sheetSVG, styleOf, stylesFor,
+  type ArtInfo, type Card, type Design, type ExtraKey, type FormatKey, type InkKey, type PresetKey, type StyleKey,
 } from "./card";
 import { loadFonts, type Fonts } from "./text";
 import ArtPicker from "./ArtPicker";
@@ -22,18 +24,25 @@ import VenuePicker, { type VenueChoice } from "@/components/codes/VenuePicker";
 import s from "./qr-studio.module.css";
 
 type View = "card" | "wall" | "sheet";
+type Billing = "live" | "simulated" | "off";
 /** A short link code already saved for one artwork (opened from My codes). */
 export type SavedCode = { code: string; slug: string; label: string; expiresAt: string | null; venueId?: string | null };
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
+const thumbOf = (c: Card) => cardSVG(c).replace(/ role="img" aria-label="[^"]*"/, "").replace(/width="[^"]*in" height="[^"]*in"/, "");
+const plainMsg = (d: Design, art: ArtInfo) => messageLines({ ...d, msg: "" }, art, styleOf(d) === "pill" ? "pill" : "two").map((l) => l.map((x) => x.t).join("")).join(" ");
 
-export default function QrStudio({ arts, initialSlug, initialDesign, initialCard, base, initialSaved = null, split, handle, venues = [] }: {
+export default function QrStudio({ arts, initialSlug, initialDesign, initialCard, base, initialSaved = null, split, pro = false, billing = "live", handle, venues = [] }: {
   /** Partner venues for the venue picker (lib/venues.ts). */
   venues?: VenueChoice[];
   /** The artist's handle, for the full artwork link. */
   handle?: string;
   /** The artist's current share of profit (Infinity pays more). */
   split?: number;
+  /** On Infinity: the Infinity looks are unlocked. */
+  pro?: boolean;
+  /** How "Get Infinity" checks out here (lib/billing.ts billingMode). */
+  billing?: Billing;
   arts: ArtInfo[];
   initialSlug: string;
   initialDesign: Design;
@@ -45,7 +54,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
   const [d, setD] = useState<Design>(initialDesign);
   const [view, setView] = useState<View>("card");
   const [fonts, setFonts] = useState<Fonts | null>(null);
-  const [busy, setBusy] = useState<"" | "pdf" | "all" | "png" | "svg" | "save" | "queue">("");
+  const [busy, setBusy] = useState<"" | "pdf" | "all" | "png" | "svg" | "save" | "queue" | ExtraKey>("");
   const router = useRouter();
   // "Add to print queue": how many cards of this piece, in this look.
   const [queueQty, setQueueQty] = useState(1);
@@ -53,12 +62,12 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
   // later downloads of the same piece update that code's record instead of making another.
   const [codes, setCodes] = useState<Record<string, string>>(initialSaved ? { [initialSaved.slug]: initialSaved.code } : {});
   const [label, setLabel] = useState(initialSaved?.label || "");
-  const [endDate, setEndDate] = useState(initialSaved?.expiresAt ? initialSaved.expiresAt.slice(0, 10) : "");
   const [venueId, setVenueId] = useState<string | null>(initialSaved?.venueId ?? null);
+  // Match your art: colours pulled from each piece, by slug.
+  const [palettes, setPalettes] = useState<Record<string, string[]>>({});
   // What each saved code was last saved with, to tell "Saved" from "Save changes".
   const [snaps, setSnaps] = useState<Record<string, string>>(() =>
-    initialSaved ? { [initialSaved.slug]: JSON.stringify([initialSaved.label || "", initialDesign, initialSaved.expiresAt ? initialSaved.expiresAt.slice(0, 10) : "", initialSaved.venueId ?? null]) } : {});
-  const customRef = useRef<HTMLInputElement>(null);
+    initialSaved ? { [initialSaved.slug]: JSON.stringify([initialSaved.label || "", initialDesign, initialSaved.venueId ?? null]) } : {});
   const stageRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const [stageHidden, setStageHidden] = useState(false);
@@ -77,6 +86,22 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
   useEffect(() => { loadFonts().then(setFonts).catch(() => failed("Could not load the card fonts", { description: "The PDF still works. Refresh to get SVG downloads back.", fix: { label: "Refresh", href: window.location.pathname + window.location.search } })); }, []);
 
   const art = arts.find((a) => a.slug === slug) || arts[0];
+
+  // Colours of this piece, for Match your art (its preview, and the look itself when it's on).
+  useEffect(() => {
+    if (palettes[art.slug]) return;
+    let live = true;
+    fetch(`/api/qr/palette?slug=${encodeURIComponent(art.slug)}`, { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { palette?: string[] } | null) => { if (live && j?.palette) setPalettes((o) => ({ ...o, [art.slug]: j.palette! })); })
+      .catch(() => { /* the look falls back to the ink's colour */ });
+    return () => { live = false; };
+  }, [art.slug, palettes]);
+  const palette = palettes[art.slug];
+  useEffect(() => {
+    if (palette && d.extras.includes("match") && (d.paletteOf !== art.slug || d.palette.join() !== palette.join())) setD((o) => ({ ...o, palette, paletteOf: art.slug }));
+  }, [palette, art.slug, d.extras, d.paletteOf, d.palette]);
+
   // The code holds only a short link. Before it's saved, the preview uses a same-length placeholder.
   const code = codes[art.slug] || null;
   const qrText = qrValue(d, art.slug, base, null, code || PLACEHOLDER_CODE, handle);
@@ -87,28 +112,45 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
     const out: Partial<Record<PresetKey, string>> = {};
     if (!fonts) return out;
     for (const k of Object.keys(PRESETS) as PresetKey[]) {
-      try {
-        const c = renderCard({ ...d, ...presetLook(k), preset: k }, art, fonts, qrText, `pt-${k}`);
-        out[k] = cardSVG(c).replace(/ role="img" aria-label="[^"]*"/, "").replace(/width="[^"]*in" height="[^"]*in"/, "");
-      } catch { /* the button falls back to its name */ }
+      try { out[k] = thumbOf(renderCard({ ...d, ...presetLook(k), preset: k, extras: [] }, art, fonts, qrText, `pt-${k}`)); } catch { /* the button falls back to its name */ }
     }
     return out;
   }, [fonts, art, qrText, d]);
+  const extraThumbs = useMemo(() => {
+    const out: Partial<Record<ExtraKey, string>> = {};
+    if (!fonts) return out;
+    // A sample show for the Event edition preview only; nothing made up is ever printed.
+    const sample = { ev: d.ev.trim() || "Open studio", evDate: d.evDate || new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10), palette: palette || d.palette, paletteOf: art.slug };
+    for (const k of Object.keys(EXTRAS) as ExtraKey[]) {
+      try { out[k] = thumbOf(renderCard(applyExtra({ ...d, ...sample }, k), art, fonts, qrText, `px-${k}`)); } catch { /* falls back to its name */ }
+    }
+    return out;
+  }, [fonts, art, qrText, d, palette]);
 
   const set = (patch: Partial<Design>) => setD((o) => ({ ...o, preset: "custom", ...patch }));
   const pick = (a: ArtInfo) => {
     setSlug(a.slug);
     try { const u = new URL(window.location.href); u.searchParams.set("art", a.slug); window.history.replaceState(null, "", u); } catch { /* ignore */ }
   };
+  /** An Infinity look: on Infinity it turns on or off; on Free it starts checkout (one click, no dead button). */
+  async function chooseExtra(k: ExtraKey) {
+    if (pro) {
+      const on = !d.extras.includes(k);
+      setD((o) => ({ ...applyExtra(o, k, on), preset: "custom", ...(k === "match" && on && palette ? { palette, paletteOf: art.slug } : {}) }));
+      return;
+    }
+    setBusy(k);
+    try { if (!(await startInfinityCheckout(billing))) setBusy(""); } catch { setBusy(""); failed("Couldn't reach Artfinity. Check your connection.", { retry: () => void chooseExtra(k) }); }
+  }
 
   // ---------------- short link code ----------------
   const defaultLabel = d.ev.trim() || `${art.title} · ${FORMATS[d.format].name}`;
   function expiresAt() {
     if (d.end === "30") return new Date(Date.now() + 30 * 86400000).toISOString();
-    if (d.end === "event" && endDate) return new Date(`${endDate}T23:59:59`).toISOString();
+    if (d.end === "event" && d.evDate) return new Date(`${d.evDate}T23:59:59`).toISOString();
     return null;
   }
-  const snapshot = JSON.stringify([label, d, endDate, venueId]);
+  const snapshot = JSON.stringify([label, d, venueId]);
   const dirty = !!code && snaps[art.slug] !== undefined && snaps[art.slug] !== snapshot;
   const codeMeta = () => ({ label: label.trim() || defaultLabel, venue: d.ev.trim() || null, venueId, discountPct: d.disc || null, expiresAt: expiresAt(), design: d });
   /** Save (or update) this piece's code with the current look, venue, deal and end date. */
@@ -206,7 +248,13 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
     try {
       const c = await ensureCode();
       if (!c) return;
-      const out = renderCard(d, art, fonts, shortUrl(c, base));
+      // The thumbnail goes inside the file, so it still shows when the SVG is opened elsewhere.
+      let a = art;
+      if (d.extras.includes("thumb")) {
+        const blob = await fetch(art.imageUrl).then((r) => (r.ok ? r.blob() : null)).catch(() => null);
+        if (blob) a = { ...art, thumb: await new Promise<string>((res) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result)); fr.onerror = () => res(""); fr.readAsDataURL(blob); }) };
+      }
+      const out = renderCard(d, a, fonts, shortUrl(c, base));
       save(new Blob([`<?xml version="1.0" encoding="UTF-8"?>\n${cardSVG(out)}`], { type: "image/svg+xml" }), `${fileBase}.svg`);
       savedToast("SVG downloaded", { description: `Code ${c} is saved in My codes.` });
     } catch (e) {
@@ -218,7 +266,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
     try {
       const c = await ensureCode();
       if (!c) return;
-      const code = qrSVG(shortUrl(c, base), { fg: d.fg, dots: d.dots, eyes: d.eyes, eyeColor: eyeColor(d), label: "QR code", logo: d.logo }).replace("<svg ", '<svg width="1200" height="1200" ');
+      const code = qrSVG(shortUrl(c, base), { fg: d.fg, dots: d.dots, eyes: d.eyes, eyeColor: cardColors(d).eye, label: "QR code", logo: d.logo }).replace("<svg ", '<svg width="1200" height="1200" ');
       const img = new Image();
       const url = URL.createObjectURL(new Blob([code], { type: "image/svg+xml" }));
       await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = rej; img.src = url; });
@@ -238,6 +286,8 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
 
   const F = FORMATS[d.format];
   const sn = card && fonts ? scanNumbers(card, qrText, fonts, d.logo) : null;
+  const style = styleOf(d);
+  const inkOn = inkMatches(d) ? d.ink : null;
 
   return (
     <div className={s.wrap}>
@@ -245,12 +295,22 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
 
       <div className={s.studio}>
         <form ref={formRef} className={s.ctl} onSubmit={(e) => e.preventDefault()} autoComplete="off" aria-label="Card options">
+          <Group title="Card" dab="#2b37f0">
+            <div className={s.sub}>Format</div>
+            <Chips label="Format" items={(Object.keys(FORMATS) as FormatKey[]).map((k) => [k, FORMATS[k].name])} value={d.format} onPick={(k) => set({ format: k })} />
+            <div className={s.sub}>Style</div>
+            <Chips label="Style" items={stylesFor(d.format).map((k) => [k, STYLES[k].name] as [StyleKey, string])} value={style} onPick={(k) => set({ style: k })} />
+            <div className={s.sub}>Ink</div>
+            <Chips label="Ink" items={(Object.keys(INKS) as InkKey[]).map((k) => [k, INKS[k].name])} value={inkOn as InkKey} onPick={(k) => setD((o) => ({ ...applyInk(o, k), preset: "custom" }))} />
+            <small className={s.hint}>{inkOn === "black" ? "Pure black. Prints sharp on any office printer." : inkOn === "color" ? "Blue pill and corners, yellow brush." : "Your own colors. Pick an ink to reset them."}</small>
+          </Group>
+
           <Group title="Start from" dab="#ffd43b">
             <div className={s.presets} role="group" aria-label="Preset">
               {(Object.keys(PRESETS) as PresetKey[]).map((k) => {
                 const p = PRESETS[k];
                 return (
-                  <button key={k} type="button" aria-pressed={d.preset === k} onClick={() => setD((o) => ({ ...o, ...presetLook(k), preset: k }))}>
+                  <button key={k} type="button" aria-pressed={d.preset === k} onClick={() => setD((o) => ({ ...o, ...presetLook(k), preset: k, extras: [] }))}>
                     <span className={s.mini} aria-hidden="true" dangerouslySetInnerHTML={{ __html: presetThumbs[k] || "" }} />
                     <span>{p.name}<small>{p.sub}</small></span>
                   </button>
@@ -259,16 +319,33 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
             </div>
           </Group>
 
+          <Group title="Infinity looks" dab="#7b2d8e">
+            <small className={cx(s.hint, "-mt-1")}>{pro ? "Mix and match. Each one prints." : "Tap one to get Infinity and use it."}</small>
+            <div className={s.presets} role="group" aria-label="Infinity looks">
+              {(Object.keys(EXTRAS) as ExtraKey[]).map((k) => {
+                const x = EXTRAS[k], on = pro && d.extras.includes(k);
+                return (
+                  <button key={k} type="button" aria-pressed={pro ? on : undefined} onClick={() => void chooseExtra(k)} disabled={!!busy && busy === k}
+                    title={pro ? undefined : `${x.name} is an Infinity look. Starts Infinity checkout.`}>
+                    <span className={s.mini} aria-hidden="true" dangerouslySetInnerHTML={{ __html: extraThumbs[k] || "" }} />
+                    <span>
+                      {x.name}
+                      {!pro && <span className={s.inf}>{busy === k ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" /> : <Lock className="h-3 w-3" aria-hidden="true" />}Infinity</span>}
+                      <small>{x.sub}</small>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </Group>
+
           <Group title="What it says" dab="#2b37f0">
-            <Chips label="Button text" items={CTAS} value={d.cta} onPick={(k) => { set({ cta: k }); if (k === "custom") setTimeout(() => customRef.current?.focus(), 0); }} />
-            {d.cta === "custom" && (
-              <label className={s.field}>Your own words
-                <input ref={customRef} type="text" maxLength={28} value={d.ctaCustom} onChange={(e) => set({ ctaCustom: e.target.value })} />
-              </label>
-            )}
             <Toggle checked={d.showTitle} onChange={(v) => set({ showTitle: v })}>Title and artist</Toggle>
-            <Toggle checked={d.showPrice} onChange={(v) => set({ showPrice: v })}>&ldquo;Prints from&rdquo; price</Toggle>
-            <Toggle checked={d.showBrand} onChange={(v) => set({ showBrand: v })}>Artfinity name</Toggle>
+            <Toggle checked={d.showPrice} onChange={(v) => set({ showPrice: v })}>Price</Toggle>
+            <label className={s.field}>Your own words
+              <input type="text" maxLength={MSG_MAX} value={d.msg} placeholder={plainMsg(d, art)} onChange={(e) => set({ msg: e.target.value })} />
+              <small>Replaces the words. The price stays. Up to {MSG_MAX} letters.</small>
+            </label>
           </Group>
 
           <Group title="Discount" dab="#ff5a36">
@@ -276,29 +353,8 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
               <select value={d.disc} onChange={(e) => set({ disc: +e.target.value })}>
                 {DISCOUNTS.map((v) => <option key={v} value={v}>{v ? `${v}% off` : "No discount"}</option>)}
               </select>
+              {d.disc > 0 && <small>The card says {d.disc}% off and shows the lower price.</small>}
             </label>
-            {d.disc > 0 && (
-              <>
-                <div className={s.sub}>Tag color</div>
-                <Swatches label="Tag color" list={TAG} value={d.tag} onPick={(c) => set({ tag: c })} fg={d.fg} />
-              </>
-            )}
-          </Group>
-
-          <Group title="Look" dab="#7b2d8e">
-            <div className={s.sub}>Format</div>
-            <Chips label="Format" items={(Object.keys(FORMATS) as FormatKey[]).map((k) => [k, FORMATS[k].name])} value={d.format} onPick={(k) => set({ format: k })} />
-            <div className={s.sub}>Dots</div>
-            <Chips label="Dot shape" items={Object.entries(DOTS) as [Design["dots"], string][]} value={d.dots} onPick={(k) => set({ dots: k })} />
-            <div className={s.sub}>Corners</div>
-            <Chips label="Corner shape" items={Object.entries(EYES) as [Design["eyes"], string][]} value={d.eyes} onPick={(k) => set({ eyes: k })} />
-            <Toggle checked={d.logo} onChange={(v) => set({ logo: v })}>Show Artfinity logo in the code</Toggle>
-            <div className={s.sub}>Corner color</div>
-            <Swatches label="Corner color" list={EYE} value={d.eye} onPick={(c) => set({ eye: c })} fg={d.fg} noCustom />
-            <div className={s.sub}>Code color</div>
-            <Swatches label="Code color" list={FG} value={d.fg} onPick={(c) => set({ fg: c })} fg={d.fg} />
-            <div className={s.sub}>Card color</div>
-            <Swatches label="Card color" list={BG} value={d.bg} onPick={(c) => set({ bg: c })} fg={d.fg} />
           </Group>
 
           <Group title="Behind the code" dab="#0f7a55">
@@ -311,7 +367,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
               hint={<>Shows in your stats and on the buyer&rsquo;s page.</>}
               onChange={(v) => { setVenueId(v.venueId); set({ ev: v.venue }); }}
             />
-            <Toggle checked={d.evPrint} disabled={!d.ev.trim()} onChange={(v) => set({ evPrint: v })}>Print it on the card too</Toggle>
+            <Toggle checked={d.evPrint || (pro && d.extras.includes("event"))} disabled={!d.ev.trim()} onChange={(v) => set({ evPrint: v })}>Print it on the card too</Toggle>
             {!d.ev.trim() && <small className="-mt-1 block text-[13px] text-ink-2">Pick a venue or event above to print its name on the card.</small>}
             <label className={s.field}>Size shown first
               <select value={d.size} onChange={(e) => set({ size: e.target.value as SizeKey })}>
@@ -325,13 +381,35 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
                 <option value="30">30 days after printing</option>
               </select>
             </label>
-            {d.end === "event" && (
+            {(d.end === "event" || (pro && d.extras.includes("event"))) && (
               <label className={s.field}>Last day of the event
-                <input type="date" value={endDate} min={new Date().toISOString().slice(0, 10)} onChange={(e) => setEndDate(e.target.value)} />
-                <small>{endDate ? "Scans after this open your page instead." : "Pick a day, or the code keeps working."}</small>
+                <input type="date" value={d.evDate} min={new Date().toISOString().slice(0, 10)} onChange={(e) => set({ evDate: e.target.value })} />
+                <small>{d.end !== "event" ? "Printed on the card. The code keeps working." : d.evDate ? "Scans after this open your page instead." : "Pick a day, or the code keeps working."}</small>
               </label>
             )}
           </Group>
+
+          <details className={s.more}>
+            <summary>Colors and code style<ChevronDown className="h-4 w-4" aria-hidden="true" /></summary>
+            <div className={s.groupBody}>
+              <div className={s.sub}>{style === "panel" ? "Panel color" : "Pill color"}</div>
+              <Swatches label="Pill and panel color" list={ACCENT} value={d.accent} onPick={(c) => set({ accent: c })} fg={d.fg} />
+              {pro && d.extras.includes("match") && <small className={s.hint}>Match your art is on, so the painting picks this color.</small>}
+              <div className={s.sub}>Code color</div>
+              <Swatches label="Code color" list={FG} value={d.fg} onPick={(c) => set({ fg: c })} fg={d.fg} />
+              <div className={s.sub}>Card color</div>
+              <Swatches label="Card color" list={BG} value={d.bg} onPick={(c) => set({ bg: c })} fg={d.fg} />
+              <div className={s.sub}>Corner color</div>
+              <Swatches label="Corner color" list={EYE} value={d.eye} onPick={(c) => set({ eye: c })} fg={d.fg} noCustom />
+              <div className={s.sub}>Brush and tape color</div>
+              <Swatches label="Brush and tape color" list={TAG} value={d.tag} onPick={(c) => set({ tag: c })} fg={d.fg} />
+              <div className={s.sub}>Dots</div>
+              <Chips label="Dot shape" items={Object.entries(DOTS) as [Design["dots"], string][]} value={d.dots} onPick={(k) => set({ dots: k })} />
+              <div className={s.sub}>Corners</div>
+              <Chips label="Corner shape" items={Object.entries(EYES) as [Design["eyes"], string][]} value={d.eyes} onPick={(k) => set({ eyes: k })} />
+              <Toggle checked={d.logo} onChange={(v) => set({ logo: v })}>The &ldquo;a&rdquo; mark in the middle of the code</Toggle>
+            </div>
+          </details>
         </form>
 
         <div className={s.out}>
@@ -351,7 +429,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
           </div>
           <p className={s.stageNote}>
             {view === "card" && <>{F.name} · {F.w} × {F.h} in · shown larger than life. Print on {PAPER[d.format].buy}.</>}
-            {view === "wall" && <>To scale on an 8 ft wall, beside a 24 × 30 in original{sn && <>. Words read from {fmtDist(sn.readM * 100)}, code scans from {fmtDist(sn.scanCm)}</>}.</>}
+            {view === "wall" && <>To scale on an 8 ft wall, beside a 24 × 30 in original{sn && <>. Title reads from {fmtDist(sn.readM * 100)}, code scans from {fmtDist(sn.scanCm)}</>}.</>}
             {view === "sheet" && <>{F.sheet.note} US Letter, 100% scale{d.format === "poster" ? "" : ", crop marks included"}. Print on {PAPER[d.format].buy}.</>}
           </p>
           <div className={s.downloads}>
@@ -416,10 +494,10 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
               <dl className={s.record}>
                 <dt>Code</dt><dd>{code ? <b>{code}</b> : "Made when you download or save"}</dd>
                 <dt>Opens</dt><dd>{art.title}</dd>
-                <dt>Venue</dt><dd>{d.ev.trim() ? <>{d.ev.trim()}{d.evPrint ? "" : " (not printed)"}</> : "None"}</dd>
+                <dt>Venue</dt><dd>{d.ev.trim() ? <>{d.ev.trim()}{d.evPrint || (pro && d.extras.includes("event")) ? "" : " (not printed)"}</> : "None"}</dd>
                 <dt>Discount</dt><dd>{d.disc ? <>{d.disc}% off at checkout</> : "None"}</dd>
-                <dt>Ends</dt><dd>{d.end === "never" ? "Never" : d.end === "30" ? "30 days after printing" : endDate ? new Date(`${endDate}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "When the event ends"}</dd>
-                <dt>Look</dt><dd>{F.name} · {DOTS[d.dots]} dots · {EYES[d.eyes]} corners</dd>
+                <dt>Ends</dt><dd>{d.end === "never" ? "Never" : d.end === "30" ? "30 days after printing" : d.evDate ? new Date(`${d.evDate}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "When the event ends"}</dd>
+                <dt>Look</dt><dd>{F.name} · {STYLES[style].name} · {inkOn ? INKS[inkOn].name : "Your colors"}{pro && d.extras.length ? ` · ${d.extras.map((k) => EXTRAS[k].name).join(", ")}` : ""}</dd>
               </dl>
               <p className={s.soon}>
                 <span className="sticker-badge">Editable any time</span>
@@ -448,7 +526,7 @@ function Group({ title, dab, children }: { title: string; dab: string; children:
   );
 }
 
-function Chips<K extends string>({ label, items, value, onPick }: { label: string; items: [K, string][]; value: K; onPick: (k: K) => void }) {
+function Chips<K extends string>({ label, items, value, onPick }: { label: string; items: [K, string][]; value: K | null; onPick: (k: K) => void }) {
   return (
     <div className={s.chips} role="group" aria-label={label}>
       {items.map(([k, l]) => <button key={k} type="button" aria-pressed={value === k} onClick={() => onPick(k)}>{l}</button>)}
@@ -471,7 +549,7 @@ function Swatches({ label, list, value, onPick, fg, noCustom }: { label: string;
       {list.map((c, i) => {
         const same = c === "same";
         return (
-          <button key={c} type="button" aria-pressed={value === c} aria-label={COLOR_NAMES[c] || c} title={COLOR_NAMES[c] || c}
+          <button key={c} type="button" aria-pressed={value === c} aria-label={COLOR_NAMES[c] || c} title={COLOR_NAMES[c] || c} onClick={() => onPick(c)}
             style={{ background: same ? fg : c, ["--r" as string]: `${(i * 37) % 50 - 20}deg`, boxShadow: same ? `inset 0 0 0 5px ${lum(fg) > 0.5 ? "#15161b" : "#ffffff"}` : undefined }} />
         );
       })}
@@ -514,20 +592,24 @@ function Wall({ art, svg, format }: { art: ArtInfo; svg: string; format: FormatK
 type SN = ReturnType<typeof scanNumbers>;
 function Checks({ d, sn }: { d: Design; sn: SN }) {
   const items: [("ok" | "warn" | "bad"), ReactNode][] = [];
+  const C = cardColors(d);
   const c = contrast(d.fg, d.bg);
   items.push(c >= 4.5 ? ["ok", <>Contrast <b>{c.toFixed(1)}:1</b>. Easy for phones.</>]
     : c >= 3 ? ["warn", <>Contrast <b>{c.toFixed(1)}:1</b>. Darker code or lighter card is safer.</>]
     : ["bad", <>Contrast <b>{c.toFixed(1)}:1</b> is too low. Pick a darker code or lighter card.</>]);
   if (lum(d.fg) > lum(d.bg)) items.push(["warn", <>Light code on a dark card. New phones read it; some old scanner apps don&rsquo;t.</>]);
-  const ec = eyeColor(d);
-  if (ec && contrast(ec, d.bg) < 3) items.push(["warn", <>Corners are close to the card color. Phones find the code by its corners.</>]);
+  if (C.eye && contrast(C.eye, d.bg) < 3) items.push(["warn", <>Corners are close to the card color. Phones find the code by its corners.</>]);
+  const st = styleOf(d);
+  if (st === "pill" || st === "panel") {
+    const t = contrast(C.onAccent, C.accent);
+    if (t < 4.5) items.push(["warn", <>Words on the {st} read at <b>{t.toFixed(1)}:1</b>. Pick a darker or lighter {st} color.</>]);
+  }
   const mm = sn.modMm;
   items.push(mm >= 0.8 ? ["ok", <>Dots print at <b>{mm.toFixed(2)} mm</b>. Above the 0.8 mm we aim for.</>]
     : mm >= 0.5 ? ["warn", <>Dots print at <b>{mm.toFixed(2)} mm</b>. Fine up close; go bigger if it hangs high.</>]
     : ["bad", <>Dots print at <b>{mm.toFixed(2)} mm</b>. Too small. Pick a bigger format.</>]);
-  items.push(["ok", <>Scans from about <b>{fmtDist(sn.scanCm)}</b>. Words read from <b>{fmtDist(sn.readM * 100)}</b>.{d.format !== "poster" ? " For a door or across a room, use the poster." : ""}</>]);
+  items.push(["ok", <>Scans from about <b>{fmtDist(sn.scanCm)}</b>. The title reads from <b>{fmtDist(sn.readM * 100)}</b>.{d.format !== "poster" ? " For a door or across a room, use the poster." : ""}</>]);
   if ((d.dots === "dots" || d.dots === "diamond") && mm < 0.9) items.push(["warn", <>{DOTS[d.dots]} leaves more white space. Square or Soft are safest this small.</>]);
-  if (d.disc && contrast(d.tag, d.bg) < 1.4) items.push(["warn", <>The tag matches the card. Pick a tag color that stands out.</>]);
   return (
     <ul className={s.checks}>
       {items.map(([k, t], i) => <li key={i} className={s[k]}><i aria-hidden="true">{k === "ok" ? "✓" : "!"}</i><span><span className="sr-only">{k === "ok" ? "Good: " : k === "warn" ? "Heads up: " : "Problem: "}</span>{t}</span></li>)}
