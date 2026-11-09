@@ -2,7 +2,7 @@
 // lib/testCheckout.ts) until Stripe Billing exists. DELETE ends Infinity now (dev only, for testing).
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard, getUserFromCookie } from "@/lib/auth";
 import { PRO, addDays, isProActive } from "@/lib/plans";
 import { testCheckoutAllowed } from "@/lib/testCheckout";
 
@@ -12,8 +12,8 @@ const soon = () => NextResponse.json({ error: "Billing is coming soon." }, { sta
 
 export async function POST() {
   if (!testCheckoutAllowed()) return soon();
-  const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Log in first." }, { status: 401 });
+  const { user, denied } = await activeUserGuard();
+  if (denied) return denied;
   const a = await prisma.artist.findUnique({ where: { id: user.id }, select: { proUntil: true } });
   if (!a) return NextResponse.json({ error: "Artist not found." }, { status: 404 });
   if (isProActive(a)) return NextResponse.json({ error: "You're already on Infinity.", proUntil: a.proUntil }, { status: 409 });

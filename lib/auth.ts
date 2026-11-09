@@ -4,9 +4,11 @@
 // fix in lib/oauth/account.ts) signs out every older token. Tokens from before `sv` existed count as version 0.
 import { cache } from "react";
 import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 import { SignJWT, jwtVerify } from "jose";
+import { accountState, gateResponse, type AccountState } from "@/lib/accountGate";
 
-export type JwtUser = { id: string; slug?: string; email?: string; role?: "ADMIN" | "USER"; sv?: number };
+export type JwtUser = { id: string; slug?: string; email?: string; role?: "ADMIN" | "USER"; sv?: number; exp?: number };
 type SessionRow = { closedAt: Date | null; suspendedAt: Date | null; sessionVersion: number };
 
 const SECRET = new TextEncoder().encode(process.env.JWT_SECRET!);
@@ -64,6 +66,20 @@ export async function verifyAuthTokenOrThrow(token: string): Promise<JwtUser> {
   return u;
 }
 
+/**
+ * Checks a token from an emailed link that we signed with the same secret (e.g. the 7-day QR download link from
+ * lib/artworkLive.ts): signature, HS256 and expiry only. It is not a login, so there's no session version; the
+ * route checks the token's `type` and the owner's account itself.
+ */
+export async function verifyLinkToken(token: string | undefined | null): Promise<Record<string, unknown> | null> {
+  if (!token) return null;
+  try {
+    return (await jwtVerify(token, SECRET, { algorithms: ["HS256"] })).payload as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
 // keep if you also want header auth for API clients
 export async function getUserFromRequestAuthHeader(req: Request): Promise<JwtUser | null> {
   const auth = req.headers.get("authorization");
@@ -71,11 +87,35 @@ export async function getUserFromRequestAuthHeader(req: Request): Promise<JwtUse
   return verifyAuthToken(auth.slice(7));
 }
 
-export async function requireUser(): Promise<JwtUser> {
+/** The cookie's user and whether the account is active, suspended or closed; null when not signed in. */
+async function cookieSession(): Promise<{ user: JwtUser; state: AccountState } | null> {
   const s = await checkToken(cookies().get("auth-token")?.value);
+  return s ? { user: s.user, state: accountState(s.row) } : null;
+}
+
+export async function requireUser(): Promise<JwtUser> {
+  const s = await cookieSession();
   // A closed, suspended or removed account's old login stops working everywhere.
-  if (!s || s.row.closedAt || s.row.suspendedAt) throw Object.assign(new Error("Unauthorized"), { status: 401 });
+  if (!s || s.state !== "active") throw Object.assign(new Error("Unauthorized"), { status: 401 });
   return s.user;
+}
+
+/**
+ * For API routes that save, send, upload or delete: { user } for a signed-in, active account, or a ready response:
+ * 401 { error, code: "not_logged_in" } when signed out (`notSignedIn` replaces the message), 403 { error, code:
+ * "account_suspended" | "account_closed" } when an admin paused the account or it was closed (lib/accountGate.ts).
+ *
+ *   const { user, denied } = await activeUserGuard("Log in to upload."); if (denied) return denied;
+ *
+ * What a paused or closed artist must still be able to do (log out, close the account, read or download their own
+ * data, contact us) stays on getUserFromCookie().
+ */
+export async function activeUserGuard(notSignedIn?: string): Promise<{ user: JwtUser; denied: null } | { user: null; denied: NextResponse }> {
+  const s = await cookieSession();
+  const gate = gateResponse(s?.state ?? null, notSignedIn);
+  if (s && !gate) return { user: s.user, denied: null };
+  const { status, body } = gate ?? gateResponse(null, notSignedIn)!; // gate is only null for an active session
+  return { user: null, denied: NextResponse.json(body, { status }) };
 }
 
 export async function requireAdmin(): Promise<JwtUser> {

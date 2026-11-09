@@ -2,20 +2,22 @@
 //   artworkIds is the full, ordered list of pieces (replaces what's there).
 // DELETE: remove it (the artworks themselves stay).
 import { prisma } from "@/lib/prisma";
-import { artistId, safe, DESC_MAX, json, shapeStudio, studioCollectionSelect, TITLE_MAX } from "@/components/collections/server";
+import { safe, DESC_MAX, json, shapeStudio, studioCollectionSelect, TITLE_MAX } from "@/components/collections/server";
+import { activeUserGuard } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 async function own(id: string) {
-  const me = await artistId();
-  if (!me) return { me: null, col: null };
+  const { user, denied } = await activeUserGuard("Log in to keep going."); // signed in, not paused or closed
+  if (denied) return { denied, me: null, col: null };
+  const me = user.id;
   const col = await prisma.collection.findFirst({ where: { id, artistId: me }, select: { id: true, coverArtworkId: true } });
-  return { me, col };
+  return { denied: null, me, col };
 }
 
 export const PATCH = safe(async (req: Request, { params }: { params: { id: string } }) => {
-  const { me, col } = await own(params.id);
-  if (!me) return json({ error: "Log in to keep going.", code: "not_logged_in" }, 401);
+  const { denied, me, col } = await own(params.id);
+  if (denied) return denied;
   if (!col) return json({ error: "That collection is gone. Refresh to see your list.", code: "collection_not_found" }, 404);
   const body = await req.json().catch(() => ({}));
   const data: { title?: string; description?: string; coverArtworkId?: string | null } = {};
@@ -56,8 +58,8 @@ export const PATCH = safe(async (req: Request, { params }: { params: { id: strin
 });
 
 export const DELETE = safe(async (_req: Request, { params }: { params: { id: string } }) => {
-  const { me, col } = await own(params.id);
-  if (!me) return json({ error: "Log in to keep going.", code: "not_logged_in" }, 401);
+  const { denied, col } = await own(params.id);
+  if (denied) return denied;
   if (!col) return json({ error: "That collection is gone. Refresh to see your list.", code: "collection_not_found" }, 404);
   await prisma.collection.delete({ where: { id: col.id } });
   return json({ ok: true });

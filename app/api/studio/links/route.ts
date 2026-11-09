@@ -2,7 +2,7 @@
 // POST /api/studio/links { url, label?, display?: "icon"|"button", kind? } : adds a link at the end.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard, getUserFromCookie } from "@/lib/auth";
 import { LINK_SELECT, MAX_LINKS, linkInput, normalizeUrl, readTheme, resolveKind } from "@/components/links/model";
 
 export const dynamic = "force-dynamic";
@@ -19,8 +19,8 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
+  const { user, denied } = await activeUserGuard();
+  if (denied) return denied;
 
   const parsed = linkInput.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: "Check the link and label.", code: "invalid_input" }, { status: 400 });

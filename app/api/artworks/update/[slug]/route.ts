@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from "@/lib/prisma";
-import { verifyAuthTokenOrThrow } from '@/lib/auth'
+import { activeUserGuard } from '@/lib/auth'
 import { deleteUpload } from '@/lib/storage'
 import Busboy from 'busboy'
 import { toNodeReadable } from '@/lib/toNodeReadables'
@@ -26,17 +26,11 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { slug: string } }
 ) {
-  const token = req.cookies.get('auth-token')?.value
-  if (!token) return NextResponse.json({ error: "Log in to keep going.", code: "not_logged_in" }, { status: 401 })
+  const { user: payload, denied } = await activeUserGuard("Log in to keep going.") // signed in, not paused or closed
+  if (denied) return denied
 
   try {
-    const payload = await verifyAuthTokenOrThrow(token); // signature, expiry and session version
-
-    const currentArtistId =
-      (payload as any).id ||
-      (payload as any).artistId ||
-      (payload as any).userId ||
-      (payload as any).sub
+    const currentArtistId = payload.id
 
 
     const form = await req.formData().catch(() => null)

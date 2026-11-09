@@ -2,13 +2,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
+  const { user, denied } = await activeUserGuard();
+  if (denied) return denied;
   const parsed = z.object({ ids: z.array(z.string().max(40)).max(100) }).safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: "Couldn't save that order. Refresh the page and try again.", code: "invalid_input" }, { status: 400 });
 

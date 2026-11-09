@@ -4,7 +4,7 @@
 //                        A look in another format moves it to that group (merging with the same code there).
 //   DELETE               remove it
 import { NextRequest, NextResponse } from "next/server";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { presetLook, sanitizeDesign } from "@/components/qr/card";
 import { clampQty, isPreset, queueCount } from "@/lib/printQueue";
@@ -16,15 +16,15 @@ export const runtime = "nodejs";
 const err = (error: string, code: string, status: number) => NextResponse.json({ error, code }, { status });
 
 async function own(id: string) {
-  const user = await getUserFromCookie();
-  if (!user?.id) return { user: null, item: null };
+  const { user, denied } = await activeUserGuard("Log in to change your print queue."); // signed in, not paused or closed
+  if (denied) return { denied, user: null, item: null };
   const item = await prisma.printQueueItem.findFirst({ where: { id, artistId: user.id } });
-  return { user, item };
+  return { denied: null, user, item };
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const { user, item } = await own(params.id);
-  if (!user) return err("Log in to change your print queue.", "not_logged_in", 401);
+  const { denied, user, item } = await own(params.id);
+  if (denied) return denied;
   if (!item) return err("That code isn't in your queue any more.", "queue_item_gone", 404);
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   try {
@@ -57,8 +57,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const { user, item } = await own(params.id);
-  if (!user) return err("Log in to change your print queue.", "not_logged_in", 401);
+  const { denied, user, item } = await own(params.id);
+  if (denied) return denied;
   if (!item) return NextResponse.json({ ok: true, cards: await queueCount(user.id) }); // already gone: same result
   await prisma.printQueueItem.delete({ where: { id: item.id } }).catch(() => null);
   return NextResponse.json({ ok: true, cards: await queueCount(user.id) });

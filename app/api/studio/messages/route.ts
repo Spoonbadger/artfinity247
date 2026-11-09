@@ -4,7 +4,7 @@
 // GET /api/studio/messages?email=: the thread with one customer.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard, getUserFromCookie } from "@/lib/auth";
 import { resend } from "@/lib/resend";
 import { rateLimit } from "@/lib/rateLimit";
 import { emailHtml, PARCEL_TAG } from "@/lib/artistEmails";
@@ -18,10 +18,12 @@ const MAX_BODY = 4000;
 const MAX_SUBJECT = 150;
 const DAILY_SENDS = 40;
 
+const findArtist = (id: string) => prisma.artist.findUnique({ where: { id }, select: { id: true, email: true, artist_name: true, name: true } });
+
 async function currentArtist() {
   const user = await getUserFromCookie();
   if (!user?.id) return null;
-  return prisma.artist.findUnique({ where: { id: user.id }, select: { id: true, email: true, artist_name: true, name: true } });
+  return findArtist(user.id);
 }
 
 export async function GET(req: Request) {
@@ -33,7 +35,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const artist = await currentArtist();
+  const { user, denied } = await activeUserGuard(); // signed in, not paused or closed: a paused page can't email buyers
+  if (denied) return denied;
+  const artist = await findArtist(user.id);
   if (!artist) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
 
   const input = await req.json().catch(() => ({}));

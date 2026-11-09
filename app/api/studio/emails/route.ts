@@ -4,7 +4,7 @@
 // DELETE ?kind= -> back to Artfinity's default (removes the artist's row)
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard, getUserFromCookie } from "@/lib/auth";
 import { rateLimit } from "@/lib/rateLimit";
 import { DEFAULT_TEMPLATES, EMAIL_KINDS, EMAIL_LIMITS, isEmailKind } from "@/lib/artistEmails";
 
@@ -29,8 +29,9 @@ export async function GET() {
 }
 
 export async function PUT(req: Request) {
-  const id = await artistId();
-  if (!id) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
+  const { user, denied } = await activeUserGuard(); // signed in, not paused or closed
+  if (denied) return denied;
+  const id = user.id;
   if (!rateLimit(`crm-tpl:${id}`, 60, 60_000)) return NextResponse.json({ error: "Slow down a little. Try again in a minute.", code: "rate_limited" }, { status: 429 });
 
   const input = await req.json().catch(() => ({}));
@@ -51,8 +52,9 @@ export async function PUT(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const id = await artistId();
-  if (!id) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
+  const { user, denied } = await activeUserGuard(); // signed in, not paused or closed
+  if (denied) return denied;
+  const id = user.id;
   const kind = new URL(req.url).searchParams.get("kind");
   if (!isEmailKind(kind)) return NextResponse.json({ error: "That email type doesn't exist. Refresh the page.", code: "invalid_input" }, { status: 400 });
   await prisma.emailTemplate.deleteMany({ where: { artistId: id, kind } });

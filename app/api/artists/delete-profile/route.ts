@@ -3,7 +3,7 @@
 // earnings are still paid on the normal schedule. Logs the artist out and emails a confirmation.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { getUserFromCookie } from "@/lib/auth";
 import { closeArtistAccount } from "@/lib/account";
 import { getBalance, PAYOUT_DAY_OF_MONTH } from "@/lib/balance";
 import { resend } from "@/lib/resend";
@@ -15,7 +15,10 @@ const usd = (cents: number) => "$" + (cents / 100).toLocaleString("en-US", { min
 
 export async function DELETE() {
   try {
-    const user = await requireUser();
+    // A paused (suspended) account can still close itself, and an already-closed one just gets logged out, so this
+    // uses getUserFromCookie (valid, unrevoked session) rather than requireUser/activeUserGuard.
+    const user = await getUserFromCookie();
+    if (!user) return NextResponse.json({ error: "Log in again to close your account.", code: "not_logged_in" }, { status: 401 });
     const artist = await prisma.artist.findUnique({
       where: { id: user.id },
       select: { id: true, email: true, first_name: true, artist_name: true, name: true, closedAt: true, venmoHandle: true },

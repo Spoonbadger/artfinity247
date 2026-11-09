@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { artistId, json, safe } from "@/components/collections/server";
 import { scaleScene } from "@/lib/social/content";
 import { isProActive } from "@/lib/plans";
+import { activeUserGuard } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -37,8 +38,9 @@ export const GET = safe(async () => {
 });
 
 export const PATCH = safe(async (req: Request) => {
-  const me = await artistId();
-  if (!me) return json({ error: "Log in to keep going.", code: "not_logged_in" }, 401);
+  const { user, denied } = await activeUserGuard("Log in to keep going."); // signed in, not paused or closed
+  if (denied) return denied;
+  const me = user.id;
   const b = (await req.json().catch(() => ({}))) as { socialFeature?: unknown };
   if (typeof b.socialFeature !== "boolean") return json({ error: "Nothing to save.", code: "invalid_input" }, 400);
   await prisma.artist.update({ where: { id: me }, data: { socialFeature: b.socialFeature } });

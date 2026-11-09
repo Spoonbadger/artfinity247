@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma"
 import { ArtworkStatus } from "@prisma/client"
 import { getArtistManager } from "@/lib/admin"
+import { activeUserGuard } from "@/lib/auth"
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
@@ -106,9 +107,9 @@ export async function PUT(
     })
     if (!target) return NextResponse.json({ error: "Artist not found" }, { status: 404 })
 
-    const { user, allowed } = await getArtistManager(target.id)
-    if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
-    if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    const { user, denied } = await activeUserGuard("Not authenticated") // signed in, not paused or closed
+    if (denied) return denied
+    if (user.id !== target.id && user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
     const body = await req.json().catch(() => ({}))
     let { venmoHandle } = body

@@ -1,6 +1,7 @@
 // GET: the signed-in artist's collections. POST {title, description?}: create one at the end.
 import { prisma } from "@/lib/prisma";
 import { artistId, safe, DESC_MAX, json, listStudioCollections, shapeStudio, studioCollectionSelect, TITLE_MAX, uniqueSlug } from "@/components/collections/server";
+import { activeUserGuard } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -11,8 +12,9 @@ export const GET = safe(async () => {
 });
 
 export const POST = safe(async (req: Request) => {
-  const me = await artistId();
-  if (!me) return json({ error: "Log in to keep going.", code: "not_logged_in" }, 401);
+  const { user, denied } = await activeUserGuard("Log in to keep going."); // signed in, not paused or closed
+  if (denied) return denied;
+  const me = user.id;
   const body = await req.json().catch(() => ({}));
   const title = String(body?.title ?? "").replace(/\s+/g, " ").trim().slice(0, TITLE_MAX);
   if (!title) return json({ error: "Give it a name.", code: "title_required" }, 400);

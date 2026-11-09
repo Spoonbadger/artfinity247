@@ -3,7 +3,7 @@
 import { ensureArtworkCode, shortUrl } from "@/lib/shortlinks";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard } from "@/lib/auth";
 import { generateQrPdf } from "@/lib/generateQrPdf";
 import { DEFAULT_DESIGN } from "@/components/qr/card";
 import { artSelect, baseUrl, pdfHeaders, toArtInfo } from "@/app/api/qr/art";
@@ -13,8 +13,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Log in to keep going.", code: "not_logged_in" }, { status: 401 });
+  // Makes codes and logs printed labels, so only for an active account (not paused or closed).
+  const { user, denied } = await activeUserGuard("Log in to keep going.");
+  if (denied) return denied;
 
   const url = new URL(req.url);
   const slugs = url.searchParams.get("slugs")?.split(",").map((s) => s.trim()).filter(Boolean);

@@ -5,6 +5,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cleanEvent, currentArtistId, eventSelect, MAX_EVENTS, placeForEvent, type EventInput } from "./_lib";
+import { activeUserGuard } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -24,8 +25,9 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const artistId = await currentArtistId();
-    if (!artistId) return NextResponse.json({ error: "Log in to keep going.", code: "not_logged_in" }, { status: 401 });
+    const { user, denied } = await activeUserGuard("Log in to keep going."); // signed in, not paused or closed
+    if (denied) return denied;
+    const artistId = user.id;
     const body = await req.json().catch(() => null);
 
     if (body && Array.isArray(body.events)) {
