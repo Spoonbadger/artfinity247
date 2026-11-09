@@ -1,18 +1,16 @@
 import { NextRequest } from 'next/server'
 import { Stripe } from 'stripe'
 import { prisma } from "@/lib/prisma"
-import { artistSplitsForOrder, calcItemProfitCents } from "@/lib/revenue"
-import { normalizeSize } from "@/lib/sales"
 import { sendOrderNotifications } from "@/lib/orderNotifications"
 import { sendWorkOrder } from "@/lib/printer"
-import { claimEditionNumbers } from "@/lib/editions"
 import { artistIdsForOrder, followFromCheckout } from "@/lib/followers"
 import { onOrderPaid } from "@/lib/collector"
-import { markRewardUsed, preservedSplit } from "@/lib/collectorRewards"
+import { markRewardUsed } from "@/lib/collectorRewards"
 import { reportError } from "@/lib/monitor"
 import { markScanPaid } from "@/lib/scanning.server"
 import { markCodeOrderPaid } from "@/lib/codePrints"
-import { orderIdFrom, shippingFrom } from "@/lib/checkoutSession"
+import { shippingFrom } from "@/lib/checkoutSession"
+import { recordCheckoutOrder, type BulkOrder } from "@/lib/checkoutOrder"
 
 export const dynamic = "force-dynamic"
 export const runtime = 'nodejs'
@@ -90,122 +88,19 @@ export async function POST(req: NextRequest) {
     // Bulk orders (an artist buying their own prints at cost, from /studio/bulk) carry their kind
     // and the artist's shipping address in metadata.
     const isBulk = session.metadata?.kind === "bulk" && !!session.metadata?.bulkArtistId
-    const bulk = isBulk
+    const bulk: BulkOrder | null = isBulk
       ? { kind: "bulk", bulkArtistId: session.metadata!.bulkArtistId, shippingName: session.metadata?.shipName || null, shippingAddress: session.metadata?.shipAddress || null }
       : null
 
     try {
-      // Since API version 2025-03-31.basil the address is at collected_information.shipping_details (lib/checkoutSession.ts).
       const shipping = shippingFrom(session)
-      // The order id made with the session (its code is on the buyer's card statement and Stripe receipt), if any.
-      const presetId = orderIdFrom(session.metadata)
-      // 1) Idempotent order create (upsert by unique stripeSessionId)
-      const order = await prisma.order.upsert({
-        where: { stripeSessionId: session.id },
-        update: {
-          // Don’t touch totals on retry, but update shipping/email if missing
-          email: buyerEmail,
-          paymentStatus: session.payment_status ?? '',
-          shippingName: shipping.name,
-          shippingAddress: shipping.address,
-          ...(bulk ?? {}),
-        },
-        create: {
-          ...(presetId ? { id: presetId } : {}),
-          stripeSessionId: session.id,
-          email: buyerEmail,
-          amountTotal: session.amount_total ?? 0,
-          currency: session.currency ?? 'usd',
-          paymentStatus: session.payment_status ?? '',
-          shippingName: shipping.name,
-          shippingAddress: shipping.address,
-          ...(bulk ?? {}),
-        },
-      })
-
-      const existingItems = await prisma.orderItem.count({
-        where: { orderId: order.id },
-      })
-
-      // 2) Create items once (a retry finds them already there)
-      if (existingItems === 0) {
+      // 1) Order, once per session, and 2) its items, once per order (lib/checkoutOrder.ts): retries add nothing.
+      const order = await recordCheckoutOrder(prisma, session, {
+        buyerEmail,
+        bulk,
         // Line items with product expanded (so product.metadata is available)
-        const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
-          expand: ['data.price.product'],
-        })
-
-        // Lock in each artist's split (Free 60%, Infinity higher) as of this order. Bulk orders pay no split.
-        const splits = isBulk
-          ? lineItems.data.map(() => null)
-          : await artistSplitsForOrder(prisma, lineItems.data.map((li) => ({
-              artistId: (li.price?.product as Stripe.Product | null)?.metadata?.artistId || null,
-              quantity: li.quantity ?? 1,
-            })), order.createdAt)
-
-        const itemsToCreate = lineItems.data.map((li, idx) => {
-          const product = li.price?.product as Stripe.Product | null
-          const unit = li.price?.unit_amount ?? 0
-          const qty = li.quantity ?? 1
-          const rawSize = product?.metadata?.size || 'medium'
-
-          const sizeNorm = normalizeSize(rawSize)
-          const lineTotal = unit * qty
-
-          const frameChosen = product?.metadata?.frameChosen === "true"
-          const rawFrameColor = product?.metadata?.frameColor || ""
-          const frameColor =
-            frameChosen && ["black", "white", "natural"].includes(rawFrameColor)
-              ? rawFrameColor
-              : null
-          // Collector reward (lib/collectorRewards.ts): keep the artist's share at the pre-reward price.
-          const rewardFrom = Number(product?.metadata?.rewardFromUnit || 0)
-          const split = rewardFrom > unit && splits[idx] != null
-            ? preservedSplit({ preRewardLineTotal: rewardFrom * qty, lineTotal, size: sizeNorm, frameChosen, quantity: qty, orderDate: order.createdAt, split: splits[idx]! })
-            : splits[idx]
-          const b = calcItemProfitCents({
-            lineTotal,
-            size: sizeNorm,
-            frameChosen,
-            quantity: qty,
-            orderDate: order.createdAt,
-            artistSplit: split,
-          })
-
-          return {
-            orderId: order.id,
-            artworkId: product?.metadata?.artworkId ?? null,
-            slug: product?.metadata?.slug || '',
-            size: sizeNorm,
-            frameChosen,
-            frameColor,
-            unitPrice: unit,
-            quantity: qty,
-            lineTotal,
-            title: product?.metadata?.title || li.description || null,
-            artistName: product?.metadata?.artistName || null,
-            imageUrl: product?.metadata?.imageUrl || null,
-
-            printCost: b.printCost,
-            shippingCost: b.shippingCost,
-            laborCost: b.laborCost,
-            websiteCost: b.websiteCost,
-            artistSplit: split,
-            // Short link code the sale came through (checked at checkout, carried in metadata)
-            qrCodeId: product?.metadata?.qrCodeId || null,
-          }
-        })
-
-        if (itemsToCreate.length > 0) {
-          // Limited editions: number the prints inside one transaction that locks each artwork.
-          // Stripe already took the money, so a line that no longer fits (two checkouts racing for
-          // the last prints) is still recorded, without a number, and logged for a refund.
-          await prisma.$transaction(async (tx) => {
-            const { numbers, shortfalls } = await claimEditionNumbers(tx, itemsToCreate.map((it) => ({ artworkId: it.artworkId, quantity: it.quantity })))
-            if (shortfalls.length) console.error("EDITION OVERSOLD: refund needed", { orderId: order.id, shortfalls })
-            await tx.orderItem.createMany({ data: itemsToCreate.map((it, i) => ({ ...it, editionNumber: numbers[i] })) })
-          })
-        }
-      }
+        listLineItems: () => stripe.checkout.sessions.listLineItems(session.id, { expand: ['data.price.product'] }),
+      })
 
       // Buyer ticked "Email me when … posts new work": a confirmed follow per artist (upsert, retry-safe).
       if (!isBulk && session.metadata?.follow === "1" && session.payment_status === "paid") {

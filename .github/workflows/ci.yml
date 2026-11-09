@@ -1,5 +1,6 @@
-# CI: install, Prisma client, type check, lint and a production build, on every push and pull request to main and
-# redesign/artist-first. Needs no secrets: the build runs with dummy env (no database, Stripe, Sentry or email).
+# CI: install, Prisma client, type check, lint, tests and a production build, on every push and pull request to main
+# and redesign/artist-first. A pull request can't be merged while any step fails. Needs no secrets: the tests and the
+# build run with dummy env (no database, Stripe, Sentry or email); the tests use an in-memory stand-in for the database.
 name: CI
 
 on:
@@ -48,6 +49,10 @@ jobs:
 
       - name: Lint
         run: pnpm exec next lint --dir app --dir components --dir lib --dir content
+
+      # Every lib/**/*.test.mjs file (checkout money path, sign-in tokens, image checks, imports, offline worker).
+      - name: Test
+        run: pnpm test
 
       - name: Build
         run: pnpm exec next build
