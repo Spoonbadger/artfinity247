@@ -73,15 +73,7 @@ export async function parseMeta(body: Record<string, unknown>, artistId: string)
       out.discountPct = d;
     }
   }
-  if ("expiresAt" in body) {
-    const v = body.expiresAt;
-    if (v === null || v === "") out.expiresAt = null;
-    else {
-      const d = new Date(String(v));
-      if (Number.isNaN(d.getTime())) return "That end date doesn't look right.";
-      out.expiresAt = d;
-    }
-  }
+  // expiresAt from older clients is ignored: codes don't end on a date any more (lib/shortlinks.ts isLive).
   if ("active" in body) out.active = body.active !== false;
   if ("design" in body && body.design && typeof body.design === "object") out.design = sanitizeDesign(body.design);
   return out;

@@ -26,7 +26,6 @@ export type CodeArt = { id: string; title: string; imageUrl: string; smallMarkup
 export type CodeLook = { fg: string; bg: string; dots: DotStyle; eyes: EyeStyle; eye: string | null; logo: boolean; printedDisc: number; printedVenue: string | null };
 
 const STEPS = [5, 10, 15, 20, 25, 30];
-const dayOf = (iso: string | null) => (iso ? iso.slice(0, 10) : "");
 
 /** Edit what's behind a printed code, and download the code again. */
 export default function CodeEditor({ initial, arts, look, base, places = [], partners = [], label = null }: {
@@ -36,10 +35,10 @@ export default function CodeEditor({ initial, arts, look, base, places = [], par
   label?: PrintedLabel | null;
 }) {
   const router = useRouter();
-  const [f, setF] = useState({ ...initial, expires: dayOf(initial.expiresAt) });
+  const [f, setF] = useState(initial);
   const [busy, setBusy] = useState(false);
   const set = (p: Partial<typeof f>) => setF((o) => ({ ...o, ...p }));
-  const dirty = f.label !== initial.label || !samePlace(f.place, initial.place) || f.discountPct !== initial.discountPct || f.active !== initial.active || f.expires !== dayOf(initial.expiresAt) || f.artworkId !== initial.artworkId;
+  const dirty = f.label !== initial.label || !samePlace(f.place, initial.place) || f.discountPct !== initial.discountPct || f.active !== initial.active || f.artworkId !== initial.artworkId;
   // Asked before saving a change that makes the printed label disagree with what scans show.
   const [warn, setWarn] = useState<LabelWarningText | null>(null);
   const [warnBusy, setWarnBusy] = useState<"reprint" | "save" | null>(null);
@@ -68,7 +67,6 @@ export default function CodeEditor({ initial, arts, look, base, places = [], par
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           label: f.label, place: placeInput(f.place), discountPct: f.discountPct, active: f.active, artworkId: f.artworkId,
-          expiresAt: f.expires ? new Date(`${f.expires}T23:59:59`).toISOString() : null,
         }),
       });
       if (!r.ok) {
@@ -155,15 +153,6 @@ export default function CodeEditor({ initial, arts, look, base, places = [], par
           </select>
         </label>
         {tagWarn && <p className="t-small -mt-2">The printed tag still says {look.printedDisc}% off. Buyers get {f.discountPct ? `${f.discountPct}%` : "full price"}.</p>}
-
-        <label className="af-field">
-          <span className="label">Stops working after</span>
-          <input type="date" value={f.expires} onChange={(e) => set({ expires: e.target.value })} />
-        </label>
-        <div className="t-small -mt-2 flex items-center justify-between gap-2">
-          <span>{f.expires ? "Then it opens your page with a short note." : "Never ends."}</span>
-          {f.expires && <button type="button" className="font-bold text-scan" onClick={() => set({ expires: "" })}>Never end</button>}
-        </div>
 
         <label className="flex min-h-[44px] items-center gap-3 text-[15px] font-semibold">
           <input type="checkbox" className="h-5 w-5 accent-[#2b37f0]" checked={f.active} onChange={(e) => set({ active: e.target.checked })} />

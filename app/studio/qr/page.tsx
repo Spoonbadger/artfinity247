@@ -79,7 +79,7 @@ export default async function QrPage({ searchParams }: { searchParams: { art?: s
     const d = saved.design ? sanitizeDesign(saved.design) : design;
     // The record is the truth for venue and deal; the card's tag can only show the Studio's discount steps.
     const disc = saved.discountPct && DISCOUNTS.includes(saved.discountPct) ? saved.discountPct : saved.discountPct ? d.disc : 0;
-    design = { ...d, ev: saved.venue || "", disc, evDate: d.evDate || (saved.expiresAt ? saved.expiresAt.toISOString().slice(0, 10) : "") };
+    design = { ...d, ev: saved.venue || "", disc, evDate: d.evDate };
   }
   // A Free artist reopening an Infinity look gets the closest free look (that's also what prints).
   if (!pro) design = freeDesign(design);

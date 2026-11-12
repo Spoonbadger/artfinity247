@@ -65,7 +65,7 @@ export default async function PrintQueuePage({ searchParams }: { searchParams: {
       return {
         id: g.row.id, qty: g.qty, title: g.row.artwork.title, slug: g.row.artwork.slug || "", imageUrl: g.row.artwork.imageUrl,
         code: g.row.qrCode.code, preset: d.preset, venue: g.row.qrCode.venue, discountPct: g.row.qrCode.discountPct,
-        live: g.row.qrCode.active && (!g.row.qrCode.expiresAt || g.row.qrCode.expiresAt > new Date()), inReview: g.row.artwork.status === "PENDING", svg,
+        live: g.row.qrCode.active, inReview: g.row.artwork.status === "PENDING", svg,
       };
     });
     // The sheets exactly as they'll print: each piece repeated qty times, packed in order.

@@ -57,7 +57,7 @@ export async function createQrCode(input: CodeInput) {
           venue: input.venue ?? null,
           discountPct: input.discountPct ?? null,
           design: (input.design ?? undefined) as never,
-          expiresAt: input.expiresAt ?? null,
+          expiresAt: null, // codes never end on a date (isLive)
           venueId: input.venueId ?? null,
           placeId: input.placeId ?? null,
         },
@@ -76,7 +76,7 @@ export async function createQrCode(input: CodeInput) {
  */
 export async function ensureArtworkCode(artistId: string, artworkId: string, label: string, design?: unknown) {
   const found = await prisma.qrCode.findFirst({
-    where: { artistId, artworkId, active: true, venue: null, placeId: null, discountPct: null, expiresAt: null },
+    where: { artistId, artworkId, active: true, venue: null, placeId: null, discountPct: null },
     orderBy: { createdAt: "asc" },
     select: { code: true },
   });
@@ -101,9 +101,12 @@ export async function resolveCode(raw: unknown) {
 
 export type ResolvedCode = NonNullable<Awaited<ReturnType<typeof resolveCode>>>;
 
-/** Active and not past its end date. */
-export function isLive(c: { active: boolean; expiresAt: Date | null }, now = new Date()) {
-  return c.active && (!c.expiresAt || c.expiresAt.getTime() > now.getTime());
+/**
+ * Active (not paused). Codes don't end on a date any more: an old stored expiresAt is ignored on purpose,
+ * not migrated, so every code that isn't paused keeps working.
+ */
+export function isLive(c: { active: boolean; expiresAt?: Date | null }, _now = new Date()) {
+  return c.active;
 }
 
 /**

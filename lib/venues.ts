@@ -380,9 +380,8 @@ export async function unlinkedVenueNames() {
 
 /** What's hanging at a venue now: live codes whose artwork (or artist page) is public. Artworks as browse cards, newest code first. */
 export async function hangingAt(venueId: string) {
-  const now = new Date();
   const codes = await prisma.qrCode.findMany({
-    where: { venueId, active: true, OR: [{ expiresAt: null }, { expiresAt: { gt: now } }], artist: { closedAt: null, suspendedAt: null } },
+    where: { venueId, active: true, artist: { closedAt: null, suspendedAt: null } },
     orderBy: { createdAt: "desc" },
     select: { artworkId: true, artist: { select: { slug: true, name: true, artist_name: true } } },
   });

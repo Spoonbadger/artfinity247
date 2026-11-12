@@ -185,7 +185,7 @@ Every piece on your page gets its own code. A buyer scans it, lands on that piec
 1. In the Studio, open [QR codes](/studio/qr).
 2. Pick the piece. Codes appear once a piece is approved.
 3. Pick a look: gallery label, sticker, market tag or show poster.
-4. Optional: add the venue or event, a scan discount, or an end date.
+4. Optional: add the venue or event, or a scan discount.
 5. Check the **Will it scan?** panel. It warns you if the colors are too close or the code is too small.
 6. Click **Download PDF** and print it at 100% scale (not "fit to page").
 
