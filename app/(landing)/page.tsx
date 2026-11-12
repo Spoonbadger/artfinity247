@@ -177,7 +177,7 @@ export default async function Home({ searchParams }: { searchParams?: Record<str
         <BrushWipe className="pointer-events-none absolute -left-16 bottom-0 h-14 w-[520px] rotate-[3deg] opacity-25 md:bottom-6 md:h-20" color="var(--af-scan)" />
         <BrushWipe className="pointer-events-none absolute -right-20 top-8 h-12 w-[380px] -rotate-[5deg] opacity-30" color="var(--af-sticker)" delay={0.4} />
         <div className="relative mx-auto grid max-w-[1240px] items-center gap-8 px-4 py-16 sm:px-6 md:py-20 lg:grid-cols-[1.1fr_1fr]">
-          <h2 className="t-page text-white">Your next wall could pay you.</h2>
+          <h2 className="t-page text-white">Claim your page. It’s free.</h2>
           <ClaimHandle dark className="lg:justify-self-end" />
         </div>
       </section>
