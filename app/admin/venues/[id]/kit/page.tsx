@@ -25,7 +25,7 @@ export default async function VenueKitPage({ params, searchParams }: { params: {
   const artists = Array.from(new Set([...artworks.map((a) => a.artist.name), ...artistPages.map((a) => a.name)]));
   const url = `${SITE_URL}/venues/${v.slug}`;
   const shown = url.replace(/^https?:\/\//, "");
-  const qr = qrSVG(url, { dots: "rounded", eyes: "frame", eyeColor: "#2b37f0", logo: true, quiet: 1, label: `QR code to ${shown}` });
+  const qr = qrSVG(url, { dots: "rounded", eyes: "frame", eyeColor: "#8b2a4b", logo: true, quiet: 1, label: `QR code to ${shown}` });
 
   return (
     <div className="grid gap-5">

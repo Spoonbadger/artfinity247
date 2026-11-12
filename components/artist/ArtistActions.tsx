@@ -39,7 +39,7 @@ export default function ArtistActions({ slug, firstName, className }: { slug: st
         firstName={firstName}
         className="btn btn-sm h-11 px-5"
         doneClassName="btn-ghost"
-        // Follow wears the artist's accent color (pageTheme), falling back to Scan Blue.
+        // Follow wears the artist's accent color (pageTheme), falling back to Garnet (--af-scan).
         idleStyle={{ background: "var(--accent, var(--af-scan))", borderColor: "var(--accent, var(--af-scan))", color: "var(--accent-ink, #fff)" }}
       />
       <button type="button" onClick={share} className="btn btn-ghost btn-sm h-11 px-5">

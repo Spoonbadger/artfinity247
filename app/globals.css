@@ -4,68 +4,81 @@
 
 /*
   Artfinity design tokens.
-  The art brings the color: the interface is mostly ink on wall-white.
-  Scan Blue = actions and the logo, Sticker = badges and deals,
-  Earned green = money only, Coral = sparing alerts.
+  Brand: Garnet Rose (Nov 2026). Replaced the 2.0 Scan Blue (#2b37f0). Roles:
+    Garnet        #8b2a4b  --af-scan         primary buttons, logo paint, links, focus ring (8.30:1 white text)
+    Garnet soft   #f6e1e6  --af-scan-soft    soft garnet tint behind garnet text and chips
+    Black cherry  #2e1219  --af-ink          text, header button (16.6:1 on ivory)
+    Quiet ink     #694c54  --af-ink-2        secondary text (7.31:1 on ivory, 6.59:1 on blush plaster)
+    Petal         #f0c3cc  --af-petal        text selection, soft paint accents
+    Blush plaster #f6ede9  --af-wall         section background
+    Ivory         #fdfaf7  --af-paper        page background (boxes stay white)
+    Box edge      #ecdcd8  --af-edge, --af-line   cards, panels, dividers
+    Control edge  #957a80  --af-edge-strong  secondary buttons, chips (3.76:1 on ivory, 3.39:1 on plaster)
+    Field edge    #8e737a  --af-field-edge   text inputs, selects (4.14:1 on ivory)
+  Functional colours are unchanged: Sticker yellow = badges, deals and the brush under titles,
+  Earned green = money only, Coral = sparing alerts and errors.
+  The art brings the color: the interface is mostly ink on ivory and plaster.
 */
 @layer base {
   :root {
-    --af-ink: #15161b;
-    --af-ink-2: #5a5d6b;
-    --af-paper: #ffffff;
-    --af-wall: #f2f3ec;
-    --af-line: #e1e2da;
-    --af-scan: #2b37f0;
-    --af-scan-soft: #e6e8ff;
+    --af-ink: #2e1219;
+    --af-ink-2: #694c54;
+    --af-paper: #fdfaf7;
+    --af-wall: #f6ede9;
+    --af-line: #ecdcd8;
+    --af-scan: #8b2a4b;
+    --af-scan-soft: #f6e1e6;
+    --af-petal: #f0c3cc;
     --af-sticker: #ffd43b;
     --af-coral: #ff5a36;
-    --af-coral-text: #c4321a; /* coral for words and for white text on coral: 5.5:1 on white */
-    --af-earned: #0f7a55;
+    --af-coral-text: #c4321a; /* coral for words and for white text on coral: 5.5:1 on white, 4.77:1 on plaster */
+    --af-earned: #0f7a55;      /* 5.13:1 on ivory, 4.63:1 on plaster */
     --af-earned-soft: #e1f2ea;
     --af-gallery: #e9e6df;
-    /* Box edges (see PAGE_RULES "Visual style"): soft gray for cards, panels and boxes;
-       a stronger gray for secondary buttons and unselected chips. Inputs and selected states keep ink. */
-    --af-edge: #d9dad2;        /* 1.41:1 on white, 1.26:1 on wall: separates, doesn't shout */
-    --af-edge-strong: #8a8c81; /* secondary buttons and chips; darkens to ink on hover. 3.4:1 on white, 3.1:1 on wall (controls need 3:1) */
-    --af-field-edge: #85877c;  /* text inputs, selects, textareas: 3.65:1 on white, 3.27:1 on wall (see "Form fields" below) */
+    /* Box edges (see PAGE_RULES "Visual style"): soft edge for cards, panels and boxes;
+       a stronger edge for secondary buttons and unselected chips. Inputs and selected states keep ink. */
+    --af-edge: #ecdcd8;        /* 1.33:1 on white, 1.15:1 on plaster: separates, doesn't shout */
+    --af-edge-strong: #957a80; /* secondary buttons and chips; darkens to ink on hover. 3.91:1 on white, 3.76:1 on ivory, 3.39:1 on plaster (controls need 3:1) */
+    --af-field-edge: #8e737a;  /* text inputs, selects, textareas: 4.30:1 on white, 4.14:1 on ivory, 3.73:1 on plaster (see "Form fields" below) */
 
     /* RGB channels so Tailwind opacity modifiers (bg-ink/25) work */
-    --af-ink-rgb: 21 22 27;
-    --af-ink-2-rgb: 90 93 107;
-    --af-paper-rgb: 255 255 255;
-    --af-wall-rgb: 242 243 236;
-    --af-line-rgb: 225 226 218;
-    --af-scan-rgb: 43 55 240;
-    --af-scan-soft-rgb: 230 232 255;
+    --af-ink-rgb: 46 18 25;
+    --af-ink-2-rgb: 105 76 84;
+    --af-paper-rgb: 253 250 247;
+    --af-wall-rgb: 246 237 233;
+    --af-line-rgb: 236 220 216;
+    --af-scan-rgb: 139 42 75;
+    --af-scan-soft-rgb: 246 225 230;
+    --af-petal-rgb: 240 195 204;
     --af-sticker-rgb: 255 212 59;
     --af-coral-rgb: 255 90 54;
     --af-coral-text-rgb: 196 50 26;
     --af-earned-rgb: 15 122 85;
     --af-earned-soft-rgb: 225 242 234;
     --af-gallery-rgb: 233 230 223;
-    --af-edge-rgb: 217 218 210;
-    --af-edge-strong-rgb: 138 140 129;
+    --af-edge-rgb: 236 220 216;
+    --af-edge-strong-rgb: 149 122 128;
 
     /* shadcn/ui variables mapped onto the palette (HSL triplets) */
-    --background: 0 0% 100%;
-    --foreground: 230 13% 9%;
+    --background: 30 60% 98%;          /* ivory */
+    --foreground: 345 44% 13%;         /* black cherry */
     --card: 0 0% 100%;
-    --card-foreground: 230 13% 9%;
+    --card-foreground: 345 44% 13%;
     --popover: 0 0% 100%;
-    --popover-foreground: 230 13% 9%;
-    --primary: 236 86% 55%;
+    --popover-foreground: 345 44% 13%;
+    --primary: 340 54% 35%;            /* garnet */
     --primary-foreground: 0 0% 100%;
-    --secondary: 70 17% 94%;
-    --secondary-foreground: 230 13% 9%;
-    --muted: 70 17% 94%;
-    --muted-foreground: 232 9% 39%;
-    --accent: 70 17% 94%;
-    --accent-foreground: 230 13% 9%;
+    --secondary: 18 42% 94%;           /* blush plaster */
+    --secondary-foreground: 345 44% 13%;
+    --muted: 18 42% 94%;
+    --muted-foreground: 343 16% 35%;   /* quiet ink */
+    --accent: 18 42% 94%;
+    --accent-foreground: 345 44% 13%;
     --destructive: 11 100% 45%;
     --destructive-foreground: 0 0% 100%;
-    --border: 70 9% 87%;
-    --input: 70 9% 87%;
-    --ring: 236 86% 55%;
+    --border: 12 34% 89%;              /* box edge */
+    --input: 12 34% 89%;
+    --ring: 340 54% 35%;
     --radius: 0.75rem;
   }
 
@@ -81,7 +94,7 @@
   h1, h2, h3, h4, h5, h6 { @apply text-ink; text-wrap: balance; }
   h1 { @apply font-display; font-variation-settings: "wdth" 80; letter-spacing: -0.01em; }
   :is(h2, h3, h4, h5, h6):is(.font-display, .font-primary) { font-variation-settings: "wdth" 80; letter-spacing: -0.01em; }
-  ::selection { background: var(--af-sticker); color: var(--af-ink); }
+  ::selection { background: var(--af-petal); color: var(--af-ink); }
   /* Placeholders: Tailwind's default grey is 2.5:1; quiet ink is 6.5:1 and still reads as a hint. */
   input::placeholder, textarea::placeholder { color: var(--af-ink-2); opacity: 1; }
   :focus-visible { outline: 3px solid var(--af-scan); outline-offset: 2px; }
@@ -133,7 +146,7 @@
   /* A box inside a box: no second border, a faint tint instead. */
   .box-inset { @apply rounded-xl bg-wall/70; }
   :is(.box, .af-card, .af-panel) :is(.box, .af-card, .af-panel) { border-color: transparent; background-color: rgb(var(--af-wall-rgb) / 0.6); }
-  .af-field { @apply grid gap-0.5 rounded-xl border-2 border-ink bg-white px-3.5 py-2.5 transition focus-within:border-scan focus-within:shadow-[0_0_0_3px_#d9dcff]; }
+  .af-field { @apply grid gap-0.5 rounded-xl border-2 border-ink bg-white px-3.5 py-2.5 transition focus-within:border-scan focus-within:shadow-[0_0_0_3px_rgb(var(--af-scan-rgb)/0.22)]; }
   .af-field > small, .af-field > span.label { @apply text-[13px] text-ink-2; }
   .af-field input, .af-field textarea, .af-field select { @apply w-full min-w-0 border-0 bg-transparent p-0 text-[17px] text-ink outline-none; }
   .af-hard-shadow { box-shadow: 8px 8px 0 var(--af-ink); }
@@ -157,7 +170,7 @@
 /* Form fields (WCAG 1.4.11, PAGE_RULES "Visual style"): every text input, select and textarea needs an edge of 3:1 or
    more. Many were drawn with the light box grays (border-line, border-edge, border-edge-strong, shadcn's border-input),
    which are 1.3:1 to 2:1. This re-colours just those classes on form controls to --af-field-edge, and turns the edge
-   scan blue on focus (the global :focus-visible outline still shows too). A field's hover utility (hover:border-ink)
+   garnet (--af-scan) on focus (the global :focus-visible outline still shows too). A field's hover utility (hover:border-ink)
    still wins. Unlayered on purpose, so it comes after Tailwind's utilities. Checkboxes, radios and other non-text
    inputs are left alone. Fields drawn by a wrapper (a search pill) use border-[color:var(--af-field-edge)] directly. */
 :where(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="hidden"], [type="submit"], [type="button"]), select, textarea):is(.border-line, .border-edge, .border-edge-strong, .border-input, .border-border) {

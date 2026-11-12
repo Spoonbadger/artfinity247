@@ -284,7 +284,7 @@ function BookingForm({ arts, preselect, settings, first, onClose }: {
             {(["dropoff", "pickup"] as Handoff[]).map((h) => (
               <label key={h} className={cn("grid cursor-pointer gap-1 rounded-xl border-2 bg-white p-3.5 has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-scan", handoff === h ? "border-ink" : "border-line hover:border-ink-2")}>
                 <span className="flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-2 font-bold"><input type="radio" name="handoff" checked={handoff === h} onChange={() => setHandoff(h)} className="h-4 w-4 accent-[#2b37f0]" />{HANDOFF_LABEL[h]}</span>
+                  <span className="flex items-center gap-2 font-bold"><input type="radio" name="handoff" checked={handoff === h} onChange={() => setHandoff(h)} className="h-4 w-4 accent-scan" />{HANDOFF_LABEL[h]}</span>
                   <span className="num text-[13.5px] font-semibold">{h === "dropoff" ? "Free" : settings.pickupFeeCents != null ? (settings.pickupFeeCents ? `+${usd(settings.pickupFeeCents)}` : "Free") : "Fee quoted"}</span>
                 </span>
                 <span className="t-small">{h === "dropoff" ? "Bring them to our NYC studio. We send the address when we confirm." : "We collect from anywhere in the five boroughs."}</span>

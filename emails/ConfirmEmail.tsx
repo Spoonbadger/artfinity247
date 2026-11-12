@@ -4,10 +4,10 @@ import * as React from "react";
 export default function ConfirmEmail({ link, firstName }: { link: string; firstName?: string | null }) {
   return (
     <div style={{ fontFamily: "ui-sans-serif, system-ui", color: "#222" }}>
-      <h2 style={{ color: "#b05c5c" }}>Confirm your email</h2>
+      <h2 style={{ color: "#8b2a4b" }}>Confirm your email</h2>
       <p>{firstName ? `Hi ${firstName}, one` : "One"} quick step: confirm this is your email so we can send your sales and pay you out.</p>
       <p>
-        <a href={link} style={{ display: "inline-block", padding: "12px 16px", borderRadius: "6px", textDecoration: "none", background: "#b05c5c", color: "#fff" }}>
+        <a href={link} style={{ display: "inline-block", padding: "12px 16px", borderRadius: "6px", textDecoration: "none", background: "#8b2a4b", color: "#fff" }}>
           Confirm my email
         </a>
       </p>

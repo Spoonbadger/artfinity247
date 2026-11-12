@@ -91,7 +91,7 @@ const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 
 /** Turns plain text into simple, safe email HTML: paragraphs, line breaks, clickable links. */
 export function emailHtml(body: string, footer = "Sent with Artfinity. Every wall is a shop.") {
-  const linkify = (s: string) => s.replace(/(https?:\/\/[^\s<]+)/g, (u) => `<a href="${u}" style="color:#2b37f0">${u}</a>`);
+  const linkify = (s: string) => s.replace(/(https?:\/\/[^\s<]+)/g, (u) => `<a href="${u}" style="color:#8b2a4b">${u}</a>`);
   const paras = body
     .split(/\n{2,}/)
     .map((p) => `<p style="margin:0 0 16px">${linkify(esc(p)).replace(/\n/g, "<br>")}</p>`)

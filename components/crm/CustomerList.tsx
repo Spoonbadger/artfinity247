@@ -89,7 +89,7 @@ export default function CustomerList({ rows }: { rows: CustomerRow[] }) {
   return (
     <section aria-label="Customer list" className="grid gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <label className="flex min-h-[46px] w-full items-center gap-2 rounded-xl border-2 border-ink bg-white px-3 focus-within:border-scan focus-within:shadow-[0_0_0_3px_#d9dcff] sm:max-w-[360px]">
+        <label className="flex min-h-[46px] w-full items-center gap-2 rounded-xl border-2 border-ink bg-white px-3 focus-within:border-scan focus-within:shadow-[0_0_0_3px_rgb(var(--af-scan-rgb)/0.22)] sm:max-w-[360px]">
           <Search className="h-4 w-4 shrink-0 text-ink-2" aria-hidden="true" />
           <span className="sr-only">Search customers</span>
           <input

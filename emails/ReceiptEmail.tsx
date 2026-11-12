@@ -16,11 +16,11 @@ type Item = {
   frame?: string | null; // "Black frame"
 };
 
-// Artfinity's paint: ink, Scan Blue, a soft gallery wall.
-const INK = "#15161b";
-const INK2 = "#5a5d6b";
-const BLUE = "#2b37f0";
-const LINE = "#e1e2da";
+// Artfinity's paint (Garnet Rose): black cherry ink, garnet, a soft gallery wall.
+const INK = "#2e1219"; // --af-ink
+const INK2 = "#694c54"; // --af-ink-2
+const GARNET = "#8b2a4b"; // --af-scan
+const LINE = "#ecdcd8"; // --af-line
 
 export default function ReceiptEmail({
   code,
@@ -107,15 +107,15 @@ export default function ReceiptEmail({
 
       <p style={{ margin: "16px 0 0", fontSize: 14, color: INK2 }}>
         Arrives damaged? We reprint it free within {HELP_DAYS_AFTER_DELIVERY} days of delivery.{" "}
-        <a href={`${SITE_URL}/return-policy`} style={{ color: BLUE, fontWeight: 600 }}>Returns</a>
+        <a href={`${SITE_URL}/return-policy`} style={{ color: GARNET, fontWeight: 600 }}>Returns</a>
       </p>
       <p style={{ margin: "12px 0 0", fontSize: 14, color: INK2 }}>
         Questions? Reply to this email or write to{" "}
-        <a href={`mailto:${SUPPORT}?subject=${encodeURIComponent(`Order ${code}`)}`} style={{ color: BLUE, fontWeight: 600 }}>{SUPPORT}</a> with order {code}.
+        <a href={`mailto:${SUPPORT}?subject=${encodeURIComponent(`Order ${code}`)}`} style={{ color: GARNET, fontWeight: 600 }}>{SUPPORT}</a> with order {code}.
       </p>
       {!bulk ? (
         <p style={{ margin: "12px 0 0", fontSize: 14, color: INK2 }}>
-          <a href={`${SITE_URL}/collector`} style={{ color: BLUE, fontWeight: 600 }}>Track your orders</a> in a free collection{rewards ? " and earn rewards" : ""}. No password.
+          <a href={`${SITE_URL}/collector`} style={{ color: GARNET, fontWeight: 600 }}>Track your orders</a> in a free collection{rewards ? " and earn rewards" : ""}. No password.
         </p>
       ) : null}
       <p style={{ margin: "20px 0 0", fontSize: 14 }}>— Artfinity</p>

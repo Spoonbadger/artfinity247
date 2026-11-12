@@ -96,7 +96,7 @@ export default async function CodePage({ params }: { params: { code: string } })
           {labelState && label && labelState.diffs.length > 0 && <LabelCard label={label} diffs={labelState.diffs} format={(FORMATS[labelState.format as keyof typeof FORMATS]?.name || "card").toLowerCase()} />}
           {s.scans === 0 ? (
             <EmptyState
-              dab="#2b37f0"
+              dab="var(--af-scan)"
               title="No scans yet"
               body={<>Hang this code and scans show up here within seconds: where, on what, and whether they bought. Scan it with your phone to test it.</>}
               action={c.artworkId ? { label: "Print this code", href: `/studio/qr?code=${c.code}` } : { label: "Download the code", href: "#dl-h" }}
@@ -125,7 +125,7 @@ export default async function CodePage({ params }: { params: { code: string } })
           <div className="grid gap-4 sm:grid-cols-2">
             <section className="af-card grid content-start gap-3 p-4 sm:p-5" aria-labelledby="where-h">
               <h2 id="where-h" className="t-card">Where</h2>
-              {c.cities.length ? <Bars rows={c.cities.slice(0, 6)} color="#2b37f0" total={scanTotal} /> : <p className="t-small">No scans yet.</p>}
+              {c.cities.length ? <Bars rows={c.cities.slice(0, 6)} color="var(--af-scan)" total={scanTotal} /> : <p className="t-small">No scans yet.</p>}
             </section>
             <section className="af-card grid content-start gap-3 p-4 sm:p-5" aria-labelledby="dev-h">
               <h2 id="dev-h" className="t-card">On what</h2>

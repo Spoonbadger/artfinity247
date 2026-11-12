@@ -27,9 +27,9 @@ export const metadata: Metadata = { title: "Infinity plan" };
 const DAY = 86400000;
 
 const DAB: Record<ReferralStatus, string> = {
-  joined: "#c9ccff",
-  live: "#9aa0ff",
-  held: "#2b37f0",
+  joined: "#f0c3cc",
+  live: "#be778c",
+  held: "#8b2a4b",
   capped: "#e8a33b",
   blocked: "#b9bcc4",
   rewarded: "#0f7a55",
@@ -210,7 +210,7 @@ export default async function ProPage({ searchParams }: { searchParams?: { billi
             </ol>
           </div>
           <figure className="hidden justify-items-center gap-2 rounded-xl bg-white p-4 md:grid">
-            <QRCode value={link} dots="rounded" eyes="frame" eyeColor="#2b37f0" className="w-full max-w-[148px]" />
+            <QRCode value={link} dots="rounded" eyes="frame" eyeColor="#8b2a4b" className="w-full max-w-[148px]" />
             <figcaption className="text-center text-[13px] text-ink-2">Scan to join with your link</figcaption>
           </figure>
         </div>

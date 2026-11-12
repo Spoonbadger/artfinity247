@@ -119,7 +119,7 @@ export async function getReviews(scope: Scope, take = 24) {
 // ---------- Emails ----------
 
 const btn = (href: string, label: string) =>
-  `<p style="margin:8px 0 24px"><a href="${href}" style="display:inline-block;background:#2b37f0;color:#fff;font-weight:700;text-decoration:none;padding:13px 22px;border-radius:999px">${label}</a></p>`;
+  `<p style="margin:8px 0 24px"><a href="${href}" style="display:inline-block;background:#8b2a4b;color:#fff;font-weight:700;text-decoration:none;padding:13px 22px;border-radius:999px">${label}</a></p>`;
 
 /** Inserts an HTML button before the footer of an emailHtml() body. */
 const withButton = (html: string, href: string, label: string) => html.replace(/<p style="margin:24px 0 0;/, `${btn(href, label)}<p style="margin:24px 0 0;`);

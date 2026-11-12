@@ -12,7 +12,7 @@ const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..")
 const out = path.join(root, "public/brand/app");
 mkdirSync(out, { recursive: true });
 const mark = readFileSync(path.join(root, "public/brand/mark.svg"));
-const WALL = "#f2f3ec"; // --af-wall
+const WALL = "#f6ede9"; // --af-wall (Garnet Rose blush plaster)
 
 async function icon(file, size, markShare, bg = WALL) {
   const m = Math.round(size * markShare);
@@ -34,9 +34,9 @@ await icon("apple-touch-icon.png", 180, 0.7);
 
 // Shortcut icons: a coloured dab (the Studio's painterly marker) behind a simple glyph.
 const glyphs = {
-  upload: `<path d="M48 70V30M32 45l16-16 16 16" stroke="#15161b" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
-  qr: `<g fill="#15161b"><rect x="26" y="26" width="18" height="18" rx="2"/><rect x="52" y="26" width="18" height="18" rx="2"/><rect x="26" y="52" width="18" height="18" rx="2"/><rect x="54" y="54" width="6" height="6"/><rect x="62" y="62" width="8" height="8"/><rect x="52" y="64" width="6" height="6"/></g>`,
-  money: `<text x="48" y="66" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="48" fill="#15161b">$</text>`,
+  upload: `<path d="M48 70V30M32 45l16-16 16 16" stroke="#2e1219" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+  qr: `<g fill="#2e1219"><rect x="26" y="26" width="18" height="18" rx="2"/><rect x="52" y="26" width="18" height="18" rx="2"/><rect x="26" y="52" width="18" height="18" rx="2"/><rect x="54" y="54" width="6" height="6"/><rect x="62" y="62" width="8" height="8"/><rect x="52" y="64" width="6" height="6"/></g>`,
+  money: `<text x="48" y="66" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="48" fill="#2e1219">$</text>`,
 };
 const dabs = { upload: "#ff8a5c", qr: "#ffd43b", money: "#7fd1ad" };
 for (const [name, glyph] of Object.entries(glyphs)) {

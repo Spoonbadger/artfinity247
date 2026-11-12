@@ -171,7 +171,7 @@ function brandMark(ctx: Ctx, A: VideoAssets, x: number, y: number, size: number,
   ctx.translate(x, top); ctx.scale(k, k);
   ctx.strokeStyle = ink; ctx.lineWidth = 1.8;
   ctx.beginPath(); ctx.roundRect(1, 1, 22, 22, 3.5); ctx.stroke();
-  ctx.fillStyle = "#2b37f0"; ctx.beginPath(); ctx.roundRect(8.25, 8.25, 7.5, 7.5, 1.6); ctx.fill();
+  ctx.fillStyle = "#8b2a4b"; ctx.beginPath(); ctx.roundRect(8.25, 8.25, 7.5, 7.5, 1.6); ctx.fill();
   ctx.restore();
   txt(ctx, f, "artfinity", x + b + size * 0.32, y, size, ink, "start", alpha);
 }

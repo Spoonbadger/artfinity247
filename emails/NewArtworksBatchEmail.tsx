@@ -15,7 +15,7 @@ export default function NewArtworksBatchEmail({
 }) {
   return (
     <div style={{ fontFamily: "ui-sans-serif, system-ui", color: "#222" }}>
-      <h2 style={{ margin: 0, color: "#b05c5c" }}>🖼 {pieces.length} New Artworks</h2>
+      <h2 style={{ margin: 0, color: "#8b2a4b" }}>🖼 {pieces.length} New Artworks</h2>
 
       <div style={{ marginTop: 16 }}>
         <p><strong>Artist:</strong> {artistName || "unknown"}</p>
@@ -31,7 +31,7 @@ export default function NewArtworksBatchEmail({
               </td>
               <td style={{ padding: "6px 0" }}>
                 <a href={p.url} style={{ color: "#222", fontWeight: 600 }}>{p.title}</a>
-                <div style={{ fontSize: 13, color: p.status === "review" ? "#b05c5c" : "#0f7a55" }}>
+                <div style={{ fontSize: 13, color: p.status === "review" ? "#8b2a4b" : "#0f7a55" }}>
                   {p.duplicate ? "Possible duplicate – to review" : p.status === "review" ? "To review" : "Live"}
                 </div>
               </td>

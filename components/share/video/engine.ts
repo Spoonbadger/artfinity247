@@ -128,7 +128,7 @@ function framed(ctx: Ctx, A: VideoAssets, r: { x: number; y: number; w: number; 
   ctx.restore();
 }
 
-function brand(ctx: Ctx, A: VideoAssets, x: number, y: number, size: number, ink: string, mark = "#2b37f0", alpha = 1) {
+function brand(ctx: Ctx, A: VideoAssets, x: number, y: number, size: number, ink: string, mark = "#8b2a4b", alpha = 1) {
   const f = A.fonts.display, b = size * 0.95, k = b / 24, top = y - capHeight(f) * size - b * 0.06;
   ctx.save();
   ctx.globalAlpha *= alpha;
@@ -234,7 +234,7 @@ function endCard(ctx: Ctx, A: VideoAssets, I: VideoInfo, k: number) {
   ctx.restore();
   const rise = (a: number) => (1 - easeOut(seg(k, a, a + 0.6))) * 40;
   framed(ctx, A, { ...pic, y: pic.y + rise(0.1) }, { mat: 16, rot: -1.5, alpha: seg(k, 0.1, 0.5) });
-  brand(ctx, A, 90, 150, 40, "#15161b", "#2b37f0", seg(k, 0, 0.4));
+  brand(ctx, A, 90, 150, 40, "#15161b", "#8b2a4b", seg(k, 0, 0.4));
 
   const T = fitBlock(F.display, I.title, { max: 92, min: 54, maxW: 900, maxH: 170, lh: 0.95, maxLines: 2 });
   let y = pic.y + pic.h + 90 + rise(0.3);
@@ -392,7 +392,7 @@ function onWall(ctx: Ctx, t: number, A: VideoAssets, I: VideoInfo) {
     // size label under the print
     txt(ctx, A.fonts.semi, `${I.printIn[0]} × ${I.printIn[1]} in print`, G.x + G.w / 2, G.y + G.h + G.fr + 26, 15, "#5a5d6b", "middle", seg(t, 3.4, 4.2));
     ctx.restore();
-    brand(ctx, A, 90, 150, 40, "#15161b", "#2b37f0", seg(t, 0.8, 1.4));
+    brand(ctx, A, 90, 150, 40, "#15161b", "#8b2a4b", seg(t, 0.8, 1.4));
     caption(ctx, A, I.captions[0] || "", t - 1.0, 2.2, 260);
     caption(ctx, A, I.captions[1] || "", t - 3.2, 1.9, 260);
     caption(ctx, A, I.captions[2] || "", t - 5.1, 1.9, 260);
@@ -424,7 +424,7 @@ function detailTour(ctx: Ctx, t: number, A: VideoAssets, I: VideoInfo) {
     ctx.translate(VW / 2, VH / 2); ctx.scale(cam[3], cam[3]); ctx.translate(-cam[1], -cam[2]);
     framed(ctx, A, pic, { mat: 18, shadow: 40 });
     ctx.restore();
-    brand(ctx, A, 90, 150, 40, "#15161b", "#2b37f0", seg(t, 0.8, 1.4));
+    brand(ctx, A, 90, 150, 40, "#15161b", "#8b2a4b", seg(t, 0.8, 1.4));
     // which detail: three paint dabs, top right
     const which = t < 2.0 ? -1 : t < 3.6 ? 0 : t < 5.2 ? 1 : t < 7.0 ? 2 : -1;
     const da = seg(t, 1.8, 2.2) * (1 - seg(t, 6.8, 7.2));

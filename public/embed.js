@@ -11,14 +11,14 @@
   }
   function e(t) { return String(t == null ? "" : t).replace(/[&<>"']/g, function (c) { return "&#" + c.charCodeAt(0) + ";"; }); }
   function u(x) { return /^https?:\/\//.test(x || "") ? e(x) : "#"; }
-  var M = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><rect x="1.5" y="1.5" width="21" height="21" rx="3" fill="none" stroke="currentColor" stroke-width="3"/><rect x="7" y="7" width="10" height="10" rx="1.5" fill="#2b37f0"/></svg>';
+  var M = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><rect x="1.5" y="1.5" width="21" height="21" rx="3" fill="none" stroke="currentColor" stroke-width="3"/><rect x="7" y="7" width="10" height="10" rx="1.5" fill="#8b2a4b"/></svg>';
   var CSS =
-    ":host{all:initial;display:block;--bg:#fff;--fg:#15161b;--mu:#5a5d6b;--ln:#e1e2da;--im:#e9e6df}.r{font:14px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:var(--fg);font-variant-numeric:tabular-nums;letter-spacing:normal;text-transform:none;text-align:left}" +
-    ":host([data-theme=dark]){--bg:#15161b;--fg:#f2f3ec;--mu:#a3a6b3;--ln:#30323b;--im:#24262e}" +
+    ":host{all:initial;display:block;--bg:#fff;--fg:#15161b;--mu:#5a5d6b;--ln:#e1e2da;--im:#e9e6df;--ac:#8b2a4b}.r{font:14px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:var(--fg);font-variant-numeric:tabular-nums;letter-spacing:normal;text-transform:none;text-align:left}" +
+    ":host([data-theme=dark]){--bg:#15161b;--fg:#f2f3ec;--mu:#a3a6b3;--ln:#30323b;--im:#24262e;--ac:#f0c3cc}" +
     "*{box-sizing:border-box;margin:0}a{color:inherit;text-decoration:none}" +
     ".w{background:var(--bg);border:1px solid var(--ln);border-radius:16px;padding:14px;display:grid;gap:12px;container-type:inline-size}" +
     ".h{display:flex;align-items:center;gap:10px}.h img{width:40px;height:40px;border-radius:50%;object-fit:cover;background:var(--im)}.h b{font-size:16px}" +
-    ".m{color:var(--mu);font-size:12.5px}.v{color:#2b37f0;font-weight:700}" +
+    ".m{color:var(--mu);font-size:12.5px}.v{color:var(--ac);font-weight:700}" +
     ".g{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(112px,1fr))}@container (min-width:640px){.g{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}}" +
     ".k{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px}.k .c{flex:0 0 min(72%,220px);scroll-snap-align:start}" +
     ".c{display:flex;flex-direction:column;gap:6px;min-width:0}.c>.b{margin-top:auto}.c .t{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
@@ -26,8 +26,8 @@
     ".s img{filter:blur(18px);transform:scale(1.15)}.o{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:6px;color:#fff;font-size:12px;text-align:center;background:rgba(21,22,27,.25)}" +
     "button,.b{font:inherit;font-weight:700;cursor:pointer;border-radius:999px;border:0;display:inline-flex;align-items:center;justify-content:center;gap:6px}" +
     ".o button{background:#fff;color:#15161b;padding:5px 14px}" +
-    ".b{background:#2b37f0;color:#fff;padding:9px 16px;font-size:14px}.b:hover{filter:brightness(1.12)}.c .b{padding:7px 12px;font-size:13px}" +
-    "a:focus-visible,button:focus-visible{outline:3px solid #2b37f0;outline-offset:2px}" +
+    ".b{background:#8b2a4b;color:#fff;padding:9px 16px;font-size:14px}.b:hover{filter:brightness(1.12)}.c .b{padding:7px 12px;font-size:13px}" +
+    "a:focus-visible,button:focus-visible{outline:3px solid var(--ac);outline-offset:2px}" +
     ".x{display:grid;gap:14px}.x .i{aspect-ratio:auto;max-height:520px}.x .i img{height:auto;max-height:520px;object-fit:contain}.x .t{font-size:18px;white-space:normal}" +
     ".f{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}.f a{display:inline-flex;align-items:center;gap:6px}" +
     ".l{display:inline-flex;align-items:center;gap:10px;background:var(--bg);color:var(--fg);border:2px solid var(--fg);border-radius:999px;padding:6px 16px 6px 6px;font-weight:700}.l img{width:32px;height:32px;border-radius:50%;object-fit:cover}";
@@ -74,7 +74,7 @@
   function buy(el, sl) {
     get("artworks/" + sl).then(function (r) {
       var a = r.artwork;
-      paint(el, '<a class="b" href="' + u(a.url) + '" target="_blank" rel="noopener" aria-label="Buy a print of ' + e(a.title) + '">' + M.replace("#2b37f0", "#ffd43b").replace('"currentColor"', '"#fff"') + " Buy a print · from " + e(a.fromPrice.display) + "</a>");
+      paint(el, '<a class="b" href="' + u(a.url) + '" target="_blank" rel="noopener" aria-label="Buy a print of ' + e(a.title) + '">' + M.replace("#8b2a4b", "#ffd43b").replace('"currentColor"', '"#fff"') + " Buy a print · from " + e(a.fromPrice.display) + "</a>");
     }, function () { // API down: no handle known, and the old /art/<slug> link redirects
       paint(el, '<a class="b" href="' + B + "/art/" + encodeURIComponent(sl) + '" target="_blank" rel="noopener">Buy a print</a>'); });
   }

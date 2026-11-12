@@ -79,11 +79,13 @@ export default function SalesChart({ days }: { days: DayPoint[] }) {
           <span className="block text-ink-2">{h.label}</span>
         </div>
       )}
-      <table className="sr-only">
-        <caption>Prints sold per day</caption>
-        <thead><tr><th>Day</th><th>Prints</th><th>Earned</th></tr></thead>
-        <tbody>{days.map((d) => <tr key={d.key}><td>{d.label}</td><td>{d.prints}</td><td>{money(d.earnedCents)}</td></tr>)}</tbody>
-      </table>
+      <div className="sr-only">
+        <table>
+          <caption>Prints sold per day</caption>
+          <thead><tr><th>Day</th><th>Prints</th><th>Earned</th></tr></thead>
+          <tbody>{days.map((d) => <tr key={d.key}><td>{d.label}</td><td>{d.prints}</td><td>{money(d.earnedCents)}</td></tr>)}</tbody>
+        </table>
+      </div>
     </div>
   );
 }

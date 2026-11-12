@@ -180,7 +180,7 @@ export default function ThemeControls({ theme, set, art }: { theme: LinksTheme; 
         </div>
       </Group>
 
-      <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border-[1.5px] border-line bg-[#f2f3ec99] px-4 py-3">
+      <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border-[1.5px] border-line bg-wall/60 px-4 py-3">
         <span className="grid leading-tight">
           <b className="text-[14px]">Show my newest prints</b>
           <span className="text-[13px] text-ink-2">3 tiles under Shop my prints</span>

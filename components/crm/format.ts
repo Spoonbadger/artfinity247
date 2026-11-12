@@ -25,7 +25,7 @@ export type Stage = "paid" | "printing" | "shipped" | "delivered";
 export const STAGE_META: Record<Stage, { label: string; dab: string }> = {
   paid: { label: "Paid", dab: "#ffd43b" },
   printing: { label: "At the printer", dab: "#e8743b" },
-  shipped: { label: "Shipped", dab: "#2b37f0" },
+  shipped: { label: "Shipped", dab: "#8b2a4b" },
   delivered: { label: "Delivered", dab: "#15161b" },
 };
 

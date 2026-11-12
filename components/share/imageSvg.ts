@@ -47,7 +47,7 @@ function brand(f: Fonts, x: number, y: number, size: number, ink: string, accent
 }
 
 function qrAt(qrText: string, x: number, y: number, size: number, title: string) {
-  return qrSVG(qrText, { fg: "#15161b", dots: "rounded", eyes: "frame", eyeColor: "#2b37f0", label: esc(`QR code for ${title}`) })
+  return qrSVG(qrText, { fg: "#15161b", dots: "rounded", eyes: "frame", eyeColor: "#8b2a4b", label: esc(`QR code for ${title}`) })
     .replace("<svg ", `<svg x="${n2(x)}" y="${n2(y)}" width="${n2(size)}" height="${n2(size)}" `);
 }
 
@@ -168,7 +168,7 @@ export function shareSVG(i: ShareImageInput): string {
   s += `</g>`;
 
   // ---- words
-  s += brand(f, g.logo.x, g.logo.y, g.logo.size, ink, dark ? "#ffd43b" : "#2b37f0");
+  s += brand(f, g.logo.x, g.logo.y, g.logo.size, ink, dark ? "#ffd43b" : "#8b2a4b");
   let y = g.col.y + capHeight(f.display) * T.size;
   T.lines.forEach((line, k) => { s += text(f.display, line, g.col.x, y + k * T.size * 0.95, T.size, ink); });
   y += (T.lines.length - 1) * T.size * 0.95 + g.by * 1.55;

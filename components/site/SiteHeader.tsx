@@ -27,7 +27,7 @@ export type HeaderBrand = {
   handle: string;
   name: string;
   avatar: string | null;
-  /** The artist's page accent; Scan Blue when they haven't picked one. */
+  /** The artist's page accent; Garnet when they haven't picked one. */
   accent?: { color: string; ink: string; soft: string } | null;
   /** The artist (or an admin) looking at their own piece: a small "Your piece · QR code" chip instead of Follow. */
   owner?: { href: string; note?: string | null } | null;
@@ -47,8 +47,8 @@ function ArtistBand({ brand }: { brand: HeaderBrand }) {
   const href = artistPath(brand.handle);
   const initials = brand.name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("");
   const firstName = brand.name.split(" ")[0] || brand.name;
-  // the artist's page accent; Ultramarine (Scan Blue) like the artist page's default theme
-  const accent = brand.accent ?? { color: "#2b37f0", ink: "#ffffff", soft: "#e6e8ff" };
+  // the artist's page accent; Garnet (the brand colour) like the artist page's default theme
+  const accent = brand.accent ?? { color: "#8b2a4b", ink: "#ffffff", soft: "#f6e1e6" };
   return (
     <div
       className="z-30 border-b border-line md:sticky md:top-0"

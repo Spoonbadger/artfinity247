@@ -29,7 +29,7 @@ export const SITE = {
   earned: "#0f7a55",
   "earned-soft": "#e1f2ea",
   sticker: "#ffd43b",
-  "field-edge": "#85877c",
+  "field-edge": "#8e737a",
 } as const;
 
 export type Tokens = {
@@ -72,13 +72,15 @@ export type Palette = {
   /** Smaller swatches under the main ones: link, focus, edges, functional tweaks. */
   support?: Swatch[];
   note?: string;
+  /** "Live" for the palette on the site now (C1 since Nov 2026). */
+  live?: boolean;
 };
 
 export const CURRENT: Palette = {
   id: "current",
   letter: "A",
-  name: "Current",
-  blurb: "The 2.0 colours exactly as they are on the site today: ink on wall-white, Scan Blue for actions and the logo.",
+  name: "Previous blue",
+  blurb: "The 2.0 colours as they were on the site until Nov 2026: ink on wall-white, Scan Blue for actions and the logo. Replaced by C1, Garnet Rose.",
   tokens: {
     ink: "#15161b",
     "ink-2": "#5a5d6b",
@@ -90,6 +92,7 @@ export const CURRENT: Palette = {
     scan: "#2b37f0",
     "scan-soft": "#e6e8ff",
     sticker: "#ffd43b",
+    "field-edge": "#85877c",
   },
   swatches: [
     { hex: "#2b37f0", name: "Scan Blue", role: "Primary buttons, logo, links" },
@@ -180,7 +183,8 @@ export const GARNET_ROSE: Palette = {
   id: "c1-garnet-rose",
   letter: "C1",
   name: "Garnet Rose",
-  blurb: "Deeper, richer rose on warm ivory. Feels more like a high-end gallery.",
+  live: true,
+  blurb: "Deeper, richer rose on warm ivory. Feels more like a high-end gallery. Live on the site since Nov 2026 (the yellow sticker and brush stay yellow there; petal is the selection colour).",
   tokens: {
     ink: "#2e1219",
     "ink-2": "#694c54",

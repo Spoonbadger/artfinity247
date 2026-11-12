@@ -26,7 +26,7 @@ export default function NewSaleNotificationEmail({
 
   return (
     <div style={{ fontFamily: "ui-sans-serif, system-ui", color: "#222" }}>
-      <h2 style={{ color: "#b05c5c" }}>💰 New Sale</h2>
+      <h2 style={{ color: "#8b2a4b" }}>💰 New Sale</h2>
 
       <p><strong>Order ID:</strong> {orderId}</p>
       <p><strong>Buyer:</strong> {buyerEmail}</p>

@@ -171,7 +171,7 @@ export async function issueRewardIfEarned(email: string) {
     `<p style="margin:0 0 16px">That's ${n * s.every} prints from independent artists. Your next order is ${s.pct}% off, and Artfinity covers it, so the artist still gets their full share.</p>` +
     `<p style="margin:0 0 16px;font-size:22px;font-weight:800;letter-spacing:.06em">${code}</p>` +
     `<p style="margin:0 0 22px">It's filled in for you at checkout while you're signed in to your collection with this email. One use.</p>` +
-    `<p style="margin:0 0 22px"><a href="${link}" style="display:inline-block;background:#2b37f0;color:#fff;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:999px">See your collection</a></p>` +
+    `<p style="margin:0 0 22px"><a href="${link}" style="display:inline-block;background:#8b2a4b;color:#fff;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:999px">See your collection</a></p>` +
     `<p style="margin:0;font-size:14px">— Artfinity</p></div>`;
   const text = `Thank you: ${s.pct}% off your next order\n\nYour code: ${code}\nFilled in at checkout while you're signed in to your collection with this email. One use.\n\n${link}`;
   const { error } = await resend.emails.send({ from: "Artfinity <notifications@theartfinity.com>", to: e, subject: `${s.pct}% off your next Artfinity order`, html, text });

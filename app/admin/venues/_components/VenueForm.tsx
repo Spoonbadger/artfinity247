@@ -109,7 +109,7 @@ export default function VenueForm({ initial, onDone }: { initial?: VenueFormValu
           <span className="t-small font-normal">0 = recognition only. Applies to sales from codes hanging here.</span>
         </label>
         <label className="flex min-h-[42px] items-center gap-2.5 self-end text-[14.5px] font-semibold">
-          <input type="checkbox" className="h-5 w-5 accent-[#2b37f0]" checked={f.active} onChange={(e) => set({ active: e.target.checked })} />
+          <input type="checkbox" className="h-5 w-5 accent-scan" checked={f.active} onChange={(e) => set({ active: e.target.checked })} />
           Active (listed publicly and in the artists&apos; picker)
         </label>
         <label className="grid gap-1 text-[13px] font-semibold sm:col-span-2">

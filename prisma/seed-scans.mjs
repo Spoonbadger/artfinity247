@@ -20,9 +20,9 @@ function code() {
 
 // QR Studio designs (components/qr/card.ts Design), so "Card in QR Studio" reopens the same look.
 const LOOK = {
-  gallery: { preset: "gallery", format: "label", cta: "buy-print", dots: "rounded", eyes: "frame", fg: "#15161b", bg: "#ffffff", eye: "#2b37f0", tag: "#ffd43b" },
+  gallery: { preset: "gallery", format: "label", cta: "buy-print", dots: "rounded", eyes: "frame", fg: "#15161b", bg: "#ffffff", eye: "#8b2a4b", tag: "#ffd43b" },
   market: { preset: "market", format: "tag", cta: "buy-painting", dots: "square", eyes: "rounded", fg: "#15161b", bg: "#ffffff", eye: "#ff5a36", tag: "#ff5a36" },
-  poster: { preset: "poster", format: "poster", cta: "scan-buy", dots: "liquid", eyes: "frame", fg: "#2b37f0", bg: "#f2f3ec", eye: "same", tag: "#ffd43b" },
+  poster: { preset: "poster", format: "poster", cta: "scan-buy", dots: "liquid", eyes: "frame", fg: "#8b2a4b", bg: "#f2f3ec", eye: "same", tag: "#ffd43b" },
   sticker: { preset: "sticker", format: "sticker", cta: "scan-buy", dots: "dots", eyes: "circle", fg: "#15161b", bg: "#ffd43b", eye: "same", tag: "#15161b" },
 };
 const design = (look, extra = {}) => ({

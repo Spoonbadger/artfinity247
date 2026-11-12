@@ -37,7 +37,7 @@ export const STATUS_LABEL: Record<OrderStatus, string> = {
   canceled: "Canceled",
 };
 export const STATUS_DAB: Record<OrderStatus, string> = {
-  pending: "#b9bcc4", paid: "#2b37f0", printing: "#ffd43b", shipped: "#e8743b", delivered: "#0f7a55", canceled: "#b9bcc4",
+  pending: "#b9bcc4", paid: "#8b2a4b", printing: "#ffd43b", shipped: "#e8743b", delivered: "#0f7a55", canceled: "#b9bcc4",
 };
 
 /** Cost-based pricing, set by the owner at /admin/settings/code-prints. All cents. */

@@ -129,7 +129,7 @@ export async function sendSignInLink(email: string, opts: { save?: { id: string;
     `<div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.55;color:#15161b;max-width:520px;margin:0 auto;padding:24px">` +
     `<h1 style="margin:0 0 14px;font-size:26px;line-height:1.15">${esc(heading)}</h1>` +
     `<p style="margin:0 0 20px">${esc(lead)}</p>` +
-    `<p style="margin:0 0 22px"><a href="${link}" style="display:inline-block;background:#2b37f0;color:#fff;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:999px">Open my collection</a></p>` +
+    `<p style="margin:0 0 22px"><a href="${link}" style="display:inline-block;background:#8b2a4b;color:#fff;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:999px">Open my collection</a></p>` +
     `<p style="margin:0;font-size:13px;color:#5b5d66">The link works once, for ${LINK_MINUTES} minutes. Didn't ask for it? Ignore this email and nothing happens. You never need an account to buy.</p>` +
     `<p style="margin:20px 0 0;font-size:14px">— Artfinity</p>` +
     `</div>`;

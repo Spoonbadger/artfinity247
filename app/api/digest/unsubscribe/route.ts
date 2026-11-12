@@ -23,8 +23,8 @@ export async function GET(req: NextRequest) {
   await setPref(a, "digest", { off: !on });
   const toggle = `/api/digest/unsubscribe?a=${encodeURIComponent(a)}&t=${signPrefLink(a, "digest")}${on ? "" : "&on=1"}`;
   return on
-    ? page("Weekly digest on", `<h1 style="font-size:22px">You're back on the list</h1><p>Your weekly Artfinity digest comes on Monday mornings.</p><p><a href="${toggle}" style="color:#2b37f0">Turn it off</a></p>`)
-    : page("Weekly digest off", `<h1 style="font-size:22px">Done. No more weekly digest.</h1><p>Sale, payout and order emails still come as usual.</p><p><a href="${toggle}" style="color:#2b37f0">Changed your mind? Turn it back on</a></p>`);
+    ? page("Weekly digest on", `<h1 style="font-size:22px">You're back on the list</h1><p>Your weekly Artfinity digest comes on Monday mornings.</p><p><a href="${toggle}" style="color:#8b2a4b">Turn it off</a></p>`)
+    : page("Weekly digest off", `<h1 style="font-size:22px">Done. No more weekly digest.</h1><p>Sale, payout and order emails still come as usual.</p><p><a href="${toggle}" style="color:#8b2a4b">Changed your mind? Turn it back on</a></p>`);
 }
 
 export async function POST(req: NextRequest) {

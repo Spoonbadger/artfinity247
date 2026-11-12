@@ -65,7 +65,7 @@ export default async function CodesPage({ searchParams }: { searchParams: { show
     >
       {codes.length === 0 ? (
         <EmptyState
-          dab="#2b37f0"
+          dab="var(--af-scan)"
           title="No codes yet"
           body="Make a code, print it and hang it beside your work. Each one shows its scans, sales and earnings here, and you can change where it points after printing."
           action={{ label: "Make a code", href: "/studio/qr" }}

@@ -15,8 +15,8 @@ function inline(s: string) {
   return s
     .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
     .replace(/(^|[\s(])_(.+?)_(?=[\s).,!?]|$)/g, "$1<i>$2</i>")
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" style="color:#2b37f0">$1</a>')
-    .replace(/(^|[\s(])(https?:\/\/[^\s<]+)/g, '$1<a href="$2" style="color:#2b37f0">$2</a>');
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" style="color:#8b2a4b">$1</a>')
+    .replace(/(^|[\s(])(https?:\/\/[^\s<]+)/g, '$1<a href="$2" style="color:#8b2a4b">$2</a>');
 }
 
 /** Markdown-lite: blank line = new paragraph, "- " lines = a list. */
@@ -79,7 +79,7 @@ export function renderNewsletter(opts: {
                   `<a href="${a.url}" style="color:#15161b;text-decoration:none">` +
                   `<img src="${absolute(a.imageUrl, base)}" alt="${esc(a.title)}" width="250" style="display:block;width:100%;height:auto;border-radius:6px;background:#f3f0ea">` +
                   `<span style="display:block;margin:8px 0 2px;font-weight:700;font-size:15px">${esc(a.title)}</span></a>` +
-                  `<a href="${a.url}" style="font-size:14px;font-weight:700;color:#2b37f0;text-decoration:none">Buy a print &rarr;</a>` +
+                  `<a href="${a.url}" style="font-size:14px;font-weight:700;color:#8b2a4b;text-decoration:none">Buy a print &rarr;</a>` +
                   `</td>`,
               )
               .join("")}${row.length === 1 ? `<td width="50%"></td>` : ""}</tr>`,

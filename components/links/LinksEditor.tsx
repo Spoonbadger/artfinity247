@@ -215,7 +215,7 @@ function Row({
   }
 
   return (
-    <div className={cn("rounded-xl border-[1.5px] bg-white", link.active ? "border-line" : "border-dashed border-line bg-[#f2f3ec80]")}>
+    <div className={cn("rounded-xl border-[1.5px] bg-white", link.active ? "border-line" : "border-dashed border-line bg-wall/50")}>
       <div className="flex items-center gap-1.5 py-1.5 pl-1 pr-2 sm:gap-2">
         {handle}
         <span className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-full", link.active ? "bg-wall text-ink" : "bg-white text-ink-2")}>

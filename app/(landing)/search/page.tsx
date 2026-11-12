@@ -29,7 +29,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
       />
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
         <form action="/search" method="get" role="search" className="max-w-xl">
-          <div className="relative flex items-center gap-2 rounded-full border-2 border-ink bg-white p-[5px] pl-4 focus-within:border-scan focus-within:shadow-[0_0_0_4px_#d9dcff]">
+          <div className="relative flex items-center gap-2 rounded-full border-2 border-ink bg-white p-[5px] pl-4 focus-within:border-scan focus-within:shadow-[0_0_0_4px_rgb(var(--af-scan-rgb)/0.22)]">
             <Search className="h-5 w-5 shrink-0 text-ink-2" aria-hidden="true" />
             <SearchTypeahead key={q} defaultValue={q} autoFocus={!q} label="Search" placeholder="Sunsets, Brooklyn, Maya…" inputClassName="w-full min-w-0 border-0 bg-transparent py-2 text-[17px] outline-none placeholder:text-ink-2" />
             <button type="submit" className="btn btn-blue shrink-0">Search</button>

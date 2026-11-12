@@ -15,7 +15,7 @@ export default function ArtworksBatchLiveEmail({
   const review = pieces.filter((p) => p.status === "review");
   return (
     <div style={{ fontFamily: "ui-sans-serif, system-ui", color: "#222" }}>
-      <h2 style={{ margin: 0, color: "#b05c5c" }}>
+      <h2 style={{ margin: 0, color: "#8b2a4b" }}>
         {live.length === 1 ? "Your artwork is live 🎉" : `${live.length} new pieces are live 🎉`}
       </h2>
 
@@ -28,7 +28,7 @@ export default function ArtworksBatchLiveEmail({
       <ul style={{ paddingLeft: 18, lineHeight: 1.8 }}>
         {live.map((p) => (
           <li key={p.url}>
-            <a href={p.url} style={{ color: "#b05c5c", textDecoration: "underline" }}>{p.title}</a>
+            <a href={p.url} style={{ color: "#8b2a4b", textDecoration: "underline" }}>{p.title}</a>
           </li>
         ))}
       </ul>
@@ -52,7 +52,7 @@ export default function ArtworksBatchLiveEmail({
         <a
           href={codesUrl}
           style={{
-            backgroundColor: "#b05c5c",
+            backgroundColor: "#8b2a4b",
             color: "#fff",
             padding: "12px 18px",
             borderRadius: 6,

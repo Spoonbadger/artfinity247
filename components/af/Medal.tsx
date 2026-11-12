@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 type Paint = { base: string; light: string; shade: string; ink: string; ribbon: string; ribbon2: string };
 
 export const MEDAL_PAINT: Record<MedalTier, Paint> = {
-  gold: { base: "#e3b23c", light: "#f8dc85", shade: "#a87a12", ink: "#4a3500", ribbon: "#2b37f0", ribbon2: "#1b24b0" },
+  gold: { base: "#e3b23c", light: "#f8dc85", shade: "#a87a12", ink: "#4a3500", ribbon: "#8b2a4b", ribbon2: "#5e1a31" },
   silver: { base: "#bcc1ca", light: "#eceef2", shade: "#7d838e", ink: "#2c3038", ribbon: "#ff5a36", ribbon2: "#cf3a1a" },
   bronze: { base: "#c98a5a", light: "#efc09a", shade: "#8c5226", ink: "#3d1f08", ribbon: "#24707c", ribbon2: "#16505a" },
 };

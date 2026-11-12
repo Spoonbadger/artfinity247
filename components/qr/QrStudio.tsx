@@ -342,7 +342,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
 
       <div className={s.studio}>
         <form ref={formRef} className={s.ctl} onSubmit={(e) => e.preventDefault()} autoComplete="off" aria-label="Card options">
-          <Group title="Card" dab="#2b37f0" open>
+          <Group title="Card" dab="var(--af-scan)" open>
             <div className={s.sub}>Format</div>
             <div className={s.chips} role="group" aria-label="Format">
               {(Object.keys(FORMATS) as FormatKey[]).map((k) => <button key={k} type="button" aria-pressed={!d.custom && d.format === k} onClick={() => set({ format: k, custom: null })}>{FORMATS[k].name}</button>)}
@@ -355,7 +355,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
             <Chips label="Style" items={stylesFor(d.format).map((k) => [k, STYLES[k].name] as [StyleKey, string])} value={style} onPick={(k) => set({ style: k })} />
             <div className={s.sub}>Ink</div>
             <Chips label="Ink" items={(Object.keys(INKS) as InkKey[]).map((k) => [k, INKS[k].name])} value={inkOn as InkKey} onPick={(k) => setD((o) => ({ ...applyInk(o, k), preset: "custom" }))} />
-            <small className={s.hint}>{inkOn === "black" ? "Pure black. Prints sharp on any office printer." : inkOn === "color" ? "Blue pill and corners, yellow brush." : "Your own colors. Pick an ink to reset them."}</small>
+            <small className={s.hint}>{inkOn === "black" ? "Pure black. Prints sharp on any office printer." : inkOn === "color" ? "Garnet pill and corners, yellow brush." : "Your own colors. Pick an ink to reset them."}</small>
           </Group>
 
           <Group title="Start from" dab="#ffd43b">
@@ -423,7 +423,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
             })}
           </Group>
 
-          <Group title="What it says" dab="#2b37f0">
+          <Group title="What it says" dab="var(--af-scan)">
             <Toggle checked={d.showTitle} onChange={(v) => set({ showTitle: v })}>Title and artist</Toggle>
             <Toggle checked={d.showPrice} onChange={(v) => set({ showPrice: v })}>Price</Toggle>
             <label className={s.field}>Your own words
@@ -579,7 +579,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
             </section>
             <Earnings d={d} art={art} split={split} />
             <section className={cx(s.panel, s.wide)} aria-labelledby="qs-inside-h">
-              <h2 id="qs-inside-h"><span className="paint-dab" style={{ ["--dab" as string]: "#2b37f0" }} aria-hidden="true" />What&rsquo;s inside the code</h2>
+              <h2 id="qs-inside-h"><span className="paint-dab" style={{ ["--dab" as string]: "var(--af-scan)" }} aria-hidden="true" />What&rsquo;s inside the code</h2>
               <a className={s.link} href={code ? shortUrl(code, base) : undefined} target="_blank" rel="noreferrer" aria-disabled={!code || undefined}>
                 {code ? shortLabel(code, base) : shortLabel("····", base)}
               </a>

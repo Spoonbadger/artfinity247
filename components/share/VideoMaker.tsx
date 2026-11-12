@@ -27,7 +27,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 
 async function loadAssets(art: ShareArt, base: string): Promise<VideoAssets> {
   const [fonts, img] = await Promise.all([loadFonts(), loadImage(`/api/share/painting?art=${encodeURIComponent(art.slug)}`)]);
-  const svg = qrSVG(artLink(base, art.handle, art.slug, "share-video"), { fg: "#15161b", dots: "rounded", eyes: "frame", eyeColor: "#2b37f0" })
+  const svg = qrSVG(artLink(base, art.handle, art.slug, "share-video"), { fg: "#15161b", dots: "rounded", eyes: "frame", eyeColor: "#8b2a4b" })
     .replace("<svg ", `<svg width="672" height="672" `);
   const qr = await loadImage("data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg));
   const probe = document.createElement("canvas");
@@ -204,7 +204,7 @@ export default function VideoMaker({ art, base }: { art: ShareArt; base: string 
                   tpl === id ? "border-ink bg-ink text-white" : "border-line bg-white hover:border-ink",
                 )}
               >
-                <span className="paint-dab sm:mb-2" style={{ ["--dab" as string]: ["#ff5a36", "#ffd43b", "#2b37f0"][i] }} />
+                <span className="paint-dab sm:mb-2" style={{ ["--dab" as string]: ["#ff5a36", "#ffd43b", "var(--af-scan)"][i] }} />
                 <span className="grid">
                   <b className="text-[15px] leading-tight">{TEMPLATES[id].name}</b>
                   <span className={cn("text-[13px]", tpl === id ? "text-white/75" : "text-ink-2")}>{TEMPLATES[id].sub}</span>

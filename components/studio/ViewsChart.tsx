@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 export type ViewPoint = { key: string; label: string; views: number; visitors: number };
 
 const PAD_L = 34, PAD_R = 8, PAD_T = 12, PAD_B = 24;
-const LINE = "var(--af-scan)"; // ultramarine, matches the "views" chip
+const LINE = "var(--af-scan)"; // garnet (--af-scan), matches the "views" chip
 
 function niceTop(max: number) {
   if (max <= 4) return Math.max(2, max);
@@ -80,11 +80,13 @@ export default function ViewsChart({ days }: { days: ViewPoint[] }) {
           <span className="block text-ink-2">{h.label}</span>
         </div>
       )}
-      <table className="sr-only">
-        <caption>Page views per day</caption>
-        <thead><tr><th>Day</th><th>Views</th><th>Visitors</th></tr></thead>
-        <tbody>{days.map((d) => <tr key={d.key}><td>{d.label}</td><td>{d.views}</td><td>{d.visitors}</td></tr>)}</tbody>
-      </table>
+      <div className="sr-only">
+        <table>
+          <caption>Page views per day</caption>
+          <thead><tr><th>Day</th><th>Views</th><th>Visitors</th></tr></thead>
+          <tbody>{days.map((d) => <tr key={d.key}><td>{d.label}</td><td>{d.views}</td><td>{d.visitors}</td></tr>)}</tbody>
+        </table>
+      </div>
     </div>
   );
 }

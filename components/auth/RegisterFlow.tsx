@@ -630,7 +630,7 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
             {artwork ? (
               <div className="grid items-center gap-6 sm:grid-cols-[220px_minmax(0,1fr)]">
                 <div className="mx-auto w-full max-w-[240px] rounded-[18px] border-2 border-ink bg-white p-3.5">
-                  <QRCode value={scanUrl(artwork.slug, handle)} dots="rounded" eyes="frame" eyeColor="#2b37f0" />
+                  <QRCode value={scanUrl(artwork.slug, handle)} dots="rounded" eyes="frame" eyeColor="#8b2a4b" />
                   <span className="mt-2 block text-center text-[13px] font-bold">Scan to buy a print</span>
                 </div>
                 <div className="grid gap-3">

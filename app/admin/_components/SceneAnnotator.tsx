@@ -497,7 +497,7 @@ export default function SceneAnnotator({ photos, annotations, arts, writable }: 
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={art.imageUrl} alt="" className="h-full w-full object-cover" />
                     ) : (
-                      <div className="grid h-full w-full place-items-center bg-[repeating-linear-gradient(45deg,#2b37f0_0_8px,#4a55ff_8px_16px)] text-center text-[28px] font-bold text-white">
+                      <div className="grid h-full w-full place-items-center bg-[repeating-linear-gradient(45deg,#8b2a4b_0_8px,#a3405f_8px_16px)] text-center text-[28px] font-bold text-white">
                         {SIZE_IN[size]}
                       </div>
                     )}
@@ -519,15 +519,15 @@ export default function SceneAnnotator({ photos, annotations, arts, writable }: 
               {draft.quad.length > 0 && (
                 <polygon
                   points={draft.quad.map((p) => p.join(",")).join(" ")}
-                  fill={draft.quad.length === 4 ? "rgba(43,55,240,.08)" : "none"}
-                  stroke="#2b37f0"
+                  fill={draft.quad.length === 4 ? "rgba(139,42,75,.08)" : "none"}
+                  stroke="#8b2a4b"
                   strokeWidth={2}
                   strokeDasharray="8 5"
                   vectorEffect="non-scaling-stroke"
                 />
               )}
               {draft.quad.map((p, i) => (
-                <circle key={`q${i}`} cx={p[0]} cy={p[1]} r={hr} fill="#2b37f0" stroke="#fff" strokeWidth={2} vectorEffect="non-scaling-stroke" className="cursor-move" onPointerDown={(e) => (e.stopPropagation(), setDrag({ kind: "quad", i }))} />
+                <circle key={`q${i}`} cx={p[0]} cy={p[1]} r={hr} fill="#8b2a4b" stroke="#fff" strokeWidth={2} vectorEffect="non-scaling-stroke" className="cursor-move" onPointerDown={(e) => (e.stopPropagation(), setDrag({ kind: "quad", i }))} />
               ))}
               {(["ref", "ref2"] as const).map((key) => {
                 const l = draft[key];

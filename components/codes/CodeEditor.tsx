@@ -172,7 +172,7 @@ export default function CodeEditor({ initial, arts, look, base, places = [], par
         )}
 
         <label className="flex min-h-[44px] items-center gap-3 text-[15px] font-semibold">
-          <input type="checkbox" className="h-5 w-5 accent-[#2b37f0]" checked={f.active} onChange={(e) => set({ active: e.target.checked })} />
+          <input type="checkbox" className="h-5 w-5 accent-scan" checked={f.active} onChange={(e) => set({ active: e.target.checked })} />
           Code is on
         </label>
 

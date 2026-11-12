@@ -13,7 +13,7 @@ export default function ArtworkLiveWithQrEmail({
 }) {
   return (
     <div style={{ fontFamily: "ui-sans-serif, system-ui", color: "#222" }}>
-      <h2 style={{ margin: 0, color: "#b05c5c" }}>
+      <h2 style={{ margin: 0, color: "#8b2a4b" }}>
         Your artwork is live 🎉
       </h2>
 
@@ -33,7 +33,7 @@ export default function ArtworkLiveWithQrEmail({
       <p>
         <a
           href={artworkUrl}
-          style={{ color: "#b05c5c", textDecoration: "underline" }}
+          style={{ color: "#8b2a4b", textDecoration: "underline" }}
         >
           {artworkUrl}
         </a>
@@ -52,7 +52,7 @@ export default function ArtworkLiveWithQrEmail({
         <a
           href={qrDownloadUrl}
           style={{
-            backgroundColor: "#b05c5c",
+            backgroundColor: "#8b2a4b",
             color: "#fff",
             padding: "12px 18px",
             borderRadius: 6,

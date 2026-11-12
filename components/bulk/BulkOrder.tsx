@@ -248,7 +248,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName, tax = "ad
                         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                           <div className="flex flex-wrap items-center gap-2">
                             <label className="flex cursor-pointer items-center gap-2 text-[14px] font-semibold">
-                              <input type="checkbox" checked={l.framed} onChange={(e) => patch(l.key, { framed: e.target.checked })} className="h-5 w-5 accent-[#2b37f0]" />
+                              <input type="checkbox" checked={l.framed} onChange={(e) => patch(l.key, { framed: e.target.checked })} className="h-5 w-5 accent-scan" />
                               Framed
                             </label>
                             {l.framed && (
@@ -334,7 +334,7 @@ export default function BulkOrder({ arts, past, placedId, defaultName, tax = "ad
           </section>
 
           <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-line bg-white p-4">
-            <input type="checkbox" checked={tags} onChange={(e) => setTags(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0 accent-[#2b37f0]" />
+            <input type="checkbox" checked={tags} onChange={(e) => setTags(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0 accent-scan" />
             <span className="grid gap-0.5">
               <b className="text-[15px]">Include matching QR hang tags</b>
               <span className="t-small">

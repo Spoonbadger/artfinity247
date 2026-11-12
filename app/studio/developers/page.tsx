@@ -54,7 +54,7 @@ export default async function StudioDevelopersPage() {
       ) : (
         inReview ? (
           <EmptyState
-            dab="#9aa0ff"
+            dab="#be778c"
             title="Your embeds appear once a piece is live"
             body={`${inReview === 1 ? "Your piece is" : `${inReview} pieces are`} in review, usually within a day. Then copy a gallery, a single piece or a buy button onto your own site.`}
             action={{ label: "See my art", href: "/studio/art" }}
@@ -62,7 +62,7 @@ export default async function StudioDevelopersPage() {
           />
         ) : (
           <EmptyState
-            dab="#9aa0ff"
+            dab="#be778c"
             title="Embeds appear once you have art"
             body="Upload a piece and copy a gallery, a single piece or a buy button onto your own site. Squarespace, Wix and WordPress all work."
             action={{ label: "Upload art", href: "/studio/art/new" }}

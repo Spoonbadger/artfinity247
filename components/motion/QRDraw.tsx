@@ -14,7 +14,7 @@ function rr(x: number, y: number, w: number, h: number, r: number) {
  * playing <Stage/> it erases and redraws itself dot by dot in a sweep. At rest it is complete.
  * Dots are round, eyes are rounded squares (the same geometry lib/qr/render.ts scan-tests).
  */
-export default function QRDraw({ value, fg = "#15161b", eyeColor = "#2b37f0", loop = 7, sweep = 0.9, className, label }: { value: string; fg?: string; eyeColor?: string; loop?: number; sweep?: number; className?: string; label?: string }) {
+export default function QRDraw({ value, fg = "#15161b", eyeColor = "#8b2a4b", loop = 7, sweep = 0.9, className, label }: { value: string; fg?: string; eyeColor?: string; loop?: number; sweep?: number; className?: string; label?: string }) {
   const m = qrMatrix(value);
   const n = m.length, q = 2, V = n + q * 2;
   const finder = (r: number, c: number) => (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);

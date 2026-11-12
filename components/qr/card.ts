@@ -62,7 +62,7 @@ type Inks = { fg: string; bg: string; eye: string; accent: string; tag: string }
 export const INKS: Record<InkKey, Inks & { name: string }> = {
   // Pure black on white: prints clean on an office laser printer. The brush is the one tint (black at 16%).
   black: { name: "Black ink", fg: "#000000", bg: "#ffffff", eye: "same", accent: "#000000", tag: "#000000" },
-  color: { name: "Color", fg: "#15161b", bg: "#ffffff", eye: "#2b37f0", accent: "#2b37f0", tag: "#ffd43b" },
+  color: { name: "Color", fg: "#15161b", bg: "#ffffff", eye: "#8b2a4b", accent: "#8b2a4b", tag: "#ffd43b" },
 };
 export const EXTRAS: Record<ExtraKey, { name: string; sub: string; formats: FormatKey[] }> = {
   match: { name: "Match your art", sub: "Color from the painting", formats: ALL },
@@ -92,13 +92,13 @@ export function seasonFor(at = new Date()): SeasonKey {
 }
 export const DOTS: Record<DotStyle, string> = { square: "Square", rounded: "Soft", dots: "Dots", liquid: "Liquid", lines: "Lines", diamond: "Diamond" };
 export const EYES: Record<EyeStyle, string> = { frame: "Frame mark", square: "Square", rounded: "Rounded", circle: "Circle" };
-export const FG = ["#000000", "#15161b", "#2b37f0", "#0f7a55", "#7b2d8e", "#b8321c"];
+export const FG = ["#000000", "#15161b", "#8b2a4b", "#2b37f0", "#0f7a55", "#7b2d8e", "#b8321c"];
 export const BG = ["#ffffff", "#f2f3ec", "#ffd43b", "#ffd6cc", "#d4e6ff", "#15161b"];
-export const ACCENT = ["#000000", "#2b37f0", "#ff5a36", "#0f7a55", "#7b2d8e", "#ffd43b"];
-export const TAG = ["#000000", "#ffd43b", "#ff5a36", "#2b37f0", "#0f7a55", "#ffd6cc"];
-export const EYE = ["same", "#2b37f0", "#ff5a36", "#0f7a55"];
+export const ACCENT = ["#000000", "#8b2a4b", "#2b37f0", "#ff5a36", "#0f7a55", "#7b2d8e", "#ffd43b"];
+export const TAG = ["#000000", "#ffd43b", "#ff5a36", "#8b2a4b", "#2b37f0", "#0f7a55", "#ffd6cc"];
+export const EYE = ["same", "#8b2a4b", "#2b37f0", "#ff5a36", "#0f7a55"];
 export const COLOR_NAMES: Record<string, string> = {
-  "#000000": "Black", "#15161b": "Ink", "#2b37f0": "Scan blue", "#0f7a55": "Green", "#7b2d8e": "Plum", "#b8321c": "Brick", "#ffffff": "White",
+  "#000000": "Black", "#15161b": "Ink", "#8b2a4b": "Garnet", "#2b37f0": "Blue", "#0f7a55": "Green", "#7b2d8e": "Plum", "#b8321c": "Brick", "#ffffff": "White",
   "#f2f3ec": "Wall white", "#ffd43b": "Sticker yellow", "#ffd6cc": "Blush", "#d4e6ff": "Sky", "#ff5a36": "Coral", same: "Same as code",
 };
 export const DISCOUNTS = [0, 10, 15, 20, 25];
@@ -110,7 +110,7 @@ export const PRESETS: Record<PresetKey, Look & { name: string; sub: string }> = 
   gallery: { name: "Gallery label", sub: "Beside the painting", format: "label", style: "pill", ink: "black", dots: "rounded", eyes: "rounded", ...pickInks("black") },
   sticker: { name: "Sticker", sub: "Round and loud", format: "sticker", style: "pill", ink: "color", dots: "dots", eyes: "circle", fg: "#15161b", bg: "#ffd43b", eye: "same", accent: "#15161b", tag: "#15161b" },
   market: { name: "Market tag", sub: "Hangs off a frame", format: "tag", style: "pill", ink: "color", dots: "square", eyes: "rounded", fg: "#15161b", bg: "#ffffff", eye: "#ff5a36", accent: "#ff5a36", tag: "#ffd43b" },
-  poster: { name: "Show poster", sub: "Door or easel", format: "poster", style: "panel", ink: "color", dots: "liquid", eyes: "frame", fg: "#2b37f0", bg: "#f2f3ec", eye: "same", accent: "#2b37f0", tag: "#ffd43b" },
+  poster: { name: "Show poster", sub: "Door or easel", format: "poster", style: "panel", ink: "color", dots: "liquid", eyes: "frame", fg: "#8b2a4b", bg: "#f2f3ec", eye: "same", accent: "#8b2a4b", tag: "#ffd43b" },
 };
 function pickInks(k: InkKey): Inks { const { fg, bg, eye, accent, tag } = INKS[k]; return { fg, bg, eye, accent, tag }; }
 
@@ -267,7 +267,7 @@ export function applySeason(d: Design, k: SeasonKey | ""): Design {
   if (!k) return { ...d, season: "" };
   const S = SEASONS[k];
   // The code corners take the season's colour too, darkened until phones read it easily (4.5:1 on the card).
-  let eye = S.accent === "#15161b" ? "#2b37f0" : S.accent;
+  let eye = S.accent === "#15161b" ? "#8b2a4b" : S.accent;
   for (let i = 0; i < 40 && contrast(eye, d.bg) < 4.5; i++) eye = mix(eye, "#000000", 0.06);
   return { ...d, season: k, ...(d.ink === "color" ? { accent: S.accent, eye } : {}), extras: d.extras.filter((e) => e !== "match") };
 }

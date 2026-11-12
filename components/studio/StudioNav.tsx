@@ -11,7 +11,7 @@ export type StudioNavItem = { href: string; label: string; dab: string };
 export type StudioSection = { id: string; label: string; dab: string; icon: LucideIcon; items: StudioNavItem[] };
 
 /** Always on top, outside the folders. */
-export const STUDIO_HOME: StudioNavItem = { href: "/studio", label: "Studio", dab: "#2b37f0" };
+export const STUDIO_HOME: StudioNavItem = { href: "/studio", label: "Studio", dab: "var(--af-scan)" };
 
 export const STUDIO_SECTIONS: StudioSection[] = [
   {
@@ -21,7 +21,7 @@ export const STUDIO_SECTIONS: StudioSection[] = [
       { href: "/studio/collections", label: "Collections", dab: "#c98a5a" },
       { href: "/studio/rooms", label: "Rooms", dab: "#5bc0be" },
       { href: "/studio/bulk", label: "Bulk prints", dab: "#ff5a36" },
-      ...(PAINTING_SCANS ? [{ href: "/studio/scanning", label: "Painting scans", dab: "#2b37f0" }] : []),
+      ...(PAINTING_SCANS ? [{ href: "/studio/scanning", label: "Painting scans", dab: "var(--af-scan)" }] : []),
     ],
   },
   {
@@ -29,18 +29,18 @@ export const STUDIO_SECTIONS: StudioSection[] = [
     items: [
       { href: "/studio/qr", label: "QR codes", dab: "#ffd43b" },
       { href: "/studio/qr/queue", label: "Print queue", dab: "#ff5a36" },
-      { href: "/studio/codes", label: "My codes", dab: "#2b37f0" },
+      { href: "/studio/codes", label: "My codes", dab: "var(--af-scan)" },
       { href: "/studio/places", label: "Places", dab: "#0f7a55" },
       { href: "/studio/events", label: "Events", dab: "#7b2d8e" },
     ],
   },
   {
-    id: "page", label: "Page", dab: "#9aa0ff", icon: LayoutTemplate,
+    id: "page", label: "Page", dab: "#be778c", icon: LayoutTemplate,
     items: [
       { href: "/studio/page", label: "My page", dab: "#15161b" },
       { href: "/studio/design", label: "Design", dab: "#f5b3c8" },
       { href: "/studio/links", label: "Links", dab: "#5bc0be" },
-      { href: "/studio/developers", label: "Embed", dab: "#9aa0ff" },
+      { href: "/studio/developers", label: "Embed", dab: "#be778c" },
     ],
   },
   {
@@ -51,7 +51,7 @@ export const STUDIO_SECTIONS: StudioSection[] = [
       { href: "/studio/reviews", label: "Reviews", dab: "#ffd43b" },
       { href: "/studio/share", label: "Share kit", dab: "#ff5a36" },
       { href: "/studio/automations", label: "Automations", dab: "#7b2d8e" },
-      { href: "/studio/emails", label: "Buyer emails", dab: "#9aa0ff" },
+      { href: "/studio/emails", label: "Buyer emails", dab: "#be778c" },
     ],
   },
   {
@@ -59,16 +59,16 @@ export const STUDIO_SECTIONS: StudioSection[] = [
     items: [
       { href: "/studio/sales", label: "Sales", dab: "#0f7a55" },
       { href: "/studio/money", label: "Money", dab: "#0f7a55" },
-      { href: "/studio/analytics", label: "Analytics", dab: "#2b37f0" },
+      { href: "/studio/analytics", label: "Analytics", dab: "var(--af-scan)" },
     ],
   },
   {
     id: "account", label: "Account", dab: "#e3b23c", icon: UserRound,
     items: [
       { href: "/studio/infinity", label: "Infinity plan", dab: "#e3b23c" },
-      { href: "/studio/verify", label: "Verify", dab: "#2b37f0" },
+      { href: "/studio/verify", label: "Verify", dab: "var(--af-scan)" },
       { href: "/studio/purchases", label: "My purchases", dab: "#c98a5a" },
-      { href: "/help", label: "Help center", dab: "#9aa0ff" },
+      { href: "/help", label: "Help center", dab: "#be778c" },
     ],
   },
 ];

@@ -25,7 +25,7 @@ The painting's title is the headline. Under it: your name, and the edition if th
 
 ## Format, style and ink
 - **Style:** Pill ("Prints from $55" in a solid pill) or Panel (the code on a solid panel, "Scan for prints from $55" beside it). Wall labels also have Clean (no shape) and Brush (the price on a paint stroke).
-- **Ink:** Black ink is pure black on white, so it prints sharp on an office laser printer. Color uses a blue pill and blue code corners.
+- **Ink:** Black ink is pure black on white, so it prints sharp on an office laser printer. Color uses a garnet pill and garnet code corners.
 - New cards start as Pill in black ink.
 
 ## The starting looks

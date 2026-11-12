@@ -107,7 +107,7 @@ export function captions(a: ShareArt, link: string): string[] {
 export function paletteFromPixels(data: ArrayLike<number>, n = 5): string[] {
   const px: [number, number, number][] = [];
   for (let i = 0; i + 3 < data.length; i += 4) if (data[i + 3] > 128) px.push([data[i], data[i + 1], data[i + 2]]);
-  if (!px.length) return ["#2b37f0", "#ffd43b", "#ff5a36", "#0f7a55", "#15161b"];
+  if (!px.length) return ["#8b2a4b", "#ffd43b", "#ff5a36", "#0f7a55", "#15161b"];
   const sat = (c: number[]) => Math.max(...c) - Math.min(...c);
   const dist = (a: number[], b: number[]) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
   // Greedy: start with the most saturated, then keep adding the color farthest from those picked.
@@ -134,5 +134,5 @@ export function accentOf(palette: string[]) {
     const l = luminance(hex);
     return Math.max(...c) - Math.min(...c) - Math.abs(l - 0.5) * 120;
   };
-  return palette.slice().sort((a, b) => score(b) - score(a))[0] || "#2b37f0";
+  return palette.slice().sort((a, b) => score(b) - score(a))[0] || "#8b2a4b";
 }

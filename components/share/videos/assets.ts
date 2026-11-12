@@ -204,7 +204,7 @@ async function beforeAfter(main: PieceRef, piece: Piece): Promise<{ before: Shot
 
 function loadQr(url: string) {
   return once(`qr:${url}`, async () => {
-    const svg = qrSVG(url, { fg: "#15161b", dots: "rounded", eyes: "frame", eyeColor: "#2b37f0" }).replace("<svg ", `<svg width="672" height="672" `);
+    const svg = qrSVG(url, { fg: "#15161b", dots: "rounded", eyes: "frame", eyeColor: "#8b2a4b" }).replace("<svg ", `<svg width="672" height="672" `);
     return loadImage("data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg));
   });
 }

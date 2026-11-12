@@ -75,16 +75,27 @@ that matters, and filling up with long, samey copy. When in doubt: less, and the
 The help center and the terms page are the reference: a calm page with one painted header, gray-edged boxes,
 a readable column (about 68 characters) and clear steps between title, section and body. Match them.
 
+### Colours: Garnet Rose (Nov 2026)
+
+- Garnet `--af-scan` #8b2a4b: the primary button, the logo paint, links and the focus ring. The class and token names
+  (`btn-blue`, `text-scan`, `bg-scan-soft`) stayed from the old Scan Blue; they are garnet now.
+- Ink `--af-ink` #2e1219 (black cherry) for text and the header button; quiet ink `--af-ink-2` #694c54 for secondary text.
+- Page `--af-paper` #fdfaf7 (ivory), sections `--af-wall` #f6ede9 (blush plaster). Boxes stay white.
+- Petal `--af-petal` #f0c3cc for text selection and soft paint. Garnet soft `--af-scan-soft` #f6e1e6 behind garnet text.
+- Unchanged: sticker yellow (badges, the brush under titles), money green, coral and the error red. Canvas, SVG, QR and
+  email renderers can't read CSS variables, so they write garnet as `#8b2a4b`.
+
 ### Boxes: gray, not black
 
 - Cards, panels and boxes use `.box` (white, `rounded-2xl`, 1px `border-edge`). `.af-card` and `.af-panel` are older
   names for the same thing. In Tailwind: `border border-edge`.
-- Tokens: `--af-edge` #d9dad2 (box edges), `--af-edge-strong` #b4b6ab (secondary buttons, segmented controls).
+- Tokens: `--af-edge` #ecdcd8 (box edges), `--af-edge-strong` #957a80 (secondary buttons, segmented controls),
+  `--af-field-edge` #8e737a (text inputs and selects).
 - A box inside a box loses its border and gets a faint tint. This happens on its own for `.box` inside `.box`;
   elsewhere use `.box-inset`.
 - Secondary buttons (`btn btn-ghost`) have a gray edge that turns ink on hover. Solid `btn` and `btn-blue` are unchanged.
 - Strong edges stay where they mean "you can type here" or "this is chosen": text inputs and selects use the
-  `--af-field-edge` gray (3:1 or more, blue on focus; `.af-field` keeps its ink border), the selected chip, tab or option card, toggles, and previews of
+  `--af-field-edge` gray (3:1 or more, garnet on focus; `.af-field` keeps its ink border), the selected chip, tab or option card, toggles, and previews of
   printed things (QR cards, link-page and video previews, the certificate).
 - Notices use their tone's colour for the edge (`border-sticker`, `border-coral`), never ink.
 - Borders are 1px for boxes and 1.5px for buttons and chips. No `border-2 border-ink` on a box.

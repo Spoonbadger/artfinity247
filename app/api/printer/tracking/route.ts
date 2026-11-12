@@ -26,7 +26,7 @@ body{font:16px/1.5 -apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#1516
 main{max-width:460px;margin:0 auto;background:#fff;border:1px solid #e6e3dc;border-radius:16px;padding:22px}
 h1{font-size:22px;margin:0 0 4px}.m{color:#5b5d66;font-size:14px;margin:0 0 18px}label{display:block;font-weight:600;font-size:14px;margin:14px 0 6px}
 select,input{box-sizing:border-box;width:100%;font:inherit;padding:11px 12px;border:1.5px solid #c9c5bc;border-radius:10px;background:#fff}
-button{margin-top:18px;width:100%;font:inherit;font-weight:700;color:#fff;background:#2b37f0;border:0;border-radius:999px;padding:13px}
+button{margin-top:18px;width:100%;font:inherit;font-weight:700;color:#fff;background:#8b2a4b;border:0;border-radius:999px;padding:13px}
 .ok{background:#e6f5ee;border-radius:10px;padding:12px}.err{background:#fde8e4;border-radius:10px;padding:12px}
 </style></head><body><main>${body}</main></body></html>`;
   return new Response(html, { status, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "private, no-store", "X-Robots-Tag": "noindex" } });

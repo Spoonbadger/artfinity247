@@ -62,7 +62,7 @@ export default async function LinksRoute({ params }: Props) {
             <b className="block">Only you see this bar.</b>
             {bare ? "Your page only has Shop my prints so far. Add your Instagram, website and other links." : "This is your links page, the way visitors see it."}
           </span>
-          <Link href="/studio/links" className="inline-flex min-h-[40px] items-center rounded-full bg-[#2b37f0] px-4 text-[14px] font-bold text-white no-underline">
+          <Link href="/studio/links" className="inline-flex min-h-[40px] items-center rounded-full bg-scan px-4 text-[14px] font-bold text-white no-underline">
             {bare ? "Add your links" : "Edit links"}
           </Link>
         </div>

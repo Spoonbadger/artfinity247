@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 export type ScanDay = { key: string; label: string; n: number };
 
 const PAD_L = 28, PAD_R = 6, PAD_T = 12, PAD_B = 24;
-const BAR = "#2b37f0"; // scan blue: one series, so the card title names it
+const BAR = "#8b2a4b"; // garnet (--af-scan): one series, so the card title names it
 
 /** Scans per day. Hover or focus a bar for the day's count. */
 export default function ScanChart({ days }: { days: ScanDay[] }) {

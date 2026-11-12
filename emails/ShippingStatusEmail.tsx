@@ -10,11 +10,11 @@ type Item = {
   artist?: string | null;
 };
 
-// Artfinity's paint: ink, Scan Blue.
-const INK = "#15161b";
-const INK2 = "#5a5d6b";
-const BLUE = "#2b37f0";
-const LINE = "#e1e2da";
+// Artfinity's paint (Garnet Rose): black cherry ink, garnet.
+const INK = "#2e1219"; // --af-ink
+const INK2 = "#694c54"; // --af-ink-2
+const GARNET = "#8b2a4b"; // --af-scan
+const LINE = "#ecdcd8"; // --af-line
 
 export default function ShippingStatusEmail({
   name,
@@ -63,7 +63,7 @@ export default function ShippingStatusEmail({
               {tracking.url && (
                 <>
                   <br />
-                  <a href={tracking.url} style={{ display: "inline-block", marginTop: 8, padding: "10px 16px", borderRadius: 999, background: BLUE, color: "#fff", fontWeight: 600, textDecoration: "none" }}>
+                  <a href={tracking.url} style={{ display: "inline-block", marginTop: 8, padding: "10px 16px", borderRadius: 999, background: GARNET, color: "#fff", fontWeight: 600, textDecoration: "none" }}>
                     Track your package
                   </a>
                 </>
@@ -78,19 +78,19 @@ export default function ShippingStatusEmail({
       {certificates.map((c) => (
         <p key={c.url} style={{ margin: "12px 0 0" }}>
           <strong>{c.title}</strong> is a numbered edition.{" "}
-          <a href={c.url} style={{ color: BLUE, fontWeight: 600 }}>Print the certificate</a>
+          <a href={c.url} style={{ color: GARNET, fontWeight: 600 }}>Print the certificate</a>
         </p>
       ))}
 
       {helpUrl && (
         <p style={{ margin: "16px 0 0", fontSize: 14, color: INK2 }}>
           Something wrong?{" "}
-          <a href={helpUrl} style={{ color: BLUE, fontWeight: 600 }}>Send us a photo</a> within 14 days of delivery and we&apos;ll reprint it free.
+          <a href={helpUrl} style={{ color: GARNET, fontWeight: 600 }}>Send us a photo</a> within 14 days of delivery and we&apos;ll reprint it free.
         </p>
       )}
 
       <p style={{ margin: "16px 0 0", fontSize: 14, color: INK2 }}>
-        <a href={`${SITE_URL}/collector`} style={{ color: BLUE, fontWeight: 600 }}>Your orders</a>, any time.
+        <a href={`${SITE_URL}/collector`} style={{ color: GARNET, fontWeight: 600 }}>Your orders</a>, any time.
       </p>
 
       <p style={{ margin: "16px 0 0", fontSize: 14 }}>— Artfinity</p>

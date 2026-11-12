@@ -229,7 +229,7 @@ export function signatureHtml(art: ShareArt, base: string) {
   return `<table cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.4;color:#15161b"><tr>` +
     `<td style="padding-right:12px;vertical-align:top"><a href="${link}"><img src="${img}" width="64" alt="${escAttr(art.title)}" style="display:block;border:0;border-radius:4px"></a></td>` +
     `<td style="vertical-align:top"><b>${escAttr(art.artist)}</b><br><a href="${link}" style="color:#15161b">${escAttr(art.title)}</a><br>` +
-    `<a href="${link}" style="display:inline-block;margin-top:6px;padding:5px 12px;background:#2b37f0;color:#ffffff;border-radius:999px;text-decoration:none;font-weight:bold">Buy a print</a></td>` +
+    `<a href="${link}" style="display:inline-block;margin-top:6px;padding:5px 12px;background:#8b2a4b;color:#ffffff;border-radius:999px;text-decoration:none;font-weight:bold">Buy a print</a></td>` +
     `</tr></table>`;
 }
 

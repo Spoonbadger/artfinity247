@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 // Installable Studio app. Served at /manifest.webmanifest; Next links it from every page.
-// Colors are the design tokens in app/globals.css (--af-wall, --af-paper). Icons: scripts/gen-app-icons.mjs.
+// Colors are the design tokens in app/globals.css (--af-wall) and the white header. Icons: scripts/gen-app-icons.mjs.
 // scope "/" so links from the Studio to the artist's own page stay inside the installed app.
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -13,8 +13,8 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#f2f3ec", // --af-wall
-    theme_color: "#ffffff", // --af-paper, matches the site's theme-color meta
+    background_color: "#f6ede9", // --af-wall (blush plaster)
+    theme_color: "#ffffff", // the white header bar; matches the site's theme-color meta
     categories: ["business", "productivity"],
     icons: [
       { src: "/brand/app/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },

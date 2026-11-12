@@ -2,6 +2,8 @@
 // Pure module: safe on server and client.
 
 export const PAINTS = [
+  // Garnet = the site's brand colour (--af-scan, Garnet Rose), and the default for pages that haven't picked one.
+  { id: "garnet", name: "Garnet", color: "#8b2a4b", ink: "#ffffff", soft: "#f6e1e6" },
   { id: "ultramarine", name: "Ultramarine", color: "#2b37f0", ink: "#ffffff", soft: "#e6e8ff" },
   { id: "cadmium-red", name: "Cadmium red", color: "#e2442b", ink: "#ffffff", soft: "#fde5df" },
   { id: "cadmium-orange", name: "Cadmium orange", color: "#e8743b", ink: "#15161b", soft: "#fde9dc" },
@@ -34,7 +36,7 @@ export type PageTheme = {
   showStats: boolean;
 };
 
-export const DEFAULT_THEME: PageTheme = { accent: "ultramarine", banner: { kind: "auto" }, layout: "grid", pinned: [], showStats: true };
+export const DEFAULT_THEME: PageTheme = { accent: "garnet", banner: { kind: "auto" }, layout: "grid", pinned: [], showStats: true };
 export const MAX_PINNED = 3;
 
 const isPaint = (v: unknown): v is PaintId => typeof v === "string" && PAINTS.some((p) => p.id === v);

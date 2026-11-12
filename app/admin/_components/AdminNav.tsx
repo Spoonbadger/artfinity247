@@ -19,7 +19,7 @@ const SECTIONS: { title: string; links: NavLink[] }[] = [
   { title: "Prints", links: [
     { href: "/admin/reprints", label: "Reprints", dab: "#c98a5a" },
     { href: "/admin/code-orders", label: "Code orders", dab: "#ffd43b" },
-    ...(PAINTING_SCANS ? [{ href: "/admin/scanning", label: "Scanning", dab: "#2b37f0" }] : []),
+    ...(PAINTING_SCANS ? [{ href: "/admin/scanning", label: "Scanning", dab: "var(--af-scan)" }] : []),
   ] },
   { title: "People", links: [
     { href: "/admin/artists", label: "Artists", dab: "#b98bd9" },
@@ -33,14 +33,14 @@ const SECTIONS: { title: string; links: NavLink[] }[] = [
     { href: "/admin/milestones", label: "Milestones", dab: "#e3b23c" },
   ] },
   { title: "Content", links: [
-    { href: "/admin/artworks", label: "Artworks", dab: "#7c8cff" },
+    { href: "/admin/artworks", label: "Artworks", dab: "#be778c" },
     { href: "/admin/scenes", label: "Scenes", dab: "#5bc0be", minRole: "admin" },
     { href: "/admin/social", label: "Social", dab: "#c13584" },
   ] },
   { title: "System", links: [
     { href: "/admin/activity", label: "Activity", dab: "#9aa3b5" },
     { href: "/admin/jobs", label: "Jobs", dab: "#5bc0be", minRole: "admin" },
-    { href: "/admin/team", label: "Team", dab: "#7c8cff" },
+    { href: "/admin/team", label: "Team", dab: "#be778c" },
     // Settings, alert emails, rewards, scanning service and code print prices share tabs (settings/layout.tsx).
     { href: "/admin/settings", label: "Settings", dab: "var(--af-ink)", match: "/admin/settings" },
   ] },

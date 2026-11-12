@@ -248,7 +248,7 @@ export default function PlaceManager({ place, paintings, codes, choices, others,
             ))}
           </ul>
         ) : (
-          <EmptyState compact dab="#2b37f0" title="No codes here yet" body="Pick codes on My codes and move them here, or hang a painting and print its code." action={{ label: "Open My codes", href: "/studio/codes" }} />
+          <EmptyState compact dab="var(--af-scan)" title="No codes here yet" body="Pick codes on My codes and move them here, or hang a painting and print its code." action={{ label: "Open My codes", href: "/studio/codes" }} />
         )}
       </section>
 

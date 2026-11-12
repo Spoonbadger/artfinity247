@@ -35,7 +35,7 @@ export type PresetDef = {
 export const PRESETS: PresetDef[] = [
   { id: "room-tour", name: "Room tour", sub: "Slow pans across real rooms with your piece on the wall", tier: "free", duration: 12, pieces: "one", dab: "#ff5a36" },
   { id: "closeup", name: "Close-up reveal", sub: "The full piece, then a slow zoom into the detail", tier: "free", duration: 10, pieces: "one", dab: "#ffd43b" },
-  { id: "price-card", name: "Price card", sub: "Your piece, the price and a code to buy", tier: "free", duration: 8, pieces: "one", dab: "#2b37f0" },
+  { id: "price-card", name: "Price card", sub: "Your piece, the price and a code to buy", tier: "free", duration: 8, pieces: "one", dab: "#8b2a4b" },
   { id: "gallery-walk", name: "Gallery walk", sub: "A walk past several pieces on a gallery wall", tier: "infinity", duration: 13, pieces: "many", dab: "#0f7a55" },
   { id: "before-after", name: "Before and after", sub: "A bare wall, then the wall with your print", tier: "infinity", duration: 9, pieces: "one", dab: "#7b2d8e" },
   { id: "size-compare", name: "Size compare", sub: "Every print size next to a sofa or a person", tier: "infinity", duration: 11, pieces: "one", dab: "#c98a5a" },

@@ -30,7 +30,7 @@ export default function WallBackdrop() {
               <img src="/seed/art-01.jpg" alt="" className="block aspect-[4/5] w-full object-cover" />
             </div>
             <div className="mb-6 grid w-[86px] rotate-[2deg] gap-1 rounded-md bg-paper p-2 shadow-[0_6px_14px_rgba(21,22,27,.16)]">
-              <QRCode value="https://theartfinity.com" dots="rounded" eyes="frame" eyeColor="#2b37f0" />
+              <QRCode value="https://theartfinity.com" dots="rounded" eyes="frame" eyeColor="#8b2a4b" />
               <span className="text-center text-[9.5px] font-bold leading-tight text-ink">Buy a print</span>
             </div>
           </div>
@@ -41,7 +41,7 @@ export default function WallBackdrop() {
               <img src="/seed/art-01.jpg" alt="" className="block aspect-[4/5] w-full object-cover" />
             </div>
             <div className="mb-3 grid w-[58px] rotate-[2deg] gap-0.5 rounded bg-paper p-1.5 shadow-[0_5px_12px_rgba(21,22,27,.16)]">
-              <QRCode value="https://theartfinity.com" dots="rounded" eyes="frame" eyeColor="#2b37f0" />
+              <QRCode value="https://theartfinity.com" dots="rounded" eyes="frame" eyeColor="#8b2a4b" />
               <span className="text-center text-[7.5px] font-bold leading-tight text-ink">Buy a print</span>
             </div>
           </div>

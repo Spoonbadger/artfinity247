@@ -6,7 +6,7 @@ export default function SocialSignInReminderEmail({ providers, loginLink }: { pr
   const list = providers.length > 1 ? `${providers.slice(0, -1).join(", ")} or ${providers[providers.length - 1]}` : providers[0];
   return (
     <div style={{ fontFamily: "ui-sans-serif, system-ui", color: "#222" }}>
-      <h2 style={{ color: "#b05c5c" }}>You sign in with {list}</h2>
+      <h2 style={{ color: "#8b2a4b" }}>You sign in with {list}</h2>
 
       <p>Someone (hopefully you) asked to reset the password for your Artfinity account. Your account doesn&apos;t have a password: you signed up with {list}.</p>
 
@@ -15,7 +15,7 @@ export default function SocialSignInReminderEmail({ providers, loginLink }: { pr
       <p>
         <a
           href={loginLink}
-          style={{ display: "inline-block", padding: "12px 16px", borderRadius: "6px", textDecoration: "none", background: "#b05c5c", color: "#fff" }}
+          style={{ display: "inline-block", padding: "12px 16px", borderRadius: "6px", textDecoration: "none", background: "#8b2a4b", color: "#fff" }}
         >
           Go to log in
         </a>

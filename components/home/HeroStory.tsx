@@ -54,7 +54,7 @@ export default function HeroStory({ art, perPrint, price, monthBefore }: { art: 
           {/* the QR card, taped up */}
           <div className="absolute left-[63%] top-[31cqw] w-[22%] rotate-[3deg] rounded-[6px] bg-white p-[1.8%] shadow-[0_10px_22px_-6px_rgba(21,22,27,.35)]">
             <span className="absolute -top-[1.4cqw] left-1/2 h-[2.6cqw] w-[7cqw] -translate-x-1/2 -rotate-3 bg-sticker/80" />
-            <QRCode value={qr} dots="rounded" eyes="frame" eyeColor="#2b37f0" />
+            <QRCode value={qr} dots="rounded" eyes="frame" eyeColor="#8b2a4b" />
             <b className="mt-[0.8cqw] block text-[1.9cqw] leading-tight text-ink">Scan to buy a print</b>
           </div>
 
@@ -112,7 +112,7 @@ export default function HeroStory({ art, perPrint, price, monthBefore }: { art: 
                 <div className={`${s.cam} absolute inset-0 z-10 grid place-items-center bg-[#d9d3c6]`}>
                   <div className="relative w-[64%] -translate-y-[30%]">
                     <div className="rounded-[1cqw] bg-white p-[1.2cqw] shadow-[0_6px_14px_-6px_rgba(21,22,27,.4)]">
-                      <QRCode value={qr} dots="rounded" eyes="frame" eyeColor="#2b37f0" />
+                      <QRCode value={qr} dots="rounded" eyes="frame" eyeColor="#8b2a4b" />
                     </div>
                     <div className="pointer-events-none absolute -inset-[1.6cqw]">
                       <span className="absolute left-0 top-0 h-[3cqw] w-[3cqw] rounded-tl-[1cqw] border-l-[0.6cqw] border-t-[0.6cqw] border-white" />
@@ -121,7 +121,7 @@ export default function HeroStory({ art, perPrint, price, monthBefore }: { art: 
                       <span className="absolute bottom-0 right-0 h-[3cqw] w-[3cqw] rounded-br-[1cqw] border-b-[0.6cqw] border-r-[0.6cqw] border-white" />
                       <span className={`${s.found} absolute inset-0 rounded-[1.4cqw] border-[0.6cqw] border-scan`} />
                       <div className={`${s.camSweep} absolute inset-x-[1.6cqw] inset-y-[1.6cqw]`}>
-                        <span className="absolute inset-x-0 top-0 h-[0.6cqw] rounded-full bg-scan shadow-[0_0_2cqw_0.6cqw_rgba(43,55,240,.45)]" />
+                        <span className="absolute inset-x-0 top-0 h-[0.6cqw] rounded-full bg-scan shadow-[0_0_2cqw_0.6cqw_rgba(139,42,75,.45)]" />
                       </div>
                     </div>
                     <span className="absolute -bottom-[7cqw] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-ink px-[1.4cqw] py-[0.4cqw] text-[1.7cqw] font-semibold text-white">theartfinity.com</span>

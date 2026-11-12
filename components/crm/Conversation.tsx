@@ -239,7 +239,7 @@ export default function Conversation({
             maxLength={4000}
             placeholder={mode === "note" ? "Loves big florals. Met at the Saturday market." : undefined}
             className={cn(
-              "w-full resize-y rounded-xl border-2 px-3.5 py-3 text-[16px] font-normal leading-relaxed text-ink outline-none focus:border-scan focus:shadow-[0_0_0_3px_#d9dcff]",
+              "w-full resize-y rounded-xl border-2 px-3.5 py-3 text-[16px] font-normal leading-relaxed text-ink outline-none focus:border-scan focus:shadow-[0_0_0_3px_rgb(var(--af-scan-rgb)/0.22)]",
               mode === "note" ? "border-[#eadb9a] bg-[#fffbe6]" : "border-line bg-white"
             )}
           />
@@ -252,7 +252,7 @@ export default function Conversation({
               checked={parcel}
               disabled={!canParcel}
               onChange={(e) => setParcel(e.target.checked)}
-              className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[#2b37f0]"
+              className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-scan"
             />
             <span>
               Also print this note in the parcel

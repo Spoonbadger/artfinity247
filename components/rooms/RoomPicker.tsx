@@ -168,7 +168,7 @@ export default function RoomPicker({ art, arts }: { art: Art; arts: { slug: stri
         <section aria-labelledby="picks-h" className="grid gap-2">
           <div className="flex items-baseline justify-between">
             <h3 id="picks-h" className="flex items-center gap-2 text-[15px] font-bold">
-              <span className="paint-dab" style={{ ["--dab" as string]: "#2b37f0" }} aria-hidden />
+              <span className="paint-dab" style={{ ["--dab" as string]: "var(--af-scan)" }} aria-hidden />
               Your rooms <span className="num font-normal text-ink-2">{picks.length}/{MAX}</span>
             </h3>
             {picks.length > 0 && (

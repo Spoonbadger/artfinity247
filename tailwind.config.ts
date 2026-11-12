@@ -38,6 +38,8 @@ const config = {
         gallery: "rgb(var(--af-gallery-rgb) / <alpha-value>)",
         scan: { DEFAULT: "rgb(var(--af-scan-rgb) / <alpha-value>)", soft: "rgb(var(--af-scan-soft-rgb) / <alpha-value>)" },
         sticker: "rgb(var(--af-sticker-rgb) / <alpha-value>)",
+        // Garnet Rose's petal pink: text selection and soft paint accents
+        petal: "rgb(var(--af-petal-rgb) / <alpha-value>)",
         coral: "rgb(var(--af-coral-rgb) / <alpha-value>)",
         earned: { DEFAULT: "rgb(var(--af-earned-rgb) / <alpha-value>)", soft: "rgb(var(--af-earned-soft-rgb) / <alpha-value>)" },
         border: "hsl(var(--border))",

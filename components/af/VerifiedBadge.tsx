@@ -30,7 +30,7 @@ export function VerifiedMark({ size = 18, className }: { size?: number; classNam
   const detailed = size >= 28;
   return (
     <svg viewBox="0 0 48 48" width={size} height={size} className={cn("inline-block shrink-0 align-middle", className)} aria-hidden="true" focusable="false">
-      <path d={SEAL} fill="var(--af-scan, #2b37f0)" />
+      <path d={SEAL} fill="var(--af-scan, #8b2a4b)" />
       {detailed && <circle cx="24" cy="24" r="14.2" fill="none" stroke="#fff" strokeOpacity=".35" strokeWidth="1.2" strokeDasharray="1.5 2.4" />}
       {detailed && <path d="M13.5 17.5c1.7-3.4 5-5.9 8.9-6.4" stroke="#fff" strokeOpacity=".4" strokeWidth="2" strokeLinecap="round" fill="none" />}
       <path d="M15.2 24.8l6 6.1 12.4-13.6" fill="none" stroke="#fff" strokeWidth={detailed ? 4.4 : 5.4} strokeLinecap="round" strokeLinejoin="round" />

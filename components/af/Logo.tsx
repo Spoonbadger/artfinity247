@@ -5,7 +5,7 @@ import { LOCKUP_MARK_TRANSFORM, LOCKUP_VIEWBOX, MARK_A, MARK_PAINT, MARK_SWATCH,
 /*
  * Artfinity logo: one flat-brush swatch of paint with a lowercase "a" knocked out, then the
  * "artfinity" wordmark (Bricolage Grotesque ExtraBold, outlined, painted i-dots).
- * The wordmark follows currentColor; the paint defaults to Scan Blue and can take any colour.
+ * The wordmark follows currentColor; the paint defaults to Garnet (--af-scan) and can take any colour.
  * Static files (favicons, mono and dark versions, og-image) live in /public/brand.
  */
 

@@ -224,7 +224,7 @@ export default function CodesList({ rows, places, partners, initialShow }: { row
       )}
 
       {visible.length === 0 ? (
-        <EmptyState compact dab="#2b37f0" title={show === "stale" ? "Every printed label is up to date" : "Nothing here"} body={show === "stale" ? "When a price, discount or title changes after printing, the code shows up here." : "No codes match this filter."} action={{ label: "Show all codes", onClick: () => setShow("all") }} />
+        <EmptyState compact dab="var(--af-scan)" title={show === "stale" ? "Every printed label is up to date" : "Nothing here"} body={show === "stale" ? "When a price, discount or title changes after printing, the code shows up here." : "No codes match this filter."} action={{ label: "Show all codes", onClick: () => setShow("all") }} />
       ) : (
         <>
           {/* Phones: cards */}

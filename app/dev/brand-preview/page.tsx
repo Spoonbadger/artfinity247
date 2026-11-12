@@ -29,6 +29,7 @@ export default function BrandPreviewPage() {
             {[...C_FAMILY, ...EARLIER].map((p) => (
               <a key={p.id} href={`#${p.id}`} className="btn btn-ghost btn-sm bg-white">
                 {p.letter}. {p.name}
+                {p.live ? " (Live)" : ""}
               </a>
             ))}
           </nav>

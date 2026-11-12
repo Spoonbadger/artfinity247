@@ -225,6 +225,7 @@ export function Section({ p, children }: { p: Palette; children: ReactNode }) {
         <p className="eyebrow">Palette {p.letter}</p>
         <h3 id={`${p.id}-title`} className="t-section">
           {p.letter}. {p.name}
+          {p.live && <span className="sticker-badge ml-3 align-middle font-body text-[13px]">Live</span>}
         </h3>
         <p className="max-w-[70ch] text-[16px] text-ink-2">{p.blurb}</p>
       </div>
@@ -287,7 +288,7 @@ export function CompareStrip({ palettes }: { palettes: Palette[] }) {
                   <span className="text-[16px] font-bold leading-tight">
                     {p.letter}. {p.name}
                   </span>
-                  <span className="text-[13px] text-ink-2">{p.letter === "C" ? "The original" : "Variation"}</span>
+                  <span className="text-[13px] text-ink-2">{p.live ? "Live on the site" : p.letter === "C" ? "The original" : "Variation"}</span>
                 </span>
                 <span className="grid grid-cols-6 gap-1.5 sm:gap-2">
                   {STRIP_ROLES.map((r) => (

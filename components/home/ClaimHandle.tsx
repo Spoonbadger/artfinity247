@@ -77,7 +77,7 @@ export default function ClaimHandle({ className, dark = false, autoFocus = false
 
   return (
     <div className={cn("w-full max-w-[520px]", className)}>
-      <form onSubmit={submit} className={cn("flex items-center rounded-full border-2 bg-white p-[5px] transition focus-within:shadow-[0_0_0_4px_#d9dcff]", dark ? "border-white" : "border-ink focus-within:border-scan")} autoComplete="off">
+      <form onSubmit={submit} className={cn("flex items-center rounded-full border-2 bg-white p-[5px] transition focus-within:shadow-[0_0_0_4px_rgb(var(--af-scan-rgb)/0.22)]", dark ? "border-white" : "border-ink focus-within:border-scan")} autoComplete="off">
         <label htmlFor={id} className="flex min-w-0 flex-1 cursor-text items-center pl-3 text-[14px] min-[400px]:pl-4 min-[400px]:text-[16px]">
           <span className="shrink-0 text-ink-2"><span className="hidden min-[340px]:inline">theartfinity.com</span>/@</span>
           <input

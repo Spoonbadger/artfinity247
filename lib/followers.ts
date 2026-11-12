@@ -55,7 +55,7 @@ async function sendConfirmEmail(artist: ArtistForEmail, email: string, token: st
     `<p style="margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#5b5d66">${esc(name)}</p>` +
     `<h1 style="margin:0 0 14px;font-size:26px;line-height:1.15">Confirm you want new work from ${esc(first)}</h1>` +
     `<p style="margin:0 0 20px">Tap the button and ${esc(first)}'s new paintings will land in your inbox. No more than one email a day, usually far fewer.</p>` +
-    `<p style="margin:0 0 22px"><a href="${link}" style="display:inline-block;background:#2b37f0;color:#fff;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:999px">Yes, send me new work</a></p>` +
+    `<p style="margin:0 0 22px"><a href="${link}" style="display:inline-block;background:#8b2a4b;color:#fff;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:999px">Yes, send me new work</a></p>` +
     `<p style="margin:0;font-size:13px;color:#5b5d66">Didn't ask for this? Ignore this email and nothing happens.</p>` +
     emailFooter({ base: BASE }) +
     `</div>`;
