@@ -82,7 +82,7 @@ export default async function Home({ searchParams }: { searchParams?: Record<str
       <section className="relative overflow-hidden">
         <div className="mx-auto grid max-w-[1240px] items-center gap-12 px-4 pb-16 pt-10 sm:px-6 md:pt-14 lg:grid-cols-[1.05fr_1fr] lg:gap-14 lg:pb-24 lg:pt-16">
           <div className="min-w-0">
-            <span className="sticker-badge">Free for NYC artists. Always.</span>
+            <span className="sticker-badge">Free for artists. Always.</span>
             <h1 className="display mt-5 text-[58px] sm:text-[84px] lg:text-[96px]">
               Turn every wall into <Brushed color="var(--af-sticker)"><span className="text-scan">your shop.</span></Brushed>
             </h1>
