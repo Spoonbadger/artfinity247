@@ -24,6 +24,7 @@ import type { VenueChoice } from "@/components/codes/VenuePicker";
 // Places hook (lib/artistPlaces.ts): where the code hangs.
 import PlacePicker, { placeInput, type PartnerChoice, type PlaceChoice } from "@/components/codes/PlacePicker";
 import s from "./qr-studio.module.css";
+import { QR_END_DATES } from "@/lib/features";
 
 type View = "card" | "wall" | "sheet";
 type Billing = "live" | "simulated" | "off";
@@ -171,8 +172,15 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
   const defaultLabel = d.ev.trim() || `${art.title} · ${FORMATS[d.format].name}`;
   const snapshot = JSON.stringify([label, d, venueId, placeId]);
   const dirty = !!code && snaps[art.slug] !== undefined && snaps[art.slug] !== snapshot;
-  const codeMeta = () => ({ label: label.trim() || defaultLabel, venue: d.ev.trim() || null, venueId, place: placeInput({ placeId, venueId, name: d.ev }), discountPct: d.disc || null, design: d });
-  /** Save (or update) this piece's code with the current look, venue and deal. */
+  // End dates are behind a switch (lib/features.ts QR_END_DATES); off, codes never end.
+  function expiresAt() {
+    if (!QR_END_DATES) return null;
+    if (d.end === "30") return new Date(Date.now() + 30 * 86400000).toISOString();
+    if (d.end === "event" && d.evDate) return new Date(`${d.evDate}T23:59:59`).toISOString();
+    return null;
+  }
+  const codeMeta = () => ({ label: label.trim() || defaultLabel, venue: d.ev.trim() || null, venueId, place: placeInput({ placeId, venueId, name: d.ev }), discountPct: d.disc || null, expiresAt: expiresAt(), design: d });
+  /** Save (or update) this piece's code with the current look, venue and deal (and end date, when that switch is on). */
   async function ensureCode(): Promise<string | null> {
     const existing = codes[art.slug];
     const snap = snapshot;
@@ -222,7 +230,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
       let body: Record<string, unknown>;
       if (all) {
         const m = codeMeta();
-        body = { all: true, design: d, venue: m.venue, venueId: m.venueId, place: m.place, discountPct: m.discountPct };
+        body = { all: true, design: d, venue: m.venue, venueId: m.venueId, place: m.place, discountPct: m.discountPct, expiresAt: m.expiresAt };
       } else {
         const c = await ensureCode();
         if (!c) return;
@@ -426,10 +434,19 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
                 {(Object.keys(SIZE_NAME) as SizeKey[]).map((k) => <option key={k} value={k}>{SIZE_NAME[k]} · {SIZE_INCHES[k]}</option>)}
               </select>
             </label>
-            {pro && d.extras.includes("event") && (
+            {QR_END_DATES && (
+              <label className={s.field}>Code stops working
+                <select value={d.end} onChange={(e) => set({ end: e.target.value as Design["end"] })}>
+                  <option value="never">Never</option>
+                  <option value="event">When the event ends</option>
+                  <option value="30">30 days after printing</option>
+                </select>
+              </label>
+            )}
+            {((QR_END_DATES && d.end === "event") || (pro && d.extras.includes("event"))) && (
               <label className={s.field}>Last day of the event
                 <input type="date" value={d.evDate} min={new Date().toISOString().slice(0, 10)} onChange={(e) => set({ evDate: e.target.value })} />
-                <small>Printed on the card. The code keeps working.</small>
+                <small>{!QR_END_DATES || d.end !== "event" ? "Printed on the card. The code keeps working." : d.evDate ? "Scans after this open your page instead." : "Pick a day, or the code keeps working."}</small>
               </label>
             )}
           </Group>
@@ -541,11 +558,12 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
                 <dt>Opens</dt><dd>{art.title}</dd>
                 <dt>Venue</dt><dd>{d.ev.trim() ? <>{d.ev.trim()}{d.evPrint || (pro && d.extras.includes("event")) ? "" : " (not printed)"}</> : "None"}</dd>
                 <dt>Discount</dt><dd>{d.disc ? <>{d.disc}% off at checkout</> : "None"}</dd>
+                {QR_END_DATES && <><dt>Ends</dt><dd>{d.end === "never" ? "Never" : d.end === "30" ? "30 days after printing" : d.evDate ? new Date(`${d.evDate}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "When the event ends"}</dd></>}
                 <dt>Look</dt><dd>{F.name} · {STYLES[style].name} · {inkOn ? INKS[inkOn].name : "Your colors"}{pro && d.extras.length ? ` · ${d.extras.map((k) => EXTRAS[k].name).join(", ")}` : ""}{pro && d.season ? ` · ${SEASONS[d.season].name}` : ""}</dd>
               </dl>
               <p className={s.soon}>
                 <span className="sticker-badge">Editable any time</span>
-                <span>The code holds only a short link. Change the artwork, deal or venue after printing{code ? <> in <Link href={`/studio/codes/${code}`} className="font-bold text-scan">My codes</Link></> : " in My codes"}.</span>
+                <span>The code holds only a short link. Change the artwork, deal{QR_END_DATES ? ", venue or end date" : " or venue"} after printing{code ? <> in <Link href={`/studio/codes/${code}`} className="font-bold text-scan">My codes</Link></> : " in My codes"}.</span>
               </p>
               {code && (
                 <button type="button" className="btn btn-ghost btn-sm justify-self-start" onClick={newCode}>

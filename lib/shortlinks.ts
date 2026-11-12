@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { calcItemProfitCents } from "@/lib/revenue";
 import { CODE_ALPHABET, normalizeCode } from "@/lib/shortcode";
 import { placeEnded, scanRoute, type PlaceLike } from "@/lib/placeRules";
+import { QR_END_DATES } from "@/lib/features";
 
 export { normalizeCode, shortUrl, shortLabel, PLACEHOLDER_CODE } from "@/lib/shortcode";
 
@@ -57,7 +58,7 @@ export async function createQrCode(input: CodeInput) {
           venue: input.venue ?? null,
           discountPct: input.discountPct ?? null,
           design: (input.design ?? undefined) as never,
-          expiresAt: null, // codes never end on a date (isLive)
+          expiresAt: QR_END_DATES ? input.expiresAt ?? null : null,
           venueId: input.venueId ?? null,
           placeId: input.placeId ?? null,
         },
@@ -102,11 +103,12 @@ export async function resolveCode(raw: unknown) {
 export type ResolvedCode = NonNullable<Awaited<ReturnType<typeof resolveCode>>>;
 
 /**
- * Active (not paused). Codes don't end on a date any more: an old stored expiresAt is ignored on purpose,
- * not migrated, so every code that isn't paused keeps working.
+ * Active (not paused) and, only while QR_END_DATES is on, not past its end date. With the switch off a stored
+ * expiresAt is ignored on purpose, not migrated, so every code that isn't paused keeps working.
  */
-export function isLive(c: { active: boolean; expiresAt?: Date | null }, _now = new Date()) {
-  return c.active;
+export function isLive(c: { active: boolean; expiresAt?: Date | null }, now = new Date()) {
+  if (!QR_END_DATES) return c.active;
+  return c.active && (!c.expiresAt || c.expiresAt.getTime() > now.getTime());
 }
 
 /**

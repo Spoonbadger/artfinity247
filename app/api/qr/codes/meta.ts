@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { sanitizeDesign } from "@/components/qr/card";
 import { parseCodeDiscount } from "@/lib/shortcode";
 import { codeMirror, ensurePlace, resolvePlace } from "@/lib/artistPlaces";
+import { QR_END_DATES } from "@/lib/features";
 
 const clean = (v: unknown, max: number) => (typeof v === "string" ? v.replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, max) || null : null);
 
@@ -73,7 +74,16 @@ export async function parseMeta(body: Record<string, unknown>, artistId: string)
       out.discountPct = d;
     }
   }
-  // expiresAt from older clients is ignored: codes don't end on a date any more (lib/shortlinks.ts isLive).
+  // End dates are switched off (lib/features.ts QR_END_DATES): expiresAt from a client is ignored.
+  if (QR_END_DATES && "expiresAt" in body) {
+    const v = body.expiresAt;
+    if (v === null || v === "") out.expiresAt = null;
+    else {
+      const d = new Date(String(v));
+      if (Number.isNaN(d.getTime())) return "That end date doesn't look right.";
+      out.expiresAt = d;
+    }
+  }
   if ("active" in body) out.active = body.active !== false;
   if ("design" in body && body.design && typeof body.design === "object") out.design = sanitizeDesign(body.design);
   return out;

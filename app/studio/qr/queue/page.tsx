@@ -14,6 +14,7 @@ import PaymentReturn from "@/components/payments/PaymentReturn";
 import { codeOrderNumber } from "@/lib/printQueueFormat";
 import QueuePlaceTag from "@/components/places/QueuePlaceTag";
 import { partnerChoices, placeOptions } from "@/lib/artistPlaces";
+import { isLive } from "@/lib/shortlinks";
 
 /** The Place every queued item is tagged to, when they all share one. */
 async function queuePlace(artistId: string, ids: string[]) {
@@ -65,7 +66,7 @@ export default async function PrintQueuePage({ searchParams }: { searchParams: {
       return {
         id: g.row.id, qty: g.qty, title: g.row.artwork.title, slug: g.row.artwork.slug || "", imageUrl: g.row.artwork.imageUrl,
         code: g.row.qrCode.code, preset: d.preset, venue: g.row.qrCode.venue, discountPct: g.row.qrCode.discountPct,
-        live: g.row.qrCode.active, inReview: g.row.artwork.status === "PENDING", svg,
+        live: isLive(g.row.qrCode), inReview: g.row.artwork.status === "PENDING", svg,
       };
     });
     // The sheets exactly as they'll print: each piece repeated qty times, packed in order.
