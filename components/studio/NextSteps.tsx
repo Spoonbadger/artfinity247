@@ -7,8 +7,10 @@ import { readLocalEvents } from "./events-store";
 import { failed, saved } from "@/lib/feedback";
 
 export const SHARED_KEY = "af-studio-shared";
+/** Optional steps the artist chose "Skip for now" on (this browser). Skipped is not done. */
+export const SKIPPED_KEY = "af-studio-skipped";
 
-type Step = { label: string; done: boolean; href?: string; act?: string; onClick?: () => void };
+type Step = { key: string; label: string; done: boolean; href?: string; act?: string; onClick?: () => void; optional?: boolean };
 /** An extra, optional idea under the checklist (not counted in the progress), e.g. "Book a scan". */
 export type Suggestion = { label: string; note?: string; href: string; act: string };
 /** Something to fix now, on top of the list and not counted in the progress, e.g. "2 printed labels show an old price". */
@@ -19,12 +21,20 @@ export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true
   const [shared, setShared] = useState(false);
   const [hasEvent, setHasEvent] = useState(serverHasEvent);
   const [copied, setCopied] = useState(false);
+  const [skipped, setSkipped] = useState<string[]>([]);
 
   useEffect(() => {
     try { setShared(localStorage.getItem(SHARED_KEY) === "1"); } catch {}
+    try { const v = JSON.parse(localStorage.getItem(SKIPPED_KEY) || "[]"); if (Array.isArray(v)) setSkipped(v.filter((x) => typeof x === "string")); } catch {}
     // Events not yet moved from this browser still count; the Events page uploads them.
     if (!serverHasEvent && readLocalEvents().length > 0) setHasEvent(true);
   }, [serverHasEvent]);
+
+  function skip(key: string, on: boolean) {
+    const next = on ? Array.from(new Set([...skipped, key])) : skipped.filter((k) => k !== key);
+    setSkipped(next);
+    try { localStorage.setItem(SKIPPED_KEY, JSON.stringify(next)); } catch {}
+  }
 
   async function copyLink() {
     const url = `https://theartfinity.com/@${slug}`;
@@ -42,25 +52,32 @@ export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true
   }
 
   const steps: Step[] = [
-    { label: "Upload your first piece", done: hasArt, href: "/studio/art/new", act: "Upload" },
-    { label: "Add a photo and bio", done: hasProfile, href: "/studio/page", act: "Add" },
-    { label: "Hang a code and make a sale", done: hasSold, href: "/studio/qr", act: "Print" },
-    { label: "Add your next event", done: hasEvent, href: "/studio/events", act: "Add" },
-    { label: "Share your page", done: shared, act: copied ? "Copied" : "Copy link", onClick: copyLink },
+    { key: "upload", label: "Upload your first piece", done: hasArt, href: "/studio/art/new", act: "Upload" },
+    { key: "profile", label: "Add a photo and bio", done: hasProfile, href: "/studio/page", act: "Add" },
+    { key: "sale", label: "Hang a code and make a sale", done: hasSold, href: "/studio/qr", act: "Print" },
+    { key: "share", label: "Share your page", done: shared, act: copied ? "Copied" : "Copy link", onClick: copyLink },
+    // Optional: shown as a small suggestion under the list, never as the first step, and it can be skipped.
+    { key: "event", label: "Add your next event", done: hasEvent, href: "/studio/events", act: "Add", optional: true },
   ];
   // Only shown while missing, so it reads as a warning rather than a chore.
   // Before the first upload, uploading comes first; after that, getting paid does.
-  if (!hasVenmo) steps.splice(hasArt ? 0 : 1, 0, { label: "Add Venmo so we can pay you", done: false, href: "/studio/page#venmo", act: "Add" });
+  if (!hasVenmo) steps.splice(hasArt ? 0 : 1, 0, { key: "venmo", label: "Add Venmo so we can pay you", done: false, href: "/studio/page#venmo", act: "Add" });
   const done = steps.filter((s) => s.done).length;
-  const todo = steps.filter((s) => !s.done);
+  const open = steps.filter((s) => !s.done && !skipped.includes(s.key));
+  const todo = open.filter((s) => !s.optional);
+  const optional = open.filter((s) => s.optional);
+  const later = steps.filter((s) => !s.done && skipped.includes(s.key));
   // All done: the card goes away (bar an optional suggestion), so the dashboard leads with the numbers.
-  if (!todo.length && !suggestion && !alerts.length) return null;
+  if (!todo.length && !optional.length && !later.length && !suggestion && !alerts.length) return null;
+  const counting = todo.length + optional.length + later.length > 0;
+  const smallLink = "inline-flex min-h-[40px] shrink-0 items-center px-1 text-[14px] font-bold text-scan underline-offset-2 hover:underline";
+  const quietBtn = "inline-flex min-h-[40px] shrink-0 items-center px-1 text-[14px] font-semibold text-ink-2 underline-offset-2 hover:text-ink hover:underline";
 
   return (
     <section className="af-card grid content-start gap-3 p-4 sm:p-5" aria-labelledby="next-h">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <h2 id="next-h" className="t-card">Next up</h2>
-        {todo.length > 0 && (
+        {counting && (
           <div className="flex items-center gap-2.5">
             <span className="t-small num font-semibold">{done} of {steps.length} done</span>
             <div className="relative h-2.5 w-24 overflow-hidden rounded-full bg-wall" role="progressbar" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={done} aria-label="Steps done">
@@ -94,6 +111,28 @@ export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true
             );
           })}
         </ul>
+      )}
+      {optional.map((s) => (
+        <div key={s.key} className="flex flex-wrap items-center gap-x-2.5 gap-y-1 rounded-xl border border-dashed border-edge-strong px-3 py-1.5 text-[14px]">
+          <span className="min-w-0 flex-1">
+            {s.label} <span className="t-small">(optional)</span>
+          </span>
+          <span className="flex items-center gap-1">
+            {s.href && <Link href={s.href} className={smallLink}>{s.act}</Link>}
+            <button type="button" onClick={() => skip(s.key, true)} className={quietBtn}>Skip for now</button>
+          </span>
+        </div>
+      ))}
+      {later.length > 0 && (
+        <div className="t-small flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="font-semibold">To do later:</span>
+          {later.map((s) => (
+            <span key={s.key} className="inline-flex items-center gap-1">
+              {s.href ? <Link href={s.href} className="inline-flex min-h-[40px] items-center text-ink underline underline-offset-2 hover:text-scan">{s.label}</Link> : s.label}
+              <button type="button" onClick={() => skip(s.key, false)} className={quietBtn} aria-label={`Put "${s.label}" back on the list`}>Undo</button>
+            </span>
+          ))}
+        </div>
       )}
       {suggestion && (
         <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-scan/50 bg-scan-soft px-3 py-2.5 text-[14px]">
