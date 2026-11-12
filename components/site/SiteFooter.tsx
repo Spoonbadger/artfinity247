@@ -29,7 +29,7 @@ export default function SiteFooter() {
       <div className="mx-auto grid max-w-[1240px] grid-cols-2 gap-x-6 gap-y-8 px-4 py-10 sm:px-6 md:grid-cols-[1.2fr_repeat(3,1fr)] md:gap-10">
         <div className="col-span-2 grid content-start gap-3 md:col-span-1">
           <Logo />
-          <p className="max-w-[30ch] text-[15px] text-ink-2">QR codes beside paintings, prints for whoever scans. New York City only.</p>
+          <p className="max-w-[30ch] text-[15px] text-ink-2">QR codes beside paintings, prints for whoever scans. US only.</p>
           <label className="mt-1 inline-flex min-h-[44px] cursor-pointer items-center gap-2.5 text-sm font-semibold text-ink">
             <input type="checkbox" className="h-[18px] w-[18px] accent-[var(--af-scan)]" checked={showSensitive} onChange={(e) => setShowSensitive(e.target.checked)} />
             Show sensitive art without blur
