@@ -105,7 +105,8 @@ export async function POST(req: NextRequest) {
   }
   if (dmca || counter) {
     if (b.address.length < 8) errors.address = "Add your full mailing address.";
-    if (b.phone.replace(/\D/g, "").length < 7) errors.phone = "Add a phone number.";
+    // Only a counter-notice needs a phone (17 U.S.C. 512(g)(3)(D)); a takedown notice is reached by email.
+    if (counter && b.phone.replace(/\D/g, "").length < 7) errors.phone = "Add a phone number.";
     if (b.signature.length < 2) errors.signature = "Type your full name to sign.";
   }
   if (Object.keys(errors).length || !b.reason) return NextResponse.json({ ok: false, errors }, { status: 422 });
@@ -158,7 +159,7 @@ export async function POST(req: NextRequest) {
   const reasonText = REASON_SHORT[reason];
   const first = b.name.split(" ")[0];
   const legalLines = dmca
-    ? `Original work: ${b.original}\nAddress: ${b.address}\nPhone: ${b.phone}\nSigned: ${b.signature}\n`
+    ? `Original work: ${b.original}\nAddress: ${b.address}\nSigned: ${b.signature}\n`
     : counter
       ? `Removed work: ${b.details}\nAddress: ${b.address}\nPhone: ${b.phone}\nSigned: ${b.signature}\n`
       : "";

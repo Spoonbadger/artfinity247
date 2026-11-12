@@ -138,7 +138,7 @@ Signed up with Google or Apple? They confirm your email for you, so there's noth
     section,
     audience: "artist",
     title: "Changing your name, email or bio",
-    summary: "Your public name, city, bio and photo are in My page. Your legal name, email, phone and state are in Account details, and stay private.",
+    summary: "Your public name, city, bio and photo are in My page. Your legal name, email and state are in Account details, and stay private.",
     link: { href: "/studio/page", label: "My page" },
     related: ["design-your-page", "change-venmo", "login-reset-password"],
     body: `
@@ -146,7 +146,7 @@ Signed up with Google or Apple? They confirm your email for you, so there's noth
 In [My page](/studio/page): the name buyers see, your city, your bio and your photo. Changes show on your page as soon as you save.
 
 ## Private (never shown)
-In **Account details** on the same page: your legal first and last name, email, phone and state. They're used for payouts and tax. Your email is also where we send your sales and the address you log in with.
+In **Account details** on the same page: your legal first and last name, email and state. They're used for payouts and tax. Your email is also where we send your sales and the address you log in with.
 
 Each email can belong to one account only.
 `,

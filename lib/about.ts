@@ -40,6 +40,5 @@ export const COMPANY = {
   address: AppConfigs.business_address,
   email: AppConfigs.business_email,
   supportEmail: AppConfigs.support_email,
-  phone: AppConfigs.business_phone,
   hours: "Mon–Fri, 8 a.m.–4 p.m. ET",
 };
