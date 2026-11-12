@@ -106,6 +106,17 @@ export default function Page() {
           <h2>Changes</h2>
           <p>We may update these terms. Changes take effect when posted here, and the date at the top will change. Using the site after that means you accept them.</p>
         </div>
+
+        <div>
+          <h2>Credits</h2>
+          <p>
+            City, town and ZIP code data in our location search comes from{" "}
+            <a href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames</a>, used under the{" "}
+            <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">Creative Commons Attribution 4.0 license</a>. Neighborhood names
+            come from Code for America&rsquo;s{" "}
+            <a href="https://github.com/codeforgermany/click_that_hood" target="_blank" rel="noopener">Click That &rsquo;Hood</a> project.
+          </p>
+        </div>
       </section>
     </LongForm>
   );
