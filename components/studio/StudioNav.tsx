@@ -92,51 +92,56 @@ function sectionFor(path: string) {
   return STUDIO_SECTIONS.find((s) => s.items.some((n) => isActive(path, n.href)))?.id;
 }
 
-const STORE_KEY = "af.studio.folders";
+const STORE_KEY = "af.studio.folder";
 
-function readStore(): Record<string, boolean> {
+function readStore(): string | null {
   try {
-    const raw = window.localStorage.getItem(STORE_KEY);
-    const v = raw ? JSON.parse(raw) : null;
-    return v && typeof v === "object" ? v : {};
+    const v = window.localStorage.getItem(STORE_KEY);
+    return v || null;
   } catch {
-    return {};
+    return null;
   }
 }
 
-function writeStore(v: Record<string, boolean>) {
+function writeStore(v: string | null) {
   try {
-    window.localStorage.setItem(STORE_KEY, JSON.stringify(v));
+    if (v) window.localStorage.setItem(STORE_KEY, v);
+    else window.localStorage.removeItem(STORE_KEY);
   } catch {
     /* private mode etc. */
   }
 }
 
-/** Folder open state: the current page's folder is always open; the rest come from localStorage. */
+/**
+ * One folder open at a time, so the menu stays short: opening one closes the others. The current page's folder opens
+ * on each page; elsewhere (Studio home) the last folder you opened comes back from localStorage.
+ */
 function useFolders(path: string) {
   const current = sectionFor(path);
-  const [open, setOpen] = useState<Record<string, boolean>>(() => (current ? { [current]: true } : {}));
+  const [openId, setOpenId] = useState<string | null>(current ?? null);
 
   // Animate only after the saved state has been applied, so a fresh load doesn't slide open.
   const [animate, setAnimate] = useState(false);
   useEffect(() => {
-    setOpen((o) => ({ ...readStore(), ...o }));
+    if (!current) setOpenId((o) => o ?? readStore());
     const t = window.setTimeout(() => setAnimate(true), 50);
     return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on first load
   }, []);
 
   useEffect(() => {
-    if (current) setOpen((o) => (o[current] ? o : { ...o, [current]: true }));
+    if (current) setOpenId(current);
   }, [current]);
 
   const toggle = useCallback((id: string) => {
-    setOpen((o) => {
-      const next = { ...o, [id]: !o[id] };
-      writeStore({ ...readStore(), [id]: next[id] });
+    setOpenId((o) => {
+      const next = o === id ? null : id;
+      writeStore(next);
       return next;
     });
   }, []);
 
+  const open: Record<string, boolean> = openId ? { [openId]: true } : {};
   return { open, toggle, animate };
 }
 

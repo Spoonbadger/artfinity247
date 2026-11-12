@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type SyntheticEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, ChevronDown, Download, FileText, ImageIcon, Layers, ListPlus, Loader2, Lock, Plus } from "lucide-react";
@@ -358,7 +358,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
             <small className={s.hint}>{inkOn === "black" ? "Pure black. Prints sharp on any office printer." : inkOn === "color" ? "Blue pill and corners, yellow brush." : "Your own colors. Pick an ink to reset them."}</small>
           </Group>
 
-          <Group title="Start from" dab="#ffd43b" open>
+          <Group title="Start from" dab="#ffd43b">
             <div className={s.presets} role="group" aria-label="Preset">
               {(Object.keys(PRESETS) as PresetKey[]).map((k) => {
                 const p = PRESETS[k];
@@ -608,10 +608,20 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
 }
 
 // ---------------- pieces ----------------
-/** A section of options that folds away. `open`: shown open on first visit. */
+/**
+ * A section of options that folds away. `open`: shown open on first visit. One section is open at a time: opening one
+ * closes the others (not the "more seasons" fold inside Seasonal), and keeps its heading in view.
+ */
 function Group({ title, dab, open, children }: { title: string; dab: string; open?: boolean; children: ReactNode }) {
+  function onToggle(e: SyntheticEvent<HTMLDetailsElement>) {
+    const el = e.currentTarget;
+    if (e.target !== el || !el.open) return;
+    el.parentElement?.querySelectorAll<HTMLDetailsElement>(`:scope > details.${s.group}[open]`).forEach((o) => { if (o !== el) o.open = false; });
+    const top = el.getBoundingClientRect().top;
+    if (top < 0) el.scrollIntoView({ block: "start", behavior: "smooth" });
+  }
   return (
-    <details className={s.group} open={open}>
+    <details className={s.group} open={open} onToggle={onToggle}>
       <summary><span className="paint-dab" style={{ ["--dab" as string]: dab }} aria-hidden="true" /><span className="flex-1">{title}</span><ChevronDown className="h-4 w-4" aria-hidden="true" /></summary>
       <div className={s.groupBody}>{children}</div>
     </details>
