@@ -116,7 +116,7 @@ export default function EventsBoard({ initial }: { initial: StudioEvent[] }) {
         <LocationInput
           label="Where"
           name="venue"
-          scope="nyc"
+          scope="place"
           tail
           autoComplete="off"
           value={venue}

@@ -1,10 +1,10 @@
 "use client";
 // The ARIA combobox pattern (an input that owns a listbox), shared by LocationInput and SearchTypeahead.
-// Arrows move, Enter picks, Esc closes (a second Esc clears), Tab closes without picking. The input keeps focus;
-// aria-activedescendant points at the highlighted option.
+// Arrows move, Enter picks, Esc closes (a second Esc clears), Tab closes without picking (or, with tabAccepts, picks
+// the highlighted option and moves on). The input keeps focus; aria-activedescendant points at the highlighted option.
 import { KeyboardEvent, MouseEvent as ReactMouseEvent, useCallback, useEffect, useId, useRef, useState } from "react";
 
-export function useCombobox<T>({ items, onPick, onEscapeEmpty }: { items: T[]; onPick: (item: T) => void; onEscapeEmpty?: () => void }) {
+export function useCombobox<T>({ items, onPick, onEscapeEmpty, tabAccepts = false }: { items: T[]; onPick: (item: T) => void; onEscapeEmpty?: () => void; tabAccepts?: boolean }) {
   const base = useId().replace(/:/g, "");
   const listId = `${base}-list`;
   const [open, setOpen] = useState(false);
@@ -60,7 +60,8 @@ export function useCombobox<T>({ items, onPick, onEscapeEmpty }: { items: T[]; o
         setOpen(false);
       } else onEscapeEmpty?.();
     } else if (e.key === "Tab") {
-      setOpen(false);
+      if (tabAccepts && shown && active >= 0 && !e.shiftKey) pick(active);
+      else setOpen(false);
     }
   }
 

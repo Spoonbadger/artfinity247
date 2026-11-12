@@ -433,7 +433,7 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
             <FormAlert>{formError}</FormAlert>
             <Field label="Artist name" name="artist_name" autoComplete="name" maxLength={60} value={artistName} onChange={(e) => { setArtistName(e.target.value); setErrors((x) => ({ ...x, artistName: null })); }} error={errors.artistName} autoFocus placeholder="Maya Okafor" />
             {/* Any US state. Picking a place (or typing "Austin, TX") fills in the state; the menu fixes it. */}
-            <LocationInput label="Neighborhood or borough" name="city" scope="nyc" maxLength={60} value={city} onChange={(v) => { setCity(v); setErrors((x) => ({ ...x, city: null })); }} onPick={(pl) => setRegion(pl.state)} error={errors.city} placeholder="Williamsburg, Brooklyn" hint="Puts you on the local map." />
+            <LocationInput label="City or neighborhood" name="city" scope="place" near={region} maxLength={60} value={city} onChange={(v) => { setCity(v); setErrors((x) => ({ ...x, city: null })); }} onPick={(pl) => { if (pl.state) { setRegion(pl.state); setErrors((x) => ({ ...x, region: null })); } }} error={errors.city} placeholder="Austin, TX" hint="Puts you on the local map." />
             <div className="grid gap-1.5">
               <label className={cn("af-field cursor-pointer", errors.region && "!border-coral focus-within:!shadow-[0_0_0_3px_#ffd9cf]")}>
                 <span className="text-[13px] text-ink-2">State</span>

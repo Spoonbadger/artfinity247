@@ -49,6 +49,8 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
   // A Venmo change waiting for the artist to confirm by email ("" = removing it).
   const [pending, setPending] = useState<string | null>(venmoPending);
   const link = `theartfinity.com/@${slug}`;
+  // The state of the place picked from the suggestions, sent with the city so the city page link is right.
+  const pickedState = useRef<string | null>(null);
   const dirty = p.name !== saved.name || p.city !== saved.city || p.bio !== saved.bio || p.venmoHandle !== saved.venmoHandle;
   useUnsavedChanges(dirty && !saving);
 
@@ -87,7 +89,7 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
     try {
       const jobs: Promise<unknown>[] = [];
       if (p.name !== saved.name) jobs.push(post("/api/artists/update-artist-name", { name: p.name.trim() }));
-      if (p.city !== saved.city) jobs.push(post("/api/artists/update-city", { city: p.city.trim() }));
+      if (p.city !== saved.city) jobs.push(post("/api/artists/update-city", { city: p.city.trim(), ...(pickedState.current ? { state: pickedState.current } : {}) }));
       if (p.bio !== saved.bio) jobs.push(post("/api/artists/update-bio", { bio: p.bio }));
       let venmo: { venmoHandle: string | null; pending: string | null } | null = null;
       if (p.venmoHandle !== saved.venmoHandle) jobs.push(post("/api/studio/venmo", { venmoHandle: p.venmoHandle }).then((r) => { venmo = r; }));
@@ -172,7 +174,7 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
             <span className="label">Artist name</span>
             <input value={p.name} onChange={(e) => setP({ ...p, name: e.target.value })} maxLength={80} required autoComplete="name" />
           </label>
-          <LocationInput label="Neighborhood or borough" name="city" scope="nyc" value={p.city} onChange={(v) => setP((x) => ({ ...x, city: v }))} maxLength={80} required placeholder="Williamsburg, Brooklyn" />
+          <LocationInput label="City or neighborhood" name="city" scope="place" value={p.city} onChange={(v) => { setP((x) => ({ ...x, city: v })); pickedState.current = null; }} onPick={(pl) => { pickedState.current = pl.state || null; }} maxLength={80} required placeholder="Austin, TX" />
         </div>
         <label className="af-field">
           <span className="label flex justify-between"><span>Bio</span><span className="num">{p.bio.length}/300</span></span>

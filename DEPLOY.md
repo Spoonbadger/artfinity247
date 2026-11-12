@@ -131,6 +131,7 @@ environment. Every variable is also listed, with a comment, in [`.env.example`](
 | `SCAN_SIGNING_SECRET` | Separate secret for QR discounts | Falls back to `JWT_SECRET` (fine). |
 | `TEST_START_DATE` | 90-day test start, `YYYY-MM-DD` | The dashboard uses the first paid order. **On Vercel set it here**: the dashboard's Save can't write files there. |
 | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Maps on artist and venue pages | Maps show a placeholder. |
+| `GOOGLE_MAPS_API_KEY` | Street address suggestions (Places API New, server only, `GET /api/places/address`) | Address fields finish the city, state and ZIP from our own list; the browser's autofill does the rest. |
 
 ### Optional, by feature
 

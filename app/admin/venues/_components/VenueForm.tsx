@@ -73,14 +73,14 @@ export default function VenueForm({ initial, onDone }: { initial?: VenueFormValu
         <div className="grid gap-1 text-[13px] font-semibold">
           <label htmlFor="venue-hood">Neighborhood</label>
           <LocationInput
-            variant="bare" id="venue-hood" name="neighborhood" scope="nyc" autoComplete="off" inputClassName={`${input} w-full`}
-            value={f.neighborhood} onChange={(v) => set({ neighborhood: v })} onPick={(pl) => set({ neighborhood: pl.city })} maxLength={60} placeholder="Williamsburg"
+            variant="bare" id="venue-hood" name="neighborhood" scope="place" autoComplete="off" inputClassName={`${input} w-full`}
+            value={f.neighborhood} onChange={(v) => set({ neighborhood: v })} onPick={(pl) => set({ neighborhood: pl.neighborhood || pl.borough || pl.city })} maxLength={60} placeholder="Williamsburg"
           />
         </div>
         <div className="grid gap-1 text-[13px] font-semibold sm:col-span-2">
           <label htmlFor="venue-address">Address</label>
           <LocationInput
-            variant="bare" id="venue-address" name="address" scope="address" autoComplete="off" inputClassName={`${input} w-full`}
+            variant="bare" id="venue-address" name="address" scope="address" addressTypes="any" autoComplete="off" inputClassName={`${input} w-full`}
             value={f.address} onChange={(v) => set({ address: v })} maxLength={160} placeholder="123 Bedford Ave, Brooklyn, NY 11211"
           />
         </div>
