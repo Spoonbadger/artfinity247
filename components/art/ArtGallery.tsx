@@ -2,7 +2,7 @@
 
 import { KeyboardEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { ROOM_SIZE_IN, type RoomFrame, type RoomSize } from "@/lib/rooms";
+import { FRAME_HEX, ROOM_SIZE_IN, printBox, type RoomFrame, type RoomSize } from "@/lib/rooms";
 import { photoScenesOn, photoSrc } from "@/lib/scenes/client";
 import { RoomScene } from "@/components/rooms/RoomScene";
 import ArtZoom from "@/components/art/ArtZoom";
@@ -78,8 +78,6 @@ export default function ArtGallery({
   const [seen, setSeen] = useState<Set<number>>(() => new Set([0]));
   const [idle, setIdle] = useState(false); // thumbnails of drawn rooms wait until the page has settled
   const [zoom, setZoom] = useState(false);
-  // View only: the painting slide with its white border and shadow ("Frame", the default) or bare. Never what gets bought.
-  const [bare, setBare] = useState(false);
   const alt = `${title} by ${artistName}`;
 
   const jump = useCallback((i: number, smooth: boolean) => {
@@ -156,6 +154,13 @@ export default function ArtGallery({
   const dims = aspect > 1.05 ? `${sb} × ${sa} in` : `${sa} × ${sb} in`;
   const slideName = (s: Slide) => (s.kind === "art" ? "The painting" : s.kind === "room" ? `${s.room.label}, ${dims}${frame ? `, ${frame} frame` : ""}` : `Close-up ${s.i + 1}`);
   const now = slides[cur] ?? slides[0];
+  // A new frame picked in the buy panel while a close-up is showing: go back to the painting to show it.
+  const lastFrame = useRef(frame);
+  useEffect(() => {
+    if (lastFrame.current === frame) return;
+    lastFrame.current = frame;
+    if (now.kind === "detail") go(0);
+  }, [frame, now.kind, go]);
   const thumbSrc = sized(imageUrl, 384);
 
   return (
@@ -180,6 +185,7 @@ export default function ArtGallery({
             >
               {s.kind === "art" && (
                 <div className="relative h-full w-full bg-[radial-gradient(ellipse_at_50%_0%,#f7f5f0_0%,#e9e6df_75%)]">
+                  {frame && !blurred && <FramedPrint src={sized(imageUrl, 1920)} alt={alt} aspect={aspect} size={size} frame={frame} onClick={() => setZoom(true)} />}
                   <Image
                     src={imageUrl}
                     alt={alt}
@@ -194,11 +200,10 @@ export default function ArtGallery({
                     }}
                     onClick={() => !blurred && setZoom(true)}
                     className={cn(
-                      "absolute inset-0 m-auto block h-auto max-h-[86%] w-auto max-w-[86%] motion-safe:transition-[border-width,box-shadow] motion-safe:duration-200",
-                      bare
-                        ? "border-0 shadow-[0_10px_28px_-14px_rgba(21,22,27,.4)]"
-                        : "border-[5px] border-white bg-white shadow-[0_18px_40px_-12px_rgba(21,22,27,.45),0_2px_6px_rgba(21,22,27,.12)] md:border-[9px]",
+                      "absolute inset-0 m-auto block h-auto max-h-[86%] w-auto max-w-[86%] border-[5px] border-white bg-white shadow-[0_18px_40px_-12px_rgba(21,22,27,.45),0_2px_6px_rgba(21,22,27,.12)] md:border-[9px]",
                       blurred ? "blur-xl" : "cursor-zoom-in",
+                      // A frame picked in the buy panel: the framed drawing above shows instead (the image stays for loading and the aspect).
+                      frame && !blurred && "invisible",
                     )}
                   />
                   {blurred && (
@@ -261,7 +266,13 @@ export default function ArtGallery({
           </p>
         )}
 
-        {now.kind === "art" && !blurred && <FrameToggle bare={bare} onChange={setBare} />}
+        {now.kind === "art" && frame && !blurred && (
+          <p className="pointer-events-none absolute bottom-2.5 left-2.5 sm:bottom-3 sm:left-3">
+            <span className="rounded-full bg-white/95 px-2.5 py-1 text-[13px] font-semibold text-ink shadow-[0_1px_3px_rgba(21,22,27,.2)]">
+              {FRAME_LABEL[frame]} frame · <span className="num">{dims}</span>
+            </span>
+          </p>
+        )}
 
         {now.kind !== "room" && !blurred && (
           <button
@@ -316,7 +327,7 @@ export default function ArtGallery({
                   )}
                   aria-hidden
                 >
-                  <Thumb s={s} idle={idle} thumbSrc={thumbSrc} slug={slug} imageUrl={imageUrl} aspect={aspect} size={size} frame={frame} blurred={blurred} bare={bare} />
+                  <Thumb s={s} idle={idle} thumbSrc={thumbSrc} slug={slug} imageUrl={imageUrl} aspect={aspect} size={size} frame={frame} blurred={blurred} />
                 </span>
               </button>
             );
@@ -329,11 +340,11 @@ export default function ArtGallery({
   );
 }
 
-function Thumb({ s, idle, thumbSrc, slug, imageUrl, aspect, size, frame, blurred, bare }: { s: Slide; idle: boolean; thumbSrc: string; slug: string; imageUrl: string; aspect: number; size: RoomSize; frame: RoomFrame | null; blurred: boolean; bare: boolean }) {
+function Thumb({ s, idle, thumbSrc, slug, imageUrl, aspect, size, frame, blurred }: { s: Slide; idle: boolean; thumbSrc: string; slug: string; imageUrl: string; aspect: number; size: RoomSize; frame: RoomFrame | null; blurred: boolean }) {
   if (s.kind === "art")
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={thumbSrc} alt="" className={cn("absolute inset-0 m-auto max-h-[80%] max-w-[80%] shadow-sm", !bare && "border-2 border-white", blurred && "blur-sm")} />
+      <img src={thumbSrc} alt="" className={cn("absolute inset-0 m-auto max-h-[80%] max-w-[80%] shadow-sm", blurred && "blur-sm")} style={{ border: `2px solid ${frame ? FRAME_HEX[frame] : "#fff"}` }} />
     );
   if (s.kind === "detail") return <CloseUp src={thumbSrc} d={s.d} aspect={aspect} />;
   if (s.room.kind === "photo" && photoScenesOn)
@@ -344,57 +355,55 @@ function Thumb({ s, idle, thumbSrc, slug, imageUrl, aspect, size, frame, blurred
   return idle ? <RoomScene scene={s.room.n} imageUrl={imageUrl} aspect={aspect} size={size} frame={frame} blur={blurred} className="h-full" /> : null;
 }
 
-const FRAME_VIEWS = [
-  { bare: false, label: "Frame" },
-  { bare: true, label: "No frame" },
-] as const;
+const FRAME_LABEL: Record<RoomFrame, string> = { black: "Black", white: "White", natural: "Natural wood" };
 
 /**
- * Frame / No frame for the painting slide: a two-option radio group (roving tabindex, arrow keys move and select,
- * Enter or Space picks the focused option). It only changes the preview, never the frame being bought.
+ * The print in the frame picked in the buy panel, on the painting slide. Same molding, mat and colours as the room
+ * previews (lib/rooms printBox and FRAME_HEX), so the close view and the rooms agree. Sized in inches by the viewBox.
  */
-function FrameToggle({ bare, onChange }: { bare: boolean; onChange: (bare: boolean) => void }) {
-  const refs = useRef<(HTMLButtonElement | null)[]>([]);
-  const onKey = (e: KeyboardEvent) => {
-    const i = bare ? 1 : 0;
-    const k = { ArrowRight: i + 1, ArrowDown: i + 1, ArrowLeft: i - 1, ArrowUp: i - 1, Home: 0, End: 1 }[e.key];
-    if (k === undefined) return;
-    e.preventDefault();
-    e.stopPropagation();
-    const next = (k + 2) % 2;
-    onChange(FRAME_VIEWS[next].bare);
-    refs.current[next]?.focus();
-  };
+function FramedPrint({ src, alt, aspect, size, frame, onClick }: { src: string; alt: string; aspect: number; size: RoomSize; frame: RoomFrame; onClick: () => void }) {
+  const { W, H, w, h, mold: mo, mat } = printBox(size, aspect, frame);
+  const fc = FRAME_HEX[frame];
+  const hi = frame === "black" ? 0.14 : 0.3;
+  const ix = mo + mat;
+  const iy = mo + mat;
+  const bv = 0.16;
+  const pts = (p: [number, number][]) => p.map(([x, y]) => `${x},${y}`).join(" ");
   return (
-    <div
-      role="radiogroup"
-      aria-label="Preview"
-      onKeyDown={onKey}
-      className="absolute bottom-2.5 left-2.5 flex rounded-full border-[1.5px] border-edge-strong bg-white/95 p-0.5 shadow-[0_1px_3px_rgba(21,22,27,.2)] sm:bottom-3 sm:left-3"
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      preserveAspectRatio="xMidYMid meet"
+      role="img"
+      aria-label={`${alt}, in a ${FRAME_LABEL[frame].toLowerCase()} frame`}
+      onClick={onClick}
+      className="absolute inset-[7%] h-[86%] w-[86%] cursor-zoom-in drop-shadow-[0_16px_22px_rgba(29,21,14,.38)]"
     >
-      {FRAME_VIEWS.map((v, i) => {
-        const on = v.bare === bare;
-        return (
-          <button
-            key={v.label}
-            ref={(el) => {
-              refs.current[i] = el;
-            }}
-            type="button"
-            role="radio"
-            aria-checked={on}
-            tabIndex={on ? 0 : -1}
-            onClick={() => onChange(v.bare)}
-            className={cn(
-              "min-h-[40px] whitespace-nowrap rounded-full px-3.5 text-[14px] font-semibold transition-colors focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-scan",
-              on ? "bg-ink text-white" : "text-ink hover:bg-wall",
-            )}
-          >
-            {v.label}
-          </button>
-        );
-      })}
-    </div>
+      <defs>
+        <linearGradient id="fp-grain" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#fff" stopOpacity=".12" />
+          <stop offset=".5" stopColor="#000" stopOpacity=".06" />
+          <stop offset="1" stopColor="#fff" stopOpacity=".08" />
+        </linearGradient>
+        <linearGradient id="fp-lip" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#1d150e" stopOpacity=".28" />
+          <stop offset="1" stopColor="#1d150e" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <rect width={W} height={H} fill={fc} />
+      {frame === "natural" && <rect width={W} height={H} fill="url(#fp-grain)" />}
+      {/* molding: light on the top and left, shade on the bottom and right */}
+      <polygon points={pts([[0, 0], [W, 0], [W - mo, mo], [mo, mo]])} fill="#fff" fillOpacity={hi} />
+      <polygon points={pts([[0, H], [W, H], [W - mo, H - mo], [mo, H - mo]])} fill="#000" fillOpacity={0.2} />
+      <polygon points={pts([[0, 0], [mo, mo], [mo, H - mo], [0, H]])} fill="#fff" fillOpacity={hi * 0.7} />
+      <polygon points={pts([[W, 0], [W - mo, mo], [W - mo, H - mo], [W, H]])} fill="#000" fillOpacity={0.12} />
+      <rect width={W} height={H} fill="none" stroke="#000" strokeOpacity={frame === "white" ? 0.16 : 0.22} strokeWidth={0.06} />
+      {/* mat, shaded under the frame lip, with a bevel-cut opening */}
+      <rect x={mo} y={mo} width={W - 2 * mo} height={H - 2 * mo} fill="#f6f3ec" />
+      <rect x={mo} y={mo} width={W - 2 * mo} height={Math.min(0.55, (H - 2 * mo) * 0.08)} fill="url(#fp-lip)" />
+      <rect x={ix - bv} y={iy - bv} width={w + 2 * bv} height={h + 2 * bv} fill="#fffdf7" />
+      <rect x={ix - bv} y={iy - bv} width={w + 2 * bv} height={0.07} fill="#000" fillOpacity={0.16} />
+      <image href={src} x={ix} y={iy} width={w} height={h} preserveAspectRatio="xMidYMid slice" />
+    </svg>
   );
 }
 
