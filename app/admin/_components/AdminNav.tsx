@@ -30,6 +30,7 @@ const SECTIONS: { title: string; links: NavLink[] }[] = [
   ] },
   { title: "Money", links: [
     { href: "/admin/payouts", label: "Payouts", dab: "var(--af-earned)" },
+    { href: "/admin/milestones", label: "Milestones", dab: "#e3b23c" },
   ] },
   { title: "Content", links: [
     { href: "/admin/artworks", label: "Artworks", dab: "#7c8cff" },
