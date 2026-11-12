@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type PointerEvent } from "react";
 import { ChevronDown, Coins, LayoutTemplate, Palette, QrCode, UserRound, Users, type LucideIcon } from "lucide-react";
 import { BrushStroke } from "@/components/af/Brush";
 import { cn } from "@/lib/utils";
@@ -133,16 +133,29 @@ function useFolders(path: string) {
     if (current) setOpenId(current);
   }, [current]);
 
+  // When a folder last opened from hover: a click soon after (the usual "hover, then click") keeps it open.
+  const hoveredAt = useRef<{ id: string; at: number } | null>(null);
   const toggle = useCallback((id: string) => {
+    const h = hoveredAt.current;
+    hoveredAt.current = null;
     setOpenId((o) => {
-      const next = o === id ? null : id;
+      const next = o === id && !(h?.id === id && Date.now() - h.at < 1500) ? null : id;
       writeStore(next);
       return next;
     });
   }, []);
+  /** Hovering a folder's heading (mouse only) opens it, closing the others. */
+  const hoverOpen = useCallback((id: string) => {
+    setOpenId((o) => {
+      if (o === id) return o;
+      hoveredAt.current = { id, at: Date.now() };
+      writeStore(id);
+      return id;
+    });
+  }, []);
 
   const open: Record<string, boolean> = openId ? { [openId]: true } : {};
-  return { open, toggle, animate };
+  return { open, toggle, hoverOpen, animate };
 }
 
 export function NavItem({ href, label, dab, active, size = "md", onNavigate, badge }: StudioNavItem & { active: boolean; size?: "md" | "lg"; onNavigate?: () => void; badge?: number }) {
@@ -165,15 +178,37 @@ export function NavItem({ href, label, dab, active, size = "md", onNavigate, bad
   );
 }
 
-function Folder({ section, path, open, onToggle, size, animate, onNavigate, badges }: { section: StudioSection; path: string; open: boolean; onToggle: () => void; size: "md" | "lg"; animate: boolean; onNavigate?: () => void; badges?: Record<string, number> }) {
+/** Wait this long on a heading before it opens, so sweeping the mouse past doesn't open everything on the way. */
+const HOVER_MS = 180;
+/** After a hover opens a folder the menu shifts; ignore hovers until the slide has settled. */
+const SETTLE_MS = 350;
+let lastHoverOpen = 0;
+
+function Folder({ section, path, open, onToggle, onHoverOpen, size, animate, onNavigate, badges }: { section: StudioSection; path: string; open: boolean; onToggle: () => void; onHoverOpen?: () => void; size: "md" | "lg"; animate: boolean; onNavigate?: () => void; badges?: Record<string, number> }) {
   const panelId = useId();
+  const timer = useRef<number | null>(null);
+  const clear = () => { if (timer.current) { window.clearTimeout(timer.current); timer.current = null; } };
+  useEffect(() => clear, []);
+  const enter = (e: PointerEvent) => {
+    if (e.pointerType !== "mouse" || open || !onHoverOpen) return;
+    clear();
+    timer.current = window.setTimeout(() => {
+      timer.current = null;
+      if (Date.now() - lastHoverOpen < SETTLE_MS) return;
+      lastHoverOpen = Date.now();
+      onHoverOpen();
+    }, HOVER_MS);
+  };
   const Icon = section.icon;
   const hasActive = section.items.some((n) => isActive(path, n.href));
   return (
     <div>
       <button
         type="button"
-        onClick={onToggle}
+        onClick={() => { clear(); onToggle(); }}
+        onPointerEnter={enter}
+        onPointerMove={(e) => { if (!timer.current) enter(e); }}
+        onPointerLeave={clear}
         aria-expanded={open}
         aria-controls={panelId}
         className={cn(
@@ -220,13 +255,13 @@ function Folder({ section, path, open, onToggle, size, animate, onNavigate, badg
 /** Home on top, then the folders. Shared by the desktop sidebar and the phone menu. */
 /** `badges`: a count beside a link, by href (e.g. cards waiting in the print queue). */
 export default function StudioNav({ path, size = "md", onNavigate, className, badges }: { path: string; size?: "md" | "lg"; onNavigate?: () => void; className?: string; badges?: Record<string, number> }) {
-  const { open, toggle, animate } = useFolders(path);
+  const { open, toggle, hoverOpen, animate } = useFolders(path);
   return (
     <nav aria-label="Studio" className={cn("grid content-start gap-1", className)}>
       <NavItem {...STUDIO_HOME} size={size} active={isActive(path, STUDIO_HOME.href)} onNavigate={onNavigate} />
       <span aria-hidden="true" className="mx-3 my-1.5 border-t border-dashed border-line" />
       {STUDIO_SECTIONS.map((s) => (
-        <Folder key={s.id} section={s} path={path} open={!!open[s.id]} onToggle={() => toggle(s.id)} size={size} animate={animate} onNavigate={onNavigate} badges={badges} />
+        <Folder key={s.id} section={s} path={path} open={!!open[s.id]} onToggle={() => toggle(s.id)} onHoverOpen={() => hoverOpen(s.id)} size={size} animate={animate} onNavigate={onNavigate} badges={badges} />
       ))}
     </nav>
   );
