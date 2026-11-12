@@ -26,11 +26,17 @@ export const metadata: Metadata = { title: { absolute: "Artfinity · Every wall 
 
 async function getHeroArt() {
   const select = { artistId: true, slug: true, title: true, imageUrl: true, sensitive: true, markupSmall: true, markupMedium: true, artist: { select: { name: true, artist_name: true, slug: true } } } as const;
-  // The best-selling safe-for-work piece; falls back to the newest one.
-  const top =
-    (await prisma.artwork.findFirst({ where: { ...PUBLIC_ART, status: "APPROVED", sensitive: { isEmpty: true } }, orderBy: [{ OrderItem: { _count: "desc" } }, { createdAt: "asc" }], select })) ??
-    (await prisma.artwork.findFirst({ where: PUBLIC_ART, orderBy: { createdAt: "desc" }, select }));
-  return top;
+  const live = { ...PUBLIC_ART, status: "APPROVED" as const, sensitive: { isEmpty: true } };
+  // A different live, safe-for-work piece on each visit. Picked on the server, so the first paint already has it
+  // (no swap, no layout shift) and it costs one count plus one indexed row.
+  const n = await prisma.artwork.count({ where: live });
+  const random = n ? await prisma.artwork.findFirst({ where: live, orderBy: { id: "asc" }, skip: Math.floor(Math.random() * n), select }) : null;
+  // Fallback, as before: the best-selling safe piece, then the newest public one.
+  return (
+    random ??
+    (await prisma.artwork.findFirst({ where: live, orderBy: [{ OrderItem: { _count: "desc" } }, { createdAt: "asc" }], select })) ??
+    (await prisma.artwork.findFirst({ where: PUBLIC_ART, orderBy: { createdAt: "desc" }, select }))
+  );
 }
 
 const SAFE = { ...PUBLIC_ART, sensitive: { isEmpty: true } };
