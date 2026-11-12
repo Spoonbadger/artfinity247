@@ -82,7 +82,7 @@ export default async function PrintQueuePage({ searchParams }: { searchParams: {
   const last = orders.find((o) => o.status !== "canceled") || orders[0];
   const address: ShipAddress = last
     ? { name: last.shipName, line1: last.shipLine1, line2: last.shipLine2 || "", city: last.shipCity, state: last.shipState, zip: last.shipZip }
-    : { name: displayName(artist), line1: "", line2: "", city: artist.city || "", state: "NY", zip: "" }; // Artfinity artists are in NYC
+    : { name: displayName(artist), line1: "", line2: "", city: artist.city || "", state: (await prisma.artist.findUnique({ where: { id: artist.id }, select: { state: true } }))?.state || "", zip: "" }; // the artist's own state; they can change it
 
   const history: QueueOrder[] = orders.map((o) => ({
     id: o.id, status: o.status, createdAt: o.createdAt.toISOString(), paidAt: o.paidAt?.toISOString() ?? null, shippedAt: o.shippedAt?.toISOString() ?? null, deliveredAt: o.deliveredAt?.toISOString() ?? null,
