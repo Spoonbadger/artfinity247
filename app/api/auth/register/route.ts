@@ -16,7 +16,7 @@ import { Prisma } from "@prisma/client";
 import { hash } from "bcryptjs";
 import { signAuthToken } from "@/lib/auth";
 import { sendVerifyEmail } from "@/lib/emailVerify";
-import slugify from "slugify";
+import { citySlugFor } from "@/lib/citySlug";
 import { prisma } from "@/lib/prisma";
 import { resend } from "@/lib/resend";
 import NewArtistNotificationEmail from "@/emails/NewArtistNotificationEmail";
@@ -88,7 +88,7 @@ export async function POST(req: Request) {
         password: oauth ? null : await hash(password, 10),
         phone: "",
         city,
-        citySlug: slugify(city, { lower: true, strict: true }),
+        citySlug: citySlugFor(city, state),
         state,
         country: body.country ? String(body.country).slice(0, 60) : null,
         slug: handle,

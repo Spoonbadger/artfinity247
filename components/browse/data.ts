@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { basePrices } from "@/lib/artwork_price";
 import { priceBand, PRINT_SIZE_KEYS, type ArtSort, type ArtistSort } from "./sortOptions";
+import { cityLabel, placeName } from "@/lib/citySlug";
 
 /** Public listings never show rejected work. */
 // Only approved work is public (matches the public APIs and the scan page).
@@ -21,7 +22,7 @@ export type CardArt = {
 };
 
 export const displayName = (a: { artist_name?: string | null; name: string }) => a.artist_name?.trim() || a.name;
-export const cityLabel = (a: { city?: string | null; state?: string | null }) => [a.city, a.state].filter(Boolean).join(", ");
+export { cityLabel };
 
 export function toCard(a: ArtRow): CardArt {
   return {
@@ -76,7 +77,7 @@ export async function getArt(opts: { city?: string; q?: string; sort?: ArtSort; 
   return { art: rows.map(toCard), total, pages: Math.max(1, Math.ceil(total / perPage)) };
 }
 
-/** Cities that have public art, biggest first. */
+/** Places (NYC neighborhoods and cities elsewhere) that have public art, biggest first. `name` adds the state outside New York ("Austin, TX"). */
 export async function getCities() {
   const rows = await prisma.artist.findMany({
     where: { citySlug: { not: "" }, artworks: { some: PUBLIC_ART } },
@@ -86,7 +87,7 @@ export async function getCities() {
   for (const r of rows) {
     const e = map.get(r.citySlug);
     if (e) { e.artists++; e.pieces += r._count.artworks; }
-    else map.set(r.citySlug, { slug: r.citySlug, name: r.city, label: cityLabel(r), artists: 1, pieces: r._count.artworks });
+    else map.set(r.citySlug, { slug: r.citySlug, name: placeName(r), label: cityLabel(r), artists: 1, pieces: r._count.artworks });
   }
   return Array.from(map.values()).sort((a, b) => b.pieces - a.pieces || a.name.localeCompare(b.name));
 }

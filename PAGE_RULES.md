@@ -40,7 +40,9 @@ that matters, and filling up with long, samey copy. When in doubt: less, and the
     leverage, robust, delve, vibrant, tapestry, game-changer, "whether you're X or Y"
   - patterns: three-part lists for rhythm, "not just X, it's Y", rhetorical questions, exclamation marks, sign-off
     sentences that restate the section
-- Voice: a friendly NYC gallery owner texting an artist. Warm, direct, a little dry. NYC only, never another city.
+- Voice: a friendly NYC gallery owner texting an artist. Warm, direct, a little dry.
+- Artfinity is open to artists and buyers anywhere in the US. Don't write copy that says or implies NYC only.
+  Name NYC only where it's a fact: prints are made in NYC, painting scans happen in NYC, partner venues are in NYC for now.
 - Help text sits next to the thing it explains, one line, or behind a "How this works" link to the help center.
 
 ## 6. Consistent layout

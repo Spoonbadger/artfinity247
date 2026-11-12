@@ -1,5 +1,6 @@
-// Artfinity is New York City only: the five boroughs and the neighborhoods where artists hang their codes.
-// `name` is what an artist would type as their city (it becomes their citySlug); `borough` groups it.
+// NYC boroughs and neighborhoods where artists hang their codes. Artfinity is open to artists anywhere in the US;
+// this list is only NYC names, not a limit on who can join. Nothing imports it at the moment.
+// `name` is what an artist would type as their city (citySlugFor(name, "NY") is its citySlug); `borough` groups it.
 const CITY_OPTIONS = [
   { name: "Brooklyn", borough: "Brooklyn", state: "NY" },
   { name: "Williamsburg", borough: "Brooklyn", state: "NY" },

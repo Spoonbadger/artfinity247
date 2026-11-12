@@ -52,7 +52,7 @@ async function getPopular() {
   return rows.map((a) => ({ slug: a.slug!, handle: a.artist.slug, title: a.title, imageUrl: a.imageUrl, artist: displayName(a.artist), priceFrom: basePrices.small + (a.markupSmall ?? 0) }));
 }
 
-/** The biggest few neighborhoods (artist cities), each with two real pieces. */
+/** The biggest few places (NYC neighborhoods, cities elsewhere), each with two real pieces. */
 async function getCityCards() {
   const cities = (await getCities()).slice(0, 4);
   return Promise.all(
@@ -95,7 +95,7 @@ export default async function Home({ searchParams }: { searchParams?: Record<str
             <p className="mt-5 text-[19px] leading-snug text-ink-2 sm:text-[21px]">Hang a code by your painting. Sell prints to anyone who scans.</p>
             <ClaimHandle className="mt-7" />
             <p className="t-small mt-3 pl-4">
-              Just here for art? <Link href="/art" className="font-semibold text-ink underline-offset-2 hover:underline">Browse prints by NYC artists <ArrowRight className="inline h-3.5 w-3.5" aria-hidden="true" /></Link>
+              Just here for art? <Link href="/art" className="font-semibold text-ink underline-offset-2 hover:underline">Browse prints by independent artists <ArrowRight className="inline h-3.5 w-3.5" aria-hidden="true" /></Link>
             </p>
           </div>
           {heroArt && <HeroStory art={heroArt} perPrint={perPrint} price={price} monthBefore={monthBefore} />}
@@ -134,10 +134,10 @@ export default async function Home({ searchParams }: { searchParams?: Record<str
         <section className="mx-auto max-w-[1240px] px-4 pt-16 sm:px-6 md:pt-24" aria-labelledby="cities-h">
           <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
             <h2 id="cities-h" className="t-feature relative inline-block">
-              <span className="relative z-10">Browse by neighborhood</span>
+              <span className="relative z-10">Browse by neighborhood and city</span>
               <BrushWipe className="absolute -bottom-1 -left-2 z-0 h-[0.34em] w-[calc(100%+16px)]" color="var(--af-scan)" style={{ opacity: 0.35 }} />
             </h2>
-            <Link href="/scenes" className="btn btn-ghost">All neighborhoods</Link>
+            <Link href="/scenes" className="btn btn-ghost">See all</Link>
           </div>
           <CityRow cities={cities} />
         </section>

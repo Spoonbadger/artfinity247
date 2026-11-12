@@ -62,6 +62,7 @@ async function main() {
 
   let img = 1; const r = rng(2026); const arts = [];
   for (const a of ARTISTS) {
+    // Every seed artist is in New York State, where citySlug is just the slugified city (lib/citySlug.ts adds the state elsewhere).
     const artist = await prisma.artist.create({ data: {
       emailVerifiedAt: new Date(), name: a.artist_name, first_name: a.first, last_name: a.last, artist_name: a.artist_name,
       email: `${a.first.toLowerCase()}@artfinity.local`, password: hash, phone: "", city: a.city, citySlug: slugify(a.city), state: a.state, country: "US",

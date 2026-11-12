@@ -29,8 +29,9 @@ export const TEAM: TeamMember[] = [
 ];
 
 // TODO(Thomas): the story in your words. Two or three short paragraphs.
+// TODO(thomas): confirm story wording for nationwide
 export const STORY: string[] = [
-  "New York painters hang work in cafés, markets and shows. People stop and look. Buying it used to mean tracking down the artist and waiting on email.",
+  "Painters hang work in cafés, markets and shows. People stop and look. Buying it used to mean tracking down the artist and waiting on email.",
   "Artfinity puts a code next to the painting. Scan it and pick a size. We print and ship it, and most of the profit goes to the artist.",
 ];
 

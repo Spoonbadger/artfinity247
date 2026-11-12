@@ -52,7 +52,7 @@ export default async function ArtPage({ searchParams }: { searchParams: Record<s
       {cities.length > 1 && (
         <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
-            <CityChip href={build({})} active={!city} label="All of NYC" />
+            <CityChip href={build({})} active={!city} label="Everywhere" />
             {cities.map((c) => <CityChip key={c.slug} href={build({ city: c.slug })} active={city === c.slug} label={c.name} count={c.pieces} />)}
           </div>
         </div>
