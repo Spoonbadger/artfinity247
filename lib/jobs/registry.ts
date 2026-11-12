@@ -4,6 +4,7 @@
 import { isDigestHour, sendWeeklyDigests } from "@/lib/digest";
 import { JOB as RETRY_JOB, retryWorkOrders } from "@/lib/jobs/workOrderRetries";
 import { JOB as STUCK_JOB, sweepStuckOrders } from "@/lib/jobs/stuckOrders";
+import { JOB as PRODIGI_JOB, runProdigiSync } from "@/lib/prodigiSync";
 import { runBookkeeping, runPayouts } from "@/lib/jobs/monthly";
 import type { JobContext, JobResult } from "@/lib/jobs/run";
 import { sweepAdminAlerts } from "@/lib/alertSweep";
@@ -35,6 +36,14 @@ export const JOBS: JobDef[] = [
     schedule: "7 * * * *",
     when: "Every hour at :07",
     run: retryWorkOrders,
+  },
+  {
+    name: PRODIGI_JOB,
+    label: "Prodigi order sync",
+    description: "Checks every Prodigi order that hasn't shipped and applies its status: tracking marks it shipped and emails the buyer, cancellations and problems raise alerts. Catches any callback Prodigi missed. Skipped unless PRINTER_PROVIDER=prodigi.",
+    schedule: "37 * * * *",
+    when: "Every hour at :37",
+    run: runProdigiSync,
   },
   {
     name: STUCK_JOB,

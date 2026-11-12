@@ -2,6 +2,7 @@
 // service, and never returns a secret's value (only whether it's set, and for Stripe whether it's a test or live key).
 import { TAX_ENABLED } from "@/lib/tax";
 import { activeProvider } from "@/lib/printer";
+import { parseSkuMap, prodigiEnv } from "@/lib/prodigi";
 import { cloudinaryOn } from "@/lib/storage";
 import { activeProvider as imageCheckProvider, configuredProvider as imageCheckWanted, providerProblem as imageCheckProblem } from "@/lib/moderation/providers";
 
@@ -9,6 +10,21 @@ export type Health = "green" | "amber" | "red";
 export type Integration = { id: string; name: string; status: Health; state: string; fix: string | null };
 
 const set = (k: string) => !!process.env[k]?.trim();
+
+/** Prodigi (lib/prodigi.ts): key, SKU map, callback token, sandbox vs live. Never returns a value. */
+function prodigiHealth(prod: boolean): Integration {
+  const name = "Print lab (Prodigi)";
+  if (!set("PRODIGI_API_KEY")) return { id: "printer", name, status: "red", state: "No PRODIGI_API_KEY: work orders fail", fix: "Set PRODIGI_API_KEY from the Prodigi dashboard (DEPLOY.md, Prodigi)." };
+  const skus = parseSkuMap(process.env.PRODIGI_SKUS);
+  const missingSkus = (["S", "M", "L", "XL"] as const).filter((sz) => !skus.map[sz]).length;
+  if (skus.error || missingSkus) return { id: "printer", name, status: "red", state: skus.error || `${missingSkus} print sizes have no SKU`, fix: "Set PRODIGI_SKUS to the confirmed SKUs (DEPLOY.md, Prodigi). Orders with a missing SKU fail and show in /admin/orders." };
+  const framesMissing = (["S", "M", "L", "XL"] as const).flatMap((sz) => ["black", "white", "natural"].map((c) => `${sz}:${c}`)).filter((k) => !skus.map[k]).length;
+  if (framesMissing) return { id: "printer", name, status: "amber", state: `${framesMissing} of 12 framed options have no SKU`, fix: "Framed orders with a missing SKU fail. Add them to PRODIGI_SKUS (DEPLOY.md, Prodigi)." };
+  const env = prodigiEnv();
+  if (prod && env === "sandbox") return { id: "printer", name, status: "amber", state: "Sandbox: nothing gets printed", fix: "Set PRODIGI_ENV=live with the live API key once sandbox orders look right." };
+  if (!set("PRODIGI_WEBHOOK_TOKEN")) return { id: "printer", name, status: "amber", state: `${env}, no callback token (hourly sync only)`, fix: "Set PRODIGI_WEBHOOK_TOKEN so Prodigi can report status right away." };
+  return { id: "printer", name, status: "green", state: `Connected (${env})`, fix: null };
+}
 
 export function integrationsHealth(): Integration[] {
   const prod = process.env.NODE_ENV === "production";
@@ -46,6 +62,8 @@ export function integrationsHealth(): Integration[] {
     ? { id: "printer", name: "Print lab", status: "red", state: "Off: work orders aren't sent", fix: "Set PRINTER_EMAIL to the lab's order inbox (or PRINTER_PROVIDER), or send each order by hand." }
     : provider.id === "email" && !printerEmail
       ? { id: "printer", name: "Print lab", status: missing, state: "Email provider, no PRINTER_EMAIL (logged only)", fix: "Set PRINTER_EMAIL to the lab's order inbox." }
+      : provider.id === "prodigi"
+        ? prodigiHealth(prod)
       : { id: "printer", name: "Print lab", status: "green", state: `Provider: ${provider.id}${printerEmail ? ", PRINTER_EMAIL set" : ""}`, fix: null });
 
   out.push(set("RESEND_API_KEY")

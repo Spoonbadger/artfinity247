@@ -6,11 +6,15 @@
 //   "email"  Email the lab a work order at PRINTER_EMAIL (the default when PRINTER_EMAIL is set). Without
 //            PRINTER_EMAIL outside production, the work order is printed to the server log instead (dev).
 //   "none"   Do nothing: tick "Sent to printer" by hand, like before (the default in production without PRINTER_EMAIL).
-//   "api"    Reserved for a lab with an API (Prodigi, Gelato, ...). Not built yet: see apiProvider below.
+//   "prodigi" Create the order in Prodigi's Print API (prodigi.com, v4). Also chosen by PRINTER_PROVIDER=api with
+//            PRINTER_API=prodigi. Needs PRODIGI_API_KEY and PRODIGI_SKUS (lib/prodigi.ts, DEPLOY.md "Prodigi").
+//            Prodigi then calls /api/webhook/prodigi as the order moves (printing, shipped with tracking, complete,
+//            cancelled) and the hourly prodigi-sync job polls open orders in case a callback is missed (lib/prodigiSync.ts).
+//   "api"    Without PRINTER_API=prodigi: reserved for another lab with an API. Fails loudly (apiProvider below).
 //
 // State lives on the order (no extra columns):
 //   printerSentAt  when the last work order went out automatically
-//   printerRef     "<provider>:<ref>" after a send, "sending:<ms>" while one is in flight, "failed: <reason>" after a failure
+//   printerRef     "<provider>:<ref>" after a send ("prodigi:ord_123" for Prodigi), "sending:<ms>" while one is in flight, "failed: <reason>" after a failure
 //   sentToPrinter  set true on a successful send (the same flag the manual toggle sets)
 //
 // The lab can't log in, so the email carries signed links that expire after LINK_DAYS: the original file per print
@@ -26,6 +30,7 @@ import { normalizeSize } from "@/lib/sales";
 import { SIZE_LABEL, sizeInches, type PrintSize } from "@/components/art/pricing";
 import { alertKey, raiseAlert, resolveAlerts } from "@/lib/alerts";
 import { workOrderAlert } from "@/lib/alertBuilders";
+import { buildOrderPayload, createOrder, parseSkuMap, shippingMethod, type SizeCode } from "@/lib/prodigi";
 
 const SECRET = process.env.SCAN_SIGNING_SECRET || process.env.JWT_SECRET || "";
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com").replace(/\/$/, "");
@@ -72,6 +77,10 @@ export type WorkOrderItem = {
   title: string;
   artist: string;
   size: string;
+  /** S, M, L or XL (lib/sales normalizeSize), for labs that need a product code. */
+  sizeCode: SizeCode;
+  /** Frame colour (black, white, natural), or null for a print without a frame. */
+  frameColor: string | null;
   inches: string;
   paper: string;
   frame: string;
@@ -89,6 +98,9 @@ export type WorkOrder = {
   bulk: boolean;
   shipName: string;
   shipAddress: string;
+  /** The order's own name and address (null when missing), for labs that need them as fields. */
+  rawShipName: string | null;
+  rawShipAddress: string | null;
   email: string;
   items: WorkOrderItem[];
   parcelNotes: { artist: string; body: string }[];
@@ -124,9 +136,12 @@ export async function buildWorkOrder(orderId: string): Promise<WorkOrder | null>
     bulk: o.kind === "bulk",
     shipName: o.shippingName || "(no name)",
     shipAddress: o.shippingAddress || "(no address)",
+    rawShipName: o.shippingName,
+    rawShipAddress: o.shippingAddress,
     email: o.email,
     items: o.items.map((it) => {
-      const size = SIZE_KEY[normalizeSize(it.size)] ?? "medium";
+      const sizeCode = normalizeSize(it.size);
+      const size = SIZE_KEY[sizeCode] ?? "medium";
       const qty = Math.max(1, it.quantity ?? 1);
       const editionSize = it.artwork?.editionSize ?? null;
       return {
@@ -134,6 +149,8 @@ export async function buildWorkOrder(orderId: string): Promise<WorkOrder | null>
         title: it.artwork?.title || it.title || "Untitled",
         artist: it.artwork?.artist.artist_name || it.artwork?.artist.name || it.artistName || "",
         size: SIZE_LABEL[size],
+        sizeCode,
+        frameColor: it.frameChosen ? (it.frameColor || "black").toLowerCase() : null,
         inches: sizeInches(size),
         paper: PAPER,
         frame: it.frameChosen ? `${(it.frameColor || "black").replace(/^./, (c) => c.toUpperCase())} frame` : "No frame (print only)",
@@ -191,12 +208,12 @@ export function workOrderText(wo: WorkOrder): { subject: string; text: string } 
 
 // ---------- Providers ----------
 
-type ProviderId = "email" | "none" | "api";
+type ProviderId = "email" | "none" | "api" | "prodigi";
 
 interface PrinterProvider {
   id: ProviderId;
-  /** Sends the work order. Returns the lab's reference (or ours). Throws on failure. */
-  send(wo: WorkOrder): Promise<string>;
+  /** Sends the work order. Returns the lab's reference (or ours). Throws on failure. `force`: an admin's resend. */
+  send(wo: WorkOrder, opts?: { force?: boolean }): Promise<string>;
 }
 
 const emailProvider: PrinterProvider = {
@@ -216,18 +233,52 @@ const emailProvider: PrinterProvider = {
   },
 };
 
+/** The URL Prodigi calls on order changes, or null without PRODIGI_WEBHOOK_TOKEN (then only the poller updates it). */
+export function prodigiCallbackUrl(): string | null {
+  const token = process.env.PRODIGI_WEBHOOK_TOKEN?.trim();
+  return token ? `${APP_URL}/api/webhook/prodigi?token=${encodeURIComponent(token)}` : null;
+}
+
 /**
- * FUTURE: a print lab with an API (e.g. Prodigi or Gelato). To add one:
- *   1. Map each WorkOrderItem to the lab's SKU (size + paper + frame) and pass `originalUrl` as the asset URL
- *      (it stays valid for LINK_DAYS; most labs fetch the file within minutes).
- *   2. POST the order with the ship-to, return the lab's order id (stored as printerRef "api:<id>").
- *   3. Optionally add a webhook route for the lab's "shipped" event that saves tracking like /api/orders/[id]/status.
- * Until then PRINTER_PROVIDER=api fails loudly so nobody thinks orders are going out.
+ * Prodigi (lib/prodigi.ts). The idempotency key is our order id, so a retry after a send that reached Prodigi but
+ * wasn't saved here gets the same Prodigi order back instead of a second print. An admin's "Resend work order" is a
+ * deliberate second print, so it gets a fresh key.
  */
+const prodigiProvider: PrinterProvider = {
+  id: "prodigi",
+  async send(wo, opts) {
+    const { map, error } = parseSkuMap(process.env.PRODIGI_SKUS);
+    if (error) throw new Error(`${error} See DEPLOY.md, Prodigi.`);
+    const callbackUrl = prodigiCallbackUrl();
+    if (!callbackUrl) console.warn("[printer:prodigi] PRODIGI_WEBHOOK_TOKEN isn't set: no callback URL, status comes from the hourly prodigi-sync job only");
+    const payload = buildOrderPayload(
+      {
+        orderId: wo.orderId,
+        number: wo.number,
+        shipName: wo.rawShipName,
+        shipAddress: wo.rawShipAddress,
+        reprintOf: wo.reprintOf,
+        items: wo.items.map((i) => ({ id: i.id, title: i.title, size: i.sizeCode, frame: i.frameColor, quantity: i.quantity, assetUrl: i.originalUrl })),
+      },
+      {
+        skus: map,
+        shippingMethod: shippingMethod(),
+        callbackUrl,
+        idempotencyKey: opts?.force ? `${wo.orderId}-r${Date.now()}` : wo.orderId,
+        packingSlipUrl: (process.env.PRODIGI_PACKING_SLIP || "").trim().toLowerCase() === "on" ? wo.slipUrl : null,
+      },
+    );
+    const r = await createOrder(payload);
+    if (r.outcome && r.outcome !== "Created") console.log(`[printer:prodigi] order #${wo.number}: ${r.outcome} (${r.id})`);
+    return r.id;
+  },
+};
+
+/** PRINTER_PROVIDER=api without PRINTER_API=prodigi: no other API lab is built, so it fails loudly. */
 const apiProvider: PrinterProvider = {
   id: "api",
   async send() {
-    throw new Error("PRINTER_PROVIDER=api isn't built yet. Use PRINTER_PROVIDER=email.");
+    throw new Error("PRINTER_PROVIDER=api needs PRINTER_API=prodigi (the only API lab built). Or use PRINTER_PROVIDER=email.");
   },
 };
 
@@ -237,8 +288,12 @@ export function activeProvider(): PrinterProvider | null {
   const id = raw || (process.env.PRINTER_EMAIL || process.env.NODE_ENV !== "production" ? "email" : "none");
   if (id === "none") return null;
   if (id === "email") return emailProvider;
+  if (id === "prodigi" || (id === "api" && (process.env.PRINTER_API || "").trim().toLowerCase() === "prodigi")) return prodigiProvider;
   return apiProvider;
 }
+
+/** True when work orders go to Prodigi (the webhook, poller and admin page use it). */
+export const usingProdigi = () => activeProvider()?.id === "prodigi";
 
 export const printerAuto = () => activeProvider() !== null;
 
@@ -294,10 +349,10 @@ export async function sendWorkOrder(orderId: string, opts: { force?: boolean } =
       return { status: "skipped", reason: "Not a paid order" };
     }
     try {
-      const ref = await provider.send(wo);
+      const ref = await provider.send(wo, { force: opts.force });
       await prisma.order.update({ where: { id: orderId }, data: { printerSentAt: new Date(), printerRef: `${provider.id}:${ref}`.slice(0, 190), sentToPrinter: true } });
       console.log(`[printer] work order #${wo.number} sent (${provider.id}:${ref})`);
-      await resolveAlerts([alertKey.workOrderFailed(orderId), alertKey.orderStuck(orderId)]);
+      await resolveAlerts([alertKey.workOrderFailed(orderId), alertKey.orderStuck(orderId), alertKey.printLabCancelled(orderId), alertKey.printLabProblem(orderId)]);
       return { status: "sent", ref };
     } catch (err) {
       const error = await markFailed(orderId, err);
