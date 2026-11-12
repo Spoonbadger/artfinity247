@@ -44,7 +44,7 @@ export default async function ArtPage({ searchParams }: { searchParams: Record<s
       <PageHead
         eyebrow={cityName ? `Art from ${cityName}` : "Prints, made to order"}
         title="Browse art"
-        sub={<><span className="num">{total}</span> {total === 1 ? "piece" : "pieces"}{q ? <> matching “{q}”</> : null}. Printed to order in NYC, free US shipping.</>}
+        sub={<><span className="num">{total}</span> {total === 1 ? "piece" : "pieces"}{q ? <> matching “{q}”</> : null}. Printed to order, free US shipping.</>}
       >
         <ArtFilters q={q} filters artists={artists.map((a) => ({ slug: a.slug, name: a.name }))} />
       </PageHead>
