@@ -12,6 +12,7 @@ import { DUPLICATE_PREFIX } from "@/lib/imageHash";
 import { draftNewsletterForUpload } from "@/lib/newsletterAuto";
 import { alertKey, raiseAlert, resolveAlerts } from "@/lib/alerts";
 import { duplicateAlert, moderationAlert } from "@/lib/alertBuilders";
+import { AUTO_APPROVE_AFTER } from "@/lib/trust/artwork";
 
 /**
  * Admin alert for a new upload that waits for review: a possible duplicate, a new artist's first pieces, or a piece
@@ -32,8 +33,11 @@ export function resolveArtworkAlerts(artworkIds: string[]) {
   return resolveAlerts(artworkIds.flatMap((id) => [alertKey.duplicate(id), alertKey.moderation(id)]));
 }
 
-/** New artworks go live right away only for verified artists or ones with 3+ approved pieces. */
-export const AUTO_APPROVE_AFTER = 3;
+/**
+ * Today's rule, used when auto-approval (lib/trust) is off or has no image check provider: new artworks go live
+ * right away only for verified artists, admins, or artists with 3+ approved pieces.
+ */
+export { AUTO_APPROVE_AFTER };
 
 export async function initialArtworkStatus(artistId: string): Promise<"APPROVED" | "PENDING"> {
   const artist = await prisma.artist.findUnique({

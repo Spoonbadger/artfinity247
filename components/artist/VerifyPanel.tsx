@@ -24,7 +24,10 @@ const STATUS_COPY: Record<VerificationStatus, { label: string; dab: string }> = 
   REJECTED: { label: "Not approved", dab: "var(--af-coral)" },
 };
 
-export default function VerifyPanel({ initial, name, slug, skipsReview = false }: { initial: State; name: string; slug: string; /** Still in the first-pieces review (lib/artworkLive.ts): verifying skips it. */ skipsReview?: boolean }) {
+/** Auto-verify is on (lib/trust): the code to put on their site, the account age needed, and whether Instagram sign-in can prove a handle. */
+export type AutoVerify = { code: string; minDays: number; instagram: boolean } | null;
+
+export default function VerifyPanel({ initial, name, slug, skipsReview = false, auto = null }: { initial: State; name: string; slug: string; /** Their uploads still wait for a person (lib/trust): verifying skips it. */ skipsReview?: boolean; auto?: AutoVerify }) {
   const router = useRouter();
   const [s, setS] = useState(initial);
   const [editing, setEditing] = useState(initial.status === "NONE" || initial.status === "REJECTED");
@@ -35,6 +38,7 @@ export default function VerifyPanel({ initial, name, slug, skipsReview = false }
   const [note, setNote] = useState(initial.evidence.note ?? "");
   const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const igRef = useRef<HTMLInputElement>(null);
@@ -75,12 +79,29 @@ export default function VerifyPanel({ initial, name, slug, skipsReview = false }
       if (!res.ok) throw new Error(j.error || "Couldn't send. Try again.");
       setS({ status: j.verification, verifiedAt: j.verifiedAt, requestedAt: j.verificationRequestedAt, evidence: j.verificationEvidence, note: null });
       setEditing(false);
-      toast.success("Sent. We'll email you when it's checked.");
+      toast.success(j.verification === "VERIFIED" ? "You're verified. The seal is on your page." : "Sent. We'll email you when it's checked.");
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't send. Try again.");
     } finally {
       setSending(false);
+    }
+  }
+
+  async function recheck() {
+    setChecking(true);
+    try {
+      const res = await fetch("/api/studio/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recheck: true }) });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.error || "Couldn't check. Try again.");
+      setS((prev) => ({ ...prev, status: j.verification, verifiedAt: j.verifiedAt }));
+      if (j.verification === "VERIFIED") toast.success("You're verified. The seal is on your page.");
+      else toast("Still waiting for a person. We'll email you.");
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't check. Try again.");
+    } finally {
+      setChecking(false);
     }
   }
 
@@ -114,9 +135,16 @@ export default function VerifyPanel({ initial, name, slug, skipsReview = false }
               <p className="t-muted">A person on our team will check it. Usually within two days.</p>
               <EvidenceSummary e={s.evidence} />
               {!editing && (
-                <button type="button" className="btn btn-ghost btn-sm w-fit" onClick={() => setEditing(true)}>
-                  Update evidence
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  {auto && s.evidence.website && (
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={recheck} disabled={checking}>
+                      {checking ? "Checking" : "Added the code? Check again"}
+                    </button>
+                  )}
+                  <button type="button" className="btn btn-ghost btn-sm w-fit" onClick={() => setEditing(true)}>
+                    Update evidence
+                  </button>
+                </div>
               )}
             </>
           )}
@@ -149,6 +177,7 @@ export default function VerifyPanel({ initial, name, slug, skipsReview = false }
               <HandleInput platform="website" name="website" label="Website" value={website} onChange={setWebsite} placeholder="yourname.com" />
             </div>
             <p className="t-small -mt-2">One is enough. It should show the name <b className="text-ink">{name}</b>.</p>
+            {auto && <ProofCode code={auto.code} slug={slug} instagram={auto.instagram} />}
 
             <div className="grid gap-2">
               <span id="photo-l" className="text-[15px] font-bold">Photo of you with your work, or your studio</span>
@@ -232,16 +261,45 @@ export default function VerifyPanel({ initial, name, slug, skipsReview = false }
         </div>
         <h2 className="eyebrow">What we check</h2>
         <ul className="grid gap-3 text-[15px]">
-          {["Your name matches your link", "The work on your page is yours", "A real photo, not a stock one"].map((t) => (
+          {(auto
+            ? ["Your code or Artfinity link is on your site", "A real photo of you, not AI or stock", "Email confirmed and a piece live", ...(auto.minDays > 0 ? [`Account at least ${auto.minDays} day${auto.minDays === 1 ? "" : "s"} old`] : [])]
+            : ["Your name matches your link", "The work on your page is yours", "A real photo, not a stock one"]
+          ).map((t) => (
             <li key={t} className="flex items-center gap-3">
               <Check className="h-4 w-4 shrink-0 text-earned" aria-hidden="true" />
               {t}
             </li>
           ))}
         </ul>
+        {auto && s.status !== "VERIFIED" && <p className="t-small">All of it checks out? You&apos;re verified right away. If not, a person looks.</p>}
         {skipsReview && s.status !== "VERIFIED" && <p className="t-small">Once you&apos;re verified, new pieces go live right away, without our review.</p>}
         <p className="t-small border-t border-line pt-3">Medals come from sales. The seal comes from us.</p>
       </aside>
+    </div>
+  );
+}
+
+/** The code (or Artfinity link) that proves the website is theirs. */
+function ProofCode({ code, slug, instagram }: { code: string; slug: string; instagram: boolean }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // the code is on screen to copy by hand
+    }
+  };
+  return (
+    <div className="box-inset grid gap-2 rounded-xl p-3 text-[14px]" data-testid="verify-code">
+      <span className="font-semibold">To prove the website is yours, add this code anywhere on it:</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <code className="num min-w-0 break-all rounded-lg border border-edge bg-white px-2.5 py-1.5 text-[14px]">{code}</code>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={copy}>{copied ? "Copied" : "Copy"}</button>
+      </div>
+      <span className="t-small">Or link to theartfinity.com/@{slug}. You can take it down once you&apos;re verified.</span>
+      {instagram && <span className="t-small">Instagram only? Connect it in My page, under Sign-in methods.</span>}
     </div>
   );
 }

@@ -1,5 +1,8 @@
 // POST /api/studio/verify  { instagram?, website?, photo, note? }
-// The signed-in artist asks Artfinity to verify them. Sets verification to PENDING for an admin to review.
+// The signed-in artist asks Artfinity to verify them. Sets verification to PENDING, then the automatic checks run
+// (lib/trust/verification.server.ts): when they all pass, the artist is verified right away; otherwise the request
+// waits for an admin, with the reasons in /admin/verification. The artist only hears the generic status.
+// POST { recheck: true }  Runs the checks again on the pending request (after adding the code to their site).
 // GET returns the current status.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
@@ -8,6 +11,8 @@ import { resend } from "@/lib/resend";
 import { parseEvidence, readEvidence } from "@/components/artist/verification";
 import { raiseAlert } from "@/lib/alerts";
 import { verificationAlert } from "@/lib/alertBuilders";
+import { rateLimit } from "@/lib/rateLimit";
+import { runAutoVerification } from "@/lib/trust/verification.server";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +31,17 @@ export async function POST(req: Request) {
   if (!user?.id) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
 
   const body = await req.json().catch(() => null);
+  // Each check fetches their site and may use a paid photo check: a few tries per 10 minutes.
+  if (!rateLimit(`verify:${user.id}`, 6, 10 * 60_000)) return NextResponse.json({ error: "That's a lot of tries. Wait a few minutes.", code: "rate_limited" }, { status: 429 });
+
+  if (body?.recheck === true) {
+    const cur = await prisma.artist.findUnique({ where: { id: user.id }, select: { verification: true } });
+    if (cur?.verification !== "PENDING") return NextResponse.json({ error: "There's no request to check.", code: "not_pending" }, { status: 409 });
+    await runAutoVerification(user.id);
+    const a = await prisma.artist.findUnique({ where: { id: user.id }, select });
+    return NextResponse.json({ ...a, verificationEvidence: readEvidence(a?.verificationEvidence) });
+  }
+
   const parsed = parseEvidence(body);
   if (parsed.error !== undefined) return NextResponse.json({ error: parsed.error, code: "missing_evidence" }, { status: 400 });
 
@@ -44,7 +60,14 @@ export async function POST(req: Request) {
     select,
   });
 
-  // Let the team know there's a request to review (logged locally).
+  // The automatic checks: verified right away when everything passes.
+  const auto = await runAutoVerification(user.id);
+  if (auto?.verified) {
+    const done = await prisma.artist.findUnique({ where: { id: user.id }, select });
+    return NextResponse.json({ ...done, verificationEvidence: readEvidence(done?.verificationEvidence) });
+  }
+
+  // Held: let the team know there's a request to review (logged locally).
   const name = current.artist_name || current.name;
   if (updated.verificationRequestedAt) await raiseAlert(verificationAlert(user.id, name, updated.verificationRequestedAt));
   await resend.emails

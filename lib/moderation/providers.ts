@@ -2,17 +2,24 @@
 //   sightengine  SIGHTENGINE_USER + SIGHTENGINE_SECRET (optional SIGHTENGINE_MODELS)
 //   google       GOOGLE_VISION_API_KEY (Cloud Vision SafeSearch + labels)
 //   aws          AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY (+ AWS_REGION) for Rekognition DetectModerationLabels
+//   local        NSFWJS on our own server ($0): nudity and explicit content only (./local.ts, dynamic import)
 //   mock         dev only, never in production: scores from hints in the title/filename (nsfw, gore, nude...)
 //   none         the default: no check
-// Every provider is a plain fetch (no SDKs) and returns the same ModerationResult. The normalizers are exported so
+// A second check for new artists and verification photos: IMAGE_MODERATION_EXTRA=sightengine (or mock in dev). See
+// extraProvider below and MODERATION_SETUP.md ("Tiered checks").
+// Every remote provider is a plain fetch (no SDKs) and returns the same ModerationResult. The normalizers are exported so
 // lib/moderation/moderation.test.mjs can check them against sample responses shaped like each provider's docs.
 //
 // Pure server code with no "@/" imports and only type imports, so scripts/moderate-backfill.mjs and the unit check
-// can load it straight from Node (type stripping).
+// can load it straight from Node (type stripping). The local model is loaded only when the local provider runs.
 import crypto from "node:crypto";
-import type { Env, ModerationResult, ProviderId, ProviderInput } from "./types";
+import fs from "node:fs";
+import path from "node:path";
+import type { Coverage, Env, ModerationResult, ProviderId, ProviderInput, Purpose } from "./types";
 
-export const PROVIDERS: ProviderId[] = ["sightengine", "google", "aws", "mock", "none"];
+export const PROVIDERS: ProviderId[] = ["sightengine", "google", "aws", "local", "mock", "none"];
+/** Sightengine's free plan: operations a month (each model on each image is one operation). */
+export const SIGHTENGINE_FREE_OPS = 2000;
 export const DEFAULT_TIMEOUT_MS = 6000;
 
 const isProd = (env: Env) => env.NODE_ENV === "production" || env.VERCEL_ENV === "production";
@@ -41,7 +48,48 @@ export function providerProblem(p: ProviderId, env: Env = process.env): string |
   if (p === "google" && !has("GOOGLE_VISION_API_KEY")) return "GOOGLE_VISION_API_KEY is not set";
   if (p === "aws" && !(has("AWS_ACCESS_KEY_ID") && has("AWS_SECRET_ACCESS_KEY"))) return "AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are not set";
   if (p === "mock" && !mockAllowed(env)) return "the mock provider never runs in production";
+  if (p === "local" && !localModelFiles()) return "the local model files are missing (node scripts/extract-nsfw-model.mjs)";
   return null;
+}
+
+const LOCAL_DIR = () => path.join(process.cwd(), "data", "models", "nsfwjs", "mobilenet_v2");
+const localModelFiles = () => fs.existsSync(path.join(LOCAL_DIR(), "model.json")) && fs.existsSync(path.join(LOCAL_DIR(), "group1-shard1of1.bin"));
+
+/**
+ * The second check for new artists' uploads and for verification photos (IMAGE_MODERATION_EXTRA). Only Sightengine
+ * (or the mock, in dev), only with its keys set, and never the same as the main provider. "none" otherwise.
+ */
+export function extraProvider(env: Env = process.env): ProviderId {
+  const v = (env.IMAGE_MODERATION_EXTRA || "").trim().toLowerCase();
+  if (v !== "sightengine" && v !== "mock") return "none";
+  if (v === activeProvider(env)) return "none";
+  return providerProblem(v, env) ? "none" : v;
+}
+
+const models = (list: string) => list.split(",").map((m) => m.trim()).filter(Boolean);
+
+/**
+ * What a call can tell, for the auto-approval checks (lib/trust):
+ *   nudity  every provider          gore   Sightengine (gore model), Google, AWS     hate   Sightengine (offensive), AWS
+ *   ai      Sightengine "genai"     faces  Sightengine "faces" (verification only)   web    no provider yet (mock only)
+ * The local provider covers nudity and explicit content only.
+ */
+export function providerCoverage(p: ProviderId, purpose: Purpose = "artwork", env: Env = process.env): Coverage[] {
+  if (p === "mock") return purpose === "verification" ? ["faces", "ai", "web"] : ["nudity", "gore", "hate", "ai", "web"];
+  if (p === "local") return purpose === "verification" ? [] : ["nudity"];
+  if (p === "google") return purpose === "verification" ? [] : ["nudity", "gore"];
+  if (p === "aws") return purpose === "verification" ? [] : ["nudity", "gore", "hate"];
+  if (p === "sightengine") {
+    const m = models(sightengineModelsFor(purpose, env));
+    const out: Coverage[] = [];
+    if (m.some((x) => x.startsWith("nudity"))) out.push("nudity");
+    if (m.some((x) => x.startsWith("gore"))) out.push("gore");
+    if (m.some((x) => x.startsWith("offensive"))) out.push("hate");
+    if (m.includes("genai")) out.push("ai");
+    if (m.includes("faces")) out.push("faces");
+    return out;
+  }
+  return [];
 }
 
 export function timeoutMs(env: Env = process.env): number {
@@ -57,6 +105,7 @@ export async function runProvider(p: ProviderId, input: ProviderInput, env: Env 
     case "sightengine": return sightengine(input, env);
     case "google": return google(input, env);
     case "aws": return aws(input, env);
+    case "local": return local(input);
     case "mock": return mock(input);
     default: throw new Error("No image check provider is set");
   }
@@ -74,13 +123,17 @@ const round = (n: number) => Math.round(n * 1000) / 1000;
 type J = Record<string, any>;
 const obj = (x: unknown): J => (x && typeof x === "object" && !Array.isArray(x) ? (x as J) : {});
 
-function result(provider: ProviderId, s: Omit<ModerationResult, "provider" | "raw">, raw: unknown): ModerationResult {
+function result(provider: ProviderId, s: Omit<ModerationResult, "provider" | "raw" | "ops">, raw: unknown): ModerationResult {
   const out: ModerationResult = {
     nudity: round(s.nudity), sexual: round(s.sexual), violence: round(s.violence), gore: round(s.gore), hate: round(s.hate),
     provider, raw,
   };
   if (s.isPhotoOfPerson !== undefined) out.isPhotoOfPerson = round(s.isPhotoOfPerson);
   if (s.hasText !== undefined) out.hasText = round(s.hasText);
+  if (s.aiGenerated !== undefined) out.aiGenerated = round(s.aiGenerated);
+  if (s.faces !== undefined) out.faces = Math.max(0, Math.round(s.faces));
+  if (s.webFullMatches !== undefined) out.webFullMatches = Math.max(0, Math.round(s.webFullMatches));
+  if (s.unchecked?.length) out.unchecked = s.unchecked;
   return out;
 }
 
@@ -95,21 +148,35 @@ async function readJson(res: Response, who: string): Promise<J> {
 // ---------------------------------------------------------------------------------------------------------------
 // Sightengine: POST https://api.sightengine.com/1.0/check.json (multipart: media, models, api_user, api_secret).
 // Each model is one "operation" on the bill. Default models: nudity-2.1, gore-2.0, offensive-2.0, violence, text
-// and type (photo vs illustration). Add "faces" to SIGHTENGINE_MODELS for the photo-of-a-person score.
+// type (photo vs illustration) and genai (AI-generated). Add "faces" to SIGHTENGINE_MODELS for the
+// photo-of-a-person score on artworks. Verification photos (purpose "verification") send only "faces": one operation.
 
-export const SIGHTENGINE_DEFAULT_MODELS = "nudity-2.1,gore-2.0,offensive-2.0,violence,text,type";
+export const SIGHTENGINE_DEFAULT_MODELS = "nudity-2.1,gore-2.0,offensive-2.0,violence,text,type,genai";
+/** A verification photo: is a person in it, and is it AI-made. Two operations. */
+export const SIGHTENGINE_VERIFY_MODELS = "faces,genai";
+/** The second check for new artists when the main provider is local: what local can't tell. Three operations. */
+export const SIGHTENGINE_EXTRA_MODELS = "gore-2.0,offensive-2.0,genai";
+export function sightengineModelsFor(purpose: Purpose, env: Env = process.env): string {
+  if (purpose === "verification") return SIGHTENGINE_VERIFY_MODELS;
+  if (purpose === "extra") return (env.SIGHTENGINE_EXTRA_MODELS || SIGHTENGINE_EXTRA_MODELS).trim();
+  return (env.SIGHTENGINE_MODELS || SIGHTENGINE_DEFAULT_MODELS).trim();
+}
 
 async function sightengine(input: ProviderInput, env: Env): Promise<ModerationResult> {
   const fd = new FormData();
   fd.append("media", new Blob([new Uint8Array(input.image)], { type: input.mime }), "preview.jpg");
-  fd.append("models", (env.SIGHTENGINE_MODELS || SIGHTENGINE_DEFAULT_MODELS).trim());
+  const list = sightengineModelsFor(input.purpose ?? "artwork", env);
+  fd.append("models", list);
   fd.append("api_user", env.SIGHTENGINE_USER!.trim());
   fd.append("api_secret", env.SIGHTENGINE_SECRET!.trim());
   const res = await fetch("https://api.sightengine.com/1.0/check.json", { method: "POST", body: fd, signal: input.signal });
-  return normalizeSightengine(await readJson(res, "Sightengine"));
+  const out = normalizeSightengine(await readJson(res, "Sightengine"), list);
+  out.ops ??= models(list).length;
+  return out;
 }
 
-export function normalizeSightengine(json: J): ModerationResult {
+/** `sent`: the models asked for, so scores for models that weren't asked for are marked unchecked, not 0. */
+export function normalizeSightengine(json: J, sent?: string): ModerationResult {
   if (json?.status !== "success") throw new Error(`Sightengine: ${json?.error?.message || json?.status || "no answer"}`);
   const n = obj(json.nudity);
   const gore = obj(json.gore);
@@ -129,9 +196,24 @@ export function normalizeSightengine(json: J): ModerationResult {
   // A face in a photograph (not an illustration) = a photo of a person. Without the faces model: unknown.
   const isPhotoOfPerson = Array.isArray(json.faces) ? (json.faces.length ? ("photo" in type ? clamp(type.photo) : 0.5) : 0) : undefined;
   const hasText = "has_artificial" in text ? max(text.has_artificial) : undefined;
-  return result("sightengine", {
-    nudity, sexual, gore: goreProb, violence: max(vio.prob), hate, isPhotoOfPerson, hasText,
+  // genai model: type.ai_generated, 0-1. // Unverified against live docs (name and field from Sightengine's model list).
+  const aiGenerated = "ai_generated" in type ? clamp(type.ai_generated) : undefined;
+  const faces = Array.isArray(json.faces) ? json.faces.length : undefined;
+  const out = result("sightengine", {
+    nudity, sexual, gore: goreProb, violence: max(vio.prob), hate, isPhotoOfPerson, hasText, aiGenerated, faces,
   }, json);
+  if (sent) {
+    const m = models(sent);
+    const unchecked: ModerationResult["unchecked"] = [];
+    if (!m.some((x) => x.startsWith("nudity"))) unchecked.push("nudity", "sexual");
+    if (!m.some((x) => x.startsWith("gore"))) unchecked.push("gore");
+    if (!m.includes("violence")) unchecked.push("violence");
+    if (!m.some((x) => x.startsWith("offensive"))) unchecked.push("hate");
+    if (unchecked.length) out.unchecked = unchecked;
+  }
+  const ops = Number(json?.request?.operations);
+  if (Number.isFinite(ops) && ops > 0) out.ops = ops;
+  return out;
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -245,18 +327,61 @@ export function normalizeAws(json: J): ModerationResult {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
+// Local: NSFWJS (MobileNetV2) on our own server, via ./local.ts. Five classes that sum to 1:
+//   Drawing (illustration, painting)   Neutral (ordinary photo)   Sexy (suggestive, bare skin, no explicit display)
+//   Porn (explicit photo)              Hentai (explicit drawing)
+// Mapped onto the shared scores so ./policy.ts works unchanged:
+//   sexual = Porn + Hentai                          held at THRESHOLDS.review.sexual (0.85)
+//   nudity = 1.5 x (Sexy + Porn + Hentai), max 1    labeled "Nudity" at THRESHOLDS.label.nudity (0.5), i.e. a raw
+//                                                   share of 0.33. NSFWJS splits a painted nude between Drawing and
+//                                                   Sexy/Hentai, so the share is scaled up (LOCAL_NUDITY_GAIN) to label it.
+// Because the five add up to 1, explicit can only reach 0.85 when Drawing + Neutral + Sexy is 0.15 or less: a painting
+// that reads as Drawing (painted nudes do) is labeled, never held. Sexy never counts as explicit, so suggestive and
+// nude work is labeled at most. Gore, violence and hate stay unchecked (hidden on the card, not scored as 0); there's
+// no photo-of-a-person, text, AI or web score either. On 25 real paintings (public/uploads/arts) none was held or
+// labeled; classical nudes read mostly Neutral, so local under-labels nudity rather than over-holding it.
+
+export const LOCAL_UNCHECKED: NonNullable<ModerationResult["unchecked"]> = ["gore", "violence", "hate"];
+/** See the mapping above. Raise it to label more, lower it to label less. */
+export const LOCAL_NUDITY_GAIN = 1.5;
+
+export function normalizeLocal(predictions: { className: string; probability: number }[]): ModerationResult {
+  if (!Array.isArray(predictions) || !predictions.length) throw new Error("local: no prediction");
+  const p: Record<string, number> = { Drawing: 0, Hentai: 0, Neutral: 0, Porn: 0, Sexy: 0 };
+  for (const x of predictions) if (x && x.className in p) p[x.className] = clamp(x.probability);
+  const sexual = Math.min(1, p.Porn + p.Hentai);
+  const nudity = Math.min(1, LOCAL_NUDITY_GAIN * (p.Sexy + p.Porn + p.Hentai));
+  return result("local", { nudity, sexual, violence: 0, gore: 0, hate: 0, unchecked: LOCAL_UNCHECKED }, { classes: Object.fromEntries(Object.entries(p).map(([k, v]) => [k, round(v)])) });
+}
+
+async function local(input: ProviderInput): Promise<ModerationResult> {
+  // Loaded only here, so the unit checks and the other providers never pull in TensorFlow.
+  const mod = await import("./local");
+  const { predictions, ms, loadMs } = await mod.classifyLocal(input.image, input.signal);
+  const out = normalizeLocal(predictions);
+  out.raw = { ...(out.raw as object), ms, loadMs };
+  return out;
+}
+
+// ---------------------------------------------------------------------------------------------------------------
 // Mock (dev only): scores from words in the title/filename, so every policy branch can be tried end to end.
 //   nsfw / explicit / porn → explicit (review)        gore / bloody → gore (review)     hate / nazi → hate (review)
 //   nude / nudity → nudity (labeled)                  violent / violence → violence (labeled)
 //   selfie → photo of a person (review)               meme / screenshot → overlaid text (review)
 //   timeout → never answers (the caller's timeout)    error → the provider fails
+//   aiart / midjourney → AI-generated (held when auto-approval is on)
+//   stock / stolen → found elsewhere online (only the mock fills this; no real provider does yet)
+//   Verification photos: one face, unless the name has noface / landscape
 
-export const MOCK_HINTS = ["nsfw", "explicit", "porn", "gore", "bloody", "hate", "nazi", "nude", "nudity", "violent", "violence", "selfie", "meme", "screenshot", "timeout", "error"];
+export const MOCK_HINTS = ["nsfw", "explicit", "porn", "gore", "bloody", "hate", "nazi", "nude", "nudity", "violent", "violence", "selfie", "meme", "screenshot", "timeout", "error", "aiart", "midjourney", "stock", "stolen", "noface", "landscape"];
 
-export function mockScores(hint: string): Omit<ModerationResult, "provider" | "raw"> {
+export function mockScores(hint: string, purpose: ProviderInput["purpose"] = "artwork"): Omit<ModerationResult, "provider" | "raw"> {
   const h = hint.toLowerCase();
   const has = (...words: string[]) => words.some((w) => new RegExp(`(^|[^a-z])${w}`, "i").test(h));
   return {
+    aiGenerated: has("aiart", "midjourney") ? 0.97 : 0.02,
+    webFullMatches: has("stock", "stolen") ? 2 : 0,
+    ...(purpose === "verification" ? { faces: has("noface", "landscape") ? 0 : 1 } : {}),
     nudity: has("nsfw", "explicit", "porn") ? 0.97 : has("nude", "nudity") ? 0.72 : 0.01,
     sexual: has("nsfw", "explicit", "porn") ? 0.94 : has("nude", "nudity") ? 0.08 : 0.01,
     violence: has("gore", "bloody") ? 0.9 : has("violent", "violence") ? 0.66 : 0.01,
@@ -277,6 +402,6 @@ async function mock(input: ProviderInput): Promise<ModerationResult> {
   }
   if (/(^|[^a-z])error/.test(h)) throw new Error("mock: provider error (filename hint)");
   await new Promise((r) => setTimeout(r, 120));
-  const s = mockScores(input.hint);
+  const s = mockScores(input.hint, input.purpose);
   return result("mock", s, { mock: true, hint: input.hint.slice(0, 120), bytes: input.image.length, scores: s });
 }

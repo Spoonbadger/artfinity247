@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getTrust } from "@/lib/artistTrust";
+import { verificationDecisionsFor } from "@/lib/trust/verification.server";
 import { readEvidence } from "@/components/artist/verification";
 import { cn } from "@/lib/utils";
 import { adminOrRedirect } from "../_components/gate";
@@ -37,7 +38,7 @@ export default async function VerificationPage({ searchParams }: { searchParams:
       artworks: { where: { status: "APPROVED" }, orderBy: { createdAt: "desc" }, take: 4, select: { id: true, title: true, imageUrl: true } },
     },
   });
-  const trust = await getTrust(rows.map((r) => r.id));
+  const [trust, decisions] = await Promise.all([getTrust(rows.map((r) => r.id)), verificationDecisionsFor(rows.map((r) => r.id))]);
 
   const items: VerRow[] = rows.map((r) => ({
     id: r.id,
@@ -55,6 +56,10 @@ export default async function VerificationPage({ searchParams }: { searchParams:
     printsSold: trust.get(r.id)?.printsSold ?? 0,
     medal: trust.get(r.id)?.earned ?? null,
     art: r.artworks,
+    auto: (() => {
+      const d = decisions.get(r.id);
+      return d ? { decision: d.decision, reasons: d.reasons, passed: d.passed, at: d.at } : null;
+    })(),
   }));
 
   return (

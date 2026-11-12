@@ -7,12 +7,15 @@ import { PageHead } from "../_components/ui";
 import ModerationList, { type ModArtwork } from "../_components/ModerationList";
 import { duplicateOfId, hamming } from "@/lib/imageHash";
 import { autoChecksFor } from "@/lib/moderation";
+import { autoDecisionsFor, openSpotChecks } from "@/lib/trust/artwork.server";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Moderation" };
 
 const TABS = [
   { id: "queue", label: "To review" },
+  // Auto-approved pieces picked at random (lib/trust, 1 in N): live, waiting for a quick look.
+  { id: "spot", label: "Spot check" },
   { id: "sensitive", label: "Sensitive" },
   { id: "rejected", label: "Rejected" },
   { id: "live", label: "Live" },
@@ -23,16 +26,18 @@ export default async function ModerationPage({ searchParams }: { searchParams: {
   await adminOrRedirect("/admin/moderation");
   const tab: TabId = (TABS.find((t) => t.id === searchParams.tab)?.id ?? "queue") as TabId;
 
+  const spotIds = await openSpotChecks();
   const [queue, sensitive, rejected, live] = await Promise.all([
     prisma.artwork.count({ where: { OR: [{ status: "PENDING" }, { status: "APPROVED", flaggedReason: { not: null } }] } }),
     prisma.artwork.count({ where: { NOT: { sensitive: { isEmpty: true } } } }),
     prisma.artwork.count({ where: { status: "REJECTED" } }),
     prisma.artwork.count({ where: { status: "APPROVED" } }),
   ]);
-  const counts: Record<TabId, number> = { queue, sensitive, rejected, live };
+  const counts: Record<TabId, number> = { queue, spot: spotIds.length, sensitive, rejected, live };
 
   const where =
     tab === "queue" ? { OR: [{ status: "PENDING" as const }, { status: "APPROVED" as const, flaggedReason: { not: null } }] }
+    : tab === "spot" ? { id: { in: spotIds } }
     : tab === "sensitive" ? { NOT: { sensitive: { isEmpty: true } } }
     : tab === "rejected" ? { status: "REJECTED" as const }
     : { status: "APPROVED" as const };
@@ -61,7 +66,7 @@ export default async function ModerationPage({ searchParams }: { searchParams: {
     : [];
   const originalById = new Map(originals.map((o) => [o.id, o]));
   // Automatic image check results (lib/moderation), for the scores on each card.
-  const checks = await autoChecksFor(rows.map((r) => r.id));
+  const [checks, decisions] = await Promise.all([autoChecksFor(rows.map((r) => r.id)), autoDecisionsFor(rows.map((r) => r.id))]);
   const since = (d: Date) => d.toISOString();
 
   const artworks: ModArtwork[] = rows.map((r) => ({
@@ -80,6 +85,7 @@ export default async function ModerationPage({ searchParams }: { searchParams: {
     artistSince: since(r.artist.createdAt),
     artistVerified: r.artist.verification === "VERIFIED",
     autoCheck: checks.get(r.id) ?? null,
+    autoDecision: decisions.get(r.id) ?? null,
     duplicateOf: (() => {
       const id = duplicateOfId(r.flaggedReason);
       if (!id) return null;

@@ -25,6 +25,7 @@ import { DUPLICATE_PREFIX } from "@/lib/imageHash";
 import { openAlerts } from "@/lib/alerts";
 import { integrationsHealth } from "@/lib/integrations";
 import { PAINTING_SCANS } from "@/lib/features";
+import { trustSettings } from "@/lib/trust/settings";
 
 const DAY = 86_400_000;
 const SIZES: PrintSize[] = ["S", "M", "L", "XL"];
@@ -191,6 +192,7 @@ export async function loadMilestones(now = new Date()) {
   const COVERED = new Set(["report", "reprint", "duplicate", "moderation", "review_flagged", "verification", "work_order_failed", "order_stuck", "order_undelivered", "payout_late", "code_print_order", "scan_booking"]);
   const otherAlerts = alerts.filter((a) => a.severity === "urgent" || !COVERED.has(a.kind)).length;
   const health = new Map(integrationsHealth().map((h) => [h.id, h]));
+  const trust = await trustSettings();
   const imageCheckOn = health.get("image-check")?.status === "green";
   const instagramOn = health.get("instagram")?.status === "green";
   const trackingOn = set("SHIPPO_API_KEY") || set("EASYPOST_API_KEY");
@@ -204,9 +206,9 @@ export async function loadMilestones(now = new Date()) {
     { key: "late", label: "Late payouts", n: lateArtists, href: "/admin/payouts", can: "setting", how: "Same fix: Stripe-connected artists are paid on the 5th by the cron." },
     { key: "stripe", label: "Owed money, Stripe not finished", n: stripeUnfinished, href: "/admin/artists?stripe=pending&balance=1", can: "person", how: "The artist finishes Stripe. We can only nudge." },
     { key: "shipped", label: "Shipped 10+ days, not delivered", n: staleShipped, href: "/admin/orders?month=all&filter=shipped", ...(trackingOn ? { can: "auto" as const, how: "Tracking updates come in by themselves. Left here: a real delay." } : { can: "key" as const, how: "Set SHIPPO_API_KEY or EASYPOST_API_KEY: deliveries mark themselves." }) },
-    { key: "mod", label: "Artworks to review", n: pendingArt, href: "/admin/moderation", ...(imageCheckOn ? { can: "person" as const, how: "The image check is on. What it holds needs a person." } : { can: "key" as const, how: "Partly: IMAGE_MODERATION_PROVIDER pre-screens uploads. Held ones need a person." }) },
+    { key: "mod", label: "Artworks to review", n: pendingArt, href: "/admin/moderation", ...(trust.autoApprove && trust.providerReady ? { can: "auto" as const, how: "Runs by itself with the image check. Questionable ones still come to you." } : imageCheckOn ? { can: "setting" as const, how: "Turn on Settings → Auto-approval. Until then new artists' first pieces come to you." } : { can: "key" as const, how: "Set IMAGE_MODERATION_PROVIDER (local is free) and turn on Auto-approval. Questionable ones still come to you." }) },
     { key: "dupes", label: "Possible duplicates", n: duplicates, href: "/admin/moderation", can: "person", how: "Someone has to decide whose image it is." },
-    { key: "verify", label: "Verification requests", n: toVerify, href: "/admin/verification", can: "person", how: "Checking the work is really theirs takes a person." },
+    { key: "verify", label: "Verification requests", n: toVerify, href: "/admin/verification", ...(trust.autoVerify && trust.verifyReady ? { can: "auto" as const, how: "Runs by itself when every check passes. Questionable ones still come to you." } : trust.verifyReady ? { can: "setting" as const, how: "Turn on auto-verify in Settings → Auto-approval." } : { can: "key" as const, how: "Needs a photo check that sees faces (IMAGE_MODERATION_EXTRA=sightengine). Until then, a person." }) },
     { key: "reports", label: "Reports (DMCA, AI, content)", n: openReports, href: "/admin/reports", can: "person", how: "Legal calls. Keep a person on these." },
     { key: "reviews", label: "Reviews held", n: flaggedReviews, href: "/admin/reviews", can: "person", how: "Held reviews are judgment calls." },
     { key: "reprints", label: "Reprint requests", n: reprints, href: "/admin/reprints", can: "code", how: "Needs a person to judge the photo. Auto-approve rules: a code change." },

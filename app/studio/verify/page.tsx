@@ -4,7 +4,10 @@ import HelpLink from "@/components/help/HelpLink";
 import VerifyPanel from "@/components/artist/VerifyPanel";
 import { readEvidence } from "@/components/artist/verification";
 import { prisma } from "@/lib/prisma";
-import { AUTO_APPROVE_AFTER } from "@/lib/artworkLive";
+import { uploadReviewNote } from "@/lib/trust/artwork.server";
+import { trustSettings } from "@/lib/trust/settings";
+import { verifyCode } from "@/lib/trust/verifyCode";
+import { instagramSignInAvailable } from "@/lib/trust/instagram";
 import { requireArtist, displayName } from "../_lib/data";
 
 export const dynamic = "force-dynamic";
@@ -19,14 +22,14 @@ export default async function VerifyPage() {
     }),
     prisma.artwork.count({ where: { artistId: artist.id, status: { not: "REJECTED" } } }),
   ]);
-  // lib/artworkLive.ts initialStatus: pieces are reviewed until an artist has this many (any status), unless verified.
-  const allArt = await prisma.artwork.count({ where: { artistId: artist.id } });
+  // Whether their uploads wait for a person today (lib/trust): verifying skips that.
+  const [review, trust] = await Promise.all([uploadReviewNote(artist.id), trustSettings()]);
   const status = v?.verification ?? "NONE";
 
   return (
     <StudioPage
       title={status === "VERIFIED" ? "Verified" : "Get verified"}
-      sub="A blue seal by your name tells buyers a person checked you."
+      sub="A blue seal by your name tells buyers we checked you."
       actions={<HelpLink href="/help/trust/verification-badge" label="How verification works" />}
     >
       {liveArt === 0 && status !== "VERIFIED" && (
@@ -37,7 +40,8 @@ export default async function VerifyPage() {
       <VerifyPanel
         name={displayName(artist)}
         slug={artist.slug}
-        skipsReview={allArt < AUTO_APPROVE_AFTER}
+        skipsReview={review.reviewed}
+        auto={trust.autoVerify && trust.verifyReady ? { code: verifyCode(artist.id), minDays: trust.minAccountDays, instagram: instagramSignInAvailable() } : null}
         initial={{
           status,
           verifiedAt: v?.verifiedAt?.toISOString() ?? null,

@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 import { announceArtworkLive, resolveArtworkAlerts } from "@/lib/artworkLive";
 import { logAdminAction } from "@/lib/audit";
 import { autoChecksFor } from "@/lib/moderation";
+import { SPOT_OK_ACTION } from "@/lib/trust/artwork.server";
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
@@ -21,14 +22,21 @@ export async function PATCH(
     }
     const { id } = params;
     const body = await req.json();
-    const action = body.action as "approve" | "reject";
+    const action = body.action as "approve" | "reject" | "spot_ok";
     const reason = (body.reason as string | undefined) || null;
     // Approving a piece the automatic image check labeled: "keep" its labels (the default), or "artist" = back to
     // the labels the artist chose (the check was wrong).
     const labels = body.labels === "artist" ? "artist" : "keep";
 
-    if (!action || !["approve", "reject"].includes(action)) {
+    if (!action || !["approve", "reject", "spot_ok"].includes(action)) {
       return new NextResponse("Invalid action", { status: 400 });
+    }
+    // Spot check (lib/trust): an admin looked at an auto-approved piece and it stays live. Nothing else changes.
+    if (action === "spot_ok") {
+      const art = await prisma.artwork.findUnique({ where: { id }, select: { title: true, artistId: true } });
+      if (!art) return new NextResponse("Not found", { status: 404 });
+      await logAdminAction(admin, SPOT_OK_ACTION, { type: "artwork", id }, `Spot check OK: “${art.title}”`, { artistId: art.artistId });
+      return NextResponse.json({ ok: true });
     }
 
     const updateData =

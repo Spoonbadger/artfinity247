@@ -2,7 +2,16 @@
 const nextConfig = {
   // photo scenes: the render route reads the photos and the catalog from disk, so ship them with it
   experimental: {
-    outputFileTracingIncludes: { "/api/scenes/render": ["./scenes/photos/**/*", "./data/scenes.json"] },
+    outputFileTracingIncludes: {
+      "/api/scenes/render": ["./scenes/photos/**/*", "./data/scenes.json"],
+      // The local image check (lib/moderation/local.ts) reads the NSFWJS model from disk (about 2.7 MB).
+      "/api/artworks/upload": ["./data/models/nsfwjs/**/*"],
+      "/api/artworks/update/[slug]": ["./data/models/nsfwjs/**/*"],
+    },
+    // nsfwjs ships its models again as base64 JS (about 38 MB) and a browser bundle: we load ours from data/models.
+    outputFileTracingExcludes: { "*": ["**/nsfwjs/dist/models/**", "**/nsfwjs/dist/browser/**"] },
+    // TensorFlow.js and NSFWJS stay plain Node packages on the server (loaded on the first local check), never bundled.
+    serverComponentsExternalPackages: ["@tensorflow/tfjs", "nsfwjs"],
   },
   images: {
     remotePatterns: [{ protocol: "https", hostname: "res.cloudinary.com" }],

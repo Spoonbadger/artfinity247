@@ -7,6 +7,7 @@ import { PAINTING_SCANS } from "@/lib/features";
 
 const TABS = [
   { href: "/admin/settings", label: "General", owner: true },
+  { href: "/admin/settings/auto-approval", label: "Auto-approval", owner: true },
   { href: "/admin/settings/notifications", label: "Alert emails" },
   { href: "/admin/settings/rewards", label: "Collector rewards" },
   ...(PAINTING_SCANS ? [{ href: "/admin/settings/scanning", label: "Scanning service" }] : []),

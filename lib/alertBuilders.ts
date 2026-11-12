@@ -3,6 +3,8 @@
 // (printer, payouts, reprints...) can use it without import cycles.
 import { alertKey, type RaiseAlertInput } from "@/lib/alerts";
 import { autoReasonOf, reasonText } from "@/lib/moderation/policy"; // pure, no imports
+import { autoHoldCode } from "@/lib/trust/artwork"; // pure, no imports
+import { trustReasonText } from "@/lib/trust/labels"; // pure (policy + artwork)
 
 const orderNo = (orderId: string) => orderId.slice(-8).toUpperCase();
 const monthName = (month: string) => {
@@ -22,8 +24,11 @@ export const duplicateAlert = (artworkId: string, title: string, artist: string)
 /** Held by the automatic image check (flaggedReason "auto_moderation:<reason>", lib/moderation): normal, not low. */
 export const moderationAlert = (artworkId: string, title: string, artist: string, flaggedReason?: string | null): RaiseAlertInput => {
   const auto = autoReasonOf(flaggedReason);
+  const hold = autoHoldCode(flaggedReason);
   return auto
     ? { kind: "moderation", key: alertKey.moderation(artworkId), title: `Image check found ${reasonText(auto)}: “${title}” by ${artist}`, link: "/admin/moderation", severity: "normal" }
+    : hold
+    ? { kind: "moderation", key: alertKey.moderation(artworkId), title: `Held (${trustReasonText({ code: hold })}): “${title}” by ${artist}`, link: "/admin/moderation", severity: "normal" }
     : { kind: "moderation", key: alertKey.moderation(artworkId), title: `To review: “${title}” by ${artist}`, link: "/admin/moderation", severity: "low" };
 };
 export const reviewAlert = (reviewId: string, rating: number, buyer: string): RaiseAlertInput => ({

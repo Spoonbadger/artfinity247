@@ -10,6 +10,8 @@ import Medal from "@/components/af/Medal";
 import VerifiedBadge from "@/components/af/VerifiedBadge";
 import { fmtDate, type Evidence } from "@/components/artist/verification";
 import type { MedalTier } from "@/lib/medals";
+import type { TrustReason } from "@/lib/trust/artwork";
+import { decisionLine, trustReasonText } from "@/lib/trust/labels";
 
 export type VerRow = {
   id: string;
@@ -27,6 +29,8 @@ export type VerRow = {
   printsSold: number;
   medal: MedalTier | null;
   art: { id: string; title: string; imageUrl: string }[];
+  /** The latest automatic check (lib/trust): why it's waiting, or what passed. */
+  auto: { decision: "approve" | "hold"; reasons: TrustReason[]; passed: string[]; at: string } | null;
 };
 
 const EMPTY: Record<string, string> = {
@@ -123,6 +127,14 @@ export default function VerificationQueue({ rows: initial, tab }: { rows: VerRow
 
             {/* Evidence + decision */}
             <div className="grid content-start gap-4">
+              {r.auto && r.auto.decision === "hold" && (
+                <div className="grid gap-1 rounded-xl border border-coral/40 bg-coral/5 px-3 py-2 text-[13.5px]" data-testid="verify-reasons">
+                  <b className="text-coral">Waiting for you because:</b>
+                  <ul className="grid list-disc gap-0.5 pl-5 text-ink">
+                    {r.auto.reasons.map((x, i) => <li key={i}>{trustReasonText(x)}</li>)}
+                  </ul>
+                </div>
+              )}
               <div className="grid gap-3 rounded-xl bg-wall p-3 sm:grid-cols-[auto_minmax(0,1fr)]">
                 {r.evidence.photo ? (
                   <a href={r.evidence.photo} target="_blank" rel="noopener noreferrer" className="block">
@@ -187,6 +199,8 @@ export default function VerificationQueue({ rows: initial, tab }: { rows: VerRow
           <div className="grid gap-2">
             <Who r={r} compact />
             {tab === "declined" && r.note && <p className="rounded-lg bg-wall px-3 py-2 text-[14px] text-ink-2">{r.note}</p>}
+            {r.auto && tab === "verified" && r.auto.decision === "approve" && <p className="text-[13px] text-ink-2">{decisionLine(r.auto, "Auto-verified")}</p>}
+            {r.auto && tab === "declined" && r.auto.decision === "hold" && <p className="text-[13px] text-ink-2">Last check: {r.auto.reasons.map(trustReasonText).join(", ")}</p>}
           </div>
           {tab === "verified" &&
             (revoking === r.id ? (

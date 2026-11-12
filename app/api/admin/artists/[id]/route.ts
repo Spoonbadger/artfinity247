@@ -26,6 +26,7 @@ import { resend } from "@/lib/resend";
 import { currentAdmin, roleCan, type AdminUser } from "@/lib/adminRoles";
 import { cantReason, type Capability } from "@/lib/adminCaps";
 import { sendVerifyEmail } from "@/lib/emailVerify";
+import { autoRevokeVerification } from "@/lib/trust/verification.server";
 import { HANDLE_CHANGE_ACTION } from "@/lib/handleRedirects";
 import { AccountError, EMAIL_RE, cleanCity, cleanName, deleteAccountPermanently, emailTaken, sendPasswordReset, validHandle } from "@/lib/adminAccounts";
 import { PROVIDER_LABEL, isProviderId } from "@/lib/oauth/meta";
@@ -85,6 +86,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           text: `Hi ${first},\n\nWe've paused your Artfinity page. Your artist page, artwork pages and printed codes are offline for now, and buyers can't check out.\n\nReason: ${reason}\n\nYour earnings are safe and are still paid out on schedule. If you have questions or think this is a mistake, reply to ${CONTACT}.\n\nArtfinity`,
         }).catch((e) => console.error("Suspend email failed", e));
         await logAdminAction(admin, "artist.suspend", target, `Suspended ${name}: ${reason}`, { reason });
+        // A suspended artist loses the verified seal (lib/trust). Recorded and alerted there; never blocks this.
+        await autoRevokeVerification(artist.id, "suspended", reason)
         return NextResponse.json({ ok: true, artist: updated });
       }
       case "unsuspend": {

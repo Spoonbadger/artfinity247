@@ -8,6 +8,7 @@ import { resend } from "@/lib/resend";
 import { REASON_SHORT, SITE_URL, type AnyReason } from "@/lib/reports";
 import { artUrl } from "@/lib/urls";
 import { logAdminAction } from "@/lib/audit";
+import { autoRevokeVerification } from "@/lib/trust/verification.server";
 
 export const dynamic = "force-dynamic";
 
@@ -137,6 +138,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     : [];
   await resolveAlerts(Array.from(new Set([report.id, ...closedIds])).map(alertKey.report));
 
+  // An upheld copyright notice removes the artist's verified seal (lib/trust). Recorded and alerted there.
+  if (action === "takedown" && report.reason === "copyright" && art) await autoRevokeVerification(art.artistId, "dmca", art.title)
   await Promise.all(mails.map((m) => resend.emails.send(m).catch((e) => console.error("report email failed", e))));
   const verb = action === "takedown" ? "Took down" : action === "restore" ? "Restored" : "Dismissed report on";
   await logAdminAction(admin, `report.${action}`, { type: "report", id: report.id }, `${verb} ${art ? `“${art.title}”` : report.artworkUrl || "unlinked art"} (${report.reason})`, {

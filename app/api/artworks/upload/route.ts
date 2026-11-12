@@ -9,9 +9,11 @@ import { parseSensitive } from "@/components/studio/sensitive"
 import { EDITION_MAX, EDITION_MIN } from "@/lib/editionFormat"
 import { parsePrintable } from "@/lib/printSizes"
 import { verifyPrintable } from "@/lib/printSign"
-import { alertArtworkNeedsReview, announceArtworkLive, initialArtworkStatus } from "@/lib/artworkLive"
+import { alertArtworkNeedsReview, announceArtworkLive } from "@/lib/artworkLive"
 import { checkUpload } from "@/lib/imageHash"
 import { saveAutoCheck, screenUpload } from "@/lib/moderation"
+import { HOLD_NOTICE } from "@/lib/trust/artwork"
+import { decideUpload, holdFlag, recordArtworkDecision, uploadContext } from "@/lib/trust/artwork.server"
 import { DAILY_UPLOAD_LIMIT } from "@/lib/uploadLimits"
 import { editsFromForm } from "@/lib/imageEdits.server"
 import type { Prisma } from "@prisma/client"
@@ -96,18 +98,23 @@ export async function POST(req: NextRequest) {
       '-' +
       Date.now().toString(36).slice(-4) // To be unique
 
-    // First pieces from new, unverified artists wait for a quick review.
-    // So does anything that looks like another artist's piece (lib/imageHash.ts): flagged, never auto-rejected.
+    // Anything that looks like another artist's piece (lib/imageHash.ts) waits for a person: flagged, never auto-rejected.
     // The automatic image check (lib/moderation, off unless IMAGE_MODERATION_PROVIDER is set) runs alongside on the
-    // stored preview: it can add a sensitive label (stays live, blurred) or hold explicit content, gore or hate for a
-    // person. If the provider is down or slow, it changes nothing.
+    // stored preview: it can add a sensitive label (stays live, blurred) or hold explicit content, gore or hate.
+    // Then the trust engine (lib/trust) decides: with auto-approval on and a provider, every check must pass
+    // (a check that didn't run holds the piece); otherwise today's rule, where a new artist's first pieces wait.
+    const ctx = await uploadContext(payload.id as string)
     const [dup, check] = await Promise.all([
       checkUpload(imageUrl, payload.id as string),
-      screenUpload({ imageUrl, title, artistLabels: sensitive }),
+      screenUpload({ imageUrl, title, artistLabels: sensitive, newArtist: ctx.newArtist }),
     ])
     const mod = check.decision
-    const flaggedReason = dup.flaggedReason || mod.flaggedReason
-    const status = flaggedReason ? "PENDING" : await initialArtworkStatus(payload.id as string)
+    const trust = await decideUpload({
+      ctx, check, duplicate: dup.duplicate === "review", title, description,
+      printableCount: printable.length, isNewUpload: true,
+    })
+    const flaggedReason = holdFlag(trust.result, dup.flaggedReason, mod.flaggedReason)
+    const status = trust.result.decision === "approve" ? "APPROVED" : "PENDING"
 
     const artwork = await prisma.artwork.create({
       data: {
@@ -144,6 +151,7 @@ export async function POST(req: NextRequest) {
     });
 
     await saveAutoCheck(artwork.id, check)
+    await recordArtworkDecision(artwork.id, { result: trust.result, spotCheck: trust.spotCheck, source: "upload" })
 
     // Live now: referral reward + the artist's "it's live" email. Pending pieces get these on approval.
     // In a batch the email waits for the batch summary; the referral reward doesn't.
@@ -176,7 +184,8 @@ export async function POST(req: NextRequest) {
       // Image check: "review" = held for a person, "labeled" = we added addedLabels (the artist can change them).
       moderation: mod.outcome === "review" || mod.outcome === "labeled" ? mod.outcome : null,
       addedLabels: mod.addedLabels,
-      notice: dup.duplicate === "review" ? dup.notice : [mod.notice, dup.notice].filter(Boolean).join(" ") || null,
+      notice: dup.duplicate === "review" ? dup.notice
+        : [mod.notice ?? (trust.result.mode === "auto" && status === "PENDING" ? HOLD_NOTICE : null), dup.notice].filter(Boolean).join(" ") || null,
     })
   } catch (err) {
     console.error('Upload error:', err);

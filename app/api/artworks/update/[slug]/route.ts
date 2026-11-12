@@ -8,10 +8,12 @@ import { parseSensitive } from '@/components/studio/sensitive'
 import { EDITION_MAX, EDITION_MIN, soldCount } from '@/lib/editions'
 import { parsePrintable } from '@/lib/printSizes'
 import { verifyPrintable } from '@/lib/printSign'
-import { alertArtworkNeedsReview, initialArtworkStatus } from '@/lib/artworkLive'
+import { alertArtworkNeedsReview } from '@/lib/artworkLive'
 import { checkUpload, duplicateOfId } from '@/lib/imageHash'
 import { saveAutoCheck, screenUpload, type Screened } from '@/lib/moderation'
 import { isAutoFlag } from '@/lib/moderation/policy'
+import { isAutoHold } from '@/lib/trust/artwork'
+import { decideUpload, holdFlag, recordArtworkDecision, uploadContext, type UploadDecision } from '@/lib/trust/artwork.server'
 import { editsFromForm } from '@/lib/imageEdits.server'
 import { parseStored } from '@/lib/imageEdits'
 import { Prisma } from '@prisma/client'
@@ -75,6 +77,7 @@ export async function POST(
     let imageData: { printableSizes: string[]; ownershipConfirmedAt: Date; status?: "PENDING"; imageHash?: string | null; flaggedReason?: string | null; flaggedBy?: string | null; sensitive?: string[] } | undefined
     let dup: Awaited<ReturnType<typeof checkUpload>> | null = null
     let check: Screened | null = null
+    let trust: UploadDecision | null = null
     if (newImage) {
       const printable = parsePrintable(form.get("printable"))
       if (!derived && String(form.get("ownership") ?? "") !== "yes") {
@@ -85,22 +88,31 @@ export async function POST(
       }
       if (!printable.length) return NextResponse.json({ error: "This file is too small to print well. Try the original photo or a bigger scan.", code: "image_too_small" }, { status: 400 })
       imageData = { printableSizes: printable, ownershipConfirmedAt: new Date() }
-      // Artists whose uploads are reviewed get a new image reviewed too.
-      if (!derived && artwork.status === "APPROVED" && (await initialArtworkStatus(artwork.artistId)) === "PENDING") imageData.status = "PENDING"
       // Fingerprint the new image; if it looks like another artist's piece, a person checks it (lib/imageHash.ts).
       // The automatic image check (lib/moderation) runs on a new image too, like a new upload.
       const labels = sensitiveRaw !== null ? parseSensitive(sensitiveRaw) : artwork.sensitive
+      const ctx = await uploadContext(artwork.artistId)
       ;[dup, check] = await Promise.all([
         checkUpload(imageUrl!, artwork.artistId, artwork.id),
-        screenUpload({ imageUrl: imageUrl!, title: title ?? artwork.title, artistLabels: labels }),
+        screenUpload({ imageUrl: imageUrl!, title: title ?? artwork.title, artistLabels: labels, newArtist: !derived && ctx.newArtist }),
       ])
       const mod = check.decision
       imageData.imageHash = dup.imageHash
       if (mod.addedLabels.length) imageData.sensitive = mod.labels
-      if (dup.flaggedReason && artwork.status !== "REJECTED") Object.assign(imageData, { status: "PENDING", flaggedReason: dup.flaggedReason, flaggedBy: "system" })
-      else if (mod.flaggedReason && artwork.status !== "REJECTED") Object.assign(imageData, { status: "PENDING", flaggedReason: mod.flaggedReason, flaggedBy: "system" })
-      // The old image's duplicate or image-check flag doesn't describe the new one (it stays in review if it was).
-      else if (duplicateOfId(artwork.flaggedReason) || isAutoFlag(artwork.flaggedReason)) Object.assign(imageData, { flaggedReason: null, flaggedBy: null })
+      // A new picture (not an edit of the same one) goes through the trust engine like a new upload (lib/trust):
+      // held means back to review. A pass never makes a waiting piece live; a person or the first upload decides that.
+      if (!derived && artwork.status !== "REJECTED") {
+        trust = await decideUpload({
+          ctx, check, duplicate: dup.duplicate === "review", title: title ?? artwork.title,
+          description: description ?? artwork.description, printableCount: printable.length, isNewUpload: false,
+        })
+      }
+      const flag = trust ? holdFlag(trust.result, dup.flaggedReason, mod.flaggedReason) : dup.flaggedReason || mod.flaggedReason
+      if (flag && artwork.status !== "REJECTED") Object.assign(imageData, { status: "PENDING", flaggedReason: flag, flaggedBy: "system" })
+      // Held by today's first-pieces rule: back to review, no flag (as before).
+      else if (trust?.result.decision === "hold" && artwork.status === "APPROVED") imageData.status = "PENDING"
+      // The old image's duplicate, image-check or trust flag doesn't describe the new one (it stays in review if it was).
+      if (!flag && (duplicateOfId(artwork.flaggedReason) || isAutoFlag(artwork.flaggedReason) || isAutoHold(artwork.flaggedReason))) Object.assign(imageData, { flaggedReason: null, flaggedBy: null })
     }
 
     // Limited print run. Leave the field out to keep it; "" = open edition; else EDITION_MIN..EDITION_MAX.
@@ -178,7 +190,8 @@ export async function POST(
 
     if (check) {
       await saveAutoCheck(updated.id, check)
-      if (check.decision.outcome === "review" && updated.status === "PENDING") await alertArtworkNeedsReview(updated.id)
+      if (trust) await recordArtworkDecision(updated.id, { result: trust.result, source: "image_change" })
+      if ((check.decision.outcome === "review" || trust?.result.decision === "hold") && updated.status === "PENDING") await alertArtworkNeedsReview(updated.id)
     }
 
     const artist = await prisma.artist.findUnique({

@@ -6,6 +6,7 @@ import { getAdmin } from "@/lib/admin";
 import { resend } from "@/lib/resend";
 import { logAdminAction } from "@/lib/audit";
 import { alertKey, resolveAlerts } from "@/lib/alerts";
+import { verifiedMail } from "@/lib/trust/verification.server";
 
 export const dynamic = "force-dynamic";
 
@@ -47,10 +48,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const first = artist.first_name || (artist.artist_name || artist.name).split(" ")[0];
   const mail =
     action === "approve"
-      ? {
-          subject: "You're verified on Artfinity",
-          text: `Hi ${first},\n\nA person at Artfinity checked your evidence. Your page now shows the verified seal next to your name.\n\n${SITE}/@${artist.slug}\n\nArtfinity`,
-        }
+      ? verifiedMail(first, artist.slug)
       : action === "decline"
         ? {
             subject: "Your Artfinity verification needs another look",

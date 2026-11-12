@@ -87,8 +87,12 @@ export function suggestedLabels(r: Scores): string[] {
 /** The scores worth storing and showing (no raw response). */
 export function scoresOf(r: ModerationResult): Scores {
   const s: Scores = { nudity: r.nudity, sexual: r.sexual, violence: r.violence, gore: r.gore, hate: r.hate };
+  for (const k of r.unchecked ?? []) delete s[k];
   if (r.isPhotoOfPerson !== undefined) s.isPhotoOfPerson = r.isPhotoOfPerson;
   if (r.hasText !== undefined) s.hasText = r.hasText;
+  if (r.aiGenerated !== undefined) s.aiGenerated = r.aiGenerated;
+  if (r.faces !== undefined) s.faces = r.faces;
+  if (r.webFullMatches !== undefined) s.webFullMatches = r.webFullMatches;
   return s;
 }
 

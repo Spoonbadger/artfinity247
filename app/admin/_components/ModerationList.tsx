@@ -10,6 +10,8 @@ import { EmptyState } from "@/components/studio/EmptyState";
 import { cn } from "@/lib/utils";
 import { autoReasonOf, reasonText, THRESHOLDS } from "@/lib/moderation/policy";
 import type { AutoCheckRecord, ScoreKey } from "@/lib/moderation/types";
+import { AI_THRESHOLD, autoHoldCode, type StoredArtworkDecision } from "@/lib/trust/artwork";
+import { decisionLine, trustReasonText } from "@/lib/trust/labels";
 
 export type ModArtwork = {
   id: string;
@@ -30,6 +32,8 @@ export type ModArtwork = {
   duplicateOf?: DuplicateOf | { id: string; missing: true } | null;
   /** Latest automatic image check (lib/moderation), if one ran. */
   autoCheck?: AutoCheckRecord | null;
+  /** Latest auto-approval decision (lib/trust): "Auto-approved: …" or "Held: …". */
+  autoDecision?: StoredArtworkDecision | null;
 };
 
 export type DuplicateOf = {
@@ -92,7 +96,10 @@ const SCORE_ROWS: { key: ScoreKey; label: string; high: number }[] = [
   { key: "hate", label: "Hate symbol", high: THRESHOLDS.review.hate },
   { key: "isPhotoOfPerson", label: "Photo of person", high: THRESHOLDS.review.photoOfPerson },
   { key: "hasText", label: "Overlaid text", high: THRESHOLDS.review.memeText },
+  { key: "aiGenerated", label: "AI-made", high: AI_THRESHOLD },
 ];
+const ALL_COVERAGE = ["nudity", "gore", "hate", "ai"] as const;
+const COVERAGE_LABEL: Record<string, string> = { nudity: "nudity", gore: "gore", hate: "hate symbols", ai: "AI-made" };
 
 /** The automatic image check's verdict and scores (0-100), the ones past a threshold in coral. */
 function AutoCheck({ c }: { c: AutoCheckRecord }) {
@@ -106,8 +113,11 @@ function AutoCheck({ c }: { c: AutoCheckRecord }) {
     <details open={c.outcome === "review"} className="grid gap-1.5 rounded-lg bg-wall px-2.5 py-2 text-[13px]" aria-label="Automatic image check">
       <summary className="flex cursor-pointer flex-wrap items-baseline justify-between gap-x-2">
         <b className={cn(c.outcome === "review" && "text-coral")}>Image check: {verdict}</b>
-        <span className="text-ink-2">{c.provider}</span>
+        <span className="text-ink-2">{c.provider}{c.extra ? ` + ${c.extra.provider}${c.extra.ok ? "" : " (failed)"}` : ""}</span>
       </summary>
+      {c.coverage && c.outcome !== "error" && ALL_COVERAGE.some((k) => !c.coverage!.includes(k)) && (
+        <p className="text-ink-2">Not checked: {ALL_COVERAGE.filter((k) => !c.coverage!.includes(k)).map((k) => COVERAGE_LABEL[k]).join(", ")}</p>
+      )}
       {rows.length > 0 && (
         <dl className="grid grid-cols-[auto_minmax(0,1fr)_2.2em] items-center gap-x-2 gap-y-0.5">
           {rows.map((r) => {
@@ -134,6 +144,16 @@ function AutoCheck({ c }: { c: AutoCheckRecord }) {
   );
 }
 
+/** The trust engine's verdict, in one line. */
+function Decision({ d }: { d: StoredArtworkDecision }) {
+  return (
+    <p className={cn("text-[13px]", d.decision === "hold" ? "font-semibold text-coral" : "text-ink-2")} data-testid="auto-decision">
+      {decisionLine(d)}
+      {d.spotCheck ? " (spot check)" : ""}
+    </p>
+  );
+}
+
 /** Approve buttons. When the check added labels: "Approve + keep labels", or "Approve" back to the artist's own labels. */
 function ApproveButtons({ a, busy, act }: { a: ModArtwork; busy: boolean; act: (a: ModArtwork, action: "approve" | "reject", labels?: "keep" | "artist") => void }) {
   if (!(a.status !== "APPROVED" || a.flaggedReason)) return null;
@@ -157,6 +177,7 @@ const STATUS: Record<ModArtwork["status"], { label: string; cls: string }> = {
 
 const EMPTY: Record<string, string> = {
   queue: "Nothing to review",
+  spot: "No spot checks waiting",
   sensitive: "No sensitive labels",
   rejected: "Nothing rejected",
   live: "No live art yet",
@@ -213,7 +234,7 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
   };
 
   const leavesTab = (status: ModArtwork["status"]) =>
-    (tab === "queue") || (tab === "rejected" && status !== "REJECTED") || (tab === "live" && status !== "APPROVED");
+    (tab === "queue") || (tab === "spot") || (tab === "rejected" && status !== "REJECTED") || (tab === "live" && status !== "APPROVED");
 
   const act = async (a: ModArtwork, action: "approve" | "reject", labels?: "keep" | "artist") => {
     if (action === "reject" && !confirm(`Reject "${a.title}"? It comes off ${a.artistName}'s page.`)) return;
@@ -235,6 +256,21 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
       router.refresh();
     } catch (e: any) {
       failed(`Couldn't ${action}. ${e?.message || ""}`.trim(), { retry: () => act(a, action, labels) });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const spotOk = async (a: ModArtwork) => {
+    setBusy(a.id);
+    try {
+      const r = await fetch(`/api/admin/moderation/artworks/${a.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "spot_ok" }) });
+      if (!r.ok) throw new Error(await r.text());
+      setItems((prev) => prev.filter((x) => x.id !== a.id));
+      saved(`"${a.title}" stays live`);
+      router.refresh();
+    } catch (e: any) {
+      failed(`Couldn't save. ${e?.message || ""}`.trim(), { retry: () => spotOk(a) });
     } finally {
       setBusy(null);
     }
@@ -287,11 +323,17 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
         const dup = a.duplicateOf && !("missing" in a.duplicateOf) ? a.duplicateOf : null;
         const flagged = a.duplicateOf
           ? (dup ? null : "possible duplicate of a piece that has since been deleted")
-          : a.flaggedReason && a.flaggedReason !== "rejected_by_admin" ? (autoReasonOf(a.flaggedReason) ? (a.autoCheck ? null : `image check found ${reasonText(autoReasonOf(a.flaggedReason))}`) : a.flaggedReason) : null;
+          : a.flaggedReason && a.flaggedReason !== "rejected_by_admin"
+            ? (autoReasonOf(a.flaggedReason) ? (a.autoCheck ? null : `image check found ${reasonText(autoReasonOf(a.flaggedReason))}`)
+              : autoHoldCode(a.flaggedReason) ? (a.autoDecision ? null : trustReasonText({ code: autoHoldCode(a.flaggedReason)! }))
+              : a.autoDecision?.source === "report" && /^(Report: |DMCA notice received)/.test(a.flaggedReason) ? null // the decision line says it
+              : a.flaggedReason)
+            : null;
         if (dup) {
           return (
             <li key={a.id} className="grid content-start gap-3 rounded-2xl border border-edge bg-white p-3 sm:col-span-2">
               <Comparison a={a} d={dup} />
+              {a.autoDecision && <Decision d={a.autoDecision} />}
               {a.autoCheck && <AutoCheck c={a.autoCheck} />}
               <div className="flex flex-wrap items-center gap-2">
                 <input type="checkbox" checked={selected.has(a.id)} onChange={() => toggle(a.id)} aria-label={`Select ${a.title}`} className="h-4 w-4 accent-[var(--af-ink)]" />
@@ -310,7 +352,7 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
           );
         }
         return (
-          <li key={a.id} className="grid grid-cols-[104px_minmax(0,1fr)] gap-3 rounded-2xl border border-edge bg-white p-3 sm:grid-cols-1">
+          <li key={a.id} className="grid grid-cols-[104px_minmax(0,1fr)] content-start gap-3 rounded-2xl border border-edge bg-white p-3 sm:grid-cols-1">
             <div className="relative aspect-[4/5] overflow-hidden rounded-[4px] bg-gallery">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={a.imageUrl} alt={a.title} loading="lazy" className="h-full w-full object-cover" />
@@ -338,9 +380,13 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
               )}
 
               {flagged && <p className="text-[13px] font-semibold text-coral">Flagged: {flagged}</p>}
+              {a.autoDecision && (tab !== "live" || a.autoDecision.decision === "hold") && <Decision d={a.autoDecision} />}
               {a.autoCheck && <AutoCheck c={a.autoCheck} />}
 
               <div className="mt-1 flex flex-wrap items-center gap-2">
+                {tab === "spot" && a.status === "APPROVED" && !a.flaggedReason && (
+                  <button type="button" disabled={busy === a.id} onClick={() => spotOk(a)} className="btn btn-sm">Looks good</button>
+                )}
                 <ApproveButtons a={a} busy={busy === a.id} act={act} />
                 {a.status !== "REJECTED" && (
                   <button type="button" disabled={busy === a.id} onClick={() => act(a, "reject")} className="btn btn-ghost btn-sm">

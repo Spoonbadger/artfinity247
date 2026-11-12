@@ -25,6 +25,7 @@ import { checkHandle, normalizeHandle } from "../_lib/handle";
 import { deviceCookie, recordDeviceSignal, referrerForCode } from "@/lib/referrals";
 import { SIGNUP_COOKIE, openSignup, readCookie, signupCookieOptions } from "@/lib/oauth/flow";
 import { copyAvatar } from "@/lib/oauth/avatar";
+import { recordInstagramProof } from "@/lib/trust/instagram";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -134,6 +135,9 @@ export async function POST(req: Request) {
     const url = await copyAvatar(oauth.provider, oauth.avatar, artist.slug);
     if (url) await prisma.artist.update({ where: { id: artist.id }, data: { profileImage: url } }).catch(() => {});
   }
+
+  // Signed up with Instagram: note the @username for auto-verification (lib/trust/instagram.ts). Record only.
+  if (oauth?.provider === "instagram" && oauth.instagram) await recordInstagramProof(artist.id, oauth.providerAccountId, oauth.instagram).catch(() => {});
 
   const res = NextResponse.json({ artist: { id: artist.id, slug: artist.slug, name: artist.artist_name } }, { status: 201 });
   if (oauth) res.cookies.set({ ...signupCookieOptions, value: "", maxAge: 0 });

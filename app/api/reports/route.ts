@@ -8,6 +8,7 @@ import { artUrl } from "@/lib/urls";
 import { getUserFromCookie } from "@/lib/auth";
 import { raiseAlert } from "@/lib/alerts";
 import { reportAlert } from "@/lib/alertBuilders";
+import { recordReportHold } from "@/lib/trust/artwork.server";
 import { DMCA_STATEMENTS, REASON_SHORT, REPORT_REASONS, SITE_URL, earliestRestore, type DmcaCounter, type DmcaNotice } from "@/lib/reports";
 
 export const runtime = "nodejs";
@@ -147,11 +148,14 @@ export async function POST(req: NextRequest) {
   // Admin alert: DMCA notices and counter-notices are urgent (emailed right away), other reports go in the digest.
   await raiseAlert(reportAlert({ id: report.id, reason, artworkUrl, artwork }));
 
-  // DMCA notices keep the art live but put it in the moderation queue right away.
-  if (artwork && dmca && artwork.status === "APPROVED" && !artwork.flaggedReason) {
-    await prisma.artwork
-      .update({ where: { id: artwork.id }, data: { flaggedReason: "DMCA notice received", flaggedBy: `report:${report.id}` } })
+  // A report on a live piece puts it back in review. It stays live, as DMCA notices always have: taking it down is
+  // a person's call from /admin/reports. Dismissing the report clears this flag (flaggedBy report:<id>).
+  // Counter-notices are the artist's own filing, not a report on the art.
+  if (artwork && !counter && artwork.status === "APPROVED" && !artwork.flaggedReason) {
+    const flagged = await prisma.artwork
+      .update({ where: { id: artwork.id }, data: { flaggedReason: dmca ? "DMCA notice received" : `Report: ${REASON_SHORT[reason]}`, flaggedBy: `report:${report.id}` } })
       .catch(() => null);
+    if (flagged) await recordReportHold(artwork.id, REASON_SHORT[reason]);
   }
 
   const artistName = artwork ? artwork.artist.artist_name || artwork.artist.name : "";

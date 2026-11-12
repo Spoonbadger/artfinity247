@@ -4,7 +4,7 @@ import { TAX_ENABLED } from "@/lib/tax";
 import { activeProvider } from "@/lib/printer";
 import { parseSkuMap, prodigiEnv } from "@/lib/prodigi";
 import { cloudinaryOn } from "@/lib/storage";
-import { activeProvider as imageCheckProvider, configuredProvider as imageCheckWanted, providerProblem as imageCheckProblem } from "@/lib/moderation/providers";
+import { activeProvider as imageCheckProvider, configuredProvider as imageCheckWanted, extraProvider as imageCheckExtra, providerProblem as imageCheckProblem } from "@/lib/moderation/providers";
 
 export type Health = "green" | "amber" | "red";
 export type Integration = { id: string; name: string; status: Health; state: string; fix: string | null };
@@ -79,12 +79,23 @@ export function integrationsHealth(): Integration[] {
   const imgRun = imageCheckProvider();
   const imgProblem = imgRun === "none" ? null : imageCheckProblem(imgRun);
   out.push(imgWanted === "mock" && imgRun === "none"
-    ? { id: "image-check", name: "Image check", status: "red", state: "Mock provider set in production: no check runs", fix: "Set IMAGE_MODERATION_PROVIDER to sightengine, google or aws (see MODERATION_SETUP.md)." }
+    ? { id: "image-check", name: "Image check", status: "red", state: "Mock provider set in production: no check runs", fix: "Set IMAGE_MODERATION_PROVIDER to local, sightengine, google or aws (see MODERATION_SETUP.md)." }
     : imgRun === "none"
-      ? { id: "image-check", name: "Image check", status: "amber", state: "Off: uploads aren't pre-screened", fix: "Set IMAGE_MODERATION_PROVIDER (sightengine, google or aws) and its keys. See MODERATION_SETUP.md." }
+      ? { id: "image-check", name: "Image check", status: "amber", state: "Off: uploads aren't pre-screened", fix: "Set IMAGE_MODERATION_PROVIDER (local is free; or sightengine, google, aws and their keys). See MODERATION_SETUP.md." }
       : imgProblem
         ? { id: "image-check", name: "Image check", status: prod ? "red" : "amber", state: `${imgRun}: ${imgProblem} (uploads go through unchecked)`, fix: "Add the provider's keys (MODERATION_SETUP.md), or set IMAGE_MODERATION_PROVIDER=none." }
-        : { id: "image-check", name: "Image check", status: "green", state: imgRun === "mock" ? "Mock (dev only: reads hints from file names)" : `Provider: ${imgRun}`, fix: null });
+        : { id: "image-check", name: "Image check", status: "green", state: imgRun === "mock" ? "Mock (dev only: reads hints from file names)" : imgRun === "local" ? "Local (NSFWJS on our server, $0): nudity and explicit only" : `Provider: ${imgRun}`, fix: null });
+
+  // The second check for new artists and verification photos (IMAGE_MODERATION_EXTRA, MODERATION_SETUP.md "Tiered checks").
+  const extraWanted = (process.env.IMAGE_MODERATION_EXTRA || "").trim().toLowerCase();
+  const extraRun = imageCheckExtra();
+  if (extraWanted && extraWanted !== "none") {
+    out.push(extraRun !== "none"
+      ? { id: "image-check-extra", name: "Extra image check", status: "green", state: `${extraRun}: new artists (gore, hate symbols, AI) and verification photos (faces)`, fix: null }
+      : { id: "image-check-extra", name: "Extra image check", status: "amber", state: `${extraWanted} is set but can't run (missing keys, same as the main provider, or mock in production)`, fix: "Set SIGHTENGINE_USER and SIGHTENGINE_SECRET (MODERATION_SETUP.md)." });
+  } else if (imgRun === "local") {
+    out.push({ id: "image-check-extra", name: "Extra image check", status: "amber", state: "Off: new artists' first pieces and verification requests wait for a person", fix: "Set IMAGE_MODERATION_EXTRA=sightengine and its keys (free up to 2,000 operations a month)." });
+  }
 
   out.push(set("PEXELS_API_KEY")
     ? { id: "pexels", name: "Pexels", status: "green", state: "Set", fix: null }

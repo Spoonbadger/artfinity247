@@ -9,6 +9,7 @@ import { issueSession, linkToArtist, resolveSignIn } from "@/lib/oauth/account";
 import { FLOW_COOKIE, appBase, flowCookieOptions, openFlow, readCookie, redirectUri, safeEqual, sealSignup, signupCookieOptions } from "@/lib/oauth/flow";
 import { getProvider, ProviderError } from "@/lib/oauth/providers";
 import { isProviderId } from "@/lib/oauth/meta";
+import { recordInstagramProof } from "@/lib/trust/instagram";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,6 +59,8 @@ async function handle(req: Request, providerParam: string, q: URLSearchParams, f
     if (!me?.id || me.id !== flow.linkArtistId) return fail("not_logged_in");
     const r = await linkToArtist(me.id, provider.id, profile);
     if (!r.ok) return fail(r.code);
+    // Notes the @username for auto-verification (lib/trust/instagram.ts). Record only; never changes the sign-in.
+    if (provider.id === "instagram") await recordInstagramProof(me.id, profile.providerAccountId, profile.instagram).catch(() => {});
     return go(`/studio/page?connected=${provider.id}#connected`);
   }
 
@@ -74,6 +77,7 @@ async function handle(req: Request, providerParam: string, q: URLSearchParams, f
     res.cookies.set({ ...signupCookieOptions, value: await sealSignup(r.pending) });
     return res;
   }
+  if (provider.id === "instagram") await recordInstagramProof(r.artist.id, profile.providerAccountId, profile.instagram).catch(() => {});
   const admin = String(r.artist.role).toUpperCase() === "ADMIN";
   const res = go(flow.next || (admin ? "/admin/orders" : "/studio"));
   await issueSession(res, r.artist, req, "login");

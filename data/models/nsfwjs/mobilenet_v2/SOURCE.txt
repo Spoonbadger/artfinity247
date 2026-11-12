@@ -1,0 +1,1 @@
+NSFWJS 4.4.0 MobileNetV2 (MIT, github.com/infinitered/nsfwjs). Made by scripts/extract-nsfw-model.mjs.
