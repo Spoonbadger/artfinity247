@@ -22,7 +22,7 @@ export const TEAM: TeamMember[] = [
   },
   {
     name: "Thomas Demuth",
-    role: "Co-founder",
+    role: "User Experience",
     note: "Leading the new, artist-first Artfinity.",
     color: "var(--af-scan)",
   },
