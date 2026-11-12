@@ -26,6 +26,23 @@ export type ExtraKey = "match" | "thumb" | "painted" | "tape" | "event" | "initi
 /** Seasonal looks (Infinity): flat motifs in the free space around the content, plus a season colour in Color ink. */
 export type SeasonKey = "winter" | "newyear" | "valentine" | "spring" | "summer" | "fall";
 export type EndKey = "never" | "event" | "30";
+/** Custom size (Infinity): the card's outline. Circle keeps width and height equal. */
+export type ShapeKey = "rounded" | "rect" | "round";
+export const SHAPES: Record<ShapeKey, string> = { rounded: "Rounded", rect: "Square corners", round: "Circle" };
+/** Ready-made US Letter label sheets: picking one sets the size and lines every card up with the sheet's labels. */
+export type TemplateKey = "avery-8371" | "avery-5163" | "avery-5164" | "avery-5160" | "avery-22807" | "avery-5126";
+export const TEMPLATES: Record<TemplateKey, { name: string; w: number; h: number; shape: ShapeKey; cols: number; rows: number; gx: number; gy: number }> = {
+  "avery-8371": { name: "Avery 8371 / 5371 business cards", w: 3.5, h: 2, shape: "rect", cols: 2, rows: 5, gx: 0, gy: 0 },
+  "avery-5163": { name: "Avery 5163 / 8163 shipping labels", w: 4, h: 2, shape: "rounded", cols: 2, rows: 5, gx: 0.1875, gy: 0 },
+  "avery-5164": { name: "Avery 5164 / 8164 shipping labels", w: 4, h: 10 / 3, shape: "rounded", cols: 2, rows: 3, gx: 0.1875, gy: 0 },
+  "avery-5160": { name: "Avery 5160 / 8160 address labels", w: 2.625, h: 1, shape: "rounded", cols: 3, rows: 10, gx: 0.125, gy: 0 },
+  "avery-22807": { name: "Avery 22807 2 in round labels", w: 2, h: 2, shape: "round", cols: 3, rows: 4, gx: 0.5, gy: 0.5 },
+  "avery-5126": { name: "Avery 5126 / 8126 half-sheet labels", w: 8.5, h: 5.5, shape: "rect", cols: 1, rows: 2, gx: 0, gy: 0 },
+};
+/** Any size between these (inches) when no label sheet is picked. */
+export const CUSTOM_MIN = 1, CUSTOM_MAX_W = 7.5, CUSTOM_MAX_H = 10;
+/** w and h in inches; sheet: a TEMPLATES key, or "auto" to fit as many as possible on US Letter. */
+export type CustomSize = { w: number; h: number; shape: ShapeKey; sheet: TemplateKey | "auto" };
 
 type Sheet = { cols: number; rows: number; gx: number; gy: number; note: string };
 export const FORMATS: Record<FormatKey, { name: string; w: number; h: number; sheet: Sheet }> = {
@@ -119,6 +136,8 @@ export type Design = Look & {
   paletteOf: string;
   /** A seasonal look (Infinity), "" = none. */
   season: SeasonKey | "";
+  /** Custom size and shape (Infinity), null = the format's own size. `format` is then the layout it's drawn with. */
+  custom: CustomSize | null;
 };
 
 export function presetLook(k: PresetKey): Look {
@@ -130,7 +149,7 @@ export const DEFAULT_DESIGN: Design = {
   preset: "gallery", ...presetLook("gallery"),
   msg: "", showTitle: true, showPrice: true, logo: true,
   disc: 0, coupon: "", ev: "", evPrint: false, evDate: "", size: "medium", end: "never",
-  extras: [], palette: [], paletteOf: "", season: "",
+  extras: [], palette: [], paletteOf: "", season: "", custom: null,
 };
 
 /** `thumb`: a data: URI (or URL) of a small copy of the painting, for the thumbnail extra. Falls back to imageUrl. */
@@ -157,9 +176,10 @@ export function sanitizeDesign(input: unknown): Design {
   const eye = i.eye === "same" ? "same" : color(i.eye, legacy ? "same" : D.eye);
   const ink: InkKey = legacy ? (lum(fg) < 0.02 && bg === "#ffffff" && eye === "same" ? "black" : "color") : oneOf(i.ink, ["black", "color"] as const, D.ink);
   const extras = Array.isArray(i.extras) ? EXTRA_KEYS.filter((k) => (i.extras as unknown[]).includes(k)) : [];
+  const custom = sanitizeCustom(i.custom);
   return {
     preset: oneOf(i.preset, ["gallery", "sticker", "market", "poster", "custom"] as const, "custom"),
-    format: oneOf(i.format, ALL, D.format),
+    format: custom ? customFormat(custom) : oneOf(i.format, ALL, D.format),
     style: legacy ? "pill" : oneOf(i.style, Object.keys(STYLES) as StyleKey[], D.style),
     ink,
     msg: legacy ? (i.cta === "custom" ? str(i.ctaCustom, MSG_MAX).trim() : "") : str(i.msg, MSG_MAX),
@@ -182,8 +202,34 @@ export function sanitizeDesign(input: unknown): Design {
     palette: Array.isArray(i.palette) ? i.palette.filter((c): c is string => typeof c === "string" && HEX.test(c)).slice(0, 3).map((c) => c.toLowerCase()) : [],
     paletteOf: str(i.paletteOf, 120),
     season: oneOf(i.season, ["", ...(Object.keys(SEASONS) as SeasonKey[])] as const, ""),
+    custom,
   };
 }
+
+/** A valid custom size, or null. A label sheet sets its own size and shape. */
+export function sanitizeCustom(v: unknown): CustomSize | null {
+  if (!v || typeof v !== "object") return null;
+  const o = v as Record<string, unknown>;
+  const sheet = typeof o.sheet === "string" && o.sheet in TEMPLATES ? (o.sheet as TemplateKey) : "auto";
+  if (sheet !== "auto") { const T = TEMPLATES[sheet]; return { w: T.w, h: T.h, shape: T.shape, sheet }; }
+  const shape = oneOf(o.shape, Object.keys(SHAPES) as ShapeKey[], "rounded");
+  const num = (x: unknown, max: number) => { const n = Number(x); return Number.isFinite(n) ? Math.round(Math.max(CUSTOM_MIN, Math.min(max, n)) * 100) / 100 : null; };
+  const w = num(o.w, CUSTOM_MAX_W), h0 = num(o.h, CUSTOM_MAX_H);
+  if (w == null || h0 == null) return null;
+  const h = shape === "round" ? Math.min(w, CUSTOM_MAX_H) : h0;
+  return { w: shape === "round" ? h : w, h, shape, sheet };
+}
+
+/** The layout a custom size is drawn with: wide → the wall label's, tall → the hang tag's (no hole), else the sticker's. */
+export function customFormat(cz: Pick<CustomSize, "w" | "h" | "shape">): FormatKey {
+  if (cz.shape === "round") return "sticker";
+  const r = cz.w / cz.h;
+  return r >= 1.3 ? "label" : r <= 1 / 1.3 ? "tag" : "sticker";
+}
+/** "4 × 2 in", or "2 in circle". */
+export const customName = (cz: CustomSize) => cz.sheet !== "auto" ? TEMPLATES[cz.sheet].name : cz.shape === "round" ? `${n2(cz.w)} in circle` : `${n2(cz.w)} × ${n2(cz.h)} in label`;
+/** The card's real size in inches. */
+export const cardInches = (d: Pick<Design, "format" | "custom">) => (d.custom ? { w: d.custom.w, h: d.custom.h } : { w: FORMATS[d.format].w, h: FORMATS[d.format].h });
 
 /** The Ink switch: resets the five colours to that ink. Black ink also drops Match your art (it adds colour). */
 export function applyInk(d: Design, ink: InkKey): Design {
@@ -203,7 +249,7 @@ export function applyExtra(d: Design, k: ExtraKey, on = true): Design {
   const extras = on ? EXTRA_KEYS.filter((e) => e === k || d.extras.includes(e)) : d.extras.filter((e) => e !== k);
   const next: Design = { ...d, extras };
   if (!on) return next;
-  if (!EXTRAS[k].formats.includes(d.format)) next.format = "label";
+  if (!EXTRAS[k].formats.includes(d.format)) { next.format = "label"; next.custom = null; }
   if (k === "painted") next.style = "panel";
   if (k === "match" && d.ink === "black") next.ink = "color";
   if (k === "event") { next.evPrint = true; if (!d.disc) next.disc = 10; }
@@ -212,9 +258,9 @@ export function applyExtra(d: Design, k: ExtraKey, on = true): Design {
 /** Infinity extras this design uses. */
 export const extrasOf = (d: Pick<Design, "extras">) => d.extras;
 /** The closest free design: the same format, style, ink and colours without the Infinity extras. */
-export const freeDesign = (d: Design): Design => (d.extras.length || d.season ? { ...d, extras: [], season: "" } : d);
+export const freeDesign = (d: Design): Design => (d.extras.length || d.season || d.custom ? { ...d, extras: [], season: "", custom: null } : d);
 /** Does this design use anything from Infinity? */
-export const usesInfinity = (d: Pick<Design, "extras" | "season">) => d.extras.length > 0 || !!d.season;
+export const usesInfinity = (d: Pick<Design, "extras" | "season"> & { custom?: CustomSize | null }) => d.extras.length > 0 || !!d.season || !!d.custom;
 
 /** A seasonal look on the current format and style. In Color ink the pill or panel takes the season's colour. */
 export function applySeason(d: Design, k: SeasonKey | ""): Design {
@@ -393,7 +439,8 @@ function wrapLine(f: Fonts, l: RLine, size: number, maxW: number, max: number): 
 
 // ---------------- shared drawing ----------------
 type Box = { k: string; x: number; y: number; w: number; h: number; pts?: [number, number][] };
-type Ctx = { d: Design; art: ArtInfo; f: Fonts; qrText: string; uid: string; n: number; C: CardColors; style: StyleKey; fx: Set<ExtraKey>; boxes: Box[]; defs: string[] };
+/** cz: a custom size, drawn in the base layout's units: its width (label) or height (tag), corner radius, no hole. */
+type Ctx = { d: Design; art: ArtInfo; f: Fonts; qrText: string; uid: string; n: number; C: CardColors; style: StyleKey; fx: Set<ExtraKey>; boxes: Box[]; defs: string[]; cz?: { W: number; H: number; R: number } };
 
 /** Body text's ink box for the checks: cap height up, descenders down. */
 const bodyBox = (x: number, y: number, w: number, size: number, f: Fonts): Box => ({ k: "text", x, y: y - capHeight(f.body) * size * 1.06, w, h: capHeight(f.body) * size * 1.06 + size * 0.24 });
@@ -652,7 +699,7 @@ function seasonSvg(c: Ctx, out: Out, d: Design): string {
   pts.forEach(([x, y], i) => {
     if (near(code, x, y, qz + r)) return;
     if (c.boxes.some((b) => b !== code && b.k !== "panel" && (b.pts ? near(b, x, y, r + 1) : near(b, x, y, b.k === "plate" ? r + 2 : gap + r)))) return;
-    if (d.format === "tag" && Math.hypot(x - W / 2, y - 12.4) < 5.2 + r + 3) return;
+    if (d.format === "tag" && !c.cz && Math.hypot(x - W / 2, y - 12.4) < 5.2 + r + 3) return;
     let fill = black ? "#000000" : S.motif[i % S.motif.length], accent = black ? "#ffffff" : S.motif[S.motif.length - 1];
     if (panel) {
       const inside = near(panel, x, y, 0);
@@ -674,12 +721,32 @@ export function renderCard(d: Design, art: ArtInfo, f: Fonts, qrText: string, ui
   const style = styleOf(d);
   if (style !== "panel" || d.format === "sticker") fx.delete("painted");
   const c: Ctx = { d, art, f, qrText, uid, n: codeModules(d, qrText), C: cardColors(d), style, fx, boxes: [], defs: [] };
+  // A custom size is drawn in its layout's own units (144 pt on the short side), then scaled to the real size.
+  const cz = d.custom && d.format !== "poster" ? d.custom : null;
+  if (cz) {
+    const r = cz.w / cz.h, W = r >= 1 ? 144 * r : 144, H = r >= 1 ? 144 : 144 / r;
+    c.cz = { W, H, R: cz.shape === "rect" ? 0 : Math.min(W, H) * 0.05 };
+  }
   const out = d.format === "label" ? label(c) : d.format === "tag" ? tag(c) : d.format === "sticker" ? sticker(c) : poster(c);
   if (d.season) out.svg += seasonSvg(c, out, d);
+  let k = 1;
+  if (cz && c.cz) {
+    const { W, H, R } = c.cz;
+    if (d.format === "sticker" && (cz.shape !== "round" || W !== out.W || H !== out.H)) {
+      // The round layout, centred on a rectangle of the card's colour.
+      const ox = (W - out.W) / 2, oy = (H - out.H) / 2;
+      out.svg = (cz.shape === "round" ? "" : `<rect width="${n2(W)}" height="${n2(H)}" rx="${n2(R)}" fill="${c.C.bg}"/>`) + `<g transform="translate(${n2(ox)} ${n2(oy)})">${out.svg}</g>`;
+      for (const b of c.boxes) { b.x += ox; b.y += oy; if (b.pts) b.pts = b.pts.map(([x, y]) => [x + ox, y + oy] as [number, number]); }
+      out.W = W; out.H = H;
+    }
+    k = (cz.w * 72) / out.W;
+    out.svg = `<g transform="scale(${n2(k)})">${out.svg}</g>`;
+    for (const b of c.boxes) { b.x *= k; b.y *= k; b.w *= k; b.h *= k; if (b.pts) b.pts = b.pts.map(([x, y]) => [x * k, y * k] as [number, number]); }
+  }
   const msg = messageLines(d, art, style === "pill" ? "pill" : "two").map(plain).join(" ");
-  const lbl = `${FORMATS[d.format].name}: ${d.showTitle ? `${art.title} by ${art.artist}. ` : ""}${msg}.`;
+  const lbl = `${cz ? customName(cz) : FORMATS[d.format].name}: ${d.showTitle ? `${art.title} by ${art.artist}. ` : ""}${msg}.`;
   const inner = (c.defs.length ? `<defs>${c.defs.join("")}</defs>` : "") + out.svg;
-  return { inner, w: out.W, h: out.H, qrPt: out.Q, ctaPt: out.Ts, label: lbl, mods: c.n, boxes: c.boxes, m: out.m };
+  return { inner, w: cz ? cz.w * 72 : out.W, h: cz ? cz.h * 72 : out.H, qrPt: out.Q * k, ctaPt: out.Ts * k, label: lbl, mods: c.n, boxes: c.boxes, m: out.m * k };
 }
 type Out = { svg: string; W: number; H: number; Q: number; Ts: number; m: number };
 
@@ -694,7 +761,7 @@ function clipped(c: Ctx, shape: string, body: string) {
 // tops and bottoms flush with the code. Panel: the code on a white plate in a solid panel that bleeds off the left.
 function label(c: Ctx): Out {
   const { C, n, style, fx } = c;
-  const W = 252, H = 144, R = 5.6, Bs = 9.2, lh = Bs * 1.32, TL = 17, TW = 13;
+  const W = c.cz?.W ?? 252, H = 144, R = c.cz?.R ?? 5.6, Bs = 9.2, lh = Bs * 1.32, TL = 17, TW = 13;
   const tape = fx.has("tape");
   let m = 11.2, Q = 0, colX: number, s = "";
   if (style === "panel") {
@@ -728,11 +795,12 @@ function label(c: Ctx): Out {
 // bottom. Panel: the code on a white plate in a solid top panel, the words below.
 function tag(c: Ctx): Out {
   const { C, n, style, fx } = c;
-  const W = 144, H = 252, R = 8.8, Bs = 8.8, lh = Bs * 1.32, holeY = 12.4, holeR = 5.2, TL = 17, TW = 13;
+  const W = 144, H = c.cz?.H ?? 252, R = c.cz?.R ?? 8.8, Bs = 8.8, lh = Bs * 1.32, holeY = 12.4, holeR = 5.2, TL = 17, TW = 13;
+  const hole = !c.cz; // a custom size is a label, not a hang tag
   let m = 11.2, s = "", Q: number, textTop: number, msgTop: number;
   const thumb = fx.has("thumb") ? "side" as const : null;
   if (style === "panel") {
-    const side = 14.4, plateY = 24.8;
+    const side = 14.4, plateY = hole ? 24.8 : side;
     let plateS = W - 2 * side;
     // Words first, bottom up, so the plate can give way to a long title.
     const two = twoLineSvg(c, m, H - m, W - 2 * m, Bs, lh, { fill: C.text, price: C.text });
@@ -754,7 +822,7 @@ function tag(c: Ctx): Out {
     Q = W - 2 * m;
     const p = pillSvg(c, m, H - m, W - 2 * m, Bs, 4.8, 6, "pill");
     s += p.svg; msgTop = p.top;
-    const mod = Q / n, codeY = Math.max(24.8, holeY + holeR + 2.2 * mod), gap = Math.max(10, 2.2 * mod);
+    const mod = Q / n, codeY = hole ? Math.max(24.8, holeY + holeR + 2.2 * mod) : m, gap = Math.max(10, 2.2 * mod);
     const probe = topBlock({ ...c, boxes: [], defs: [] }, { x: m, y: codeY + Q + gap, w: W - 2 * m, limit: msgTop - 7, Ts: 16, Tmin: 10, maxLines: 2, Bs, thumb, thumbS: 30 });
     if (probe.bottom > msgTop - 7) Q = Math.max(84, Q - (probe.bottom - (msgTop - 7)));
     s += codeSvg(c, (W - Q) / 2, codeY, Q);
@@ -764,6 +832,7 @@ function tag(c: Ctx): Out {
   s += tb.svg;
   if (fx.has("tape")) s += tapeSvg(c, 0, 0, 47, TL, TW) + tapeSvg(c, W, 0, 133, TL, TW);
   const shape = `<rect width="${W}" height="${H}" rx="${R}"/>`;
+  if (!hole) return { svg: `<rect width="${W}" height="${H}" rx="${R}" fill="${C.bg}"/>${clipped(c, shape, s)}`, W, H, Q, Ts: tb.Ts, m };
   const id = `qs-hole-${c.uid}`;
   c.defs.push(`<mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="#fff"/><circle cx="${W / 2}" cy="${holeY}" r="${holeR}" fill="#000"/></mask>`);
   // The hole is cut out; a thin ring marks where to punch it.
@@ -777,7 +846,9 @@ function sticker(c: Ctx): Out {
   const { f, d, art, C, n, style, fx } = c;
   const S = 144, Cc = 72, R = 72;
   const dcap = capHeight(f.display), bcap = capHeight(f.body);
-  const chord = (y: number) => 2 * Math.sqrt(Math.max(0, R * R - (y - Cc) ** 2));
+  // A custom square or rectangle isn't a circle: words can use the full width.
+  const round = !c.cz || d.custom?.shape === "round";
+  const chord = (y: number) => (round ? 2 * Math.sqrt(Math.max(0, R * R - (y - Cc) ** 2)) : S);
   const ev = eventLine(d, fx);
   let s = "", Q: number, Ts = 0;
   if (style === "panel") {
@@ -807,7 +878,7 @@ function sticker(c: Ctx): Out {
   const pillH = 2 * padY + Bs * 1.32 * wrapLine(f, messageLines(d, art, "pill")[0], Bs, pillW - 12, 2).length;
   const evH = ev ? Bs * 1.32 : 0;
   // Title: one line down to 9 pt, then two balanced lines down to 8 pt, then an ellipsis.
-  const tW = 78;
+  const tW = round ? 78 : 112;
   let tLines: string[] = [], Ts0 = 11.2;
   if (d.showTitle) {
     while (Ts0 > 9 && width(f.display, art.title, Ts0) > tW + 6) Ts0 *= 0.96;
@@ -900,29 +971,40 @@ export function cardSVG(c: Card) {
 }
 
 // ---------------- print sheet (US Letter) ----------------
-export type SheetLayout = { W: number; H: number; cw: number; ch: number; slots: { x: number; y: number }[]; marks: [number, number, number, number][] };
-export function sheetLayout(fmt: FormatKey): SheetLayout {
-  const F = FORMATS[fmt], S = F.sheet, W = 612, H = 792;
-  const cw = F.w * 72, ch = F.h * 72, gx = S.gx * 72, gy = S.gy * 72;
+export type SheetLayout = { W: number; H: number; cw: number; ch: number; gy: number; slots: { x: number; y: number }[]; marks: [number, number, number, number][] };
+/** How a custom size sits on US Letter: a label sheet's own grid, or as many as fit inside ¼ in margins. */
+export function customSheet(cz: CustomSize): Sheet {
+  if (cz.sheet !== "auto") { const T = TEMPLATES[cz.sheet], n = T.cols * T.rows; return { cols: T.cols, rows: T.rows, gx: T.gx, gy: T.gy, note: `${n} per sheet, lined up with ${T.name}.` }; }
+  const gap = cz.shape === "round" ? 0.25 : 0, room = 0.25 * 2;
+  const cols = Math.max(1, Math.floor((8.5 - room + gap) / (cz.w + gap))), rows = Math.max(1, Math.floor((11 - room + gap) / (cz.h + gap)));
+  const n = cols * rows;
+  return { cols, rows, gx: gap, gy: gap, note: `${n} per sheet. Cut on the marks.` };
+}
+/** The sheet for a design: its custom size's, or its format's. */
+export const sheetOf = (d: Pick<Design, "format" | "custom">): Sheet => (d.custom ? customSheet(d.custom) : FORMATS[d.format].sheet);
+export function sheetLayout(fmt: FormatKey, custom: CustomSize | null = null): SheetLayout {
+  const S = custom ? customSheet(custom) : FORMATS[fmt].sheet, size = cardInches({ format: fmt, custom }), W = 612, H = 792;
+  const cw = size.w * 72, ch = size.h * 72, gx = S.gx * 72, gy = S.gy * 72;
   const gw = S.cols * cw + (S.cols - 1) * gx, gh = S.rows * ch + (S.rows - 1) * gy;
   const x0 = (W - gw) / 2, y0 = (H - gh) / 2;
   const slots: SheetLayout["slots"] = [];
   for (let r = 0; r < S.rows; r++) for (let c = 0; c < S.cols; c++) slots.push({ x: x0 + c * (cw + gx), y: y0 + r * (ch + gy) });
   const marks: SheetLayout["marks"] = [];
   const off = 4;
-  if (x0 > 10 && y0 > 10) {
+  // Ready-cut label sheets need no crop marks.
+  if (x0 > 10 && y0 > 10 && (!custom || custom.sheet === "auto")) {
     const xs = new Set<number>(), ys = new Set<number>();
     slots.forEach((p) => { xs.add(n2(p.x)); xs.add(n2(p.x + cw)); ys.add(n2(p.y)); ys.add(n2(p.y + ch)); });
     const lenY = Math.min(16, y0 - off - 2), lenX = Math.min(16, x0 - off - 2);
     xs.forEach((x) => { marks.push([x, y0 - off - lenY, x, y0 - off]); marks.push([x, y0 + gh + off, x, y0 + gh + off + lenY]); });
     ys.forEach((y) => { marks.push([x0 - off - lenX, y, x0 - off, y]); marks.push([x0 + gw + off, y, x0 + gw + off + lenX, y]); });
   }
-  return { W, H, cw, ch, slots, marks };
+  return { W, H, cw, ch, gy, slots, marks };
 }
 
 /** Each card's ids are made unique per copy on a sheet by `uid`; <use> shares one copy, so this keeps it simple. */
-export function sheetSVG(c: Card, fmt: FormatKey, uid = "s") {
-  const L = sheetLayout(fmt);
+export function sheetSVG(c: Card, fmt: FormatKey, uid = "s", custom: CustomSize | null = null) {
+  const L = sheetLayout(fmt, custom);
   const id = `qs-card-${uid}`;
   let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${L.W} ${L.H}" width="8.5in" height="11in" role="img" aria-label="Print sheet: ${L.slots.length} × ${esc(c.label)}">` +
     `<rect width="${L.W}" height="${L.H}" fill="#fff"/><defs><symbol id="${id}" viewBox="0 0 ${c.w} ${c.h}">${c.inner}</symbol></defs>`;

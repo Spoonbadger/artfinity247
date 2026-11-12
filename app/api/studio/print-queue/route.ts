@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
     const art = await prisma.artwork.findFirst({ where: { slug, artistId: user.id, status: { in: ["APPROVED", "PENDING"] } }, select: { id: true, title: true } });
     if (!art) return err("We couldn't find that piece. It may have been deleted.", "art_not_found", 404);
     let design = sanitizeDesign(body.design);
+    if (design.custom) return err("Custom sizes print from Download PDF. The print queue takes the standard formats.", "custom_size", 400);
     const qty = clampQty(body.qty);
     let qrCodeId: string | null = null;
     const code = normalizeCode(body.code);

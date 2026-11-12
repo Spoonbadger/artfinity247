@@ -91,7 +91,7 @@ export default async function QrPage({ searchParams }: { searchParams: { art?: s
     const fonts = await loadFonts();
     const art = arts.find((a) => a.slug === slug)!;
     const card = renderCard(design, art, fonts, qrValue(design, slug, base, null, savedCode?.code ?? PLACEHOLDER_CODE, artist.slug));
-    initialCard = { svg: cardSVG(card), sheet: sheetSVG(card, design.format) };
+    initialCard = { svg: cardSVG(card), sheet: sheetSVG(card, design.format, "s", design.custom) };
   } catch (e) {
     console.error("QR first paint failed", e);
   }
