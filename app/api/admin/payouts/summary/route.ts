@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { adminRoleGuard } from "@/lib/adminRoles"
 import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
-import { getBalance, isPayoutLate, type PayoutRow } from "@/lib/balance"
+import { getBalance, heldAtLatestRun, paidMethodLabel, type PayoutRow } from "@/lib/balance"
+import { isMonthLate, payoutRoute } from "@/lib/payoutPlan"
 import { connectMode, connectStatus } from "@/lib/stripeConnect"
 import { activeRefunds, adjustmentTotals, refundAdjustments, shareAfterRefund } from "@/lib/refunds"
 
@@ -129,7 +130,7 @@ export async function GET(req: NextRequest) {
     // Fetch artist info in one go
     const artists = await prisma.artist.findMany({
       where: { id: { in: artistIds } },
-      select: { id: true, artist_name: true, name: true, email: true, venmoHandle: true, closedAt: true, stripeAccountId: true, stripePayoutsEnabled: true },
+      select: { id: true, artist_name: true, name: true, email: true, closedAt: true, stripeAccountId: true, stripePayoutsEnabled: true },
     });
     const artistMap = new Map<string, (typeof artists)[number]>(
       artists.map((a: any) => [a.id, a])
@@ -145,9 +146,11 @@ export async function GET(req: NextRequest) {
     )
 
 
-    // Late: unpaid more than a few days after this month's payout day (lib/balance.ts).
-    const monthLate = isPayoutLate(month)
+    // Late: unpaid more than a few days after this month's payout day, and only for a payout-ready Stripe account the
+    // run should have paid (lib/payoutPlan.ts isMonthLate). Money held while Stripe isn't set up is never late.
+    const now = new Date()
     const mode = connectMode()
+    const heldAt = await heldAtLatestRun(artistIds, now)
 
     const rows = artistIds.map(artistId => {
       const agg = byArtist.get(artistId)!;
@@ -157,14 +160,15 @@ export async function GET(req: NextRequest) {
       const br = balanceRows.get(artistId);
       // Owed for the month: sales + refund adjustments (+ any carried in), never below $0 while unpaid.
       const due = br && !p?.paidAt ? br.payableCents : agg.artistShare + refundAdjustmentsCents;
+      const stripe = a ? connectStatus(a, mode) : "not_connected";
+      const unpaid = !p?.paidAt && due > 0 && artistId !== "__unknown__";
 
       return {
         artistId,
         artistName: a?.artist_name || a?.name || "(unknown)",
         artistEmail: a?.email || "",
-        venmoHandle: a?.venmoHandle || "",
-        // How they get paid: Stripe (connected and ready), setting up Stripe, or Venmo by hand.
-        stripe: a ? connectStatus(a, mode) : "not_connected",
+        // How they get paid: Stripe once payout-ready; until then the month is held in their balance.
+        stripe,
         itemsCount: agg.itemsCount,
         gross: agg.gross,
         expenses: agg.expenses,
@@ -175,12 +179,14 @@ export async function GET(req: NextRequest) {
         carriedIn: br && !p?.paidAt ? br.carryInCents : 0,
         // Closed accounts are still paid what they earned.
         closed: !!a?.closedAt,
-        late: monthLate && !p?.paidAt && due > 0 && artistId !== "__unknown__",
+        late: unpaid && isMonthLate({ month, status: stripe, now, heldAt: heldAt.get(artistId) ?? null }),
+        held: unpaid && month < now.toISOString().slice(0, 7) && payoutRoute(stripe) === "held",
         payout: {
           status: p?.paidAt ? "PAID" : "UNPAID",
           paidAt: p?.paidAt || null,
           amountCents: p?.amountCents ?? due,
           method: p?.method ?? null,
+          methodLabel: p?.paidAt ? paidMethodLabel(p.method) : undefined,
           stripeTransferId: p?.stripeTransferId ?? null,
           failureReason: p?.paidAt ? null : p?.failureReason ?? null,
         },

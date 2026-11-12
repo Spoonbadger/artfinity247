@@ -8,7 +8,7 @@ export const HELP_SECTIONS: HelpSection[] = [
   { id: "growing", title: "Growing", blurb: "Share kit, followers, analytics, reviews, referrals, Infinity.", audience: "artist", dab: "#f5b3c8" },
   { id: "trust", title: "Trust & rights", blurb: "Your copyright, AI, stolen art, badges and medals.", audience: "both", dab: "#7b2d8e" },
   { id: "buyers", title: "Buying a print", blurb: "Shipping, tax, paper, frames, damaged prints, your order.", audience: "buyer", dab: "#5bc0be" },
-  { id: "account", title: "Your account", blurb: "Logging in, passwords, Venmo, email, closing your account.", audience: "both", dab: "#c98a5a" },
+  { id: "account", title: "Your account", blurb: "Logging in, passwords, email, your payout bank, closing your account.", audience: "both", dab: "#c98a5a" },
 ];
 
 export const sectionById = (id: string) => HELP_SECTIONS.find((s) => s.id === id);

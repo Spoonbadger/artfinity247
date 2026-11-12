@@ -5,6 +5,8 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 const PASSWORD = "artfinity123";
 
+/** Seed artists with a simulated, payout-ready Stripe Connect account (see the artist rows below). */
+const CONNECTED = new Set(["junopark", "inesduarte"]);
 const ARTISTS = [
   { slug: "mayaokafor", verified: "VERIFIED", artist_name: "Maya Okafor", first: "Maya", last: "Okafor", city: "Brooklyn", state: "NY", bio: "Painting New York the way it looks at 6pm in October, from a studio in Bed-Stuy. Every print is made to order.", avatar: 1 },
   { slug: "junopark", verified: "PENDING", artist_name: "Juno Park", first: "Juno", last: "Park", city: "Queens", state: "NY", bio: "Big flat color, small moments. Mostly gouache, mostly Astoria and the Rockaways.", avatar: 2 },
@@ -66,7 +68,11 @@ async function main() {
     const artist = await prisma.artist.create({ data: {
       emailVerifiedAt: new Date(), name: a.artist_name, first_name: a.first, last_name: a.last, artist_name: a.artist_name,
       email: `${a.first.toLowerCase()}@artfinity.local`, password: hash, phone: "", city: a.city, citySlug: slugify(a.city), state: a.state, country: "US",
-      slug: a.slug, bio: a.bio, profileImage: `/seed/avatar-${a.avatar}.jpg`, venmoHandle: `@${a.slug}`,
+      slug: a.slug, bio: a.bio, profileImage: `/seed/avatar-${a.avatar}.jpg`,
+      // Payouts are Stripe-only. A couple of artists are Connect-ready through the test-mode simulation
+      // (lib/stripeConnect.ts: an "acct_sim_" id counts as ready while STRIPE_SECRET_KEY is unset).
+      // Maya stays unconnected so the "held until you connect Stripe" flow can be tried.
+      ...(CONNECTED.has(a.slug) ? { stripeAccountId: `acct_sim_seed${a.slug}`, stripePayoutsEnabled: true } : {}),
       verification: a.verified || "NONE",
       verifiedAt: a.verified === "VERIFIED" ? new Date(Date.now() - 20 * 86400000) : null,
       verificationRequestedAt: a.verified ? new Date(Date.now() - 25 * 86400000) : null,

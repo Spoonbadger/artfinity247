@@ -41,7 +41,7 @@ export default async function AdminArtistPage({ params }: { params: { id: string
       id: true, name: true, artist_name: true, first_name: true, last_name: true, slug: true, email: true, phone: true, city: true, state: true,
       profileImage: true, bio: true, createdAt: true, role: true, plan: true, proUntil: true, referralCode: true, referredById: true,
       verification: true, verifiedAt: true, verificationRequestedAt: true, verificationEvidence: true, verificationNote: true,
-      closedAt: true, suspendedAt: true, suspendedReason: true, venmoHandle: true, venmoPending: true, termsAcceptedAt: true,
+      closedAt: true, suspendedAt: true, suspendedReason: true, termsAcceptedAt: true,
       stripeAccountId: true, adminRole: true, emailVerifiedAt: true, password: true, sessionVersion: true,
       oauthAccounts: { orderBy: { createdAt: "asc" }, select: { id: true, provider: true, email: true, createdAt: true, lastUsedAt: true } },
     },
@@ -90,14 +90,16 @@ export default async function AdminArtistPage({ params }: { params: { id: string
 
   const payoutRows: TRow[] = balance.payouts.map((p) => {
     const late = balance.lateMonths.includes(p.month);
+    // Stripe not payout-ready: the month waits in their balance, not late (lib/payoutPlan.ts).
+    const held = balance.payoutVia === "held";
     return {
       id: p.month,
-      status: p.status === "paid" ? "paid" : late ? "late" : p.status === "scheduled" ? "due" : "open",
+      status: p.status === "paid" ? "paid" : late ? "late" : p.status === "scheduled" ? (held ? "held" : "due") : "open",
       sort: { month: p.month, amount: p.amountCents, status: p.status === "paid" ? 2 : late ? 0 : 1, sales: p.sales },
       cells: {
         month: p.label,
         amount: <b>{usd(p.amountCents)}</b>,
-        status: p.status === "paid" ? <Pill tone="green">Paid {day(p.paidAt)}</Pill> : p.status === "scheduled" ? (late ? <Pill tone="red">Late</Pill> : <Pill tone="amber">Due {day(p.dueDate)}</Pill>) : <Pill>This month</Pill>,
+        status: p.status === "paid" ? <Pill tone="green">Paid {day(p.paidAt)}</Pill> : p.status === "scheduled" ? (late ? <Pill tone="red">Late</Pill> : held ? <Pill>Waiting on Stripe</Pill> : <Pill tone="amber">Due {day(p.dueDate)}</Pill>) : <Pill>This month</Pill>,
         method: <span className="text-ink-2">{p.method}</span>,
         sales: p.sales,
       },
@@ -209,7 +211,7 @@ export default async function AdminArtistPage({ params }: { params: { id: string
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <div className="grid content-start gap-6">
-          <Card title="Payouts" sub={`${balance.payoutVia === "stripe" ? "Stripe" : "Venmo"} · Stripe ${STRIPE_LABEL[balance.stripeStatus].toLowerCase()} · Venmo ${a.venmoHandle ? `@${a.venmoHandle.replace(/^@/, "")}` : "none"}${a.venmoPending ? ` (@${a.venmoPending} unconfirmed)` : ""}`}>
+          <Card title="Payouts" sub={`Stripe ${STRIPE_LABEL[balance.stripeStatus].toLowerCase()}${balance.heldCents > 0 ? ` · ${usd(balance.heldCents)} held until they connect` : ""}`}>
             {balance.lateMonths.length > 0 && <p className="mb-2 rounded-lg bg-coral/10 px-3 py-2 text-[13.5px] font-semibold text-coral">Late: {balance.lateMonths.map((m) => monthLabel(m)).join(", ")}</p>}
             {balance.adjustmentCents !== 0 && <p className="t-small mb-2">Paid months differ from today&apos;s numbers by {usd(balance.adjustmentCents)} (a refund or change after payout).</p>}
             <DataTable id="artist-payouts" caption="Payouts" minWidth={480} defaultSort={{ key: "month", dir: "desc" }}

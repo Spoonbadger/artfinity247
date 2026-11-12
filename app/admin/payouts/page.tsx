@@ -28,7 +28,7 @@ export default async function AdminPayoutsPage({ searchParams }: { searchParams:
 
   return (
     <div className="grid gap-5">
-      <PageHead title="Payouts" sub="Paid by the 5th. Late after the 8th." />
+      <PageHead title="Payouts" sub="Stripe only. Paid by the 5th, late after the 8th." />
       {lateList.length > 0 && (
         <Problem tone="error" title={`Late: ${lateList.map(([m, n]) => `${monthLabel(m)} (${n} ${n === 1 ? "artist" : "artists"})`).join(", ")}`} fix={{ label: "Open month", href: `/admin/payouts?month=${lateList[0][0]}` }} />
       )}

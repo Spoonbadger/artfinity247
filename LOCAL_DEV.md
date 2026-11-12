@@ -45,5 +45,6 @@ Open http://localhost:3000.
 - Checkout runs in test mode and creates real orders in your local database.
 - Emails print to the terminal (look for `[email:dev]`, including password reset links).
 - Uploads are saved to `public/uploads`.
+- Payouts are Stripe Connect only, simulated: Juno and Ines are seeded as connected; Maya isn't, so her latest month shows as held. "Connect with Stripe" on her Money page makes a test account, then /admin/payouts → Pay all pays it (no money moves).
 
 No Docker? Install PostgreSQL 16 yourself, create a user and database both named `artfinity` with password `artfinity`, then run `pnpm setup:local`.

@@ -10,9 +10,13 @@ const SORTS = [
   { value: "amount", label: "Amount", dir: "desc" as const },
 ];
 
-export function PayoutChip({ row, late = false }: { row: PayoutRow; late?: boolean }) {
+export function PayoutChip({ row, late = false, held = false }: { row: PayoutRow; late?: boolean; held?: boolean }) {
   if (late) {
     return <span className="inline-flex items-center whitespace-nowrap rounded-full bg-coral px-2.5 py-0.5 text-[13px] font-bold text-white">Late</span>;
+  }
+  // Closed and unpaid while Stripe isn't set up: waiting on the artist, not on us.
+  if (held && row.status === "scheduled") {
+    return <span className="inline-flex items-center whitespace-nowrap rounded-full bg-wall px-2.5 py-0.5 text-[13px] font-semibold text-ink-2">Held</span>;
   }
   const cls =
     row.status === "paid" ? "bg-earned-soft text-earned" : row.status === "scheduled" ? "bg-sticker/60 text-ink" : "bg-wall text-ink-2";
@@ -26,14 +30,20 @@ export function PayoutChip({ row, late = false }: { row: PayoutRow; late?: boole
   );
 }
 
-function when(row: PayoutRow, late: boolean) {
+function when(row: PayoutRow, late: boolean, held: boolean, payoutDay: string) {
   if (row.status === "paid") return row.paidAt ? dayUTC(row.paidAt, true) : "Paid";
   if (late) return `Was due ${dayUTC(payoutDateFor(row.month).toISOString())}`;
+  if (held && row.status === "scheduled") return `By the ${payoutDay} once you connect`;
   return `Goes out ${dayUTC(row.dueDate)}`;
 }
 
 /** Payouts by month: month · amount · status · date, each expandable to its method and sales. */
-export default function PayoutsList({ payouts, ledger, adjustments = [], lateMonths = [] }: { payouts: PayoutRow[]; ledger: LedgerLine[]; adjustments?: AdjustmentLine[]; lateMonths?: string[] }) {
+export default function PayoutsList({ payouts, ledger, adjustments = [], lateMonths = [], held = false, payoutDay = "5th" }: {
+  payouts: PayoutRow[]; ledger: LedgerLine[]; adjustments?: AdjustmentLine[]; lateMonths?: string[];
+  /** Stripe isn't payout-ready: closed months are held until it is (lib/payoutPlan.ts). */
+  held?: boolean;
+  payoutDay?: string;
+}) {
   return (
     <section aria-labelledby="payouts-h" className="af-card grid min-w-0 gap-2 p-4 sm:p-5">
       {payouts.length === 0 ? (
@@ -74,8 +84,8 @@ export default function PayoutsList({ payouts, ledger, adjustments = [], lateMon
                   <b className="num text-right text-[16px] text-earned md:order-none">{usd(p.amountCents)}</b>
                   <svg viewBox="0 0 12 12" className="h-3.5 w-3.5 text-ink-2 transition group-open:rotate-180 md:order-last" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   <span className="col-span-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] text-ink-2 md:contents">
-                    <span className="md:block"><PayoutChip row={p} late={late} /></span>
-                    <span className="num whitespace-nowrap md:text-[14px] md:text-ink">{when(p, late)}</span>
+                    <span className="md:block"><PayoutChip row={p} late={late} held={held} /></span>
+                    <span className="num whitespace-nowrap md:text-[14px] md:text-ink">{when(p, late, held, payoutDay)}</span>
                   </span>
                 </summary>
                 <div className="mb-3 grid gap-1 rounded-[4px] bg-wall p-3 text-[13px]">

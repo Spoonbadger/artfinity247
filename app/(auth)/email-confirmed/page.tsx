@@ -34,7 +34,7 @@ export default async function EmailConfirmed({ searchParams }: { searchParams: {
           <p className="t-body text-ink-2">
             {status === "ok" ? "Thanks." : "You'd already confirmed it."} Payouts and newsletters are on. Next, tell us where to send your money.
           </p>
-          <p className="t-small">Each month&apos;s sales are paid by the {ordinal(PAYOUT_DAY_OF_MONTH)} of the next month, to your bank or Venmo.</p>
+          <p className="t-small">Each month&apos;s sales are paid by the {ordinal(PAYOUT_DAY_OF_MONTH)} of the next month, to your bank through Stripe.</p>
           {me ? (
             <>
               {/* Straight into Stripe's payout setup: no stop on Money to press "Connect" again. */}

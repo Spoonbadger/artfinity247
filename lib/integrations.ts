@@ -43,7 +43,8 @@ export function integrationsHealth(): Integration[] {
 
   out.push(set("STRIPE_CONNECT_WEBHOOK_SECRET")
     ? { id: "connect-webhook", name: "Connect webhook secret", status: "green", state: "Set", fix: null }
-    : { id: "connect-webhook", name: "Connect webhook secret", status: "amber", state: "Missing", fix: "Add a Connect webhook (account.updated) in Stripe and set STRIPE_CONNECT_WEBHOOK_SECRET, so artists' Stripe setup status updates by itself." });
+    // Artists are paid only through Stripe Connect, so their payout status has to stay current.
+    : { id: "connect-webhook", name: "Connect webhook secret", status: skMode && prod ? "red" : "amber", state: "Missing: artists' Stripe status only updates when they return from Stripe", fix: "Add a Connect webhook (account.updated, account.application.deauthorized) for /api/webhook/connect in Stripe and set STRIPE_CONNECT_WEBHOOK_SECRET. Artists are paid only through Stripe, and the run pays only accounts marked ready." });
 
   // Infinity billing (lib/billing.ts, BILLING_SETUP.md). Without a Price id the monthly price comes from lib/plans.ts.
   const billingHook = set("STRIPE_BILLING_WEBHOOK_SECRET");

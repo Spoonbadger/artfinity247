@@ -9,7 +9,7 @@ export const gettingPaid: HelpArticle[] = [
     section,
     audience: "artist",
     title: "When do I get paid?",
-    summary: `Each sale is held ${RETURN_WINDOW_DAYS} days for returns. Each month's earnings are paid by the ${PAYOUT_DAY} of the following month.`,
+    summary: `Each sale is held ${RETURN_WINDOW_DAYS} days for returns. Each month's earnings are paid through Stripe by the ${PAYOUT_DAY} of the following month.`,
     popular: 1,
     faq: true,
     link: { href: "/studio/money", label: "Open Money" },
@@ -19,7 +19,9 @@ export const gettingPaid: HelpArticle[] = [
 Every sale shows as **pending** for ${RETURN_WINDOW_DAYS} days after the order. That's our return window, so a damaged print can be reprinted or refunded before the money is counted. After that it shows as **available**.
 
 ## Payday: the ${PAYOUT_DAY}
-Earnings are paid monthly. All of a month's sales are paid by the ${PAYOUT_DAY} of the next month. For example, everything you sell in March is paid by April ${PAYOUT_DAY}.
+Earnings are paid monthly, through Stripe to your bank. All of a month's sales are paid by the ${PAYOUT_DAY} of the next month. For example, everything you sell in March is paid by April ${PAYOUT_DAY}.
+
+Haven't connected Stripe yet? Your earnings are held for you, safe. Once you connect, every month that's waiting is paid by the next ${PAYOUT_DAY}. See [How payouts reach you](/help/getting-paid/how-payouts-reach-you).
 
 Sales from the last days of a month may still be inside the ${RETURN_WINDOW_DAYS}-day window on the ${PAYOUT_DAY}. They're still in that month's payout.
 
@@ -36,26 +38,38 @@ You don't need to request a payout. Artfinity sends them automatically.
     slug: "how-payouts-reach-you",
     section,
     audience: "artist",
-    title: "How payouts reach you: Venmo or Stripe",
-    summary: "Connect your bank through Stripe in Money → Get paid automatically, or add your Venmo handle and we'll send it there.",
+    title: "How payouts reach you: Stripe",
+    summary: `We pay every artist through Stripe, straight to your bank. Connect it once in Money. Until you do, your earnings are held for you.`,
     popular: 5,
     faq: true,
     link: { href: "/studio/money", label: "Open Money" },
-    related: ["when-paid", "change-venmo", "taxes"],
+    related: ["when-paid", "change-payout-bank", "taxes"],
     body: `
-## Automatic payouts with Stripe
-Connect your bank through Stripe in **[Money](/studio/money) → Get paid**. Stripe asks for a few details to confirm who you are and where to send money. Once Stripe says your account is ready, each monthly payout goes to your bank automatically.
+## Connect Stripe
+1. Open [Money](/studio/money) and press **Connect with Stripe**.
+2. Stripe opens. Fill in its short form. It takes about 5 minutes.
+3. You come back to Money. Once Stripe says your account is ready, Money shows **Ready**.
 
-Artfinity never sees your full bank details. Stripe handles them.
+You need a confirmed email first. See [Confirming your email](/help/account/confirm-email).
 
-## Venmo
-Prefer Venmo? Add your Venmo handle in [My page](/studio/page) and we'll send your monthly payout there. Artists who haven't connected Stripe are paid by Venmo.
+## What Stripe asks for
+Stripe is a payments company. It asks for what US law requires to send you money:
+- Your legal name, date of birth, address and phone number
+- Your Social Security number (or the last 4 digits), for identity and tax
+- The bank account to pay into
+- Sometimes a photo of your ID
 
-If you have neither set up, Money shows a reminder. Your earnings wait for you, so nothing is lost. Add a payout method before the ${PAYOUT_DAY} so the payout isn't held up.
+Stripe keeps these details, including the tax information a US payout needs. Artfinity never sees your full bank account or Social Security number.
 
-## Changing where you're paid
-- Changing your Venmo needs an email confirmation. See [Changing your Venmo](/help/account/change-venmo).
-- Questions about a payout method? [Message us](/contact).
+## When you're paid
+Each month's sales are paid by the ${PAYOUT_DAY} of the next month, as one transfer to your bank. Stripe then sends it on to your bank, which usually takes a couple of business days.
+
+Not connected yet? Nothing is lost. Your earnings are held in your balance, and every month that's waiting is paid by the first ${PAYOUT_DAY} after you connect.
+
+## If Stripe needs more
+Sometimes Stripe asks for another detail, or reviews an account. Money says what's missing and gives you a **Finish setup** button. Your earnings stay held until it's sorted.
+
+Questions? [Message us](/contact).
 `,
   },
   {
@@ -63,18 +77,18 @@ If you have neither set up, Money shows a reminder. Your earnings wait for you, 
     section,
     audience: "artist",
     title: "My payout hasn't arrived",
-    summary: `Check your Venmo handle or Stripe connection in Money first. If a payout is more than ${LATE_AFTER_DAYS} days past the ${PAYOUT_DAY}, Money flags it and we're on it. Message us any time.`,
+    summary: `Check your Stripe connection in Money first. If you're connected and a payout is more than ${LATE_AFTER_DAYS} days past the ${PAYOUT_DAY}, Money flags it and we're on it.`,
     link: { href: "/studio/money", label: "Open Money" },
     related: ["when-paid", "how-payouts-reach-you"],
     body: `
 ## Check these first
 1. **Is it after the ${PAYOUT_DAY}?** Payouts go out by the ${PAYOUT_DAY} of the month after the sales.
-2. **Is your payout method right?** Look at [Money](/studio/money). A wrong or missing Venmo handle, or an unfinished Stripe connection, holds things up.
-3. **Did you change your Venmo recently?** The change only applies after you click the confirmation link we email you.
+2. **Is Stripe connected and ready?** Look at [Money](/studio/money). Until Stripe says your account is ready, your earnings are held, not lost. Press **Connect with Stripe** or **Finish setup** there.
+3. **Has it reached your bank?** Once we send a payout, Stripe usually takes a couple of business days to get it to your bank. You can check it with **Manage in Stripe** on Money.
 4. **Did the sale clear?** Sales show as pending for ${RETURN_WINDOW_DAYS} days.
 
 ## Late payouts
-If a month is still unpaid ${LATE_AFTER_DAYS} days after the ${PAYOUT_DAY}, Money shows a "late" notice. We see it too. You can also [message us](/contact) and a real person will look into it.
+If you're connected and a month is still unpaid ${LATE_AFTER_DAYS} days after the ${PAYOUT_DAY}, Money shows a "late" notice. We see it too. You can also [message us](/contact) and a real person will look into it.
 `,
   },
   {
@@ -92,7 +106,7 @@ You're an independent seller, not an employee. You report the income you get fro
 
 [Money](/studio/money) lists every sale with its costs and your share, which helps when you do your taxes. Keep your own records too. If you're not sure what to report, ask a tax professional.
 
-Your legal name and state in **Account details** (in My page) are private. They're used for payouts and tax, never shown on your public page.
+Your legal name and state in **Account details** (in My page) are private, never shown on your public page. When you connect Stripe for payouts, Stripe collects the tax details US payouts need.
 
 ## Sales tax
 Buyers pay sales tax at checkout where the law requires it. Artfinity collects it as the seller of the print, and it never comes out of your share.
@@ -109,11 +123,11 @@ Buyers pay sales tax at checkout where the law requires it. Artfinity collects i
     body: `
 Closing your account takes your page, art and codes offline right away, but it doesn't cancel what you've earned.
 
-- Sales you've already made are paid on the usual schedule: each month's earnings by the ${PAYOUT_DAY} of the following month.
+- Sales you've already made are paid through Stripe on the usual schedule: each month's earnings by the ${PAYOUT_DAY} of the following month.
 - Orders already placed are still printed and shipped.
 - Your past sales stay on record.
 
-Keep your payout method working until your last payout arrives. If you need to change it after closing, [message us](/contact).
+Connect Stripe in [Money](/studio/money) before you close, and keep that bank account open until your last payout arrives. Already closed without it? [Message us](/contact) and we'll help.
 
 See [Closing your account](/help/account/close-account) for the steps. Changed your mind? [Contact us](/contact) to reopen.
 `,

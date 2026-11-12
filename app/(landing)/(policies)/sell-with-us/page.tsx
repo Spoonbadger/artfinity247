@@ -18,12 +18,12 @@ const WE_DO: [string, string, string][] = [
   ["var(--af-sticker)", "Printing", "Giclée on archival paper, made to order in NYC."],
   ["var(--af-scan)", "Shipping", "Free to US buyers, with tracking."],
   ["var(--af-coral)", "Checkout", "Card, Apple Pay, Google Pay."],
-  ["var(--af-earned)", "Payouts", `To your bank or Venmo by the ${PAYOUT_DAY}.`],
+  ["var(--af-earned)", "Payouts", `To your bank via Stripe by the ${PAYOUT_DAY}.`],
 ];
 
 const FAQ: [string, React.ReactNode][] = [
   ["Does it cost anything?", `No. Joining, listing and printing cost you nothing. Infinity is optional, at ${proPrice()} a month.`],
-  ["How do I get paid?", `You get ${pct(FREE_SPLIT)} of the profit on each print (${pct(PRO.split)} on Infinity). Each sale is held ${RETURN_WINDOW_DAYS} days for returns. A month's sales are paid by the ${PAYOUT_DAY} of the next month, to your bank or Venmo.`],
+  ["How do I get paid?", `You get ${pct(FREE_SPLIT)} of the profit on each print (${pct(PRO.split)} on Infinity). Each sale is held ${RETURN_WINDOW_DAYS} days for returns. A month's sales are paid by the ${PAYOUT_DAY} of the next month, to your bank through Stripe.`],
   ["Who owns my art?", <>You do. We get a limited license to print, sell and promote it while it&apos;s listed. We never use it to train AI. See the <Link href="/artist-terms-and-agreement">artist terms</Link>.</>],
   ["Can I set my own prices?", "Yes. You set a markup on each size, on top of the base price."],
   ["What about shipping?", "Shipping is free for US buyers and already in the print cost. Sales tax is added at checkout and never comes out of your share."],

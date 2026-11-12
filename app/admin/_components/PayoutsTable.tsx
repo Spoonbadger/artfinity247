@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { failed, saved } from "@/lib/feedback";
 import { passes, sortRows, SortSelect, SortTh, TableToolbar, useTable, type SortDir } from "./table";
-import { cn } from "@/lib/utils";
 import { monthLabel, usd } from "./util";
 import { useAdminCan } from "./AdminRole";
 import { THEAD } from "./ui";
@@ -12,7 +11,6 @@ type Row = {
   artistId: string;
   artistName: string;
   artistEmail: string;
-  venmoHandle: string;
   stripe?: "not_connected" | "pending" | "ready";
   itemsCount: number;
   gross: number;
@@ -24,7 +22,9 @@ type Row = {
   carriedIn?: number;
   closed?: boolean;
   late?: boolean;
-  payout: { status: "PAID" | "UNPAID"; paidAt: string | null; amountCents: number; method?: string | null; stripeTransferId?: string | null; failureReason?: string | null };
+  /** Unpaid and the artist's Stripe isn't payout-ready: the month waits in their balance (not late). */
+  held?: boolean;
+  payout: { status: "PAID" | "UNPAID"; paidAt: string | null; amountCents: number; method?: string | null; methodLabel?: string; stripeTransferId?: string | null; failureReason?: string | null };
 };
 
 /** PayAllPanel fires this after a run so the month's table reloads. */
@@ -55,22 +55,22 @@ export default function PayoutsTable({ month }: { month: string }) {
     return () => window.removeEventListener(PAYOUTS_CHANGED, on);
   }, [load]);
 
-  const toggle = async (r: Row) => {
-    const paid = r.payout.status === "PAID";
-    if (!paid && !confirm(`Records ${usd(r.artistShare)} to ${r.artistName} as paid by hand. Send the money first: this doesn't move any.\n\n${r.artistName} is emailed now, and the email can't be unsent.`)) return;
+  // Payouts are Stripe-only (lib/payouts.ts): nothing is marked paid by hand. Only a test-mode payout can be undone.
+  const undo = async (r: Row) => {
+    if (!confirm(`Undo the test payout to ${r.artistName} for ${monthLabel(month)}? The month goes back to unpaid.`)) return;
     setBusy(r.artistId);
     try {
-      const res = await fetch("/api/admin/payouts/mark-paid", {
+      const res = await fetch("/api/admin/payouts/undo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ artistId: r.artistId, month, unmark: paid }),
+        body: JSON.stringify({ artistId: r.artistId, month }),
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.error || "");
-      saved(paid ? `${r.artistName} marked unpaid` : `${r.artistName} marked paid`, paid ? undefined : { description: "Email sent." });
+      saved(`${r.artistName}: test payout undone`);
       await load();
     } catch (e: any) {
-      failed(e?.message || "Couldn't update the payout.", { retry: () => toggle(r) });
+      failed(e?.message || "Couldn't undo the payout.", { retry: () => undo(r) });
     } finally {
       setBusy(null);
     }
@@ -82,11 +82,12 @@ export default function PayoutsTable({ month }: { month: string }) {
   const gross = list.reduce((n, r) => n + r.gross, 0);
   const unpaidCount = list.filter((r) => r.payout.status !== "PAID").length;
   const t = useTable("payouts", { sort: { key: "share", dir: "desc" } });
-  const statusOf = (r: Row) => (r.payout.status === "PAID" ? "paid" : r.late ? "late" : "unpaid");
+  const statusOf = (r: Row) => (r.payout.status === "PAID" ? "paid" : r.late ? "late" : r.held ? "held" : "unpaid");
+  const STATUS_RANK: Record<string, number> = { late: 0, unpaid: 1, held: 2, paid: 3 };
   const shown = sortRows(
-    list.filter((r) => passes(t.filters, { search: `${r.artistName} ${r.artistEmail} ${r.venmoHandle}`, status: statusOf(r) })),
+    list.filter((r) => passes(t.filters, { search: `${r.artistName} ${r.artistEmail}`, status: statusOf(r) })),
     t.sort,
-    (r, k) => (k === "artist" ? r.artistName.toLowerCase() : k === "to" ? (r.stripe === "ready" ? "Stripe" : r.venmoHandle || "") : k === "prints" ? r.itemsCount : k === "sales" ? r.gross : k === "costs" ? r.expenses : k === "profit" ? r.profit : k === "share" ? r.artistShare : statusOf(r) === "late" ? 0 : statusOf(r) === "unpaid" ? 1 : 2),
+    (r, k) => (k === "artist" ? r.artistName.toLowerCase() : k === "to" ? (r.stripe ?? "not_connected") : k === "prints" ? r.itemsCount : k === "sales" ? r.gross : k === "costs" ? r.expenses : k === "profit" ? r.profit : k === "share" ? r.artistShare : STATUS_RANK[statusOf(r)]),
   );
   const SORTS: { key: string; dir: SortDir; label: string }[] = [
     { key: "share", dir: "desc", label: "Most owed" },
@@ -103,7 +104,7 @@ export default function PayoutsTable({ month }: { month: string }) {
         <div className="flex gap-1.5"><dt className="text-ink-2">Sales</dt><dd className="font-semibold">{usd(gross)}</dd></div>
       </dl>
       {list.length > 0 && (
-        <TableToolbar filters={t.filters} setFilter={t.setFilter} clear={t.clear} active={t.active} search="Artist, email or Venmo" statuses={[{ value: "unpaid", label: "Unpaid" }, { value: "late", label: "Late" }, { value: "paid", label: "Paid" }]} count={shown.length} total={list.length}>
+        <TableToolbar filters={t.filters} setFilter={t.setFilter} clear={t.clear} active={t.active} search="Artist or email" statuses={[{ value: "unpaid", label: "Unpaid" }, { value: "late", label: "Late" }, { value: "held", label: "Waiting on Stripe" }, { value: "paid", label: "Paid" }]} count={shown.length} total={list.length}>
           <SortSelect options={SORTS} sort={t.sort} onChange={t.setSort} className="md:hidden" />
         </TableToolbar>
       )}
@@ -145,7 +146,7 @@ export default function PayoutsTable({ month }: { month: string }) {
                     <td className="px-3 py-3 text-right text-ink-2">{usd(r.expenses)}</td>
                     <td className="px-3 py-3 text-right">{usd(r.profit)}</td>
                     <td className="px-3 py-3 text-right text-[16px] font-bold text-earned">{usd(r.artistShare)}<AdjustNote r={r} /></td>
-                    <td className="px-4 py-3 text-right"><PayButton r={r} busy={busy === r.artistId} onClick={() => toggle(r)} /></td>
+                    <td className="px-4 py-3 text-right"><PayStatus r={r} busy={busy === r.artistId} onUndo={() => undo(r)} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -163,7 +164,7 @@ export default function PayoutsTable({ month }: { month: string }) {
                     <b className="num shrink-0 text-right text-[18px] text-earned">{usd(r.artistShare)}<AdjustNote r={r} /></b>
                   </div>
                   <div className="num text-[13px] text-ink-2">{usd(r.gross)} sales · {usd(r.expenses)} costs · {usd(r.profit)} profit</div>
-                  <PayButton r={r} busy={busy === r.artistId} onClick={() => toggle(r)} />
+                  <PayStatus r={r} busy={busy === r.artistId} onUndo={() => undo(r)} />
                 </li>
               ))}
             </ul>
@@ -181,37 +182,37 @@ function AdjustNote({ r }: { r: Row }) {
   return <span className="block text-[13px] font-semibold text-coral" title="A refund on a sale that was already paid out comes off this payout. It never goes below $0; the rest carries to next month.">after {usd(cents)} refund adj.</span>;
 }
 
-/** Where the money goes: Stripe when connected and ready, else Venmo by hand. */
+/** Where the money goes: Stripe once payout-ready; until then it's held in the artist's balance. */
 function PaidTo({ r }: { r: Row }) {
-  const venmo = r.venmoHandle ? `Venmo @${r.venmoHandle.replace(/^@/, "")}` : null;
-  if (r.stripe === "ready") return <span className="font-semibold text-earned" title={venmo ? `Fallback: ${venmo}` : undefined}>Stripe</span>;
-  return (
-    <span>
-      {venmo ?? <span className="text-coral">No Venmo</span>}
-      {r.stripe === "pending" && <span className="t-small block">Stripe setup unfinished</span>}
-    </span>
-  );
+  if (r.stripe === "ready") return <span className="font-semibold text-earned">Stripe</span>;
+  return <span className="text-ink-2">{r.stripe === "pending" ? "Stripe setup unfinished" : "Stripe not connected"}</span>;
 }
 
-function PayButton({ r, busy, onClick }: { r: Row; busy: boolean; onClick: () => void }) {
+function PayStatus({ r, busy, onUndo }: { r: Row; busy: boolean; onUndo: () => void }) {
   const paid = r.payout.status === "PAID";
   const canPay = useAdminCan("money");
-  const viaStripe = paid && r.payout.method === "stripe";
-  const realTransfer = viaStripe && !!r.payout.stripeTransferId && !r.payout.stripeTransferId.startsWith("tr_sim_");
+  const testPayout = paid && !!r.payout.stripeTransferId?.startsWith("tr_sim_");
+  // Short in the chip; the full label (e.g. "Paid outside Stripe (before Nov 2026)" for old rows) is the tooltip.
+  const label = r.payout.method === "stripe" ? "Stripe" : r.payout.method === "carried" ? "refund adj." : "outside Stripe";
   return (
     <div className="inline-flex flex-wrap items-center justify-end gap-2">
       {paid && (
-        <span className="rounded-full bg-earned-soft px-2.5 py-1 text-[13px] font-bold text-earned" title={r.payout.stripeTransferId || undefined}>
+        <span className="rounded-full bg-earned-soft px-2.5 py-1 text-[13px] font-bold text-earned" title={[r.payout.methodLabel, r.payout.stripeTransferId].filter(Boolean).join(" · ") || undefined}>
           Paid {r.payout.paidAt ? new Date(r.payout.paidAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" }) : ""}
-          {viaStripe ? " · Stripe" : r.payout.method === "venmo" ? " · Venmo" : ""}
+          {label ? ` · ${label}` : ""}
         </span>
       )}
       {!paid && r.payout.failureReason && (
         <span className="max-w-[260px] text-left text-[13px] font-semibold text-coral" title={r.payout.failureReason}>Stripe failed: {r.payout.failureReason}</span>
       )}
-      {!realTransfer && (
-        <button type="button" disabled={busy || !canPay} title={canPay ? undefined : "Payouts need the admin or owner role."} onClick={onClick} className={cn("btn btn-sm", paid && "btn-ghost")}>
-          {paid ? "Undo" : "Mark paid"}
+      {!paid && !r.payout.failureReason && (
+        r.held
+          ? <a href="#waiting" className="rounded-full bg-wall px-2.5 py-1 text-[13px] font-semibold text-ink-2 no-underline hover:underline" title="Held in their balance until they finish Stripe setup. Not late.">Waiting on Stripe</a>
+          : <span className="rounded-full bg-sticker/60 px-2.5 py-1 text-[13px] font-semibold">Pays on the 5th</span>
+      )}
+      {testPayout && (
+        <button type="button" disabled={busy || !canPay} title={canPay ? "Undo this test payout" : "Payouts need the admin or owner role."} onClick={onUndo} className="btn btn-ghost btn-sm">
+          Undo
         </button>
       )}
     </div>

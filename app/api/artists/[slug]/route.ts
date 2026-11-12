@@ -33,7 +33,6 @@ export async function GET(
         state: true,
         country: true,
         profileImage: true,
-        venmoHandle: true,
         closedAt: true,
         suspendedAt: true,
       },
@@ -43,7 +42,7 @@ export async function GET(
 
     // Contact and payout details are private: only the artist themself or an admin sees them.
     const { allowed } = await getArtistManager(artist.id)
-    const { email, phone, venmoHandle, closedAt: _closed, suspendedAt: _suspended, ...publicArtist } = artist
+    const { email, phone, closedAt: _closed, suspendedAt: _suspended, ...publicArtist } = artist
     const artistOut = allowed ? artist : publicArtist
 
     const where = { artistId: artist.id, status: ArtworkStatus.APPROVED };
@@ -95,5 +94,5 @@ export async function GET(
   }
 }
 
-// No PUT here: artists change their Venmo handle in Studio (/api/studio/venmo), which emails a confirmation
-// so a stolen login can't redirect payouts. Admins don't edit handles from this route.
+// No PUT here: artists edit their page in Studio. Payout details live in Stripe (Connect onboarding from
+// Studio → Money), never on this route.

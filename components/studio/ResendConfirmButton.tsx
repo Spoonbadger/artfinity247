@@ -1,6 +1,6 @@
 "use client";
 
-// [Resend confirmation] for anything that waits on a confirmed email (payouts, Venmo, newsletters).
+// [Resend confirmation] for anything that waits on a confirmed email (Stripe payout setup, newsletters).
 // Same endpoint as the Studio banner (app/studio/_lib/VerifyEmailBanner.tsx); feedback by toast.
 import { useState, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";

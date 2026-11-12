@@ -1,5 +1,5 @@
 // Public read API v1: shared response helpers and serializers.
-// Only public data leaves here: no emails, phones, Venmo handles, costs or link click counts.
+// Only public data leaves here: no emails, phones, payout details, costs or link click counts.
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { rateLimit } from "@/lib/rateLimit";

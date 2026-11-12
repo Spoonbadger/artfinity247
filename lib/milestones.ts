@@ -13,7 +13,7 @@ import { COSTS, type PrintSize } from "@/lib/revenue";
 import { itemBreakdown, normalizeSize } from "@/lib/sales";
 import { activeRefunds } from "@/lib/refunds";
 import { getBalance, latePayouts } from "@/lib/balance";
-import { readyPayouts } from "@/lib/payouts";
+import { readyPayouts, waitingOnStripe } from "@/lib/payouts";
 import { connectMode, connectStatus, type ConnectMode } from "@/lib/stripeConnect";
 import { activeProvider } from "@/lib/printer";
 import { readAdminSettings } from "@/lib/adminSettings";
@@ -80,8 +80,8 @@ export async function loadMilestones(now = new Date()) {
     SELECT DISTINCT a."artistId" AS "artistId"
     FROM "OrderItem" oi JOIN "Order" o ON o.id = oi."orderId" JOIN "Artwork" a ON a.id = oi."artworkId"
     WHERE o."paymentStatus" = 'paid' AND o.kind <> 'bulk'`;
-  const owed = { total: 0, ready: 0, pending: 0, venmo: 0, cents: 0 };
-  let stripeUnfinished = 0;
+  // Payouts are Stripe-only: an artist who isn't payout-ready has their money held until they connect.
+  const owed = { total: 0, ready: 0, pending: 0, notConnected: 0, cents: 0 };
   for (const { artistId } of sellers) {
     const b = await getBalance(artistId, now);
     const cents = b.pendingCents + b.availableCents;
@@ -89,24 +89,25 @@ export async function loadMilestones(now = new Date()) {
     owed.total++;
     owed.cents += cents;
     if (b.stripeStatus === "ready") owed.ready++;
-    else if (b.stripeStatus === "pending") { owed.pending++; stripeUnfinished++; }
-    else owed.venmo++;
+    else if (b.stripeStatus === "pending") owed.pending++;
+    else owed.notConnected++;
   }
   // $0 months a refund adjustment used up ("carried") aren't payouts. Older rows have no method (SQL NULL), so say so.
   const sentPayout = { paidAt: { not: null }, OR: [{ method: null }, { method: { not: "carried" } }] };
   const lastPaid = await prisma.payout.findFirst({ where: sentPayout, orderBy: { month: "desc" }, select: { month: true } });
   const lastRows = lastPaid ? await prisma.payout.findMany({ where: { month: lastPaid.month, ...sentPayout }, select: { method: true, amountCents: true } }) : [];
-  // Older rows have no method and were Venmo (lib/balance.ts); "manual" is by hand too.
+  // Rows from before Stripe-only payouts (any other method, or none) were paid outside Stripe (lib/payoutPlan.ts).
   const lastByMethod = {
     stripe: { n: 0, cents: 0 },
-    venmo: { n: 0, cents: 0 },
+    outside: { n: 0, cents: 0 },
   };
   for (const r of lastRows) {
-    const k = r.method === "stripe" ? "stripe" : "venmo";
+    const k = r.method === "stripe" ? "stripe" : "outside";
     lastByMethod[k].n++;
     lastByMethod[k].cents += r.amountCents;
   }
   const ready = await readyPayouts(now);
+  const waiting = await waitingOnStripe(now, ready);
   const payouts = {
     mode,
     stripeKey: set("STRIPE_SECRET_KEY"),
@@ -114,7 +115,9 @@ export async function loadMilestones(now = new Date()) {
     owed,
     lastMonth: lastPaid?.month ?? null,
     lastByMethod,
-    venmoReady: ready.filter((r) => r.route === "venmo").length,
+    /** Artists with closed months held until they finish Stripe setup. */
+    held: waiting.length,
+    heldCents: waiting.reduce((n, w) => n + w.heldCents, 0),
   };
 
   // ---------- 2. Orders go to the lab ----------
@@ -202,9 +205,8 @@ export async function loadMilestones(now = new Date()) {
   const tasks: ManualTask[] = [
     { key: "print", label: "Orders not sent to the lab", n: notSent, href: "/admin/orders?month=all&filter=print", ...(labAuto ? { can: "auto" as const, how: `Sent by itself (${lab.provider.label}). Left here only if a send didn't happen.` } : { can: "key" as const, how: "Set PRINTER_EMAIL, or the Prodigi API key." }) },
     { key: "wo", label: "Work orders that failed", n: failedWo, href: "/admin/orders?month=all&filter=print", can: "auto", how: "Retried every hour. A person only if it keeps failing." },
-    { key: "venmo", label: "Venmo payouts", n: payouts.venmoReady, href: "/admin/payouts", can: "setting", how: "Artists connect Stripe in Studio → Money. Then the 5th pays them." },
-    { key: "late", label: "Late payouts", n: lateArtists, href: "/admin/payouts", can: "setting", how: "Same fix: Stripe-connected artists are paid on the 5th by the cron." },
-    { key: "stripe", label: "Owed money, Stripe not finished", n: stripeUnfinished, href: "/admin/artists?stripe=pending&balance=1", can: "person", how: "The artist finishes Stripe. We can only nudge." },
+    { key: "late", label: "Late payouts", n: lateArtists, href: "/admin/payouts", can: "setting", how: "Connected artists are paid on the 5th by the cron (CRON_SECRET and the Stripe key). Late means a transfer failed or didn't run." },
+    { key: "stripe", label: "Pay held: Stripe not set up", n: payouts.held, href: "/admin/payouts#waiting", can: "person", how: "The artist connects Stripe in Studio → Money. A monthly reminder goes out by itself; you can send one more." },
     { key: "shipped", label: "Shipped 10+ days, not delivered", n: staleShipped, href: "/admin/orders?month=all&filter=shipped", ...(trackingOn ? { can: "auto" as const, how: "Tracking updates come in by themselves. Left here: a real delay." } : { can: "key" as const, how: "Set SHIPPO_API_KEY or EASYPOST_API_KEY: deliveries mark themselves." }) },
     { key: "mod", label: "Artworks to review", n: pendingArt, href: "/admin/moderation", ...(trust.autoApprove && trust.providerReady ? { can: "auto" as const, how: "Runs by itself with the image check. Questionable ones still come to you." } : imageCheckOn ? { can: "setting" as const, how: "Turn on Settings → Auto-approval. Until then new artists' first pieces come to you." } : { can: "key" as const, how: "Set IMAGE_MODERATION_PROVIDER (local is free) and turn on Auto-approval. Questionable ones still come to you." }) },
     { key: "dupes", label: "Possible duplicates", n: duplicates, href: "/admin/moderation", can: "person", how: "Someone has to decide whose image it is." },

@@ -5,7 +5,7 @@ import { emailHtml } from "@/lib/artistEmails";
 import { alertKey, raiseAlert, resolveAlert, resolveAlerts } from "@/lib/alerts";
 import { payoutFailedAlert } from "@/lib/alertBuilders";
 import { PAYOUT_DAY_OF_MONTH, monthLabel } from "@/lib/balance";
-import { INSUFFICIENT_FUNDS, lastClosedMonth, payReadyPayouts } from "@/lib/payouts";
+import { INSUFFICIENT_FUNDS, lastClosedMonth, payReadyPayouts, remindWaitingArtists } from "@/lib/payouts";
 import { connectMode } from "@/lib/stripeConnect";
 import { SUMMARY_ROWS, booksCsv, buildBooks, monthBounds, previousMonth } from "@/lib/bookkeeping";
 import type { JobContext, JobResult } from "@/lib/jobs/run";
@@ -21,8 +21,9 @@ export const insufficientKey = (month: string) => `payout_insufficient:${month}`
 
 /**
  * Same as "Pay all" on /admin/payouts, from the 5th on, only with real Stripe keys (never simulates). Each paid month
- * already emails the artist "Your Artfinity payout for <month> is on its way" (lib/payouts.ts), so nothing more is
- * sent here. Failed transfers and a too-low Stripe balance raise alerts; paid months resolve earlier failure alerts.
+ * already emails the artist "Your Artfinity payout for <month> is on its way" (lib/payouts.ts). Right after the run,
+ * every artist whose money is held (Stripe not set up) gets a "Connect Stripe" reminder, unless one went out in the
+ * last 7 days. Failed transfers and a too-low Stripe balance raise alerts; paid months resolve earlier failure alerts.
  */
 export async function runPayouts(ctx: JobContext): Promise<JobResult> {
   if (connectMode() !== "live") return { summary: "Skipped: STRIPE_SECRET_KEY is not set (payouts never run simulated from here; use Pay all on /admin/payouts)." };
@@ -38,12 +39,15 @@ export async function runPayouts(ctx: JobContext): Promise<JobResult> {
   } else {
     await resolveAlerts({ prefix: "payout_insufficient:" });
   }
+  // Held artists: the monthly "Connect Stripe to get paid" email (rate-limited per artist, lib/payoutPlan.ts).
+  const reminders = r.held.length ? await remindWaitingArtists(ctx.now, r.held) : { sent: 0, skipped: 0, failed: 0 };
   const paidCents = r.paid.reduce((n, p) => n + p.amountCents, 0);
+  const heldCents = r.held.reduce((n, h) => n + h.totalCents, 0);
   const summary = [
     `${r.paid.length} paid (${usd(paidCents)})`,
     r.failed.length ? `${r.failed.length} failed (alerted)` : null,
     r.insufficientFunds ? "Stripe balance too low" : null,
-    r.manual.length ? `${r.manual.length} to pay by Venmo by hand` : null,
+    r.held.length ? `${r.held.length} held until they connect Stripe (${usd(heldCents)}; ${reminders.sent} reminded)` : null,
   ].filter(Boolean).join(", ");
   return {
     summary: `${monthLabel(month)}: ${summary}`,
@@ -51,7 +55,8 @@ export async function runPayouts(ctx: JobContext): Promise<JobResult> {
       month,
       paid: r.paid.map((p) => ({ artistId: p.artistId, month: p.month, cents: p.amountCents, transferId: p.transferId })),
       failed: r.failed.map((f) => ({ artistId: f.artistId, month: f.month, reason: f.reason })),
-      venmoByHand: r.manual.map((m) => ({ artistId: m.artistId, cents: m.totalCents })),
+      held: r.held.map((h) => ({ artistId: h.artistId, cents: h.totalCents, stripe: h.stripeStatus })),
+      reminders,
       insufficientFunds: r.insufficientFunds,
     },
   };

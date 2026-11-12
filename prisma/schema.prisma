@@ -105,7 +105,7 @@ model Payout {
   month       String
   amountCents Int
   paidAt      DateTime?
-  method      String?   // "stripe" | "venmo" | "manual"
+  method      String?   // "stripe" | "carried"; older rows "venmo" | "manual" | null were paid outside Stripe (kept for history)
   stripeTransferId String? @unique
   failureReason    String?
   createdAt   DateTime  @default(now())
@@ -132,8 +132,9 @@ model Artist {
   bio          String?   @default("")
   createdAt    DateTime  @default(now())
   role         Role      @default(USER)
+  /// Deprecated: Venmo payouts removed Nov 2026. Unused; drop in a later migration.
   venmoHandle  String?   @unique
-  // Automatic payouts through Stripe Connect (Express). Venmo stays as the fallback.
+  // Payouts: Stripe Connect (Express) only. Until the account is payout-ready, earnings are held (lib/payouts.ts).
   stripeAccountId       String?  @unique
   stripePayoutsEnabled  Boolean  @default(false)
   artworks     Artwork[]
@@ -183,9 +184,11 @@ model Artist {
 
   passwordResetTokens PasswordResetToken[]
 
-  // Payouts: a Venmo change waits for the artist to confirm it from their email
+  /// Deprecated: Venmo payouts removed Nov 2026. Unused; drop in a later migration.
   venmoPending       String?
+  /// Deprecated: Venmo payouts removed Nov 2026. Unused; drop in a later migration.
   venmoPendingToken  String?   @unique
+  /// Deprecated: Venmo payouts removed Nov 2026. Unused; drop in a later migration.
   venmoPendingAt     DateTime?
   // Account closing: the page goes offline right away; unpaid earnings are still paid out before the data is removed
   closedAt           DateTime?

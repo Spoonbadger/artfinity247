@@ -2,7 +2,7 @@
 // No emails, street addresses, cookies, auth headers or request bodies leave the app: keys that look personal
 // are replaced, and any email-looking text in messages, breadcrumbs and extra data is masked.
 const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
-const SECRET_KEY = /email|e-mail|address|street|zip|postal|phone|cookie|authorization|password|passwd|secret|token|session|shipping|billing|card|iban|venmo/i;
+const SECRET_KEY = /email|e-mail|address|street|zip|postal|phone|cookie|authorization|password|passwd|secret|token|session|shipping|billing|card|iban/i;
 const FILTERED = "[Filtered]";
 
 function scrubValue(v: unknown, depth = 0): unknown {

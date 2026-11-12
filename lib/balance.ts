@@ -15,6 +15,7 @@ import type { PrintSize } from "@/lib/revenue";
 import { connectStatus, type ConnectStatus } from "@/lib/stripeConnect";
 import { activeRefunds, refundAdjustments, shareAfterRefund, type RefundAdjustment } from "@/lib/refunds";
 import type { RefundReason } from "@/lib/refundPolicy";
+import { HELD_LABEL, STRIPE_LABEL, isMonthLate, isPayoutLate, lastPayoutDay, nextPayoutDay, paidMethodLabel, payoutDateFor, payoutRoute, type PayoutRoute } from "@/lib/payoutPlan";
 
 /**
  * BUSINESS DECISION: the return window. A sale stays "pending" (incoming) for this many days
@@ -23,22 +24,14 @@ import type { RefundReason } from "@/lib/refundPolicy";
  */
 export const RETURN_WINDOW_DAYS = 14;
 
-/**
- * BUSINESS DECISION: payout day. Artfinity sends each month's earnings by this day of the
- * following month (Sell with us and the artist terms both say "by the 5th of the following month").
- * Payouts are sent by Artfinity ("Pay all" in /admin/payouts sends Stripe transfers to connected artists; Venmo
- * months are paid by hand and marked paid); artists never start one.
- *
- * Note: with a 14-day window, orders from the last ~9 days of a month are still in the window on
- * the 5th. The admin pays whole months, so those sales ARE in that payout; they show as pending
- * until they clear and are reported in nextPayout.clearingCents.
- */
-export const PAYOUT_DAY_OF_MONTH = 5;
+// Payout day, late rules and method labels live in lib/payoutPlan.ts (pure, tested); re-exported here.
+export { LATE_AFTER_DAYS, PAYOUT_DAY_OF_MONTH, isPayoutLate, payoutDateFor } from "@/lib/payoutPlan";
+export { CARRIED_METHOD, HELD_LABEL, LEGACY_PAID_LABEL, STRIPE_LABEL, paidMethodLabel } from "@/lib/payoutPlan";
 
 const DAY_MS = 86_400_000;
 
-/** A month's payout counts as late once it is still unpaid this many days after the 5th. */
-export const LATE_AFTER_DAYS = 3;
+/** AdminAction written by each payout run, listing the artists it held (Stripe not ready). See heldAtLatestRun. */
+export const HELD_RUN_ACTION = "payout.held";
 
 export type LedgerStatus = "pending" | "available" | "paid";
 export type PayoutStatus = "paid" | "scheduled" | "in_progress";
@@ -142,11 +135,15 @@ export type Balance = {
     /** True when the due date has passed and the months aren't marked paid yet. */
     late: boolean;
   };
-  /** Closed months still unpaid more than LATE_AFTER_DAYS after their payout day, oldest first. */
+  /**
+   * Closed months still unpaid more than LATE_AFTER_DAYS after their payout day, oldest first. Only for a payout-ready
+   * Connect account (lib/payoutPlan.ts isMonthLate): money held while Stripe isn't set up is never late.
+   */
   lateMonths: string[];
-  venmoHandle: string | null;
-  /** How the next payout goes out: to their bank through Stripe (connected and ready), else by Venmo. */
-  payoutVia: "stripe" | "venmo";
+  /** "stripe": the next run sends it to their bank. "held": it waits in their balance until Stripe is payout-ready. */
+  payoutVia: PayoutRoute;
+  /** Closed, unpaid months' total while held (0 when payoutVia is "stripe"). */
+  heldCents: number;
   stripeStatus: ConnectStatus;
   method: string;
   ledger: LedgerLine[];
@@ -160,38 +157,9 @@ export type Balance = {
 /** "2026-10" for a date, in UTC (payout months follow UTC, like the admin pages). */
 export const utcMonth = (d: Date) => d.toISOString().slice(0, 7);
 
-/** The payout due date for an earnings month: the 5th of the following month, UTC. */
-export function payoutDateFor(month: string): Date {
-  const [y, m] = month.split("-").map(Number);
-  return new Date(Date.UTC(y, m, PAYOUT_DAY_OF_MONTH)); // m is 1-based, so this is next month
-}
-
-/** Unpaid and more than LATE_AFTER_DAYS days past the payout day (the whole 5th counts as on time). */
-export function isPayoutLate(month: string, now: Date = new Date()) {
-  return now.getTime() >= payoutDateFor(month).getTime() + (1 + LATE_AFTER_DAYS) * DAY_MS;
-}
-
 export function monthLabel(month: string, style: "long" | "short" = "long") {
   const [y, m] = month.split("-").map(Number);
   return new Date(Date.UTC(y, m - 1, 15)).toLocaleDateString("en-US", { timeZone: "UTC", month: style, year: "numeric" });
-}
-
-export function venmoLabel(handle: string | null | undefined) {
-  const h = (handle || "").trim().replace(/^@/, "");
-  return h ? `Venmo @${h}` : "Venmo (add your handle)";
-}
-
-export const STRIPE_LABEL = "Bank via Stripe";
-
-/** Payout.method of a $0 month settled along with a later one, because a refund adjustment used it up (carriedInto). */
-export const CARRIED_METHOD = "carried";
-
-/** A paid month's method, from Payout.method ("stripe" | "venmo" | "manual"; older rows have none and were Venmo). */
-function paidMethodLabel(method: string | null | undefined, handle: string | null | undefined) {
-  if (method === "stripe") return STRIPE_LABEL;
-  if (method === "manual") return "Paid by Artfinity";
-  if (method === CARRIED_METHOD) return "Went to a refund adjustment";
-  return venmoLabel(handle);
 }
 
 function cityOnly(address: string | null | undefined) {
@@ -265,7 +233,7 @@ function adjustmentLine(a: RefundAdjustment, status: LedgerStatus): AdjustmentLi
 
 export async function getBalance(artistId: string, now: Date = new Date()): Promise<Balance> {
   const [artist, items, payoutRows] = await Promise.all([
-    prisma.artist.findUnique({ where: { id: artistId }, select: { venmoHandle: true, stripeAccountId: true, stripePayoutsEnabled: true } }),
+    prisma.artist.findUnique({ where: { id: artistId }, select: { stripeAccountId: true, stripePayoutsEnabled: true } }),
     prisma.orderItem.findMany({
       where: { artwork: { artistId }, order: { paymentStatus: "paid", kind: { not: "bulk" } } },
       select: {
@@ -294,8 +262,8 @@ export async function getBalance(artistId: string, now: Date = new Date()): Prom
   const paid = new Map(payoutRows.filter((p) => p.paidAt).map((p) => [p.month, p]));
   const paidMonths = new Set(paid.keys());
   const stripeStatus: ConnectStatus = artist ? connectStatus(artist) : "not_connected";
-  const payoutVia = stripeStatus === "ready" ? "stripe" : "venmo";
-  const method = payoutVia === "stripe" ? STRIPE_LABEL : venmoLabel(artist?.venmoHandle);
+  const payoutVia = payoutRoute(stripeStatus);
+  const method = payoutVia === "stripe" ? STRIPE_LABEL : HELD_LABEL;
 
   const ledger: LedgerLine[] = items.map((it) => {
     const date = it.order.createdAt;
@@ -367,15 +335,14 @@ export async function getBalance(artistId: string, now: Date = new Date()): Prom
   const lifetimeCents = pendingCents + availableCents + paidTotalCents;
 
   // Next payout: every closed, unpaid month goes out in the next run on the 5th.
+  // Held (Stripe not payout-ready): the first run after they connect, i.e. the next 5th.
   const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-  const nextRun = now.getUTCDate() <= PAYOUT_DAY_OF_MONTH
-    ? new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), PAYOUT_DAY_OF_MONTH))
-    : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, PAYOUT_DAY_OF_MONTH));
+  const nextRun = nextPayoutDay(now);
   const owedMonths = Array.from(byMonth.keys()).filter((m) => m < currentMonth && !paidMonths.has(m) && payableOf(m) > 0).sort();
   let nextPayout: Balance["nextPayout"];
   if (owedMonths.length) {
     const latestDue = payoutDateFor(owedMonths[owedMonths.length - 1]);
-    const late = latestDue.getTime() < today;
+    const late = payoutVia === "stripe" && latestDue.getTime() < today;
     const owed = new Set(owedMonths);
     const amountCents = owedMonths.reduce((n, m) => n + payableOf(m), 0);
     nextPayout = {
@@ -398,7 +365,11 @@ export async function getBalance(artistId: string, now: Date = new Date()): Prom
     };
   }
 
-  const lateMonths = owedMonths.filter((m) => isPayoutLate(m, now));
+  // Late only for a payout-ready account the run should already have paid (not one held at the latest run).
+  const candidates = payoutVia === "stripe" ? owedMonths.filter((m) => isPayoutLate(m, now)) : [];
+  const heldAt = candidates.length ? await heldAtLatestRun([artistId], now).then((m) => m.get(artistId) ?? null) : null;
+  const lateMonths = candidates.filter((month) => isMonthLate({ month, status: stripeStatus, now, heldAt }));
+  const heldCents = payoutVia === "held" && !nextPayout.projected ? nextPayout.amountCents : 0;
 
   const months = Array.from(new Set([...Array.from(byMonth.keys()), ...Array.from(paid.keys())])).sort((a, b) => b.localeCompare(a));
   const payouts: PayoutRow[] = months.map((m) => {
@@ -419,7 +390,7 @@ export async function getBalance(artistId: string, now: Date = new Date()): Prom
       paidAt: p?.paidAt ? p.paidAt.toISOString() : null,
       // Every closed, unpaid month is in the next payout run.
       dueDate: status === "scheduled" ? nextPayout.date : payoutDateFor(m).toISOString(),
-      method: p ? paidMethodLabel(p.method, artist?.venmoHandle) : method,
+      method: p ? paidMethodLabel(p.method) : method,
       sales: agg.sales,
       prints: agg.prints,
     };
@@ -436,8 +407,8 @@ export async function getBalance(artistId: string, now: Date = new Date()): Prom
     adjustmentCents,
     nextPayout,
     lateMonths,
-    venmoHandle: artist?.venmoHandle?.trim() || null,
     payoutVia,
+    heldCents,
     stripeStatus,
     method,
     ledger,
@@ -448,8 +419,32 @@ export async function getBalance(artistId: string, now: Date = new Date()): Prom
 }
 
 /**
- * Every artist with a late payout: a closed month with paid sales, not marked paid, more than
- * LATE_AFTER_DAYS past its payout day. Closed accounts included (they are still owed).
+ * When each artist was last held by a payout run on or after the latest payout day (the 5th), from the run's
+ * AdminAction (HELD_RUN_ACTION, details.artistIds). An artist held then connected after that run: the next run pays
+ * them, so their months aren't late yet (lib/payoutPlan.ts isMonthLate).
+ */
+export async function heldAtLatestRun(artistIds: string[], now: Date = new Date()): Promise<Map<string, Date>> {
+  const out = new Map<string, Date>();
+  if (!artistIds.length) return out;
+  const runs = await prisma.adminAction.findMany({
+    where: { action: HELD_RUN_ACTION, createdAt: { gte: lastPayoutDay(now), lte: now } },
+    select: { createdAt: true, details: true },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  });
+  const want = new Set(artistIds);
+  for (const r of runs) {
+    const ids = (r.details as { artistIds?: unknown } | null)?.artistIds;
+    if (!Array.isArray(ids)) continue;
+    for (const id of ids) if (typeof id === "string" && want.has(id) && !out.has(id)) out.set(id, r.createdAt);
+  }
+  return out;
+}
+
+/**
+ * Every artist with a late payout: a closed month with paid sales, not paid, more than LATE_AFTER_DAYS past its payout
+ * day, for an artist whose Stripe Connect account is payout-ready (so the transfer failed or didn't run). Money held
+ * while the artist hasn't set up Stripe is never late. Closed accounts included (they are still owed).
  */
 export async function latePayouts(now: Date = new Date()): Promise<{ artistId: string; month: string }[]> {
   const rows = await prisma.$queryRaw<{ artistId: string; month: string }[]>`
@@ -461,12 +456,16 @@ export async function latePayouts(now: Date = new Date()): Promise<{ artistId: s
       AND o."createdAt" < ${new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))}`;
   const late = rows.filter((r) => isPayoutLate(r.month, now));
   if (!late.length) return [];
-  const paid = await prisma.payout.findMany({
-    where: { artistId: { in: Array.from(new Set(late.map((r) => r.artistId))) }, paidAt: { not: null } },
-    select: { artistId: true, month: true },
-  });
+  const ids = Array.from(new Set(late.map((r) => r.artistId)));
+  const [paid, artists, heldAt] = await Promise.all([
+    prisma.payout.findMany({ where: { artistId: { in: ids }, paidAt: { not: null } }, select: { artistId: true, month: true } }),
+    prisma.artist.findMany({ where: { id: { in: ids } }, select: { id: true, stripeAccountId: true, stripePayoutsEnabled: true } }),
+    heldAtLatestRun(ids, now),
+  ]);
   const done = new Set(paid.map((p) => `${p.artistId}:${p.month}`));
-  let out = late.filter((r) => !done.has(`${r.artistId}:${r.month}`));
+  const status = new Map(artists.map((a) => [a.id, connectStatus(a)]));
+  let out = late.filter((r) => !done.has(`${r.artistId}:${r.month}`)
+    && isMonthLate({ month: r.month, status: status.get(r.artistId) ?? "not_connected", now, heldAt: heldAt.get(r.artistId) ?? null }));
   // A month a refund adjustment brought to $0 isn't owed, so it isn't late.
   const withAdjustments = new Set((await refundAdjustments()).map((a) => a.artistId));
   const check = Array.from(new Set(out.map((r) => r.artistId).filter((id) => withAdjustments.has(id))));

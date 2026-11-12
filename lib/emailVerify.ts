@@ -2,7 +2,7 @@
 // New password sign-ups and email changes get a link /api/auth/verify-email?t=<token>, good for 7 days.
 // The token is "<expiry in seconds>.<random>"; only its SHA-256 is stored (Artist.emailVerifyToken), so a database
 // read can't be turned into working links. Confirming sets Artist.emailVerifiedAt and clears the token.
-// Until confirmed: Studio shows a banner, and payouts (Stripe onboarding, Venmo) and newsletter sending are blocked.
+// Until confirmed: Studio shows a banner, and Stripe payout setup and newsletter sending are blocked.
 import { createHash, randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { resend, emailEnabled } from "@/lib/resend";

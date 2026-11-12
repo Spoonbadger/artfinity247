@@ -145,7 +145,6 @@ export type UserType = {
   role: "ADMIN" | "USER"
   is_active: boolean;
   slug: string;
-  venmoHandle: string
 }
 
 export type UserProductsType = {

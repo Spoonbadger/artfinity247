@@ -1,5 +1,5 @@
 import type { HelpArticle } from "../types";
-import { PAYOUT_DAY, VENMO_CONFIRM_HOURS } from "../facts";
+import { PAYOUT_DAY } from "../facts";
 
 const section = "account" as const;
 
@@ -83,26 +83,21 @@ Good to know in the meantime:
 `,
   },
   {
-    slug: "change-venmo",
+    slug: "change-payout-bank",
     section,
     audience: "artist",
-    title: "Changing your Venmo",
-    summary: `Change it in My page. For your security, we email you a confirmation link (good for ${VENMO_CONFIRM_HOURS} hours). Payouts keep going to your old handle until you click it.`,
-    link: { href: "/studio/page", label: "My page" },
+    title: "Changing the bank you're paid to",
+    summary: "Your bank details live in Stripe, not Artfinity. Open Money, press Manage in Stripe, and change it there.",
+    link: { href: "/studio/money", label: "Open Money" },
     related: ["how-payouts-reach-you", "when-paid", "account-details"],
     body: `
-1. Open [My page](/studio/page) and edit **Venmo handle**.
-2. Save. If you already had a handle, we email you a confirmation link.
-3. Click the link within ${VENMO_CONFIRM_HOURS} hours. Money then says "Venmo updated."
+1. Open [Money](/studio/money) and press **Manage in Stripe**.
+2. Stripe opens your account. Change your bank account there.
+3. Stripe may ask you to confirm it's you. That keeps anyone who gets into your Artfinity account from redirecting your earnings.
 
-Until you click it, payouts keep going to your current handle, and [Money](/studio/money) shows that a change is waiting. This stops anyone who gets into your account from redirecting your earnings.
+Change it before the ${PAYOUT_DAY} so that month's payout goes to the new account.
 
-## If something goes wrong
-- **Link expired:** change your Venmo again to get a new one.
-- **"Already on another Artfinity account":** each Venmo handle can be used by one account only. [Message us](/contact) if it's yours.
-- **Change it before the ${PAYOUT_DAY}** so that month's payout goes to the right place.
-
-Getting paid through Stripe instead? See [How payouts reach you](/help/getting-paid/how-payouts-reach-you).
+Not connected to Stripe yet? See [How payouts reach you](/help/getting-paid/how-payouts-reach-you).
 `,
   },
   {
@@ -110,15 +105,15 @@ Getting paid through Stripe instead? See [How payouts reach you](/help/getting-p
     section,
     audience: "artist",
     title: "Confirming your email",
-    summary: "We email you a link when you sign up or change your email. Click it to turn on payouts (Venmo and Stripe) and newsletters. The link works for 7 days; you can send a fresh one from the top of your Studio.",
+    summary: "We email you a link when you sign up or change your email. Click it to turn on Stripe payouts and newsletters. The link works for 7 days; you can send a fresh one from the top of your Studio.",
     link: { href: "/studio#confirm-email", label: "Resend the link" },
-    related: ["account-details", "change-venmo", "login-reset-password"],
+    related: ["account-details", "how-payouts-reach-you", "login-reset-password"],
     body: `
 ## Why we ask
 Your email is where sales, payout notices and security emails go, so we check it's really yours before money moves. Until you confirm:
 - You can use the whole Studio: add art, print codes, sell.
-- Adding or changing your Venmo, connecting Stripe and sending newsletters wait.
-- Your earnings are safe. They're paid out once a payout method is set.
+- Connecting Stripe for payouts and sending newsletters wait.
+- Your earnings are safe. They're paid out once Stripe is connected.
 
 ## Confirm it
 1. Open the email "Confirm your email for Artfinity".
@@ -140,7 +135,7 @@ Signed up with Google or Apple? They confirm your email for you, so there's noth
     title: "Changing your name, email or bio",
     summary: "Your public name, city, bio and photo are in My page. Your legal name, email and state are in Account details, and stay private.",
     link: { href: "/studio/page", label: "My page" },
-    related: ["design-your-page", "change-venmo", "login-reset-password"],
+    related: ["design-your-page", "change-payout-bank", "login-reset-password"],
     body: `
 ## Public (on your page)
 In [My page](/studio/page): the name buyers see, your city, your bio and your photo. Changes show on your page as soon as you save.
@@ -168,7 +163,7 @@ Each email can belong to one account only.
 ## What happens
 - Your page goes offline right away. Your art and codes stop showing to buyers, and printed codes stop opening anything.
 - Orders already placed are still printed and shipped.
-- Unpaid earnings are paid on the usual monthly payout, by the ${PAYOUT_DAY} of the following month.
+- Unpaid earnings are paid through Stripe on the usual monthly payout, by the ${PAYOUT_DAY} of the following month. Connect Stripe in [Money](/studio/money) first.
 - Past sales stay on record. We email you the details.
 - Remaining personal data is removed after any unpaid earnings are paid out (see the [privacy policy](/privacy-policy)).
 

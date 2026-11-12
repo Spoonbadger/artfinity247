@@ -45,7 +45,7 @@ function PaintedBar({ pending, available, paid }: { pending: number; available: 
 
 export default function BalanceCard({ b }: { b: Balance }) {
   const np = b.nextPayout;
-  const handle = b.venmoHandle ? `@${b.venmoHandle.replace(/^@/, "")}` : null;
+  // Payouts are Stripe-only: until it's payout-ready, closed months are held (lib/payoutPlan.ts).
   const stripe = b.payoutVia === "stripe";
   const months = np.months.map((m) => monthName(m).split(" ")[0]);
   const monthsText = months.length > 2 ? `${months.slice(0, -1).join(", ")} and ${months[months.length - 1]}` : months.join(" and ");
@@ -65,7 +65,7 @@ export default function BalanceCard({ b }: { b: Balance }) {
   const segs = [
     // "Why is this on hold?" It's this month's sales: each month is paid as one payout, after the month ends.
     { k: "pending" as const, label: <>On hold</>, value: holdCents, note: holdCents > 0 ? `${thisMonth} sales. Paid together by ${holdDate}, after the month ends.` : `${thisMonth} sales land here, paid by ${holdDate}.` },
-    { k: "available" as const, label: <>Ready for next payout</>, value: readyCents, note: readyCents > 0 ? `${monthsText} sales.` : `Empty until ${thisMonth} ends.` },
+    { k: "available" as const, label: stripe ? <>Ready for next payout</> : <>Held for you</>, value: readyCents, note: readyCents > 0 ? (stripe ? `${monthsText} sales.` : `${monthsText} sales. Paid once you connect Stripe.`) : `Empty until ${thisMonth} ends.` },
     { k: "paid" as const, label: <>Paid out</>, value: b.paidTotalCents, note: "All time." },
   ];
 
@@ -82,7 +82,7 @@ export default function BalanceCard({ b }: { b: Balance }) {
         <div className="grid gap-1 rounded-[4px] bg-wall p-3.5 sm:p-4">
           <span className="t-small font-semibold">Next payout</span>
           <p className="text-[19px] leading-tight sm:text-[21px]">
-            <b className={late ? "text-coral" : undefined}>{late ? "Overdue" : dayUTC(np.date)}</b>
+            <b className={late ? "text-coral" : undefined}>{late ? "Overdue" : !stripe && readyCents > 0 ? "Once you connect" : dayUTC(np.date)}</b>
             {np.late && !late && <span className="text-[14px] text-ink-2"> (on its way)</span>}
             <span className="text-ink-2"> · </span>
             <b className="num text-earned">{usd(np.amountCents)}</b>
@@ -90,10 +90,8 @@ export default function BalanceCard({ b }: { b: Balance }) {
           <p className="flex flex-wrap items-center gap-x-2 text-[15px]">
             {stripe ? (
               <><Tick />Your bank, via Stripe</>
-            ) : handle ? (
-              <><Tick />Venmo <b>{handle}</b></>
             ) : (
-              <><span className="font-semibold text-coral">No payout method yet</span><Link href="/studio/page#venmo" className="font-bold text-ink underline underline-offset-2">Add Venmo</Link></>
+              <><span className="font-semibold text-coral">Waiting on your Stripe setup</span><Link href="#getpaid-h" className="font-bold text-ink underline underline-offset-2">Connect Stripe</Link></>
             )}
           </p>
           {!fresh && (
@@ -109,7 +107,7 @@ export default function BalanceCard({ b }: { b: Balance }) {
               {usd(-b.carryForwardCents)} in refunds comes off your next payouts. A payout never goes below $0; the rest carries over.
             </p>
           )}
-          {!late && <p className="t-small">Sent automatically. Nothing to do.</p>}
+          {!late && stripe && <p className="t-small">Sent automatically. Nothing to do.</p>}
         </div>
       </div>
 

@@ -9,8 +9,8 @@ export default function PayoutSentEmail({
   artistName: string;
   month: string;
   amountCents: number;
-  /** "stripe": sent to their bank through Stripe. Left out: paid by hand (Venmo). */
-  via?: "stripe" | "venmo";
+  /** "stripe": sent to their bank through Stripe. Left out only when re-sending the email for an old payout made outside Stripe. */
+  via?: "stripe";
 }) {
   const fmt = (cents: number) =>
     (cents / 100).toLocaleString("en-US", {

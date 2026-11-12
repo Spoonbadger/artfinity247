@@ -26,7 +26,7 @@ export default function Page() {
           <ul>
             <li>Your name, email and shipping address when you buy, sign up or contact us. A phone number only if you file a copyright counter-notice, which the law requires.</li>
             <li>Payment details, which Stripe processes. We never see or store your full card number.</li>
-            <li>For artists: your profile, the art you upload, and the Venmo handle or Stripe account we pay you with. Stripe collects the bank and tax details for its payouts.</li>
+            <li>For artists: your profile, the art you upload, and the Stripe account we pay you with. Stripe collects the bank and tax details for its payouts.</li>
             <li>When someone scans a QR code: the device type and a rough location (city, region, country), plus a random visitor id so artists can count unique scans. No names.</li>
             <li>When you view an artist&apos;s page: an anonymous view count with the device type and the site you came from (like Instagram), never the full link. We skip this if your browser sends Do Not Track or Global Privacy Control.</li>
             <li>

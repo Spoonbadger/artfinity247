@@ -6,11 +6,11 @@ import { usd } from "./_components/util";
 import { cn } from "@/lib/utils";
 import { itemBreakdown } from "@/lib/sales";
 import { activeRefunds } from "@/lib/refunds";
-import { getBalance, latePayouts } from "@/lib/balance";
+import { latePayouts } from "@/lib/balance";
+import { waitingOnStripe } from "@/lib/payouts";
 import { openRequestCount } from "@/lib/reprints";
 import { shippedDates } from "@/lib/shipping/store";
 import { DUPLICATE_PREFIX } from "@/lib/imageHash";
-import { connectStatus } from "@/lib/stripeConnect";
 import { integrationsHealth, type Health } from "@/lib/integrations";
 import { TEST_DAYS, TEST_TARGET, testStart } from "@/lib/adminSettings";
 import TestStartForm from "./_components/TestStartForm";
@@ -59,17 +59,14 @@ export default async function AdminDashboard() {
     prisma.order.findMany({ where: { shippingStatus: "shipped" }, select: { id: true, createdAt: true } }),
     latePayouts(now),
     prisma.artist.count({ where: { verification: "PENDING" } }),
-    prisma.artist.findMany({ where: { stripeAccountId: { not: null }, stripePayoutsEnabled: false }, select: { id: true, stripeAccountId: true, stripePayoutsEnabled: true } }),
+    waitingOnStripe(now),
   ]);
   // Shipped date = Order.shippedAt, else when tracking was saved (older orders kept it as a Message), else the order date.
   const shippedAt = await shippedDates(shippedOrders.map((o) => o.id));
   const staleShipped = shippedOrders.filter((o) => (shippedAt.get(o.id) ?? o.createdAt).getTime() < now.getTime() - SHIPPED_STALE_DAYS * DAY).length;
   const lateArtists = new Set(late.map((l) => l.artistId)).size;
-  let stripeWithBalance = 0;
-  for (const a of stripePending.filter((a) => connectStatus(a) === "pending")) {
-    const b = await getBalance(a.id, now);
-    if (b.pendingCents + b.availableCents > 0) stripeWithBalance++;
-  }
+  // Held until the artist finishes Stripe setup: not late, but a reminder from /admin/payouts can help.
+  const stripeWaiting = stripePending.length;
 
   // Open alerts not snoozed. Urgent ones are listed one by one; the rest only when no queue below covers them.
   const alerts = await openAlerts().catch(() => []);
@@ -103,7 +100,7 @@ export default async function AdminDashboard() {
     { key: "verify", n: toVerify, label: "Verification requests", href: "/admin/verification", action: "Review" },
     { key: "reviews", n: flaggedReviews, label: "Reviews held", href: "/admin/reviews", action: "Check" },
     { key: "shipped", n: staleShipped, label: `Shipped ${SHIPPED_STALE_DAYS}+ days ago, not delivered`, href: "/admin/orders?month=all&filter=shipped", action: "Check" },
-    { key: "stripe", n: stripeWithBalance, label: "Owed money, Stripe not finished", href: "/admin/artists?stripe=pending&balance=1", action: "See" },
+    { key: "stripe", n: stripeWaiting, label: "Pay held: artist hasn't set up Stripe", href: "/admin/payouts#waiting", action: "Remind" },
     { key: "alerts", n: otherAlerts, label: "Other open alerts", href: "/admin/alerts", action: "See" },
   ] as Todo[]).filter((t) => t.urgent || t.n > 0);
   const total = queue.reduce((n, t) => n + (t.urgent ? 1 : t.n), 0);

@@ -2,7 +2,8 @@
 //
 // Artists connect a Stripe Express account (transfers only) from /studio/money. Once Stripe says the account
 // can receive transfers and pay out, Artist.stripePayoutsEnabled is true and the monthly payout goes to their bank
-// as a Stripe Transfer (lib/payouts.ts). Artists who don't connect keep getting paid by Venmo, by hand.
+// as a Stripe Transfer (lib/payouts.ts). This is the only way artists are paid: until an artist's account is ready,
+// their earnings are held in their balance and paid on the first run after they connect.
 //
 // Without STRIPE_SECRET_KEY (localhost, or a staging site with ALLOW_TEST_CHECKOUT=1) connecting is SIMULATED:
 // the artist gets a fake "acct_sim_..." id and is ready at once, and "Pay all" records fake "tr_sim_..." transfers.
@@ -183,8 +184,8 @@ export async function connectDetail(artistId: string): Promise<ConnectDetail | n
     const why = r?.disabled_reason ?? "";
     if (why.startsWith("rejected") || why === "under_review" || why === "requirements.pending_verification") {
       return why === "requirements.pending_verification" || why === "under_review"
-        ? { state: "review", reason: "Stripe is checking your details. This usually takes a day or two; we pay by Venmo until then." }
-        : { state: "review", reason: "Stripe couldn't approve this account. Message us and we'll sort out another way to pay you." };
+        ? { state: "review", reason: "Stripe is checking your details. This usually takes a day or two." }
+        : { state: "review", reason: "Stripe couldn't approve this account. Message us and we'll help sort it out." };
     }
     if (!acct.details_submitted) return { state: "setup", reason: `Stripe still needs ${needWords(due)}.` };
     return { state: "paused", reason: `Payouts are paused: Stripe needs ${needWords(due)}.` };
