@@ -29,6 +29,7 @@ import {
 import {
   Cancelled, CloudImportButtons, ImportFailed, importCloudFile, importFix, importingLabel, isCloudImage, pickCloud, SOURCE_LABEL, type CloudFile, type CloudSource,
 } from "./cloudImport";
+import { PAINTING_SCANS } from "@/lib/features";
 
 type Result = {
   state: "live" | "review" | "failed";
@@ -626,7 +627,7 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
               </Problem>
             )}
             {item.upload === "done" && item.source && printable && !printable.length && (
-              <Problem tone="warning" title={TOO_SMALL} fix={{ label: "Which files print sharp?", href: "/help/getting-started/file-sizes-print-sharp" }} secondary={{ label: "Book a scan", href: scanHref(item.result?.slug) }} />
+              <Problem tone="warning" title={TOO_SMALL} fix={{ label: "Which files print sharp?", href: "/help/getting-started/file-sizes-print-sharp" }} secondary={PAINTING_SCANS ? { label: "Book a scan", href: scanHref(item.result?.slug) } : undefined} />
             )}
             {item.upload === "done" && item.imageUrl && (
               <button type="button" onClick={() => setPhotoEditor({ id: item.id, auto: false })} className="btn btn-ghost btn-sm justify-self-start"><Crop className="h-4 w-4" aria-hidden="true" />Edit photo</button>

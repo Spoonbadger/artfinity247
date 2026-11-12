@@ -8,13 +8,17 @@ import { ArtGrid } from "@/components/browse/ArtCard";
 import { Avatar } from "@/components/browse/ArtistCard";
 import PageHead, { EmptyCanvas, Pager } from "@/components/browse/PageHead";
 import { artSort, getArt, getArtists, getCities } from "@/components/browse/data";
+import { prisma } from "@/lib/prisma";
+import { placeName } from "@/lib/citySlug";
 
 export const dynamic = "force-dynamic";
 
 const humanize = (s: string) => s.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const name = humanize(decodeURIComponent(params.slug));
+  const slug = decodeURIComponent(params.slug).toLowerCase();
+  const place = await prisma.artist.findFirst({ where: { citySlug: slug }, select: { city: true, state: true } }).catch(() => null);
+  const name = place?.city ? placeName(place) : humanize(slug);
   const title = `Art from ${name}`;
   const description = `Prints by independent artists in ${name}.`;
   const { art } = await getArt({ city: decodeURIComponent(params.slug), perPage: 6 }).catch(() => ({ art: [] as Awaited<ReturnType<typeof getArt>>["art"] }));
@@ -52,7 +56,7 @@ export default async function ScenePage({ params, searchParams }: { params: { sl
       </div>
       <PageHead
         className="pt-4 md:pt-6"
-        eyebrow={city?.label || "Neighborhood"}
+        eyebrow={city && city.label !== name ? city.label : "Local art"}
         title={name}
         sub={<><span className="num">{city?.pieces ?? total}</span> pieces by <span className="num">{artists.length}</span> local {artists.length === 1 ? "artist" : "artists"}.</>}
         stroke="var(--af-scan)"

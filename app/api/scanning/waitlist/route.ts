@@ -4,11 +4,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserFromCookie } from "@/lib/auth";
 import { rateLimit } from "@/lib/rateLimit";
 import { joinWaitlist, ScanError } from "@/lib/scanning.server";
+import { PAINTING_SCANS } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
+  if (!PAINTING_SCANS) return NextResponse.json({ error: "Painting scans aren’t available.", code: "scanning_off" }, { status: 404 });
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
   if (!rateLimit(`scan-waitlist:${ip}`, 10, 10 * 60_000)) return NextResponse.json({ error: "Too many tries. Wait a few minutes.", code: "rate_limited" }, { status: 429 });
   const body = (await req.json().catch(() => ({}))) as { email?: unknown; source?: unknown };

@@ -72,6 +72,7 @@ export default async function AdminArtistsPage({ searchParams }: { searchParams:
                 { name: "handle", label: "Handle", required: true, placeholder: "e.g. maya.paints", hint: "3–30 letters, numbers, dots or underscores. Their page is /@handle." },
                 { name: "email", label: "Email", required: true },
                 { name: "city", label: "City", required: true, defaultValue: "New York" },
+                { name: "state", label: "State", required: true, defaultValue: "NY", hint: "2-letter code, like NY or TX." },
                 { name: "first_name", label: "First name (for emails)", placeholder: "Optional" },
               ]}
               confirmLabel="Create and send invite" done="Account created"

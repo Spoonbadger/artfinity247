@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { activeUserGuard, requireUser, signAuthToken } from "@/lib/auth";
 import { sendVerifyEmail } from "@/lib/emailVerify";
+import { citySlugFor } from "@/lib/citySlug";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -78,6 +79,9 @@ export async function PATCH(req: Request) {
   if (state !== undefined) {
     if (state.length > 40) return fail("Keep the state under 40 characters.", 400, "state");
     data.state = state || null;
+    // The state is part of the place key (lib/citySlug.ts), so keep citySlug in step with it.
+    const cur = await prisma.artist.findUnique({ where: { id: user.id }, select: { city: true } });
+    if (cur?.city) data.citySlug = citySlugFor(cur.city, state || null);
   }
 
   if (!Object.keys(data).length) return fail("Nothing to save.");

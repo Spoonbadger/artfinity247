@@ -1,13 +1,16 @@
 "use client";
 // A US shipping address, split the way browsers autofill it: name, street (address-line1), apt (address-line2),
-// city (address-level2), state (address-level1), ZIP (postal-code). Street uses Google Places when
-// NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is set and fills the rest from the pick; city suggests NYC places and big US
-// cities. Each field checks itself on blur with a specific fix; the ZIP formats as you type, the state becomes "NY".
-import { useState } from "react";
+// city (address-level2), state (address-level1), ZIP (postal-code). Street suggests addresses (Google Places through
+// the server when GOOGLE_MAPS_API_KEY is set) and fills the rest from the pick; typing or pasting "214 Bedford Ave,
+// Brookl" works without Google too. City suggests any US city, town or neighborhood (picking Williamsburg fills
+// Brooklyn, NY). A full ZIP fills an empty city and state. Each field checks itself on blur with a specific fix; the
+// ZIP formats as you type, the state becomes its 2-letter code.
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { postalCity, stateCode } from "@/lib/places";
+import { stateCode } from "@/lib/places";
 import { checks, formatZip } from "@/lib/smartFields";
 import LocationInput from "./LocationInput";
+import { fetchPlaces } from "./placesClient";
 
 export type Address = { name?: string; line1: string; line2: string; city: string; state: string; zip: string };
 type Key = keyof Address;
@@ -58,6 +61,27 @@ export default function AddressFields({
       </span>
     ) : null;
   const box = (k: Key) => cn("af-field", errors[k] && "!border-coral");
+  const near = stateCode(value.state) ?? undefined;
+
+  // A full ZIP fills an empty city and state ("11211" → Brooklyn, NY).
+  const latest = useRef(value);
+  latest.current = value;
+  const zip5 = /^\d{5}/.test(value.zip) ? value.zip.slice(0, 5) : "";
+  useEffect(() => {
+    if (!zip5 || (latest.current.city.trim() && latest.current.state.trim())) return;
+    const ctrl = new AbortController();
+    fetchPlaces(zip5, "zip", { signal: ctrl.signal })
+      .then(([z]) => {
+        const v = latest.current;
+        if (!z || ctrl.signal.aborted || v.zip.slice(0, 5) !== zip5) return;
+        onChange({ ...v, city: v.city.trim() || z.city, state: v.state.trim() || z.state });
+        setErrors((x) => ({ ...x, city: null, state: null }));
+      })
+      .catch(() => {});
+    return () => ctrl.abort();
+    // Only when the ZIP changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zip5]);
   const aria = (k: Key) => ({ "aria-invalid": errors[k] ? true : undefined, "aria-describedby": errors[k] ? `${id(k)}-err` : undefined });
 
   return (
@@ -80,12 +104,12 @@ export default function AddressFields({
           label="Street"
           name="address-line1"
           scope="address"
-          localTail={false}
+          near={near}
           autoComplete={ac("address-line1")}
           value={value.line1}
           onChange={(v) => { set({ line1: v }); fix("line1", v); }}
           onPick={(p) => {
-            onChange({ ...value, line1: p.line1 || value.line1, city: p.city || value.city, state: p.state || value.state, zip: p.zip ? formatZip(p.zip) : value.zip });
+            onChange({ ...value, line1: p.line1 || value.line1, city: p.city || value.city, state: p.state || value.state, zip: p.zip ? formatZip(p.zip) : p.city && p.city !== value.city ? "" : value.zip });
             setErrors({});
           }}
           onBlur={(e) => blur("line1", e.target.value)}
@@ -104,11 +128,12 @@ export default function AddressFields({
           label="City"
           name="address-level2"
           scope="city"
+          near={near}
           autoComplete={ac("address-level2")}
           value={value.city}
           onChange={(v) => { set({ city: v }); fix("city", v); }}
           onPick={(p) => {
-            onChange({ ...value, city: postalCity(p), state: p.state || value.state });
+            onChange({ ...value, city: p.city, state: p.state || value.state });
             setErrors((x) => ({ ...x, city: null, state: null }));
           }}
           onBlur={(e) => blur("city", e.target.value)}

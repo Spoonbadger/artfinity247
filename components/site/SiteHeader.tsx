@@ -14,6 +14,7 @@ import SearchTypeahead from "@/components/forms/SearchTypeahead";
 const LINKS = [
   { href: "/art", label: "Browse art" },
   { href: "/artists", label: "Artists" },
+  { href: "/scenes", label: "Neighborhoods" },
   { href: "/#how", label: "How it works" },
   { href: "/pricing", label: "Pricing" },
 ];
@@ -134,7 +135,7 @@ export default function SiteHeader({ brand = null, inPage = false }: { brand?: H
       id="site-menu"
       className={cn(
         "grid gap-1 border-t border-line px-4 pb-4 pt-3",
-        brand ? "md:absolute md:right-6 md:top-full md:z-50 md:w-[320px] md:rounded-2xl md:border md:bg-white md:shadow-[0_18px_40px_-12px_rgba(21,22,27,.35)]" : "md:hidden",
+        brand ? "md:absolute md:right-6 md:top-full md:z-50 md:w-[320px] md:rounded-2xl md:border md:bg-white md:shadow-[0_18px_40px_-12px_rgba(21,22,27,.35)]" : "lg:hidden",
       )}
       aria-label="Menu"
     >
@@ -164,7 +165,7 @@ export default function SiteHeader({ brand = null, inPage = false }: { brand?: H
   const menuButton = (
     <button
       type="button"
-      className={cn("-mr-1.5 grid h-11 w-11 place-items-center rounded-full hover:bg-wall", !brand && "md:hidden")}
+      className={cn("-mr-1.5 grid h-11 w-11 place-items-center rounded-full hover:bg-wall", !brand && "lg:hidden")}
       onClick={() => setOpen(!open)}
       aria-expanded={open}
       aria-controls="site-menu"
@@ -205,27 +206,27 @@ export default function SiteHeader({ brand = null, inPage = false }: { brand?: H
     <header className="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-[1240px] items-center gap-6 px-4 py-3 sm:px-6">
         <Logo />
-        <nav className="ml-auto hidden items-center gap-6 text-[15px] font-medium md:flex" aria-label="Main">
+        <nav className="ml-auto hidden items-center gap-5 whitespace-nowrap text-[15px] font-medium lg:flex xl:gap-6" aria-label="Main">
           {LINKS.map((l) => (
             <Link key={l.href} href={l.href} aria-current={isActive(l.href) ? "page" : undefined} className={cn("text-ink no-underline hover:text-scan", isActive(l.href) && "text-scan")}>{l.label}</Link>
           ))}
           {currentUser ? null : <Link href="/login" className="text-ink no-underline hover:text-scan">Log in</Link>}
         </nav>
-        <form onSubmit={search} role="search" aria-label="Search Artfinity" className="hidden lg:block">
+        <form onSubmit={search} role="search" aria-label="Search Artfinity" className="hidden xl:block">
           <div className="relative flex h-10 w-44 items-center gap-2 rounded-full border-[1.5px] border-[color:var(--af-field-edge)] bg-white pl-3 pr-1 transition-[width,border-color] focus-within:w-60 focus-within:border-ink">
             <Search className="h-4 w-4 shrink-0 text-ink-2" aria-hidden="true" />
             <SearchTypeahead value={q} onChange={setQ} onNavigate={() => setQ("")} placeholder="Search" listClassName="left-auto w-[min(380px,calc(100vw-32px))]" inputClassName="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-2" />
           </div>
         </form>
-        <div className="ml-auto flex items-center gap-2 md:ml-0">
-          <Link href="/search" className="hidden h-11 w-11 place-items-center rounded-full text-ink hover:bg-wall md:grid lg:hidden" aria-label="Search">
+        <div className="ml-auto flex items-center gap-2 lg:ml-0">
+          <Link href="/search" className="hidden h-11 w-11 place-items-center rounded-full text-ink hover:bg-wall md:grid xl:hidden" aria-label="Search">
             <Search className="h-5 w-5" aria-hidden="true" />
           </Link>
           {cart}
           {currentUser ? (
             <Link href="/studio" className="btn btn-sm min-h-[44px] px-4 md:min-h-0">My Studio</Link>
           ) : (
-            <Link href="/register" className="btn btn-sm hidden sm:inline-flex">Start selling free</Link>
+            <Link href="/register" className="btn btn-sm hidden whitespace-nowrap sm:inline-flex">Start selling free</Link>
           )}
           {menuButton}
         </div>

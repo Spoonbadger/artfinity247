@@ -17,6 +17,7 @@ import type { StoredEdits } from "@/lib/imageEdits";
 import { problemFrom } from "@/lib/feedback";
 import type { PriceGuide } from "@/app/api/artworks/price-guide/route";
 import { cleanMoney } from "@/lib/smartFields";
+import { PAINTING_SCANS } from "@/lib/features";
 
 export const SIZES: SizeKey[] = ["small", "medium", "large", "xl"];
 export const FIELD: Record<SizeKey, "markupSmall" | "markupMedium" | "markupLarge" | "markupXl"> = {
@@ -225,7 +226,7 @@ export function PrintSizes({ imageUrl, printable, dims, shape, scanSlug }: { ima
       {printable.length === 0
         ? <p className="t-small font-semibold !text-coral">Too small to print. Try the original photo or a bigger scan.</p>
         : <p className="t-small">{printable.length < SIZES.length && `XL needs ${PIXELS_NEEDED.xl[0].toLocaleString("en-US")} × ${PIXELS_NEEDED.xl[1].toLocaleString("en-US")} px. `}Each crop shows how that size trims the edges.</p>}
-      {scanSlug !== undefined && !printable.includes("xl") && (
+      {PAINTING_SCANS && scanSlug !== undefined && !printable.includes("xl") && (
         <p className="t-small">
           Only have phone photos? We scan the original in NYC so every size prints sharp.{" "}
           <Link href={scanHref(scanSlug)} className="font-semibold text-scan underline-offset-2 hover:underline">Book a scan</Link>

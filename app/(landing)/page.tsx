@@ -26,11 +26,17 @@ export const metadata: Metadata = { title: { absolute: "Artfinity · Every wall 
 
 async function getHeroArt() {
   const select = { artistId: true, slug: true, title: true, imageUrl: true, sensitive: true, markupSmall: true, markupMedium: true, artist: { select: { name: true, artist_name: true, slug: true } } } as const;
-  // The best-selling safe-for-work piece; falls back to the newest one.
-  const top =
-    (await prisma.artwork.findFirst({ where: { ...PUBLIC_ART, status: "APPROVED", sensitive: { isEmpty: true } }, orderBy: [{ OrderItem: { _count: "desc" } }, { createdAt: "asc" }], select })) ??
-    (await prisma.artwork.findFirst({ where: PUBLIC_ART, orderBy: { createdAt: "desc" }, select }));
-  return top;
+  const live = { ...PUBLIC_ART, status: "APPROVED" as const, sensitive: { isEmpty: true } };
+  // A different live, safe-for-work piece on each visit. Picked on the server, so the first paint already has it
+  // (no swap, no layout shift) and it costs one count plus one indexed row.
+  const n = await prisma.artwork.count({ where: live });
+  const random = n ? await prisma.artwork.findFirst({ where: live, orderBy: { id: "asc" }, skip: Math.floor(Math.random() * n), select }) : null;
+  // Fallback, as before: the best-selling safe piece, then the newest public one.
+  return (
+    random ??
+    (await prisma.artwork.findFirst({ where: live, orderBy: [{ OrderItem: { _count: "desc" } }, { createdAt: "asc" }], select })) ??
+    (await prisma.artwork.findFirst({ where: PUBLIC_ART, orderBy: { createdAt: "desc" }, select }))
+  );
 }
 
 const SAFE = { ...PUBLIC_ART, sensitive: { isEmpty: true } };
@@ -46,7 +52,7 @@ async function getPopular() {
   return rows.map((a) => ({ slug: a.slug!, handle: a.artist.slug, title: a.title, imageUrl: a.imageUrl, artist: displayName(a.artist), priceFrom: basePrices.small + (a.markupSmall ?? 0) }));
 }
 
-/** The biggest few neighborhoods (artist cities), each with two real pieces. */
+/** The biggest few places (NYC neighborhoods, cities elsewhere), each with two real pieces. */
 async function getCityCards() {
   const cities = (await getCities()).slice(0, 4);
   return Promise.all(
@@ -82,14 +88,14 @@ export default async function Home({ searchParams }: { searchParams?: Record<str
       <section className="relative overflow-hidden">
         <div className="mx-auto grid max-w-[1240px] items-center gap-12 px-4 pb-16 pt-10 sm:px-6 md:pt-14 lg:grid-cols-[1.05fr_1fr] lg:gap-14 lg:pb-24 lg:pt-16">
           <div className="min-w-0">
-            <span className="sticker-badge">Free for NYC artists. Always.</span>
+            <span className="sticker-badge">Free for artists. Always.</span>
             <h1 className="display mt-5 text-[58px] sm:text-[84px] lg:text-[96px]">
               Turn every wall into <Brushed color="var(--af-sticker)"><span className="text-scan">your shop.</span></Brushed>
             </h1>
             <p className="mt-5 text-[19px] leading-snug text-ink-2 sm:text-[21px]">Hang a code by your painting. Sell prints to anyone who scans.</p>
             <ClaimHandle className="mt-7" />
             <p className="t-small mt-3 pl-4">
-              Just here for art? <Link href="/art" className="font-semibold text-ink underline-offset-2 hover:underline">Browse prints by NYC artists <ArrowRight className="inline h-3.5 w-3.5" aria-hidden="true" /></Link>
+              Just here for art? <Link href="/art" className="font-semibold text-ink underline-offset-2 hover:underline">Browse prints by independent artists <ArrowRight className="inline h-3.5 w-3.5" aria-hidden="true" /></Link>
             </p>
           </div>
           {heroArt && <HeroStory art={heroArt} perPrint={perPrint} price={price} monthBefore={monthBefore} />}
@@ -128,10 +134,10 @@ export default async function Home({ searchParams }: { searchParams?: Record<str
         <section className="mx-auto max-w-[1240px] px-4 pt-16 sm:px-6 md:pt-24" aria-labelledby="cities-h">
           <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
             <h2 id="cities-h" className="t-feature relative inline-block">
-              <span className="relative z-10">Browse by neighborhood</span>
+              <span className="relative z-10">Browse by neighborhood and city</span>
               <BrushWipe className="absolute -bottom-1 -left-2 z-0 h-[0.34em] w-[calc(100%+16px)]" color="var(--af-scan)" style={{ opacity: 0.35 }} />
             </h2>
-            <Link href="/scenes" className="btn btn-ghost">All neighborhoods</Link>
+            <Link href="/scenes" className="btn btn-ghost">See all</Link>
           </div>
           <CityRow cities={cities} />
         </section>
@@ -177,7 +183,7 @@ export default async function Home({ searchParams }: { searchParams?: Record<str
         <BrushWipe className="pointer-events-none absolute -left-16 bottom-0 h-14 w-[520px] rotate-[3deg] opacity-25 md:bottom-6 md:h-20" color="var(--af-scan)" />
         <BrushWipe className="pointer-events-none absolute -right-20 top-8 h-12 w-[380px] -rotate-[5deg] opacity-30" color="var(--af-sticker)" delay={0.4} />
         <div className="relative mx-auto grid max-w-[1240px] items-center gap-8 px-4 py-16 sm:px-6 md:py-20 lg:grid-cols-[1.1fr_1fr]">
-          <h2 className="t-page text-white">Your next wall could pay you.</h2>
+          <h2 className="t-page text-white">Claim your page. It’s free.</h2>
           <ClaimHandle dark className="lg:justify-self-end" />
         </div>
       </section>

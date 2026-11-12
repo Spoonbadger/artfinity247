@@ -28,8 +28,8 @@ export const DEFAULT_SOCIAL: SocialSettings = {
   autoQueueSince: null,
   presets: [...FREE_PRESETS],
   format: "vertical",
-  captionTemplate: "{title} by {handle}, painted in New York. Prints from {price}, made to order.\nTap the link in our bio or scan the code next to the painting: {link}",
-  hashtags: "#nycart #nycartist #artprint #supportartists #artfinity",
+  captionTemplate: "{title} by {handle}. Prints from {price}, made to order.\nTap the link in our bio or scan the code next to the painting: {link}",
+  hashtags: "#artprint #supportartists #artfinity",
   maxPerDay: 1,
   times: ["12:00"],
 };

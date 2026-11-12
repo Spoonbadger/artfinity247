@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { calcItemProfitCents } from "@/lib/revenue";
 import { CODE_ALPHABET, normalizeCode } from "@/lib/shortcode";
 import { placeEnded, scanRoute, type PlaceLike } from "@/lib/placeRules";
+import { QR_END_DATES } from "@/lib/features";
 
 export { normalizeCode, shortUrl, shortLabel, PLACEHOLDER_CODE } from "@/lib/shortcode";
 
@@ -57,7 +58,7 @@ export async function createQrCode(input: CodeInput) {
           venue: input.venue ?? null,
           discountPct: input.discountPct ?? null,
           design: (input.design ?? undefined) as never,
-          expiresAt: input.expiresAt ?? null,
+          expiresAt: QR_END_DATES ? input.expiresAt ?? null : null,
           venueId: input.venueId ?? null,
           placeId: input.placeId ?? null,
         },
@@ -76,7 +77,7 @@ export async function createQrCode(input: CodeInput) {
  */
 export async function ensureArtworkCode(artistId: string, artworkId: string, label: string, design?: unknown) {
   const found = await prisma.qrCode.findFirst({
-    where: { artistId, artworkId, active: true, venue: null, placeId: null, discountPct: null, expiresAt: null },
+    where: { artistId, artworkId, active: true, venue: null, placeId: null, discountPct: null },
     orderBy: { createdAt: "asc" },
     select: { code: true },
   });
@@ -101,8 +102,12 @@ export async function resolveCode(raw: unknown) {
 
 export type ResolvedCode = NonNullable<Awaited<ReturnType<typeof resolveCode>>>;
 
-/** Active and not past its end date. */
-export function isLive(c: { active: boolean; expiresAt: Date | null }, now = new Date()) {
+/**
+ * Active (not paused) and, only while QR_END_DATES is on, not past its end date. With the switch off a stored
+ * expiresAt is ignored on purpose, not migrated, so every code that isn't paused keeps working.
+ */
+export function isLive(c: { active: boolean; expiresAt?: Date | null }, now = new Date()) {
+  if (!QR_END_DATES) return c.active;
   return c.active && (!c.expiresAt || c.expiresAt.getTime() > now.getTime());
 }
 

@@ -1,10 +1,11 @@
-// Local place suggestions for location fields (components/forms/LocationInput.tsx).
-// Pure data + search, no network: the five boroughs, NYC neighborhoods mapped to their borough,
-// US states, and the largest US cities (for buyers' shipping addresses).
+// The hand-made NYC list (the five boroughs and their neighborhoods), US states, and small helpers. Pure data, no network.
+// Nationwide suggestions (every US city, town and neighborhood we know, and ZIPs) come from GET /api/places
+// (lib/placeSearch.server.ts, data/us-places.json). scripts/build-us-places.mjs reads the NYC list from here, so
+// this file must stay import-free.
 //
-// How artist locations are stored: Artist.city is free text ("Brooklyn", or "Williamsburg, Brooklyn") and
-// Artist.state is "NY". citySlug comes from city on the server. Picking a borough stores just the borough, so
-// existing rows ("Brooklyn", "Queens"…) keep matching; a neighborhood stores "Neighborhood, Borough".
+// How artist locations are stored: Artist.city is free text and Artist.state the state. In NYC, picking a borough
+// stores just the borough ("Brooklyn") and a neighborhood stores "Neighborhood, Borough", so existing rows keep
+// matching. Elsewhere the field holds "City, ST" or "Neighborhood, City, ST" (lib/citySlug.ts splits it).
 
 export const BOROUGHS = ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"] as const;
 export type Borough = (typeof BOROUGHS)[number];
@@ -55,10 +56,6 @@ export const US_STATES: [code: string, name: string][] = [
   ["WV", "West Virginia"], ["WI", "Wisconsin"], ["WY", "Wyoming"], ["PR", "Puerto Rico"],
 ];
 
-/** The largest US cities, biggest first (for buyers outside NYC). */
-const US_CITIES =
-  "Los Angeles,CA|Chicago,IL|Houston,TX|Phoenix,AZ|Philadelphia,PA|San Antonio,TX|San Diego,CA|Dallas,TX|Jacksonville,FL|Austin,TX|Fort Worth,TX|San Jose,CA|Columbus,OH|Charlotte,NC|Indianapolis,IN|San Francisco,CA|Seattle,WA|Denver,CO|Oklahoma City,OK|Nashville,TN|Washington,DC|El Paso,TX|Las Vegas,NV|Boston,MA|Detroit,MI|Portland,OR|Louisville,KY|Memphis,TN|Baltimore,MD|Milwaukee,WI|Albuquerque,NM|Tucson,AZ|Fresno,CA|Sacramento,CA|Mesa,AZ|Atlanta,GA|Kansas City,MO|Colorado Springs,CO|Omaha,NE|Raleigh,NC|Miami,FL|Virginia Beach,VA|Long Beach,CA|Oakland,CA|Minneapolis,MN|Bakersfield,CA|Tulsa,OK|Tampa,FL|Arlington,TX|Wichita,KS|Aurora,CO|New Orleans,LA|Cleveland,OH|Honolulu,HI|Anaheim,CA|Henderson,NV|Orlando,FL|Lexington,KY|Stockton,CA|Riverside,CA|Irvine,CA|Corpus Christi,TX|Newark,NJ|Santa Ana,CA|Cincinnati,OH|Pittsburgh,PA|Saint Paul,MN|Greensboro,NC|Jersey City,NJ|Durham,NC|Lincoln,NE|North Las Vegas,NV|Plano,TX|Anchorage,AK|Gilbert,AZ|Madison,WI|Reno,NV|Chandler,AZ|St. Louis,MO|Chula Vista,CA|Buffalo,NY|Fort Wayne,IN|Lubbock,TX|St. Petersburg,FL|Toledo,OH|Laredo,TX|Port St. Lucie,FL|Glendale,AZ|Irving,TX|Winston-Salem,NC|Chesapeake,VA|Garland,TX|Scottsdale,AZ|Boise,ID|Hialeah,FL|Frisco,TX|Richmond,VA|Cape Coral,FL|Norfolk,VA|Spokane,WA|Huntsville,AL|Santa Clarita,CA|Tacoma,WA|Fremont,CA|McKinney,TX|San Bernardino,CA|Baton Rouge,LA|Modesto,CA|Fontana,CA|Salt Lake City,UT|Moreno Valley,CA|Des Moines,IA|Worcester,MA|Yonkers,NY|Fayetteville,NC|Sioux Falls,SD|Grand Prairie,TX|Rochester,NY|Tallahassee,FL|Little Rock,AR|Amarillo,TX|Overland Park,KS|Augusta,GA|Columbus,GA|Mobile,AL|Oxnard,CA|Grand Rapids,MI|Peoria,AZ|Vancouver,WA|Knoxville,TN|Birmingham,AL|Montgomery,AL|Providence,RI|Huntington Beach,CA|Brownsville,TX|Chattanooga,TN|Fort Lauderdale,FL|Tempe,AZ|Akron,OH|Glendale,CA|Clarksville,TN|Ontario,CA|Newport News,VA|Elk Grove,CA|Cary,NC|Aurora,IL|Salem,OR|Pembroke Pines,FL|Eugene,OR|Santa Rosa,CA|Rancho Cucamonga,CA|Shreveport,LA|Garden Grove,CA|Oceanside,CA|Fort Collins,CO|Springfield,MO|Murfreesboro,TN|Surprise,AZ|Lancaster,CA|Denton,TX|Roseville,CA|Palmdale,CA|Corona,CA|Salinas,CA|Killeen,TX|Paterson,NJ|Alexandria,VA|Hollywood,FL|Hayward,CA|Charleston,SC|Macon,GA|Lakewood,CO|Sunnyvale,CA|Kansas City,KS|Springfield,MA|Bellevue,WA|Naperville,IL|Joliet,IL|Bridgeport,CT|Mesquite,TX|Pasadena,TX|Olathe,KS|Escondido,CA|Savannah,GA|McAllen,TX|Gainesville,FL|Pomona,CA|Rockford,IL|Thornton,CO|Waco,TX|Visalia,CA|Syracuse,NY|Columbia,SC|Midland,TX|Miramar,FL|Palm Bay,FL|Jackson,MS|Coral Springs,FL|Victorville,CA|Elizabeth,NJ|Fullerton,CA|Meridian,ID|Torrance,CA|Stamford,CT|West Valley City,UT|Orange,CA|Cedar Rapids,IA|Warren,MI|Hampton,VA|New Haven,CT|Dayton,OH|Hartford,CT|Albany,NY|Ann Arbor,MI|Berkeley,CA|Burlington,VT|Portland,ME|Hoboken,NJ|Princeton,NJ|Asheville,NC|Santa Fe,NM";
-
 export type Place = {
   /** What goes in the field when picked, e.g. "Williamsburg, Brooklyn" or "Austin, TX". */
   value: string;
@@ -77,6 +74,11 @@ export type Place = {
 
 let cache: { nyc: Place[]; us: Place[] } | null = null;
 
+/** Every NYC borough and neighborhood (for scripts/build-us-places.mjs). */
+export function nycPlaces(): Place[] {
+  return build().nyc;
+}
+
 function build() {
   if (cache) return cache;
   const nyc: Place[] = BOROUGHS.map((b) => ({ value: b, primary: b, secondary: "New York City", kind: "borough", city: b, borough: b, state: "NY", aliases: ALIASES[b] }));
@@ -86,11 +88,7 @@ function build() {
       nyc.push({ value: `${name}, ${b}`, primary: name, secondary: b, kind: "neighborhood", city: name, borough: b, state: "NY", aliases: ALIASES[name] });
     }
   }
-  const stateName = Object.fromEntries(US_STATES);
-  const us: Place[] = US_CITIES.split("|").map((s) => {
-    const [city, st] = s.split(",");
-    return { value: `${city}, ${st}`, primary: city, secondary: stateName[st] ?? st, kind: "city", city, state: st };
-  });
+  const us: Place[] = [];
   for (const [code, name] of US_STATES) us.push({ value: name, primary: name, secondary: code, kind: "state", city: "", state: code, aliases: [code] });
   cache = { nyc, us };
   return cache;
@@ -108,17 +106,14 @@ function rank(name: string, q: string) {
   return -1;
 }
 
-export type PlaceScope = "nyc" | "us" | "city" | "state";
+export type PlaceScope = "nyc" | "state";
 
-/**
- * Suggestions for what someone has typed. "nyc" = boroughs and neighborhoods (artists, venues, events);
- * "us" = NYC first, then US cities and states (buyers); "city" = the same without states; "state" = states only.
- */
+/** Local suggestions: "nyc" = boroughs and neighborhoods (the header search), "state" = US states. */
 export function searchPlaces(query: string, scope: PlaceScope = "nyc", limit = 8): Place[] {
   const { nyc, us } = build();
   const q = fold(query.split(",")[0] ?? "");
   if (!q) return [];
-  const pool = scope === "nyc" ? nyc : scope === "state" ? us.filter((p) => p.kind === "state") : scope === "city" ? [...nyc, ...us.filter((p) => p.kind === "city")] : [...nyc, ...us];
+  const pool = scope === "nyc" ? nyc : us;
   const scored: { p: Place; s: number }[] = [];
   for (const p of pool) {
     let best = rank(p.primary, q);
@@ -127,8 +122,8 @@ export function searchPlaces(query: string, scope: PlaceScope = "nyc", limit = 8
       if (r >= 0 && (best < 0 || r < best)) best = r;
     }
     if (best < 0) continue;
-    // Boroughs, then NYC neighborhoods, then the rest; big places sort first within each (pool order).
-    const tier = p.kind === "borough" ? 0 : p.kind === "neighborhood" ? 1 : p.kind === "state" && scope !== "state" ? 3 : 2;
+    // Boroughs, then neighborhoods; list order within each.
+    const tier = p.kind === "borough" ? 0 : p.kind === "neighborhood" ? 1 : 2;
     scored.push({ p, s: best * 10 + tier });
   }
   scored.sort((a, b) => a.s - b.s);

@@ -65,7 +65,7 @@ export default async function VenuePage({ params }: Props) {
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
         <p className="box-inset mb-6 flex items-start gap-2.5 px-4 py-3 text-[15px] text-ink sm:w-fit">
           <ScanLine className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
-          <span><b className="font-semibold">Scan the code beside any piece to buy a print.</b> We print it in NYC and ship it to you free.</span>
+          <span><b className="font-semibold">Scan the code beside any piece to buy a print.</b> We print it in NYC and ship it free anywhere in the US.</span>
         </p>
 
         {artworks.length ? (

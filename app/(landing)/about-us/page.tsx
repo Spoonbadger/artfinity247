@@ -65,7 +65,7 @@ export default async function AboutPage() {
 
   const numbers: [string, string][] = [
     [stats.artists.toLocaleString("en-US"), stats.artists === 1 ? "artist" : "artists"],
-    [stats.cities.toLocaleString("en-US"), stats.cities === 1 ? "neighborhood" : "neighborhoods"],
+    [stats.cities.toLocaleString("en-US"), stats.cities === 1 ? "neighborhood or city" : "neighborhoods and cities"],
     [stats.prints.toLocaleString("en-US"), "prints sold"],
     [moneyRound(stats.earned), "earned by artists"],
   ];
@@ -84,8 +84,9 @@ export default async function AboutPage() {
       <section className="mx-auto max-w-[1240px] px-4 pb-10 pt-10 sm:px-6 md:pt-16">
         <div className="mb-4 flex items-center gap-2.5"><DabRow /><span className="eyebrow">About Artfinity</span></div>
         <h1 className="display max-w-[12ch] text-[56px] sm:text-[88px]">Local art, on <Brushed>every wall.</Brushed></h1>
+        {/* TODO(thomas): confirm story wording for nationwide */}
         <p className="mt-5 max-w-[40ch] text-[17px] text-ink-2">
-          New York artists hang a code by their work. We print, ship and pay them.
+          Artists hang a code by their work. We print, ship and pay them.
         </p>
       </section>
 
@@ -202,8 +203,6 @@ export default async function AboutPage() {
             <p><b>{COMPANY.legalName}</b><br />{COMPANY.address}</p>
             <p>
               <a href={`mailto:${COMPANY.email}`} className="font-bold underline underline-offset-2">{COMPANY.email}</a>
-              <br />
-              <a href={`tel:${COMPANY.phone.replace(/[^\d+]/g, "")}`} className="underline underline-offset-2">{COMPANY.phone}</a>
             </p>
             <p className="text-ink-2">{COMPANY.hours}</p>
             <Link href="/contact" className="btn btn-sm w-fit">Send a message</Link>

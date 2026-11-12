@@ -2,11 +2,13 @@
 import { NextResponse } from "next/server";
 import { getUserFromCookie } from "@/lib/auth";
 import { artistCancel, ScanError } from "@/lib/scanning.server";
+import { PAINTING_SCANS } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
+  if (!PAINTING_SCANS) return NextResponse.json({ error: "Painting scans aren’t available.", code: "scanning_off" }, { status: 404 });
   const user = await getUserFromCookie();
   if (!user?.id) return NextResponse.json({ error: "Log in to keep going.", code: "not_logged_in" }, { status: 401 });
   const body = (await req.json().catch(() => ({}))) as { action?: unknown };

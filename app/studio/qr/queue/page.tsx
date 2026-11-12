@@ -14,6 +14,7 @@ import PaymentReturn from "@/components/payments/PaymentReturn";
 import { codeOrderNumber } from "@/lib/printQueueFormat";
 import QueuePlaceTag from "@/components/places/QueuePlaceTag";
 import { partnerChoices, placeOptions } from "@/lib/artistPlaces";
+import { isLive } from "@/lib/shortlinks";
 
 /** The Place every queued item is tagged to, when they all share one. */
 async function queuePlace(artistId: string, ids: string[]) {
@@ -65,7 +66,7 @@ export default async function PrintQueuePage({ searchParams }: { searchParams: {
       return {
         id: g.row.id, qty: g.qty, title: g.row.artwork.title, slug: g.row.artwork.slug || "", imageUrl: g.row.artwork.imageUrl,
         code: g.row.qrCode.code, preset: d.preset, venue: g.row.qrCode.venue, discountPct: g.row.qrCode.discountPct,
-        live: g.row.qrCode.active && (!g.row.qrCode.expiresAt || g.row.qrCode.expiresAt > new Date()), inReview: g.row.artwork.status === "PENDING", svg,
+        live: isLive(g.row.qrCode), inReview: g.row.artwork.status === "PENDING", svg,
       };
     });
     // The sheets exactly as they'll print: each piece repeated qty times, packed in order.
@@ -81,7 +82,7 @@ export default async function PrintQueuePage({ searchParams }: { searchParams: {
   const last = orders.find((o) => o.status !== "canceled") || orders[0];
   const address: ShipAddress = last
     ? { name: last.shipName, line1: last.shipLine1, line2: last.shipLine2 || "", city: last.shipCity, state: last.shipState, zip: last.shipZip }
-    : { name: displayName(artist), line1: "", line2: "", city: artist.city || "", state: "NY", zip: "" }; // Artfinity artists are in NYC
+    : { name: displayName(artist), line1: "", line2: "", city: artist.city || "", state: (await prisma.artist.findUnique({ where: { id: artist.id }, select: { state: true } }))?.state || "", zip: "" }; // the artist's own state; they can change it
 
   const history: QueueOrder[] = orders.map((o) => ({
     id: o.id, status: o.status, createdAt: o.createdAt.toISOString(), paidAt: o.paidAt?.toISOString() ?? null, shippedAt: o.shippedAt?.toISOString() ?? null, deliveredAt: o.deliveredAt?.toISOString() ?? null,

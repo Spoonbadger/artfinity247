@@ -61,7 +61,7 @@ Preview it on the card, **On the wall** (to scale beside a 24 × 30 in painting)
     section,
     audience: "artist",
     title: "Can I change a code after printing it?",
-    summary: "Yes. A printed code holds only a short link like theartfinity.com/q/K7P2. Change the piece it opens, the discount, the venue or the end date in My codes, and the printed code follows.",
+    summary: "Yes. A printed code holds only a short link like theartfinity.com/q/K7P2. Change the piece it opens, the discount or the venue in My codes, and the printed code follows.",
     faq: true,
     popular: 6,
     link: { href: "/studio/codes", label: "Open My codes" },
@@ -73,7 +73,6 @@ Your QR code doesn't contain the painting's address. It holds a short link, and 
 - **Which piece it opens**, or point it at your artist page instead
 - **The discount** (or remove it)
 - **The venue or event name**
-- **When it stops working:** never, or after a date
 - **On or off:** turn a code off without throwing the label away
 
 Open [My codes](/studio/codes), pick the code and save your changes. They apply to the next scan.
@@ -97,7 +96,7 @@ For every code in [My codes](/studio/codes):
 - **Scans** and **people** (unique visitors)
 - **Revenue** and **you earned** from sales that came through the code
 - **Converts:** sales as a share of scans
-- **Status:** live, or ended
+- **Status:** on, or paused
 
 Open a code for more: scans by day, where people scanned (city), on what (phone or tablet), and the latest scans.
 
@@ -128,7 +127,7 @@ The discount lowers the sale price. Costs stay the same, so the profit is smalle
 A discount only works when it comes from your code. Typing a discount into the web address by hand does nothing.
 
 ## Changing or ending it
-Change or remove the discount any time in [My codes](/studio/codes). Set an end date if it's for one event.
+Change or remove the discount any time in [My codes](/studio/codes). For a one-day event, remove it when the event is over.
 
 ## Older cards
 Cards printed before discounts were protected carry a plain discount in the link. We honor those up to ${LEGACY_MAX_PCT}% until ${LEGACY_UNTIL_TEXT}, so nobody holding an old card is let down. After that, print fresh codes.
@@ -212,8 +211,7 @@ Prefer not to fuss with label sheets? Choose **Have us print them**: we print ev
 Lots of QR codes break when a website changes. Ours hold only a short link like theartfinity.com/q/K7P2, and Artfinity looks up the destination on every scan. Nothing about the page address is printed.
 
 ## A code stops working only when
-- **You set an end date** (for example, the last day of a market). After that, a scan opens your artist page instead, with a note that the code has ended.
-- **You turn it off** in [My codes](/studio/codes). Same result: the scan opens your artist page.
+- **You turn it off** in [My codes](/studio/codes). The scan opens your artist page, with a note that the code has ended.
 - **The piece is no longer live.** The scan opens your artist page.
 - **You close your account.** Codes stop opening anything, because your page is offline.
 

@@ -20,6 +20,8 @@ import { PARCEL_TAG } from "@/lib/artistEmails";
 import { certPath } from "@/lib/certificates";
 import { editionLabel } from "@/lib/editionFormat";
 import { orderNumber, printerAuto, printerState } from "@/lib/printer";
+import { dashboardUrl } from "@/lib/prodigi";
+import { latestProdigiStatus, prodigiIdOf } from "@/lib/prodigiSync";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -74,6 +76,9 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
   const sentToPrinterAt = o.printerSentAt ?? audit.filter((a) => a.action === "order.sent_to_printer").at(-1)?.createdAt ?? null;
   const deliveredAt = o.deliveredAt ?? audit.find((a) => (a.action === "order.shipping_status" || a.action === "order.ship") && (a.details as { to?: string } | null)?.to === "delivered")?.createdAt ?? null;
   const paid = o.paymentStatus === "paid";
+  // Prodigi (lib/prodigiSync.ts): the order id from printerRef, the latest status from the audit rows.
+  const prodigiId = prodigiIdOf(o.printerRef);
+  const prodigi = prodigiId ? latestProdigiStatus(audit, prodigiId) : null;
 
   const items = o.items.map((it) => {
     const b = itemBreakdown({ ...it, orderDate: o.createdAt });
@@ -96,6 +101,7 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
       : printer.status === "failed"
         ? { at: null, title: "Work order failed to send", detail: printer.error, tone: "warn" as const }
         : { at: null, title: "Not sent to the printer yet", tone: "warn" as const },
+    ...(prodigi && prodigi.phase !== "received" ? [{ at: prodigi.recordedAt, title: `Prodigi: ${prodigi.label}`, detail: prodigi.notes[0], tone: prodigi.phase === "cancelled" ? ("warn" as const) : ("info" as const) }] : []),
     ...tracking.map((x) => ({ at: x.at, title: "Shipped", detail: x.t ? <>{x.t.carrier} <b className="num">{x.t.number}</b>{x.t.url && <> · <a href={x.t.url} target="_blank" rel="noreferrer" className="text-scan">Track</a></>}</> : undefined, tone: "done" as const })),
     ...(o.shippingStatus !== "pending" && !tracking.length ? [{ at: null, title: "Marked shipped (no tracking saved)", tone: "info" as const }] : []),
     ...(o.shippingStatus === "delivered" ? [{ at: deliveredAt, title: "Delivered", tone: "done" as const }] : []),
@@ -268,8 +274,22 @@ export default async function AdminOrderPage({ params }: { params: { id: string 
             <p className="eyebrow mt-1">Printer</p>
             <p className={cn("text-ink-2", printer.status === "failed" && "font-semibold text-coral")}>
               {printer.status === "sent" ? `Work order sent ${at(printer.at)}` : printer.status === "failed" ? `Failed: ${printer.error}` : printer.status === "sending" ? "Sending…" : o.sentToPrinter ? "Marked sent by hand" : "Not sent"}
-              {o.printerRef && printer.status === "sent" ? ` · ref ${o.printerRef}` : ""}
+              {o.printerRef && printer.status === "sent" && !prodigiId ? ` · ref ${o.printerRef}` : ""}
             </p>
+            {prodigiId && (
+              <div className="grid gap-0.5 text-[13px] text-ink-2">
+                <p>
+                  Prodigi <a href={dashboardUrl(prodigiId)} target="_blank" rel="noreferrer" className="num font-semibold text-scan">{prodigiId}</a>
+                  {" · "}
+                  <b className={cn("text-ink", prodigi?.phase === "cancelled" && "text-coral")}>{prodigi ? prodigi.label : "Waiting for first update"}</b>
+                </p>
+                {prodigi && <p>Updated {at(prodigi.lastUpdated || prodigi.recordedAt)}{prodigi.stage !== prodigi.label ? ` · stage ${prodigi.stage}` : ""}</p>}
+                {prodigi?.extraTracking.map((t) => (
+                  <p key={t.number}>Also shipped: {t.carrier} <span className="num">{t.number}</span>{t.url && <> · <a href={t.url} target="_blank" rel="noreferrer" className="text-scan">Track</a></>}</p>
+                ))}
+                {prodigi?.notes.map((n) => <p key={n}>{n}</p>)}
+              </div>
+            )}
             <p className="eyebrow mt-1">Stripe</p>
             <p className="break-all text-[13px] text-ink-2">{o.stripeSessionId}</p>
           </section>

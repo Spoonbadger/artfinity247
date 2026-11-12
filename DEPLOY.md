@@ -119,7 +119,7 @@ environment. Every variable is also listed, with a comment, in [`.env.example`](
 | `STRIPE_CONNECT_WEBHOOK_SECRET` | Signing secret of the **Connect** webhook (`/api/webhook/connect`) | Artists who connect Stripe stay "pending"; payouts fall back to Venmo by hand. |
 | `STRIPE_BILLING_WEBHOOK_SECRET` | Signing secret of the **billing** webhook (`/api/webhook/billing`) | Infinity subscriptions don't activate. See BILLING_SETUP.md. |
 | `RESEND_API_KEY` | Resend API key | No email at all (receipts, sign-in links, payouts, alerts). |
-| `PRINTER_EMAIL` | The print lab's order inbox | Work orders aren't sent; tick "Sent to printer" by hand in the admin. |
+| `PRINTER_EMAIL` | The print lab's order inbox (or use Prodigi instead: section 7, "Prodigi") | Work orders aren't sent; tick "Sent to printer" by hand in the admin. |
 
 ### Recommended
 
@@ -131,6 +131,7 @@ environment. Every variable is also listed, with a comment, in [`.env.example`](
 | `SCAN_SIGNING_SECRET` | Separate secret for QR discounts | Falls back to `JWT_SECRET` (fine). |
 | `TEST_START_DATE` | 90-day test start, `YYYY-MM-DD` | The dashboard uses the first paid order. **On Vercel set it here**: the dashboard's Save can't write files there. |
 | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Maps on artist and venue pages | Maps show a placeholder. |
+| `GOOGLE_MAPS_API_KEY` | Street address suggestions (Places API New, server only, `GET /api/places/address`) | Address fields finish the city, state and ZIP from our own list; the browser's autofill does the rest. |
 
 ### Optional, by feature
 
@@ -142,7 +143,8 @@ environment. Every variable is also listed, with a comment, in [`.env.example`](
 | Image checks | `IMAGE_MODERATION_PROVIDER`, `IMAGE_MODERATION_TIMEOUT_MS`, `SIGHTENGINE_USER`, `SIGHTENGINE_SECRET`, `SIGHTENGINE_MODELS`, `GOOGLE_VISION_API_KEY`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`, `AWS_REGION`, `AWS_DEFAULT_REGION` | Off by default. [MODERATION_SETUP.md](MODERATION_SETUP.md) |
 | Drive / Dropbox import | `NEXT_PUBLIC_GOOGLE_API_KEY`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_GOOGLE_APP_ID`, `NEXT_PUBLIC_DROPBOX_APP_KEY` | Buttons hidden without them. [IMPORT_SETUP.md](IMPORT_SETUP.md) |
 | Email senders | `RESEND_FROM_EMAIL`, `EMAIL_FROM`, `CONTACT_EMAIL`, `REPORTS_EMAIL`, `ADMIN_NOTIFY_EMAIL`, `BOOKKEEPING_EMAIL` | Defaults use @theartfinity.com addresses. |
-| Print lab | `PRINTER_PROVIDER` (`email` / `none`), `PRINTER_FROM`, `PRINTER_REPLY_TO`, `PRINTER_PAPER` | Defaults are fine. |
+| Print lab | `PRINTER_PROVIDER` (`email` / `none` / `prodigi`), `PRINTER_FROM`, `PRINTER_REPLY_TO`, `PRINTER_PAPER` | Defaults are fine. |
+| Prodigi | `PRODIGI_API_KEY`, `PRODIGI_ENV`, `PRODIGI_SKUS`, `PRODIGI_WEBHOOK_TOKEN`, `PRODIGI_SHIPPING_METHOD`, `PRODIGI_PACKING_SLIP`, `PRODIGI_DASHBOARD_URL`, `PRINTER_API` | Only with `PRINTER_PROVIDER=prodigi`. Section 7, "Prodigi". |
 | Business rules | `REFUND_PAID_OUT_POLICY` (`absorb` / `deduct_next_payout`), `REPRINT_AUTO_MAX`, `COLLECTOR_REWARDS`, `COLLECTOR_REWARD_EVERY`, `COLLECTOR_REWARD_PCT`, `LEGACY_DISCOUNT_UNTIL` | Set here to pin a value. The refund rule is normally chosen on /admin/settings (saved in the database, works on Vercel). Collector rewards' admin page saves a file, which **doesn't work on Vercel**: set the env vars instead. |
 | Sentry extras | `SENTRY_ENVIRONMENT`, `NEXT_PUBLIC_SENTRY_ENVIRONMENT`, `SENTRY_TRACES_SAMPLE_RATE`, `NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE`, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | Section 11. |
 | Staging only | `ALLOW_TEST_CHECKOUT=1` | Lets a Preview deploy without Stripe keys record test orders. **Never in Production.** |
@@ -185,6 +187,7 @@ Log out and back in: you now have /admin. Invite the rest of the team from /admi
 | `/api/cron/payouts` | 5th of the month, 15:17 | Pays artists through Stripe ("Pay all") |
 | `/api/cron/admin-digest` | daily 12:07 | Admin email digest + alert sweep |
 | `/api/cron/work-order-retries` | **every hour** at :07 | Re-sends failed print-lab work orders |
+| `/api/cron/prodigi-sync` | **every hour** at :37 | Checks open Prodigi orders (only with `PRINTER_PROVIDER=prodigi`) |
 | `/api/cron/stuck-orders` | daily 12:23 | Flags paid orders not sent to the printer |
 | `/api/cron/artist-digest` | Mondays 13:00 **and** 14:00 | Weekly artist email (two runs so it lands at 9am New York in summer and winter) |
 | `/api/cron/bookkeeping` | 1st of the month, 13:37 | Monthly books CSV email |
@@ -192,7 +195,7 @@ Log out and back in: you now have /admin. Invite the rest of the team from /admi
 They need `CRON_SECRET` set (Vercel sends it automatically). Crons only run on the **Production** deployment.
 
 **Plan note:** Vercel's free Hobby plan only allows jobs that run **once a day** at most. The hourly work-order
-retry and the twice-on-Monday artist digest need **Pro** ($20/month); on Hobby the deploy is rejected with these
+retry, the hourly Prodigi sync and the twice-on-Monday artist digest need **Pro** ($20/month); on Hobby the deploy is rejected with these
 schedules. Either upgrade to Pro (recommended once you're selling), or edit `vercel.json` to make those two daily.
 
 You can always run any job by hand from **/admin/jobs → Run now**, and see each run's result there.
@@ -225,6 +228,53 @@ Also in Stripe: turn on **Connect** (Express accounts) for artist payouts, and s
 Registrations: add New York) so sales tax is collected. BILLING_SETUP.md covers the Infinity price and portal.
 
 A wrong signing secret shows up as a Sentry warning ("stripe-signature") and as 400s on the endpoint's page in Stripe.
+
+### Prodigi (automatic printing and tracking)
+
+With `PRINTER_PROVIDER=prodigi`, every paid order and every approved free reprint becomes a Prodigi order by itself.
+Prodigi tells us as it prints and ships. Tracking marks the order shipped and the buyer gets the usual shipped email.
+Code: `lib/prodigi.ts` (payload, SKU map, status mapping), `lib/prodigiSync.ts` (applying it), `lib/printer.ts`.
+
+**How an order moves**
+
+1. Paid (Stripe webhook, test checkout, bulk order) or reprint approved → `POST /v4.0/Orders` with our order number
+   as `merchantReference` and our order id as `idempotencyKey` (a retry can't print twice). The order shows
+   `prodigi:ord_…` and "Work order sent". A failure (missing SKU, unreadable address, Prodigi down) shows the reason in
+   /admin/orders; the hourly retry job tries 3 times, then alerts.
+2. Prodigi calls `/api/webhook/prodigi` on every change. We fetch the order again from Prodigi (the callback body
+   isn't trusted) and apply it. The hourly `prodigi-sync` job does the same for every order not shipped yet.
+3. Printing → shown on the admin order page. Shipment with tracking → order **shipped**, tracking saved, buyer and
+   artist emails same as when an admin marks it shipped. Cancelled, a problem, or our account waiting for payment →
+   an admin alert ("Print lab cancelled or flagged an order").
+4. Delivered: Prodigi doesn't report it. With `SHIPPO_API_KEY` or `EASYPOST_API_KEY` set (section 4), the tracking
+   number is registered there and delivery is marked automatically. Without one, the daily stuck-orders job flags
+   orders shipped 10+ days ago and an admin marks them delivered.
+
+The manual buttons on the admin order page still work and win: tracking typed by hand is never replaced.
+"Resend work order" creates a **new** Prodigi order (new idempotency key), so use it only to print again.
+
+**Set it up, sandbox first**
+
+1. Make a Prodigi account. In the dashboard, open **Settings → API** (sandbox and live each have their own key).
+2. Find the SKUs in the dashboard's **product catalogue**: the 310gsm smooth matte fine art paper in each size
+   (5×7, 8×12, 11×17, 18×24) and the framed version in black, white and natural, plus any attribute the frame
+   needs (usually a colour). Put them in `PRODIGI_SKUS` (the example in `.env.example` shows the shape). Values
+   starting with `TODO` count as missing, so an order with that size or frame fails with a clear reason instead of
+   printing the wrong product. /admin shows how many are still missing.
+3. Set on **Preview** (staging) first:
+   `PRINTER_PROVIDER=prodigi`, `PRODIGI_ENV=sandbox`, `PRODIGI_API_KEY=<sandbox key>`, `PRODIGI_SKUS=…`,
+   `PRODIGI_WEBHOOK_TOKEN=<long random string>`. Optional: `PRODIGI_SHIPPING_METHOD` (`Standard` by default).
+4. The callback URL is set on each order for you: `https://<site>/api/webhook/prodigi?token=<PRODIGI_WEBHOOK_TOKEN>`.
+   Nothing to paste into Prodigi. If the dashboard also has an account-wide callback setting, use the same URL.
+   Prodigi has to reach the site and the original files, so test on the staging address, not localhost.
+5. Place a test order on staging. Check in the Prodigi sandbox dashboard: right product, whole artwork shown, no
+   crop, the white border looks right, address correct. Move it along in the sandbox (or wait) and watch the admin
+   order page change. Check the buyer's shipped email.
+6. Then **Production**: `PRODIGI_ENV=live` and the **live** key, same SKUs and a new token. Add billing in the Prodigi
+   dashboard, or orders wait for payment (that raises an urgent alert).
+
+Not sent to Prodigi: certificates of authenticity and artists' parcel notes (the email work order carried them).
+`PRODIGI_PACKING_SLIP=on` sends our packing slip URL; check in sandbox that Prodigi accepts it before turning it on.
 
 ### Resend (email)
 

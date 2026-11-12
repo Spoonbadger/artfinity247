@@ -5,12 +5,13 @@
 import path from "node:path";
 import fsp from "node:fs/promises";
 import { prisma } from "@/lib/prisma";
+import type { MilestoneInputs } from "@/lib/milestonesCalc";
 
 const FILE = path.join(process.cwd(), "data", "admin-settings.json");
 const ACTION = "settings.snapshot";
 
-/** `social`: Instagram auto-posting (lib/social/settings.ts). */
-export type AdminSettings = { testStartDate?: string; testTarget?: number; refundPaidOutPolicy?: string; social?: unknown };
+/** `social`: Instagram auto-posting (lib/social/settings.ts). `milestones`: the owner's numbers on /admin/milestones (lib/milestonesCalc.ts). */
+export type AdminSettings = { testStartDate?: string; testTarget?: number; refundPaidOutPolicy?: string; social?: unknown; milestones?: MilestoneInputs };
 
 async function readFile(): Promise<AdminSettings> {
   try {

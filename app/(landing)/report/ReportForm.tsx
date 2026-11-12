@@ -25,7 +25,7 @@ export default function ReportForm({ art, mode = "report" }: { art: ReportArt | 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const dmca = reason === "copyright";
-  const legal = dmca || counter; // needs address, phone, statements and a signature
+  const legal = dmca || counter; // needs address, statements and a signature (a counter-notice also needs a phone)
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -164,7 +164,8 @@ export default function ReportForm({ art, mode = "report" }: { art: ReportArt | 
         {field("name", legal ? "Full legal name" : "Your name", <input {...aria("name")} autoComplete="name" />)}
         {field("email", "Email", <input {...aria("email")} type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} />)}
         {legal && field("address", "Mailing address", <input {...aria("address")} autoComplete="street-address" placeholder="Street, city, state, ZIP, country" />)}
-        {legal && field("phone", "Phone", <input {...aria("phone")} type="tel" autoComplete="tel" />)}
+        {/* Phone only on a counter-notice: the DMCA (17 U.S.C. 512(g)(3)(D)) requires one there. Everything else is email. */}
+        {counter && field("phone", "Phone", <input {...aria("phone")} type="tel" autoComplete="tel" />)}
       </div>
 
       <div className="grid gap-3 border-t border-line pt-4">

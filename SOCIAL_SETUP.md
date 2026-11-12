@@ -28,7 +28,7 @@ While the app is in **Development** mode, it already works for people with a rol
 
 For a permanent setup, switch the app to **Live** and request **Advanced access** for `instagram_content_publish`, `instagram_basic` and `pages_read_engagement` in **App Review → Permissions and features**. What to send Meta:
 
-- **What it does:** "Artfinity is an NYC print marketplace. Our staff approve short videos of artists' paintings in our admin, and the app publishes them as Reels on our own Instagram account. Artists opt in and are credited."
+- **What it does:** "Artfinity is a print marketplace for artists across the US. Our staff approve short videos of artists' paintings in our admin, and the app publishes them as Reels on our own Instagram account. Artists opt in and are credited."
 - **Screencast:** /admin/social → Preview and approve a draft → the post scheduled → it appearing on Instagram.
 - **Test account:** an admin login for the reviewer (create one in /admin/team), plus the steps above.
 - Business verification of the company may be required (Business Settings → Security Center).

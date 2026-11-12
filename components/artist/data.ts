@@ -5,6 +5,7 @@ import { basePrices, getFinalPrice } from "@/lib/artwork_price";
 import { getArtistTrust, type Trust } from "@/lib/artistTrust";
 import { parseTheme, paint, type PageTheme } from "./theme";
 import { artPath } from "@/lib/urls";
+import { cityLabel } from "@/lib/citySlug";
 
 export type ArtistWork = {
   id: string;
@@ -119,7 +120,7 @@ export const getArtistPage = cache(async (rawSlug: string): Promise<ArtistPageDa
   const trust = await getArtistTrust(artist.id);
 
   const name = artist.artist_name || artist.name;
-  const city = [artist.city, artist.state].filter(Boolean).join(", ");
+  const city = cityLabel(artist);
 
   return {
     id: artist.id,

@@ -5,11 +5,13 @@ import { activeUserGuard } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rateLimit";
 import { createBooking, ScanError } from "@/lib/scanning.server";
+import { PAINTING_SCANS } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
+  if (!PAINTING_SCANS) return NextResponse.json({ error: "Painting scans aren’t available.", code: "scanning_off" }, { status: 404 });
   const { user, denied } = await activeUserGuard("Log in to keep going.");
   if (denied) return denied;
   const artist = await prisma.artist.findUnique({ where: { id: user.id }, select: { id: true, closedAt: true, suspendedAt: true } });

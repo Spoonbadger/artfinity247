@@ -60,7 +60,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const artist = await prisma.artist.findUnique({
     where: { id: params.id },
     select: {
-      id: true, email: true, first_name: true, artist_name: true, name: true, slug: true, city: true, role: true, password: true,
+      id: true, email: true, first_name: true, artist_name: true, name: true, slug: true, city: true, state: true, role: true, password: true,
       closedAt: true, suspendedAt: true, suspendedReason: true, proUntil: true, emailVerifiedAt: true,
     },
   });
@@ -190,7 +190,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           changes.handle = { from: artist.slug, to: slug };
         }
         if (typeof input.city === "string" && input.city.trim() !== artist.city) {
-          const c = cleanCity(input.city);
+          const c = cleanCity(input.city, artist.state);
           Object.assign(data, c);
           changes.city = { from: artist.city, to: c.city };
         }

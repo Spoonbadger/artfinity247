@@ -4,6 +4,7 @@ import Link from "next/link";
 import Logo from "@/components/af/Logo";
 import { useSensitivePref } from "@/components/site/useSensitivePref";
 import AppConfigs from "@/db/json/AppConfigs.json";
+import { PAINTING_SCANS } from "@/lib/features";
 
 // Contact facts come from the same config the original footer used.
 const EMAIL = AppConfigs.business_email;
@@ -12,7 +13,7 @@ const HOURS = "Weekdays " + AppConfigs.business_open_time.split("\n")[0].trim().
 
 // Three short columns of the places people actually go; the legal pages sit in one small row underneath.
 const COLS: [string, [string, string][]][] = [
-  ["For artists", [["Start selling free", "/register"], ["Sell with us", "/sell-with-us"], ["Pricing", "/pricing"], ["Painting scans", "/scanning"], ["Artist help", "/help/getting-started"]]],
+  ["For artists", [["Start selling free", "/register"], ["Sell with us", "/sell-with-us"], ["Pricing", "/pricing"], ...(PAINTING_SCANS ? [["Painting scans", "/scanning"] as [string, string]] : []), ["Artist help", "/help/getting-started"]]],
   ["For buyers", [["Browse art", "/art"], ["Artists", "/artists"], ["Neighborhoods", "/scenes"], ["Your orders", "/collector"], ["Buying help", "/help/buyers"]]],
   ["Artfinity", [["About", "/about-us"], ["Help center", "/help"], ["Contact", "/contact"], ["Report art", "/report"]]],
 ];
@@ -29,7 +30,7 @@ export default function SiteFooter() {
       <div className="mx-auto grid max-w-[1240px] grid-cols-2 gap-x-6 gap-y-8 px-4 py-10 sm:px-6 md:grid-cols-[1.2fr_repeat(3,1fr)] md:gap-10">
         <div className="col-span-2 grid content-start gap-3 md:col-span-1">
           <Logo />
-          <p className="max-w-[30ch] text-[15px] text-ink-2">QR codes beside paintings, prints for whoever scans. New York City only.</p>
+          <p className="max-w-[30ch] text-[15px] text-ink-2">QR codes beside paintings, prints for whoever scans. US only.</p>
           <label className="mt-1 inline-flex min-h-[44px] cursor-pointer items-center gap-2.5 text-sm font-semibold text-ink">
             <input type="checkbox" className="h-[18px] w-[18px] accent-[var(--af-scan)]" checked={showSensitive} onChange={(e) => setShowSensitive(e.target.checked)} />
             Show sensitive art without blur

@@ -78,6 +78,8 @@ export default function ArtGallery({
   const [seen, setSeen] = useState<Set<number>>(() => new Set([0]));
   const [idle, setIdle] = useState(false); // thumbnails of drawn rooms wait until the page has settled
   const [zoom, setZoom] = useState(false);
+  // View only: the painting slide with its white border and shadow ("Frame", the default) or bare. Never what gets bought.
+  const [bare, setBare] = useState(false);
   const alt = `${title} by ${artistName}`;
 
   const jump = useCallback((i: number, smooth: boolean) => {
@@ -192,7 +194,10 @@ export default function ArtGallery({
                     }}
                     onClick={() => !blurred && setZoom(true)}
                     className={cn(
-                      "absolute inset-0 m-auto block h-auto max-h-[86%] w-auto max-w-[86%] border-[5px] border-white bg-white shadow-[0_18px_40px_-12px_rgba(21,22,27,.45),0_2px_6px_rgba(21,22,27,.12)] md:border-[9px]",
+                      "absolute inset-0 m-auto block h-auto max-h-[86%] w-auto max-w-[86%] motion-safe:transition-[border-width,box-shadow] motion-safe:duration-200",
+                      bare
+                        ? "border-0 shadow-[0_10px_28px_-14px_rgba(21,22,27,.4)]"
+                        : "border-[5px] border-white bg-white shadow-[0_18px_40px_-12px_rgba(21,22,27,.45),0_2px_6px_rgba(21,22,27,.12)] md:border-[9px]",
                       blurred ? "blur-xl" : "cursor-zoom-in",
                     )}
                   />
@@ -256,6 +261,8 @@ export default function ArtGallery({
           </p>
         )}
 
+        {now.kind === "art" && !blurred && <FrameToggle bare={bare} onChange={setBare} />}
+
         {now.kind !== "room" && !blurred && (
           <button
             type="button"
@@ -309,7 +316,7 @@ export default function ArtGallery({
                   )}
                   aria-hidden
                 >
-                  <Thumb s={s} idle={idle} thumbSrc={thumbSrc} slug={slug} imageUrl={imageUrl} aspect={aspect} size={size} frame={frame} blurred={blurred} />
+                  <Thumb s={s} idle={idle} thumbSrc={thumbSrc} slug={slug} imageUrl={imageUrl} aspect={aspect} size={size} frame={frame} blurred={blurred} bare={bare} />
                 </span>
               </button>
             );
@@ -322,11 +329,11 @@ export default function ArtGallery({
   );
 }
 
-function Thumb({ s, idle, thumbSrc, slug, imageUrl, aspect, size, frame, blurred }: { s: Slide; idle: boolean; thumbSrc: string; slug: string; imageUrl: string; aspect: number; size: RoomSize; frame: RoomFrame | null; blurred: boolean }) {
+function Thumb({ s, idle, thumbSrc, slug, imageUrl, aspect, size, frame, blurred, bare }: { s: Slide; idle: boolean; thumbSrc: string; slug: string; imageUrl: string; aspect: number; size: RoomSize; frame: RoomFrame | null; blurred: boolean; bare: boolean }) {
   if (s.kind === "art")
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={thumbSrc} alt="" className={cn("absolute inset-0 m-auto max-h-[80%] max-w-[80%] border-2 border-white shadow-sm", blurred && "blur-sm")} />
+      <img src={thumbSrc} alt="" className={cn("absolute inset-0 m-auto max-h-[80%] max-w-[80%] shadow-sm", !bare && "border-2 border-white", blurred && "blur-sm")} />
     );
   if (s.kind === "detail") return <CloseUp src={thumbSrc} d={s.d} aspect={aspect} />;
   if (s.room.kind === "photo" && photoScenesOn)
@@ -335,6 +342,60 @@ function Thumb({ s, idle, thumbSrc, slug, imageUrl, aspect, size, frame, blurred
       <img src={photoSrc(s.room.n, slug, size, frame, 480, { blur: blurred })} alt="" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
     );
   return idle ? <RoomScene scene={s.room.n} imageUrl={imageUrl} aspect={aspect} size={size} frame={frame} blur={blurred} className="h-full" /> : null;
+}
+
+const FRAME_VIEWS = [
+  { bare: false, label: "Frame" },
+  { bare: true, label: "No frame" },
+] as const;
+
+/**
+ * Frame / No frame for the painting slide: a two-option radio group (roving tabindex, arrow keys move and select,
+ * Enter or Space picks the focused option). It only changes the preview, never the frame being bought.
+ */
+function FrameToggle({ bare, onChange }: { bare: boolean; onChange: (bare: boolean) => void }) {
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const onKey = (e: KeyboardEvent) => {
+    const i = bare ? 1 : 0;
+    const k = { ArrowRight: i + 1, ArrowDown: i + 1, ArrowLeft: i - 1, ArrowUp: i - 1, Home: 0, End: 1 }[e.key];
+    if (k === undefined) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const next = (k + 2) % 2;
+    onChange(FRAME_VIEWS[next].bare);
+    refs.current[next]?.focus();
+  };
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Preview"
+      onKeyDown={onKey}
+      className="absolute bottom-2.5 left-2.5 flex rounded-full border-[1.5px] border-edge-strong bg-white/95 p-0.5 shadow-[0_1px_3px_rgba(21,22,27,.2)] sm:bottom-3 sm:left-3"
+    >
+      {FRAME_VIEWS.map((v, i) => {
+        const on = v.bare === bare;
+        return (
+          <button
+            key={v.label}
+            ref={(el) => {
+              refs.current[i] = el;
+            }}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            tabIndex={on ? 0 : -1}
+            onClick={() => onChange(v.bare)}
+            className={cn(
+              "min-h-[40px] whitespace-nowrap rounded-full px-3.5 text-[14px] font-semibold transition-colors focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-scan",
+              on ? "bg-ink text-white" : "text-ink hover:bg-wall",
+            )}
+          >
+            {v.label}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 function CloseUp({ src, d, aspect }: { src: string; d: Detail; aspect: number }) {

@@ -267,7 +267,7 @@ To see, fix or delete the data we hold about you, see the [privacy policy](/priv
 If you scanned a code with a discount, the buy page says your discount is applied, and checkout takes it off.
 
 ## Why it might not show
-- **The offer has ended.** Artists can set a code to end after an event. A scan then opens the artist's page with a note that the code has ended.
+- **The offer has ended.** The artist removed the discount or turned the code off.
 - **You didn't come from the code.** Discounts only apply when you arrive by scanning. Typing a discount into the web address doesn't work.
 
 Still think something's wrong? [Message us](/contact) with the artwork and where you saw the code.

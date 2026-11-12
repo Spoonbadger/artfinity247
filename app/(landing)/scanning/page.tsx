@@ -10,6 +10,8 @@ import { readScanSettings } from "@/lib/scanning.server";
 import { LARGEST_PRINT, bandRange, careTextFor, oversizedRange, usd } from "@/lib/scanning";
 import { PRINT_SIZES, SIZE_LABEL, sizeInches } from "@/components/art/pricing";
 import { FREE_SPLIT, pct } from "@/lib/plans";
+import { PAINTING_SCANS } from "@/lib/features";
+import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -20,6 +22,7 @@ export const metadata: Metadata = {
 const BOOK = "/studio/scanning";
 
 export default async function ScanningPage() {
+  if (!PAINTING_SCANS) notFound();
   const s = await readScanSettings();
   const on = s.enabled;
   const steps: [string, string, string][] = [

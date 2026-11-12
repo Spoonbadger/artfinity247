@@ -15,6 +15,8 @@ import { safeNext, withNext } from "./next";
 import SocialButtons, { OrDivider, PROVIDER_MARK } from "./SocialButtons";
 import type { ProviderId } from "@/lib/oauth/meta";
 import LocationInput from "@/components/forms/LocationInput";
+import US_STATE_OPTIONS from "@/lib/constants/usa_states";
+import { cityLabel, splitCityState } from "@/lib/citySlug";
 import { PasswordStrength } from "@/components/forms/PasswordInput";
 import { checks } from "@/lib/smartFields";
 import ImageEditor, { type EditResult } from "@/components/media/ImageEditor";
@@ -87,7 +89,9 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
   // step 2
   const [artistName, setArtistName] = useState("");
   const [city, setCity] = useState("");
-  const [region, setRegion] = useState("NY");
+  const [region, setRegion] = useState("");
+  // "Austin, TX" typed or picked in the city box fills in the state.
+  useEffect(() => { const st = splitCityState(city).state; if (st) setRegion(st); }, [city]);
   const [agreed, setAgreed] = useState(false);
   const [created, setCreated] = useState(false);
   // step 3
@@ -204,6 +208,7 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
     const errs: Record<string, string | null> = {};
     if (!artistName.trim()) errs.artistName = "Add the name buyers will see.";
     if (!city.trim()) errs.city = "Add your city.";
+    if (!region) errs.region = "Pick your state.";
     if (!agreed) errs.terms = "Please accept the Artist Terms and the Terms & Conditions.";
     setErrors(errs);
     if (Object.values(errs).some(Boolean)) return;
@@ -331,7 +336,7 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
         })();
 
   const shownName = artistName.trim() || "Your name";
-  const shownCity = [city.trim(), region.trim()].filter(Boolean).join(", ");
+  const shownCity = cityLabel({ city: city.trim(), state: region });
 
   return (
     <div className="mx-auto grid max-w-[1120px] items-start gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-12">
@@ -424,8 +429,26 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
             <StepHead n={2} refEl={headingRef}>What should buyers call you?</StepHead>
             <FormAlert>{formError}</FormAlert>
             <Field label="Artist name" name="artist_name" autoComplete="name" maxLength={60} value={artistName} onChange={(e) => { setArtistName(e.target.value); setErrors((x) => ({ ...x, artistName: null })); }} error={errors.artistName} autoFocus placeholder="Maya Okafor" />
-            {/* NYC only: the state comes from the picked place (or NY); no separate field to fill in. */}
-            <LocationInput label="Neighborhood or borough" name="city" scope="nyc" maxLength={60} value={city} onChange={(v) => { setCity(v); setErrors((x) => ({ ...x, city: null })); }} onPick={(pl) => setRegion(pl.state)} error={errors.city} placeholder="Williamsburg, Brooklyn" hint="Puts you on the local map." />
+            {/* Any US state. Picking a place (or typing "Austin, TX") fills in the state; the menu fixes it. */}
+            <LocationInput label="City or neighborhood" name="city" scope="place" near={region} maxLength={60} value={city} onChange={(v) => { setCity(v); setErrors((x) => ({ ...x, city: null })); }} onPick={(pl) => { if (pl.state) { setRegion(pl.state); setErrors((x) => ({ ...x, region: null })); } }} error={errors.city} placeholder="Austin, TX" hint="Puts you on the local map." />
+            <div className="grid gap-1.5">
+              <label className={cn("af-field cursor-pointer", errors.region && "!border-coral focus-within:!shadow-[0_0_0_3px_#ffd9cf]")}>
+                <span className="text-[13px] text-ink-2">State</span>
+                <select
+                  name="state"
+                  autoComplete="address-level1"
+                  value={region}
+                  onChange={(e) => { setRegion(e.target.value); setErrors((x) => ({ ...x, region: null })); }}
+                  aria-invalid={errors.region ? true : undefined}
+                  aria-describedby={errors.region ? "reg-state-msg" : undefined}
+                  className="min-h-[28px] cursor-pointer"
+                >
+                  <option value="">Pick your state</option>
+                  {US_STATE_OPTIONS.map((s) => <option key={s.code} value={s.code}>{s.name}</option>)}
+                </select>
+              </label>
+              {errors.region && <div id="reg-state-msg" className="px-1 text-[13.5px] font-semibold text-coral" aria-live="polite">{errors.region}</div>}
+            </div>
             <div className="grid gap-1.5">
               <label htmlFor="accept-terms" className="flex cursor-pointer items-start gap-3 text-[15px] leading-snug">
                 <input

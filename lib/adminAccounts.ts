@@ -2,7 +2,7 @@
 // Password links reuse the forgot-password flow: a PasswordResetToken (SHA-256 stored) and /reset-password?token=...,
 // which also confirms the email and bumps sessionVersion when used (app/api/auth/reset-password).
 import crypto from "crypto";
-import slugify from "slugify";
+import { citySlugFor, stateAbbr } from "@/lib/citySlug";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { resend, emailEnabled } from "@/lib/resend";
@@ -76,10 +76,19 @@ export function cleanName(raw: unknown, what = "Name"): string {
   return v;
 }
 
-export function cleanCity(raw: unknown): { city: string; citySlug: string } {
+/** A US state code or name → its 2-letter code; empty → null. */
+export function cleanState(raw: unknown): string | null {
+  const v = String(raw ?? "").trim();
+  if (!v) return null;
+  const code = stateAbbr(v);
+  if (!code) throw new AccountError("Use a US state, like NY or TX.");
+  return code;
+}
+
+export function cleanCity(raw: unknown, state?: string | null): { city: string; citySlug: string } {
   const city = String(raw ?? "").trim();
   if (!city || city.length > 80) throw new AccountError("Add a city (80 characters at most).");
-  return { city, citySlug: slugify(city, { lower: true, strict: true }) };
+  return { city, citySlug: citySlugFor(city, state) };
 }
 
 /** Create an artist account by hand (met at a market). No password: they get a "set your password" email. */
@@ -89,11 +98,12 @@ export async function createAccountByAdmin(input: Record<string, unknown>) {
   if (await emailTaken(email)) throw new AccountError("An account with that email already exists.", 409);
   const artist_name = cleanName(input.artist_name, "Artist name");
   const slug = await validHandle(input.handle);
-  const { city, citySlug } = cleanCity(input.city);
+  const state = cleanState(input.state);
+  const { city, citySlug } = cleanCity(input.city, state);
   const first_name = typeof input.first_name === "string" && input.first_name.trim() ? input.first_name.trim().slice(0, 60) : null;
   try {
     return await prisma.artist.create({
-      data: { name: artist_name, artist_name, first_name, email, password: null, phone: "", city, citySlug, slug, role: "USER" },
+      data: { name: artist_name, artist_name, first_name, email, password: null, phone: "", city, citySlug, state, slug, role: "USER" },
       select: { id: true, email: true, slug: true, artist_name: true },
     });
   } catch (e) {

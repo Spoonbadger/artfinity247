@@ -10,7 +10,6 @@ const AGENT = {
   name: "Copyright Agent, Artfinity",
   address: AppConfigs.business_address.replace(/,\s*United States$/, "").replace(/, (\d{5})/, " $1"),
   email: AppConfigs.business_email,
-  phone: AppConfigs.business_phone,
 };
 
 export default function Page() {
@@ -54,8 +53,6 @@ export default function Page() {
         {AGENT.address}
         <br />
         <a href={`mailto:${AGENT.email}?subject=DMCA%20notice`}>{AGENT.email}</a>
-        <br />
-        {AGENT.phone}
       </p>
       <p>
         Questions that aren’t about copyright? <Link href="/contact">Contact us</Link>.

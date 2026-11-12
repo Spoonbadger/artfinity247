@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { roleCan, type AdminRole } from "@/lib/adminCaps";
+import { PAINTING_SCANS } from "@/lib/features";
 
 type NavLink = { href: string; label: string; dab: string; exact?: boolean; owner?: boolean; minRole?: AdminRole; match?: string };
 // Today = the daily queues. Everything else is grouped by what it's about.
@@ -18,7 +19,7 @@ const SECTIONS: { title: string; links: NavLink[] }[] = [
   { title: "Prints", links: [
     { href: "/admin/reprints", label: "Reprints", dab: "#c98a5a" },
     { href: "/admin/code-orders", label: "Code orders", dab: "#ffd43b" },
-    { href: "/admin/scanning", label: "Scanning", dab: "#2b37f0" },
+    ...(PAINTING_SCANS ? [{ href: "/admin/scanning", label: "Scanning", dab: "#2b37f0" }] : []),
   ] },
   { title: "People", links: [
     { href: "/admin/artists", label: "Artists", dab: "#b98bd9" },
@@ -29,6 +30,7 @@ const SECTIONS: { title: string; links: NavLink[] }[] = [
   ] },
   { title: "Money", links: [
     { href: "/admin/payouts", label: "Payouts", dab: "var(--af-earned)" },
+    { href: "/admin/milestones", label: "Milestones", dab: "#e3b23c" },
   ] },
   { title: "Content", links: [
     { href: "/admin/artworks", label: "Artworks", dab: "#7c8cff" },

@@ -9,11 +9,15 @@ import { growing } from "./articles/growing";
 import { trust } from "./articles/trust";
 import { buyers } from "./articles/buyers";
 import { account } from "./articles/account";
+import { PAINTING_SCANS } from "@/lib/features";
 
 export { HELP_SECTIONS, sectionById };
 export type { HelpArticle, HelpSectionId };
 
-export const HELP_ARTICLES: HelpArticle[] = [...gettingStarted, ...qrCodes, ...selling, ...gettingPaid, ...growing, ...trust, ...buyers, ...account];
+// Articles about features that are switched off (lib/features.ts) are left out of the help center.
+const HIDDEN = new Set<string>(PAINTING_SCANS ? [] : ["painting-scans"]);
+
+export const HELP_ARTICLES: HelpArticle[] = [...gettingStarted, ...qrCodes, ...selling, ...gettingPaid, ...growing, ...trust, ...buyers, ...account].filter((a) => !HIDDEN.has(a.slug));
 
 const bySlug = new Map(HELP_ARTICLES.map((a) => [a.slug, a]));
 if (bySlug.size !== HELP_ARTICLES.length) throw new Error("Help: duplicate article slug");

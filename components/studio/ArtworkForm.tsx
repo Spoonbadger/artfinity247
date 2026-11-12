@@ -29,6 +29,7 @@ import {
   Cancelled, cloudImportAvailable, CloudImportButtons, ImportFailed, importCloudFile, importFix, importingLabel, isCloudImage, pickCloud,
   type CloudFile, type CloudSource, type UploadedImage,
 } from "./cloudImport";
+import { PAINTING_SCANS } from "@/lib/features";
 
 type ProblemFix = { label: string; href?: string; onClick?: () => void };
 
@@ -439,7 +440,7 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
           <OwnershipField owned={owned} setOwned={setOwned} note={!editing ? reviewNote : undefined} />
         )}
 
-        {error && <Problem tone="error" title={error.message} fix={error.fix} secondary={error.message === TOO_SMALL ? { label: "Book a scan", href: scanHref(artwork?.slug) } : undefined} />}
+        {error && <Problem tone="error" title={error.message} fix={error.fix} secondary={PAINTING_SCANS && error.message === TOO_SMALL ? { label: "Book a scan", href: scanHref(artwork?.slug) } : undefined} />}
         {warn && (
           <LabelWarning
             warning={warn} busy={warnBusy}

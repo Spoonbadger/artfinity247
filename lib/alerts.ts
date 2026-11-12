@@ -37,6 +37,10 @@ export const alertKey = {
   verification: (artistId: string, requestedAt: Date) => `verification:${artistId}:${requestedAt.getTime()}`,
   verificationPrefix: (artistId: string) => `verification:${artistId}:`,
   workOrderFailed: (orderId: string) => `work_order_failed:${orderId}`,
+  /** Prodigi reports a problem with the order (issues, a failed step, our account awaiting payment). */
+  printLabProblem: (orderId: string) => `print_lab_problem:${orderId}`,
+  /** Prodigi cancelled the order. Resolved when the work order is sent again. */
+  printLabCancelled: (orderId: string) => `print_lab_cancelled:${orderId}`,
   payoutFailed: (artistId: string, month: string) => `payout_failed:${artistId}:${month}`,
   payoutLate: (artistId: string, month: string) => `payout_late:${artistId}:${month}`,
   orderStuck: (orderId: string) => `order_stuck:${orderId}`,

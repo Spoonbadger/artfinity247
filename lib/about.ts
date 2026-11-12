@@ -22,15 +22,16 @@ export const TEAM: TeamMember[] = [
   },
   {
     name: "Thomas Demuth",
-    role: "Co-founder",
+    role: "User Experience",
     note: "Leading the new, artist-first Artfinity.",
     color: "var(--af-scan)",
   },
 ];
 
 // TODO(Thomas): the story in your words. Two or three short paragraphs.
+// TODO(thomas): confirm story wording for nationwide
 export const STORY: string[] = [
-  "New York painters hang work in cafés, markets and shows. People stop and look. Buying it used to mean tracking down the artist and waiting on email.",
+  "Painters hang work in cafés, markets and shows. People stop and look. Buying it used to mean tracking down the artist and waiting on email.",
   "Artfinity puts a code next to the painting. Scan it and pick a size. We print and ship it, and most of the profit goes to the artist.",
 ];
 
@@ -40,6 +41,5 @@ export const COMPANY = {
   address: AppConfigs.business_address,
   email: AppConfigs.business_email,
   supportEmail: AppConfigs.support_email,
-  phone: AppConfigs.business_phone,
   hours: "Mon–Fri, 8 a.m.–4 p.m. ET",
 };

@@ -12,6 +12,7 @@
     "test:oauth": "node --test lib/oauth/oauth.test.mjs",
     "test:sw": "node --test lib/pwa/sw.test.mjs",
     "test:checkout": "node --experimental-transform-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./scripts/test-hooks.mjs --test lib/checkout.test.mjs lib/checkoutSession.test.mjs",
+    "test:prodigi": "node --experimental-strip-types --test lib/prodigi.test.mjs",
     "postinstall": "prisma generate",
     "db:seed": "node --env-file=.env prisma/seed.mjs",
     "db:images": "node scripts/gen-seed-images.mjs",

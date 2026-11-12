@@ -13,6 +13,7 @@ export type AlertKind =
   | "review_flagged" // buyer review held for a look
   | "verification" // artist asked to be verified
   | "work_order_failed" // print lab didn't get the work order
+  | "print_lab_problem" // Prodigi cancelled an order or reports a problem with it (lib/prodigiSync.ts)
   | "payout_failed" // Stripe transfer failed (urgent)
   | "payout_late" // a month's payout is past due
   | "order_stuck" // paid 24h+ ago, not sent to the printer
@@ -34,6 +35,7 @@ export const ALERT_KINDS: KindMeta[] = [
   { kind: "report", label: "Reports and DMCA notices", plural: "new reports", queue: "/admin/reports", urgent: "sometimes", defaultPref: "digest" },
   { kind: "payout_failed", label: "Payout transfer failures", plural: "failed payouts", queue: "/admin/payouts", money: true, urgent: "always", defaultPref: "instant" },
   { kind: "work_order_failed", label: "Work orders that failed to send", plural: "work orders failed", queue: "/admin/orders?month=all&filter=print", defaultPref: "digest" },
+  { kind: "print_lab_problem", label: "Print lab cancelled or flagged an order", plural: "print lab problems", queue: "/admin/orders?month=all&filter=print", urgent: "sometimes", defaultPref: "instant" },
   { kind: "reprint", label: "Reprint requests", plural: "reprint requests", queue: "/admin/reprints", defaultPref: "digest" },
   { kind: "order_stuck", label: "Orders not sent to the printer after 24h", plural: "orders not sent to the printer", queue: "/admin/orders?month=all&filter=print", defaultPref: "digest" },
   { kind: "order_undelivered", label: "Shipped 10+ days ago, not delivered", plural: "orders not marked delivered", queue: "/admin/orders?month=all&filter=shipped", defaultPref: "digest" },

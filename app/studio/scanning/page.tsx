@@ -12,6 +12,8 @@ import { requireArtist } from "../_lib/data";
 import { usd } from "@/lib/scanning";
 import PaymentReturn from "@/components/payments/PaymentReturn";
 import ScanPayButton from "@/components/scanning/ScanPayButton";
+import { PAINTING_SCANS } from "@/lib/features";
+import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Painting scans" };
@@ -19,6 +21,7 @@ export const metadata: Metadata = { title: "Painting scans" };
 const HELP = "/help/selling/painting-scans";
 
 export default async function StudioScanningPage({ searchParams }: { searchParams: { art?: string; booking?: string; paid?: string; session_id?: string; canceled?: string } }) {
+  if (!PAINTING_SCANS) notFound();
   const artist = await requireArtist("/studio/scanning");
   // Back from Stripe Checkout: mark it paid now if the webhook hasn't yet.
   if (searchParams.session_id) await verifyScanSession(artist.id, searchParams.session_id);

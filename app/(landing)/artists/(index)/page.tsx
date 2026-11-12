@@ -30,7 +30,7 @@ export default async function ArtistsPage({ searchParams }: { searchParams: Reco
       <PageHead
         eyebrow="Hanging codes now"
         title="Artists"
-        sub={<><span className="num">{artists.length}</span> {artists.length === 1 ? "artist" : "artists"}{city ? "" : <> in <span className="num">{cities.length}</span> {cities.length === 1 ? "neighborhood" : "neighborhoods"}</>}.</>}
+        sub={<><span className="num">{artists.length}</span> {artists.length === 1 ? "artist" : "artists"}{city ? "" : <> in <span className="num">{cities.length}</span> {cities.length === 1 ? "place" : "places"}</>}.</>}
         stroke="var(--af-coral)"
       >
         <div className="grid w-full gap-2 md:w-auto md:justify-items-end">
@@ -50,7 +50,7 @@ export default async function ArtistsPage({ searchParams }: { searchParams: Reco
       {cities.length > 1 && (
         <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
-            {[{ slug: "", name: "All of NYC" }, ...cities].map((c) => {
+            {[{ slug: "", name: "Everywhere" }, ...cities].map((c) => {
               const active = (city || "") === c.slug;
               return (
                 <Link key={c.slug || "all"} href={link(c.slug || undefined)} aria-current={active ? "true" : undefined}
