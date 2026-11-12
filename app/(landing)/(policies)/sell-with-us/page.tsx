@@ -10,6 +10,7 @@ import { FREE_SPLIT, PRO, pct, proPrice } from "@/lib/plans";
 import { RETURN_WINDOW_DAYS } from "@/lib/balance";
 import { PAYOUT_DAY } from "@/content/help/facts";
 import BrushWipe from "@/components/motion/BrushWipe";
+import { PAINTING_SCANS } from "@/lib/features";
 
 export const metadata: Metadata = { title: "Sell with us", description: `Free for artists. We print, ship and pay you ${pct(FREE_SPLIT)} of the profit.` };
 
@@ -58,13 +59,13 @@ export default function SellWithUsPage() {
               </li>
             ))}
           </ul>
-          <Link href="/scanning" className="mt-10 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-2xl border border-edge bg-white px-5 py-4 text-ink no-underline transition hover:border-ink hover:-translate-y-0.5">
+          {PAINTING_SCANS && <Link href="/scanning" className="mt-10 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-2xl border border-edge bg-white px-5 py-4 text-ink no-underline transition hover:border-ink hover:-translate-y-0.5">
             <span className="min-w-0">
               <b className="t-card block">Only have phone photos?</b>
               <span className="t-muted">We scan originals in NYC so you can sell bigger prints.</span>
             </span>
             <span className="font-bold text-scan">Painting scans →</span>
-          </Link>
+          </Link>}
         </div>
       </section>
 

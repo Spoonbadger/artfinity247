@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { PAINTING_SCANS } from "@/lib/features";
 
 const TABS = [
   { href: "/admin/settings", label: "General", owner: true },
   { href: "/admin/settings/notifications", label: "Alert emails" },
   { href: "/admin/settings/rewards", label: "Collector rewards" },
-  { href: "/admin/settings/scanning", label: "Scanning service" },
+  ...(PAINTING_SCANS ? [{ href: "/admin/settings/scanning", label: "Scanning service" }] : []),
   { href: "/admin/settings/code-prints", label: "Code print prices" },
 ];
 

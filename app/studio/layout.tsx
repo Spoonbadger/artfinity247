@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { getBillingState } from "@/lib/billing";
 import { isPaymentFailing } from "@/lib/billingStatus";
 import { queueCount } from "@/lib/printQueue";
+import { PAINTING_SCANS } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ export default async function StudioLayout({ children }: { children: ReactNode }
   const artist = await requireArtist();
   const [plan, billing, queued] = await Promise.all([getArtistPlan(artist.id), getBillingState(artist.id).catch(() => null), queueCount(artist.id)]);
   // A painting scan we confirmed that's waiting for payment (app/studio/scanning has its own pay button).
-  const scanToPay = currentPath().startsWith("/studio/scanning")
+  const scanToPay = !PAINTING_SCANS || currentPath().startsWith("/studio/scanning")
     ? null
     : await prisma.scanBooking.findFirst({ where: { artistId: artist.id, status: "confirmed", priceCents: { gt: 0 } }, orderBy: { confirmedAt: "desc" }, select: { id: true, priceCents: true, scheduledFor: true } }).catch(() => null);
   return (

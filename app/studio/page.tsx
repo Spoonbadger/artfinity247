@@ -18,6 +18,7 @@ import { readScanSettings } from "@/lib/scanning.server";
 import { staleLabels } from "@/lib/labelStatus";
 import { pct } from "@/lib/plans";
 import { artistSplitNow, requireArtist, firstName, getSales, getArtworks, dayKey, serverGreeting, timeAgo, SIZE_LABEL, STUDIO_TZ, usd } from "./_lib/data";
+import { PAINTING_SCANS } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Studio" };
@@ -63,7 +64,7 @@ export default async function StudioHome() {
     prisma.artwork.count({ where: { artistId: artist.id, status: { not: "REJECTED" }, printableSizes: { isEmpty: false }, NOT: { printableSizes: { has: "xl" } } } }),
     prisma.scanBooking.count({ where: { artistId: artist.id, status: { in: ["requested", "confirmed", "paid", "scanning"] } } }),
   ]);
-  const scanSuggestion = limitedCount > 1 && !scanOpen
+  const scanSuggestion = PAINTING_SCANS && limitedCount > 1 && !scanOpen
     ? { label: `${limitedCount} pieces can't print at XL yet`, note: scanOn ? "We scan the originals in NYC so every size prints sharp." : "Painting scans are coming soon. Join the waitlist.", href: "/studio/scanning", act: scanOn ? "Book a scan" : "Join" }
     : null;
   // Real scans of the artist's short link codes: last 30 days vs the 30 before.

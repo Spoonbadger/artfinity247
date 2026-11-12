@@ -4,6 +4,7 @@ import Link from "next/link";
 import Logo from "@/components/af/Logo";
 import { useSensitivePref } from "@/components/site/useSensitivePref";
 import AppConfigs from "@/db/json/AppConfigs.json";
+import { PAINTING_SCANS } from "@/lib/features";
 
 // Contact facts come from the same config the original footer used.
 const EMAIL = AppConfigs.business_email;
@@ -12,7 +13,7 @@ const HOURS = "Weekdays " + AppConfigs.business_open_time.split("\n")[0].trim().
 
 // Three short columns of the places people actually go; the legal pages sit in one small row underneath.
 const COLS: [string, [string, string][]][] = [
-  ["For artists", [["Start selling free", "/register"], ["Sell with us", "/sell-with-us"], ["Pricing", "/pricing"], ["Painting scans", "/scanning"], ["Artist help", "/help/getting-started"]]],
+  ["For artists", [["Start selling free", "/register"], ["Sell with us", "/sell-with-us"], ["Pricing", "/pricing"], ...(PAINTING_SCANS ? [["Painting scans", "/scanning"] as [string, string]] : []), ["Artist help", "/help/getting-started"]]],
   ["For buyers", [["Browse art", "/art"], ["Artists", "/artists"], ["Neighborhoods", "/scenes"], ["Your orders", "/collector"], ["Buying help", "/help/buyers"]]],
   ["Artfinity", [["About", "/about-us"], ["Help center", "/help"], ["Contact", "/contact"], ["Report art", "/report"]]],
 ];
