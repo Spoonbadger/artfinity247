@@ -202,8 +202,6 @@ export default async function AboutPage() {
             <p><b>{COMPANY.legalName}</b><br />{COMPANY.address}</p>
             <p>
               <a href={`mailto:${COMPANY.email}`} className="font-bold underline underline-offset-2">{COMPANY.email}</a>
-              <br />
-              <a href={`tel:${COMPANY.phone.replace(/[^\d+]/g, "")}`} className="underline underline-offset-2">{COMPANY.phone}</a>
             </p>
             <p className="text-ink-2">{COMPANY.hours}</p>
             <Link href="/contact" className="btn btn-sm w-fit">Send a message</Link>
