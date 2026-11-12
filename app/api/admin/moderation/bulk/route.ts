@@ -1,6 +1,6 @@
 // POST /api/admin/moderation/bulk { ids: string[], action: "approve" | "reject" }  Same as one-by-one, for many.
 import { NextRequest, NextResponse } from "next/server";
-import { getAdmin } from "@/lib/admin";
+import { adminRoleGuard } from "@/lib/adminRoles";
 import { prisma } from "@/lib/prisma";
 import { announceArtworkLive, resolveArtworkAlerts } from "@/lib/artworkLive";
 import { logAdminAction } from "@/lib/audit";
@@ -11,8 +11,8 @@ export const runtime = "nodejs";
 const MAX = 100;
 
 export async function POST(req: NextRequest) {
-  const admin = await getAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const { admin, denied } = await adminRoleGuard("moderation");
+  if (denied) return denied;
   const input = (await req.json().catch(() => ({}))) as { ids?: unknown; action?: unknown };
   const action = input.action === "approve" || input.action === "reject" ? input.action : null;
   const ids = Array.from(new Set((Array.isArray(input.ids) ? input.ids : []).filter((x): x is string => typeof x === "string"))).slice(0, MAX);

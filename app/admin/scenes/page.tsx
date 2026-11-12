@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { adminOrRedirect } from "../_components/gate";
+import { adminRoleOrRedirect } from "../_components/gate";
 import { PageHead } from "../_components/ui";
 import SceneAnnotator from "../_components/SceneAnnotator";
 import { listPhotos, loadCatalog, readAllAnnotations } from "@/lib/scenes/catalog";
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Scenes" };
 
 export default async function ScenesAdminPage() {
-  await adminOrRedirect("/admin/scenes");
+  await adminRoleOrRedirect("/admin/scenes", "admin");
   const [photos, anns, arts] = await Promise.all([
     listPhotos({ fixtures: true }),
     readAllAnnotations(),

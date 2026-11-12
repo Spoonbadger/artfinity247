@@ -1,14 +1,15 @@
 // POST /api/admin/notes { targetType: "artist" | "order", targetId, body }  A support note on an artist or order.
 import { NextRequest, NextResponse } from "next/server";
-import { getAdmin } from "@/lib/admin";
+import { adminRoleGuard } from "@/lib/adminRoles";
 import { prisma } from "@/lib/prisma";
 import { logAdminAction } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const admin = await getAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  // Internal notes: anyone on the admin team.
+  const { admin, denied } = await adminRoleGuard("view");
+  if (denied) return denied;
   const input = (await req.json().catch(() => ({}))) as { targetType?: string; targetId?: string; body?: string };
   const targetType = input.targetType === "artist" || input.targetType === "order" ? input.targetType : null;
   const targetId = typeof input.targetId === "string" ? input.targetId.trim() : "";

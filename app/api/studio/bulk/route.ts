@@ -7,7 +7,7 @@ import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { sendWorkOrder } from "@/lib/printer";
 import { checkoutUnavailable, testCheckoutAllowed } from "@/lib/testCheckout";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard } from "@/lib/auth";
 import { calcItemProfitCents } from "@/lib/revenue";
 import { BULK_MAX_LINES, BULK_MAX_PER_LINE, BULK_SIZE_KEY, BULK_SIZE_LABEL, bulkQuote, isBulkSize } from "@/lib/bulk";
 import { claimEditionNumbers, EditionSoldOutError, editionMessage, editionShortfalls } from "@/lib/editions";
@@ -29,8 +29,8 @@ function baseUrlFrom(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const user = await getUserFromCookie();
-  if (!user?.id) return json({ error: "Log in to keep going.", code: "not_logged_in" }, 401);
+  const { user, denied } = await activeUserGuard("Log in to keep going.");
+  if (denied) return denied;
   const artist = await prisma.artist.findUnique({ where: { id: user.id }, select: { id: true, email: true, name: true, artist_name: true } });
   if (!artist) return json({ error: "Log in to keep going.", code: "not_logged_in" }, 401);
 

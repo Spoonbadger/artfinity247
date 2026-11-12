@@ -3,7 +3,7 @@
 // Checks state against the af_oauth cookie, exchanges the code (PKCE / nonce / ID-token checks live in
 // lib/oauth/providers), then logs in, links, or hands a new person to sign-up (lib/oauth/account.ts).
 import { NextResponse } from "next/server";
-import { getUserFromCookie } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { rateLimit } from "@/lib/rateLimit";
 import { issueSession, linkToArtist, resolveSignIn } from "@/lib/oauth/account";
 import { FLOW_COOKIE, appBase, flowCookieOptions, openFlow, readCookie, redirectUri, safeEqual, sealSignup, signupCookieOptions } from "@/lib/oauth/flow";
@@ -55,7 +55,7 @@ async function handle(req: Request, providerParam: string, q: URLSearchParams, f
 
   // ---- Studio "Connect" ----
   if (linking) {
-    const me = await getUserFromCookie();
+    const me = await requireUser().catch(() => null); // same check as the start of the flow: not paused or closed
     if (!me?.id || me.id !== flow.linkArtistId) return fail("not_logged_in");
     const r = await linkToArtist(me.id, provider.id, profile);
     if (!r.ok) return fail(r.code);

@@ -1,7 +1,7 @@
 // /app/api/admin/orders/route.ts
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { getAdmin } from "@/lib/admin"
+import { adminRoleGuard } from "@/lib/adminRoles"
 import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
 
 export const dynamic = "force-dynamic"
@@ -25,8 +25,8 @@ function normalizeSize(raw: string | null): PrintSize {
 }
 
 export async function GET(req: NextRequest) {
-  const admin = await getAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const { admin, denied } = await adminRoleGuard("view");
+  if (denied) return denied;
 
   try {
     const { searchParams } = new URL(req.url);

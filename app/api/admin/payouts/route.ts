@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from "@/lib/prisma";
-import { getAdmin } from "@/lib/admin"
+import { adminRoleGuard } from "@/lib/adminRoles"
 import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
 import { activeRefunds, adjustmentTotals, refundAdjustments, shareAfterRefund } from "@/lib/refunds"
 import { getBalance } from "@/lib/balance"
@@ -39,8 +39,9 @@ function normalizeSize(raw: string | null): PrintSize {
 
 
 export async function GET(req: NextRequest) {
-  const admin = await getAdmin()
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  // The month's money report as a file (company share, profit, every artist's payout): admin or owner.
+  const { admin, denied } = await adminRoleGuard("money")
+  if (denied) return denied
 
   const { searchParams } = new URL(req.url)
   const month = searchParams.get('month') // YYYY-MM

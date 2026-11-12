@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from "@/lib/prisma"
-import { jwtVerify } from 'jose'
+import { activeUserGuard } from '@/lib/auth'
 import slugify from 'slugify'
 import { rateLimit } from '@/lib/rateLimit'
 import { resend } from "@/lib/resend"
@@ -22,8 +22,8 @@ export const dynamic = "force-dynamic"
 
 
 export async function POST(req: NextRequest) {
-  const token = req.cookies.get('auth-token')?.value;
-  if (!token) return NextResponse.json({ error: "Log in to keep going.", code: "not_logged_in" }, { status: 401 });
+  const { user: payload, denied } = await activeUserGuard("Log in to keep going."); // signed in, not paused or closed
+  if (denied) return denied;
 
   try {
     const rawIp = req.headers.get("x-forwarded-for");
@@ -31,11 +31,6 @@ export async function POST(req: NextRequest) {
     if (!rateLimit(ip)) {
       return NextResponse.json({ error: "Too many uploads at once. Wait a minute and try again.", code: "rate_limited" }, { status: 429 });
     }
-
-    const { payload } = await jwtVerify(
-      token,
-      new TextEncoder().encode(process.env.JWT_SECRET!)
-    )
 
     // Daily upload limit
     const todayStart = new Date();

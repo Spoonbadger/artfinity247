@@ -1,7 +1,7 @@
 // POST /api/studio/print-queue/printed { format } → "Mark as printed": logs each code in that format as printed today
 // (My codes shows "Printed Nov 5") and clears them from the queue. → { cleared, cards }
 import { NextRequest, NextResponse } from "next/server";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isFormat, queueCount } from "@/lib/printQueue";
 import { markupsOf, recordPrints } from "@/lib/labelStatus";
@@ -11,8 +11,8 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
-  const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Log in to keep going.", code: "not_logged_in" }, { status: 401 });
+  const { user, denied } = await activeUserGuard("Log in to keep going.");
+  if (denied) return denied;
   const body = (await req.json().catch(() => ({}))) as { format?: unknown };
   if (!isFormat(body.format)) return NextResponse.json({ error: "Pick a format.", code: "bad_request" }, { status: 400 });
   const rows = await prisma.printQueueItem.findMany({

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { failed, saved } from "@/lib/feedback";
 import MoreMenu from "./MoreMenu";
+import { useAdminCan } from "./AdminRole";
 import { passes, sortRows, SortSelect, TableToolbar, useTable, type SortDir } from "./table";
 import { EmptyState } from "@/components/studio/EmptyState";
 import { cn } from "@/lib/utils";
@@ -190,6 +191,7 @@ const SORTS: { key: string; dir: SortDir; label: string }[] = [
 ];
 
 export default function ModerationList({ artworks: initial, tab }: { artworks: ModArtwork[]; tab: string }) {
+  const canDelete = useAdminCan("takedown"); // deleting for good: admin or owner (support can reject)
   const router = useRouter();
   const [items, setItems] = useState(initial);
   const [busy, setBusy] = useState<string | null>(null);
@@ -345,7 +347,7 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
                 <MoreMenu label={<><span className="sr-only">More for {a.title}</span><span aria-hidden="true">More</span></>}>
                   <Link href={`/admin/artworks/${a.id}/edit`} className="btn btn-ghost btn-sm">Edit</Link>
                   <a href={`/api/admin/originals/${a.id}`} className="btn btn-ghost btn-sm">Download original</a>
-                  <button type="button" disabled={busy === a.id} onClick={() => remove(a)} className="btn btn-ghost btn-sm text-coral">Delete</button>
+                  {canDelete && <button type="button" disabled={busy === a.id} onClick={() => remove(a)} className="btn btn-ghost btn-sm text-coral">Delete</button>}
                 </MoreMenu>
               </div>
             </li>
@@ -396,7 +398,7 @@ export default function ModerationList({ artworks: initial, tab }: { artworks: M
                 <MoreMenu label={<><span className="sr-only">More for {a.title}</span><span aria-hidden="true">More</span></>}>
                   <Link href={`/admin/artworks/${a.id}/edit`} className="btn btn-ghost btn-sm">Edit</Link>
                   <a href={`/api/admin/originals/${a.id}`} className="btn btn-ghost btn-sm">Download original</a>
-                  <button type="button" disabled={busy === a.id} onClick={() => remove(a)} className="btn btn-ghost btn-sm text-coral">Delete</button>
+                  {canDelete && <button type="button" disabled={busy === a.id} onClick={() => remove(a)} className="btn btn-ghost btn-sm text-coral">Delete</button>}
                 </MoreMenu>
               </div>
             </div>

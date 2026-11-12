@@ -2,7 +2,7 @@
 // Admin decision on an artist's verification. Emails the artist.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAdmin } from "@/lib/admin";
+import { adminRoleGuard } from "@/lib/adminRoles";
 import { resend } from "@/lib/resend";
 import { logAdminAction } from "@/lib/audit";
 import { alertKey, resolveAlerts } from "@/lib/alerts";
@@ -13,8 +13,9 @@ export const dynamic = "force-dynamic";
 const SITE = process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com";
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
-  const admin = await getAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  // Verification is a review queue like artwork moderation: support may decide.
+  const { admin, denied } = await adminRoleGuard("moderation");
+  if (denied) return denied;
 
   const body = (await req.json().catch(() => null)) as { action?: string; note?: string } | null;
   const action = body?.action;

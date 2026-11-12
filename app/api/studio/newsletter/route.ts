@@ -3,7 +3,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard } from "@/lib/auth";
 import { UNVERIFIED_MESSAGE } from "@/lib/emailVerify";
 import { rateLimit } from "@/lib/rateLimit";
 import { activeFollowerCount } from "@/lib/followers";
@@ -25,8 +25,8 @@ const Body = z.object({
 const when = (d: Date) => d.toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" });
 
 export async function POST(req: Request) {
-  const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
+  const { user, denied } = await activeUserGuard();
+  if (denied) return denied;
   const artist = await prisma.artist.findUnique({ where: { id: user.id }, select: { id: true, slug: true, artist_name: true, name: true, profileImage: true, email: true, closedAt: true, emailVerifiedAt: true } });
   if (!artist || artist.closedAt) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
 
@@ -80,8 +80,8 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
+  const { user, denied } = await activeUserGuard();
+  if (denied) return denied;
   const id = new URL(req.url).searchParams.get("id") || "";
   await prisma.newsletter.deleteMany({ where: { id, artistId: user.id, sentAt: null } });
   return NextResponse.json({ ok: true });

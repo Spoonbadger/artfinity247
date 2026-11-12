@@ -2,7 +2,7 @@
 // scenes: 1–5 scene numbers (0–999), in display order. [] goes back to auto-picked rooms.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -10,8 +10,8 @@ const MAX = 5;
 
 export async function POST(req: Request) {
   try {
-    const user = await getUserFromCookie();
-    if (!user?.id) return NextResponse.json({ error: "Log in to keep going.", code: "not_logged_in" }, { status: 401 });
+    const { user, denied } = await activeUserGuard("Log in to keep going.");
+    if (denied) return denied;
 
     const body = (await req.json().catch(() => null)) as { slug?: unknown; scenes?: unknown } | null;
     const slug = typeof body?.slug === "string" ? body.slug.trim() : "";

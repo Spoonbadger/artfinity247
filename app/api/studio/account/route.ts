@@ -2,11 +2,9 @@
 // PATCH /api/studio/account { first_name?, last_name?, email?, phone?, state? }
 // Legal name, email, phone and state are private (used for payouts and tax), never shown on the public page.
 import { NextResponse } from "next/server";
-import { jwtVerify } from "jose";
-import { cookies } from "next/headers";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireUser, signAuthToken } from "@/lib/auth";
+import { activeUserGuard, requireUser, signAuthToken } from "@/lib/auth";
 import { sendVerifyEmail } from "@/lib/emailVerify";
 import { citySlugFor } from "@/lib/citySlug";
 
@@ -38,8 +36,8 @@ export async function GET() {
 }
 
 export async function PATCH(req: Request) {
-  const user = await auth();
-  if (!user) return fail("Log in first.", 401);
+  const { user, denied } = await activeUserGuard(); // signed in, session still valid, account not paused or closed
+  if (denied) return denied;
 
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") return fail("Nothing to save.");
@@ -104,15 +102,8 @@ export async function PATCH(req: Request) {
 
   // The session token carries the email; re-issue it with the same expiry so it stays in sync.
   if (data.email && data.email !== user.email) {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
-    const old = cookies().get("auth-token")?.value;
-    let exp = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30;
-    if (old) {
-      try {
-        const { payload } = await jwtVerify(old, secret);
-        if (payload.exp) exp = payload.exp;
-      } catch {}
-    }
+    // user is the current session's verified token, so its exp is the one to keep.
+    const exp = typeof user.exp === "number" ? user.exp : Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30;
     const token = await signAuthToken({ id, email: account.email, slug, role, sessionVersion }, exp);
     const left = exp - Math.floor(Date.now() / 1000);
     const base = { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/" };

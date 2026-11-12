@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getAdmin } from "@/lib/admin"
+import { adminRoleGuard } from "@/lib/adminRoles"
 import { logAdminAction } from "@/lib/audit"
 import { cleanTracking, type Tracking } from "@/lib/tracking"
 import { recordTracking } from "@/lib/shipping"
@@ -16,8 +16,8 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const admin = await getAdmin()
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  const { admin, denied } = await adminRoleGuard("orders")
+  if (denied) return denied
 
   const input = await req.json().catch(() => ({}))
   const { shippingStatus } = input

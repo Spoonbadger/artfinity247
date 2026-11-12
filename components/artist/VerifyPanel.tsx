@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Check } from "lucide-react";
+import { uploadImage } from "@/components/media/uploadImage";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -49,12 +50,7 @@ export default function VerifyPanel({ initial, name, slug, skipsReview = false, 
     setUploading(true);
     setError(null);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("kind", "photo");
-      const res = await fetch("/api/uploads", { method: "POST", body: fd });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok || !j.url) throw new Error(j.error || "Upload failed. Try again.");
+      const j = await uploadImage(file, { kind: "photo" });
       setPhoto(j.url);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Upload failed. Try again.");

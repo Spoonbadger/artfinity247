@@ -3,7 +3,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard, getUserFromCookie } from "@/lib/auth";
 import { rateLimit } from "@/lib/rateLimit";
 import { emailSchema, newToken } from "@/lib/followers";
 
@@ -58,6 +58,8 @@ function parseList(text: string) {
 }
 
 export async function POST(req: Request) {
+  const { denied } = await activeUserGuard(); // signed in, not paused or closed (GET, the CSV download, stays open)
+  if (denied) return denied;
   const artist = await artistId();
   if (!artist) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
   if (!rateLimit(`import:${artist.id}`, 10, 60 * 60_000)) return NextResponse.json({ error: "Too many imports this hour. Try again in an hour.", code: "rate_limited" }, { status: 429 });

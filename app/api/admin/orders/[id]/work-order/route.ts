@@ -1,6 +1,6 @@
 // POST /api/admin/orders/:id/work-order  "Resend work order" / "Retry" in admin orders (lib/printer.ts).
 import { NextRequest, NextResponse } from "next/server";
-import { getAdmin } from "@/lib/admin";
+import { adminRoleGuard } from "@/lib/adminRoles";
 import { logAdminAction } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { printerState, sendWorkOrder } from "@/lib/printer";
@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
-  const admin = await getAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const { admin, denied } = await adminRoleGuard("orders");
+  if (denied) return denied;
   const r = await sendWorkOrder(params.id, { force: true });
   await logAdminAction(admin, "order.work_order_resend", { type: "order", id: params.id },
     r.status === "sent" ? "Resent work order to the printer" : r.status === "failed" ? `Work order resend failed: ${r.error ?? ""}` : `Work order skipped: ${r.reason ?? ""}`,

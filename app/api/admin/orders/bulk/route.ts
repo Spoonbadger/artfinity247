@@ -1,6 +1,6 @@
 // POST /api/admin/orders/bulk { ids: string[], action: "sent" }  Mark many orders as sent to the printer.
 import { NextRequest, NextResponse } from "next/server";
-import { getAdmin } from "@/lib/admin";
+import { adminRoleGuard } from "@/lib/adminRoles";
 import { prisma } from "@/lib/prisma";
 import { logAdminAction } from "@/lib/audit";
 import { alertKey, resolveAlerts } from "@/lib/alerts";
@@ -8,8 +8,8 @@ import { alertKey, resolveAlerts } from "@/lib/alerts";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const admin = await getAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const { admin, denied } = await adminRoleGuard("orders");
+  if (denied) return denied;
   const input = (await req.json().catch(() => ({}))) as { ids?: unknown; action?: unknown };
   const ids = Array.from(new Set((Array.isArray(input.ids) ? input.ids : []).filter((x): x is string => typeof x === "string"))).slice(0, 200);
   if (input.action !== "sent") return NextResponse.json({ error: "Unknown action." }, { status: 400 });

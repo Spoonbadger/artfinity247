@@ -1,7 +1,7 @@
 // POST /api/studio/scanning  Book a painting scan (lib/scanning.server.ts createBooking).
 // { artworks: [{ artworkId, band }], newPieces: [{ band, count }], handoff: "dropoff" | "pickup", pickupAddress?, preferredDates: ["YYYY-MM-DD"], notes? }
 import { NextResponse } from "next/server";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rateLimit";
 import { createBooking, ScanError } from "@/lib/scanning.server";
@@ -12,8 +12,8 @@ export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   if (!PAINTING_SCANS) return NextResponse.json({ error: "Painting scans aren’t available.", code: "scanning_off" }, { status: 404 });
-  const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Log in to keep going.", code: "not_logged_in" }, { status: 401 });
+  const { user, denied } = await activeUserGuard("Log in to keep going.");
+  if (denied) return denied;
   const artist = await prisma.artist.findUnique({ where: { id: user.id }, select: { id: true, closedAt: true, suspendedAt: true } });
   if (!artist || artist.closedAt) return NextResponse.json({ error: "Log in to keep going.", code: "not_logged_in" }, { status: 401 });
   if (artist.suspendedAt) return NextResponse.json({ error: "Your account is paused, so scans can't be booked right now.", code: "account_suspended" }, { status: 403 });

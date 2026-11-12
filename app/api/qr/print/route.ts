@@ -5,10 +5,10 @@
 //   of the logged-in artist, same look, as many sheets as needed. X-Af-Codes says how many codes were made.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard } from "@/lib/auth";
 import { generateQrPdf } from "@/lib/generateQrPdf";
 import { artistIsPro } from "@/lib/qr/plan";
-import { sanitizeDesign, FORMATS } from "@/components/qr/card";
+import { sanitizeDesign, sheetLayout, FORMATS } from "@/components/qr/card";
 import { createQrCode, normalizeCode, shortUrl } from "@/lib/shortlinks";
 import { parseMeta } from "../codes/meta";
 import { recordPrints, type PrintRecord } from "@/lib/labelStatus";
@@ -18,8 +18,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Log in to print codes.", code: "not_logged_in" }, { status: 401 });
+  const { user, denied } = await activeUserGuard("Log in to print codes.");
+  if (denied) return denied;
 
   const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
   const base = baseUrl(req);
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     const pdf = await generateQrPdf([{ design, art, qrText: shortUrl(code, base) }], { fill: true, pro: await artistIsPro(row.artistId) });
     // A full sheet of this card: record what it says (lib/labelStatus.ts).
     const qr = await prisma.qrCode.findUnique({ where: { code }, select: { id: true, artistId: true } });
-    if (qr) await recordPrints([{ qrCodeId: qr.id, artistId: qr.artistId, artworkId: row.id, design, art, qty: FORMATS[design.format].sheet.cols * FORMATS[design.format].sheet.rows, source: "download" }]);
+    if (qr) await recordPrints([{ qrCodeId: qr.id, artistId: qr.artistId, artworkId: row.id, design, art, qty: sheetLayout(design.format, design.custom).slots.length, source: "download" }]);
     return new NextResponse(Buffer.from(pdf), { status: 200, headers: { ...pdfHeaders(`${art.slug}-${design.format}-sheet.pdf`), "X-Af-Code": code } });
   } catch (err) {
     console.error("QR print error", err);

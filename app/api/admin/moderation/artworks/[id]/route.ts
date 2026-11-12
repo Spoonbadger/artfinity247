@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth"
+import { adminRoleGuard } from "@/lib/adminRoles"
 import { Prisma } from "@prisma/client";
 import { announceArtworkLive, resolveArtworkAlerts } from "@/lib/artworkLive";
 import { logAdminAction } from "@/lib/audit";
@@ -15,11 +15,8 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const admin = await requireAdmin().catch(() => null);
-
-    if (!admin) {
-      return new NextResponse("Unauthorized", { status: 401 });
-    }
+    const { admin, denied } = await adminRoleGuard("moderation");
+    if (denied) return denied;
     const { id } = params;
     const body = await req.json();
     const action = body.action as "approve" | "reject" | "spot_ok";
@@ -95,7 +92,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const admin = await requireAdmin();
+    // Deleting for good (support can reject instead): admin or owner, the same level as a takedown.
+    const { admin, denied } = await adminRoleGuard("takedown");
+    if (denied) return denied;
     const { id } = params;
     const art = await prisma.artwork.findUnique({ where: { id }, select: { title: true, artistId: true, status: true } });
 

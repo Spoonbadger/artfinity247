@@ -2,20 +2,14 @@
 // Admin moderation for buyer reviews. Publishing a held (flagged) review emails the artist, as a new review would have.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { adminRoleGuard } from "@/lib/adminRoles";
 import { notifyArtistOfReview } from "@/lib/reviews";
 import { logAdminAction } from "@/lib/audit";
 import { alertKey, resolveAlert } from "@/lib/alerts";
 
 export const dynamic = "force-dynamic";
 
-async function guard() {
-  try {
-    return { admin: await requireAdmin(), denied: null };
-  } catch (e: any) {
-    return { admin: null, denied: NextResponse.json({ error: e?.status === 401 ? "Not authenticated" : "Forbidden" }, { status: e?.status || 403 }) };
-  }
-}
+const guard = () => adminRoleGuard("reviews");
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const { admin, denied } = await guard();

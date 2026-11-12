@@ -8,6 +8,7 @@ import { Check, Loader2 } from "lucide-react";
 import { basePrices } from "@/lib/artwork_price";
 import { SENSITIVE_LABELS } from "@/components/studio/sensitive";
 import { cn } from "@/lib/utils";
+import { CantNote, useAdminCan } from "./AdminRole";
 
 type Status = "PENDING" | "APPROVED" | "REJECTED";
 type MarkupKey = "markupSmall" | "markupMedium" | "markupLarge" | "markupXl";
@@ -36,6 +37,7 @@ const toDollars = (c: number) => (c / 100).toFixed(2);
 
 export default function ArtworkEditForm({ artwork }: { artwork: AdminArtwork }) {
   const router = useRouter();
+  const canPrice = useAdminCan("money");
   const [saved, setSaved] = useState(artwork);
   const [title, setTitle] = useState(artwork.title);
   const [description, setDescription] = useState(artwork.description);
@@ -146,6 +148,7 @@ export default function ArtworkEditForm({ artwork }: { artwork: AdminArtwork }) 
           <summary className="cursor-pointer text-[14px] font-bold">Prices <span className="font-normal text-ink-2">· markup on top of the base print price</span></summary>
           <fieldset className="mt-2">
           <legend className="sr-only">Markup per size, in dollars</legend>
+          <CantNote need="money" />
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {SIZES.map((s) => {
               const n = Number(markups[s.key]);
@@ -160,6 +163,7 @@ export default function ArtworkEditForm({ artwork }: { artwork: AdminArtwork }) 
                     step="0.01"
                     value={markups[s.key]}
                     onChange={(e) => setMarkups((x) => ({ ...x, [s.key]: e.target.value }))}
+                    disabled={!canPrice}
                     aria-describedby={`${s.key}-price`}
                     className="num"
                   />

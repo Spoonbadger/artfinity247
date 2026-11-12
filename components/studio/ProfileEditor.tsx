@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, ReactNode, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ArrowUpRight, Camera, Check, ChevronDown, Copy, Loader2 } from "lucide-react";
+import { uploadImage } from "@/components/media/uploadImage";
 import { useUser } from "@/components/contexts";
 import { BrushStroke } from "@/components/af/Brush";
 import { Avatar } from "./StudioShell";
@@ -58,12 +59,7 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
     setError(null);
     setPhotoBusy(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("kind", "photo");
-      const res = await fetch("/api/uploads", { method: "POST", body: fd, credentials: "include" });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "Upload failed.");
+      const data = await uploadImage(file, { kind: "photo" });
       await post("/api/artists/update-profile-image", { imageUrl: data.url });
       setP((x) => ({ ...x, profileImage: data.url }));
       setSaved((x) => ({ ...x, profileImage: data.url }));

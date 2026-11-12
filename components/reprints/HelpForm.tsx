@@ -4,6 +4,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { Camera, Check, Minus, Plus, X } from "lucide-react";
+import { uploadImage } from "@/components/media/uploadImage";
 import { BrushStroke } from "@/components/af/Brush";
 import { cn } from "@/lib/utils";
 import { MAX_NOTE, MAX_PHOTOS, REPRINT_REASONS, type ReprintReason } from "@/lib/reprintFormat";
@@ -37,13 +38,7 @@ export default function HelpForm({ orderId, token, items }: { orderId: string; t
     setUploading(list.length);
     await Promise.all(list.map(async (file) => {
       try {
-        const fd = new FormData();
-        fd.append("file", file);
-        fd.append("helpOrder", orderId);
-        fd.append("helpToken", token);
-        const r = await fetch("/api/uploads", { method: "POST", body: fd });
-        const j = await r.json().catch(() => ({}));
-        if (!r.ok || !j.url) throw new Error(j.error || "That photo didn't upload.");
+        const j = await uploadImage(file, { helpOrder: orderId, helpToken: token });
         setPhotos((p) => (p.length < MAX_PHOTOS ? [...p, j.url] : p));
       } catch (e: any) {
         setError(e?.message || "That photo didn't upload.");

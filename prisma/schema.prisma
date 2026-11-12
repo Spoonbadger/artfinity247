@@ -34,6 +34,7 @@ model Order {
   kind            String  @default("retail")
   bulkArtistId    String?
   artistNotificationsSentAt DateTime?
+  refunds         Refund[]
 }
 
 model OrderItem {
@@ -58,11 +59,44 @@ model OrderItem {
   qrCodeId      String?  // the printed code that led to this sale (scan attribution)
   artistSplit   Float?   // the artist's share of profit locked in when the order was placed (0.6 free, higher on Pro)
   review        Review?
+  refunds       Refund[]
   artwork      Artwork? @relation(fields: [artworkId], references: [id])
   order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
   @@index([artworkId])
+}
+
+// A refunded order line (lib/refunds.ts). The money goes back to the buyer in Stripe; this records it so the books
+// match. A line is refunded while it has a row with undoneAt null. Admins record and undo refunds in the admin order
+// page, which also writes an AdminAction audit row each time.
+model Refund {
+  id             String    @id @default(cuid())
+  orderId        String
+  orderItemId    String
+  // The artist whose share the line paid (null when the piece isn't listed anymore)
+  artistId       String?
+  amountCents    Int       // line total refunded to the buyer, ex-tax
+  shareCents     Int       // the artist's share on the line at refund time
+  // Share taken back because its payout month wasn't paid yet: the line counts as 0 for the artist
+  reversed       Boolean   @default(false)
+  // Already paid out: the share comes off the artist's payout for adjustMonth ("YYYY-MM") as a Refund adjustment
+  deducted       Boolean   @default(false)
+  adjustMonth    String?
+  reason         String    @default("other") // lib/refundPolicy.ts RefundReason
+  title          String    @default("")
+  note           String    @default("")
+  createdAt      DateTime  @default(now())
+  createdByEmail String    @default("")
+  undoneAt       DateTime?
+  undoneByEmail  String?
+  order          Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem      OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  artist         Artist?   @relation(fields: [artistId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([orderItemId])
+  @@index([artistId])
 }
 
 model Payout {
@@ -132,6 +166,20 @@ model Artist {
   proUntil         DateTime? // Pro is active while this is in the future (paid or earned by referrals)
   referralCode     String?   @unique
   referredById     String?
+
+  // Infinity subscription (Stripe Billing, lib/billing.ts). Only ever moves proUntil; these record where it stands.
+  stripeCustomerId              String?   @unique // the artist's Stripe Customer; webhooks find the artist by it
+  stripeSubscriptionId          String?
+  subscriptionStatus            String?   // active | trialing | past_due | unpaid | incomplete | incomplete_expired | canceled | paused
+  subscriptionInterval          String?   // month | year
+  subscriptionPeriodEnd         DateTime? // end of the current paid period (or of the free trial while referral months run first)
+  subscriptionTrialEnd          DateTime?
+  subscriptionCancelAtPeriodEnd Boolean   @default(false)
+  subscriptionPaymentFailedAt   DateTime? // set by invoice.payment_failed, cleared when an invoice is paid
+  // The rest of the subscription bookkeeping (lib/billing.ts BillingExtra): endedAt, failedInvoiceId, subProUntil,
+  // simulated, eventAt, updatedAt
+  billing                       Json?
+  refunds                       Refund[]
 
   passwordResetTokens PasswordResetToken[]
 

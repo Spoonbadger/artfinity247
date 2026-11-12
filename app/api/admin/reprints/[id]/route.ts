@@ -3,7 +3,6 @@
 // refund: marks it refunded (the refund itself is done in Stripe for now), emails the buyer.
 // decline: needs a note for the buyer, emails them.
 import { NextRequest, NextResponse } from "next/server";
-import { getAdmin } from "@/lib/admin";
 import { decideRequest, ReprintError, type Decision } from "@/lib/reprints";
 import { prisma } from "@/lib/prisma";
 import { logAdminAction } from "@/lib/audit";
@@ -15,8 +14,8 @@ export const runtime = "nodejs";
 const ACTIONS: Decision[] = ["approve", "refund", "decline"];
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const admin = await getAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const { admin, denied } = await adminRoleGuard("reprints");
+  if (denied) return denied;
   const input = await req.json().catch(() => ({}));
   const action = ACTIONS.find((a) => a === input?.action);
   if (!action) return NextResponse.json({ error: "Pick approve, refund or decline." }, { status: 400 });

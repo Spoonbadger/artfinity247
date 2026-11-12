@@ -3,14 +3,16 @@
 import { NextResponse } from "next/server";
 import { queueForPlace } from "@/lib/artistPlaces";
 import { queueCount } from "@/lib/printQueue";
-import { err, me } from "../../_lib";
+import { err } from "../../_lib";
+import { activeUserGuard } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
-  const artistId = await me();
-  if (!artistId) return err("Log in to keep going.", "not_logged_in", 401);
+  const { user, denied } = await activeUserGuard("Log in to keep going."); // signed in, not paused or closed
+  if (denied) return denied;
+  const artistId = user.id;
   try {
     const r = await queueForPlace(artistId, params.id);
     if (!r) return err("That place is gone. Refresh to see your list.", "place_not_found", 404);

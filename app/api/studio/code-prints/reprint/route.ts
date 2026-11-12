@@ -4,14 +4,16 @@ import { NextResponse } from "next/server";
 import { reprintCodes } from "@/lib/labelStatus";
 import { queueCount } from "@/lib/printQueue";
 import { normalizeCode } from "@/lib/shortcode";
-import { body, err, me, strings } from "../../places/_lib";
+import { body, err, strings } from "../../places/_lib";
+import { activeUserGuard } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  const artistId = await me();
-  if (!artistId) return err("Log in to keep going.", "not_logged_in", 401);
+  const { user, denied } = await activeUserGuard("Log in to keep going."); // signed in, not paused or closed
+  if (denied) return denied;
+  const artistId = user.id;
   const b = await body(req);
   const codes = strings(b?.codes, 200).map((c) => normalizeCode(c)).filter((c): c is string => !!c);
   if (!codes.length) return err("Pick at least one code.", "bad_request", 400);

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from "@/lib/prisma";
-import { getUserFromCookie, verifyAuthTokenOrThrow } from '@/lib/auth'
+import { activeUserGuard, getUserFromCookie } from '@/lib/auth'
 import cloudinary from '@/lib/cloudinary'
 
 export const dynamic = "force-dynamic"
@@ -63,11 +63,10 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: { slug: string } } // keeps same route file
 ) {
-  const token = req.cookies.get("auth-token")?.value;
-  if (!token) return NextResponse.json({ error: "Log in to keep going.", code: "not_logged_in" }, { status: 401 });
+  const { user, denied } = await activeUserGuard("Log in to keep going."); // signed in, not paused or closed
+  if (denied) return denied;
 
   try {
-    const payload = await verifyAuthTokenOrThrow(token); // signature, expiry and session version
 
     const idOrSlug = params.slug;
 
@@ -82,14 +81,7 @@ export async function DELETE(
 
     if (!artwork) return NextResponse.json({ error: "We couldn't find that piece. It may already be deleted.", code: "art_not_found" }, { status: 404 });
 
-    // token was signed with { id, email, slug }
-    const currentArtistId =
-      (payload as any).id ||
-      (payload as any).artistId ||
-      (payload as any).userId ||
-      (payload as any).sub;
-
-    if (String(artwork.artistId) !== String(currentArtistId)) {
+    if (String(artwork.artistId) !== String(user.id)) {
       return NextResponse.json({ error: "Only the artist can delete this piece.", code: "not_your_art" }, { status: 403 });
     }
 

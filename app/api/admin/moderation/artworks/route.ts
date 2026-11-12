@@ -1,17 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { adminRoleGuard } from "@/lib/adminRoles";
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
 
 export async function GET() {
   try {
-    const admin = await requireAdmin().catch(() => null);
-
-    if (!admin) {
-      return new NextResponse("Unauthorized", { status: 401 });
-    }
+    const { denied } = await adminRoleGuard("moderation");
+    if (denied) return denied;
 
     if (process.env.NEXT_PHASE === "phase-production-build") {
       return NextResponse.json({ artworks: [] })

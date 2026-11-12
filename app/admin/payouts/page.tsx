@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { adminOrRedirect } from "../_components/gate";
+import { adminRoleOrRedirect } from "../_components/gate";
+import { roleCan } from "@/lib/adminCaps";
 import MonthPicker from "../_components/MonthPicker";
 import PayoutsTable from "../_components/PayoutsTable";
 import PayAllPanel from "../_components/PayAllPanel";
@@ -13,7 +14,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Payouts" };
 
 export default async function AdminPayoutsPage({ searchParams }: { searchParams: { month?: string } }) {
-  await adminOrRedirect("/admin/payouts");
+  const admin = await adminRoleOrRedirect("/admin/payouts");
   const monthRows = await prisma.$queryRaw<{ m: string }[]>`
     SELECT DISTINCT to_char("createdAt" AT TIME ZONE 'UTC', 'YYYY-MM') AS m FROM "Order" WHERE "paymentStatus" = 'paid' ORDER BY m DESC`;
   const months = Array.from(new Set([currentMonth(), ...monthRows.map((r) => r.m)])).sort().reverse();
@@ -37,7 +38,7 @@ export default async function AdminPayoutsPage({ searchParams }: { searchParams:
           <h2 id="month-h" className="t-card">By month</h2>
           <div className="flex flex-wrap items-center gap-2">
             <MonthPicker months={months} value={month} allowAll={false} />
-            <a href={`/api/admin/payouts?month=${month}`} className="btn btn-ghost btn-sm">Export CSV</a>
+            {roleCan(admin.adminRole, "money") && <a href={`/api/admin/payouts?month=${month}`} className="btn btn-ghost btn-sm">Export CSV</a>}
           </div>
         </div>
         <PayoutsTable key={month} month={month} />

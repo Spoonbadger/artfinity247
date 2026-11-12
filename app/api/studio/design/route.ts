@@ -2,7 +2,7 @@
 // PUT { theme } is validated strictly: palette colors only, banner and pins must be the artist's own approved work.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard, getUserFromCookie } from "@/lib/auth";
 import { parseTheme, themeError, type PageTheme } from "@/components/artist/theme";
 
 export const dynamic = "force-dynamic";
@@ -21,8 +21,8 @@ export async function GET() {
 }
 
 export async function PUT(req: Request) {
-  const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Log in first.", code: "not_logged_in" }, { status: 401 });
+  const { user, denied } = await activeUserGuard();
+  if (denied) return denied;
 
   const body = (await req.json().catch(() => null)) as { theme?: unknown } | null;
   const ids = await ownedIds(user.id);

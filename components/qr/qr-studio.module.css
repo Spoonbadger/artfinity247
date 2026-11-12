@@ -12,12 +12,19 @@
 .thumb[aria-pressed="true"] img { box-shadow: 0 0 0 2.5px var(--af-ink), 5px 5px 0 var(--af-sticker); transform: rotate(-1.5deg); }
 
 /* ---------- studio frame ---------- */
-.studio { display: grid; grid-template-columns: 330px minmax(0, 1fr); grid-template-rows: auto 1fr; grid-template-areas: "ctl out" "ctl panels"; border: 1px solid var(--af-edge); border-radius: 18px; overflow: hidden; background: #fff; min-width: 0; }
+/* overflow: clip (not hidden) so the preview can stick while the options scroll. */
+.studio { display: grid; grid-template-columns: 340px minmax(0, 1fr); grid-template-areas: "ctl out"; border: 1px solid var(--af-edge); border-radius: 18px; overflow: clip; background: #fff; min-width: 0; }
 .ctl { grid-area: ctl; border-right: 1px solid var(--af-edge); padding: 8px 24px 24px; display: grid; align-content: start; min-width: 0; background: #fff; }
-.group { border: 0; margin: 0; padding: 16px 0; min-width: 0; border-bottom: 1px dashed var(--af-line); }
+/* Each group of options folds away (a <details>), like "Colors and code style". */
+.group { margin: 0; padding: 6px 0; min-width: 0; border-bottom: 1px dashed var(--af-line); }
 .group:last-child { border-bottom: 0; }
-.group legend { float: left; width: 100%; padding: 0; margin-bottom: 10px; display: flex; align-items: center; gap: 9px; font-family: var(--font-body); font-weight: 700; font-size: 17px; line-height: 1.3; color: var(--af-ink); } /* .t-card */
-.groupBody { clear: both; display: grid; gap: 9px; min-width: 0; }
+.group > summary { display: flex; align-items: center; gap: 9px; cursor: pointer; list-style: none; min-height: 44px; font-family: var(--font-body); font-weight: 700; font-size: 17px; line-height: 1.3; color: var(--af-ink); } /* .t-card */
+.group > summary::-webkit-details-marker { display: none; }
+.group > summary svg { flex: none; color: var(--af-ink-2); transition: transform .15s; }
+.group[open] > summary svg { transform: rotate(180deg); }
+.group > summary:focus-visible { outline: 3px solid var(--af-scan); outline-offset: 2px; border-radius: 6px; }
+.group[open] > .groupBody { padding: 4px 0 12px; }
+.groupBody { display: grid; gap: 9px; min-width: 0; }
 .sub { font-size: 13px; font-weight: 600; color: var(--af-ink-2); margin-top: 4px; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -53,11 +60,13 @@
 .disabled { opacity: .45; cursor: not-allowed; }
 
 /* ---------- output ---------- */
-.out { grid-area: out; padding: 24px; display: grid; gap: 16px; align-content: start; min-width: 0;
+.out { grid-area: out; padding: 24px; min-width: 0;
   background-color: var(--af-wall);
   background-image:
     repeating-linear-gradient(0deg, rgba(21,22,27,.025) 0 1px, transparent 1px 4px),
     repeating-linear-gradient(90deg, rgba(21,22,27,.025) 0 1px, transparent 1px 5px); }
+/* The preview follows you down the page on wide screens. */
+.outInner { display: grid; gap: 16px; align-content: start; min-width: 0; position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; scrollbar-width: thin; }
 .topRow { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; }
 .tabs { display: inline-flex; gap: 2px; padding: 3px; border: 1.5px solid var(--af-edge-strong); border-radius: 999px; background: #fff; flex-wrap: wrap; }
 .tabs button { border: 0; background: transparent; color: var(--af-ink); border-radius: 999px; padding: 7px 14px; font: 600 13.5px/1.2 var(--font-body); cursor: pointer; }
@@ -77,8 +86,13 @@
 .f_sticker { max-width: 300px; }
 .f_tag { max-width: 250px; }
 .f_poster { max-width: 380px; }
+/* Keep the whole card in view beside the options. */
+@media (min-width: 1101px) {
+  .stage { min-height: min(440px, calc(100vh - 300px)); }
+  .face svg, .sheet svg { max-height: max(240px, calc(100vh - 300px)); }
+}
 
-.panelsWrap { grid-area: panels; padding-top: 0; }
+.panelsWrap { min-width: 0; }
 
 /* to-scale wall */
 .wall { position: relative; width: 100%; max-width: 760px; aspect-ratio: 16 / 10; background: var(--af-gallery); border-radius: 14px; overflow: hidden;
@@ -139,9 +153,9 @@
 .soon { margin: 4px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 13px; color: var(--af-ink-2); }
 
 @media (max-width: 1100px) {
-  .studio { grid-template-columns: 1fr; grid-template-rows: auto; grid-template-areas: "out" "ctl" "panels"; }
-  .ctl { border-right: 0; border-top: 1px solid var(--af-edge); border-bottom: 1px solid var(--af-edge); grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); column-gap: 28px; }
-  .panelsWrap { padding-top: 20px; }
+  .studio { grid-template-columns: 1fr; grid-template-rows: auto; grid-template-areas: "out" "ctl"; }
+  .ctl { border-right: 0; border-top: 1px solid var(--af-edge); grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); column-gap: 28px; }
+  .outInner { position: static; max-height: none; overflow: visible; }
 }
 @media (max-width: 720px) {
   .panels { grid-template-columns: 1fr; }
@@ -149,7 +163,6 @@
 @media (max-width: 480px) {
   .ctl { padding: 4px 14px 16px; }
   .out { padding: 16px 12px 20px; }
-  .panelsWrap { padding-top: 16px; }
   .stage { min-height: 280px; }
   .tabs button { padding: 6px 10px; font-size: 13px; }
   .loupe { width: 40%; }
@@ -175,12 +188,15 @@
 /* "Infinity" on a locked look: its real preview stays visible; choosing it starts checkout. */
 .inf { display: inline-flex; align-items: center; gap: 3px; margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: var(--af-ink); color: #fff; font-size: 12px; font-weight: 700; line-height: 1.5; vertical-align: 1px; }
 .presets button[aria-pressed="true"] .inf { background: #fff; color: var(--af-ink); }
-.more { padding: 14px 0 4px; min-width: 0; }
-.more summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; list-style: none; font-family: var(--font-body); font-weight: 700; font-size: 17px; line-height: 1.3; color: var(--af-ink); min-height: 40px; }
-.more summary::-webkit-details-marker { display: none; }
-.more[open] summary svg { transform: rotate(180deg); }
-.more[open] .groupBody { margin-top: 8px; }
 .moreSeasons summary { display: flex; align-items: center; gap: 6px; cursor: pointer; list-style: none; font-size: 14px; font-weight: 600; color: var(--af-ink); min-height: 40px; }
 .moreSeasons summary::-webkit-details-marker { display: none; }
 .moreSeasons[open] summary svg { transform: rotate(180deg); }
 .moreSeasons[open] .presets { margin-top: 4px; }
+
+/* Custom size (Infinity) */
+.custom { display: grid; gap: 9px; padding: 12px; border-radius: 12px; background: var(--af-wall); min-width: 0; }
+.sizeRow { display: flex; align-items: flex-end; gap: 8px; }
+.sizeRow .field { flex: 1; min-width: 0; }
+.unit { font-size: 14px; font-weight: 600; color: var(--af-ink-2); padding-bottom: 11px; }
+.chips button:disabled { opacity: .6; cursor: wait; }
+.chips button[aria-pressed="true"] .inf { background: #fff; color: var(--af-ink); }

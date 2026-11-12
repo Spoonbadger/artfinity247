@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from "@/lib/auth"
+import { requireAdminRole } from "@/lib/adminRoles"
 import { itemBreakdown } from "@/lib/sales"
 
 export const dynamic = "force-dynamic"
@@ -8,7 +8,7 @@ export const dynamicParams = true
 
 export async function GET(req: NextRequest) {
   try{
-    await requireAdmin()
+    await requireAdminRole("view")
 
     const { searchParams } = new URL(req.url)
 

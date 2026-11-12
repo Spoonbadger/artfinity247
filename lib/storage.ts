@@ -2,6 +2,8 @@
 // gets a preview (long edge 1600px, JPEG, no EXIF/GPS).
 // Cloudinary (when CLOUDINARY_* are set): the preview is a public "upload" asset and the original an
 // "authenticated" asset with the same public_id, so it can only be fetched with a signed URL.
+// Browser uploads put the original there directly (POST /api/uploads/sign + /finish, since Vercel caps request
+// bodies at 4.5 MB) and finishCloudUpload adds the preview. Server-side uploads (imports, photo edits, scans) use saveUpload.
 // Local files: the preview goes to public/uploads/<folder>/<name>.jpg and the original to
 // storage/originals/<folder>/<name>.<ext> (ORIGINALS_DIR overrides the folder). Neither needs a DB column.
 import fs from "fs/promises";
@@ -43,6 +45,39 @@ export class UnreadableImage extends Error {}
 
 type Saved = { url: string; width: number; height: number };
 
+/** Upright size and format of an image sharp can read (zeros when it can't, e.g. some HEIC files). */
+async function measure(buf: Buffer): Promise<{ width: number; height: number; format?: string }> {
+  try {
+    const m = await sharp(buf).metadata();
+    // EXIF orientation 5-8: stored sideways, so swap to the upright size.
+    const [width, height] = (m.orientation || 0) >= 5 ? [m.height || 0, m.width || 0] : [m.width || 0, m.height || 0];
+    return { width, height, format: m.format };
+  } catch {
+    return { width: 0, height: 0 };
+  }
+}
+
+type Cloud = Awaited<ReturnType<typeof cloud>>;
+
+/** Cloudinary reads some files sharp can't (e.g. HEIC): a preview built from its JPEG of the private original. */
+async function cloudPreviewOf(cloudinary: Cloud, publicId: string): Promise<Buffer | null> {
+  const src = cloudinary.url(publicId, {
+    type: "authenticated", sign_url: true, secure: true, format: "jpg",
+    transformation: [{ crop: "limit", width: PREVIEW_EDGE, height: PREVIEW_EDGE }],
+  });
+  const res = await fetch(src).catch(() => null);
+  return res?.ok ? makePreview(Buffer.from(await res.arrayBuffer())).catch(() => null) : null;
+}
+
+function cloudPut(cloudinary: Cloud, publicId: string, data: Buffer, o: Record<string, unknown>): Promise<any> {
+  return new Promise((resolve, reject) =>
+    cloudinary.uploader.upload_stream({ public_id: publicId, resource_type: "image", ...o }, (err, r) => (err ? reject(err) : resolve(r))).end(data),
+  );
+}
+
+const dropPrivate = (cloudinary: Cloud, publicId: string) =>
+  cloudinary.uploader.destroy(publicId, { type: "authenticated", invalidate: true }).catch(() => {});
+
 /**
  * Stores an upload and returns its public preview URL. width/height are the original's (print sizes use them).
  * keepOriginal stores the untouched file privately too (artwork uploads).
@@ -51,13 +86,8 @@ export async function saveUpload(
   buf: Buffer,
   opts: { folder: string; cloudFolder: string; keepOriginal: boolean; fileName?: string },
 ): Promise<Saved> {
-  let width = 0, height = 0, format: string | undefined;
-  try {
-    const m = await sharp(buf).metadata();
-    // EXIF orientation 5-8: stored sideways, so swap to the upright size.
-    [width, height] = (m.orientation || 0) >= 5 ? [m.height || 0, m.width || 0] : [m.width || 0, m.height || 0];
-    format = m.format;
-  } catch {}
+  const measured = await measure(buf);
+  let { width, height } = measured;
   let preview: Buffer | null = null;
   try { preview = await makePreview(buf); } catch {}
   const name = crypto.randomBytes(6).toString("hex");
@@ -70,34 +100,62 @@ export async function saveUpload(
     if (opts.keepOriginal) {
       const odir = path.join(ORIGINALS_DIR, ...opts.folder.split("/"));
       await fs.mkdir(odir, { recursive: true });
-      await fs.writeFile(path.join(odir, `${name}.${extFor(format, opts.fileName)}`), buf);
+      await fs.writeFile(path.join(odir, `${name}.${extFor(measured.format, opts.fileName)}`), buf);
     }
     return { url: `/uploads/${opts.folder}/${name}.jpg`, width, height };
   }
 
   const cloudinary = await cloud();
   const publicId = `${opts.cloudFolder}/${name}`;
-  const put = (data: Buffer, o: Record<string, unknown>): Promise<any> =>
-    new Promise((resolve, reject) =>
-      cloudinary.uploader.upload_stream({ public_id: publicId, resource_type: "image", ...o }, (err, r) => (err ? reject(err) : resolve(r))).end(data),
-    );
   // Cloudinary reads some files sharp can't (e.g. HEIC): keep the file privately, then build the preview from it.
   const privateCopy = opts.keepOriginal || !preview;
   if (privateCopy) {
-    const r = await put(buf, { type: "authenticated" });
+    const r = await cloudPut(cloudinary, publicId, buf, { type: "authenticated" });
     if (!width && r.width) { width = r.width; height = r.height; }
-    if (!preview) {
-      const src = cloudinary.url(publicId, {
-        type: "authenticated", sign_url: true, secure: true, format: "jpg",
-        transformation: [{ crop: "limit", width: PREVIEW_EDGE, height: PREVIEW_EDGE }],
-      });
-      const res = await fetch(src);
-      if (res.ok) preview = await makePreview(Buffer.from(await res.arrayBuffer())).catch(() => null);
-    }
-    if (!opts.keepOriginal) await cloudinary.uploader.destroy(publicId, { type: "authenticated", invalidate: true }).catch(() => {});
+    if (!preview) preview = await cloudPreviewOf(cloudinary, publicId);
+    if (!opts.keepOriginal) await dropPrivate(cloudinary, publicId);
   }
   if (!preview) throw new UnreadableImage();
-  const r = await put(preview, { type: "upload", overwrite: true, format: "jpg" });
+  const r = await cloudPut(cloudinary, publicId, preview, { type: "upload", overwrite: true, format: "jpg" });
+  return { url: r.secure_url, width, height };
+}
+
+/**
+ * Bytes of a private original the browser uploaded straight to Cloudinary (POST /api/uploads/sign, lib/directUpload.ts),
+ * or null when there's no such asset. `format` is the one Cloudinary reported; the download fails if it's wrong.
+ */
+export async function readCloudUpload(publicId: string, format: string): Promise<Buffer | null> {
+  const cloudinary = await cloud();
+  const src = cloudinary.utils.private_download_url(publicId, format, { type: "authenticated", expires_at: Math.floor(Date.now() / 1000) + 300 } as any);
+  const res = await fetch(src).catch(() => null);
+  return res?.ok ? Buffer.from(await res.arrayBuffer()) : null;
+}
+
+/** Removes a browser-uploaded private original we won't use (too big, unreadable). */
+export async function dropCloudUpload(publicId: string): Promise<void> {
+  await dropPrivate(await cloud(), publicId);
+}
+
+/**
+ * saveUpload for a file that's already in Cloudinary as a private original at publicId (uploaded by the browser):
+ * measures it, stores the public 1600px preview under the same public_id, and drops the original unless keepOriginal.
+ * The original is never uploaded a second time. Throws UnreadableImage (and drops the original) when nothing can read it.
+ */
+export async function finishCloudUpload(publicId: string, buf: Buffer, keepOriginal: boolean): Promise<Saved> {
+  const cloudinary = await cloud();
+  let { width, height } = await measure(buf);
+  let preview: Buffer | null = await makePreview(buf).catch(() => null);
+  if (!preview) preview = await cloudPreviewOf(cloudinary, publicId);
+  if (!width) {
+    const r: any = await cloudinary.api.resource(publicId, { type: "authenticated" }).catch(() => null);
+    if (r?.width) { width = r.width; height = r.height; }
+  }
+  if (!preview) {
+    await dropPrivate(cloudinary, publicId);
+    throw new UnreadableImage();
+  }
+  const r = await cloudPut(cloudinary, publicId, preview, { type: "upload", overwrite: true, format: "jpg" });
+  if (!keepOriginal) await dropPrivate(cloudinary, publicId);
   return { url: r.secure_url, width, height };
 }
 

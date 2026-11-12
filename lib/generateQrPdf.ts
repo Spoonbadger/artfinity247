@@ -2,7 +2,7 @@
 // rasterised at print resolution with sharp, then tiled on US Letter with pdf-lib.
 import sharp from "sharp";
 import { PDFDocument, StandardFonts, rgb, type PDFImage } from "pdf-lib";
-import { cardSVG, freeDesign, renderCard, sheetLayout, FORMATS, type ArtInfo, type Design, type FormatKey } from "@/components/qr/card";
+import { cardSVG, customName, freeDesign, renderCard, sheetLayout, FORMATS, type ArtInfo, type Design, type FormatKey } from "@/components/qr/card";
 import { loadFonts } from "@/components/qr/text";
 import { artPalette, artThumb } from "@/lib/qr/palette";
 
@@ -43,14 +43,16 @@ export async function generateQrPdf(rawJobs: CardJob[], opts: PdfPlan & { fill?:
   for (const j of rawJobs) if (!ready.has(j)) ready.set(j, await prepareJob(j, opts));
   const jobs = rawJobs.map((j) => ready.get(j)!);
   const fonts = await loadFonts();
-  const fmt = jobs[0].design.format;
-  const L = sheetLayout(fmt);
+  const fmt = jobs[0].design.format, custom = jobs[0].design.custom;
+  const L = sheetLayout(fmt, custom);
   const list = opts.fill && jobs.length === 1 ? Array.from({ length: L.slots.length }, () => jobs[0]) : jobs;
-  const dpi = fmt === "poster" ? 200 : 300;
-  const gapY = FORMATS[fmt].sheet.gy * 72;
+  // Big cards (the poster, large custom sizes) rasterise at 200 dpi to keep the file small.
+  const dpi = L.cw * L.ch > 30 * 72 * 72 ? 200 : 300;
+  const gapY = L.gy;
+  const name = custom ? customName(custom) : FORMATS[fmt].name;
 
   const pdf = await PDFDocument.create();
-  pdf.setTitle(opts.title || (jobs.length === 1 ? `${jobs[0].art.title} · ${FORMATS[fmt].name}` : `Artfinity QR cards · ${FORMATS[fmt].name}`));
+  pdf.setTitle(opts.title || (jobs.length === 1 ? `${jobs[0].art.title} · ${name}` : `Artfinity QR cards · ${name}`));
   pdf.setAuthor(jobs[0].art.artist);
   pdf.setCreator("Artfinity QR Studio");
   const helv = await pdf.embedFont(StandardFonts.Helvetica);
@@ -66,7 +68,7 @@ export async function generateQrPdf(rawJobs: CardJob[], opts: PdfPlan & { fill?:
       const bottom = L.slots.length ? L.H - (L.slots[L.slots.length - 1].y + L.ch) : 0;
       if (bottom > 22) {
         const sheets = Math.ceil(list.length / L.slots.length);
-        const hint = (typeof opts.hint === "function" ? opts.hint(i / L.slots.length + 1, sheets) : opts.hint) || "Print at 100% (actual size). Cut on the marks.";
+        const hint = (typeof opts.hint === "function" ? opts.hint(i / L.slots.length + 1, sheets) : opts.hint) || (custom && custom.sheet !== "auto" ? `Print at 100% (actual size) on ${name}.` : "Print at 100% (actual size). Cut on the marks.");
         page.drawText(hint, { x: (L.W - helv.widthOfTextAtSize(hint, 7)) / 2, y: 8, size: 7, font: helv, color: rgb(0.45, 0.46, 0.5) });
       }
     }
@@ -102,7 +104,9 @@ export async function generateMixedQrPdf(items: { job: CardJob; qty: number }[],
   const list: CardJob[] = [];
   for (const it of items) {
     if (it.job.design.format !== fmt) continue;
-    for (let i = 0; i < Math.max(0, Math.floor(it.qty)); i++) list.push(it.job);
+    // Queue sheets share one grid per format, so a custom size (which the queue doesn't take) prints at the format's size.
+    const job = it.job.design.custom ? { ...it.job, design: { ...it.job.design, custom: null } } : it.job;
+    for (let i = 0; i < Math.max(0, Math.floor(it.qty)); i++) list.push(job);
   }
   if (!list.length) throw new Error("No cards to print");
   return generateQrPdf(list, {

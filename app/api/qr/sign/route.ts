@@ -1,7 +1,7 @@
 // POST /api/qr/sign {slug, disc, ev} → {sig}
 // Signs a scan discount for the QR Studio preview. Only the artwork's artist (or an admin) can sign.
 import { NextRequest, NextResponse } from "next/server";
-import { getUserFromCookie } from "@/lib/auth";
+import { activeUserGuard } from "@/lib/auth";
 import { signScan } from "@/lib/scanSign";
 import { findArt } from "../art";
 
@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
-  const user = await getUserFromCookie();
-  if (!user?.id) return NextResponse.json({ error: "Log in to keep going.", code: "not_logged_in" }, { status: 401 });
+  const { user, denied } = await activeUserGuard("Log in to keep going.");
+  if (denied) return denied;
   const body = await req.json().catch(() => ({}));
   const slug = typeof body?.slug === "string" ? body.slug : "";
   const disc = Number(body?.disc);

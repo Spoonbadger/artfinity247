@@ -1,6 +1,6 @@
 // GET /api/admin/search?q=  Global admin search: artists, orders, artworks and printed codes.
 import { NextRequest, NextResponse } from "next/server";
-import { getAdmin } from "@/lib/admin";
+import { adminRoleGuard } from "@/lib/adminRoles";
 import { prisma } from "@/lib/prisma";
 import { orderNumber } from "@/lib/printer";
 
@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic";
 export type AdminSearchHit = { kind: "artist" | "order" | "artwork" | "code"; id: string; title: string; sub: string; href: string };
 
 export async function GET(req: NextRequest) {
-  const admin = await getAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const { admin, denied } = await adminRoleGuard("view");
+  if (denied) return denied;
   const q = (req.nextUrl.searchParams.get("q") || "").trim().replace(/^[@#]/, "").slice(0, 80);
   if (q.length < 2) return NextResponse.json({ hits: [] });
   const ci = { contains: q, mode: "insensitive" as const };

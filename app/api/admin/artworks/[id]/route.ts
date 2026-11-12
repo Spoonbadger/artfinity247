@@ -4,7 +4,7 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth";
+import { adminRoleGuard } from "@/lib/adminRoles";
 import { parseSensitive } from "@/components/studio/sensitive";
 import { logAdminAction } from "@/lib/audit";
 
@@ -24,19 +24,25 @@ const SELECT = {
 const fail = (error: string, status = 400) => NextResponse.json({ error }, { status });
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const admin = await requireAdmin().catch(() => null);
-  if (!admin) return fail("Forbidden", 403);
+  const { denied } = await adminRoleGuard("view");
+  if (denied) return denied;
   const artwork = await prisma.artwork.findUnique({ where: { id: params.id }, select: SELECT });
   if (!artwork) return fail("Not found", 404);
   return NextResponse.json({ artwork });
 }
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const admin = await requireAdmin().catch(() => null);
-  if (!admin) return fail("Forbidden", 403);
+  // Title, description, status and labels are moderation (support may). Prices change what the buyer pays and the
+  // artist earns, so markups also need "money" (admin or owner).
+  const { admin, denied } = await adminRoleGuard("moderation");
+  if (denied) return denied;
 
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") return fail("Nothing to save.");
+  if (MARKUPS.some((k) => body[k] !== undefined)) {
+    const money = await adminRoleGuard("money");
+    if (money.denied) return money.denied;
+  }
 
   const data: Prisma.ArtworkUpdateInput = {};
 

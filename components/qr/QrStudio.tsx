@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type SyntheticEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, ChevronDown, Download, FileText, ImageIcon, Layers, ListPlus, Loader2, Lock, Plus } from "lucide-react";
@@ -13,10 +13,10 @@ import { BrushStroke } from "@/components/af/Brush";
 import { startInfinityCheckout } from "@/components/pro/StartInfinityButton";
 import { PLACEHOLDER_CODE, shortLabel, shortUrl } from "@/lib/shortcode";
 import {
-  ACCENT, BG, COLOR_NAMES, DISCOUNTS, DOTS, EXTRAS, EYE, EYES, FG, FORMATS, INKS, MSG_MAX, PRESETS, SEASONS, STYLES, TAG,
-  applyExtra, applyInk, applySeason, cardColors, seasonFor, cardSVG, contrast, fmtDist, inkMatches, lum, messageLines, presetLook, qrValue, renderCard,
-  scanNumbers, sheetSVG, styleOf, stylesFor,
-  type ArtInfo, type Card, type Design, type ExtraKey, type FormatKey, type InkKey, type PresetKey, type SeasonKey, type StyleKey,
+  ACCENT, BG, COLOR_NAMES, CUSTOM_MAX_H, CUSTOM_MAX_W, CUSTOM_MIN, DISCOUNTS, DOTS, EXTRAS, EYE, EYES, FG, FORMATS, INKS, MSG_MAX, PRESETS, SEASONS, SHAPES, STYLES, TAG, TEMPLATES,
+  applyExtra, applyInk, applySeason, cardColors, cardInches, customFormat, customName, sanitizeCustom, seasonFor, cardSVG, contrast, fmtDist, inkMatches, lum, messageLines, presetLook, qrValue, renderCard,
+  scanNumbers, sheetOf, sheetSVG, styleOf, stylesFor,
+  type ArtInfo, type Card, type CustomSize, type Design, type ExtraKey, type FormatKey, type InkKey, type PresetKey, type SeasonKey, type ShapeKey, type StyleKey, type TemplateKey,
 } from "./card";
 import { loadFonts, type Fonts } from "./text";
 import ArtPicker from "./ArtPicker";
@@ -60,7 +60,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
   const [d, setD] = useState<Design>(initialDesign);
   const [view, setView] = useState<View>("card");
   const [fonts, setFonts] = useState<Fonts | null>(null);
-  const [busy, setBusy] = useState<"" | "pdf" | "all" | "png" | "svg" | "save" | "queue" | ExtraKey | SeasonKey>("");
+  const [busy, setBusy] = useState<"" | "pdf" | "all" | "png" | "svg" | "save" | "queue" | "custom" | ExtraKey | SeasonKey>("");
   const router = useRouter();
   // "Add to print queue": how many cards of this piece, in this look.
   const [queueQty, setQueueQty] = useState(1);
@@ -166,6 +166,21 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
     if (pro) { setD((o) => ({ ...applySeason(o, o.season === k ? "" : k), preset: "custom" })); return; }
     setBusy(k);
     try { if (!(await startInfinityCheckout(billing))) setBusy(""); } catch { setBusy(""); failed("Couldn't reach Artfinity. Check your connection.", { retry: () => void chooseSeason(k) }); }
+  }
+
+  /** Custom size (Infinity): on Infinity it switches on at the current card's size; on Free it starts checkout. */
+  async function chooseCustom() {
+    if (pro) {
+      if (!d.custom) { const now = cardInches(d); setCustom({ w: now.w, h: now.h, shape: d.format === "sticker" ? "round" : "rounded", sheet: "auto" }); }
+      return;
+    }
+    setBusy("custom");
+    try { if (!(await startInfinityCheckout(billing))) setBusy(""); } catch { setBusy(""); failed("Couldn't reach Artfinity. Check your connection.", { retry: () => void chooseCustom() }); }
+  }
+  /** A new custom size, kept valid; the layout follows its shape. */
+  function setCustom(next: Partial<CustomSize>) {
+    const c = sanitizeCustom({ ...(d.custom || { w: 3, h: 2, shape: "rounded", sheet: "auto" }), ...next });
+    if (c) set({ custom: c, format: customFormat(c) });
   }
 
   // ---------------- short link code ----------------
@@ -314,6 +329,9 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
   }
 
   const F = FORMATS[d.format];
+  const size = cardInches(d), sheet = sheetOf(d), perSheet = sheet.cols * sheet.rows;
+  const cardName = d.custom ? customName(d.custom) : F.name;
+  const paper = d.custom ? (d.custom.sheet !== "auto" ? TEMPLATES[d.custom.sheet].name : "matte cardstock or label paper, US Letter") : PAPER[d.format].buy;
   const sn = card && fonts ? scanNumbers(card, qrText, fonts, d.logo) : null;
   const style = styleOf(d);
   const inkOn = inkMatches(d) ? d.ink : null;
@@ -324,9 +342,15 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
 
       <div className={s.studio}>
         <form ref={formRef} className={s.ctl} onSubmit={(e) => e.preventDefault()} autoComplete="off" aria-label="Card options">
-          <Group title="Card" dab="#2b37f0">
+          <Group title="Card" dab="#2b37f0" open>
             <div className={s.sub}>Format</div>
-            <Chips label="Format" items={(Object.keys(FORMATS) as FormatKey[]).map((k) => [k, FORMATS[k].name])} value={d.format} onPick={(k) => set({ format: k })} />
+            <div className={s.chips} role="group" aria-label="Format">
+              {(Object.keys(FORMATS) as FormatKey[]).map((k) => <button key={k} type="button" aria-pressed={!d.custom && d.format === k} onClick={() => set({ format: k, custom: null })}>{FORMATS[k].name}</button>)}
+              <button type="button" aria-pressed={!!d.custom} onClick={() => void chooseCustom()} disabled={busy === "custom"} title={pro ? "Any size or shape, or a label sheet you already have" : "Custom sizes are an Infinity feature. Starts Infinity checkout."}>
+                Custom size{!pro && <span className={s.inf}>{busy === "custom" ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" /> : <Lock className="h-3 w-3" aria-hidden="true" />}Infinity</span>}
+              </button>
+            </div>
+            {pro && d.custom && <CustomSizeFields c={d.custom} onChange={setCustom} perSheet={perSheet} />}
             <div className={s.sub}>Style</div>
             <Chips label="Style" items={stylesFor(d.format).map((k) => [k, STYLES[k].name] as [StyleKey, string])} value={style} onPick={(k) => set({ style: k })} />
             <div className={s.sub}>Ink</div>
@@ -339,7 +363,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
               {(Object.keys(PRESETS) as PresetKey[]).map((k) => {
                 const p = PRESETS[k];
                 return (
-                  <button key={k} type="button" aria-pressed={d.preset === k} onClick={() => setD((o) => ({ ...o, ...presetLook(k), preset: k, extras: [], season: "" }))}>
+                  <button key={k} type="button" aria-pressed={d.preset === k} onClick={() => setD((o) => ({ ...o, ...presetLook(k), preset: k, extras: [], season: "", custom: null }))}>
                     <span className={s.mini} aria-hidden="true" dangerouslySetInnerHTML={{ __html: presetThumbs[k] || "" }} />
                     <span>{p.name}<small>{p.sub}</small></span>
                   </button>
@@ -451,9 +475,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
             )}
           </Group>
 
-          <details className={s.more}>
-            <summary>Colors and code style<ChevronDown className="h-4 w-4" aria-hidden="true" /></summary>
-            <div className={s.groupBody}>
+          <Group title="Colors and code style" dab="#ff5a36">
               <div className={s.sub}>{style === "panel" ? "Panel color" : "Pill color"}</div>
               <Swatches label="Pill and panel color" list={ACCENT} value={d.accent} onPick={(c) => set({ accent: c })} fg={d.fg} />
               {pro && d.extras.includes("match") && <small className={s.hint}>Match your art is on, so the painting picks this color.</small>}
@@ -470,11 +492,11 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
               <div className={s.sub}>Corners</div>
               <Chips label="Corner shape" items={Object.entries(EYES) as [Design["eyes"], string][]} value={d.eyes} onPick={(k) => set({ eyes: k })} />
               <Toggle checked={d.logo} onChange={(v) => set({ logo: v })}>The &ldquo;a&rdquo; mark in the middle of the code</Toggle>
-            </div>
-          </details>
+          </Group>
         </form>
 
         <div className={s.out}>
+          <div className={s.outInner}>
           <div className={s.topRow}>
             <div className={s.tabs} role="tablist" aria-label="Preview">
               {([["card", "Card"], ["wall", "On the wall"], ["sheet", "Print sheet"]] as [View, string][]).map(([v, l]) => (
@@ -485,14 +507,14 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
 
           <div className={s.stage} aria-live="polite" data-view={view} ref={stageRef}>
             {!svg ? <div className={s.loading}><Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" /> Mixing paint</div>
-              : view === "card" ? <div className={cx(s.face, s[`f_${d.format}`])} dangerouslySetInnerHTML={{ __html: svg }} />
-              : view === "wall" ? <Wall art={art} svg={svg} format={d.format} />
-              : <div className={s.sheet} dangerouslySetInnerHTML={{ __html: card ? sheetSVG(card, d.format) : initialCard?.sheet || "" }} />}
+              : view === "card" ? <div className={cx(s.face, !d.custom && s[`f_${d.format}`])} style={d.custom ? { maxWidth: `${Math.round(Math.min(520, Math.max(220, size.w * 150)))}px` } : undefined} dangerouslySetInnerHTML={{ __html: svg }} />
+              : view === "wall" ? <Wall art={art} svg={svg} format={d.format} w={size.w} name={cardName} />
+              : <div className={s.sheet} dangerouslySetInnerHTML={{ __html: card ? sheetSVG(card, d.format, "s", d.custom) : initialCard?.sheet || "" }} />}
           </div>
           <p className={s.stageNote}>
-            {view === "card" && <>{F.name} · {F.w} × {F.h} in · shown larger than life. Print on {PAPER[d.format].buy}.</>}
+            {view === "card" && <>{cardName}{d.custom?.sheet === "auto" ? "" : <> · {+size.w.toFixed(2)} × {+size.h.toFixed(2)} in</>} · shown {size.w > 3.5 ? "smaller" : "larger"} than life. Print on {paper}.</>}
             {view === "wall" && <>To scale on an 8 ft wall, beside a 24 × 30 in original{sn && <>. Title reads from {fmtDist(sn.readM * 100)}, code scans from {fmtDist(sn.scanCm)}</>}.</>}
-            {view === "sheet" && <>{F.sheet.note} US Letter, 100% scale{d.format === "poster" ? "" : ", crop marks included"}. Print on {PAPER[d.format].buy}.</>}
+            {view === "sheet" && <>{sheet.note} US Letter, 100% scale{d.format === "poster" || (d.custom && d.custom.sheet !== "auto") ? "" : ", crop marks included"}. Print on {paper}.</>}
           </p>
           <div className={s.downloads}>
               <button type="button" className="btn btn-blue btn-sm" onClick={() => downloadPdf()} disabled={!!busy}>
@@ -510,6 +532,9 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
                 {code ? (dirty ? `Save changes · ${code}` : `Saved · ${code}`) : "Save code"}
               </button>
             </div>
+          {d.custom ? (
+            <p className={s.stageNote}>Custom sizes print from Download PDF: a full sheet, {perSheet} per page.</p>
+          ) : (
           <div className={s.printAll}>
             <span>Printing several pieces?</span>
             <span className="inline-flex items-center gap-2">
@@ -524,6 +549,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
               </button>
             </span>
           </div>
+          )}
           {arts.length > 1 && (
             <div className={s.printAll}>
               <span>Every piece, this look:</span>
@@ -533,6 +559,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
               </button>
             </div>
           )}
+          </div>
         </div>
 
         {stageHidden && formShown && svg && (
@@ -541,7 +568,10 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
           </button>
         )}
 
-        <div className={cx(s.out, s.panelsWrap)}>
+      </div>
+
+      {/* The details sit below the editor, so the preview can stay in view while you scroll the options. */}
+      <div className={s.panelsWrap}>
           <div className={s.panels}>
             <section className={s.panel} aria-labelledby="qs-scan-h">
               <h2 id="qs-scan-h"><span className="paint-dab" style={{ ["--dab" as string]: "#0f7a55" }} aria-hidden="true" />Will it scan?</h2>
@@ -559,7 +589,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
                 <dt>Venue</dt><dd>{d.ev.trim() ? <>{d.ev.trim()}{d.evPrint || (pro && d.extras.includes("event")) ? "" : " (not printed)"}</> : "None"}</dd>
                 <dt>Discount</dt><dd>{d.disc ? <>{d.disc}% off at checkout</> : "None"}</dd>
                 {QR_END_DATES && <><dt>Ends</dt><dd>{d.end === "never" ? "Never" : d.end === "30" ? "30 days after printing" : d.evDate ? new Date(`${d.evDate}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "When the event ends"}</dd></>}
-                <dt>Look</dt><dd>{F.name} · {STYLES[style].name} · {inkOn ? INKS[inkOn].name : "Your colors"}{pro && d.extras.length ? ` · ${d.extras.map((k) => EXTRAS[k].name).join(", ")}` : ""}{pro && d.season ? ` · ${SEASONS[d.season].name}` : ""}</dd>
+                <dt>Look</dt><dd>{cardName} · {STYLES[style].name} · {inkOn ? INKS[inkOn].name : "Your colors"}{pro && d.extras.length ? ` · ${d.extras.map((k) => EXTRAS[k].name).join(", ")}` : ""}{pro && d.season ? ` · ${SEASONS[d.season].name}` : ""}</dd>
               </dl>
               <p className={s.soon}>
                 <span className="sticker-badge">Editable any time</span>
@@ -572,19 +602,67 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
               )}
             </section>
           </div>
-        </div>
       </div>
     </div>
   );
 }
 
 // ---------------- pieces ----------------
-function Group({ title, dab, children }: { title: string; dab: string; children: ReactNode }) {
+/**
+ * A section of options that folds away. `open`: shown open on first visit. One section is open at a time: opening one
+ * closes the others (not the "more seasons" fold inside Seasonal), and keeps its heading in view.
+ */
+function Group({ title, dab, open, children }: { title: string; dab: string; open?: boolean; children: ReactNode }) {
+  function onToggle(e: SyntheticEvent<HTMLDetailsElement>) {
+    const el = e.currentTarget;
+    if (e.target !== el || !el.open) return;
+    el.parentElement?.querySelectorAll<HTMLDetailsElement>(`:scope > details.${s.group}[open]`).forEach((o) => { if (o !== el) o.open = false; });
+    const top = el.getBoundingClientRect().top;
+    if (top < 0) el.scrollIntoView({ block: "start", behavior: "smooth" });
+  }
   return (
-    <fieldset className={s.group}>
-      <legend><span className="paint-dab" style={{ ["--dab" as string]: dab }} aria-hidden="true" />{title}</legend>
+    <details className={s.group} open={open} onToggle={onToggle}>
+      <summary><span className="paint-dab" style={{ ["--dab" as string]: dab }} aria-hidden="true" /><span className="flex-1">{title}</span><ChevronDown className="h-4 w-4" aria-hidden="true" /></summary>
       <div className={s.groupBody}>{children}</div>
-    </fieldset>
+    </details>
+  );
+}
+
+/** Custom size (Infinity): a label sheet you already have, or any width, height and shape. */
+function CustomSizeFields({ c, onChange, perSheet }: { c: CustomSize; onChange: (next: Partial<CustomSize>) => void; perSheet: number }) {
+  // Typed sizes apply when they're a real number; the box keeps what's typed meanwhile.
+  const [w, setW] = useState(String(c.w)), [h, setH] = useState(String(c.h));
+  useEffect(() => { setW(String(c.w)); setH(String(c.h)); }, [c.w, c.h]);
+  const num = (v: string, set: (v: string) => void, key: "w" | "h") => { set(v); const n = Number(v); if (v.trim() && Number.isFinite(n) && n >= CUSTOM_MIN) onChange({ [key]: n }); };
+  const template = c.sheet !== "auto";
+  return (
+    <div className={s.custom}>
+      <label className={s.field}>Label sheet
+        <select value={c.sheet} onChange={(e) => onChange({ sheet: e.target.value as TemplateKey | "auto" })}>
+          <option value="auto">Any size (cut from US Letter)</option>
+          {(Object.keys(TEMPLATES) as TemplateKey[]).map((k) => <option key={k} value={k}>{TEMPLATES[k].name}</option>)}
+        </select>
+        <small>{template ? "Cards line up with the sheet's labels. Test on plain paper first." : "Have a box of labels? Pick it and the cards fit it."}</small>
+      </label>
+      {!template && (
+        <>
+          <div className={s.sub}>Shape</div>
+          <Chips label="Shape" items={Object.entries(SHAPES) as [ShapeKey, string][]} value={c.shape} onPick={(k) => onChange({ shape: k })} />
+          <div className={s.sizeRow}>
+            <label className={s.field}>{c.shape === "round" ? "Across" : "Width"}
+              <input type="number" inputMode="decimal" step={0.25} min={CUSTOM_MIN} max={c.shape === "round" ? CUSTOM_MAX_H : CUSTOM_MAX_W} value={w} onChange={(e) => num(e.target.value, setW, "w")} onBlur={() => setW(String(c.w))} />
+            </label>
+            {c.shape !== "round" && (
+              <label className={s.field}>Height
+                <input type="number" inputMode="decimal" step={0.25} min={CUSTOM_MIN} max={CUSTOM_MAX_H} value={h} onChange={(e) => num(e.target.value, setH, "h")} onBlur={() => setH(String(c.h))} />
+              </label>
+            )}
+            <span className={s.unit}>in</span>
+          </div>
+        </>
+      )}
+      <small className={s.hint}>{perSheet} per sheet. The card re-fits its words and code to this size.</small>
+    </div>
   );
 }
 
@@ -625,13 +703,13 @@ function Swatches({ label, list, value, onPick, fg, noCustom }: { label: string;
   );
 }
 
-function Wall({ art, svg, format }: { art: ArtInfo; svg: string; format: FormatKey }) {
-  const F = FORMATS[format], WALL = 96;
+function Wall({ art, svg, format, w, name }: { art: ArtInfo; svg: string; format: FormatKey; w: number; name: string }) {
+  const WALL = 96;
   const pw = (24 / WALL) * 100, ph = (30 / WALL) * 100 * 1.6;
-  const cw = (F.w / WALL) * 100;
+  const cw = (w / WALL) * 100;
   const top = format === "poster" ? 30 : 46;
   return (
-    <div className={s.wall} role="img" aria-label={`To scale: ${art.title}, 24 by 30 inches, with the ${F.name.toLowerCase()} beside it`}>
+    <div className={s.wall} role="img" aria-label={`To scale: ${art.title}, 24 by 30 inches, with the ${name.toLowerCase()} beside it`}>
       <div className={s.orig} style={{ left: "20%", top: "14%", width: `${pw}%`, height: `${ph}%` }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={art.imageUrl} alt="" />
