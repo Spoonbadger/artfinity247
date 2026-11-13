@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { OFFENSIVE_HANDLE_MESSAGE } from "@/lib/trust/names";
 
 type Result = { handle: string; available: boolean; suggestion: string | null; reason: string | null };
 
@@ -63,7 +64,7 @@ export default function ClaimHandle({ className, dark = false, autoFocus = false
   else if (res && !res.available) {
     status = (
       <span className={cn("font-semibold", dark ? "text-[#ffb4a3]" : "text-[#c23a1d]")}>
-        {res.reason === "invalid" ? "Use letters and numbers. Dots or underscores can’t start or end it." : `@${res.handle} is taken.`}
+        {res.reason === "invalid" ? "Use letters and numbers. Dots or underscores can’t start or end it." : res.reason === "offensive" ? OFFENSIVE_HANDLE_MESSAGE : `@${res.handle} is taken.`}
         {res.suggestion && (
           <> Try{" "}
             <button type="button" onClick={() => { setValue(res.suggestion!); input.current?.focus(); }} className={cn("rounded-full px-2 py-0.5 font-bold underline-offset-2 hover:underline", dark ? "bg-white/10 text-white" : "bg-scan-soft text-scan")}>

@@ -63,7 +63,7 @@ export async function validHandle(raw: unknown): Promise<string> {
   const handle = normalizeHandle(String(raw ?? ""));
   const r = await checkHandle(handle);
   if (!r.available) {
-    const why = r.reason === "taken" ? "is taken" : r.reason === "reserved" ? "is reserved" : "isn't valid (3–30 letters, numbers, dots or underscores)";
+    const why = r.reason === "taken" ? "is taken" : r.reason === "reserved" ? "is reserved" : r.reason === "offensive" ? "isn't allowed (slurs and profanity)" : "isn't valid (3–30 letters, numbers, dots or underscores)";
     throw new AccountError(`@${handle} ${why}.${r.suggestions?.length ? ` Try @${r.suggestions[0]}.` : ""}`, r.reason === "taken" ? 409 : 400);
   }
   return handle;

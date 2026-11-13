@@ -19,6 +19,7 @@ import US_STATE_OPTIONS from "@/lib/constants/usa_states";
 import { cityLabel, splitCityState } from "@/lib/citySlug";
 import { PasswordStrength } from "@/components/forms/PasswordInput";
 import { checks } from "@/lib/smartFields";
+import { OFFENSIVE_HANDLE_MESSAGE, OFFENSIVE_NAME_MESSAGE, isOffensiveHandle, isOffensiveName } from "@/lib/trust/names";
 import ImageEditor, { type EditResult } from "@/components/media/ImageEditor";
 import type { StoredEdits } from "@/lib/imageEdits";
 
@@ -64,6 +65,7 @@ async function lookupHandle(h: string, email?: string): Promise<{ available: boo
 function handleMessage(reason?: string) {
   if (reason === "invalid") return "Use 3 to 30 letters, numbers, dots or underscores.";
   if (reason === "reserved") return "That name is reserved.";
+  if (reason === "offensive") return OFFENSIVE_HANDLE_MESSAGE;
   return "That name is taken.";
 }
 
@@ -147,6 +149,7 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
     if (!handle) return setHs({ status: "idle" });
     if (handle.length < 3) return setHs({ status: "bad", message: "At least 3 characters." });
     if (!HANDLE_RE.test(handle)) return setHs({ status: "bad", message: handleMessage("invalid") });
+    if (isOffensiveHandle(handle)) return setHs({ status: "bad", message: OFFENSIVE_HANDLE_MESSAGE });
     setHs({ status: "checking" });
     let live = true;
     const t = setTimeout(async () => {
@@ -207,6 +210,7 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
     e.preventDefault();
     const errs: Record<string, string | null> = {};
     if (!artistName.trim()) errs.artistName = "Add the name buyers will see.";
+    else if (isOffensiveName(artistName)) errs.artistName = OFFENSIVE_NAME_MESSAGE;
     if (!city.trim()) errs.city = "Add your city.";
     if (!region) errs.region = "Pick your state.";
     if (!agreed) errs.terms = "Please accept the Artist Terms and the Terms & Conditions.";
@@ -231,7 +235,12 @@ export default function RegisterFlow({ providers = [] }: { providers?: ProviderI
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-        if (d.code === "handle_taken" || d.code === "invalid_handle") {
+        if (d.code === "offensive_name") {
+          setErrors({ artistName: OFFENSIVE_NAME_MESSAGE });
+        } else if (d.code === "offensive_handle") {
+          setHs({ status: "bad", message: OFFENSIVE_HANDLE_MESSAGE });
+          setErrors({ handle: " " });
+        } else if (d.code === "handle_taken" || d.code === "invalid_handle") {
           setHs({ status: "bad", message: handleMessage(d.code === "invalid_handle" ? "invalid" : "taken"), suggestions: d.suggestions });
           go(1);
           setErrors({ handle: " " });

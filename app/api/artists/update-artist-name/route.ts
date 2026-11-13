@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
 import { activeUserGuard } from "@/lib/auth";
+import { OFFENSIVE_NAME_MESSAGE, isOffensiveName } from "@/lib/trust/names";
 
 export const dynamic = "force-dynamic"
 
@@ -14,6 +15,9 @@ export async function POST(req: NextRequest) {
     const { name } = await req.json();
     if (typeof name !== "string" || name.trim().length < 2 || name.trim().length > 80) {
       return NextResponse.json({ error: "Your name needs at least 2 letters.", code: "invalid_input" }, { status: 400 });
+    }
+    if (isOffensiveName(name)) {
+      return NextResponse.json({ error: OFFENSIVE_NAME_MESSAGE, code: "offensive_name" }, { status: 400 });
     }
 
     const artist = await prisma.artist.update({

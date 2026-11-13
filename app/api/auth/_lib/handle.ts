@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { isOffensiveHandle } from "@/lib/trust/names";
 
 export const HANDLE_RE = /^[a-z0-9_.]{3,30}$/;
 
@@ -12,7 +13,7 @@ const RESERVED = new Set([
   "assets", "billing", "blog", "null", "q", "seed", "static", "team", "undefined",
 ]);
 
-export type HandleCheck = { available: boolean; reason?: "invalid" | "reserved" | "taken"; suggestions?: string[] };
+export type HandleCheck = { available: boolean; reason?: "invalid" | "reserved" | "offensive" | "taken"; suggestions?: string[] };
 
 export function normalizeHandle(raw: string) {
   return (raw || "").trim().replace(/^@/, "").toLowerCase();
@@ -21,6 +22,8 @@ export function normalizeHandle(raw: string) {
 export async function checkHandle(raw: string): Promise<HandleCheck> {
   const h = normalizeHandle(raw);
   if (!HANDLE_RE.test(h) || /^[._]|[._]$/.test(h)) return { available: false, reason: "invalid" };
+  // Slurs and strong profanity: refused, with no suggestions built from the word.
+  if (isOffensiveHandle(h)) return { available: false, reason: "offensive" };
   if (RESERVED.has(h)) return { available: false, reason: "reserved", suggestions: await suggest(h) };
   const hit = await prisma.artist.findFirst({ where: { slug: { equals: h, mode: "insensitive" } }, select: { id: true } });
   if (hit) return { available: false, reason: "taken", suggestions: await suggest(h) };

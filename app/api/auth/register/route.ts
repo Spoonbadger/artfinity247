@@ -22,6 +22,7 @@ import { resend } from "@/lib/resend";
 import NewArtistNotificationEmail from "@/emails/NewArtistNotificationEmail";
 import WelcomeArtistEmail from "@/emails/WelcomeArtistEmail";
 import { checkHandle, normalizeHandle } from "../_lib/handle";
+import { OFFENSIVE_HANDLE_MESSAGE, OFFENSIVE_NAME_MESSAGE, isOffensiveName } from "@/lib/trust/names";
 import { deviceCookie, recordDeviceSignal, referrerForCode } from "@/lib/referrals";
 import { SIGNUP_COOKIE, openSignup, readCookie, signupCookieOptions } from "@/lib/oauth/flow";
 import { copyAvatar } from "@/lib/oauth/avatar";
@@ -38,6 +39,8 @@ const MESSAGES: Record<string, string> = {
   weak_password: "Use at least 8 characters for your password.",
   invalid_handle: "Links use 3-30 letters, numbers, dots, dashes or underscores.",
   handle_taken: "That link is taken. Try one of the suggestions.",
+  offensive_handle: OFFENSIVE_HANDLE_MESSAGE,
+  offensive_name: OFFENSIVE_NAME_MESSAGE,
   email_taken: "That email already has a page. Log in, or reset your password if you forgot it.",
   oauth_expired: "That sign-in expired. Continue with it again, or sign up with your email.",
   oauth_in_use: "That account already has a page. Log in instead.",
@@ -65,6 +68,8 @@ export async function POST(req: Request) {
   if (!oauth && password.length < 8) return err("weak_password", 400);
 
   const hc = await checkHandle(handle);
+  if (hc.reason === "offensive") return err("offensive_handle", 400);
+  if (isOffensiveName(artist_name)) return err("offensive_name", 400);
   if (!hc.available) return err(hc.reason === "invalid" ? "invalid_handle" : "handle_taken", hc.reason === "invalid" ? 400 : 409, { suggestions: hc.suggestions });
 
   const existing = await prisma.artist.findFirst({ where: { email: { equals: email, mode: "insensitive" } }, select: { id: true } });
