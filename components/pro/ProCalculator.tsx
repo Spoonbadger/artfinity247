@@ -3,7 +3,7 @@
 import { useId, useMemo, useState } from "react";
 import { basePrices } from "@/lib/artwork_price";
 import { breakdown, money, moneyRound } from "@/lib/earnings";
-import { FREE_SPLIT, PRO, pct, proPrice } from "@/lib/plans";
+import { FREE_SPLIT, PRO, pct, proPrice, yearlySavingsCents } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 
 const MIN_PRICE = Math.ceil(basePrices.medium / 100); // $45
@@ -84,9 +84,10 @@ export default function ProCalculator({ initialPrints = 8, initialPrice = 60 }: 
 
         <div className={cn("rounded-2xl border-[1.5px] p-4", proWins ? "border-earned bg-earned-soft" : "border-line bg-wall")}>
           <b className="block text-[17px]">
-            {proWins ? `Infinity earns you ${moneyRound(diff)} more a month.` : diff === 0 ? "Even either way." : `Free is better for you now, by ${moneyRound(diff)}.`}
+            {proWins ? `Infinity earns you ${moneyRound(diff * 12)} more a year.` : diff === 0 ? "Even either way." : `Free is better for you now, by ${moneyRound(diff * 12)} a year.`}
           </b>
           <span className="text-[14px] text-ink-2">
+            {proWins && `That's ${moneyRound(diff)} more a month${yearlySavingsCents() > 0 ? `, or ${moneyRound(diff * 12 + yearlySavingsCents())} a year if you pay yearly` : ""}. `}
             {m.breakEven != null ? `Infinity pays for itself at ${m.breakEven} prints a month at this price.` : "At this price Infinity doesn't pay for itself on prints alone."}
           </span>
         </div>

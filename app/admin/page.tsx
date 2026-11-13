@@ -246,7 +246,7 @@ export default async function AdminDashboard() {
                 <div><dt className="t-small">Cancelling</dt><dd className="num text-[18px] font-bold">{infinity.cancelling}</dd></div>
               </dl>
               <p className="t-small mt-2">
-                MRR = paying × {usd(PRO.priceCents)} ({usd(PRO.yearlyMonthlyCents)}/mo yearly). Referral months not counted.{infinity.simulated ? " Test mode." : ""}
+                MRR = paying × {usd(PRO.priceCents)} ({usd(PRO.yearlyCents)}/yr yearly, counted as a twelfth a month). Referral months not counted.{infinity.simulated ? " Test mode." : ""}
               </p>
             </details>
           )}

@@ -20,7 +20,7 @@ function envNumber(raw: string | undefined, min: number, max: number): number | 
   return Number.isFinite(n) && n >= min && n <= max ? n : null;
 }
 const ENV_PRICE_CENTS = envNumber(process.env.NEXT_PUBLIC_INFINITY_PRICE_CENTS, 100, 100_000);
-const ENV_YEARLY_CENTS = envNumber(process.env.NEXT_PUBLIC_INFINITY_YEARLY_MONTHLY_CENTS, 100, 100_000);
+const ENV_YEARLY_CENTS = envNumber(process.env.NEXT_PUBLIC_INFINITY_YEARLY_CENTS, 100, 1_000_000);
 const ENV_SPLIT = envNumber(process.env.NEXT_PUBLIC_INFINITY_SPLIT, FREE_SPLIT, 0.9);
 
 /**
@@ -36,8 +36,8 @@ export const PRO = {
   name: "Infinity",
   /** Monthly price: the button, the copy, the calculators, MRR, and inline Stripe price_data. */
   priceCents: ENV_PRICE_CENTS ?? 2000,
-  /** Per-month price when billed yearly. Only offered when STRIPE_INFINITY_YEARLY_PRICE_ID is set. */
-  yearlyMonthlyCents: ENV_YEARLY_CENTS ?? 1600,
+  /** Price for a year, billed yearly. STRIPE_INFINITY_YEARLY_PRICE_ID, when set, must charge the same. */
+  yearlyCents: ENV_YEARLY_CENTS ?? 20000,
   /** Artist's share of profit while Infinity is active. */
   split: ENV_SPLIT ?? 0.7,
   /**
@@ -72,6 +72,10 @@ export const pct = (split: number) => `${Math.round(split * 100)}%`;
 /** "$20", or "$19.50" when the amount isn't whole dollars. */
 export const dollars = (cents: number) => `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
 export const proPrice = () => dollars(PRO.priceCents);
+/** "$200": Infinity billed yearly. */
+export const proYearlyPrice = () => dollars(PRO.yearlyCents);
+/** What yearly saves against 12 monthly payments ($40 at $20/mo and $200/yr). */
+export const yearlySavingsCents = () => Math.max(0, PRO.priceCents * 12 - PRO.yearlyCents);
 
 /** Is Infinity active at `at` (defaults to now)? Only proUntil decides. */
 export function isProActive(a: { proUntil?: Date | string | null } | null | undefined, at: Date = new Date()): boolean {

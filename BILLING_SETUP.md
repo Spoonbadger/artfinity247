@@ -12,12 +12,12 @@ In Stripe, go to **Product catalog → Add product**:
 
 1. Name it **Artfinity Infinity**. Set the tax code to *Software as a service (SaaS) – business use* (`txcd_10103001`), or whatever code your accountant picks.
 2. Add a **recurring monthly price** of **$20.00** (it must match `PRO.priceCents` in `lib/plans.ts`). Set tax behavior to **Exclusive**.
-3. Optional: add a **recurring yearly price**, e.g. **$192.00/year** (that's $16/mo, matching `PRO.yearlyMonthlyCents`). The yearly choice only appears when its Price id is set.
+3. Add a **recurring yearly price** of **$200.00/year** (it must match `PRO.yearlyCents`). Tax behavior **Exclusive**.
 4. Copy each Price id (`price_…`) into the env vars below.
 
-If `STRIPE_INFINITY_PRICE_ID` isn't set, Checkout builds the monthly price inline from `lib/plans.ts`. That works, but every checkout then creates a new Price, so set the id for production.
+If `STRIPE_INFINITY_PRICE_ID` or `STRIPE_INFINITY_YEARLY_PRICE_ID` isn't set, Checkout builds that price inline from `lib/plans.ts`. That works, but every checkout then creates a new Price, so set the id for production.
 
-**Changing the price or the split:** edit `PRO` in `lib/plans.ts`, or set `NEXT_PUBLIC_INFINITY_PRICE_CENTS`, `NEXT_PUBLIC_INFINITY_YEARLY_MONTHLY_CENTS` or `NEXT_PUBLIC_INFINITY_SPLIT` and rebuild. For a new price, create a new Price in Stripe and update the env var. Existing subscribers stay on their old Price until you migrate them in Stripe.
+**Changing the price or the split:** edit `PRO` in `lib/plans.ts`, or set `NEXT_PUBLIC_INFINITY_PRICE_CENTS`, `NEXT_PUBLIC_INFINITY_YEARLY_CENTS` or `NEXT_PUBLIC_INFINITY_SPLIT` and rebuild. For a new price, create a new Price in Stripe and update the env var. Existing subscribers stay on their old Price until you migrate them in Stripe.
 
 ## 2. Stripe Tax
 
@@ -74,12 +74,12 @@ Put the `whsec_…` it prints into `STRIPE_BILLING_WEBHOOK_SECRET`.
 | `STRIPE_SECRET_KEY` | yes | Already used for orders. Turns real billing on. |
 | `STRIPE_BILLING_WEBHOOK_SECRET` | yes | Signing secret of the `/api/webhook/billing` endpoint. |
 | `STRIPE_INFINITY_PRICE_ID` | recommended | Monthly Price id. Without it, an inline price comes from `lib/plans.ts`. |
-| `STRIPE_INFINITY_YEARLY_PRICE_ID` | optional | Yearly Price id. Setting it shows the yearly option. |
+| `STRIPE_INFINITY_YEARLY_PRICE_ID` | recommended | Yearly Price id. Without it, an inline yearly price comes from `lib/plans.ts`. |
 | `STRIPE_PORTAL_CONFIGURATION_ID` | optional | A named Customer Portal configuration. |
 | `STRIPE_BILLING_TAX` | optional | `off` turns automatic tax off for subscriptions only. |
 | `STRIPE_INFINITY_TAX_CODE` | optional | Tax code for the inline price (default `txcd_10103001`). |
 | `NEXT_PUBLIC_INFINITY_PRICE_CENTS` | optional | Overrides `PRO.priceCents` (keep it equal to the Stripe Price). |
-| `NEXT_PUBLIC_INFINITY_YEARLY_MONTHLY_CENTS` | optional | Overrides `PRO.yearlyMonthlyCents`, used for the label and MRR. |
+| `NEXT_PUBLIC_INFINITY_YEARLY_CENTS` | optional | Overrides `PRO.yearlyCents` (keep it equal to the Stripe Price). |
 | `NEXT_PUBLIC_INFINITY_SPLIT` | optional | Overrides `PRO.split` (between 0.6 and 0.9). Applies to new orders only. |
 
 The **Integrations** panel on the admin dashboard shows whether billing is set up.
@@ -95,7 +95,7 @@ The **Integrations** panel on the admin dashboard shows whether billing is set u
 - **/admin/artists/[id]** has an **Infinity billing** card showing status, subscription, period end, failures and customer, with links to Stripe.
   - Owners and admins (the `money` role) can **Cancel at period end**, **Undo cancel**, **Cancel now** (no refund; refund in Stripe if one is owed) and **Sync from Stripe**.
   - **End Infinity** is blocked while a paid subscription is live: cancel the subscription first.
-- **/admin** shows Infinity MRR next to the business numbers: paying subscribers × price, with yearly counted at its monthly rate and subscribers still in free months left out.
+- **/admin** shows Infinity MRR next to the business numbers: paying subscribers × price, with yearly counted at a twelfth of its price and subscribers still in free months left out.
 
 ## 8. Going live checklist
 

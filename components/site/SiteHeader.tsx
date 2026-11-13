@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, Search, ShoppingBag, X } from "lucide-react";
+import { ChevronDown, Menu, Search, ShoppingBag, X } from "lucide-react";
 import Logo from "@/components/af/Logo";
 import FollowButton from "@/components/follow/FollowButton";
 import { useCart, useUser } from "@/components/contexts";
@@ -11,13 +11,91 @@ import { cn } from "@/lib/utils";
 import { artistPath } from "@/lib/urls";
 import SearchTypeahead from "@/components/forms/SearchTypeahead";
 
+// "Browse art" opens a menu (hover or click on desktop, nested links on phones); the rest are plain links.
+const BROWSE = [
+  { href: "/art", label: "All art", note: "Every print, newest first" },
+  { href: "/artists", label: "Artists", note: "Find someone whose work you love" },
+  { href: "/scenes", label: "Neighborhoods", note: "Art from the places you know" },
+];
+const SHOP_BY = [
+  { href: "/art?sort=popular", label: "Most popular" },
+  { href: "/art?price=under-50", label: "Under $50" },
+  { href: "/art?price=50-75", label: "$50 to $75" },
+  { href: "/art?price=75-up", label: "$75 and up" },
+];
 const LINKS = [
-  { href: "/art", label: "Browse art" },
-  { href: "/artists", label: "Artists" },
-  { href: "/scenes", label: "Neighborhoods" },
   { href: "/#how", label: "How it works" },
   { href: "/pricing", label: "Pricing" },
 ];
+const inBrowse = (p: string | null) => !!p && /^\/(art|artists|scenes)(\/|$)/.test(p);
+
+/** Desktop "Browse art": opens on hover (with a short grace period so the pointer can cross the gap), on click, or
+ * from the keyboard; closes on Escape, on leaving, and on navigation. */
+function BrowseMenu({ pathname }: { pathname: string | null }) {
+  const [open, setOpen] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wrap = useRef<HTMLDivElement>(null);
+  const clear = () => { if (timer.current) clearTimeout(timer.current); timer.current = null; };
+  const show = () => { clear(); setOpen(true); };
+  const hide = (ms = 140) => { clear(); timer.current = setTimeout(() => setOpen(false), ms); };
+  useEffect(() => { setOpen(false); }, [pathname]);
+  useEffect(() => clear, []);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(false); wrap.current?.querySelector<HTMLElement>("button")?.focus(); } };
+    const onDown = (e: PointerEvent) => { if (!wrap.current?.contains(e.target as Node)) setOpen(false); };
+    window.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onDown);
+    return () => { window.removeEventListener("keydown", onKey); document.removeEventListener("pointerdown", onDown); };
+  }, [open]);
+  const active = inBrowse(pathname);
+
+  return (
+    <div
+      ref={wrap}
+      className="relative"
+      onMouseEnter={show}
+      onMouseLeave={() => hide()}
+      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) hide(0); }}
+    >
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="browse-menu"
+        onClick={() => (open ? setOpen(false) : show())}
+        className={cn("inline-flex items-center gap-1 text-ink hover:text-scan", (active || open) && "text-scan")}
+      >
+        Browse art
+        <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} aria-hidden="true" />
+      </button>
+      {open && (
+        // pt-3 is the invisible bridge between the button and the panel, so hovering across doesn't close it
+        <div id="browse-menu" className="absolute left-1/2 top-full z-50 -translate-x-1/2 pt-3">
+          <div className="grid w-[520px] grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-6 whitespace-normal rounded-2xl border border-line bg-white p-5 shadow-[0_18px_40px_-12px_rgba(21,22,27,.35)]">
+            <ul className="grid content-start gap-1">
+              {BROWSE.map((l) => (
+                <li key={l.href}>
+                  <Link href={l.href} aria-current={pathname === l.href ? "page" : undefined} onClick={() => setOpen(false)} className="group block rounded-xl px-3 py-2.5 no-underline hover:bg-wall">
+                    <span className="block text-[16px] font-bold text-ink group-hover:text-scan">{l.label}</span>
+                    <span className="block text-[13.5px] font-normal text-ink-2">{l.note}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <div className="grid content-start gap-1 border-l border-line pl-6">
+              <span className="eyebrow mb-1 px-1">Shop by</span>
+              {SHOP_BY.map((l) => (
+                <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="rounded-lg px-1 py-1.5 text-[15px] text-ink no-underline hover:text-scan">
+                  {l.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /**
  * On an artist's painting and collection pages the artist is the star: a slim Artfinity bar, then a band with the
@@ -146,6 +224,16 @@ export default function SiteHeader({ brand = null, inPage = false }: { brand?: H
           <button type="submit" className="btn btn-sm min-h-[38px]">Go</button>
         </div>
       </form>
+      <Link href="/art" aria-current={isActive("/art") ? "page" : undefined} onClick={() => setOpen(false)} className="rounded-lg px-2 py-2.5 text-lg font-semibold text-ink no-underline hover:bg-wall">
+        Browse art
+      </Link>
+      <div className="-mt-1 mb-1 ml-2 grid border-l-2 border-line pl-3">
+        {BROWSE.slice(1).map((l) => (
+          <Link key={l.href} href={l.href} aria-current={isActive(l.href) ? "page" : undefined} onClick={() => setOpen(false)} className="rounded-lg px-2 py-2 text-[17px] font-medium text-ink no-underline hover:bg-wall">
+            {l.label}
+          </Link>
+        ))}
+      </div>
       {LINKS.map((l) => (
         <Link key={l.href} href={l.href} aria-current={isActive(l.href) ? "page" : undefined} onClick={() => setOpen(false)} className="rounded-lg px-2 py-2.5 text-lg font-semibold text-ink no-underline hover:bg-wall">
           {l.label}
@@ -207,6 +295,7 @@ export default function SiteHeader({ brand = null, inPage = false }: { brand?: H
       <div className="mx-auto flex max-w-[1240px] items-center gap-6 px-4 py-3 sm:px-6">
         <Logo />
         <nav className="ml-auto hidden items-center gap-5 whitespace-nowrap text-[15px] font-medium lg:flex xl:gap-6" aria-label="Main">
+          <BrowseMenu pathname={pathname} />
           {LINKS.map((l) => (
             <Link key={l.href} href={l.href} aria-current={isActive(l.href) ? "page" : undefined} className={cn("text-ink no-underline hover:text-scan", isActive(l.href) && "text-scan")}>{l.label}</Link>
           ))}

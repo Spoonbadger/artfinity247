@@ -59,14 +59,14 @@ function planStatus(v: BillingView, daysLeft: number): { head: string; line: str
   switch (v.kind) {
     case "free": return { head: "Free", line: `You keep ${pct(FREE_SPLIT)} of profit. Everything core is free.` };
     case "earned": return { head: PRO.name, line: `${PRO.name} until ${formatPlanDate(v.until)} · ${left}`, sub: "Free months from referrals. No card on file." };
-    case "renews": return { head: PRO.name, line: `${PRO.name} until ${formatPlanDate(v.renewsOn)} (renews)`, sub: v.interval === "year" ? `${dollars(PRO.yearlyMonthlyCents * 12)} a year, billed yearly.` : `${proPrice()} a month.` };
+    case "renews": return { head: PRO.name, line: `${PRO.name} until ${formatPlanDate(v.renewsOn)} (renews)`, sub: v.interval === "year" ? `${dollars(PRO.yearlyCents)} a year, billed yearly.` : `${proPrice()} a month.` };
     case "trial": return { head: PRO.name, line: `${PRO.name} until ${formatPlanDate(v.until)} · ${left}`, sub: `Your free months run first. Billing starts ${formatPlanDate(v.billingStarts)}.` };
     case "cancels": return { head: PRO.name, line: `Cancels on ${formatPlanDate(v.cancelsOn)}`, sub: `You keep ${PRO.name} until ${formatPlanDate(v.until)}, then you're on Free. No more charges.` };
     case "payment_failed": return { head: "Payment failed", line: v.until ? `${PRO.name} stays on until ${formatPlanDate(v.until)} while we retry.` : "Your last payment didn't go through.", sub: "Update your card to keep it going." };
   }
 }
 
-export default async function ProPage({ searchParams }: { searchParams?: { billing?: string; session_id?: string; start?: string } }) {
+export default async function ProPage({ searchParams }: { searchParams?: { billing?: string; session_id?: string; start?: string; interval?: string } }) {
   const artist = await requireArtist("/studio/infinity");
   const now = new Date();
   // Back from Stripe Checkout: turn Infinity on now rather than waiting for the webhook.
@@ -159,7 +159,7 @@ export default async function ProPage({ searchParams }: { searchParams?: { billi
             ))}
           </ul>
           <div className="relative">
-            <BillingPanel mode={billing.mode} kind={view.kind} intervals={billing.intervals} freeMonthsUntil={freeMonthsUntil} onDark={dark} autoStart={searchParams?.start === "1" && !plan.active} tax={billing.mode === "simulated" ? "test" : BILLING_TAX_ENABLED ? "added" : "none"} />
+            <BillingPanel mode={billing.mode} kind={view.kind} intervals={billing.intervals} freeMonthsUntil={freeMonthsUntil} onDark={dark} autoStart={searchParams?.start === "1" && !plan.active} autoStartInterval={searchParams?.interval === "year" ? "year" : "month"} tax={billing.mode === "simulated" ? "test" : BILLING_TAX_ENABLED ? "added" : "none"} />
           </div>
           <p className={dark ? "relative text-[13.5px] text-white/70" : "t-small"}>
             The higher share counts for orders placed while {PRO.name} is on. Earlier orders keep theirs.

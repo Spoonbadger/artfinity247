@@ -52,22 +52,21 @@ export function billingMode(): BillingMode {
 }
 
 export type Interval = "month" | "year";
-/** Intervals on offer: monthly always; yearly only when STRIPE_INFINITY_YEARLY_PRICE_ID is set. */
+/** Intervals on offer: monthly and yearly. Without a Price id, Checkout builds the price inline from lib/plans.ts. */
 export function billingIntervals(): Interval[] {
-  return process.env.STRIPE_INFINITY_YEARLY_PRICE_ID ? ["month", "year"] : ["month"];
+  return ["month", "year"];
 }
 
 function lineItem(interval: Interval): Stripe.Checkout.SessionCreateParams.LineItem {
   const priceId = interval === "year" ? process.env.STRIPE_INFINITY_YEARLY_PRICE_ID : process.env.STRIPE_INFINITY_PRICE_ID;
   if (priceId) return { price: priceId, quantity: 1 };
-  if (interval === "year") throw new BillingError("Yearly billing isn't set up.", 400);
-  // No Price in Stripe yet: an inline monthly price from lib/plans.ts.
+  // No Price in Stripe yet: an inline price from lib/plans.ts.
   return {
     quantity: 1,
     price_data: {
       currency: "usd",
-      unit_amount: PRO.priceCents,
-      recurring: { interval: "month" },
+      unit_amount: interval === "year" ? PRO.yearlyCents : PRO.priceCents,
+      recurring: { interval },
       tax_behavior: "exclusive",
       product_data: { name: `Artfinity ${PRO.name}`, tax_code: SUBSCRIPTION_TAX_CODE, metadata: { kind: "infinity" } },
     },
@@ -540,7 +539,7 @@ export async function adminBillingAction(artistId: string, action: "cancel_at_pe
   return { cancel_now: "Subscription cancelled now", cancel_at_period_end: "Cancels at the end of the period", resume: "Cancellation undone", sync: "Synced from Stripe" }[action];
 }
 
-/** Admin dashboard: paying subscribers and MRR (PRO.priceCents a month, PRO.yearlyMonthlyCents for yearly). */
+/** Admin dashboard: paying subscribers and MRR (PRO.priceCents a month, PRO.yearlyCents / 12 for yearly). */
 export async function billingOverview() {
   const states = await allBillingStates();
   let monthly = 0, yearly = 0, trialing = 0, failing = 0, cancelling = 0;
@@ -560,7 +559,7 @@ export async function billingOverview() {
     trialing,
     failing,
     cancelling,
-    mrrCents: monthly * PRO.priceCents + yearly * PRO.yearlyMonthlyCents,
+    mrrCents: monthly * PRO.priceCents + Math.round((yearly * PRO.yearlyCents) / 12),
     infinityNow,
     simulated: billingMode() === "simulated",
   };
@@ -589,7 +588,7 @@ function simSub(artistId: string, state: BillingState, o: { status: string; peri
  * cancel / resume: cancel at period end and undo; payment_failed: the renewal fails (Stripe would move to
  * past_due); payment_fixed: the retry succeeds; end: the subscription ends now.
  */
-export async function simulate(artistId: string, action: SimAction, now = new Date()): Promise<{ proUntil: Date | null; message: string }> {
+export async function simulate(artistId: string, action: SimAction, now = new Date(), interval: Interval = "month"): Promise<{ proUntil: Date | null; message: string }> {
   if (billingMode() !== "simulated") throw new BillingError("Test billing is only on without Stripe keys, outside production.", 403);
   const state = await storedBillingState(artistId);
   const live = state.simulated && hasLiveSubscription(state);
@@ -603,11 +602,11 @@ export async function simulate(artistId: string, action: SimAction, now = new Da
       const a = await prisma.artist.findUnique({ where: { id: artistId }, select: { proUntil: true } });
       const fresh = { ...state, subscriptionId: null, customerId: state.simulated ? state.customerId : null, interval: null };
       const free = a?.proUntil && a.proUntil.getTime() > now.getTime() + BILLING.minTrialHours * 3_600_000 ? a.proUntil : null;
-      const sub = free ? simSub(artistId, fresh, { status: "trialing", periodEnd: free, trialEnd: free }) : simSub(artistId, fresh, { status: "active", periodEnd: addMonths(now, 1) });
+      const sub = free ? simSub(artistId, fresh, { status: "trialing", periodEnd: free, trialEnd: free, interval }) : simSub(artistId, fresh, { status: "active", periodEnd: addMonths(now, interval === "year" ? 12 : 1), interval });
       // Same as checkout.session.completed: the customer first, then the subscription.
       await saveBillingState(artistId, { customerId: idOf(sub.customer), subscriptionId: null, status: null, subProUntil: null, paymentFailedAt: null, failedInvoiceId: null, simulated: true, eventAt: null });
       res = await applySubscription(sub, { artistId, now });
-      message = free ? `Subscribed (test). Referral months first: billing starts ${formatPlanDate(free)}.` : "Subscribed (test).";
+      message = free ? `Subscribed ${interval === "year" ? "yearly " : ""}(test). Referral months first: billing starts ${formatPlanDate(free)}.` : `Subscribed ${interval === "year" ? "yearly " : ""}(test).`;
       break;
     }
     case "cancel":

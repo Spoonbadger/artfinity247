@@ -43,7 +43,7 @@ export async function startInfinityCheckout(mode: Mode, interval: "month" | "yea
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(simulated ? { action: "subscribe" } : { interval }),
+    body: JSON.stringify(simulated ? { action: "subscribe", interval } : { interval }),
   });
   if (!r.ok) {
     const p = await problemFrom(r, "Checkout didn't open. Try again in a minute.");
@@ -58,8 +58,10 @@ export async function startInfinityCheckout(mode: Mode, interval: "month" | "yea
 }
 
 export default function StartInfinityButton({
-  label = `Get ${PRO.name}`, className = "btn btn-blue", activeClassName, icon, included = false, includedClassName, state,
+  label = `Get ${PRO.name}`, className = "btn btn-blue", activeClassName, icon, included = false, includedClassName, state, interval = "month",
 }: {
+  /** Monthly or yearly checkout. Carried through log in as ?interval=year. */
+  interval?: "month" | "year";
   label?: ReactNode;
   className?: string;
   /** For "You're on Infinity". Defaults to a ghost button of the same size. */
@@ -85,9 +87,9 @@ export default function StartInfinityButton({
     setBusy(true);
     try {
       const s = known ?? (await loadState());
-      if (!s.signedIn) { window.location.assign(withNext("/login", INFINITY_START)); return; }
+      if (!s.signedIn) { window.location.assign(withNext("/login", interval === "year" ? `${INFINITY_START}&interval=year` : INFINITY_START)); return; }
       if (s.active) { window.location.assign(`${PLAN}#billing`); return; }
-      if (!(await startInfinityCheckout(s.mode))) setBusy(false);
+      if (!(await startInfinityCheckout(s.mode, interval))) setBusy(false);
     } catch {
       setBusy(false);
       failed("Couldn't reach Artfinity. Check your connection.", { retry: () => void go() });

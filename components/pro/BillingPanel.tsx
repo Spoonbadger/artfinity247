@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PRO, REFERRALS, dollars } from "@/lib/plans";
+import { PRO, REFERRALS, dollars, proYearlyPrice, yearlySavingsCents } from "@/lib/plans";
 import type { BillingView } from "@/lib/billingStatus";
 import { cn } from "@/lib/utils";
 import { failed, problemFrom, saved } from "@/lib/feedback";
@@ -20,8 +20,10 @@ type SimAction = "subscribe" | "cancel" | "resume" | "payment_failed" | "payment
  * its states.
  */
 export default function BillingPanel({
-  mode, kind, intervals, freeMonthsUntil, onDark = false, autoStart = false, tax,
+  mode, kind, intervals, freeMonthsUntil, onDark = false, autoStart = false, autoStartInterval = "month", tax,
 }: {
+  /** From ?interval=year: which checkout autoStart opens. */
+  autoStartInterval?: "month" | "year";
   /** Sales tax on the subscription (lib/tax.ts BILLING_TAX_ENABLED): added by Stripe from the billing address. */
   tax?: TaxLine;
   mode: Mode;
@@ -86,6 +88,7 @@ export default function BillingPanel({
     // Drop ?start=1, and remember the start for a few minutes, so Back from Stripe or a refresh doesn't reopen it.
     const url = new URL(window.location.href);
     url.searchParams.delete("start");
+    url.searchParams.delete("interval");
     window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
     let recent = false;
     try {
@@ -93,9 +96,10 @@ export default function BillingPanel({
       sessionStorage.setItem("af-infinity-start", String(Date.now()));
     } catch { /* storage blocked: start anyway */ }
     if (subscribed || mode === "off" || recent) return;
-    setBusy("month");
+    const interval = intervals.includes(autoStartInterval) ? autoStartInterval : "month";
+    setBusy(interval);
     // Same landing as the buttons elsewhere: Stripe, or in test mode straight to ?billing=success.
-    startInfinityCheckout(mode, "month").then((ok) => { if (!ok) setBusy(null); }).catch(() => setBusy(null));
+    startInfinityCheckout(mode, interval).then((ok) => { if (!ok) setBusy(null); }).catch(() => setBusy(null));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStart]);
 
@@ -149,7 +153,7 @@ export default function BillingPanel({
           />
           {intervals.includes("year") && (
             <button type="button" className={cn(ghost, "!text-ink !border-ink hover:!bg-ink hover:!text-white")} disabled={!!busy} onClick={() => checkout("year")}>
-              {busy === "year" ? "Starting…" : `Or ${dollars(PRO.yearlyMonthlyCents)}/mo, billed yearly (${dollars(PRO.yearlyMonthlyCents * 12)})`}
+              {busy === "year" ? "Starting…" : `Or ${proYearlyPrice()} a year${yearlySavingsCents() > 0 ? ` (save ${dollars(yearlySavingsCents())})` : ""}`}
             </button>
           )}
         </PaymentSummary>
