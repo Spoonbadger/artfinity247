@@ -2,6 +2,7 @@ import { ReactNode, Suspense } from "react";
 import Logo from "@/components/af/Logo";
 import AuthTopLink from "@/components/auth/AuthTopLink";
 import WallBackdrop from "@/components/auth/WallBackdrop";
+import WallPainting from "@/components/auth/WallPainting";
 
 // Auth screens: a quiet gallery wall, the logo, and one card.
 export default function AuthLayout({ children }: { children: ReactNode }) {
@@ -15,6 +16,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         </Suspense>
       </header>
       <main className="relative z-10 px-4 pb-16 pt-2 sm:px-8 sm:pt-8">{children}</main>
+      <WallPainting />
     </div>
   );
 }

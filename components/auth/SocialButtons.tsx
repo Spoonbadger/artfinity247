@@ -95,7 +95,8 @@ export default function SocialButtons({
 }) {
   if (!providers.length) return null;
   return (
-    <div className={cn("grid gap-2.5", className)}>
+    // Side by side wherever two full-width labels fit (sign-up card, wide sign-in card), stacked otherwise.
+    <div className={cn("grid gap-2.5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,228px),1fr))]", className)}>
       {providers.map((p) => {
         const Mark = PROVIDER_MARK[p];
         return (
@@ -104,7 +105,7 @@ export default function SocialButtons({
             key={p}
             href={oauthStartHref(p, { next, handle, ref: referral })}
             className={cn(
-              "btn w-full min-w-0 min-h-[52px] whitespace-normal bg-white text-center text-ink hover:bg-wall hover:[filter:none]",
+              "btn w-full min-w-0 min-h-[52px] whitespace-normal bg-white px-3 text-center text-ink hover:bg-wall hover:[filter:none]",
               p === "apple" && "font-semibold",
               p === "mock" && "border-dashed",
             )}
@@ -113,7 +114,6 @@ export default function SocialButtons({
           >
             <Mark className={cn("h-[20px] w-[20px] shrink-0", p === "apple" && "-mt-[3px] h-[20px] w-[17px]")} />
             <span>Continue with {PROVIDER_LABEL[p]}</span>
-            
           </a>
         );
       })}

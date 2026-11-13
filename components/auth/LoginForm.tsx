@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Brushed } from "@/components/af/Brush";
 import { useUser } from "@/components/contexts";
+import { cn } from "@/lib/utils";
 import { AuthCard, Field, FormAlert, PasswordField, Spinner } from "./ui";
 import { safeNext, withNext } from "./next";
 import SocialButtons, { OrDivider } from "./SocialButtons";
@@ -93,7 +94,7 @@ export default function LoginForm({ providers = [] }: { providers?: ProviderId[]
   }
 
   return (
-    <AuthCard className="mx-auto w-full max-w-[460px]">
+    <AuthCard className={cn("mx-auto w-full max-w-[460px]", providers.length > 1 && "lg:max-w-[548px]")}>
       <form onSubmit={onSubmit} className="grid gap-5" noValidate>
         <h1 className="t-page">
           Welcome <Brushed>back</Brushed>

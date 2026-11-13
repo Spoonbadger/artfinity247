@@ -9,7 +9,8 @@ const GRAIN =
 const dab = (r: string) => ({ borderRadius: r });
 
 // A gallery wall behind the auth card: canvas grain, a wash of paint, and on the
-// smaller screens (login, password) a framed painting hung with its QR label.
+// smaller screens (login, password) a framed painting hung with its QR label beside the card on wide screens.
+// On phones and tablets the painting sits below the card instead (WallPainting), so the card never covers it.
 // Purely decorative.
 export default function WallBackdrop() {
   const path = usePathname() || "";
@@ -24,7 +25,7 @@ export default function WallBackdrop() {
       {!register && (
         <>
           {/* hung painting + its little label, the whole idea in one picture */}
-          <div className="absolute left-[max(32px,calc(50%-600px))] top-[170px] hidden items-end gap-4 xl:flex">
+          <div className="absolute left-[max(24px,calc(50%-660px))] top-[170px] hidden items-end gap-4 min-[1360px]:flex">
             <div className="w-[210px] rotate-[-1.5deg] border-[10px] border-ink bg-paper p-3 shadow-[0_18px_30px_rgba(21,22,27,.22)]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/seed/art-01.jpg" alt="" className="block aspect-[4/5] w-full object-cover" />
@@ -32,17 +33,6 @@ export default function WallBackdrop() {
             <div className="mb-6 grid w-[86px] rotate-[2deg] gap-1 rounded-md bg-paper p-2 shadow-[0_6px_14px_rgba(21,22,27,.16)]">
               <QRCode value="https://theartfinity.com" dots="rounded" eyes="frame" eyeColor="#8b2a4b" />
               <span className="text-center text-[9.5px] font-bold leading-tight text-ink">Buy a print</span>
-            </div>
-          </div>
-          {/* the same picture, smaller, low on the wall on phones and tablets */}
-          <div className="absolute bottom-[56px] left-1/2 flex -translate-x-1/2 items-end gap-3 xl:hidden">
-            <div className="w-[118px] rotate-[-1.5deg] border-[6px] border-ink bg-paper p-2 shadow-[0_12px_22px_rgba(21,22,27,.2)]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/seed/art-01.jpg" alt="" className="block aspect-[4/5] w-full object-cover" />
-            </div>
-            <div className="mb-3 grid w-[58px] rotate-[2deg] gap-0.5 rounded bg-paper p-1.5 shadow-[0_5px_12px_rgba(21,22,27,.16)]">
-              <QRCode value="https://theartfinity.com" dots="rounded" eyes="frame" eyeColor="#8b2a4b" />
-              <span className="text-center text-[7.5px] font-bold leading-tight text-ink">Buy a print</span>
             </div>
           </div>
           <span className="absolute right-[max(32px,calc(50%-560px))] top-[22%] hidden h-24 w-28 rotate-[-14deg] bg-sticker opacity-80 sm:block" style={dab("52% 44% 58% 40%")} />
