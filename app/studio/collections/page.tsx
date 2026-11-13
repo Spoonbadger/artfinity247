@@ -16,7 +16,7 @@ export default async function CollectionsPage() {
     prisma.artwork.findMany({
       where: { artistId: artist.id, slug: { not: null }, status: { not: "REJECTED" } },
       orderBy: { createdAt: "desc" },
-      select: { id: true, slug: true, title: true, imageUrl: true, status: true },
+      select: { id: true, slug: true, title: true, imageUrl: true, status: true, sensitive: true },
     }),
   ]);
 
@@ -37,7 +37,7 @@ export default async function CollectionsPage() {
         <CollectionsManager
           artistSlug={artist.slug}
           initial={collections}
-          arts={arts.map((a) => ({ id: a.id, slug: a.slug!, title: a.title, imageUrl: a.imageUrl, live: a.status === "APPROVED" }))}
+          arts={arts.map((a) => ({ id: a.id, slug: a.slug!, title: a.title, imageUrl: a.imageUrl, live: a.status === "APPROVED", sensitive: a.sensitive ?? [] }))}
         />
       )}
     </StudioPage>

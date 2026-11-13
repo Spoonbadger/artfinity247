@@ -8,8 +8,9 @@ import { EmptyState } from "@/components/studio/EmptyState";
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ExternalLink, GripVertical, Plus, Star, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StudioCollection } from "@/components/collections/server";
+import BackgroundControl from "@/components/collections/BackgroundControl";
 
-type Art = { id: string; slug: string; title: string; imageUrl: string; live: boolean };
+type Art = { id: string; slug: string; title: string; imageUrl: string; live: boolean; sensitive: string[] };
 
 const move = <T,>(list: T[], from: number, to: number) => {
   const next = list.slice();
@@ -62,7 +63,9 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
 
   const update = (id: string, patch: Partial<StudioCollection>, body: Record<string, unknown>) => {
     setCols((cs) => cs.map((c) => (c.id === id ? { ...c, ...patch } : c)));
-    save(() => api(`/api/studio/collections/${id}`, "PATCH", body).then((d) => setCols((cs) => cs.map((c) => (c.id === id ? { ...c, coverArtworkId: d.collection.coverArtworkId } : c)))));
+    // The server may move the cover (and drop a painting background) when pieces change; take its word for those.
+    const synced = (d: { collection: StudioCollection }) => ({ coverArtworkId: d.collection.coverArtworkId, ...("artworkIds" in body ? { background: d.collection.background } : {}) });
+    save(() => api(`/api/studio/collections/${id}`, "PATCH", body).then((d) => setCols((cs) => cs.map((c) => (c.id === id ? { ...c, ...synced(d) } : c)))));
   };
 
   const setWorks = (c: StudioCollection, artworkIds: string[]) => {
@@ -124,8 +127,9 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
   const takeOut = (c: StudioCollection, id: string, title: string) => {
     const before = c.artworkIds;
     const cover = c.coverArtworkId;
+    const background = c.background;
     setWorks(c, before.filter((x) => x !== id));
-    withUndo(`Took ${title} out`, () => update(c.id, { artworkIds: before, coverArtworkId: cover }, { artworkIds: before, coverArtworkId: cover }));
+    withUndo(`Took ${title} out`, () => update(c.id, { artworkIds: before, coverArtworkId: cover, background }, { artworkIds: before, coverArtworkId: cover, background }));
   };
 
   const pick = (id: string) => {
@@ -256,6 +260,12 @@ export default function CollectionsManager({ artistSlug, initial, arts }: { arti
                   onBlur={(e) => { const d = e.target.value.trim(); if (d !== active.description) update(active.id, { description: d }, { description: d }); }}
                 />
               </label>
+              <BackgroundControl
+                value={active.background}
+                title={active.title}
+                pieces={active.artworkIds.map((id) => artById.get(id)).filter((a): a is Art => !!a)}
+                onChange={(background) => update(active.id, { background }, { background })}
+              />
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3">

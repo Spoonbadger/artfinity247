@@ -345,6 +345,9 @@ model Collection {
   slug        String
   description String?          @default("")
   coverArtworkId String?
+  // Public page background (lib/collectionBackground.ts): {kind:"wall"} | {kind:"color",color} |
+  // {kind:"painting",artworkId,blur,tint,tintOpacity}. Null = the gallery wall.
+  background  Json?
   position    Int              @default(0)
   createdAt   DateTime         @default(now())
   artist      Artist           @relation(fields: [artistId], references: [id], onDelete: Cascade)
