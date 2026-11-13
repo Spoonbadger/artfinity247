@@ -20,12 +20,6 @@ export const TEAM: TeamMember[] = [
     note: "Founded Artfinity and built the first version of the site.",
     color: "var(--af-coral)",
   },
-  {
-    name: "Thomas Demuth",
-    role: "User Experience",
-    note: "Leading the new, artist-first Artfinity.",
-    color: "var(--af-scan)",
-  },
 ];
 
 // TODO(Thomas): the story in your words. Two or three short paragraphs.

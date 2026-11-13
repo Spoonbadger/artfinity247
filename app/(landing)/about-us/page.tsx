@@ -129,9 +129,8 @@ export default async function AboutPage() {
                   )}
                 </span>
                 <div className="grid content-start gap-1">
-                  <p className="t-card">{m.name}</p>
-                  <p className="eyebrow">{m.role}</p>
-                  <p className="t-muted mt-1">{m.note}</p>
+                  <p className="t-card">{m.name} <span className="font-normal text-ink-2">· {m.role}</span></p>
+                  <p className="t-muted">{m.note}</p>
                 </div>
               </li>
             ))}
