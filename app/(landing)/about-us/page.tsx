@@ -197,7 +197,6 @@ export default async function AboutPage() {
             </div>
           </div>
           <address className="af-panel grid gap-3 p-5 text-[15.5px] not-italic">
-            <p className="eyebrow">Talk to a person</p>
             <p><b>{COMPANY.legalName}</b><br />{COMPANY.address}</p>
             <p>
               <a href={`mailto:${COMPANY.email}`} className="font-bold underline underline-offset-2">{COMPANY.email}</a>

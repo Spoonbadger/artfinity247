@@ -139,8 +139,7 @@ export default async function CollectionPage({ params, searchParams }: Props) {
       <header className="mx-auto grid max-w-[1240px] gap-4 px-4 pb-8 pt-8 sm:px-6 sm:pb-12 sm:pt-14">
         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,380px)] md:items-end md:gap-10">
           <div>
-            <p className="eyebrow">Collection · {n} {n === 1 ? "work" : "works"}</p>
-            <h1 className="display relative mt-2 text-[44px] [overflow-wrap:anywhere] sm:text-[64px]">
+            <h1 className="display relative text-[44px] [overflow-wrap:anywhere] sm:text-[64px]">
               {collection.title}
             </h1>
             <BrushStroke className="mt-2 h-3 w-48 sm:w-64" />

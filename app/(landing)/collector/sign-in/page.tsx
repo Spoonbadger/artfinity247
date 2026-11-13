@@ -18,7 +18,6 @@ export default async function CollectorSignIn({ searchParams }: { searchParams: 
   return (
     <div className="mx-auto grid max-w-[520px] gap-6 px-4 pb-16 pt-10 sm:pt-16">
       <div className="grid gap-3">
-        <span className="eyebrow">Your collection</span>
         <h1 className="display relative inline-block text-[46px] sm:text-[60px]">
           <span className="relative z-10">See your orders</span>
           <BrushStroke className="absolute -bottom-1 left-0 z-0 h-[0.32em] w-[min(100%,5.5em)] opacity-90" color="var(--af-sticker)" />

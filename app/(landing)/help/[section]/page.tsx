@@ -14,7 +14,6 @@ export function generateMetadata({ params }: { params: { section: string } }): M
   return { title: `${s.title} · Help`, description: s.blurb, alternates: { canonical: `/help/${s.id}` } };
 }
 
-const AUDIENCE: Record<string, string> = { artist: "For artists", buyer: "For buyers", both: "Artists and buyers" };
 
 export default function HelpSectionPage({ params }: { params: { section: string } }) {
   const s = sectionById(params.section);
@@ -28,8 +27,7 @@ export default function HelpSectionPage({ params }: { params: { section: string 
         <div className="order-last lg:order-first"><SectionNav current={s.id} /></div>
         <div className="grid min-w-0 max-w-[760px] content-start gap-10">
           <section aria-label={`${s.title} articles`}>
-            <span className="eyebrow">{AUDIENCE[s.audience]}</span>
-            <ul className="mt-3 grid divide-y divide-line border-y border-line">
+            <ul className="grid divide-y divide-line border-y border-line">
               {items.map((a) => (
                 <li key={a.slug}>
                   <Link href={articleHref(a)} className="group grid gap-1 py-4 no-underline">
