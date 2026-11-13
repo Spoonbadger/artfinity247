@@ -1,3 +1,7 @@
+# Single-package repo. pnpm 9 (which Vercel may pick from the lockfile) refuses this file without a packages list.
+packages:
+  - '.'
+
 onlyBuiltDependencies:
   - '@prisma/client'
   - '@prisma/engines'
