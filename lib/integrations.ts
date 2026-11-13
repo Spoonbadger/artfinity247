@@ -22,7 +22,7 @@ function prodigiHealth(prod: boolean): Integration {
   if (framesMissing) return { id: "printer", name, status: "amber", state: `${framesMissing} of 12 framed options have no SKU`, fix: "Framed orders with a missing SKU fail. Add them to PRODIGI_SKUS (DEPLOY.md, Prodigi)." };
   const env = prodigiEnv();
   if (prod && env === "sandbox") return { id: "printer", name, status: "amber", state: "Sandbox: nothing gets printed", fix: "Set PRODIGI_ENV=live with the live API key once sandbox orders look right." };
-  if (!set("PRODIGI_WEBHOOK_TOKEN")) return { id: "printer", name, status: "amber", state: `${env}, no callback token (hourly sync only)`, fix: "Set PRODIGI_WEBHOOK_TOKEN so Prodigi can report status right away." };
+  if (!set("PRODIGI_WEBHOOK_TOKEN")) return { id: "printer", name, status: "amber", state: `${env}, no callback token (daily sync only)`, fix: "Set PRODIGI_WEBHOOK_TOKEN so Prodigi can report status right away." };
   return { id: "printer", name, status: "green", state: `Connected (${env})`, fix: null };
 }
 

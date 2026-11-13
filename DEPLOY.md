@@ -208,17 +208,19 @@ This deletes the stored handles for good. Don't edit the older files in `prisma/
 | --- | --- | --- |
 | `/api/cron/payouts` | 5th of the month, 15:17 | Pays connected artists through Stripe ("Pay all"), then emails a "Connect Stripe" reminder to artists whose money is held |
 | `/api/cron/admin-digest` | daily 12:07 | Admin email digest + alert sweep |
-| `/api/cron/work-order-retries` | **every hour** at :07 | Re-sends failed print-lab work orders |
-| `/api/cron/prodigi-sync` | **every hour** at :37 | Checks open Prodigi orders (only with `PRINTER_PROVIDER=prodigi`) |
+| `/api/cron/work-order-retries` | daily 14:07 | Re-sends failed print-lab work orders (3 tries, then an alert) |
+| `/api/cron/prodigi-sync` | daily 14:37 | Checks open Prodigi orders (only with `PRINTER_PROVIDER=prodigi`) |
 | `/api/cron/stuck-orders` | daily 12:23 | Flags paid orders not sent to the printer |
-| `/api/cron/artist-digest` | Mondays 13:00 **and** 14:00 | Weekly artist email (two runs so it lands at 9am New York in summer and winter) |
+| `/api/cron/artist-digest` | Mondays 13:00 | Weekly artist email (8am New York in winter, 9am in summer) |
 | `/api/cron/bookkeeping` | 1st of the month, 13:37 | Monthly books CSV email |
+| `/api/cron/social-publish` | daily 17:05 | Drafts and publishes Instagram posts (SOCIAL_SETUP.md) |
 
 They need `CRON_SECRET` set (Vercel sends it automatically). Crons only run on the **Production** deployment.
 
-**Plan note:** Vercel's free Hobby plan only allows jobs that run **once a day** at most. The hourly work-order
-retry, the hourly Prodigi sync and the twice-on-Monday artist digest need **Pro** ($20/month); on Hobby the deploy is rejected with these
-schedules. Either upgrade to Pro (recommended once you're selling), or edit `vercel.json` to make those two daily.
+**Plan note:** Vercel's free Hobby plan only allows jobs that run **once a day** at most (and may fire them any time
+within the scheduled hour); a more frequent schedule gets the whole deploy rejected. So every job above runs at most
+daily. On **Pro** ($20/month, recommended once you're selling) you can make the work-order retry (`7 * * * *`), the
+Prodigi sync (`37 * * * *`) and the Instagram job (`5 * * * *`) hourly again in `vercel.json` and `lib/jobs/registry.ts`.
 
 You can always run any job by hand from **/admin/jobs → Run now**, and see each run's result there.
 
@@ -278,9 +280,9 @@ Code: `lib/prodigi.ts` (payload, SKU map, status mapping), `lib/prodigiSync.ts` 
 1. Paid (Stripe webhook, test checkout, bulk order) or reprint approved → `POST /v4.0/Orders` with our order number
    as `merchantReference` and our order id as `idempotencyKey` (a retry can't print twice). The order shows
    `prodigi:ord_…` and "Work order sent". A failure (missing SKU, unreadable address, Prodigi down) shows the reason in
-   /admin/orders; the hourly retry job tries 3 times, then alerts.
+   /admin/orders; the daily retry job tries 3 times, then alerts (or press Retry on the order).
 2. Prodigi calls `/api/webhook/prodigi` on every change. We fetch the order again from Prodigi (the callback body
-   isn't trusted) and apply it. The hourly `prodigi-sync` job does the same for every order not shipped yet.
+   isn't trusted) and apply it. The daily `prodigi-sync` job does the same for every order not shipped yet.
 3. Printing → shown on the admin order page. Shipment with tracking → order **shipped**, tracking saved, buyer and
    artist emails same as when an admin marks it shipped. Cancelled, a problem, or our account waiting for payment →
    an admin alert ("Print lab cancelled or flagged an order").

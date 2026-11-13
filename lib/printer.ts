@@ -9,7 +9,7 @@
 //   "prodigi" Create the order in Prodigi's Print API (prodigi.com, v4). Also chosen by PRINTER_PROVIDER=api with
 //            PRINTER_API=prodigi. Needs PRODIGI_API_KEY and PRODIGI_SKUS (lib/prodigi.ts, DEPLOY.md "Prodigi").
 //            Prodigi then calls /api/webhook/prodigi as the order moves (printing, shipped with tracking, complete,
-//            cancelled) and the hourly prodigi-sync job polls open orders in case a callback is missed (lib/prodigiSync.ts).
+//            cancelled) and the daily prodigi-sync job polls open orders in case a callback is missed (lib/prodigiSync.ts).
 //   "api"    Without PRINTER_API=prodigi: reserved for another lab with an API. Fails loudly (apiProvider below).
 //
 // State lives on the order (no extra columns):
@@ -250,7 +250,7 @@ const prodigiProvider: PrinterProvider = {
     const { map, error } = parseSkuMap(process.env.PRODIGI_SKUS);
     if (error) throw new Error(`${error} See DEPLOY.md, Prodigi.`);
     const callbackUrl = prodigiCallbackUrl();
-    if (!callbackUrl) console.warn("[printer:prodigi] PRODIGI_WEBHOOK_TOKEN isn't set: no callback URL, status comes from the hourly prodigi-sync job only");
+    if (!callbackUrl) console.warn("[printer:prodigi] PRODIGI_WEBHOOK_TOKEN isn't set: no callback URL, status comes from the daily prodigi-sync job only");
     const payload = buildOrderPayload(
       {
         orderId: wo.orderId,

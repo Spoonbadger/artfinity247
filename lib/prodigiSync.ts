@@ -1,4 +1,4 @@
-// Applying Prodigi's order status to our orders: used by the callback (app/api/webhook/prodigi) and the hourly
+// Applying Prodigi's order status to our orders: used by the callback (app/api/webhook/prodigi) and the daily
 // "prodigi-sync" job, so a missed callback never leaves an order stuck. Server only.
 //
 // Both always read the order fresh from Prodigi (GET /v4.0/Orders/{id}) and never trust a callback body, then go
@@ -127,7 +127,7 @@ export async function applyProdigiOrder(p: ProdigiOrder): Promise<SyncResult> {
     const key = plan.problem.key === "cancelled" ? alertKey.printLabCancelled(id) : alertKey.printLabProblem(id);
     const a = await raiseAlert({ kind: "print_lab_problem", key, title: `Order #${orderNumber(id)}: ${plan.problem.text}`, link: `/admin/orders/${id}`, severity: plan.problem.severity,
       // A cancellation is raised once per Prodigi order (the poller skips cancelled ones), so it may reopen; a problem
-      // is seen every hour while it lasts, so an admin's "resolve" sticks.
+      // is seen on every sync while it lasts, so an admin's "resolve" sticks.
       reopen: plan.problem.key === "cancelled" });
     if (a?.created) actions.push(`alert: ${plan.problem.key}`);
   } else if (plan.clearProblem) {
@@ -153,7 +153,7 @@ export async function syncProdigiOrder(prodigiId: string): Promise<SyncResult> {
   return applyProdigiOrder(await getOrder(prodigiId));
 }
 
-/** Job "prodigi-sync" (hourly): polls every Prodigi order that hasn't shipped yet and applies the same transitions. */
+/** Job "prodigi-sync" (daily): polls every Prodigi order that hasn't shipped yet and applies the same transitions. */
 export async function runProdigiSync(ctx: JobContext): Promise<JobResult> {
   if (!usingProdigi()) return { summary: "Skipped: PRINTER_PROVIDER isn't prodigi." };
   if (!process.env.PRODIGI_API_KEY?.trim()) return { ok: false, summary: "PRODIGI_API_KEY isn't set." };

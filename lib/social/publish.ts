@@ -1,4 +1,4 @@
-// The "social-publish" job (lib/jobs/registry.ts, /api/cron/social-publish, hourly): queues drafts for new art,
+// The "social-publish" job (lib/jobs/registry.ts, /api/cron/social-publish, daily): queues drafts for new art,
 // checks the Instagram token, and publishes approved posts whose time has come. Server only.
 //
 // A Reel isn't ready the moment it's created: Meta downloads and processes the video. Each run waits up to ~40 s for

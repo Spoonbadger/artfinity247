@@ -32,17 +32,17 @@ export const JOBS: JobDef[] = [
   {
     name: RETRY_JOB,
     label: "Work order retries",
-    description: "Sends failed work orders to the print lab again: 3 tries over about 6 hours, then an alert.",
-    schedule: "7 * * * *",
-    when: "Every hour at :07",
+    description: "Sends failed work orders to the print lab again: one try a day, 3 tries, then an alert. Retry by hand from the order any time.",
+    schedule: "7 14 * * *",
+    when: "Daily at 9:07am New York (10:07am in summer)",
     run: retryWorkOrders,
   },
   {
     name: PRODIGI_JOB,
     label: "Prodigi order sync",
     description: "Checks every Prodigi order that hasn't shipped and applies its status: tracking marks it shipped and emails the buyer, cancellations and problems raise alerts. Catches any callback Prodigi missed. Skipped unless PRINTER_PROVIDER=prodigi.",
-    schedule: "37 * * * *",
-    when: "Every hour at :37",
+    schedule: "37 14 * * *",
+    when: "Daily at 9:37am New York (10:37am in summer)",
     run: runProdigiSync,
   },
   {
@@ -57,9 +57,9 @@ export const JOBS: JobDef[] = [
     name: "artist-digest",
     label: "Artist weekly digest",
     description: "Monday email to each artist with activity: scans, views, sales, earnings, best painting, reviews, followers and one tip.",
-    schedule: "0 13,14 * * 1",
-    when: "Mondays at 9:00am New York (runs at 13:00 and 14:00 UTC; only the 9am one sends)",
-    gate: { ok: isDigestHour, reason: "Not 9am Monday in New York" },
+    schedule: "0 13 * * 1",
+    when: "Mondays at 8am New York (9am in summer)",
+    gate: { ok: isDigestHour, reason: "Not Monday morning in New York" },
     run: async (ctx) => {
       const r = await sendWeeklyDigests(ctx.now);
       const parts = [`${r.sent.length} sent`, `${r.skippedInactive} inactive skipped`, `${r.skippedOptOut} opted out`];
@@ -106,8 +106,8 @@ export const JOBS: JobDef[] = [
     name: SOCIAL_JOB,
     label: "Instagram posts",
     description: "Drafts a post for each newly approved piece (if auto-queue is on), checks the Instagram token (refreshes it or warns 7 days ahead) and publishes approved posts whose time has come. Without Instagram keys it only drafts: posts are made by hand from /admin/social.",
-    schedule: "5 * * * *",
-    when: "Every hour at :05",
+    schedule: "5 17 * * *",
+    when: "Daily at 12:05pm New York (1:05pm in summer)",
     run: runSocialJob,
   },
   {

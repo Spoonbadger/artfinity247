@@ -1,9 +1,10 @@
-// Job "work-order-retries" (hourly): work orders that failed to reach the print lab are sent again with backoff,
-// up to MAX_TRIES over about 6 hours, then an admin gets an alert. Server only.
+// Job "work-order-retries" (daily, vercel.json): work orders that failed to reach the print lab are sent again,
+// up to MAX_TRIES (one a run, so about 3 days), then an admin gets an alert. Server only.
 //
 // No schema change: each run's details list the orders it tried ({ tried: [{ orderId, ok, error }] }), so the attempt
-// count and the last attempt time come from the JobRun log of the last 24 hours. The first retry waits for
-// DELAYS_MIN[0] after the order was placed, then DELAYS_MIN[n] after the previous try (30 min, 2 h, 3 h: ~5.5 h).
+// count and the last attempt time come from the JobRun log of the last WINDOW_MS. The first retry waits for
+// DELAYS_MIN[0] after the order was placed, then DELAYS_MIN[n] after the previous try (30 min, 2 h, 3 h). Run by
+// hand from /admin/jobs it can go faster. The window must cover MAX_TRIES daily runs, or tries would never add up.
 // A successful retry resolves the order's work_order_failed alert. sendWorkOrder (lib/printer.ts) claims the order
 // itself, so a retry racing an admin's "Retry" can't send twice.
 import { prisma } from "@/lib/prisma";
@@ -16,11 +17,11 @@ export const JOB = "work-order-retries";
 export const MAX_TRIES = 3;
 export const DELAYS_MIN = [30, 120, 180];
 const STUCK_SENDING_MS = 5 * 60_000;
-const WINDOW_MS = 24 * 3_600_000;
+const WINDOW_MS = 5 * 24 * 3_600_000;
 
 type Tried = { orderId: string; ok: boolean; error?: string };
 
-/** orderId -> { tries, last } from this job's runs in the last 24 hours. */
+/** orderId -> { tries, last } from this job's runs in the last WINDOW_MS (5 days). */
 async function history(now: Date) {
   const runs = await prisma.jobRun.findMany({
     where: { job: JOB, finishedAt: { not: null }, startedAt: { gte: new Date(now.getTime() - WINDOW_MS) } },

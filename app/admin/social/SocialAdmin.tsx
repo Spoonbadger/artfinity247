@@ -114,7 +114,7 @@ function SettingsForm({ initial, connected, canEdit }: { initial: SocialSettings
       </div>
       <label className="af-field"><small>Hashtags</small><input value={s.hashtags} disabled={!canEdit} onChange={(e) => set("hashtags", e.target.value)} /></label>
       <fieldset>
-        <legend className="mb-2 text-[15px] font-bold">Posting times <span className="font-normal text-ink-2">(New York; the job runs at :05 past each hour)</span></legend>
+        <legend className="mb-2 text-[15px] font-bold">Posting times <span className="font-normal text-ink-2">(New York; the job runs once a day around 12pm, so a later time posts the next day)</span></legend>
         <div className="flex flex-wrap items-end gap-2">
           {s.times.map((t, i) => (
             <span key={i} className="flex items-end gap-1">

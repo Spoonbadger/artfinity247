@@ -31,9 +31,12 @@ export function weekKey(now: Date) {
 }
 
 /** True at 9:xx on a Monday in New York (the cron runs at 13:00 and 14:00 UTC so one of them is 9am, DST or not). */
+// Monday morning in New York. The cron runs once, at 13:00 UTC (8am EST, 9am EDT), and Vercel's Hobby plan may fire it
+// any time in that hour, so 8 and 9 both count. The weekly "already sent" check stops a second send.
 export function isDigestHour(now: Date) {
   const parts = new Intl.DateTimeFormat("en-US", { timeZone: TZ, weekday: "short", hour: "numeric", hourCycle: "h23" }).formatToParts(now);
-  return parts.find((p) => p.type === "weekday")?.value === "Mon" && Number(parts.find((p) => p.type === "hour")?.value) === 9;
+  const hour = Number(parts.find((p) => p.type === "hour")?.value);
+  return parts.find((p) => p.type === "weekday")?.value === "Mon" && (hour === 8 || hour === 9);
 }
 
 export const digestOptOutUrl = (artistId: string) => `${BASE()}/api/digest/unsubscribe?a=${artistId}&t=${signPrefLink(artistId, "digest")}`;

@@ -204,7 +204,7 @@ export async function loadMilestones(now = new Date()) {
 
   const tasks: ManualTask[] = [
     { key: "print", label: "Orders not sent to the lab", n: notSent, href: "/admin/orders?month=all&filter=print", ...(labAuto ? { can: "auto" as const, how: `Sent by itself (${lab.provider.label}). Left here only if a send didn't happen.` } : { can: "key" as const, how: "Set PRINTER_EMAIL, or the Prodigi API key." }) },
-    { key: "wo", label: "Work orders that failed", n: failedWo, href: "/admin/orders?month=all&filter=print", can: "auto", how: "Retried every hour. A person only if it keeps failing." },
+    { key: "wo", label: "Work orders that failed", n: failedWo, href: "/admin/orders?month=all&filter=print", can: "auto", how: "Retried once a day. A person only if it keeps failing." },
     { key: "late", label: "Late payouts", n: lateArtists, href: "/admin/payouts", can: "setting", how: "Connected artists are paid on the 5th by the cron (CRON_SECRET and the Stripe key). Late means a transfer failed or didn't run." },
     { key: "stripe", label: "Pay held: Stripe not set up", n: payouts.held, href: "/admin/payouts#waiting", can: "person", how: "The artist connects Stripe in Studio → Money. A monthly reminder goes out by itself; you can send one more." },
     { key: "shipped", label: "Shipped 10+ days, not delivered", n: staleShipped, href: "/admin/orders?month=all&filter=shipped", ...(trackingOn ? { can: "auto" as const, how: "Tracking updates come in by themselves. Left here: a real delay." } : { can: "key" as const, how: "Set SHIPPO_API_KEY or EASYPOST_API_KEY: deliveries mark themselves." }) },

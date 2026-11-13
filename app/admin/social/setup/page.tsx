@@ -132,7 +132,7 @@ export default async function SocialSetupPage() {
     { label: "INSTAGRAM_ACCESS_TOKEN", ok: s.token },
     { label: "App id and secret (token refresh)", ok: s.appCreds, optional: true },
     { label: "Cloudinary (public video URLs)", ok: cloudinaryOn() },
-    { label: "CRON_SECRET (hourly job)", ok: !!process.env.CRON_SECRET?.trim() },
+    { label: "CRON_SECRET (daily job)", ok: !!process.env.CRON_SECRET?.trim() },
   ];
   return (
     <div className="grid gap-5">

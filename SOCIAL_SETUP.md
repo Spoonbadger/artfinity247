@@ -51,7 +51,7 @@ You need a **long-lived token** for the Instagram account. The best one is a **P
    In the Artfinity Page's row, `access_token` is the **Page token** (never expires) and `instagram_business_account.id` is the **INSTAGRAM_BUSINESS_ACCOUNT_ID**.
 4. Check it in Meta's **Access Token Debugger**: "Expires: Never" for the Page token.
 
-**Refreshing:** a 60-day user token runs out. If you use one instead of the Page token, also set the app id and secret (below): the hourly social job reads the expiry and refreshes the token itself when 10 days are left, and keeps the new one in the database. Without the app id and secret it can't refresh, so set `INSTAGRAM_TOKEN_EXPIRES_AT` and you'll get an admin alert (and email) 7 days before it expires. Either way, if a token stops working (password change, removed from the Page), posting stops, the post shows **Failed** with a "Make a new token" link and an urgent alert goes out. Make a new token with the steps above, replace the env var and redeploy; nothing else to change.
+**Refreshing:** a 60-day user token runs out. If you use one instead of the Page token, also set the app id and secret (below): the daily social job reads the expiry and refreshes the token itself when 10 days are left, and keeps the new one in the database. Without the app id and secret it can't refresh, so set `INSTAGRAM_TOKEN_EXPIRES_AT` and you'll get an admin alert (and email) 7 days before it expires. Either way, if a token stops working (password change, removed from the Page), posting stops, the post shows **Failed** with a "Make a new token" link and an urgent alert goes out. Make a new token with the steps above, replace the env var and redeploy; nothing else to change.
 
 ## 5. Where to put the keys
 
@@ -79,7 +79,7 @@ Instagram downloads each video from a public URL. In production the admin's brow
 
 - **Auto-queue** (Settings): when a piece is approved, the job adds a draft for it, with the caption template filled in and the artist's Instagram @handle credited (from their links page or verification request).
 - **Approve** renders the video in the admin's browser (same engine as the artists' Share kit), uploads it and gives it the next free slot (at most N a day, at your chosen New York times).
-- **The job** `social-publish` runs hourly at :05 (vercel.json, `CRON_SECRET`). It creates a Reels container with the video URL and caption, waits for Instagram to process it, then publishes. A video still processing is finished on the next run. You can also press **Run now** on /admin/jobs, or **Publish now** on a post.
+- **The job** `social-publish` runs once a day at 17:05 UTC, 12:05pm New York (vercel.json, `CRON_SECRET`), so a post scheduled later in the day goes out the next day's run. Vercel Pro allows hourly: set `"5 * * * *"`. It creates a Reels container with the video URL and caption, waits for Instagram to process it, then publishes. A video still processing is finished on the next run. You can also press **Run now** on /admin/jobs, or **Publish now** on a post.
 - **Failures** (expired token, Instagram's posting limit, a video it rejects) mark the post **Failed** with the reason and a fix link, raise an admin alert and go in the activity log. Retry from the post.
 - **Browser**: approve from Chrome, Edge or Safari. They record MP4 in the page; Firefox can only make WebM.
 

@@ -5,7 +5,7 @@
 //   2. the body is only used for the Prodigi order id: the order itself is fetched again from Prodigi's API
 //   3. applying it is idempotent and never moves an order backwards, so repeats and out-of-order calls are harmless
 // Answers 200 for anything it read (even an order that isn't ours) so Prodigi doesn't retry forever; 500 when Prodigi
-// couldn't be reached, and the hourly prodigi-sync job catches up either way.
+// couldn't be reached, and the daily prodigi-sync job catches up either way.
 import { NextRequest, NextResponse } from "next/server";
 import { callbackOrderId, tokenMatches } from "@/lib/prodigi";
 import { syncProdigiOrder } from "@/lib/prodigiSync";
