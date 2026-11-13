@@ -5,7 +5,6 @@ import { Brushed } from "@/components/af/Brush";
 import ClaimHandle from "@/components/home/ClaimHandle";
 import SplitBar from "@/components/home/SplitBar";
 import EarningsCalculator from "@/components/home/EarningsCalculator";
-import { DabRow } from "@/components/browse/PageHead";
 import { FREE_SPLIT, PRO, pct, proPrice } from "@/lib/plans";
 import { RETURN_WINDOW_DAYS } from "@/lib/balance";
 import { PAYOUT_DAY } from "@/content/help/facts";
@@ -37,7 +36,6 @@ export default function SellWithUsPage() {
       <section className="relative overflow-hidden">
         <div className="mx-auto grid max-w-[1240px] items-center gap-12 px-4 pb-16 pt-10 sm:px-6 md:pt-16 lg:grid-cols-[1.1fr_1fr] lg:pb-24">
           <div className="min-w-0">
-            <div className="mb-4 flex items-center gap-2.5"><DabRow /><span className="eyebrow">Sell with us</span></div>
             <h1 className="display text-[56px] sm:text-[84px]">
               Your art.<br />Our printers.<br /><Brushed color="var(--af-earned-soft)"><span className="text-earned">{pct(FREE_SPLIT)} to you.</span></Brushed>
             </h1>

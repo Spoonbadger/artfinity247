@@ -56,7 +56,7 @@ export default function ClaimHandle({ className, dark = false, autoFocus = false
   }
 
   const tone = dark ? "text-white/75" : "text-ink-2";
-  let status: React.ReactNode = <span className={tone}>Pick the name people will find you by.</span>;
+  let status: React.ReactNode = null;
   if (value && value.length < 3) status = <span className={tone}>At least 3 letters or numbers.</span>;
   else if (checking && (!res || res.handle !== value)) status = <span className={cn("inline-flex items-center gap-1.5", tone)}><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />Checking @{value}</span>;
   else if (res && res.available) status = <span className={cn("inline-flex items-center gap-1.5 font-semibold", dark ? "text-white" : "text-ink")}><span className={cn("grid h-4 w-4 place-items-center rounded-full", dark ? "bg-sticker text-ink" : "bg-scan text-white")}><Check className="h-3 w-3" strokeWidth={3} aria-hidden="true" /></span>@{res.handle} is yours to claim.</span>;
@@ -100,7 +100,7 @@ export default function ClaimHandle({ className, dark = false, autoFocus = false
           Claim it
         </button>
       </form>
-      <div id={`${id}-s`} role="status" aria-live="polite" className="mt-2.5 min-h-[22px] pl-4 text-[14px]">{status}</div>
+      <div id={`${id}-s`} role="status" aria-live="polite" className="mt-2.5 pl-4 text-[14px] empty:mt-0">{status}</div>
     </div>
   );
 }

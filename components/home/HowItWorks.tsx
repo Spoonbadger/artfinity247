@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
-import { ImageUp } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, ImageUp } from "lucide-react";
 import QRCode from "@/components/af/QRCode";
 import QRDraw from "@/components/motion/QRDraw";
 import Stage from "@/components/motion/Stage";
@@ -96,6 +97,9 @@ export default function HowItWorks({ art, perPrint, smallPerPrint, monthBefore }
             </div>
           </Step>
         </Stage>
+        <Link href="/how-it-works" className="mt-10 inline-flex items-center gap-1 text-[15px] font-semibold text-ink underline-offset-2 hover:underline">
+          See how it works <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
       </div>
     </section>
   );

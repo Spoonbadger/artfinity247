@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { Brushed } from "@/components/af/Brush";
-import { DabRow } from "@/components/browse/PageHead";
 import Splat from "@/components/motion/Splat";
 import BrushWipe from "@/components/motion/BrushWipe";
 import Waitlist from "@/components/scanning/Waitlist";
@@ -47,11 +46,7 @@ export default async function ScanningPage() {
       <section className="relative overflow-hidden">
         <div className="mx-auto grid max-w-[1240px] items-center gap-12 px-4 pb-16 pt-10 sm:px-6 md:pt-16 lg:grid-cols-[1.15fr_1fr] lg:pb-24">
           <div className="min-w-0">
-            <div className="mb-4 flex flex-wrap items-center gap-2.5">
-              <DabRow />
-              <span className="eyebrow">Painting scans · NYC only</span>
-              {!on && <span className="sticker-badge">Coming soon</span>}
-            </div>
+            {!on && <span className="sticker-badge mb-4 inline-block">Coming soon</span>}
             <h1 className="display text-[52px] sm:text-[80px]">
               Phone photo<br />too small?<br /><Brushed color="var(--af-scan-soft)"><span className="text-scan">We scan the original.</span></Brushed>
             </h1>

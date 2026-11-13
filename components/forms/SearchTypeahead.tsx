@@ -31,6 +31,7 @@ export default function SearchTypeahead({
   enterKeyHint = "search",
   label = "Search art, artists and neighborhoods",
   onNavigate,
+  hrefs,
 }: {
   value?: string;
   onChange?: (v: string) => void;
@@ -43,6 +44,8 @@ export default function SearchTypeahead({
   enterKeyHint?: "search" | "go";
   label?: string;
   onNavigate?: () => void;
+  /** Where picks go, when not to the usual pages (/art turns an artist or neighborhood into a filter). */
+  hrefs?: { artist?: (slug: string) => string; place?: (href: string) => string; all?: (term: string) => string };
 }) {
   const router = useRouter();
   const [own, setOwn] = useState(defaultValue);
@@ -86,11 +89,12 @@ export default function SearchTypeahead({
   const items = useMemo(() => {
     const out: Item[] = [];
     if (!data || term.length < 2) return out;
-    for (const a of data.artists) out.push({ key: `a-${a.slug}`, group: "Artists", label: a.name, sub: a.city, href: artistPath(a.slug), img: a.avatar, round: true });
+    for (const a of data.artists) out.push({ key: `a-${a.slug}`, group: "Artists", label: a.name, sub: a.city, href: hrefs?.artist?.(a.slug) ?? artistPath(a.slug), img: a.avatar, round: true });
     for (const a of data.art) out.push({ key: `w-${a.handle}-${a.slug}`, group: "Art", label: a.title, sub: a.artist, href: artPath(a.handle, a.slug), img: a.imageUrl, blur: a.sensitive });
-    for (const p of data.places) out.push({ key: `p-${p.href}`, group: "Neighborhoods", label: p.label, sub: p.sub, href: p.href });
-    out.push({ key: "all", group: "", label: `See all results for “${term}”`, href: `/search?q=${encodeURIComponent(term)}` });
+    for (const p of data.places) out.push({ key: `p-${p.href}`, group: "Neighborhoods", label: p.label, sub: p.sub, href: hrefs?.place?.(p.href) ?? p.href });
+    out.push({ key: "all", group: "", label: `See all results for “${term}”`, href: hrefs?.all?.(term) ?? `/search?q=${encodeURIComponent(term)}` });
     return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, term]);
 
   const cb = useCombobox<Item>({

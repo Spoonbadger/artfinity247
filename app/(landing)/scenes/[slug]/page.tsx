@@ -56,9 +56,8 @@ export default async function ScenePage({ params, searchParams }: { params: { sl
       </div>
       <PageHead
         className="pt-4 md:pt-6"
-        eyebrow={city && city.label !== name ? city.label : "Local art"}
         title={name}
-        sub={<><span className="num">{city?.pieces ?? total}</span> pieces by <span className="num">{artists.length}</span> local {artists.length === 1 ? "artist" : "artists"}.</>}
+        sub={<><span className="num">{city?.pieces ?? total}</span> pieces by <span className="num">{artists.length}</span> local {artists.length === 1 ? "artist" : "artists"}{city && city.label !== name ? <>, in {city.label}</> : null}.</>}
         stroke="var(--af-scan)"
       >
         <ArtFilters action={`/scenes/${slug}`} q={q} placeholder={`Search ${name}`} storageKey="browse.neighborhood" />

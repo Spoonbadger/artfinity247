@@ -16,7 +16,7 @@ export const metadata: Metadata = { title: "Terms and conditions" };
 
 export default function Page() {
   return (
-    <LongForm eyebrow="Policy" title="Terms and conditions" sub="Using the site and buying prints." current="/terms-and-conditions" summary={SUMMARY}>
+    <LongForm title="Terms and conditions" sub="Using the site and buying prints." current="/terms-and-conditions" summary={SUMMARY}>
       <section>
         <p className="!mt-0 !text-[14px] text-ink-2">Last updated: November 5, 2026</p>
 

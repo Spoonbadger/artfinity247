@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   try {
     // Bad, expired or signed-out (old sessionVersion) tokens, and closed or suspended accounts, count as logged out.
     const payload = await verifyAuthToken(token);
-    const row = payload ? await prisma.artist.findUnique({ where: { id: payload.id }, select: { closedAt: true, suspendedAt: true } }) : null;
+    const row = payload ? await prisma.artist.findUnique({ where: { id: payload.id }, select: { closedAt: true, suspendedAt: true, role: true } }) : null;
     if (!payload || !row || row.closedAt || row.suspendedAt) {
       const res = NextResponse.json({ user: null });
       res.cookies.set("auth-token", "", { httpOnly: true, path: "/", maxAge: 0, sameSite: "lax", secure: process.env.NODE_ENV === "production" });
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
         id: payload.id,
         slug: payload.slug,
         email: payload.email,
-        role: payload.role,
+        role: row.role,
       },
     });
   } catch (err) {

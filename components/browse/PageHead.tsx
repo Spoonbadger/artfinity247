@@ -14,13 +14,12 @@ export function DabRow({ colors = ["var(--af-scan)", "var(--af-sticker)", "var(-
   );
 }
 
-/** Page title block for browse and info pages: short eyebrow, big narrow headline, one line under it. */
-export default function PageHead({ eyebrow, title, sub, children, className, stroke = "var(--af-sticker)" }: { eyebrow?: ReactNode; title: ReactNode; sub?: ReactNode; children?: ReactNode; className?: string; stroke?: string }) {
+/** Page title block for browse and info pages: big narrow headline, one line under it. */
+export default function PageHead({ title, sub, children, className, stroke = "var(--af-sticker)" }: { title: ReactNode; sub?: ReactNode; children?: ReactNode; className?: string; stroke?: string }) {
   return (
     <header className={cn("relative mx-auto max-w-[1240px] px-4 pb-6 pt-10 sm:px-6 md:pb-8 md:pt-14", className)}>
       <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-5">
         <div className="min-w-0">
-          {eyebrow && <div className="mb-3 flex items-center gap-2.5"><DabRow /><span className="eyebrow">{eyebrow}</span></div>}
           <h1 className="display relative inline-block text-[44px] sm:text-[64px]">
             <span className="relative z-10">{title}</span>
             <BrushStroke className="absolute -bottom-1 left-0 z-0 h-[0.32em] w-[min(100%,5.5em)] opacity-90" color={stroke} />

@@ -1,7 +1,6 @@
 import { ReactNode } from "react";
 import Link from "next/link";
 import { BrushStroke, Splotch } from "@/components/af/Brush";
-import { DabRow } from "./PageHead";
 import { cn } from "@/lib/utils";
 import AppConfigs from "@/db/json/AppConfigs.json";
 
@@ -48,13 +47,12 @@ function Summary({ items }: { items: ReactNode[] }) {
 }
 
 /** Shell for legal and info pages: title block, a side list of the other policies, readable column. */
-export default function LongForm({ eyebrow, title, sub, children, current, summary }: { eyebrow?: string; title: string; sub?: ReactNode; children: ReactNode; current?: string; summary?: ReactNode[] }) {
+export default function LongForm({ title, sub, children, current, summary }: { title: string; sub?: ReactNode; children: ReactNode; current?: string; summary?: ReactNode[] }) {
   return (
     <div className="pb-24">
       <header className="relative overflow-hidden border-b border-line bg-wall">
         <BrushStroke className="pointer-events-none absolute -right-20 bottom-4 hidden h-14 w-[420px] -rotate-[4deg] opacity-40 md:block" color="var(--af-sticker)" />
         <div className="relative mx-auto max-w-[1240px] px-4 pb-10 pt-10 sm:px-6 md:pb-14 md:pt-16">
-          <div className="mb-3 flex items-center gap-2.5"><DabRow /><span className="eyebrow">{eyebrow || "Artfinity"}</span></div>
           <h1 className="display max-w-[16ch] text-[44px] sm:text-[64px]">{title}</h1>
           {sub && <p className="mt-3 max-w-[56ch] text-[16px] text-ink-2">{sub}</p>}
         </div>
@@ -86,7 +84,7 @@ export default function LongForm({ eyebrow, title, sub, children, current, summa
 /** Policy page from stored HTML (db/json/AppPages.json); text unchanged. */
 export function HtmlPolicy({ title, sub, html, current }: { title: string; sub?: string; html: string; current: string }) {
   return (
-    <LongForm eyebrow="Policy" title={title} sub={sub ? sub.charAt(0) + sub.slice(1).toLowerCase() : undefined} current={current}>
+    <LongForm title={title} sub={sub ? sub.charAt(0) + sub.slice(1).toLowerCase() : undefined} current={current}>
       <div dangerouslySetInnerHTML={{ __html: html }} />
     </LongForm>
   );

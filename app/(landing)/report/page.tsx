@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DabRow } from "@/components/browse/PageHead";
 import { prisma } from "@/lib/prisma";
 import { getUserFromCookie } from "@/lib/auth";
 import ReportForm, { type ReportArt } from "./ReportForm";
@@ -46,7 +45,6 @@ export default async function ReportPage({ searchParams }: { searchParams: { art
   return (
     <div className="pb-24">
       <section className="mx-auto max-w-[1240px] px-4 pb-8 pt-10 sm:px-6 md:pt-16">
-        <div className="mb-4 flex items-center gap-2.5"><DabRow /><span className="eyebrow">{counter ? "Counter-notice" : "Report art"}</span></div>
         <h1 className="display text-[44px] sm:text-[64px]">{counter ? "Taken down by mistake?" : "Something not right?"}</h1>
         <p className="mt-3 max-w-[48ch] text-[17px] text-ink-2">
           {counter

@@ -3,7 +3,7 @@
 // Sensitive art never goes in a preview: chat apps show it unblurred.
 import type { Metadata } from "next";
 
-export const DEFAULT_OG = { url: "/brand/og-image.png", width: 1200, height: 630, alt: "Artfinity. Every wall is a shop." };
+export const DEFAULT_OG = { url: "/brand/og-image.png", width: 1200, height: 630, alt: "Artfinity. From paint to print." };
 
 type Img = { url: string | null | undefined; alt?: string; sensitive?: string[] | boolean | null } | null | undefined;
 

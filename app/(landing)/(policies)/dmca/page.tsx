@@ -14,7 +14,7 @@ const AGENT = {
 
 export default function Page() {
   return (
-    <LongForm eyebrow="Policy" title="Copyright and DMCA" sub="How we handle copied art." current="/dmca" summary={[
+    <LongForm title="Copyright and DMCA" sub="How we handle copied art." current="/dmca" summary={[
       <>Someone selling your work? <Link href="/report">Use the report form</Link>.</>,
       "A person reviews every notice, usually within 2 business days.",
       "Taken down by mistake? File a counter-notice from your takedown email.",

@@ -17,14 +17,8 @@ const BROWSE = [
   { href: "/artists", label: "Artists", note: "Find someone whose work you love" },
   { href: "/scenes", label: "Neighborhoods", note: "Art from the places you know" },
 ];
-const SHOP_BY = [
-  { href: "/art?sort=popular", label: "Most popular" },
-  { href: "/art?price=under-50", label: "Under $50" },
-  { href: "/art?price=50-75", label: "$50 to $75" },
-  { href: "/art?price=75-up", label: "$75 and up" },
-];
 const LINKS = [
-  { href: "/#how", label: "How it works" },
+  { href: "/how-it-works", label: "How it works" },
   { href: "/pricing", label: "Pricing" },
 ];
 const inBrowse = (p: string | null) => !!p && /^\/(art|artists|scenes)(\/|$)/.test(p);
@@ -71,8 +65,8 @@ function BrowseMenu({ pathname }: { pathname: string | null }) {
       {open && (
         // pt-3 is the invisible bridge between the button and the panel, so hovering across doesn't close it
         <div id="browse-menu" className="absolute left-1/2 top-full z-50 -translate-x-1/2 pt-3">
-          <div className="grid w-[520px] grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-6 whitespace-normal rounded-2xl border border-line bg-white p-5 shadow-[0_18px_40px_-12px_rgba(21,22,27,.35)]">
-            <ul className="grid content-start gap-1">
+          <div className="w-[300px] whitespace-normal rounded-2xl border border-line bg-white p-2 shadow-[0_18px_40px_-12px_rgba(21,22,27,.35)]">
+            <ul className="grid content-start gap-0.5">
               {BROWSE.map((l) => (
                 <li key={l.href}>
                   <Link href={l.href} aria-current={pathname === l.href ? "page" : undefined} onClick={() => setOpen(false)} className="group block rounded-xl px-3 py-2.5 no-underline hover:bg-wall">
@@ -82,14 +76,6 @@ function BrowseMenu({ pathname }: { pathname: string | null }) {
                 </li>
               ))}
             </ul>
-            <div className="grid content-start gap-1 border-l border-line pl-6">
-              <span className="eyebrow mb-1 px-1">Shop by</span>
-              {SHOP_BY.map((l) => (
-                <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="rounded-lg px-1 py-1.5 text-[15px] text-ink no-underline hover:text-scan">
-                  {l.label}
-                </Link>
-              ))}
-            </div>
           </div>
         </div>
       )}
@@ -240,6 +226,9 @@ export default function SiteHeader({ brand = null, inPage = false }: { brand?: H
         </Link>
       ))}
       <Link href="/collector" aria-current={isActive("/collector") ? "page" : undefined} onClick={() => setOpen(false)} className="rounded-lg px-2 py-2.5 text-lg font-semibold text-ink no-underline hover:bg-wall">Your orders</Link>
+      {currentUser?.role === "ADMIN" && (
+        <Link href="/admin" onClick={() => setOpen(false)} className="rounded-lg px-2 py-2.5 text-lg font-semibold text-ink no-underline hover:bg-wall">Admin</Link>
+      )}
       {currentUser ? (
         brand && <Link href="/studio" onClick={() => setOpen(false)} className="btn btn-blue mt-2">My Studio</Link>
       ) : (
@@ -312,6 +301,9 @@ export default function SiteHeader({ brand = null, inPage = false }: { brand?: H
             <Search className="h-5 w-5" aria-hidden="true" />
           </Link>
           {cart}
+          {currentUser?.role === "ADMIN" && (
+            <Link href="/admin" className="hidden min-h-[32px] items-center rounded-full border-[1.5px] border-ink bg-sticker px-3 text-[13px] font-bold text-ink no-underline transition hover:-rotate-2 sm:inline-flex">Admin</Link>
+          )}
           {currentUser ? (
             <Link href="/studio" className="btn btn-sm min-h-[44px] px-4 md:min-h-0">My Studio</Link>
           ) : (

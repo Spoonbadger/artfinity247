@@ -26,7 +26,7 @@ export default async function ArtNotFound() {
           <span className="display text-[44px] text-ink-2">?</span>
         </div>
         <h1 className="display relative text-[44px] md:text-[60px]">
-          This one&apos;s off the wall
+          This piece isn&apos;t here anymore
           <BrushStroke className="mx-auto mt-1 h-3 w-48" />
         </h1>
         <p className="max-w-sm text-[17px] text-ink-2">The link may be old, or the artist took it down.</p>

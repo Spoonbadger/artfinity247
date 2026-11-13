@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Privacy policy" };
 
 export default function Page() {
   return (
-    <LongForm eyebrow="Policy" title="Privacy policy" current="/privacy-policy" summary={[
+    <LongForm title="Privacy policy" current="/privacy-policy" summary={[
       "We collect what we need to sell, ship and pay artists: names, emails, addresses, uploads.",
       "Stripe handles card details. We never see your full card number.",
       "QR scans and page views are counted without names.",

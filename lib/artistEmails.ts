@@ -83,14 +83,14 @@ export function renderArtistEmail(kind: EmailKind, template: TemplateLike, vars:
   const src = custom ? template! : DEFAULT_TEMPLATES[kind];
   const subject = fillVariables(src.subject, vars).replace(/\s+/g, " ").trim();
   const body = fillVariables(src.body, vars).trim();
-  const footer = opts.footer ?? "Sent with Artfinity. Every wall is a shop.";
+  const footer = opts.footer ?? "Sent with Artfinity. From paint to print.";
   return { subject, body, text: `${body}\n\n--\n${footer}`, html: emailHtml(body, footer), custom };
 }
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 /** Turns plain text into simple, safe email HTML: paragraphs, line breaks, clickable links. */
-export function emailHtml(body: string, footer = "Sent with Artfinity. Every wall is a shop.") {
+export function emailHtml(body: string, footer = "Sent with Artfinity. From paint to print.") {
   const linkify = (s: string) => s.replace(/(https?:\/\/[^\s<]+)/g, (u) => `<a href="${u}" style="color:#8b2a4b">${u}</a>`);
   const paras = body
     .split(/\n{2,}/)

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { ReactNode } from "react";
 import Link from "next/link";
+import { ArrowLeft, Bell } from "lucide-react";
 import { headers } from "next/headers";
-import Logo from "@/components/af/Logo";
+import { Swatch } from "@/components/af/Brush";
 import AdminNav from "./_components/AdminNav";
 import AdminSearch from "./_components/AdminSearch";
 import { adminRoleOrRedirect } from "./_components/gate";
@@ -46,26 +47,34 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     <div className="min-h-[100svh] bg-wall">
       <header className="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-3">
-            <Logo href="/admin" />
-            <span className="sticker-badge text-[12px]">Admin</span>
-          </div>
-          <div className="order-last w-full sm:order-none sm:ml-4 sm:w-auto">
-            <AdminSearch />
-          </div>
-          <div className="ml-auto flex items-center gap-3 text-[14px]">
+          {/* left to right: back to the site, admin home, alerts */}
+          <nav aria-label="Admin shortcuts" className="flex items-center gap-2.5">
+            <Link
+              href="/"
+              aria-label="Back to site"
+              title="Back to site"
+              className="grid h-10 w-10 place-items-center rounded-full border-[1.5px] border-edge-strong bg-white text-ink no-underline transition hover:border-ink"
+            >
+              <ArrowLeft className="h-[18px] w-[18px]" aria-hidden="true" />
+            </Link>
+            <Link href="/admin" aria-label="Admin home" title="Admin home" className="group relative inline-grid h-11 place-items-center px-5 no-underline">
+              <Swatch color="var(--af-sticker)" className="absolute inset-0 h-full w-full transition group-hover:scale-[1.04]" />
+              <span className="display relative text-[24px] leading-none text-ink">Admin</span>
+            </Link>
             <Link
               href="/admin/alerts"
               aria-label={openAlerts ? `${openAlerts} open alerts` : "Alerts, none open"}
               title={openAlerts ? `${openAlerts} open alerts` : "No open alerts"}
               className="relative grid h-10 w-10 place-items-center rounded-full border-[1.5px] border-edge-strong bg-white text-ink no-underline transition hover:border-ink"
             >
-              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
+              <Bell className="h-[18px] w-[18px]" aria-hidden="true" />
               {openAlerts > 0 && <span className="num absolute -right-1 -top-1 min-w-[20px] rounded-full bg-coral px-1 text-center text-[12px] font-bold leading-[20px] text-white">{openAlerts > 99 ? "99+" : openAlerts}</span>}
             </Link>
-            <span className="hidden text-ink-2 xl:inline">{admin.email} · {ROLE_LABEL[admin.adminRole]}</span>
-            <Link href="/" className="btn btn-ghost btn-sm hidden sm:inline-flex">View site</Link>
+          </nav>
+          <div className="order-last w-full sm:order-none sm:ml-2 sm:w-auto">
+            <AdminSearch />
           </div>
+          <span className="ml-auto hidden text-[14px] text-ink-2 xl:inline">{admin.email} · {ROLE_LABEL[admin.adminRole]}</span>
         </div>
       </header>
       <div className="mx-auto grid max-w-[1400px] gap-x-8 px-4 pb-20 pt-4 sm:px-6 lg:grid-cols-[200px_minmax(0,1fr)] lg:pt-8">

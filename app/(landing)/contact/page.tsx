@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Mail, MapPin } from "lucide-react";
-import { DabRow } from "@/components/browse/PageHead";
 import ContactForm from "@/components/browse/ContactForm";
 import { getAppConfigs } from "@/db/query";
 
@@ -17,7 +16,6 @@ export default function ContactPage() {
   return (
     <div className="pb-24">
       <section className="mx-auto max-w-[1240px] px-4 pb-8 pt-10 sm:px-6 md:pb-10 md:pt-16">
-        <div className="mb-4 flex items-center gap-2.5"><DabRow /><span className="eyebrow">Contact</span></div>
         <h1 className="display text-[44px] sm:text-[64px]">Say hello.</h1>
         <p className="mt-3 text-[17px] text-ink-2">A real person reads every message, usually within a day.</p>
       </section>

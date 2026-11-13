@@ -12,6 +12,7 @@ const STATIC: [string, number][] = [
   ["/artists", 0.9],
   ["/scenes", 0.7],
   ["/venues", 0.6],
+  ["/how-it-works", 0.8],
   ["/pricing", 0.7],
   ["/sell-with-us", 0.7],
   ["/about-us", 0.6],

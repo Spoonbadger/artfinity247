@@ -14,7 +14,7 @@ export default async function NotFound() {
           <b className="display text-[52px] text-scan sm:text-[60px]">404</b>
         </CrookedFrame>
         <div className="grid justify-items-center gap-3">
-          <h1 className="t-page">This wall is empty.</h1>
+          <h1 className="t-page">Nothing here.</h1>
           <p className="t-body max-w-[44ch] text-ink-2">The page moved, or never existed.</p>
           <div className="mt-3 flex flex-wrap justify-center gap-2">
             {user ? <Link href="/studio" className="btn btn-blue">Go to my Studio</Link> : <Link href="/" className="btn btn-blue">Go home</Link>}

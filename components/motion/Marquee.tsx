@@ -1,11 +1,12 @@
 import { ReactNode } from "react";
 import Stage from "./Stage";
+import MarqueeCopy from "./MarqueeCopy";
 import s from "./motion.module.css";
 import { cn } from "@/lib/utils";
 
 /**
  * A row that drifts sideways forever and pauses on hover or focus. The content is
- * rendered twice; the copy is hidden from assistive tech and keyboard.
+ * rendered twice; the copy is hidden from assistive tech and the Tab order, but still clickable.
  * At rest (and with reduced motion) it is a plain, full row.
  */
 export default function Marquee({ children, seconds = 60, reverse = false, className, label }: { children: ReactNode; seconds?: number; reverse?: boolean; className?: string; label?: string }) {
@@ -13,7 +14,7 @@ export default function Marquee({ children, seconds = 60, reverse = false, class
     <Stage className={cn(s.marquee, className)} style={{ ["--dur" as string]: `${seconds}s` }} aria-label={label} role={label ? "region" : undefined}>
       <div className={cn(s.track, reverse && s.reverse)}>
         <div className={s.set}>{children}</div>
-        <div className={s.set} aria-hidden="true" {...({ inert: "" } as Record<string, string>)}>{children}</div>
+        <MarqueeCopy className={s.set}>{children}</MarqueeCopy>
       </div>
     </Stage>
   );

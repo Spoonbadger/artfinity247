@@ -24,10 +24,10 @@ const ENV_YEARLY_CENTS = envNumber(process.env.NEXT_PUBLIC_INFINITY_YEARLY_CENTS
 const ENV_SPLIT = envNumber(process.env.NEXT_PUBLIC_INFINITY_SPLIT, FREE_SPLIT, 0.9);
 
 /**
- * THE PRO SPLIT DECISION LIVES HERE. The user asked for 70%, $20 a month.
+ * THE PRO SPLIT DECISION LIVES HERE. The user asked for 70%, at $25 a month or $240 a year ($20 a month billed yearly).
  *
- * Research ("What Artists Need", Infinity analysis): at $20/mo and 70%, Infinity pays for itself at about
- * 6 Medium prints a month; past that point Artfinity earns less per Infinity artist than per Free one.
+ * Research ("What Artists Need", Infinity analysis, done at the earlier $20/mo): at 70%, Infinity paid for itself at
+ * about 6 Medium prints a month (a little more at $25); past that point Artfinity earns less per Infinity artist than per Free one.
  * It suggested either 65% (split: 0.65), or 70% capped at 50 prints a month (monthlyPrintCap: 50).
  * Not decided yet, so this defaults to what the user said: 70%, no cap. Change it here (or with the env vars
  * above); nothing else in the app hard-codes the price or the split.
@@ -35,9 +35,9 @@ const ENV_SPLIT = envNumber(process.env.NEXT_PUBLIC_INFINITY_SPLIT, FREE_SPLIT, 
 export const PRO = {
   name: "Infinity",
   /** Monthly price: the button, the copy, the calculators, MRR, and inline Stripe price_data. */
-  priceCents: ENV_PRICE_CENTS ?? 2000,
+  priceCents: ENV_PRICE_CENTS ?? 2500,
   /** Price for a year, billed yearly. STRIPE_INFINITY_YEARLY_PRICE_ID, when set, must charge the same. */
-  yearlyCents: ENV_YEARLY_CENTS ?? 20000,
+  yearlyCents: ENV_YEARLY_CENTS ?? 24000,
   /** Artist's share of profit while Infinity is active. */
   split: ENV_SPLIT ?? 0.7,
   /**
@@ -72,9 +72,9 @@ export const pct = (split: number) => `${Math.round(split * 100)}%`;
 /** "$20", or "$19.50" when the amount isn't whole dollars. */
 export const dollars = (cents: number) => `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
 export const proPrice = () => dollars(PRO.priceCents);
-/** "$200": Infinity billed yearly. */
+/** "$240": Infinity billed yearly. */
 export const proYearlyPrice = () => dollars(PRO.yearlyCents);
-/** What yearly saves against 12 monthly payments ($40 at $20/mo and $200/yr). */
+/** What yearly saves against 12 monthly payments ($60 at $25/mo and $240/yr). */
 export const yearlySavingsCents = () => Math.max(0, PRO.priceCents * 12 - PRO.yearlyCents);
 
 /** Is Infinity active at `at` (defaults to now)? Only proUntil decides. */

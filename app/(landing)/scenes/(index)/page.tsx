@@ -18,7 +18,7 @@ export default async function ScenesPage() {
 
   return (
     <div className="pb-20">
-      <PageHead eyebrow="Local art" title="Neighborhoods" sub="By neighborhood and city. See what artists near you are painting." stroke="var(--af-scan)" />
+      <PageHead title="Neighborhoods" sub="By neighborhood and city. See what artists near you are painting." stroke="var(--af-scan)" />
       <section className="mx-auto mt-2 max-w-[1240px] px-4 sm:px-6" aria-label="Neighborhoods">
         {withArt.length ? (
           <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-8">

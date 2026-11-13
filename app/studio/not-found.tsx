@@ -17,7 +17,7 @@ export default function StudioNotFound() {
         <b className="display text-[52px] text-scan sm:text-[60px]">404</b>
       </CrookedFrame>
       <div className="grid justify-items-center gap-3">
-        <h1 className="display text-[40px] sm:text-[52px]">Nothing on this wall.</h1>
+        <h1 className="display text-[40px] sm:text-[52px]">Nothing here.</h1>
         <p className="max-w-[48ch] text-[16px] text-ink-2">
           That Studio page moved, or the piece or code was deleted. Pick up from here.
         </p>

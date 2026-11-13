@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { BrushStroke, Splotch } from "@/components/af/Brush";
-import { DabRow } from "@/components/browse/PageHead";
 import { HELP_SECTIONS } from "@/content/help/sections";
 import { cn } from "@/lib/utils";
 import { COMPANY } from "@/lib/about";
@@ -52,12 +51,12 @@ export function SectionNav({ current }: { current?: string }) {
 }
 
 /** Header band shared by the help pages. */
-export function HelpHeader({ eyebrow = "Help center", title, sub, crumbs, children }: { eyebrow?: string; title: ReactNode; sub?: ReactNode; crumbs?: Crumb[]; children?: ReactNode }) {
+export function HelpHeader({ title, sub, crumbs, children }: { title: ReactNode; sub?: ReactNode; crumbs?: Crumb[]; children?: ReactNode }) {
   return (
     <header className="relative overflow-hidden border-b border-line bg-wall">
       <BrushStroke className="pointer-events-none absolute -right-20 bottom-4 hidden h-14 w-[420px] -rotate-[4deg] opacity-40 md:block" color="var(--af-sticker)" />
       <div className="relative mx-auto max-w-[1240px] px-4 pb-10 pt-8 sm:px-6 md:pb-14 md:pt-14">
-        {crumbs ? <Breadcrumbs items={crumbs} /> : <div className="mb-3 flex items-center gap-2.5"><DabRow /><span className="eyebrow">{eyebrow}</span></div>}
+        {crumbs && <Breadcrumbs items={crumbs} />}
         <h1 className="display max-w-[20ch] text-[40px] sm:text-[60px]">{title}</h1>
         {sub && <p className="mt-3 max-w-[60ch] text-[17px] text-ink-2">{sub}</p>}
         {children}

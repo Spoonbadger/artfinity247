@@ -11,33 +11,16 @@ import { getTrustBySlug } from "@/lib/artistTrust";
 import ClaimHandle from "@/components/home/ClaimHandle";
 import CodeNote from "@/components/qr/CodeNote";
 import HeroStory from "@/components/home/HeroStory";
+import { getHeroData } from "@/components/home/heroData";
 import SalonStrip from "@/components/home/SalonStrip";
 import CityRow from "@/components/home/CityRow";
 import BrushWipe from "@/components/motion/BrushWipe";
-import Splat from "@/components/motion/Splat";
-import MotionToggle from "@/components/motion/MotionToggle";
 import HowItWorks from "@/components/home/HowItWorks";
 import EarningsCalculator from "@/components/home/EarningsCalculator";
-import { DabRow } from "@/components/browse/PageHead";
 import { getArtists, getCities, displayName, PUBLIC_ART } from "@/components/browse/data";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: { absolute: "Artfinity · Every wall is a shop" } };
-
-async function getHeroArt() {
-  const select = { artistId: true, slug: true, title: true, imageUrl: true, sensitive: true, markupSmall: true, markupMedium: true, artist: { select: { name: true, artist_name: true, slug: true } } } as const;
-  const live = { ...PUBLIC_ART, status: "APPROVED" as const, sensitive: { isEmpty: true } };
-  // A different live, safe-for-work piece on each visit. Picked on the server, so the first paint already has it
-  // (no swap, no layout shift) and it costs one count plus one indexed row.
-  const n = await prisma.artwork.count({ where: live });
-  const random = n ? await prisma.artwork.findFirst({ where: live, orderBy: { id: "asc" }, skip: Math.floor(Math.random() * n), select }) : null;
-  // Fallback, as before: the best-selling safe piece, then the newest public one.
-  return (
-    random ??
-    (await prisma.artwork.findFirst({ where: live, orderBy: [{ OrderItem: { _count: "desc" } }, { createdAt: "asc" }], select })) ??
-    (await prisma.artwork.findFirst({ where: PUBLIC_ART, orderBy: { createdAt: "desc" }, select }))
-  );
-}
+export const metadata: Metadata = { title: { absolute: "Artfinity · From paint to print" } };
 
 const SAFE = { ...PUBLIC_ART, sensitive: { isEmpty: true } };
 
@@ -63,30 +46,16 @@ async function getCityCards() {
   );
 }
 
-/** Prints the hero artist sold in the last 30 days, for the earnings chip. */
-async function printsThisMonth(artistId: string) {
-  const since = new Date(Date.now() - 30 * 864e5);
-  const r = await prisma.orderItem.aggregate({ _sum: { quantity: true }, where: { artwork: { artistId }, order: { paymentStatus: "paid", kind: { not: "bulk" }, createdAt: { gte: since } } } });
-  return r._sum.quantity ?? 0;
-}
-
 export default async function Home({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
-  const [hero, artists, popular, cities] = await Promise.all([getHeroArt(), getArtists({ take: 4, pieces: 1 }), getPopular(), getCityCards()]);
+  const [{ heroArt, perPrint, smallPerPrint, price, monthBefore }, artists, popular, cities] = await Promise.all([getHeroData(), getArtists({ take: 4, pieces: 1 }), getPopular(), getCityCards()]);
   const trust = await getTrustBySlug(artists.map((a) => a.slug));
-  const perPrint = hero ? breakdown("medium", hero.markupMedium ?? 0).artist : breakdown("medium", 1500).artist;
-  const smallPerPrint = hero ? breakdown("small", hero.markupSmall ?? 0).artist : breakdown("small", 1000).artist;
-  const price = breakdown("medium", hero?.markupMedium ?? 1500).price;
-  const monthBefore = hero ? Math.max(1, await printsThisMonth(hero.artistId)) * perPrint : 0;
-  const heroArt = hero
-    ? { slug: hero.slug!, title: hero.title, imageUrl: hero.imageUrl, sensitive: hero.sensitive, artist: { name: displayName(hero.artist), slug: hero.artist.slug } }
-    : null;
 
   return (
     <>
       {searchParams?.code === "unknown" && <CodeNote kind="unknown" />}
       {/* HERO */}
       <section className="relative overflow-hidden">
-        <div className="mx-auto grid max-w-[1240px] items-center gap-12 px-4 pb-16 pt-10 sm:px-6 md:pt-14 lg:grid-cols-[1.05fr_1fr] lg:gap-14 lg:pb-24 lg:pt-16">
+        <div className="mx-auto grid max-w-[1240px] items-center gap-10 px-4 pb-12 pt-6 sm:px-6 md:pt-8 lg:grid-cols-[1.05fr_1fr] lg:gap-14 lg:pb-16 lg:pt-8">
           <div className="min-w-0">
             <span className="sticker-badge">Free for artists. Always.</span>
             <h1 className="display mt-5 text-[58px] sm:text-[84px] lg:text-[96px]">
@@ -100,18 +69,16 @@ export default async function Home({ searchParams }: { searchParams?: Record<str
           </div>
           {heroArt && <HeroStory art={heroArt} perPrint={perPrint} price={price} monthBefore={monthBefore} />}
         </div>
-        {/* The hero, How it works, the drifting wall and the split bar loop while on screen (WCAG 2.2.2). */}
-        <MotionToggle className="absolute bottom-3 right-4 sm:right-6" />
       </section>
 
       {/* HOW IT WORKS */}
       {heroArt && <HowItWorks art={heroArt} perPrint={perPrint} smallPerPrint={smallPerPrint} monthBefore={monthBefore} />}
 
-      {/* ON WALLS NOW: popular prints, drifting by */}
+      {/* POPULAR NOW: most-sold prints, drifting by */}
       {popular.length > 0 && (
         <section className="relative overflow-hidden border-t border-line bg-gallery py-14 md:py-20" aria-labelledby="popular-h">
           <div className="mx-auto mb-8 flex max-w-[1240px] flex-wrap items-end justify-between gap-4 px-4 sm:px-6 md:mb-10">
-            <h2 id="popular-h" className="t-feature">On walls now</h2>
+            <h2 id="popular-h" className="t-feature">Popular now</h2>
             <Link href="/art" className="btn btn-ghost bg-white">Browse all prints</Link>
           </div>
           <SalonStrip art={popular} />
@@ -123,7 +90,6 @@ export default async function Home({ searchParams }: { searchParams?: Record<str
       <section className="relative overflow-hidden border-b border-line bg-wall">
         <BrushStroke className="pointer-events-none absolute -right-24 top-10 hidden h-16 w-[420px] md:block rotate-[-4deg] opacity-30" color="var(--af-earned)" />
         <div className="mx-auto max-w-[1240px] px-4 py-16 sm:px-6 md:py-24">
-          <div className="mb-6 flex items-center gap-3"><Splat><DabRow colors={["var(--af-earned)", "var(--af-sticker)", "var(--af-earned)"]} /></Splat><span className="eyebrow">Do the math</span></div>
           <h2 className="t-feature mb-8 md:mb-10">What could one piece earn?</h2>
           <EarningsCalculator />
         </div>

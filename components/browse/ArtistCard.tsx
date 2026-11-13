@@ -57,14 +57,14 @@ export default function ArtistCard({ artist, trust }: { artist: DirArtist; trust
   );
 }
 
-/** The empty spot on the wall: an invitation to join. */
+/** The empty spot in the grid: an invitation to join. */
 export function YourSpotCard({ className }: { className?: string }) {
   return (
     <Link href="/register" className={cn("group grid min-w-0 content-start gap-3.5 text-ink no-underline", className)}>
       <div className="relative grid aspect-[16/10] place-items-center overflow-hidden rounded-md border-2 border-dashed border-ink/30 bg-white transition group-hover:border-scan">
         <div className="grid justify-items-center gap-2 text-center">
           <span className="grid h-12 w-12 place-items-center rounded-full bg-sticker transition group-hover:scale-110"><Plus className="h-6 w-6" aria-hidden="true" /></span>
-          <b className="display text-[28px]">Your wall here</b>
+          <b className="display text-[28px]">Your art here</b>
         </div>
       </div>
       <div className="flex items-center gap-3">

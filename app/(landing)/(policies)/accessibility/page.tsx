@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default function AccessibilityPage() {
   const email = COMPANY.supportEmail;
   return (
-    <LongForm eyebrow="Accessibility" title="Accessibility" current="/accessibility" sub="We want the whole site to work for everyone." summary={[
+    <LongForm title="Accessibility" current="/accessibility" sub="We want the whole site to work for everyone." summary={[
       "We aim for WCAG 2.1 AA and test for it, but don’t fully meet it yet.",
       "Some artwork descriptions and Studio charts still fall short.",
       "Stuck at checkout? Email us and we’ll help you finish your order.",

@@ -11,7 +11,7 @@ const ordinal = (n: number) => `${n}${n % 10 === 1 && n !== 11 ? "st" : n % 10 =
 
 export default function ArtistTermsPage() {
   return (
-    <LongForm eyebrow="For artists" title="Artist terms and agreement" sub="The agreement for selling on Artfinity." current="/artist-terms-and-agreement" summary={[
+    <LongForm title="Artist terms and agreement" sub="The agreement for selling on Artfinity." current="/artist-terms-and-agreement" summary={[
       "You keep your copyright. We get a limited license to print, show and promote your work while it’s listed.",
       "We never train AI on your art or sell it to anyone who does.",
       `You get ${pct(FREE_SPLIT)} of the profit on each print, or ${pct(PRO.split)} on Infinity (${proPrice()} a month).`,

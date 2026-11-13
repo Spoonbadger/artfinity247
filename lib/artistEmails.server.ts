@@ -68,7 +68,7 @@ export async function sendArtistOrderEmail(orderId: string, kind: EmailKind, opt
   if (!email) return false;
   // `append` adds Artfinity's lines (e.g. tracking) under the artist's own words.
   const body = opts.append ? `${email.body}\n\n${opts.append}` : null;
-  const footer = "Sent with Artfinity. Every wall is a shop.";
+  const footer = "Sent with Artfinity. From paint to print.";
   const { error } = await resend.emails.send({
     from: `${email.fromName} <${FROM_ADDRESS}>`,
     to: email.to,
@@ -104,7 +104,7 @@ export async function sendArtistReceipt(orderId: string): Promise<"sent" | "none
     });
     const summary = `Your order\n${lines.join("\n")}\nTotal: ${usd(order.amountTotal ?? 0)}`;
     const body = `${email.body}\n\n${summary}`;
-    const footer = "Sent with Artfinity. Every wall is a shop.";
+    const footer = "Sent with Artfinity. From paint to print.";
     const { error } = await resend.emails.send({
       from: `${email.fromName} <${FROM_ADDRESS}>`,
       to: email.to,

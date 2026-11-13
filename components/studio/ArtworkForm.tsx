@@ -6,12 +6,14 @@ import { DragEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { errorText, failed, saved as savedToast } from "@/lib/feedback";
 import { Problem } from "./Problem";
 import AddToQueueButton from "@/components/qr/AddToQueueButton";
-import { Crop, FolderOpen, ImagePlus, Loader2, RotateCcw } from "lucide-react";
+import { Check, Crop, FolderOpen, ImagePlus, Loader2, Pencil, RotateCcw } from "lucide-react";
 import { SIZE_INCHES, type SizeKey } from "@/lib/earnings";
 import { PIXELS_NEEDED } from "@/lib/printSizes";
 import { BrushStroke } from "@/components/af/Brush";
 import { cn } from "@/lib/utils";
 import { artPath } from "@/lib/urls";
+import QRCode from "@/components/af/QRCode";
+import { scanUrl } from "@/lib/qr/render";
 import { splitOriginal } from "@/lib/originalSize";
 import { FREE_SPLIT, pct } from "@/lib/plans";
 import { useUnsavedChanges } from "@/components/forms/useUnsavedChanges";
@@ -315,30 +317,77 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
   }
 
   if (done) {
+    const qrHref = `/studio/qr?art=${done.slug}`;
+    const reset = () => { setDone(null); setImageUrl(""); setFresh(null); setShape(null); setOwned(false); setDims(null); set({ title: "", description: "", origW: "", origH: "", sensitive: [], limited: false }); };
     return (
-      <div className="af-card mx-auto grid max-w-[640px] gap-5 p-5 text-center sm:p-8">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={done.imageUrl} alt={done.title} className="mx-auto max-h-[340px] w-auto rounded-[3px] shadow-[0_10px_30px_rgba(21,22,27,.18)]" />
-        {done.pending ? (
-          <div className="grid justify-items-center gap-3">
-            <span className="sticker-badge">{REVIEW_NOTE}</span>
-            <h2 className="display text-[40px]">Almost on the wall.</h2>
-            <p className="text-ink-2">{done.duplicate === "review" || done.moderation === "review" ? done.notice : <>We look over every new artist&apos;s first pieces.</>} We&apos;ll email you when {done.title} is live. You can print its code now.</p>
+      // After an upload: the piece next to a preview of its code label (click it to design and print), then three
+      // plain next steps. Printing the code is the one thing to do now; everything else is a quiet link.
+      <div className="af-card mx-auto grid max-w-[1040px] gap-8 p-5 sm:p-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-stretch lg:gap-10">
+        <div className="flex min-h-[320px] items-center justify-center rounded-2xl bg-wall px-5 pb-12 pt-6 sm:px-8">
+          {/* the painting, with its code label taped by the lower right corner */}
+          <div className="relative mr-10 sm:mr-14">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={done.imageUrl} alt={done.title} className="block max-h-[340px] w-auto max-w-full rotate-[-1deg] border-[6px] border-white shadow-[0_16px_28px_-12px_rgba(21,22,27,.5)]" />
+            <Link href={qrHref} className="group absolute -bottom-10 -right-12 block w-[112px] rotate-[3deg] no-underline sm:-right-16 sm:w-[124px]" aria-label={`Design and print the code for ${done.title}`}>
+              <span className="absolute -top-2 left-1/2 z-10 h-3.5 w-10 -translate-x-1/2 -rotate-3 bg-sticker/80" aria-hidden="true" />
+              <span className="block rounded-md bg-white p-2.5 shadow-[0_10px_22px_-6px_rgba(21,22,27,.4)] transition group-hover:-translate-y-1 group-hover:shadow-[0_16px_28px_-8px_rgba(21,22,27,.45)]">
+                <QRCode value={scanUrl(done.slug, handle)} dots="rounded" eyes="frame" eyeColor="#8b2a4b" />
+                <b className="mt-1.5 block truncate text-[12px] leading-tight text-ink">{done.title}</b>
+                <span className="block text-[11px] leading-tight text-ink-2">Scan to buy a print</span>
+                <span className="mt-1.5 flex items-center gap-1 border-t border-line pt-1.5 text-[11.5px] font-semibold text-scan">
+                  <Pencil className="h-3 w-3" aria-hidden="true" /> Edit design
+                </span>
+              </span>
+            </Link>
           </div>
-        ) : (
-          <div>
-            <h2 className="display text-[40px]">It&apos;s live.</h2>
-            <p className="mt-2 text-ink-2">{done.title} is on your page. Next: hang its code.</p>
-            {done.notice && <p className="t-small mt-2">{done.notice}</p>}
+        </div>
+
+        <div className="grid content-start gap-6">
+          <div className="grid gap-2">
+            <h2 className="display text-[40px] leading-[0.95] sm:text-[48px]">{done.pending ? "Uploaded." : "It\u2019s live."} Now print its code.</h2>
+            <p className="text-[16.5px] text-ink-2">The code is how people buy: they scan it next to the painting and order a print.</p>
           </div>
-        )}
-        <div className="flex flex-wrap justify-center gap-2">
-          <Link href={`/studio/qr?art=${done.slug}`} className="btn btn-blue">Print its code</Link>
-          <AddToQueueButton slug={done.slug} title={done.title} />
-          <Link href={artPath(handle, done.slug)} className="btn btn-ghost">View</Link>
-          <button type="button" className="btn btn-ghost" onClick={() => { setDone(null); setImageUrl(""); setFresh(null); setShape(null); setOwned(false); setDims(null); set({ title: "", description: "", origW: "", origH: "", sensitive: [], limited: false }); }}>
-            Upload another
-          </button>
+
+          <ol className="grid gap-4">
+            <li className="grid grid-cols-[28px_minmax(0,1fr)] gap-3">
+              <span className="grid h-7 w-7 place-items-center rounded-full bg-earned text-white" aria-hidden="true"><Check className="h-4 w-4" strokeWidth={3} /></span>
+              <span className="grid gap-0.5">
+                <b className="text-[15.5px]">{done.title} is {done.pending ? "uploaded" : "on your page"}</b>
+                <span className="t-small">
+                  {done.pending
+                    ? <>{done.duplicate === "review" || done.moderation === "review" ? done.notice : <>We look over every new artist&apos;s first pieces, usually within a day.</>} We&apos;ll email you when it&apos;s live.</>
+                    : <>{done.notice || <>People can buy prints of it now.</>} <Link href={artPath(handle, done.slug)} className="font-semibold text-ink underline-offset-2 hover:underline">See its page</Link></>}
+                </span>
+              </span>
+            </li>
+            <li className="grid grid-cols-[28px_minmax(0,1fr)] gap-3">
+              <span className="num grid h-7 w-7 place-items-center rounded-full bg-ink text-[13px] font-extrabold text-white" aria-hidden="true">2</span>
+              <span className="grid gap-3">
+                <span className="grid gap-0.5">
+                  <b className="text-[15.5px]">Print its code</b>
+                  <span className="t-small">Pick a label, sticker or tag, then print it at home. You can do this while it&apos;s in review.</span>
+                </span>
+                <span className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                  <Link href={qrHref} className="btn btn-blue">Print its code</Link>
+                  <AddToQueueButton slug={done.slug} title={done.title} label="Add to print queue" className="btn-sm border-0 bg-transparent px-0 underline-offset-2 hover:bg-transparent hover:underline" />
+                </span>
+              </span>
+            </li>
+            <li className="grid grid-cols-[28px_minmax(0,1fr)] gap-3">
+              <span className="num grid h-7 w-7 place-items-center rounded-full bg-white text-[13px] font-extrabold text-ink ring-[1.5px] ring-ink" aria-hidden="true">3</span>
+              <span className="grid gap-0.5">
+                <b className="text-[15.5px]">Hang it beside the painting</b>
+                <span className="t-small">Just to the right of the frame, at eye level, like a gallery label.</span>
+              </span>
+            </li>
+          </ol>
+
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-line pt-4 text-[14.5px]">
+            <button type="button" onClick={reset} className="inline-flex min-h-[40px] items-center gap-1.5 font-semibold text-ink underline-offset-2 hover:underline">
+              <ImagePlus className="h-4 w-4" aria-hidden="true" /> Upload another
+            </button>
+            <Link href="/studio/art" className="inline-flex min-h-[40px] items-center font-semibold text-ink-2 underline-offset-2 hover:text-ink hover:underline">Back to my art</Link>
+          </div>
         </div>
       </div>
     );

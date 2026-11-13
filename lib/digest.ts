@@ -179,7 +179,7 @@ export async function sendWeeklyDigests(now = new Date(), only?: string[]): Prom
         to: a.email,
         subject: d.prints ? `Your week: ${d.prints} ${d.prints === 1 ? "print" : "prints"} sold, ${money(d.earnedCents)} earned` : d.active ? `Your week on Artfinity: ${d.views} views, ${d.scans} scans` : "One thing to fix on Artfinity",
         text,
-        html: emailHtml(text, "Your weekly Artfinity digest. Every wall is a shop."),
+        html: emailHtml(text, "Your weekly Artfinity digest. From paint to print."),
         headers: { "List-Unsubscribe": `<${digestOptOutUrl(a.id)}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
       });
       if (error) throw error;

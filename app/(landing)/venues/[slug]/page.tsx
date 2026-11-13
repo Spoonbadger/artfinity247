@@ -44,10 +44,9 @@ export default async function VenuePage({ params }: Props) {
   return (
     <div className="pb-20">
       <PageHead
-        eyebrow="Artfinity partner venue"
         title={headline(v)}
         stroke="var(--af-sticker)"
-        sub={artworks.length ? <>{artworks.length} {artworks.length === 1 ? "piece" : "pieces"} on the walls now{artists.length ? <> by {artists.join(", ")}</> : null}.</> : undefined}
+        sub={<>Artfinity partner venue.{artworks.length ? <> {artworks.length} {artworks.length === 1 ? "piece" : "pieces"} on the walls now{artists.length ? <> by {artists.join(", ")}</> : null}.</> : null}</>}
       >
         <div className="grid max-w-[340px] gap-2 text-[15px]">
           {v.address && (

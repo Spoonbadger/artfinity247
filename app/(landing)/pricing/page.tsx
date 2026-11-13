@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Check, ChevronDown, Minus } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Brushed, BrushStroke } from "@/components/af/Brush";
 import { PUBLIC_ART, displayName } from "@/components/browse/data";
 import ProCalculator from "@/components/pro/ProCalculator";
 import StartInfinityButton from "@/components/pro/StartInfinityButton";
-import InfinityPlanPicker from "@/components/pro/InfinityPlanPicker";
+import { BillingPeriodProvider, BillingToggle, InfinityCta, InfinityPrice } from "@/components/pro/InfinityPlanPicker";
 import InfinityPreview, { type PreviewPiece } from "@/components/pro/InfinityPreview";
 import { displayHost } from "@/components/share/shareData";
 import { getUserFromCookie } from "@/lib/auth";
@@ -23,31 +23,28 @@ export const metadata: Metadata = {
   description: `Free to sell, ${pct(FREE_SPLIT)} of profit. Infinity is ${proPrice()} a month or ${proYearlyPrice()} a year: ${pct(PRO.split)} of profit, auto videos and automations.`,
 };
 
-function Cell({ v, dark = false }: { v: Feature["free"]; dark?: boolean }) {
-  if (v === false) return <Minus className={`h-4 w-4 shrink-0 ${dark ? "text-white/75" : "text-ink-2"}`} aria-label="Not included" />;
-  return <Check className={`h-4 w-4 shrink-0 ${dark ? "text-sticker" : "text-earned"}`} aria-label="Included" />;
+function Tick({ dark = false }: { dark?: boolean }) {
+  return <Check className={`mt-[3px] h-4 w-4 shrink-0 ${dark ? "text-sticker" : "text-earned"}`} aria-label="Included" />;
 }
 
 function FeatureList({ which, dark = false }: { which: "free" | "pro"; dark?: boolean }) {
-  // Infinity lists what it adds; Free lists everything, with Infinity-only rows marked by a dash and "Infinity only"
-  // (full-contrast text, not faded, for WCAG 4.5:1).
-  const rows = which === "pro" ? planFeatures().filter((f) => f.free !== true) : planFeatures();
+  // Free lists what it includes; Infinity lists what it adds on top.
+  const rows = planFeatures().filter((f) => (which === "pro" ? f.free !== true : f.free !== false));
   return (
     <ul className="grid gap-2.5">
       {which === "pro" && (
         <li className="flex items-start gap-2.5 text-[15px]">
-          <span className="mt-[3px]"><Cell v dark={dark} /></span>
+          <Tick dark={dark} />
           <span>Everything in Free, plus</span>
         </li>
       )}
       {rows.map((f) => {
         const v = f[which];
         return (
-          <li key={f.label} className={`flex items-start gap-2.5 text-[15px] ${v === false ? (dark ? "text-white/75" : "text-ink-2") : ""}`}>
-            <span className="mt-[3px]"><Cell v={v} dark={dark} /></span>
+          <li key={f.label} className="flex items-start gap-2.5 text-[15px]">
+            <Tick dark={dark} />
             <span>
               {f.label}
-              {v === false && <span className="text-[13px]"> · {PRO.name} only</span>}
               {typeof v === "string" && <b className={dark ? "text-sticker" : "text-ink"}> · {v}</b>}
             </span>
           </li>
@@ -107,7 +104,7 @@ export default async function PricingPage() {
         <div>
           <h1 className="display max-w-[12ch] text-[52px] sm:text-[84px]">Free to sell. <Brushed>Infinity</Brushed> to grow.</h1>
           <p className="mt-5 text-[17px] text-ink-2 [text-wrap:balance]">
-            Keep {pct(FREE_SPLIT)} of the profit on Free, or {pct(PRO.split)} on {PRO.name} for {proPrice()} a month.
+            Keep {pct(FREE_SPLIT)} of the profit on Free, or {pct(PRO.split)} on {PRO.name} from {dollars(Math.round(PRO.yearlyCents / 12))} a month.
           </p>
         </div>
         {art.length > 0 && (
@@ -125,31 +122,43 @@ export default async function PricingPage() {
         )}
       </section>
 
-      {/* plans */}
-      <section aria-label="Plans" className="mx-auto grid max-w-[1240px] gap-4 px-4 pb-16 sm:px-6 md:grid-cols-2 md:gap-6">
-        <div className="af-card grid content-start gap-5 p-5 sm:p-7">
-          <div className="grid gap-1">
-            <h2 className="t-card">Free</h2>
-            <p className="t-num">$0</p>
-            <p className="t-muted">Everything you need to sell.</p>
-          </div>
-          <Link href="/register" className="btn btn-blue btn-lg w-full">Start selling free</Link>
-          <FeatureList which="free" />
+      {/* plans: the cards share rows (subgrid) so prices, buttons and lists line up */}
+      <BillingPeriodProvider>
+        {/* phones get the switch inside the Infinity card, next to the price it changes */}
+        <div className="mx-auto hidden max-w-[1240px] justify-end px-4 pb-4 sm:px-6 md:flex">
+          <BillingToggle />
         </div>
+        <section aria-label="Plans" className="mx-auto grid max-w-[1240px] gap-4 px-4 pb-16 sm:px-6 md:grid-cols-2 md:gap-x-6">
+          <div className="af-card grid content-start gap-5 p-5 sm:p-7 md:row-span-4 md:grid-rows-subgrid">
+            <div className="grid content-start gap-1">
+              <h2 className="t-card">Free</h2>
+              <p className="t-muted">Everything you need to sell.</p>
+            </div>
+            <div className="grid content-start gap-1">
+              <p className="t-num">$0</p>
+              <p className="text-[15px] font-semibold">Free forever</p>
+            </div>
+            <div className="grid content-start">
+              <Link href="/register" className="btn btn-blue btn-lg w-full">Start selling free</Link>
+            </div>
+            <FeatureList which="free" />
+          </div>
 
-        <div className="relative grid content-start gap-5 overflow-hidden rounded-2xl border-[1.5px] border-ink bg-ink p-5 text-white sm:p-7">
-          <BrushStroke className="pointer-events-none absolute -right-10 -top-1 h-10 w-64 rotate-[-4deg]" color="var(--af-sticker)" />
-          <div className="relative grid gap-1">
-            <h2 className="t-card !text-white">Infinity plan</h2>
-            <p className="t-muted !text-white/75">{pct(PRO.split)} of profit, plus auto videos and automations.</p>
+          <div className="relative grid content-start gap-5 overflow-hidden rounded-2xl border-[1.5px] border-ink bg-ink p-5 text-white sm:p-7 md:row-span-4 md:grid-rows-subgrid">
+            <BrushStroke className="pointer-events-none absolute -right-10 -top-1 h-10 w-64 rotate-[-4deg]" color="var(--af-sticker)" />
+            <div className="relative grid content-start gap-1">
+              <h2 className="t-card !text-white">Infinity plan</h2>
+              <p className="t-muted !text-white/75">{pct(PRO.split)} of profit, plus auto videos and automations.</p>
+            </div>
+            <div className="relative grid content-start gap-4">
+              <BillingToggle dark className="md:hidden" />
+              <InfinityPrice />
+            </div>
+            <div className="relative"><InfinityCta /></div>
+            <div className="relative"><FeatureList which="pro" dark /></div>
           </div>
-          <InfinityPlanPicker />
-          <div className="relative -mt-3 grid">
-            <Link href="/studio/infinity#referrals" className="text-center text-[14px] font-bold text-white underline-offset-2 hover:underline">Or share Artfinity, get {REFERRALS.rewardMonths} months free</Link>
-          </div>
-          <div className="relative"><FeatureList which="pro" dark /></div>
-        </div>
-      </section>
+        </section>
+      </BillingPeriodProvider>
 
       {/* what Infinity adds, shown */}
       <section aria-labelledby="see-h" className="mx-auto grid max-w-[1240px] gap-6 px-4 pb-16 sm:px-6">

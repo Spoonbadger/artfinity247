@@ -36,13 +36,14 @@ export function toCard(a: ArtRow): CardArt {
 export { ART_SORTS, artSort, PRICE_BANDS, priceBand, PRINT_SIZE_KEYS, ARTIST_SORTS, artistSort } from "./sortOptions";
 export type { ArtSort, PriceBand, ArtistSort } from "./sortOptions";
 
-export async function getArt(opts: { city?: string; q?: string; sort?: ArtSort; page?: number; perPage?: number; artistSlug?: string; price?: string; size?: string } = {}) {
-  const { city, q, sort = "newest", page = 1, perPage = 24, artistSlug, price, size } = opts;
+export async function getArt(opts: { city?: string; q?: string; sort?: ArtSort; page?: number; perPage?: number; artistSlug?: string; price?: string; minCents?: number; maxCents?: number; verified?: boolean; size?: string } = {}) {
+  const { city, q, sort = "newest", page = 1, perPage = 24, artistSlug, price, size, verified } = opts;
   const where: Prisma.ArtworkWhereInput = { ...PUBLIC_ART };
   const and: Prisma.ArtworkWhereInput[] = [];
   const artist: Prisma.ArtistWhereInput = {};
   if (city) artist.citySlug = city;
   if (artistSlug) artist.slug = artistSlug;
+  if (verified) artist.verification = "VERIFIED";
   if (Object.keys(artist).length) where.artist = { is: { ...artist, closedAt: null, suspendedAt: null } };
   if (q) {
     and.push({ OR: [
@@ -51,13 +52,19 @@ export async function getArt(opts: { city?: string; q?: string; sort?: ArtSort; 
       { artist: { is: { OR: [{ name: { contains: q, mode: "insensitive" } }, { artist_name: { contains: q, mode: "insensitive" } }, { city: { contains: q, mode: "insensitive" } }] } } },
     ] });
   }
+  // Starting price range, in cents, both ends included. A named band (?price=under-50, from older links) counts too.
+  let lo = opts.minCents, hi = opts.maxCents;
   const band = priceBand(price);
-  if (band) {
+  if (band && lo == null && hi == null) {
+    if ("min" in band) lo = band.min;
+    if ("max" in band) hi = band.max - 1;
+  }
+  if (lo != null || hi != null) {
     // priceFrom = small base price + small markup (a missing markup counts as 0)
     const markup: Prisma.IntNullableFilter = {};
-    if ("min" in band) markup.gte = band.min - basePrices.small;
-    if ("max" in band) markup.lt = band.max - basePrices.small;
-    const zeroFits = (!("min" in band) || band.min <= basePrices.small) && (!("max" in band) || band.max > basePrices.small);
+    if (lo != null) markup.gte = lo - basePrices.small;
+    if (hi != null) markup.lte = hi - basePrices.small;
+    const zeroFits = (lo == null || lo <= basePrices.small) && (hi == null || hi >= basePrices.small);
     and.push(zeroFits ? { OR: [{ markupSmall: markup }, { markupSmall: null }] } : { markupSmall: markup });
   }
   if (size && (PRINT_SIZE_KEYS as string[]).includes(size)) {
@@ -93,10 +100,11 @@ export async function getCities() {
 }
 
 /** Artists with public work, with their newest few pieces. */
-export async function getArtists(opts: { take?: number; city?: string; q?: string; pieces?: number; sort?: ArtistSort } = {}) {
-  const { take, city, q, pieces = 3, sort = "popular" } = opts;
+export async function getArtists(opts: { take?: number; city?: string; q?: string; pieces?: number; sort?: ArtistSort; verified?: boolean } = {}) {
+  const { take, city, q, pieces = 3, sort = "popular", verified } = opts;
   const where: Prisma.ArtistWhereInput = { role: "USER", artworks: { some: PUBLIC_ART } };
   if (city) where.citySlug = city;
+  if (verified) where.verification = "VERIFIED";
   if (q) where.OR = [{ name: { contains: q, mode: "insensitive" } }, { artist_name: { contains: q, mode: "insensitive" } }, { city: { contains: q, mode: "insensitive" } }];
   const rows = await prisma.artist.findMany({
     where, take: sort === "az" ? undefined : take,

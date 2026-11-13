@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: "Cookie policy" };
 
 export default function Page() {
   return (
-    <LongForm eyebrow="Policy" title="Cookie policy" current="/cookie-policy" summary={[
+    <LongForm title="Cookie policy" current="/cookie-policy" summary={[
       "A few cookies keep you logged in and count QR scans.",
       "Your cart and settings live in your browser.",
       "No advertising or third-party tracking cookies.",

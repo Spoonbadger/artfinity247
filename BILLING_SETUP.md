@@ -11,8 +11,8 @@ Without `STRIPE_SECRET_KEY`, on localhost or a staging site with `ALLOW_TEST_CHE
 In Stripe, go to **Product catalog → Add product**:
 
 1. Name it **Artfinity Infinity**. Set the tax code to *Software as a service (SaaS) – business use* (`txcd_10103001`), or whatever code your accountant picks.
-2. Add a **recurring monthly price** of **$20.00** (it must match `PRO.priceCents` in `lib/plans.ts`). Set tax behavior to **Exclusive**.
-3. Add a **recurring yearly price** of **$200.00/year** (it must match `PRO.yearlyCents`). Tax behavior **Exclusive**.
+2. Add a **recurring monthly price** of **$25.00** (it must match `PRO.priceCents` in `lib/plans.ts`). Set tax behavior to **Exclusive**.
+3. Add a **recurring yearly price** of **$240.00/year** (it must match `PRO.yearlyCents`). Tax behavior **Exclusive**.
 4. Copy each Price id (`price_…`) into the env vars below.
 
 If `STRIPE_INFINITY_PRICE_ID` or `STRIPE_INFINITY_YEARLY_PRICE_ID` isn't set, Checkout builds that price inline from `lib/plans.ts`. That works, but every checkout then creates a new Price, so set the id for production.

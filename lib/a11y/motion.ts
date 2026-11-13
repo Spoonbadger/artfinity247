@@ -5,12 +5,9 @@ export const MOTION_EVENT = "af:motion";
 
 export function isMotionPaused(): boolean {
   if (typeof document === "undefined") return false;
-  if (document.documentElement.dataset.motion === "paused") return true;
-  try {
-    return window.localStorage.getItem(KEY) === "paused";
-  } catch {
-    return false;
-  }
+  // The on-page switch was removed (prefers-reduced-motion covers it), so a choice saved by it no longer applies:
+  // otherwise someone who paused once would stay paused with no way back.
+  return document.documentElement.dataset.motion === "paused";
 }
 
 export function setMotionPaused(paused: boolean) {

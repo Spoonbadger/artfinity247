@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Return policy" };
 
 export default function Page() {
   return (
-    <LongForm eyebrow="Policy" title="Return policy" sub="Arrives damaged? We reprint it free." current="/return-policy" summary={[
+    <LongForm title="Return policy" sub="Arrives damaged? We reprint it free." current="/return-policy" summary={[
       `Damaged, misprinted or wrong: send a photo within ${HELP_DAYS_AFTER_DELIVERY} days of delivery. We reprint it free, no need to send it back.`,
       "No returns for a change of mind or the wrong size. Every print is made to order.",
     ]}>

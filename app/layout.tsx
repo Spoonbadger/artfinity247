@@ -22,7 +22,7 @@ const body = Instrument_Sans({
 });
 
 export const metadata: Metadata = {
-  title: { default: "Artfinity · Every wall is a shop", template: "%s · Artfinity" },
+  title: { default: "Artfinity · From paint to print", template: "%s · Artfinity" },
   description:
     "Artists upload their work free, print a QR code to hang beside it, and get paid when people scan it and buy a print.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com"),
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "Artfinity", statusBarStyle: "default" },
   openGraph: {
     siteName: "Artfinity",
-    images: [{ url: "/brand/og-image.png", width: 1200, height: 630, alt: "Artfinity. Every wall is a shop." }],
+    images: [{ url: "/brand/og-image.png", width: 1200, height: 630, alt: "Artfinity. From paint to print." }],
   },
   twitter: { card: "summary_large_image", images: ["/brand/og-image.png"] },
 };

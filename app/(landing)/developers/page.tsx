@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { BrushStroke } from "@/components/af/Brush";
-import { DabRow } from "@/components/browse/PageHead";
 import Code from "@/components/devtools/Code";
 import EmbedBuilder, { type Kind } from "@/components/devtools/EmbedBuilder";
 import { getExamples } from "@/components/devtools/examples";
@@ -31,10 +30,9 @@ const SOON = [
   ["OAuth apps", "Act on behalf of an artist, with permission."],
 ];
 
-function H2({ id, eyebrow, children, dabs }: { id: string; eyebrow: string; children: React.ReactNode; dabs?: string[] }) {
+function H2({ id, children }: { id: string; children: React.ReactNode }) {
   return (
     <div id={id} className="mb-8 scroll-mt-24">
-      <div className="mb-3 flex items-center gap-2.5"><DabRow colors={dabs} /><span className="eyebrow">{eyebrow}</span></div>
       <h2 className="display text-[40px] sm:text-[54px]">{children}</h2>
     </div>
   );
@@ -86,7 +84,6 @@ export default async function DevelopersPage() {
         <BrushStroke className="pointer-events-none absolute -right-20 top-16 hidden h-14 w-[380px] rotate-[-5deg] opacity-30 md:block" color="var(--af-scan)" />
         <div className="mx-auto grid max-w-[1240px] gap-8 px-4 pb-14 pt-10 sm:px-6 md:pt-14 lg:grid-cols-[1fr_1fr] lg:items-center lg:gap-14 lg:pb-20">
           <div className="min-w-0">
-            <div className="mb-4 flex items-center gap-2.5"><DabRow /><span className="eyebrow">Developers</span></div>
             <h1 className="display text-[54px] sm:text-[76px] lg:text-[88px]">
               Your art, on <span className="relative z-0 whitespace-nowrap">any site.<BrushStroke className="absolute -bottom-1 -left-2 -z-10 h-[0.42em] w-[calc(100%+16px)]" color="var(--af-sticker)" /></span>
             </h1>
@@ -114,7 +111,7 @@ export default async function DevelopersPage() {
 
       {/* EMBEDS */}
       <section className="mx-auto max-w-[1240px] px-4 py-16 sm:px-6 md:py-20">
-        <H2 id="embed" eyebrow="Embeds">What you can embed</H2>
+        <H2 id="embed">What you can embed</H2>
         {ex ? (
           <div className="grid gap-8">
             {/* The gallery is open; the other embeds fold away until someone wants them. */}
@@ -175,7 +172,7 @@ export default async function DevelopersPage() {
       {/* API */}
       <section className="relative border-y border-line bg-wall">
         <div className="mx-auto max-w-[1240px] px-4 py-16 sm:px-6 md:py-20">
-          <H2 id="api" eyebrow="Public API v1" dabs={["var(--af-earned)", "var(--af-scan)", "var(--af-sticker)"]}>Read the art, as JSON</H2>
+          <H2 id="api">Read the art, as JSON</H2>
           <div className="mb-10 flex flex-wrap gap-x-8 gap-y-3 text-[14.5px]">
             <p><span className="text-ink-2">Base </span><b className="num [overflow-wrap:anywhere]">{api}</b></p>
             <p><span className="text-ink-2">Auth </span><b>none</b></p>
@@ -249,7 +246,7 @@ export default async function DevelopersPage() {
       {/* LIMITS + TERMS */}
       <section className="mx-auto grid max-w-[1240px] gap-10 px-4 py-16 sm:px-6 md:grid-cols-2 md:py-20">
         <div>
-          <H2 id="limits" eyebrow="Limits" dabs={["var(--af-coral)", "var(--af-sticker)"]}>Rate limits</H2>
+          <H2 id="limits">Rate limits</H2>
           <ul className="grid gap-3 text-[16px]">
             <li className="flex gap-3"><span className="paint-dab mt-1.5" style={{ ["--dab" as string]: "var(--af-scan)" }} aria-hidden="true" /><span><b className="num">{PROD_RATE_LIMIT}</b> requests a minute per IP. Then 429 with Retry-After.</span></li>
             <li className="flex gap-3"><span className="paint-dab mt-1.5" style={{ ["--dab" as string]: "var(--af-sticker)" }} aria-hidden="true" /><span>Responses are cached for <b className="num">60</b> seconds at the edge.</span></li>
@@ -257,7 +254,7 @@ export default async function DevelopersPage() {
           </ul>
         </div>
         <div>
-          <H2 id="terms" eyebrow="Terms" dabs={["var(--af-ink)", "var(--af-scan)"]}>Fair use</H2>
+          <H2 id="terms">Fair use</H2>
           <ul className="grid gap-3 text-[16px]">
             <li className="flex gap-3"><span className="paint-dab mt-1.5" style={{ ["--dab" as string]: "var(--af-coral)" }} aria-hidden="true" /><span>Link every piece back to its Artfinity page.</span></li>
             <li className="flex gap-3"><span className="paint-dab mt-1.5" style={{ ["--dab" as string]: "var(--af-sticker)" }} aria-hidden="true" /><span>Credit the artist. Don&apos;t crop, recolor or resell the images.</span></li>

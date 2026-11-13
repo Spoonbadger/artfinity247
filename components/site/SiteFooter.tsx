@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Logo from "@/components/af/Logo";
+import { DabRow } from "@/components/browse/PageHead";
 import { useSensitivePref } from "@/components/site/useSensitivePref";
 import AppConfigs from "@/db/json/AppConfigs.json";
 import { PAINTING_SCANS } from "@/lib/features";
@@ -13,7 +14,7 @@ const HOURS = "Weekdays " + AppConfigs.business_open_time.split("\n")[0].trim().
 
 // Three short columns of the places people actually go; the legal pages sit in one small row underneath.
 const COLS: [string, [string, string][]][] = [
-  ["For artists", [["Start selling free", "/register"], ["Sell with us", "/sell-with-us"], ["Pricing", "/pricing"], ...(PAINTING_SCANS ? [["Painting scans", "/scanning"] as [string, string]] : []), ["Artist help", "/help/getting-started"]]],
+  ["For artists", [["Start selling free", "/register"], ["How it works", "/how-it-works"], ["Sell with us", "/sell-with-us"], ["Pricing", "/pricing"], ...(PAINTING_SCANS ? [["Painting scans", "/scanning"] as [string, string]] : []), ["Artist help", "/help/getting-started"]]],
   ["For buyers", [["Browse art", "/art"], ["Artists", "/artists"], ["Neighborhoods", "/scenes"], ["Your orders", "/collector"], ["Buying help", "/help/buyers"]]],
   ["Artfinity", [["About", "/about-us"], ["Help center", "/help"], ["Contact", "/contact"], ["Report art", "/report"]]],
 ];
@@ -47,7 +48,9 @@ export default function SiteFooter() {
         <nav aria-label="Legal" className="flex flex-wrap gap-x-4">
           {LEGAL.map(([label, href]) => <Link key={href} href={href} className="inline-flex min-h-[40px] items-center text-ink-2 no-underline hover:text-ink md:min-h-0 md:py-0.5">{label}</Link>)}
         </nav>
-        <p className="flex flex-wrap gap-x-2 gap-y-1">
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          {/* The four paint dabs live here now: a painter's signature at the foot of every page. */}
+          <DabRow className="mr-1" />
           <span>© {new Date().getFullYear()} Artfinity</span>
           <span aria-hidden="true">·</span>
           <a href={`mailto:${EMAIL}`} className="font-semibold text-ink-2 underline-offset-2 hover:text-ink hover:underline">{EMAIL}</a>

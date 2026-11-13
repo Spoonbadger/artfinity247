@@ -23,7 +23,6 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
   return (
     <div className="pb-20">
       <PageHead
-        eyebrow="Search"
         title={q ? <>“{q.length > 22 ? q.slice(0, 22) + "…" : q}”</> : "Find art"}
         sub={q ? <><span className="num">{total}</span> {total === 1 ? "piece" : "pieces"}{artists.length > 0 && <>, <span className="num">{artists.length}</span> {artists.length === 1 ? "artist" : "artists"}</>}.</> : "Search titles, artists and neighborhoods."}
       />
@@ -80,7 +79,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
                 <Pager page={page} pages={pages} href={(p) => `/search?q=${encodeURIComponent(q)}${sort !== "newest" ? `&sort=${sort}` : ""}${p > 1 ? `&page=${p}` : ""}`} />
               </>
             ) : (
-              <EmptyCanvas title="Nothing on this wall">
+              <EmptyCanvas title="Nothing matches that">
                 <p className="t-muted">Try fewer words, or browse everything.</p>
                 <Link href="/art" className="btn btn-ghost">Browse all art</Link>
               </EmptyCanvas>

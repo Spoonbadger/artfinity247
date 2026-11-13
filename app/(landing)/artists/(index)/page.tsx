@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { X } from "lucide-react";
 import ArtistCard, { YourSpotCard } from "@/components/browse/ArtistCard";
 import PageHead, { EmptyCanvas } from "@/components/browse/PageHead";
-import { ARTIST_SORTS, artistSort, getArtists, getCities } from "@/components/browse/data";
-import { UrlSort } from "@/components/browse/UrlSort";
-import { cn } from "@/lib/utils";
+import { artistSort, getArtists, getCities } from "@/components/browse/data";
+import ArtSearch from "@/components/browse/ArtSearch";
 import { getTrustBySlug } from "@/lib/artistTrust";
 
 export const dynamic = "force-dynamic";
@@ -15,51 +14,41 @@ export default async function ArtistsPage({ searchParams }: { searchParams: Reco
   const q = (searchParams.q || "").trim().slice(0, 60) || undefined;
   const city = searchParams.city || undefined;
   const sort = artistSort(searchParams.sort);
-  const [artists, cities] = await Promise.all([getArtists({ q, city, sort }), getCities()]);
+  const verified = searchParams.verified === "1";
+  const started = performance.now();
+  const [artists, cities] = await Promise.all([getArtists({ q, city, sort, verified }), getCities()]);
   const trust = await getTrustBySlug(artists.map((a) => a.slug));
-  const link = (c?: string) => {
+  const seconds = (performance.now() - started) / 1000;
+  const link = (o: { q?: string; city?: string; verified?: boolean } = {}) => {
+    const v = { q, city, verified, ...o };
     const s = new URLSearchParams();
-    if (q) s.set("q", q);
-    if (c) s.set("city", c);
+    if (v.q) s.set("q", v.q);
+    if (v.city) s.set("city", v.city);
     if (sort !== "popular") s.set("sort", sort);
+    if (v.verified) s.set("verified", "1");
     return s.toString() ? `/artists?${s}` : "/artists";
   };
+  // What's narrowing the list right now, each removable. Nothing shows when nothing is picked.
+  const chips = [
+    q && { label: `“${q}”`, href: link({ q: "" }) },
+    city && { label: cities.find((c) => c.slug === city)?.name ?? city, href: link({ city: "" }) },
+    verified && { label: "Verified artists", href: link({ verified: false }) },
+  ].filter(Boolean) as { label: string; href: string }[];
 
   return (
     <div className="pb-20">
-      <PageHead
-        eyebrow="Hanging codes now"
-        title="Artists"
-        sub={<><span className="num">{artists.length}</span> {artists.length === 1 ? "artist" : "artists"}{city ? "" : <> in <span className="num">{cities.length}</span> {cities.length === 1 ? "place" : "places"}</>}.</>}
-        stroke="var(--af-coral)"
-      >
-        <div className="grid w-full gap-2 md:w-auto md:justify-items-end">
-        <form action="/artists" method="get" role="search" className="w-full md:w-auto">
-          {city && <input type="hidden" name="city" value={city} />}
-          {sort !== "popular" && <input type="hidden" name="sort" value={sort} />}
-          <label className="flex items-center gap-2 rounded-full border-2 border-ink bg-white px-4 py-2 focus-within:border-scan md:w-72">
-            <Search className="h-4 w-4 shrink-0 text-ink-2" aria-hidden="true" />
-            <span className="sr-only">Search artists</span>
-            <input name="q" type="search" defaultValue={q} placeholder="Find an artist" className="w-full min-w-0 border-0 bg-transparent p-0 py-1 text-[16px] md:py-0 md:text-[15px] outline-none placeholder:text-ink-2" />
-          </label>
-        </form>
-        <UrlSort storageKey="browse.artists" options={ARTIST_SORTS} fallback="popular" className="w-full md:w-auto" />
-        </div>
+      <PageHead title="Artists" stroke="var(--af-coral)">
+        <ArtSearch kind="artists" q={q} cities={cities.map((c) => ({ slug: c.slug, name: c.name, pieces: c.artists }))} />
       </PageHead>
 
-      {cities.length > 1 && (
-        <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
-          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
-            {[{ slug: "", name: "Everywhere" }, ...cities].map((c) => {
-              const active = (city || "") === c.slug;
-              return (
-                <Link key={c.slug || "all"} href={link(c.slug || undefined)} aria-current={active ? "true" : undefined}
-                  className={cn("inline-flex min-h-[44px] shrink-0 items-center rounded-full border-[1.5px] px-4 py-1.5 text-[14px] md:min-h-0 md:px-3.5 font-semibold no-underline transition", active ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-ink")}>
-                  {c.name}
-                </Link>
-              );
-            })}
-          </div>
+      {chips.length > 0 && (
+        <div className="mx-auto flex max-w-[1240px] flex-wrap items-center gap-2 px-4 sm:px-6">
+          {chips.map((c) => (
+            <Link key={c.label} href={c.href} scroll={false} className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full bg-ink px-3.5 text-[14px] font-semibold text-white no-underline hover:bg-ink/85 md:min-h-[34px]" aria-label={`Remove ${c.label}`}>
+              {c.label}<X className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
+          ))}
+          {chips.length > 1 && <Link href={sort !== "popular" ? `/artists?sort=${sort}` : "/artists"} scroll={false} className="px-1 text-[14px] font-bold text-ink underline-offset-2 hover:underline">Clear all</Link>}
         </div>
       )}
 
@@ -77,6 +66,11 @@ export default async function ArtistsPage({ searchParams }: { searchParams: Reco
               <Link href="/register" className="btn btn-blue">Start selling free</Link>
             </div>
           </EmptyCanvas>
+        )}
+        {artists.length > 0 && (
+          <p className="t-small mt-12 text-center">
+            <span className="num">{artists.length.toLocaleString()}</span> {artists.length === 1 ? "artist" : "artists"} found in <span className="num">{seconds < 0.1 ? Math.max(seconds, 0.001).toFixed(3) : seconds.toFixed(2)}</span> seconds
+          </p>
         )}
       </section>
     </div>

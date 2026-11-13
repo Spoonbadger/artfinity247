@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { BrushStroke, Brushed } from "@/components/af/Brush";
-import { DabRow } from "@/components/browse/PageHead";
 import { PUBLIC_ART, displayName } from "@/components/browse/data";
 import { basePrices } from "@/lib/artwork_price";
 import SalonStrip from "@/components/home/SalonStrip";
@@ -82,8 +81,7 @@ export default async function AboutPage() {
   return (
     <>
       <section className="mx-auto max-w-[1240px] px-4 pb-10 pt-10 sm:px-6 md:pt-16">
-        <div className="mb-4 flex items-center gap-2.5"><DabRow /><span className="eyebrow">About Artfinity</span></div>
-        <h1 className="display max-w-[12ch] text-[56px] sm:text-[88px]">Local art, on <Brushed>every wall.</Brushed></h1>
+        <h1 className="display max-w-[12ch] text-[56px] sm:text-[88px]">Local art, from paint <Brushed>to print.</Brushed></h1>
         {/* TODO(thomas): confirm story wording for nationwide */}
         <p className="mt-5 max-w-[40ch] text-[17px] text-ink-2">
           Artists hang a code by their work. We print, ship and pay them.

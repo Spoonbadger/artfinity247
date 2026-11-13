@@ -32,7 +32,6 @@ export default async function VenuesIndex({ searchParams }: { searchParams?: Rec
   return (
     <div className="pb-20">
       <PageHead
-        eyebrow="Partner venues"
         title="Where to see the art"
         sub={<>Local art in {venues.length} NYC {venues.length === 1 ? "spot" : "spots"}. Scan the code beside a piece to buy a print.</>}
         stroke="var(--af-coral)"

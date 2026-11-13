@@ -34,9 +34,10 @@ export default function HeroStory({ art, perPrint, price, monthBefore }: { art: 
   );
 
   return (
-    <div className="mx-auto w-full max-w-[600px]">
+    <div className="relative mx-auto w-full max-w-[600px]">
       <Stage
-        className={`${s.scene} relative aspect-[1/1.02] w-full overflow-hidden rounded-[22px] border-[1.5px] border-ink/10`}
+        // isolate + clip-path keep the rounded corners clipped even while the animated layers are composited
+        className={`${s.scene} relative isolate aspect-[1/1.02] w-full overflow-hidden rounded-[22px] border-[1.5px] border-ink/10 [clip-path:inset(0_round_22px)]`}
         style={{ background: "radial-gradient(120% 80% at 30% 20%, rgba(255,255,255,.55), transparent 60%), radial-gradient(60% 50% at 85% 75%, rgba(21,22,27,.05), transparent 70%), var(--af-gallery)" }}
         role="img"
         aria-label={`${art.title} by ${art.artist.name} on a café wall. A phone scans its QR code, a print is bought and boxed, and ${first} earns ${money(perPrint)}.`}
@@ -132,8 +133,9 @@ export default function HeroStory({ art, perPrint, price, monthBefore }: { art: 
           </div>
         </div>
       </Stage>
-      <p className="mt-3 pl-1 text-[13px] text-ink-2">
-        On the wall: <Link href={artPath(art.artist.slug, art.slug)} className="font-semibold text-ink no-underline hover:underline">{art.title}</Link> by{" "}
+      {/* Credit, on the floor of the scene, bottom left (the phone fills the bottom right). Outside the Stage, which is role="img", so the links stay reachable. */}
+      <p className="absolute bottom-[2.2%] left-[3%] z-10 max-w-[56%] truncate rounded-full bg-white/90 px-3 py-1 text-[13px] text-ink-2">
+        <Link href={artPath(art.artist.slug, art.slug)} className="font-semibold text-ink no-underline hover:underline">{art.title}</Link> by{" "}
         <Link href={artistPath(art.artist.slug)} className="text-ink no-underline hover:underline">{art.artist.name}</Link>
       </p>
     </div>
