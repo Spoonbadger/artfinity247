@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { Libre_Bodoni, Roboto_Mono } from "next/font/google";
+import localFont from "next/font/local";
 
 /*
  * Palette data and colour maths for the brand colour preview (page.tsx). Each palette overrides the --af-* tokens
@@ -7,16 +7,17 @@ import { Libre_Bodoni, Roboto_Mono } from "next/font/google";
  */
 
 // Palette B only: the original site's faces (main branch app/layout.tsx loaded both).
-const bodoni = Libre_Bodoni({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+// Bundled in /fonts (fonts/README.md) so the build never downloads from Google Fonts. Both are variable fonts.
+const bodoni = localFont({
+  src: "../../../fonts/libre-bodoni-400-700.woff2",
+  weight: "400 700",
   variable: "--pv-bodoni",
   display: "swap",
   fallback: ["Didot", "Bodoni MT", "Georgia", "serif"],
 });
-const robotoMono = Roboto_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
+const robotoMono = localFont({
+  src: "../../../fonts/roboto-mono-400-700.woff2",
+  weight: "400 700",
   variable: "--pv-mono",
   display: "swap",
   fallback: ["ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"],

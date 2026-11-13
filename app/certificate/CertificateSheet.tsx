@@ -1,10 +1,11 @@
-import { Mrs_Saint_Delafield } from "next/font/google";
+import localFont from "next/font/local";
 import { BrushStroke } from "@/components/af/Brush";
 import { SIZE_LABEL, sizeInches } from "@/components/art/pricing";
 import { qrSVG } from "@/lib/qr/render";
 import { VERIFY_HOST, verifyPath, type Certificate } from "@/lib/certificates";
 
-const script = Mrs_Saint_Delafield({ weight: "400", subsets: ["latin"], display: "swap" });
+// Bundled in /fonts (fonts/README.md) so the build never downloads from Google Fonts.
+const script = localFont({ src: "../../fonts/mrs-saint-delafield-400.woff2", weight: "400", display: "swap" });
 
 const longDate = (d: Date) => d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
 

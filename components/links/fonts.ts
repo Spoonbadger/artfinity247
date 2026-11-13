@@ -1,11 +1,12 @@
 // Font pairings for the link page. Loaded only where the link page or its preview renders.
-import { Caveat_Brush, DM_Sans, DM_Serif_Display, Fraunces } from "next/font/google";
+// Bundled in /fonts (see fonts/README.md) so the build never downloads from Google Fonts.
+import localFont from "next/font/local";
 import type { LinksTheme } from "./model";
 
-const fraunces = Fraunces({ subsets: ["latin"], weight: ["600", "800"], variable: "--lk-fraunces", display: "swap" });
-const caveat = Caveat_Brush({ subsets: ["latin"], weight: "400", variable: "--lk-caveat", display: "swap" });
-const dmSerif = DM_Serif_Display({ subsets: ["latin"], weight: "400", variable: "--lk-dmserif", display: "swap" });
-const dmSans = DM_Sans({ subsets: ["latin"], variable: "--lk-dmsans", display: "swap" });
+const fraunces = localFont({ src: "../../fonts/fraunces-600-800.woff2", weight: "600 800", variable: "--lk-fraunces", display: "swap" });
+const caveat = localFont({ src: "../../fonts/caveat-brush-400.woff2", weight: "400", variable: "--lk-caveat", display: "swap" });
+const dmSerif = localFont({ src: "../../fonts/dm-serif-display-400.woff2", weight: "400", variable: "--lk-dmserif", display: "swap" });
+const dmSans = localFont({ src: "../../fonts/dm-sans-100-1000.woff2", weight: "100 1000", variable: "--lk-dmsans", display: "swap" });
 
 /** Class names that define the font variables; put on the page root. */
 export const linkFontVars = [fraunces.variable, caveat.variable, dmSerif.variable, dmSans.variable].join(" ");

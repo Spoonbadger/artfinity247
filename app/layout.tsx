@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { type Metadata, type Viewport } from "next";
-import { Bricolage_Grotesque, Instrument_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 import Provider from "@/components/contexts";
@@ -9,14 +9,17 @@ import PwaSetup from "@/components/pwa/PwaSetup";
 import SkipLink from "@/components/a11y/SkipLink";
 import "./globals.css";
 
-const display = Bricolage_Grotesque({
-  subsets: ["latin"],
-  axes: ["wdth", "opsz"],
+// Bundled in /fonts (see fonts/README.md) so the build never downloads from Google Fonts.
+// Bricolage Grotesque is variable: weight 200-800 plus the wdth and opsz axes.
+const display = localFont({
+  src: "../fonts/bricolage-grotesque-200-800.woff2",
+  weight: "200 800",
   variable: "--font-display",
   display: "swap",
 });
-const body = Instrument_Sans({
-  subsets: ["latin"],
+const body = localFont({
+  src: "../fonts/instrument-sans-400-700.woff2",
+  weight: "400 700",
   variable: "--font-body",
   display: "swap",
 });
