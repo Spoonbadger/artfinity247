@@ -4,12 +4,32 @@ const nextConfig = {
   experimental: {
     outputFileTracingIncludes: {
       "/api/scenes/render": ["./scenes/photos/**/*", "./data/scenes.json"],
+      "/api/admin/scenes/photo": ["./scenes/photos/**/*", "./scenes/fixtures/**/*", "./data/scenes.json"],
       // The local image check (lib/moderation/local.ts) reads the NSFWJS model from disk (about 2.7 MB).
       "/api/artworks/upload": ["./data/models/nsfwjs/**/*"],
       "/api/artworks/update/[slug]": ["./data/models/nsfwjs/**/*"],
     },
     // nsfwjs ships its models again as base64 JS (about 38 MB) and a browser bundle: we load ours from data/models.
-    outputFileTracingExcludes: { "*": ["**/nsfwjs/dist/models/**", "**/nsfwjs/dist/browser/**"] },
+    // Never needed at runtime: dev-only tools (local Postgres is ~300 MB per platform, Playwright), scripts, tests,
+    // seeds and git. A backstop so no function goes over Vercel's 250 MB limit (see lib/projectRoot.ts).
+    outputFileTracingExcludes: {
+      "*": [
+        "**/nsfwjs/dist/models/**",
+        "**/nsfwjs/dist/browser/**",
+        "**/@embedded-postgres/**",
+        "**/embedded-postgres/**",
+        "**/playwright/**",
+        "**/playwright-core/**",
+        "**/@axe-core/**",
+        "**/@img/sharp-libvips-dev*/**",
+        "./.git/**",
+        "./scripts/**",
+        "./storage/**",
+        "./.cache/**",
+        "./prisma/seed*",
+        "./**/*.test.mjs",
+      ],
+    },
     // TensorFlow.js and NSFWJS stay plain Node packages on the server (loaded on the first local check), never bundled.
     serverComponentsExternalPackages: ["@tensorflow/tfjs", "nsfwjs"],
   },

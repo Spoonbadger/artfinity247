@@ -4,6 +4,7 @@
 import path from "node:path";
 import fsp from "node:fs/promises";
 import sharp from "sharp";
+import { projectRoot } from "@/lib/projectRoot";
 import { apply, frameBox, hexToRgb, homography, invert, mul, solveWall, type M3, type P } from "./geometry";
 import { loadCatalog, variantForScene, sceneLabelFor, type Catalog, type CatalogPhoto, type CatalogVariant } from "./catalog";
 import { OUT_ASPECT, hash32, type CropRect } from "./variants";
@@ -11,7 +12,8 @@ import { creditLine, type FrameKey, type Grade, type PhotoCredit, type PrintSize
 
 /** Bump when the output changes, so caches refill. */
 export const COMPOSITOR_VERSION = 3;
-const ROOT = process.cwd();
+// projectRoot, not process.cwd(): see lib/projectRoot.ts. The photos ship via outputFileTracingIncludes.
+const ROOT = projectRoot();
 
 export type ArtInput = string | Buffer;
 export type CompositeOptions = {

@@ -6,6 +6,7 @@ import sharp from "sharp";
 import { adminRoleGuard } from "@/lib/adminRoles";
 import { findPhoto } from "@/lib/scenes/catalog";
 import { sceneCacheDir } from "@/lib/scenes/server";
+import { projectRoot } from "@/lib/projectRoot";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -18,7 +19,7 @@ export async function GET(req: Request) {
   if (!photo) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const w = Math.min(2400, Math.max(0, Number(q.get("w")) || 0));
   const headers = { "Content-Type": "image/jpeg", "Cache-Control": "private, max-age=300" };
-  const src = path.join(process.cwd(), photo.file);
+  const src = path.join(projectRoot(), photo.file);
   if (!w) {
     // upright, as the annotation points expect
     const buf = await sharp(src).rotate().jpeg({ quality: 88 }).toBuffer();

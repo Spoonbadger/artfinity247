@@ -12,10 +12,11 @@ import { Readable } from "stream";
 import path from "path";
 import crypto from "crypto";
 import sharp from "sharp";
+import { projectRoot } from "@/lib/projectRoot";
 
 export const PREVIEW_EDGE = 1600;
 const PUBLIC_UPLOADS = path.join(process.cwd(), "public", "uploads");
-const ORIGINALS_DIR = path.resolve(process.cwd(), process.env.ORIGINALS_DIR || "storage/originals");
+const ORIGINALS_DIR = path.resolve(projectRoot(), process.env.ORIGINALS_DIR || "storage/originals");
 // Preview URLs this code writes locally: /uploads/<folder...>/<name>.jpg
 const LOCAL_RE = /^\/uploads\/((?:[\w-]+\/)*[\w-]+)\/([\w-]+)\.jpg$/;
 
@@ -229,7 +230,7 @@ export async function readStoredImage(previewUrl: string): Promise<Buffer | null
   if (orig) return fs.readFile(orig);
   const clean = previewUrl.split("?")[0];
   if (/^\/(?:[\w.-]+\/)*[\w.-]+\.(?:jpe?g|png|webp|gif|avif|tiff?)$/i.test(clean) && !clean.includes("..")) {
-    const pub = path.join(process.cwd(), "public");
+    const pub = path.join(projectRoot(), "public");
     const file = path.join(pub, ...clean.split("/").filter(Boolean));
     if (file.startsWith(pub + path.sep)) return fs.readFile(file).catch(() => null);
     return null;
