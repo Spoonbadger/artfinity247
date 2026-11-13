@@ -8,6 +8,7 @@ import { closeArtistAccount } from "@/lib/account";
 import { getBalance, PAYOUT_DAY_OF_MONTH } from "@/lib/balance";
 import { resend } from "@/lib/resend";
 import { emailHtml } from "@/lib/artistEmails";
+import { connectStatus } from "@/lib/stripeConnect";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,7 @@ export async function DELETE() {
     if (!user) return NextResponse.json({ error: "Log in again to close your account.", code: "not_logged_in" }, { status: 401 });
     const artist = await prisma.artist.findUnique({
       where: { id: user.id },
-      select: { id: true, email: true, first_name: true, artist_name: true, name: true, closedAt: true, venmoHandle: true },
+      select: { id: true, email: true, first_name: true, artist_name: true, name: true, closedAt: true, stripeAccountId: true, stripePayoutsEnabled: true },
     });
     if (!artist) return NextResponse.json({ error: "Log in again to close your account.", code: "not_logged_in" }, { status: 401 });
 
@@ -36,7 +37,9 @@ export async function DELETE() {
           `Hi ${first},`,
           "Your Artfinity account is closed. Your page and your art are offline, and your codes no longer open them.",
           owed > 0
-            ? `You still have ${usd(owed)} in earnings that haven't been paid yet. We'll still pay it on the normal schedule: each month's sales go out by the ${PAYOUT_DAY_OF_MONTH}th of the next month, after the 14-day return window, to ${artist.venmoHandle ? `Venmo ${artist.venmoHandle}` : "your Venmo (reply with your handle, we don't have one on file)"}.`
+            ? connectStatus(artist) === "ready"
+              ? `You still have ${usd(owed)} in earnings that haven't been paid yet. We'll still pay it through Stripe on the normal schedule: each month's sales go out by the ${PAYOUT_DAY_OF_MONTH}th of the next month, after the 14-day return window.`
+              : `You still have ${usd(owed)} in earnings that haven't been paid yet. We pay through Stripe, and your Stripe isn't set up yet, so we're holding it for you. Reply to this email and we'll help you connect Stripe so we can send it.`
             : "You have no unpaid earnings with us.",
           "Your past sales stay on record. Changed your mind? Reply to this email and we'll reopen your account.",
           "Thank you for selling with Artfinity.",

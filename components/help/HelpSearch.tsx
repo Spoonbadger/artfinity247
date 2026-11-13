@@ -8,7 +8,7 @@ import { Search, X } from "lucide-react";
 import type { SearchDoc } from "@/content/help";
 
 const SYNONYMS: Record<string, string[]> = {
-  paid: ["payout", "pay", "venmo", "stripe"],
+  paid: ["payout", "pay", "stripe", "bank"],
   payed: ["paid", "payout"],
   pay: ["payout", "paid"],
   payout: ["paid", "pay"],

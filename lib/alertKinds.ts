@@ -15,7 +15,7 @@ export type AlertKind =
   | "work_order_failed" // print lab didn't get the work order
   | "print_lab_problem" // Prodigi cancelled an order or reports a problem with it (lib/prodigiSync.ts)
   | "payout_failed" // Stripe transfer failed (urgent)
-  | "payout_late" // a month's payout is past due
+  | "payout_late" // a connected artist's payout is past due (transfer failed or didn't run; held balances never count)
   | "order_stuck" // paid 24h+ ago, not sent to the printer
   | "order_undelivered" // shipped 10+ days ago, not delivered
   | "job_failed" // a background job (JobRun) failed

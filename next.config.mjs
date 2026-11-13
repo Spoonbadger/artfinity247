@@ -24,6 +24,12 @@ const nextConfig = {
       { source: "/sw.js", headers: [{ key: "Cache-Control", value: "no-cache, max-age=0, must-revalidate" }] },
     ];
   },
+  async redirects() {
+    return [
+      // Venmo payouts were removed (Nov 2026): old help links go to the Stripe payout article.
+      { source: "/help/account/change-venmo", destination: "/help/account/change-payout-bank", permanent: true },
+    ];
+  },
   async rewrites() {
     return [
       // Artist pages live at theartfinity.com/@handle

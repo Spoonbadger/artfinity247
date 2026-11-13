@@ -20,7 +20,7 @@ Signing up takes about a minute and costs nothing. There's no inventory and no u
 ## What you need
 - To be at least 18 and live in the United States
 - An email address (we send your sales there)
-- A way to get paid: a Venmo handle today, or a bank account through Stripe (see [How payouts reach you](/help/getting-paid/how-payouts-reach-you))
+- A US bank account to get paid, connected through Stripe (see [How payouts reach you](/help/getting-paid/how-payouts-reach-you))
 
 ## The steps
 1. Go to [Start selling free](/register) and pick your handle. Your page lives at theartfinity.com/@yourhandle.

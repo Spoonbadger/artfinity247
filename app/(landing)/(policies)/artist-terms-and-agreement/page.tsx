@@ -27,7 +27,8 @@ export default function ArtistTermsPage() {
           <ul>
             <li>Be at least 18 years old</li>
             <li>Live in the United States</li>
-            <li>Have a US bank account (connected through Stripe) or a Venmo account that can receive payments</li>
+            {/* TODO(thomas): review payout terms wording (Stripe-only payouts, Nov 2026). Changed here and in section 8; update "Last updated" when approved. */}
+            <li>Have a US bank account you can connect through Stripe to receive payouts</li>
           </ul>
           <p>By signing up as an artist, you confirm this is true.</p>
         </div>
@@ -129,7 +130,8 @@ export default function ArtistTermsPage() {
             <li>
               Earnings are paid monthly: each month&apos;s sales are paid by the {ordinal(PAYOUT_DAY_OF_MONTH)} of the following month.
             </li>
-            <li>We send payouts to your bank through Stripe if you connect it on your Money page, otherwise by Venmo to the handle in your account. Please keep these up to date.</li>
+            {/* TODO(thomas): review payout terms wording (Stripe-only payouts, Nov 2026). */}
+            <li>We send payouts only through Stripe, to the bank account you connect on your Money page. Until your Stripe account is set up and can receive payouts, we hold your earnings and pay them in the first monthly payout after it can. Please keep your Stripe details up to date.</li>
           </ul>
         </div>
 

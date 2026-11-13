@@ -34,7 +34,7 @@ export async function requireArtist(nextPath?: string) {
     where: { id: user.id },
     select: {
       id: true, slug: true, name: true, first_name: true, artist_name: true, city: true,
-      profileImage: true, bio: true, venmoHandle: true, email: true, role: true, closedAt: true, suspendedAt: true, suspendedReason: true,
+      profileImage: true, bio: true, email: true, role: true, closedAt: true, suspendedAt: true, suspendedReason: true,
       emailVerifiedAt: true,
     },
   });

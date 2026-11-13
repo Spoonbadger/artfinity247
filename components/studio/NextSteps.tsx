@@ -10,14 +10,21 @@ export const SHARED_KEY = "af-studio-shared";
 /** Optional steps the artist chose "Skip for now" on (this browser). Skipped is not done. */
 export const SKIPPED_KEY = "af-studio-skipped";
 
-type Step = { key: string; label: string; done: boolean; href?: string; act?: string; onClick?: () => void; optional?: boolean };
+/** `post`: a plain form POST (e.g. straight to Stripe onboarding), so one click lands on the final screen. */
+type Step = { key: string; label: string; done: boolean; href?: string; post?: string; act?: string; onClick?: () => void; optional?: boolean };
+type ConnectStatus = "not_connected" | "pending" | "ready";
 /** An extra, optional idea under the checklist (not counted in the progress), e.g. "Book a scan". */
 export type Suggestion = { label: string; note?: string; href: string; act: string };
 /** Something to fix now, on top of the list and not counted in the progress, e.g. "2 printed labels show an old price". */
 export type Alert = { label: string; href: string; act: string };
 
 /** Before the first upload the page has no header button, so the Upload step is the blue one. */
-export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true, hasEvent: serverHasEvent = false, slug, suggestion, alerts = [] }: { hasProfile: boolean; hasArt: boolean; hasSold: boolean; hasVenmo?: boolean; hasEvent?: boolean; slug: string; suggestion?: Suggestion | null; alerts?: Alert[] }) {
+export default function NextSteps({ hasProfile, hasArt, hasSold, stripe = "ready", hasEvent: serverHasEvent = false, slug, suggestion, alerts = [] }: {
+  hasProfile: boolean; hasArt: boolean; hasSold: boolean;
+  /** The artist's Stripe Connect status (lib/stripeConnect.ts connectStatus). Payouts are Stripe-only. */
+  stripe?: ConnectStatus;
+  hasEvent?: boolean; slug: string; suggestion?: Suggestion | null; alerts?: Alert[];
+}) {
   const [shared, setShared] = useState(false);
   const [hasEvent, setHasEvent] = useState(serverHasEvent);
   const [copied, setCopied] = useState(false);
@@ -61,7 +68,12 @@ export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true
   ];
   // Only shown while missing, so it reads as a warning rather than a chore.
   // Before the first upload, uploading comes first; after that, getting paid does.
-  if (!hasVenmo) steps.splice(hasArt ? 0 : 1, 0, { key: "venmo", label: "Add Venmo so we can pay you", done: false, href: "/studio/page#venmo", act: "Add" });
+  // The button posts straight to the Connect action on Money (Stripe onboarding, or a test account in test mode).
+  if (stripe !== "ready") {
+    steps.splice(hasArt ? 0 : 1, 0, stripe === "pending"
+      ? { key: "stripe", label: "Finish Stripe setup so we can pay you", done: false, post: "/api/studio/stripe/connect", act: "Finish" }
+      : { key: "stripe", label: "Connect Stripe so we can pay you", done: false, post: "/api/studio/stripe/connect", act: "Connect" });
+  }
   const done = steps.filter((s) => s.done).length;
   const open = steps.filter((s) => !s.done && !skipped.includes(s.key));
   const todo = open.filter((s) => !s.optional);
@@ -106,6 +118,7 @@ export default function NextSteps({ hasProfile, hasArt, hasSold, hasVenmo = true
                 <span aria-hidden="true" className="h-[18px] w-[18px] shrink-0 rounded-md border-[1.5px] border-ink-2" />
                 <span className={cn("min-w-0 flex-1", i === 0 && "font-semibold")}>{s.label}</span>
                 {s.href && <Link href={s.href} className={cls}>{s.act}</Link>}
+                {s.post && <form method="post" action={s.post} className="contents"><button type="submit" className={cls}>{s.act}</button></form>}
                 {s.onClick && <button type="button" onClick={s.onClick} className={cls}>{s.act}</button>}
               </li>
             );

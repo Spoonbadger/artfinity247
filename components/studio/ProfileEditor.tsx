@@ -17,7 +17,7 @@ import LocationInput from "@/components/forms/LocationInput";
 import { useUnsavedChanges } from "@/components/forms/useUnsavedChanges";
 import AvatarCropper from "@/components/media/AvatarCropper";
 
-type Profile = { name: string; city: string; bio: string; profileImage: string | null; venmoHandle: string };
+type Profile = { name: string; city: string; bio: string; profileImage: string | null };
 type Art = { id: string; title: string; imageUrl: string; sensitive: string[] };
 
 async function post(url: string, body: unknown) {
@@ -32,7 +32,7 @@ async function post(url: string, body: unknown) {
   return res.json();
 }
 
-export default function ProfileEditor({ initial, venmoPending = null, slug, art, account, payoutDay }: { initial: Profile; venmoPending?: string | null; slug: string; art: Art[]; account?: ReactNode; /** "5th": the monthly payout day (lib/balance.ts). */ payoutDay?: string }) {
+export default function ProfileEditor({ initial, slug, art, account, payoutDay }: { initial: Profile; slug: string; art: Art[]; account?: ReactNode; /** "5th": the monthly payout day (lib/payoutPlan.ts). */ payoutDay?: string }) {
   const router = useRouter();
   const { refreshUser } = useUser();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -44,15 +44,13 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
   const [cropping, setCropping] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Venmo waits for a confirmed email: that error gets a [Resend confirmation] button.
+  // An error that needs a confirmed email gets a [Resend confirmation] button.
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  // A Venmo change waiting for the artist to confirm by email ("" = removing it).
-  const [pending, setPending] = useState<string | null>(venmoPending);
   const link = `theartfinity.com/@${slug}`;
   // The state of the place picked from the suggestions, sent with the city so the city page link is right.
   const pickedState = useRef<string | null>(null);
-  const dirty = p.name !== saved.name || p.city !== saved.city || p.bio !== saved.bio || p.venmoHandle !== saved.venmoHandle;
+  const dirty = p.name !== saved.name || p.city !== saved.city || p.bio !== saved.bio;
   useUnsavedChanges(dirty && !saving);
 
   async function changePhoto(file: File) {
@@ -87,18 +85,11 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
       if (p.name !== saved.name) jobs.push(post("/api/artists/update-artist-name", { name: p.name.trim() }));
       if (p.city !== saved.city) jobs.push(post("/api/artists/update-city", { city: p.city.trim(), ...(pickedState.current ? { state: pickedState.current } : {}) }));
       if (p.bio !== saved.bio) jobs.push(post("/api/artists/update-bio", { bio: p.bio }));
-      let venmo: { venmoHandle: string | null; pending: string | null } | null = null;
-      if (p.venmoHandle !== saved.venmoHandle) jobs.push(post("/api/studio/venmo", { venmoHandle: p.venmoHandle }).then((r) => { venmo = r; }));
       await Promise.all(jobs);
-      const v = venmo as { venmoHandle: string | null; pending: string | null } | null;
-      // A change to an existing handle only applies after the email link is clicked.
-      const venmoHandle = v ? v.venmoHandle || "" : p.venmoHandle;
-      const next = { ...p, name: p.name.trim(), city: p.city.trim(), bio: p.bio.trim(), venmoHandle };
+      const next = { ...p, name: p.name.trim(), city: p.city.trim(), bio: p.bio.trim() };
       setP(next);
       setSaved(next);
-      if (v) setPending(v.pending);
-      if (v?.pending != null) toast.success("Saved. Check your email to confirm the Venmo change.");
-      else toast.success("Saved");
+      toast.success("Saved");
       refreshUser();
       router.refresh();
     } catch (e: any) {
@@ -113,17 +104,6 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
       });
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function cancelVenmo() {
-    try {
-      const res = await fetch("/api/studio/venmo", { method: "DELETE", credentials: "include" });
-      if (!res.ok) throw new Error();
-      setPending(null);
-      toast.success("Venmo change canceled");
-    } catch {
-      toast.error("Couldn't cancel. Try again.");
     }
   }
 
@@ -176,33 +156,16 @@ export default function ProfileEditor({ initial, venmoPending = null, slug, art,
           <span className="label flex justify-between"><span>Bio</span><span className="num">{p.bio.length}/300</span></span>
           <textarea value={p.bio} onChange={(e) => setP({ ...p, bio: e.target.value.slice(0, 300) })} rows={4} placeholder="What you paint and where. Two lines is plenty." className="resize-y" />
         </label>
-        <div id="venmo" className="grid scroll-mt-24 gap-2">
-          <label className="af-field">
-            <span className="label">{payoutDay ? "Venmo for payouts" : "Venmo for payouts · private"}</span>
-            <input value={p.venmoHandle} onChange={(e) => setP({ ...p, venmoHandle: e.target.value.replace(/\s/g, "") })} maxLength={30} placeholder="@yourname" aria-describedby={payoutDay ? "venmo-help" : undefined} />
-          </label>
-          {payoutDay && <p id="venmo-help" className="t-small">Never shown on your page. Each month&apos;s sales are paid here by the {payoutDay} of the next month.</p>}
-          {pending !== null && (
-            <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border-[1.5px] border-sticker bg-sticker/30 px-3 py-2 text-[13.5px]">
-              <b className="min-w-0 flex-1">
-                {pending ? <>Waiting for you to confirm by email: {pending}</> : <>Waiting for you to confirm by email: remove your Venmo</>}
-              </b>
-              <button type="button" onClick={cancelVenmo} className="font-semibold text-ink-2 underline underline-offset-2 hover:text-coral">Cancel change</button>
-              <span className="basis-full text-[13px] text-ink-2">The link works for 24 hours. Until then, payouts go to {saved.venmoHandle || "your current Venmo"}.</span>
-            </div>
-          )}
-          {!saved.venmoHandle && pending === null && (
-            <p role="status" className="flex items-center gap-2 rounded-xl bg-sticker/40 px-3 py-2 text-[13.5px] font-semibold">
-              <span className="sticker-badge text-[12px]">Heads up</span>Add your Venmo to get paid.
-            </p>
-          )}
-        </div>
+        {/* Payouts aren't set here: Stripe holds the bank details (Studio → Money). */}
+        <p className="t-small">
+          Getting paid: through Stripe{payoutDay ? `, by the ${payoutDay} of each month` : ""}.{" "}
+          <Link href="/studio/money#getpaid-h" className="font-semibold text-ink underline underline-offset-2">Set it up in Money</Link>
+        </p>
 
         {error && (
           <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border-2 border-coral bg-[#fff1ed] px-3.5 py-2.5 text-[14px] font-semibold">
             <span className="min-w-0 flex-1">{error}</span>
             {errorCode === "email_unverified" && <ResendConfirmButton />}
-            {errorCode === "venmo_taken" && <Link href="/contact" className="btn btn-sm shrink-0">Message us</Link>}
           </div>
         )}
         <div className="flex flex-wrap items-center gap-3">
@@ -348,7 +311,7 @@ function DeleteAccount() {
           <p className="text-[14px]">Your page goes offline right away. You&apos;ll still be paid what you&apos;ve earned.</p>
           <ul className="grid list-disc gap-1 pl-5 text-[13.5px] text-ink-2">
             <li>Your art and codes stop showing to buyers.</li>
-            <li>Unpaid earnings go to your Venmo on the usual monthly payout.</li>
+            <li>Unpaid earnings go out through Stripe on the usual monthly payout. Connect it in Money first.</li>
             <li>Past sales stay on record. Contact us if you want to reopen.</li>
           </ul>
           <label className="af-field border-coral">

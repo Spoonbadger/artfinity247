@@ -116,7 +116,7 @@ environment. Every variable is also listed, with a comment, in [`.env.example`](
 | --- | --- | --- |
 | `STRIPE_SECRET_KEY` | Stripe secret key (`sk_live_…`; Preview: `sk_test_…`) | Checkout doesn't take payments. Production refuses test orders unless `ALLOW_TEST_CHECKOUT=1`. |
 | `STRIPE_WEBHOOK_SECRET` | Signing secret of the **orders** webhook (`/api/webhook`) | Paid orders are never recorded. |
-| `STRIPE_CONNECT_WEBHOOK_SECRET` | Signing secret of the **Connect** webhook (`/api/webhook/connect`) | Artists who connect Stripe stay "pending"; payouts fall back to Venmo by hand. |
+| `STRIPE_CONNECT_WEBHOOK_SECRET` | Signing secret of the **Connect** webhook (`/api/webhook/connect`) | Artists' Stripe status only updates when they come back from Stripe; anyone stuck on "pending" isn't paid (payouts are Stripe-only, their money is held). |
 | `STRIPE_BILLING_WEBHOOK_SECRET` | Signing secret of the **billing** webhook (`/api/webhook/billing`) | Infinity subscriptions don't activate. See BILLING_SETUP.md. |
 | `RESEND_API_KEY` | Resend API key | No email at all (receipts, sign-in links, payouts, alerts). |
 | `PRINTER_EMAIL` | The print lab's order inbox (or use Prodigi instead: section 7, "Prodigi") | Work orders aren't sent; tick "Sent to printer" by hand in the admin. |
@@ -176,6 +176,28 @@ UPDATE "Artist" SET role = 'ADMIN', "adminRole" = 'owner' WHERE email = 'you@exa
 
 Log out and back in: you now have /admin. Invite the rest of the team from /admin/team.
 
+### Later cleanup: Venmo columns
+
+Payouts are Stripe-only since Nov 2026. The old payout-handle columns on `Artist` (`venmoHandle`, `venmoPending`,
+`venmoPendingToken`, `venmoPendingAt`) are no longer read or written by the app, but are kept so no production data
+is lost on deploy. Old `Payout` rows keep their `method` ("venmo" or "manual") for history; the app shows them as
+"Paid outside Stripe (before Nov 2026)". Don't touch those.
+
+Once you're sure you don't need the old handles (export them first if you want a record), drop the columns in a
+**new** migration: remove the four fields from `prisma/schema.prisma`, then run `pnpm prisma migrate dev --name
+drop_venmo_columns`. It should produce this SQL:
+
+```sql
+DROP INDEX IF EXISTS "Artist_venmoHandle_key";
+DROP INDEX IF EXISTS "Artist_venmoPendingToken_key";
+ALTER TABLE "Artist" DROP COLUMN "venmoHandle",
+  DROP COLUMN "venmoPending",
+  DROP COLUMN "venmoPendingToken",
+  DROP COLUMN "venmoPendingAt";
+```
+
+This deletes the stored handles for good. Don't edit the older files in `prisma/migrations/`: they've already run.
+
 ---
 
 ## 6. Scheduled jobs (crons) and the Vercel plan
@@ -184,7 +206,7 @@ Log out and back in: you now have /admin. Invite the rest of the team from /admi
 
 | Job | Schedule | What it does |
 | --- | --- | --- |
-| `/api/cron/payouts` | 5th of the month, 15:17 | Pays artists through Stripe ("Pay all") |
+| `/api/cron/payouts` | 5th of the month, 15:17 | Pays connected artists through Stripe ("Pay all"), then emails a "Connect Stripe" reminder to artists whose money is held |
 | `/api/cron/admin-digest` | daily 12:07 | Admin email digest + alert sweep |
 | `/api/cron/work-order-retries` | **every hour** at :07 | Re-sends failed print-lab work orders |
 | `/api/cron/prodigi-sync` | **every hour** at :37 | Checks open Prodigi orders (only with `PRINTER_PROVIDER=prodigi`) |
@@ -226,6 +248,22 @@ the matching variable.
 
 Also in Stripe: turn on **Connect** (Express accounts) for artist payouts, and set up **Stripe Tax** (Tax →
 Registrations: add New York) so sales tax is collected. BILLING_SETUP.md covers the Infinity price and portal.
+
+### Stripe Connect (artist payouts)
+
+Artists are paid **only** through Stripe Connect (Express). Until an artist's account is ready, their earnings are
+held in their balance; the first payout run after they connect pays every month that's waiting, one transfer per month.
+
+1. Stripe → **Connect** → get started, platform type **Express**, country US. Complete the platform profile
+   (what artists are paid for: "Artists selling art prints through Artfinity").
+2. **Settings → Connect → Branding**: name, icon and brand color (Garnet `#8b2a4b`), so onboarding looks like Artfinity.
+3. **Settings → Connect → Onboarding options / Express**: keep the default requirements (Stripe collects identity,
+   bank and tax details). Decide whether Stripe files and delivers 1099s for you (Connect → Tax reporting).
+4. Make sure the platform's Stripe balance can cover the transfers on the 5th (Balance → Add to balance, or let
+   sales settle first). A short balance fails the run and raises an alert on /admin.
+5. Add the Connect webhook above and set `STRIPE_CONNECT_WEBHOOK_SECRET`.
+6. Test in **test mode** on staging: connect a test artist with Stripe's test bank and ID numbers, then
+   /admin/payouts → Pay all.
 
 A wrong signing secret shows up as a Sentry warning ("stripe-signature") and as 400s on the endpoint's page in Stripe.
 
@@ -426,4 +464,5 @@ Takes 10 minutes. Do it after the first deploy and after big changes.
 | No emails | Resend domain not verified, or `RESEND_API_KEY` missing. |
 | Uploads fail | `CLOUDINARY_*` missing. Big files only: the Cloudinary plan's max image size (section 7). |
 | Jobs never run | `CRON_SECRET` missing, or the deploy was rejected for the cron schedule on Hobby (section 6). |
+| An artist says they connected Stripe but isn't paid | Their account isn't payout-ready yet (Stripe wants more details: they see "Finish setup" on Money), or `STRIPE_CONNECT_WEBHOOK_SECRET` is missing so the status never updated. /admin/payouts lists them under "Waiting on Stripe setup". |
 | An admin setting won't save on Vercel ("couldn't save the settings file") | That setting lives in a file; set its env var instead (`TEST_START_DATE`, `COLLECTOR_REWARDS…`). |

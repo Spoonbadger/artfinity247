@@ -122,7 +122,7 @@ export default async function AdminVenuePage({ params }: { params: { id: string 
                           <ActionButton
                             url={`/api/admin/venues/${v.id}/payout`} body={{ month: m.month }} need="money" label="Mark paid" title={`Mark ${label} paid`}
                             disabled={m.owedCents <= 0}
-                            confirm={<>Records <b>{usd(m.owedCents)}</b> paid to {v.name} for {label}. Send the money first (Venmo, check, Zelle).</>}
+                            confirm={<>Records <b>{usd(m.owedCents)}</b> paid to {v.name} for {label}. Send the money first (bank transfer or check).</>}
                             fields={[{ name: "note", label: "How it was paid (optional)", placeholder: "Zelle to owner, ref 1234" }]}
                             confirmLabel="Mark paid"
                           />

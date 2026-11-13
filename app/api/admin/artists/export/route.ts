@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     lines.push([
       r.id, r.name, r.slug, r.email, r.city, r.createdAt.toISOString().slice(0, 10), r.verification, r.suspended ? "yes" : "", r.closed ? "yes" : "",
       r.infinity ? "Infinity" : "Free", r.proUntil ? r.proUntil.toISOString().slice(0, 10) : "",
-      r.stripe === "ready" ? "stripe" : r.stripe === "pending" ? "stripe (unfinished)" : r.venmo ? "venmo" : "none",
+      r.stripe === "ready" ? "stripe" : r.stripe === "pending" ? "stripe (unfinished)" : "not connected",
       r.live, r.prints, (r.salesCents / 100).toFixed(2), (r.balanceCents / 100).toFixed(2),
     ].map(cell).join(","));
   }

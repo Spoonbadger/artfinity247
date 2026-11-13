@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { adminRoleGuard } from "@/lib/adminRoles"
 import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
 import { activeRefunds, adjustmentTotals, refundAdjustments, shareAfterRefund } from "@/lib/refunds"
-import { getBalance } from "@/lib/balance"
+import { getBalance, paidMethodLabel } from "@/lib/balance"
 
 export const dynamic = "force-dynamic"
 export const runtime = 'nodejs'
@@ -97,9 +97,11 @@ export async function GET(req: NextRequest) {
 
   const payouts = await prisma.payout.findMany({
     where: { month },
-    select: { artistId: true, paidAt: true, amountCents: true },
+    select: { artistId: true, paidAt: true, amountCents: true, method: true },
   })
   const paidLookup = new Map(payouts.map((p: any) => [p.artistId, p.paidAt]))
+  // How a paid month went out, labelled neutrally (old rows paid outside Stripe keep their own label, lib/payoutPlan.ts).
+  const methodLookup = new Map(payouts.filter((p) => p.paidAt).map((p) => [p.artistId, paidMethodLabel(p.method)]))
   const recordedLookup = new Map(payouts.filter((p) => p.paidAt).map((p) => [p.artistId, p.amountCents]))
 
   for (const it of items) {
@@ -178,6 +180,7 @@ export async function GET(req: NextRequest) {
     'carried_in_cents',
     'payout_cents',
     'payout_usd',
+    'paid_via',
   ]
 
   const rows = [header.join(',')]
@@ -208,6 +211,7 @@ export async function GET(req: NextRequest) {
         status === 'PAID' ? 0 : c?.carryIn ?? 0,
         payout,
         dollars(payout),
+        csvEscape(methodLookup.get(row.artistId) ?? ''),
       ].join(',')
     )
   }

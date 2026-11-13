@@ -24,8 +24,7 @@
     "zip_code": 98115,
     "roles": ["seller", "admin"],
     "is_active": true,
-    "slug": "craig-morley",
-    "venmoHandle": null
+    "slug": "craig-morley"
   },
   {
     "id": "2",
@@ -52,8 +51,7 @@
     "zip_code": 98115,
     "roles": ["seller"],
     "is_active": true,
-    "slug": "madsy-shete",
-    "venmoHandle": null
+    "slug": "madsy-shete"
   },
   {
     "id": "3",
@@ -80,8 +78,7 @@
     "zip_code": 98115,
     "roles": ["seller"],
     "is_active": true,
-    "slug": "vincent-van-gogh",
-    "venmoHandle": null
+    "slug": "vincent-van-gogh"
   },
   {
     "id": "4",
@@ -108,8 +105,7 @@
     "zip_code": 98115,
     "roles": ["seller", "editor"],
     "is_active": true,
-    "slug": "claude-monet",
-    "venmoHandle": null
+    "slug": "claude-monet"
   },
   {
     "id": "5",
@@ -136,8 +132,7 @@
     "zip_code": 98115,
     "roles": ["seller"],
     "is_active": true,
-    "slug": "leonardo-da-vinci",
-    "venmoHandle": null
+    "slug": "leonardo-da-vinci"
   },
   {
     "id": "6",
@@ -164,8 +159,7 @@
     "zip_code": 98115,
     "roles": ["seller"],
     "is_active": true,
-    "slug": "egon-schiele",
-    "venmoHandle": null
+    "slug": "egon-schiele"
   },
   {
     "id": "7",
@@ -192,8 +186,7 @@
     "zip_code": 98115,
     "roles": ["seller", "editor"],
     "is_active": true,
-    "slug": "gustav-klimpt",
-    "venmoHandle": null
+    "slug": "gustav-klimpt"
   },
   {
     "id": "8",
@@ -220,8 +213,7 @@
     "zip_code": 98115,
     "roles": ["seller"],
     "is_active": true,
-    "slug": "henry-ossawa-tanner",
-    "venmoHandle": null
+    "slug": "henry-ossawa-tanner"
   },
   {
     "id": "9",
@@ -248,8 +240,7 @@
     "zip_code": 98115,
     "roles": ["seller"],
     "is_active": true,
-    "slug": "johannes-vermeer",
-    "venmoHandle": null
+    "slug": "johannes-vermeer"
   },
   {
     "id": "10",
@@ -276,7 +267,6 @@
     "zip_code": 98103,
     "roles": ["seller"],
     "is_active": true,
-    "slug": "jason-briesh",
-    "venmoHandle": null
+    "slug": "jason-briesh"
   }
 ]

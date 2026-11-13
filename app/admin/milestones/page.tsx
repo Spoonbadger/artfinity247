@@ -133,7 +133,7 @@ export default async function MilestonesPage() {
           </ul>
           <Stats>
             <Stat label="Artists owed money now" value={p.owed.total} note={usd(p.owed.cents)} />
-            <Stat label="Ready on Stripe" value={p.owed.ready} note={`${p.owed.venmo} Venmo only${p.owed.pending ? `, ${p.owed.pending} Stripe not finished` : ""}`} />
+            <Stat label="Ready on Stripe" value={p.owed.ready} note={`${p.owed.notConnected} not connected${p.owed.pending ? `, ${p.owed.pending} Stripe not finished` : ""}`} />
           </Stats>
           {p.owed.total > 0 && (
             <Bar value={p.owed.ready} max={p.owed.total} label="Owed artists ready on Stripe" left={`${p.owed.ready} on Stripe`} right={`${p.owed.total} owed`} done={notReady === 0} />
@@ -141,12 +141,14 @@ export default async function MilestonesPage() {
           <p className="text-[14.5px]">
             {p.lastMonth ? (
               <>
-                <b>{monthLabel(p.lastMonth)} payouts:</b> Stripe {p.lastByMethod.stripe.n} ({usd(p.lastByMethod.stripe.cents)}), Venmo {p.lastByMethod.venmo.n} ({usd(p.lastByMethod.venmo.cents)})
+                <b>{monthLabel(p.lastMonth)} payouts:</b> Stripe {p.lastByMethod.stripe.n} ({usd(p.lastByMethod.stripe.cents)})
+                {p.lastByMethod.outside.n > 0 && <>, paid outside Stripe (before Nov 2026) {p.lastByMethod.outside.n} ({usd(p.lastByMethod.outside.cents)})</>}
               </>
             ) : (
-              "No payouts marked paid yet."
+              "No payouts sent yet."
             )}
           </p>
+          {p.held > 0 && <p className="t-small"><a href="/admin/payouts#waiting" className="font-semibold">{plural(p.held, "artist")}</a> waiting on Stripe setup ({usd(p.heldCents)} held).</p>}
         </Card>
 
         <Card n={2} id="lab" title="Orders go to the lab automatically" status={s2} next={next2} link={{ href: "/admin/orders", label: "Orders" }}>

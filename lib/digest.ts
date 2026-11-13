@@ -57,7 +57,7 @@ export type ArtistDigest = {
 
 type ArtistRow = {
   id: string; email: string; slug: string; first_name: string | null; artist_name: string | null; name: string;
-  stripeAccountId: string | null; stripePayoutsEnabled: boolean; venmoHandle: string | null;
+  stripeAccountId: string | null; stripePayoutsEnabled: boolean;
 };
 
 export async function buildDigest(a: ArtistRow, now: Date): Promise<ArtistDigest> {
@@ -108,8 +108,9 @@ export async function buildDigest(a: ArtistRow, now: Date): Promise<ArtistDigest
   // One tip. Fixes first (they cost the artist money), then nudges.
   const status = connectStatus(a);
   let tip: Tip | null = null;
-  if (status === "pending") tip = { fix: true, text: "Your Stripe setup isn't finished — finish it to get paid.", link: `${base}/studio/money` };
-  else if (status === "not_connected" && !a.venmoHandle) tip = { fix: true, text: "You haven't added a way to get paid yet. Connect Stripe so your earnings reach you.", link: `${base}/studio/money` };
+  // Payouts are Stripe-only: until it's set up, earnings wait in their balance.
+  if (status === "pending") tip = { fix: true, text: "Your Stripe setup isn't finished. Finish it so we can pay you.", link: `${base}/studio/money` };
+  else if (status === "not_connected") tip = { fix: true, text: "Connect Stripe so we can pay you. Your earnings wait until you do.", link: `${base}/studio/money` };
   else if (noScenes > 0) tip = { fix: false, text: `${noScenes} ${noScenes === 1 ? "painting has" : "paintings have"} no room scenes picked. Buyers who see a piece on a wall buy more often.`, link: `${base}/studio/rooms` };
   else if (codes === 0) tip = { fix: false, text: "You haven't printed a QR code yet. Put one next to your work at your next show or café wall.", link: `${base}/studio/qr` };
   else if (followerTotal === 0) tip = { fix: false, text: "Nobody follows you yet. Add your Artfinity link to your Instagram bio so fans can follow.", link: `${base}/studio/followers` };
@@ -161,7 +162,7 @@ export async function sendWeeklyDigests(now = new Date(), only?: string[]): Prom
   const artists = await prisma.artist.findMany({
     // Artists with at least one piece (an account that never uploaded gets nothing).
     where: { role: "USER", closedAt: null, suspendedAt: null, artworks: { some: {} }, ...(only ? { id: { in: only } } : {}) },
-    select: { id: true, email: true, slug: true, first_name: true, artist_name: true, name: true, stripeAccountId: true, stripePayoutsEnabled: true, venmoHandle: true },
+    select: { id: true, email: true, slug: true, first_name: true, artist_name: true, name: true, stripeAccountId: true, stripePayoutsEnabled: true },
   });
   const prefs = await getPrefs<DigestPref>(artists.map((a) => a.id), "digest");
   const out: DigestRun = { week, sent: [], skippedInactive: 0, skippedOptOut: 0, alreadySent: 0, failed: [] };

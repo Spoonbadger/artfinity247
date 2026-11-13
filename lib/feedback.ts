@@ -39,7 +39,6 @@ const FIXES: Record<string, Fix> = {
   not_logged_in: { label: "Log in", href: "/login" },
   unauthorized: { label: "Log in", href: "/login" },
   stripe_not_connected: { label: "Connect Stripe", href: "/studio/money" },
-  venmo_missing: { label: "Add Venmo", href: "/studio/page#venmo" },
   // ?start=1 opens checkout on arrival: one click, not a second "Get Infinity".
   infinity_required: { label: "Get Infinity", href: "/studio/infinity?start=1" },
   daily_limit: { label: "See followers", href: "/studio/followers" },
@@ -55,7 +54,6 @@ const FIXES: Record<string, Fix> = {
   account_closed: { label: "Contact us", href: "/contact" },
   account_suspended: { label: "Contact us", href: "/contact" },
   already_verified: { label: "See your seal", href: "/studio/verify" },
-  venmo_taken: { label: "Message us", href: "/contact" },
   reset_expired: { label: "Send a new link", href: "/recover-password" },
   email_taken: { label: "Log in", href: "/login" },
   billing_off: { label: "Get it free", href: "/studio/infinity#referrals" },

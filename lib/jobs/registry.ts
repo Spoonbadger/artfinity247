@@ -71,7 +71,7 @@ export const JOBS: JobDef[] = [
   {
     name: "payouts",
     label: "Monthly payouts",
-    description: "Pays every artist's closed months by Stripe transfer (same as Pay all). Artists get a \"your payout is on its way\" email; failures and a low Stripe balance raise alerts.",
+    description: "Pays every connected artist's closed months by Stripe transfer (same as Pay all). Artists get a \"your payout is on its way\" email; failures and a low Stripe balance raise alerts. Artists without Stripe set up are held and get a reminder (one a week at most).",
     schedule: "17 15 5 * *",
     when: "5th of the month at 10:17am New York (11:17am in summer)",
     money: true,

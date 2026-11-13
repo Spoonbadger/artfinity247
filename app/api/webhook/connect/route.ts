@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       const ready = await syncAccount(event.data.object as Stripe.Account);
       console.log("[connect] account.updated", event.data.object.id, ready ? "ready" : "not ready");
     } else if (event.type === "account.application.deauthorized" && event.account) {
-      // The artist disconnected Artfinity in Stripe: back to Venmo until they connect again.
+      // The artist disconnected Artfinity in Stripe: payouts are held until they connect again.
       await prisma.artist.updateMany({ where: { stripeAccountId: event.account }, data: { stripePayoutsEnabled: false } });
     }
   } catch (err) {

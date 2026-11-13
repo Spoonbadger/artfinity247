@@ -113,7 +113,7 @@ export default async function StudioHome() {
     >
 
       {/* What to do next. Hides itself once everything is done. */}
-      <NextSteps hasProfile={!!artist.profileImage && !!artist.bio?.trim()} hasArt={hasArt} hasSold={hasSold} hasVenmo={!!artist.venmoHandle || balance.payoutVia === "stripe"} hasEvent={eventCount > 0} slug={artist.slug} suggestion={scanSuggestion} alerts={labelAlerts} />
+      <NextSteps hasProfile={!!artist.profileImage && !!artist.bio?.trim()} hasArt={hasArt} hasSold={hasSold} stripe={balance.stripeStatus} hasEvent={eventCount > 0} slug={artist.slug} suggestion={scanSuggestion} alerts={labelAlerts} />
       {!hasArt && <p className="t-muted">After your first upload, your sales, scans and balance show up here.</p>}
 
       {/* How it's going: four numbers, each a link to the full story. Nothing to count before the first upload. */}

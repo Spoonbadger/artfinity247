@@ -1,8 +1,8 @@
 // /api/admin/payouts/pay-all  The monthly payout run (lib/payouts.ts). Admins only.
-// GET: what's ready (Stripe transfers vs Venmo by hand). POST: send the Stripe transfers.
+// GET: what's ready (Stripe transfers) and who's waiting on Stripe setup (held). POST: send the Stripe transfers.
 import { NextResponse } from "next/server";
 import { adminRoleGuard } from "@/lib/adminRoles";
-import { payReadyPayouts, readyPayouts } from "@/lib/payouts";
+import { payReadyPayouts, readyPayouts, waitingOnStripe } from "@/lib/payouts";
 import { connectMode } from "@/lib/stripeConnect";
 import { logAdminAction } from "@/lib/audit";
 
@@ -14,7 +14,8 @@ export async function GET() {
   const { denied } = await adminRoleGuard("view");
   if (denied) return denied;
   const ready = await readyPayouts();
-  return NextResponse.json({ mode: connectMode(), ready }, { headers: { "Cache-Control": "no-store" } });
+  const waiting = await waitingOnStripe(new Date(), ready);
+  return NextResponse.json({ mode: connectMode(), ready: ready.filter((r) => r.route === "stripe"), waiting }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST() {
@@ -22,9 +23,9 @@ export async function POST() {
   const { admin, denied } = await adminRoleGuard("money");
   if (denied) return denied;
   try {
-    const r = await payReadyPayouts({ source: "admin" });
+    const r = await payReadyPayouts({ source: "admin", by: admin });
     const total = r.paid.reduce((n, p) => n + p.amountCents, 0);
-    await logAdminAction(admin, "payout.pay_all", { type: "payout" }, `Pay all: ${r.paid.length} sent ($${(total / 100).toFixed(2)}), ${r.failed.length} failed, ${r.manual.length} by hand`, {
+    await logAdminAction(admin, "payout.pay_all", { type: "payout" }, `Pay all: ${r.paid.length} sent ($${(total / 100).toFixed(2)}), ${r.failed.length} failed, ${r.held.length} held (Stripe not set up)`, {
       mode: r.mode,
       paid: r.paid.map((p) => ({ artistId: p.artistId, month: p.month, amountCents: p.amountCents, transferId: p.transferId })),
       failed: r.failed.map((f) => ({ artistId: f.artistId, month: f.month, reason: f.reason })),

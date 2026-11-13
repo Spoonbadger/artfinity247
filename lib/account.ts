@@ -21,10 +21,10 @@ export async function closeArtistAccount(artistId: string, now = new Date()) {
     for (const [reason, ids] of Array.from(byReason)) {
       await tx.artwork.updateMany({ where: { id: { in: ids } }, data: { status: "REJECTED", flaggedReason: reason, flaggedBy: "system" } });
     }
-    // Printed codes stop resolving because /q checks closedAt. A pending Venmo change is dropped.
+    // Printed codes stop resolving because /q checks closedAt.
     await tx.artist.update({
       where: { id: artistId },
-      data: { closedAt: now, venmoPending: null, venmoPendingToken: null, venmoPendingAt: null },
+      data: { closedAt: now },
     });
   });
 }

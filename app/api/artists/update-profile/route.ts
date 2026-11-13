@@ -1,6 +1,6 @@
-// Retired. This old all-in-one profile route set the email and Venmo handle directly, skipping email
-// confirmation and the emailed Venmo confirmation, and nothing in the app calls it any more. Use instead:
-//   /api/studio/account (legal name, email, phone, state)   /api/studio/venmo (payouts)
+// Retired. This old all-in-one profile route set the email and payout details directly, skipping email
+// confirmation, and nothing in the app calls it any more. Use instead:
+//   /api/studio/account (legal name, email, phone, state)   /api/studio/stripe/connect (payouts, Stripe Connect)
 //   /api/artists/update-artist-name, update-city, update-bio, update-profile-image
 import { NextResponse } from "next/server";
 

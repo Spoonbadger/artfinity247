@@ -14,7 +14,7 @@ export const ARTIST_FILTER_KEYS = ["q", "verified", "status", "balance", "plan",
 export type ArtistListRow = {
   id: string; name: string; slug: string; email: string; city: string; createdAt: Date; role: string;
   verification: string; suspended: boolean; closed: boolean; infinity: boolean; proUntil: Date | null;
-  stripe: ConnectStatus; venmo: boolean; live: number; prints: number; salesCents: number; balanceCents: number;
+  stripe: ConnectStatus; live: number; prints: number; salesCents: number; balanceCents: number;
   adminRole: string | null; emailVerified: boolean; hasPassword: boolean; providers: string[];
 };
 
@@ -83,7 +83,7 @@ export async function listArtists(f: ArtistFilters): Promise<ArtistListRow[]> {
     take: 2000,
     select: {
       id: true, name: true, artist_name: true, slug: true, email: true, city: true, createdAt: true, role: true, verification: true,
-      suspendedAt: true, closedAt: true, proUntil: true, stripeAccountId: true, stripePayoutsEnabled: true, venmoHandle: true,
+      suspendedAt: true, closedAt: true, proUntil: true, stripeAccountId: true, stripePayoutsEnabled: true,
       adminRole: true, emailVerifiedAt: true, password: true, oauthAccounts: { select: { provider: true } },
       _count: { select: { artworks: { where: { status: "APPROVED" } } } },
     },
@@ -94,7 +94,7 @@ export async function listArtists(f: ArtistFilters): Promise<ArtistListRow[]> {
     return {
       id: a.id, name: a.artist_name || a.name, slug: a.slug, email: a.email, city: a.city, createdAt: a.createdAt, role: a.role,
       verification: a.verification, suspended: !!a.suspendedAt, closed: !!a.closedAt, infinity: isProActive(a), proUntil: a.proUntil,
-      stripe: connectStatus(a), venmo: !!a.venmoHandle, live: a._count.artworks,
+      stripe: connectStatus(a), live: a._count.artworks,
       prints: m?.prints ?? 0, salesCents: m?.salesCents ?? 0, balanceCents: m?.balanceCents ?? 0,
       // Only whether a password exists ever leaves this function, never the hash.
       adminRole: a.role === "ADMIN" ? a.adminRole : null, emailVerified: !!a.emailVerifiedAt, hasPassword: !!a.password,

@@ -5,7 +5,6 @@ import { signInMethods } from "@/lib/oauth/account";
 import { enabledProviders } from "@/lib/oauth/providers";
 import { StudioPage } from "@/components/studio/StudioPage";
 import { prisma } from "@/lib/prisma";
-import { VENMO_CONFIRM_HOURS } from "@/lib/venmo";
 import { PAYOUT_DAY_OF_MONTH } from "@/lib/balance";
 import { requireArtist, displayName } from "../_lib/data";
 
@@ -17,11 +16,8 @@ export default async function MyPageEditor() {
   const artist = await requireArtist("/studio/page");
   const acct = await prisma.artist.findUnique({
     where: { id: artist.id },
-    select: { first_name: true, last_name: true, email: true, phone: true, state: true, venmoPending: true, venmoPendingAt: true },
+    select: { first_name: true, last_name: true, email: true, phone: true, state: true },
   });
-  // An unconfirmed Venmo change only counts while its emailed link still works.
-  const pendingLive = acct?.venmoPendingAt && Date.now() - acct.venmoPendingAt.getTime() < VENMO_CONFIRM_HOURS * 3_600_000;
-  const venmoPending = pendingLive ? acct?.venmoPending ?? null : null;
   const m = await signInMethods(artist.id);
   const methods = {
     hasPassword: m?.hasPassword ?? true,
@@ -39,8 +35,7 @@ export default async function MyPageEditor() {
       sub="What buyers see when they scan."
     >
       <ProfileEditor
-        initial={{ name: displayName(artist), city: artist.city || "", bio: artist.bio || "", profileImage: artist.profileImage, venmoHandle: artist.venmoHandle || "" }}
-        venmoPending={venmoPending}
+        initial={{ name: displayName(artist), city: artist.city || "", bio: artist.bio || "", profileImage: artist.profileImage }}
         slug={artist.slug}
         art={art}
         payoutDay={ordinal(PAYOUT_DAY_OF_MONTH)}
