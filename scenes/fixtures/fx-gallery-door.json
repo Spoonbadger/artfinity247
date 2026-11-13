@@ -1,0 +1,49 @@
+{
+  "fixture": true,
+  "source": "Synthetic test fixture",
+  "note": "Drawn by scripts/scenes/make-fixtures.mjs for testing. NOT a photograph; never ship as a real scene.",
+  "description": "Portrait gallery wall with an 80 in door (the reference), a bench and a visitor standing 70 in in front of the wall.",
+  "tags": [
+    "gallery",
+    "person"
+  ],
+  "truth": {
+    "quad": [
+      [
+        350,
+        635
+      ],
+      [
+        1100,
+        635
+      ],
+      [
+        1100,
+        1015
+      ],
+      [
+        350,
+        1015
+      ]
+    ],
+    "anchors": [
+      [
+        725,
+        885
+      ]
+    ],
+    "ref": {
+      "a": [
+        205,
+        1185
+      ],
+      "b": [
+        205,
+        785
+      ],
+      "kind": "door",
+      "inches": 80
+    },
+    "ppiWall": 5
+  }
+}

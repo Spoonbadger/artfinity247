@@ -1,0 +1,76 @@
+{
+  "id": "pixabay-2596976",
+  "version": 1,
+  "image": {
+    "w": 1280,
+    "h": 922
+  },
+  "status": "ok",
+  "quad": [
+    [
+      12.8,
+      73.76
+    ],
+    [
+      1267.2,
+      73.76
+    ],
+    [
+      1267.2,
+      746.82
+    ],
+    [
+      12.8,
+      746.82
+    ]
+  ],
+  "anchors": [
+    [
+      1107.2,
+      350.36
+    ],
+    [
+      140.8,
+      350.36
+    ]
+  ],
+  "ref": {
+    "a": [
+      492.8,
+      756.04
+    ],
+    "b": [
+      492.8,
+      124.47000000000001
+    ],
+    "kind": "door",
+    "inches": 80
+  },
+  "ref2": null,
+  "lens": null,
+  "tint": "#d9d9d8",
+  "shadow": {
+    "angle": 70,
+    "strength": 0.5
+  },
+  "tags": [
+    "living"
+  ],
+  "softness": 0.4,
+  "updatedAt": "2026-11-05T22:05:17.974Z",
+  "computed": {
+    "ppi": 7.895,
+    "wallIn": {
+      "w": 158.9,
+      "h": 85.3
+    },
+    "focal": 1021,
+    "focalSource": "frontal",
+    "usableSizes": [
+      "small",
+      "medium",
+      "large",
+      "xl"
+    ]
+  }
+}

@@ -1,165 +1,117 @@
-import QRCode from 'qrcode'
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
-import fs from 'fs/promises'
-import path from 'path'
+// Print sheets for QR cards: each card is drawn as SVG (components/qr/card.ts),
+// rasterised at print resolution with sharp, then tiled on US Letter with pdf-lib.
+import sharp from "sharp";
+import { PDFDocument, StandardFonts, rgb, type PDFImage } from "pdf-lib";
+import { cardSVG, customName, freeDesign, renderCard, sheetLayout, FORMATS, type ArtInfo, type Design, type FormatKey } from "@/components/qr/card";
+import { loadFonts } from "@/components/qr/text";
+import { artPalette, artThumb } from "@/lib/qr/palette";
 
-type GenerateQrPdfInput = { title: string; artistName: string; url: string }
+export type CardJob = { design: Design; art: ArtInfo; qrText: string };
+/**
+ * pro: the artist's plan. false = a Free artist: Infinity extras fall back to the closest free look (same format,
+ * style, ink and colours) instead of failing, e.g. an old link to an Infinity design. Leave it out only where the
+ * designs are known to be free.
+ */
+export type PdfPlan = { pro?: boolean };
 
-// Horizontal business-card style
-// const CARD = { w: 420, h: 210 }
-const CARD = { w: 265.5, h: 132.75 }
-const PAD = 20
+/**
+ * Ready a job to print: the plan fallback, Match your art's palette for THIS piece (Print all shares one design across
+ * pieces), and the thumbnail as an embedded image (the rasteriser can't fetch URLs).
+ */
+export async function prepareJob(job: CardJob, plan: PdfPlan = {}): Promise<CardJob> {
+  let design = plan.pro === false ? freeDesign(job.design) : job.design;
+  let art = job.art;
+  if (design.extras.includes("match") && (design.paletteOf !== art.slug || !design.palette.length)) {
+    const p = await artPalette(art.imageUrl).catch(() => null);
+    design = { ...design, palette: p?.palette ?? [], paletteOf: art.slug };
+  }
+  if (design.extras.includes("thumb") && !art.thumb?.startsWith("data:")) {
+    const t = await artThumb(art).catch(() => null);
+    art = { ...art, thumb: t ?? "" };
+  }
+  return design === job.design && art === job.art ? job : { ...job, design, art };
+}
 
-export async function generateQrPdf({
-  title,
-  artistName,
-  url,
-}: GenerateQrPdfInput): Promise<Uint8Array> {
+/**
+ * One job + fill: a full sheet of the same card (the Studio's "Download PDF").
+ * Several jobs: one card each, as many sheets as needed. All jobs use the first job's format.
+ */
+export async function generateQrPdf(rawJobs: CardJob[], opts: PdfPlan & { fill?: boolean; hint?: string | ((sheet: number, sheets: number) => string); title?: string } = {}): Promise<Uint8Array> {
+  if (!rawJobs.length) throw new Error("No cards to print");
+  // Same job object in, same prepared job out, so repeated cards are still rasterised once.
+  const ready = new Map<CardJob, CardJob>();
+  for (const j of rawJobs) if (!ready.has(j)) ready.set(j, await prepareJob(j, opts));
+  const jobs = rawJobs.map((j) => ready.get(j)!);
+  const fonts = await loadFonts();
+  const fmt = jobs[0].design.format, custom = jobs[0].design.custom;
+  const L = sheetLayout(fmt, custom);
+  const list = opts.fill && jobs.length === 1 ? Array.from({ length: L.slots.length }, () => jobs[0]) : jobs;
+  // Big cards (the poster, large custom sizes) rasterise at 200 dpi to keep the file small.
+  const dpi = L.cw * L.ch > 30 * 72 * 72 ? 200 : 300;
+  const gapY = L.gy;
+  const name = custom ? customName(custom) : FORMATS[fmt].name;
 
-  const pdfDoc = await PDFDocument.create()
-const PAGE = { w: 595, h: 842 }
-const PAGE_PAD_X = 24
-const PAGE_PAD_Y = 24
+  const pdf = await PDFDocument.create();
+  pdf.setTitle(opts.title || (jobs.length === 1 ? `${jobs[0].art.title} · ${name}` : `Artfinity QR cards · ${name}`));
+  pdf.setAuthor(jobs[0].art.artist);
+  pdf.setCreator("Artfinity QR Studio");
+  const helv = await pdf.embedFont(StandardFonts.Helvetica);
+  const ink = rgb(0.08, 0.09, 0.11);
 
-const page = pdfDoc.addPage([PAGE.w, PAGE.h])
-
-const x = PAGE_PAD_X
-const y = PAGE.h - PAGE_PAD_Y - CARD.h
-
-  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica)
-  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
-
-  // Load favicon logo
-  const faviconPath = path.join(
-    process.cwd(),
-    'public',
-    'favicons',
-    'apple-touch-icon.png'
-  )
-  const faviconBytes = await fs.readFile(faviconPath)
-  const faviconImg = await pdfDoc.embedPng(faviconBytes)
-
-  // Background card
-  page.drawRectangle({
-    x: x, y: y,
-    width: CARD.w,
-    height: CARD.h,
-    color: rgb(1, 1, 1),
-    borderColor: rgb(0.9, 0.9, 0.9),
-    borderWidth: 1,
-  })
-
-  // Left/right columns
-  const leftW = CARD.w * 0.55
-  const rightW = CARD.w - leftW
-
-  // --- Logo (top left)
-  const logoSize = 24
-const titleSize = 14
-const artistSize = 10
-const ctaSize = 6
-  // const logoSize = 40
-const logoX = x + PAD
-const logoY = y + CARD.h - PAD - logoSize
-
-  page.drawImage(faviconImg, {
-    x: logoX,
-    y: logoY,
-    width: logoSize,
-    height: logoSize,
-  })
-
-let textY = logoY - logoSize
-
-  // const titleSize = 18
-  const maxWidth = leftW - PAD * 1.2
-
-  const words = title.split(' ')
-  let line = ''
-  let lines: string[] = []
-
-  for (const word of words) {
-    const testLine = line ? line + ' ' + word : word
-    const width = fontBold.widthOfTextAtSize(testLine, titleSize)
-
-    if (width > maxWidth) {
-      lines.push(line)
-      line = word
-    } else {
-      line = testLine
+  const images = new Map<CardJob, PDFImage>();
+  let page = null as ReturnType<typeof pdf.addPage> | null;
+  for (let i = 0; i < list.length; i++) {
+    const slot = i % L.slots.length;
+    if (slot === 0) {
+      page = pdf.addPage([L.W, L.H]);
+      for (const [x1, y1, x2, y2] of L.marks) page.drawLine({ start: { x: x1, y: L.H - y1 }, end: { x: x2, y: L.H - y2 }, thickness: 0.5, color: ink });
+      const bottom = L.slots.length ? L.H - (L.slots[L.slots.length - 1].y + L.ch) : 0;
+      if (bottom > 22) {
+        const sheets = Math.ceil(list.length / L.slots.length);
+        const hint = (typeof opts.hint === "function" ? opts.hint(i / L.slots.length + 1, sheets) : opts.hint) || (custom && custom.sheet !== "auto" ? `Print at 100% (actual size) on ${name}.` : "Print at 100% (actual size). Cut on the marks.");
+        page.drawText(hint, { x: (L.W - helv.widthOfTextAtSize(hint, 7)) / 2, y: 8, size: 7, font: helv, color: rgb(0.45, 0.46, 0.5) });
+      }
+    }
+    const job = list[i];
+    let img = images.get(job);
+    if (!img) {
+      const card = renderCard(job.design, job.art, fonts, job.qrText, `p${images.size}`);
+      const png = await sharp(Buffer.from(cardSVG(card)), { density: dpi }).png({ compressionLevel: 9 }).toBuffer();
+      img = await pdf.embedPng(png);
+      images.set(job, img);
+    }
+    const p = L.slots[slot];
+    page!.drawImage(img, { x: p.x, y: L.H - p.y - L.ch, width: L.cw, height: L.ch });
+    // Mixed sheets with gaps (stickers): a small caption below each card, outside the cut, says which piece it is.
+    if (!opts.fill && gapY >= 18) {
+      let cap = job.art.title;
+      while (cap.length > 3 && helv.widthOfTextAtSize(cap, 6.5) > L.cw) cap = cap.slice(0, -2);
+      if (cap !== job.art.title) cap = cap.trimEnd() + "...";
+      try {
+        page!.drawText(cap, { x: p.x + (L.cw - helv.widthOfTextAtSize(cap, 6.5)) / 2, y: L.H - p.y - L.ch - 11, size: 6.5, font: helv, color: rgb(0.45, 0.46, 0.5) });
+      } catch { /* title has characters the standard PDF font can't draw: skip the caption */ }
     }
   }
-  if (line) lines.push(line)
+  return pdf.save();
+}
 
-  // Limit to 3 lines max
-  if (lines.length > 3) {
-    lines = [lines[0], lines[1], lines[2] + "…"]
+/**
+ * The print queue's mixed sheets: DIFFERENT pieces packed onto the same sheets, each repeated `qty` times, in order
+ * (3 labels of piece A and 7 of piece B fill one 10-up sheet). Every job must be in `fmt`; others are skipped.
+ * Each distinct card is rasterised once.
+ */
+export async function generateMixedQrPdf(items: { job: CardJob; qty: number }[], fmt: FormatKey, opts: PdfPlan & { title?: string; footer?: string } = {}): Promise<Uint8Array> {
+  const list: CardJob[] = [];
+  for (const it of items) {
+    if (it.job.design.format !== fmt) continue;
+    // Queue sheets share one grid per format, so a custom size (which the queue doesn't take) prints at the format's size.
+    const job = it.job.design.custom ? { ...it.job, design: { ...it.job.design, custom: null } } : it.job;
+    for (let i = 0; i < Math.max(0, Math.floor(it.qty)); i++) list.push(job);
   }
-
-  for (const l of lines) {
-    page.drawText(l, {
-x: x + PAD,
-      y: textY,
-      size: titleSize,
-      font: fontBold,
-      color: rgb(0, 0, 0),
-    })
-    textY -= titleSize + 4
-  }
-
-  // const artistSize = 14
-  page.drawText(artistName, {
-x: x + PAD,
-    y: textY,
-    size: artistSize,
-    font: fontRegular,
-    color: rgb(0.25, 0.25, 0.25),
-  })
-
-  // --- QR Code (right side)
-  const qrPng = await QRCode.toBuffer(url, {
-    errorCorrectionLevel: 'M',
-    margin: 1,
-    scale: 6,
-  })
-  const qrImg = await pdfDoc.embedPng(qrPng)
-
-const qrSize = Math.min(CARD.h - PAD * 2, rightW - PAD * 2) * 0.9
-  const qrX = x + leftW + (rightW - qrSize) / 2
-const qrY = y + (CARD.h - qrSize) / 2
-
-  page.drawImage(qrImg, {
-    x: qrX,
-    y: qrY,
-    width: qrSize,
-    height: qrSize,
-  })
-
-  // --- CTA under QR
-  const cta = 'Scan to view this artwork and order prints'
-  // const ctaSize = 8
-  const ctaWidth = fontRegular.widthOfTextAtSize(cta, ctaSize)
-
-  page.drawText(cta, {
-x: x + leftW + (rightW - ctaWidth) / 2,
-y: y + PAD / 2 + 10,
-    size: ctaSize,
-    font: fontRegular,
-    color: rgb(0.35, 0.35, 0.35),
-  })
-
-  // --- URL (tiny)
-  // const urlSize = 7
-  // const urlWidth = fontRegular.widthOfTextAtSize(url, urlSize)
-
-  // page.drawText(url, {
-  //   x: leftW + (rightW - urlWidth) / 2,
-  //   y: PAD / 2,
-  //   size: urlSize,
-  //   font: fontRegular,
-  //   color: rgb(0.5, 0.5, 0.5),
-  // })
-
-  // Output as PDF
-  return pdfDoc.save()
+  if (!list.length) throw new Error("No cards to print");
+  return generateQrPdf(list, {
+    title: opts.title,
+    pro: opts.pro,
+    hint: (sheet, sheets) => `${opts.footer ? `${opts.footer} · ` : ""}Sheet ${sheet} of ${sheets} · Print at 100% (actual size). Cut on the marks.`,
+  });
 }

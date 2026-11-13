@@ -1,206 +1,145 @@
-'use client'
+import type { Metadata } from "next";
+import { prisma } from "@/lib/prisma";
+import { adminRoleOrRedirect } from "../_components/gate";
+import { roleCan } from "@/lib/adminCaps";
+import { itemBreakdown, normalizeSize } from "@/lib/sales";
+import MonthPicker from "../_components/MonthPicker";
+import { PageHead } from "../_components/ui";
+import OrdersBoard, { type AdminOrder, type Filter } from "../_components/OrdersBoard";
+import { activeRefunds } from "@/lib/refunds";
+import { currentMonth, monthLabel, monthRange, usd } from "../_components/util";
+import { trackingForOrders } from "@/lib/shipping/store";
+import { PARCEL_TAG, splitParcelTag } from "@/lib/artistEmails";
+import { certPath } from "@/lib/certificates";
+import { printerAuto, printerState } from "@/lib/printer";
 
-import Link from 'next/link'
-import { useEffect, useState } from 'react'
+export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Orders" };
 
-type OrderItem = {
-  imageUrl: any
-  id: string
-  slug: string | null
-  size: string | null
-  frameChosen: boolean
-  frameColor: string | null
-  quantity: number | null
-  unitPrice: number | null
-  lineTotal: number | null
-  printCost: number | null
-  shippingCost: number | null
-  laborCost: number | null
-  websiteCost: number | null
-  profit: number
-  artistShare: number
-  companyShare: number
-  artwork: {
-    artistId: string
-  }
-}
+const FILTERS: Record<string, Filter> = { print: "print", ship: "ship", shipped: "done", done: "done" };
 
-type Order = {
-  shippingAddress: string | null
-  shippingName: string | null
-  id: string
-  stripeSessionId: string
-  email: string | null
-  amountTotal: number | null
-  currency: string | null
-  paymentStatus: string
-  createdAt: string
-  shippingStatus: string
-  sentToPrinter: Boolean
-  items: OrderItem[]
-}
+export default async function AdminOrdersPage({ searchParams }: { searchParams: { month?: string; filter?: string } }) {
+  const admin = await adminRoleOrRedirect("/admin/orders");
+  const monthRows = await prisma.$queryRaw<{ m: string }[]>`
+    SELECT DISTINCT to_char("createdAt" AT TIME ZONE 'UTC', 'YYYY-MM') AS m FROM "Order" ORDER BY m DESC`;
+  const months = Array.from(new Set([currentMonth(), ...monthRows.map((r) => r.m)])).sort().reverse();
+  const month = searchParams.month === "all" || (searchParams.month && monthRange(searchParams.month))
+    ? searchParams.month!
+    : monthRows[0]?.m ?? currentMonth();
+  const range = month === "all" ? null : monthRange(month);
 
-export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([])
-  const [selectedMonth, setSelectedMonth] = useState(
-    new Date().toISOString().slice(0, 7) // current month YYYY-MM
-  )
+  const orders = await prisma.order.findMany({
+    where: range ? { createdAt: { gte: range.start, lt: range.end } } : undefined,
+    orderBy: { createdAt: "desc" },
+    include: {
+      items: {
+        include: { artwork: { select: { title: true, sensitive: true, artist: { select: { artist_name: true, name: true, slug: true } } } } },
+      },
+    },
+  });
 
-  const months = ["all", ...Array.from({ length: 12 }).map((_, i) => {
-    const d = new Date()
-    d.setMonth(d.getMonth() - i)
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-  })]
+  // Tracking: the order's columns, else the older Message on the order (lib/shipping/store.ts).
+  const trackingByOrder = await trackingForOrders(orders);
 
-  useEffect(() => {
-    const url = selectedMonth === "all"
-      ? "/api/admin/orders"
-      : `/api/admin/orders?month=${selectedMonth}`
-
-    fetch(url)
-      .then(res => res.json())
-      .then(setOrders)
-  }, [selectedMonth])
-
-
-  const updateStatus = async (orderId: string, newStatus: string) => {
-    try {
-      const res = await fetch(`/api/orders/${orderId}/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shippingStatus: newStatus }),
+  // Artists' thank-you notes to print into the parcel: Messages tagged [parcel] on the order (Studio customer page).
+  const parcelRows = orders.length
+    ? await prisma.message.findMany({
+        where: { orderId: { in: orders.map((o) => o.id) }, direction: "out", subject: { startsWith: PARCEL_TAG } },
+        orderBy: { createdAt: "asc" },
+        select: { id: true, orderId: true, subject: true, body: true, createdAt: true, artist: { select: { artist_name: true, name: true } } },
       })
-      if (!res.ok) throw new Error('Failed to update')
-      setOrders(prev =>
-        prev.map(o =>
-          o.id === orderId ? { ...o, shippingStatus: newStatus } : o
-        )
-      )
-    } catch (err) {
-      console.error(err)
-      alert('Could not update shipping status')
-    }
+    : [];
+  const parcelByOrder = new Map<string, NonNullable<AdminOrder["parcelNotes"]>>();
+  for (const m of parcelRows) {
+    if (!m.orderId) continue;
+    const list = parcelByOrder.get(m.orderId) ?? [];
+    list.push({ id: m.id, artistName: m.artist.artist_name || m.artist.name, subject: splitParcelTag(m.subject).subject, body: m.body, createdAt: m.createdAt.toISOString() });
+    parcelByOrder.set(m.orderId, list);
   }
 
-  const toggleSent = async (orderId: string) => {
-    const order = orders.find(o => o.id === orderId)
-    if (!order) return
+  const refunds = await activeRefunds(orders.map((o) => o.id));
 
-    const newValue = !order.sentToPrinter
+  const shaped: AdminOrder[] = orders.map((o) => {
+    const items = o.items.map((it) => {
+      // Authoritative money math (60/40 or 50/50 by order date) lives in lib/sales.ts.
+      const b0 = itemBreakdown({ lineTotal: it.lineTotal, unitPrice: it.unitPrice, quantity: it.quantity, size: it.size, frameChosen: it.frameChosen, orderDate: o.createdAt, artistSplit: it.artistSplit });
+      // Bulk = an artist buying their own prints at cost: no artist share.
+      const b1 = o.kind === "bulk" ? { ...b0, companyShare: b0.companyShare + b0.artistShare, artistShare: 0 } : b0;
+      // A refund that reversed the artist's share leaves them nothing on the line.
+      const b = refunds.get(it.id)?.reversed ? { ...b1, artistShare: 0 } : b1;
+      const size = normalizeSize(it.size);
+      return {
+        id: it.id,
+        slug: it.slug,
+        title: it.title || it.artwork?.title || it.slug || "Untitled",
+        artistName: it.artistName || it.artwork?.artist.artist_name || it.artwork?.artist.name || "",
+        artistSlug: it.artwork?.artist.slug ?? null,
+        artworkId: it.artworkId,
+        imageUrl: it.imageUrl,
+        sensitive: it.artwork?.sensitive ?? [],
+        size,
+        frameChosen: it.frameChosen,
+        frameColor: it.frameColor,
+        quantity: b.quantity,
+        lineTotal: b.lineTotal,
+        expenses: b.expenses,
+        profit: b.profit,
+        artistShare: b.artistShare,
+        companyShare: b.companyShare,
+        // Limited editions: print the certificate of authenticity into the parcel (lib/certificates.ts).
+        certPath: o.paymentStatus === "paid" && it.editionNumber && it.artworkId ? certPath(it.id) : null,
+      };
+    });
+    return {
+      id: o.id,
+      stripeSessionId: o.stripeSessionId,
+      email: o.email,
+      amountTotal: o.amountTotal,
+      paymentStatus: o.paymentStatus,
+      createdAt: o.createdAt.toISOString(),
+      shippingName: o.shippingName,
+      shippingAddress: o.shippingAddress,
+      shippingStatus: o.shippingStatus,
+      sentToPrinter: o.sentToPrinter,
+      printer: printerState(o),
+      kind: o.kind,
+      items,
+      tracking: trackingByOrder.get(o.id) ?? null,
+      parcelNotes: parcelByOrder.get(o.id) ?? [],
+      refundedItems: o.items.filter((it) => refunds.has(it.id)).length,
+    };
+  });
 
-    await fetch(`/api/orders/${orderId}/sent`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sent: newValue })
-    })
+  const paid = shaped.filter((o) => o.paymentStatus === "paid");
+  const gross = paid.reduce((n, o) => n + o.amountTotal, 0);
+  const artistTotal = paid.reduce((n, o) => n + o.items.reduce((m, i) => m + i.artistShare, 0), 0);
+  const companyTotal = paid.reduce((n, o) => n + o.items.reduce((m, i) => m + i.companyShare, 0), 0);
+  const prints = paid.reduce((n, o) => n + o.items.reduce((m, i) => m + i.quantity, 0), 0);
 
-    setOrders(prev =>
-      prev.map(o =>
-        o.id === orderId ? { ...o, sentToPrinter: newValue } : o
-      )
-    )
-  }
+  const toPrint = shaped.filter((o) => !o.sentToPrinter && o.shippingStatus === "pending").length;
+  const toShip = shaped.filter((o) => o.shippingStatus === "pending").length;
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Admin Orders View</h1>
-      <div className="flex items-center gap-2 mb-4">
-        <label htmlFor="month" className="font-medium">Select month:</label>
-        <select
-          id="month"
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(e.target.value)}
-          className="border rounded px-2 py-1"
-        >
-          {months.map(m => (
-            <option key={m} value={m}>{m}</option>
-          ))}
-        </select>
+    <div className="grid gap-5">
+      <PageHead
+        title="Orders"
+        sub={toPrint || toShip ? `${toPrint} to print · ${toShip} to ship` : "Everything's shipped"}
+        action={
+          <>
+            <MonthPicker months={months} value={month} />
+            {month !== "all" && roleCan(admin.adminRole, "money") && <a href={`/api/admin/payouts?month=${month}`} className="btn btn-ghost btn-sm">Export CSV</a>}
+          </>
+        }
+      />
 
-        <Link
-          href={`/api/admin/payouts?month=${selectedMonth}`}
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-        >
-          Export CSV
-        </Link>
-      </div>
-      <div className="space-y-4">
-        {orders.map(order => (
-          <div key={order.id} className="border rounded p-4 shadow">
-            <div><strong>Email:</strong> {order.email}</div>
-            <div><strong>Status:</strong> {order.paymentStatus}</div>
-            <div><strong>Amount:</strong>{' '}
-              {new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: order.currency || 'USD',
-              }).format((order.amountTotal || 0) / 100)}
-            </div>
-            <div><strong>Stripe ID:</strong> {order.stripeSessionId}</div>
-            <div><strong>Created:</strong> {new Date(order.createdAt).toLocaleString()}</div>
-            <div><strong>Ship To:</strong></div>
-            <div>{order.shippingName}</div>
-            <div>{order.shippingAddress}</div>
-            <div className="mt-2">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={!!order.sentToPrinter}
-                  onChange={() => toggleSent(order.id)}
-                />
-                Sent to printer
-              </label>
-            </div>
-            <div><strong>Shipping:</strong>
-              <select
-                value={order.shippingStatus || 'pending'}
-                onChange={e => updateStatus(order.id, e.target.value)}
-                className="ml-2 border rounded px-2 py-1"
-              >
-                <option value="pending">Pending</option>
-                <option value="shipped">Shipped</option>
-                <option value="delivered">Delivered</option>
-              </select>
-            </div>
+      <dl className="num flex flex-wrap gap-x-6 gap-y-1 text-[14px]">
+        <div className="flex gap-1.5"><dt className="text-ink-2">{month === "all" ? "All time" : monthLabel(month)}:</dt><dd className="font-semibold">{paid.length} paid · {prints} prints</dd></div>
+        <div className="flex gap-1.5"><dt className="text-ink-2">Sales</dt><dd className="font-semibold">{usd(gross)}</dd></div>
+        <div className="flex gap-1.5"><dt className="text-ink-2">Owed to artists</dt><dd className="font-semibold">{usd(artistTotal)}</dd></div>
+        <div className="flex gap-1.5"><dt className="text-ink-2">Artfinity</dt><dd className="font-semibold text-earned">{usd(companyTotal)}</dd></div>
+      </dl>
 
-            {/* --- Items breakdown --- */}
-            <div className="mt-4">
-              <h3 className="font-semibold">Items</h3>
-              {order.items.map(item => (
-                <div key={item.id} className="ml-4 mt-2 border-t pt-2 text-sm">
-                  <div><strong>Artwork:</strong> {item.slug} ({item.size})</div>
-                  <div>
-                    <strong>Frame:</strong>{" "}
-                    {item.frameChosen ? `Yes${item.frameColor ? ` — ${item.frameColor}` : ""}` : "No"}
-                  </div>
-                  {item.imageUrl && (
-                    <div>
-                      <a
-                        href={item.imageUrl?.replace("/upload/f_auto,q_auto/", "/upload/fl_attachment/")}
-                        target="_blank"
-                        className="text-blue-600 underline"
-                      >
-                        Download Artwork
-                      </a>
-                    </div>
-                  )}
-                  <div><strong>Line Total:</strong> ${((item.lineTotal ?? 0) / 100).toFixed(2)}</div>
-                  <div><strong>Costs:</strong>{' '}
-                    print+shipping cost ${(item.printCost ?? 0)/100},{' '}
-                    {/* ship ${(item.shippingCost ?? 0)/100},{' '} */}
-                    labor ${(item.laborCost ?? 0)/100},{' '}
-                    site+stripe ${(item.websiteCost ?? 0)/100},
-                     Total expenses: ${((item.printCost ?? 0)/100) + ((item.laborCost ?? 0)/100) + ((item.websiteCost ?? 0)/100)}
-                  </div>
-                  <div><strong>Profit:</strong> ${(item.profit/100).toFixed(2)} →{' '}
-                    Artist ${(item.artistShare/100).toFixed(2)} /{' '}
-                    Company ${(item.companyShare/100).toFixed(2)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+      <OrdersBoard key={month} orders={shaped} printerAuto={printerAuto()} initialFilter={FILTERS[searchParams.filter || ""]} />
     </div>
-  )
+  );
 }

@@ -1,14 +1,6 @@
-'use client'
+import { redirect } from "next/navigation";
 
-import ArtworkUploadForm from '@/components/forms/ArtworkUploadForm'
-
-export const dynamic = "force-dynamic"
-
-export default function UploadArtworkPage() {
-  return (
-    <div className="max-w-xl mx-auto py-8">
-      <h1 className="text-2xl font-bold mb-6">Upload New Artwork</h1>
-      <ArtworkUploadForm />
-    </div>
-  )
+// Old dashboard route. The artist Studio replaced it.
+export default function Page() {
+  redirect("/studio/art/new");
 }

@@ -1,3 +1,7 @@
+# Single-package repo. pnpm 9 (which Vercel may pick from the lockfile) refuses this file without a packages list.
+packages:
+  - '.'
+
 onlyBuiltDependencies:
   - '@prisma/client'
   - '@prisma/engines'
@@ -5,3 +9,13 @@ onlyBuiltDependencies:
   - prisma
   - sharp
   - unrs-resolver
+  # Built-in local database (pnpm local): its post-install step links the Postgres binaries
+  - '@embedded-postgres/darwin-arm64'
+  - '@embedded-postgres/darwin-x64'
+  - '@embedded-postgres/linux-x64'
+  - '@embedded-postgres/linux-arm64'
+  - '@embedded-postgres/windows-x64'
+
+# core-js only prints a donation message on install; skip it without the "Ignored build scripts" warning.
+ignoredBuiltDependencies:
+  - core-js

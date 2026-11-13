@@ -1,0 +1,5 @@
+# Artfinity ai.txt
+# Artists' work on this site may not be used to train AI or machine-learning models,
+# or for any text and data mining. See /robots.txt and /.well-known/tdmrep.json.
+User-Agent: *
+Disallow: /

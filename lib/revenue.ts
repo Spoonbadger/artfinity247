@@ -1,12 +1,72 @@
 // /lib/revenue.ts
 // All currency is in CENTS. Never use floats for money.
+import type { Prisma, PrismaClient } from "@prisma/client"
+import { PRO, isProActive, type PlanId } from "@/lib/plans"
 
 export type PrintSize = "S" | "M" | "L" | "XL"
 
+/** The Free plan's split for an order date. Orders that stored OrderItem.artistSplit use that instead. */
 export function getArtistSplit(orderDate: Date): number {
   const changeDate = new Date("2026-10-21T00:00:00-04:00")
 
   return orderDate >= changeDate ? 0.6 : 0.5
+}
+
+/**
+ * Plan-aware split at order time. Infinity (proUntil after the order date) gets PRO.split from lib/plans.ts,
+ * unless PRO.monthlyPrintCap is set and the artist already sold that many Infinity-split prints this month.
+ */
+export function getArtistSplitFor(args: {
+  orderDate: Date
+  plan?: PlanId | string | null
+  proUntil?: Date | string | null
+  /** Prints already paid at the Infinity split this calendar month (only matters when a cap is set). */
+  proPrintsThisMonth?: number
+}): number {
+  const base = getArtistSplit(args.orderDate)
+  if (!isProActive({ proUntil: args.proUntil }, args.orderDate)) return base
+  if (PRO.monthlyPrintCap != null && (args.proPrintsThisMonth ?? 0) >= PRO.monthlyPrintCap) return base
+  return Math.max(base, PRO.split)
+}
+
+type SplitDb = Pick<PrismaClient, "artist" | "orderItem"> | Prisma.TransactionClient
+
+/**
+ * The split to store on each new OrderItem (OrderItem.artistSplit), in line order.
+ * Lines whose artist is unknown get the Free split for the date.
+ */
+export async function artistSplitsForOrder(db: SplitDb, lines: { artistId: string | null | undefined; quantity: number }[], orderDate: Date): Promise<number[]> {
+  const ids = Array.from(new Set(lines.map((l) => l.artistId).filter((x): x is string => !!x)))
+  const artists = ids.length
+    ? await db.artist.findMany({ where: { id: { in: ids } }, select: { id: true, plan: true, proUntil: true } })
+    : []
+  const byId = new Map(artists.map((a) => [a.id, a]))
+
+  // With a monthly cap, count this month's prints already paid at the Infinity split.
+  const used = new Map<string, number>()
+  if (PRO.monthlyPrintCap != null) {
+    const monthStart = new Date(orderDate.getFullYear(), orderDate.getMonth(), 1)
+    for (const a of artists) {
+      if (!isProActive(a, orderDate)) continue
+      const agg = await db.orderItem.aggregate({
+        _sum: { quantity: true },
+        where: {
+          artwork: { artistId: a.id },
+          artistSplit: { gte: PRO.split },
+          order: { paymentStatus: "paid", createdAt: { gte: monthStart } },
+        },
+      })
+      used.set(a.id, agg._sum.quantity ?? 0)
+    }
+  }
+
+  return lines.map((l) => {
+    const a = l.artistId ? byId.get(l.artistId) : undefined
+    if (!a) return getArtistSplit(orderDate)
+    const split = getArtistSplitFor({ orderDate, plan: a.plan, proUntil: a.proUntil, proPrintsThisMonth: used.get(a.id) ?? 0 })
+    if (split >= PRO.split && PRO.monthlyPrintCap != null) used.set(a.id, (used.get(a.id) ?? 0) + l.quantity)
+    return split
+  })
 }
 
 // export const FRAME_ARTIST_BONUS = 500
@@ -52,6 +112,8 @@ export function calcItemProfitCents(args: {
   frameChosen?: boolean
   quantity?: number
   orderDate: Date
+  /** OrderItem.artistSplit, locked in when the order was placed. Falls back to getArtistSplit(orderDate). */
+  artistSplit?: number | null
 }) {
   const {
     lineTotal,
@@ -59,6 +121,7 @@ export function calcItemProfitCents(args: {
     frameChosen = false,
     quantity = 1,
     orderDate,
+    artistSplit,
   } = args
 
   const unitItemCost = frameChosen
@@ -79,7 +142,8 @@ export function calcItemProfitCents(args: {
 
   const profit = Math.max(0, lineTotal - expenses)
 
-  const artistShare = Math.round(profit * getArtistSplit(orderDate))
+  const split = typeof artistSplit === "number" && artistSplit > 0 && artistSplit < 1 ? artistSplit : getArtistSplit(orderDate)
+  const artistShare = Math.round(profit * split)
   const companyShare = profit - artistShare
 
 
@@ -97,5 +161,6 @@ export function calcItemProfitCents(args: {
     profit,
     artistShare,
     companyShare,
+    split,
   }
 }

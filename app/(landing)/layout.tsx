@@ -1,50 +1,16 @@
-"use client";
-
-import { ReactNode } from "react"
-import { cn } from "@/lib/utils";
-import { usePathname } from "next/navigation";
-import { useLoadingStatus } from "@/components/contexts";
-import { NavBar, Footer } from "@/components/layout";
-import PageLoading from "@/components/PageLoading";
-import { getAppPages } from "@/db/query";
+import { ReactNode } from "react";
+import SiteHeader from "@/components/site/SiteHeader";
+import SiteFooter from "@/components/site/SiteFooter";
 import CookieBanner from "@/components/CookieBanner";
 
-
-const AppPages = getAppPages();
-
-const Layout = ({ children }: { children: ReactNode }) => {
-  const pathname = usePathname();
-  const { isLoading } = useLoadingStatus();
-
-  const fixedNavPages: string[] = [
-    "/",
-    `/${AppPages.search.slug}`,
-    `/${AppPages.contact.slug}`,
-    `/${AppPages.about_us.slug}`,
-    `/${AppPages.products.slug}`,
-    `/${AppPages.sellers.slug}`,
-  ];
-  const fixedNavStartPaths: string[] = [`/${AppPages.scenes.slug}`];
-
-  const fixedNavPage =
-    fixedNavPages.includes(pathname) ||
-    fixedNavStartPaths.some((startPath) => pathname?.startsWith(startPath));
-
-
+// The header hides itself on artist storefront pages, which render their own (with the artist's name).
+export default function Layout({ children }: { children: ReactNode }) {
   return (
-    <div
-      className={cn(
-        "app",
-        isLoading && "fixed inset-0 -z-50 max-h-[100svh] overflow-hidden",
-      )}
-    >
-      <NavBar fixedNav={fixedNavPage} />
-      <main>{children}</main>
-      <Footer />
+    <div className="flex min-h-[100svh] flex-col">
+      <SiteHeader />
+      <main className="flex-1">{children}</main>
+      <SiteFooter />
       <CookieBanner />
-      {isLoading && <PageLoading />}
     </div>
   );
-};
-
-export default Layout;
+}

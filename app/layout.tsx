@@ -1,70 +1,68 @@
 import { ReactNode } from "react";
-import { type Metadata } from "next";
-import { Crimson_Text, Karla, Roboto, Roboto_Mono, Libre_Bodoni } from "next/font/google"
+import { type Metadata, type Viewport } from "next";
+import localFont from "next/font/local";
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
-import { getAppConfigs } from "@/db/query";
 import Provider from "@/components/contexts";
+import BrushDefs from "@/components/af/BrushDefs";
+import PwaSetup from "@/components/pwa/PwaSetup";
+import SkipLink from "@/components/a11y/SkipLink";
 import "./globals.css";
 
-
-const crimsonText = Crimson_Text({
-  subsets: ["latin"],
-  weight: ["400", "600", "700"],
-  variable: "--font-primary",
+// Bundled in /fonts (see fonts/README.md) so the build never downloads from Google Fonts.
+// Bricolage Grotesque is variable: weight 200-800 plus the wdth and opsz axes.
+const display = localFont({
+  src: "../fonts/bricolage-grotesque-200-800.woff2",
+  weight: "200 800",
+  variable: "--font-display",
+  display: "swap",
 });
-const roboto = Roboto({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "700", "900"],
-  variable: "--font-secondary",
+const body = localFont({
+  src: "../fonts/instrument-sans-400-700.woff2",
+  weight: "400 700",
+  variable: "--font-body",
+  display: "swap",
 });
-const robotoMono = Roboto_Mono({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-tertiary",
-});
-const karla = Karla({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-quaternary",
-});
-
-const libreBodoni = Libre_Bodoni({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-quinary",
-})
-
-const AppConfigs = getAppConfigs();
 
 export const metadata: Metadata = {
-  title: {
-    absolute: "",
-    default: `${AppConfigs.app_name || "Demo App"}`,
-    template: `%s: ${AppConfigs.app_name || "Demo App"}`,
+  title: { default: "Artfinity · From paint to print", template: "%s · Artfinity" },
+  description:
+    "Artists upload their work free, print a QR code to hang beside it, and get paid when people scan it and buy a print.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com"),
+  // Opt out of AI training. Pages that set their own robots (admin, studio) replace this.
+  robots: "noai, noimageai",
+  icons: {
+    icon: [
+      { url: "/brand/favicon.svg", type: "image/svg+xml" },
+      { url: "/brand/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/brand/favicon-16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: [{ url: "/brand/apple-touch-icon.png", sizes: "180x180" }],
   },
-  description: `${AppConfigs.app_description || "This is a demo app."}`,
+  // Installable Studio app (app/manifest.ts): iOS home-screen name and full-screen launch.
+  appleWebApp: { capable: true, title: "Artfinity", statusBarStyle: "default" },
+  openGraph: {
+    siteName: "Artfinity",
+    images: [{ url: "/brand/og-image.png", width: 1200, height: 630, alt: "Artfinity. From paint to print." }],
+  },
+  twitter: { card: "summary_large_image", images: ["/brand/og-image.png"] },
 };
 
-const RootLayout = ({
-  children,
-}: Readonly<{
-  children: ReactNode;
-}>) => {
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#ffffff",
+};
+
+const RootLayout = ({ children }: Readonly<{ children: ReactNode }>) => {
   return (
     <html lang="en">
-      <body
-        className={cn(
-          "font-quinary",
-          crimsonText.variable,
-          roboto.variable,
-          robotoMono.variable,
-          karla.variable,
-          libreBodoni.variable,
-        )}
-      >
+      <body className={cn("font-body", display.variable, body.variable)}>
+        <SkipLink />
+        <BrushDefs />
         <Provider>{children}</Provider>
-        <Toaster />
+        <Toaster position="top-center" richColors />
+        <PwaSetup />
       </body>
     </html>
   );

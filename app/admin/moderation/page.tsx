@@ -1,249 +1,134 @@
-"use client"
+import type { Metadata } from "next";
+import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import { adminOrRedirect } from "../_components/gate";
+import { cn } from "@/lib/utils";
+import { PageHead } from "../_components/ui";
+import ModerationList, { type ModArtwork } from "../_components/ModerationList";
+import { duplicateOfId, hamming } from "@/lib/imageHash";
+import { autoChecksFor } from "@/lib/moderation";
+import { autoDecisionsFor, openSpotChecks } from "@/lib/trust/artwork.server";
 
-import { useEffect, useState } from "react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useUser } from "@/components/contexts/UserProvider";
-import { MaxWidthWrapper } from "@/components/layout";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner"
+export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Moderation" };
 
-export const dynamic = "force-dynamic"
+const TABS = [
+  { id: "queue", label: "To review" },
+  // Auto-approved pieces picked at random (lib/trust, 1 in N): live, waiting for a quick look.
+  { id: "spot", label: "Spot check" },
+  { id: "sensitive", label: "Sensitive" },
+  { id: "rejected", label: "Rejected" },
+  { id: "live", label: "Live" },
+] as const;
+type TabId = (typeof TABS)[number]["id"];
 
-type ModerationArtwork = {
-  id: string;
-  title: string;
-  slug: string | null;
-  imageUrl: string;
-  createdAt: string;
-  status: "PENDING" | "APPROVED" | "REJECTED";
-  flaggedReason: string | null;
-  flaggedBy: string | null;
-  artist: {
-    slug: string;
-    artist_name: string | null;
-    name: string;
-    email: string;
-  };
-};
+export default async function ModerationPage({ searchParams }: { searchParams: { tab?: string } }) {
+  await adminOrRedirect("/admin/moderation");
+  const tab: TabId = (TABS.find((t) => t.id === searchParams.tab)?.id ?? "queue") as TabId;
 
-export default function ModerationPage() {
-  const router = useRouter();
-  const { currentUser } = useUser();
-  const [artworks, setArtworks] = useState<ModerationArtwork[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const spotIds = await openSpotChecks();
+  const [queue, sensitive, rejected, live] = await Promise.all([
+    prisma.artwork.count({ where: { OR: [{ status: "PENDING" }, { status: "APPROVED", flaggedReason: { not: null } }] } }),
+    prisma.artwork.count({ where: { NOT: { sensitive: { isEmpty: true } } } }),
+    prisma.artwork.count({ where: { status: "REJECTED" } }),
+    prisma.artwork.count({ where: { status: "APPROVED" } }),
+  ]);
+  const counts: Record<TabId, number> = { queue, spot: spotIds.length, sensitive, rejected, live };
 
-  const handleModeration = async (
-    id: string,
-    action: "approve" | "reject"
-    ) => {
-    const label = action === "approve" ? "Approve" : "Reject";
+  const where =
+    tab === "queue" ? { OR: [{ status: "PENDING" as const }, { status: "APPROVED" as const, flaggedReason: { not: null } }] }
+    : tab === "spot" ? { id: { in: spotIds } }
+    : tab === "sensitive" ? { NOT: { sensitive: { isEmpty: true } } }
+    : tab === "rejected" ? { status: "REJECTED" as const }
+    : { status: "APPROVED" as const };
 
-    if (action === "reject") {
-        const sure = confirm("Reject this artwork?");
-        if (!sure) return;
-    }
+  const rows = await prisma.artwork.findMany({
+    where,
+    orderBy: { createdAt: tab === "queue" ? "asc" : "desc" },
+    take: 120,
+    select: {
+      id: true, title: true, slug: true, imageUrl: true, createdAt: true, status: true,
+      sensitive: true, flaggedReason: true, description: true, imageHash: true,
+      artist: { select: { slug: true, artist_name: true, name: true, email: true, createdAt: true, verification: true } },
+    },
+  });
 
-    try {
-        setUpdatingId(id);
-        const res = await fetch(`/api/admin/moderation/artworks/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-            action,
-            reason: action === "reject" ? "rejected_by_admin" : undefined,
-        }),
-        });
+  // Possible duplicates (lib/imageHash.ts): load the piece each one resembles, for the side-by-side.
+  const dupIds = Array.from(new Set(rows.map((r) => duplicateOfId(r.flaggedReason)).filter((x): x is string => !!x)));
+  const originals = dupIds.length
+    ? await prisma.artwork.findMany({
+        where: { id: { in: dupIds } },
+        select: {
+          id: true, title: true, slug: true, imageUrl: true, createdAt: true, status: true, imageHash: true,
+          artist: { select: { slug: true, artist_name: true, name: true, email: true, createdAt: true, verification: true } },
+        },
+      })
+    : [];
+  const originalById = new Map(originals.map((o) => [o.id, o]));
+  // Automatic image check results (lib/moderation), for the scores on each card.
+  const [checks, decisions] = await Promise.all([autoChecksFor(rows.map((r) => r.id)), autoDecisionsFor(rows.map((r) => r.id))]);
+  const since = (d: Date) => d.toISOString();
 
-        if (!res.ok) {
-        const text = await res.text();
-        toast.error(`${label} failed: ${text}`);
-        return;
-        }
-
-        toast.success(`Artwork ${label.toLowerCase()}d`);
-
-        // Remove from local list (queue shrinks)
-        setArtworks((prev) => prev.filter((a) => a.id !== id));
-    } catch (err) {
-        console.error("Moderation error", err);
-        toast.error("Server error");
-    } finally {
-        setUpdatingId(null);
-    }
-    };
-
-    const handleDelete = async (id: string) => {
-      const sure = confirm("Permanently delete this artwork? This cannot be undone.");
-      if (!sure) return;
-
-      try {
-        setUpdatingId(id);
-        const res = await fetch(`/api/admin/moderation/artworks/${id}`, {
-          method: "DELETE",
-          credentials: "include",
-        });
-
-        if (!res.ok && res.status !== 204) {
-          const text = await res.text();
-          toast.error(`Delete failed: ${text}`);
-          return;
-        }
-
-        toast.success("Artwork deleted");
-        setArtworks((prev) => prev.filter((a) => a.id !== id));
-      } catch (err) {
-        console.error("Delete error", err);
-        toast.error("Server error");
-      } finally {
-        setUpdatingId(null);
-      }
-    };
-
-
-    useEffect(() => {
-      if (!currentUser) return;          // wait for context
-      if (currentUser.role !== "ADMIN") {
-        router.replace("/");
-        return;
-      }
-
-    const fetchData = async () => {
-      try {
-        const res = await fetch("/api/admin/moderation/artworks", {
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error(await res.text());
-        const data = await res.json();
-        setArtworks(data.artworks || []);
-      } catch (err) {
-        console.error("Failed to load moderation queue", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [currentUser, router]);
-
-
-  if (loading) {
-    return <div className="p-6">Checking permissions…</div>;
-  }
-
-  if (!currentUser || currentUser.role !== "ADMIN") {
-    return null
-  }
-
+  const artworks: ModArtwork[] = rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    slug: r.slug,
+    imageUrl: r.imageUrl,
+    createdAt: r.createdAt.toISOString(),
+    status: r.status,
+    sensitive: r.sensitive ?? [],
+    flaggedReason: r.flaggedReason,
+    description: r.description,
+    artistName: r.artist.artist_name || r.artist.name,
+    artistSlug: r.artist.slug,
+    artistEmail: r.artist.email,
+    artistSince: since(r.artist.createdAt),
+    artistVerified: r.artist.verification === "VERIFIED",
+    autoCheck: checks.get(r.id) ?? null,
+    autoDecision: decisions.get(r.id) ?? null,
+    duplicateOf: (() => {
+      const id = duplicateOfId(r.flaggedReason);
+      if (!id) return null;
+      const o = originalById.get(id);
+      if (!o) return { id, missing: true as const };
+      return {
+        id: o.id,
+        title: o.title,
+        slug: o.slug,
+        imageUrl: o.imageUrl,
+        createdAt: since(o.createdAt),
+        status: o.status,
+        artistName: o.artist.artist_name || o.artist.name,
+        artistSlug: o.artist.slug,
+        artistEmail: o.artist.email,
+        artistSince: since(o.artist.createdAt),
+        artistVerified: o.artist.verification === "VERIFIED",
+        distance: r.imageHash && o.imageHash ? hamming(r.imageHash, o.imageHash) : null,
+      };
+    })(),
+  }));
 
   return (
-    <section className="my-8 md:my-12">
-      <MaxWidthWrapper className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold">Artwork Moderation</h1>
-          <Button size="sm" onClick={() => location.reload()}>
-            Refresh
-          </Button>
-        </div>
+    <div className="grid gap-5">
+      <PageHead title="Moderation" sub={queue === 0 ? "All clear" : `${queue} waiting`} />
 
-        {loading ? (
-          <div className="p-6 text-theme-secondary-600">Loading…</div>
-        ) : artworks.length === 0 ? (
-          <div className="p-6 text-sm text-muted-foreground">
-            No artworks to review.
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {artworks.map((art) => (
-              <div
-                key={art.id}
-                className="flex gap-4 rounded border p-3 text-sm items-start"
-              >
-                <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded bg-muted">
-                  {art.imageUrl && (
-                    <Image
-                      src={art.imageUrl}
-                      alt={art.title}
-                      fill
-                      className="object-cover"
-                    />
-                  )}
-                </div>
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <div className="font-medium">{art.title}</div>
-                      <div className="text-xs text-muted-foreground">
-                        By{" "}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            router.push(`/artists/${art.artist.slug}`)
-                          }
-                          className="underline"
-                        >
-                          {art.artist.artist_name || art.artist.name}
-                        </button>{" "}
-                        · {new Date(art.createdAt).toLocaleString()}
-                      </div>
-                    </div>
-                    <div className="text-xs">
-                      <span
-                        className={
-                          art.status === "PENDING"
-                            ? "rounded bg-yellow-100 px-2 py-1 text-yellow-800"
-                            : art.status === "APPROVED"
-                            ? "rounded bg-green-100 px-2 py-1 text-green-800"
-                            : "rounded bg-red-100 px-2 py-1 text-red-800"
-                        }
-                      >
-                        {art.status.toLowerCase()}
-                      </span>
-                    </div>
-                  </div>
+      <nav aria-label="Moderation views" className="flex flex-wrap gap-2">
+        {TABS.map((t) => (
+          <Link
+            key={t.id}
+            href={t.id === "queue" ? "/admin/moderation" : `/admin/moderation?tab=${t.id}`}
+            aria-current={tab === t.id ? "page" : undefined}
+            className={cn(
+              "flex min-h-[40px] items-center rounded-full border-[1.5px] px-3.5 text-[14px] font-semibold no-underline transition",
+              tab === t.id ? "border-ink bg-ink text-white" : "border-edge-strong bg-white text-ink hover:border-ink"
+            )}
+          >
+            {t.label} <span className="num ml-1 opacity-70">{counts[t.id]}</span>
+          </Link>
+        ))}
+      </nav>
 
-                  {art.flaggedReason && (
-                    <div className="text-xs text-red-600">
-                      Flagged: {art.flaggedReason}{" "}
-                      {art.flaggedBy && `(by ${art.flaggedBy})`}
-                    </div>
-                  )}
-
-                  {/* Actions will be wired next step */}
-                  <div className="flex gap-2 pt-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={updatingId === art.id}
-                      onClick={() => handleModeration(art.id, "approve")}
-                    >
-                      {updatingId === art.id ? "Approving…" : "Approve"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      disabled={updatingId === art.id}
-                      onClick={() => handleModeration(art.id, "reject")}
-                    >
-                      {updatingId === art.id ? "Rejecting…" : "Reject"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      disabled={updatingId === art.id}
-                      onClick={() => handleDelete(art.id)}
-                    >
-                      {updatingId === art.id ? "Deleting…" : "Delete"}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </MaxWidthWrapper>
-    </section>
+      <ModerationList key={tab} artworks={artworks} tab={tab} />
+    </div>
   );
 }

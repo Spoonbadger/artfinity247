@@ -1,281 +1,51 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { jwtVerify } from 'jose'
-import QRCode from 'qrcode'
-import { PDFDocument, StandardFonts, rgb, type PDFPage } from 'pdf-lib'
-import fs from 'fs/promises'
-import path from 'path'
+// GET → gallery-label QR cards for all of the logged-in artist's approved artworks (or ?slugs=a,b),
+// 10 per US Letter sheet with crop marks.
+import { ensureArtworkCode, shortUrl } from "@/lib/shortlinks";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { activeUserGuard } from "@/lib/auth";
+import { generateQrPdf } from "@/lib/generateQrPdf";
+import { DEFAULT_DESIGN } from "@/components/qr/card";
+import { artSelect, baseUrl, pdfHeaders, toArtInfo } from "@/app/api/qr/art";
+import { recordPrints, type PrintRecord } from "@/lib/labelStatus";
 
-export const runtime = 'nodejs'
-export const dynamic = "force-dynamic"
-
-// A4 portrait ~ 595 x 842 pts
-const A4 = { w: 595, h: 842 }
-// horizontal single card (same as generateQrPdf)
-const CARD = { w: 420, h: 210 }
-const MARGIN = 24
-const GUTTER = 16
-const PAD = 20
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
+  // Makes codes and logs printed labels, so only for an active account (not paused or closed).
+  const { user, denied } = await activeUserGuard("Log in to keep going.");
+  if (denied) return denied;
+
+  const url = new URL(req.url);
+  const slugs = url.searchParams.get("slugs")?.split(",").map((s) => s.trim()).filter(Boolean);
+  const rows = await prisma.artwork.findMany({
+    where: { artistId: user.id, status: "APPROVED", slug: slugs?.length ? { in: slugs } : { not: null } },
+    select: { ...artSelect, id: true },
+    orderBy: { createdAt: "desc" },
+  });
+  if (!rows.length) return NextResponse.json({ error: "No live pieces yet. Codes print once your art is approved.", code: "no_approved_art" }, { status: 404 });
+
   try {
-    // Auth
-    const token = req.cookies.get('auth-token')?.value
-    if (!token) return new NextResponse('Not authenticated', { status: 401 })
-    const secret = process.env.JWT_SECRET
-    if (!secret) return new NextResponse('JWT_SECRET missing', { status: 500 })
-    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret))
-
-    const artistId =
-      (payload as any).id ||
-      (payload as any).artistId ||
-      (payload as any).userId ||
-      (payload as any).sub
-    if (!artistId) return new NextResponse('Invalid token', { status: 401 })
-
-    const urlIn = new URL(req.url)
-    const layout = ('8up').toLowerCase()
-    const slugsParam = urlIn.searchParams.get('slugs')
-    const slugFilter = slugsParam
-      ? slugsParam.split(',').map(s => s.trim()).filter(Boolean)
-      : null
-
-    // Fetch artworks
-    const rows = await prisma.artwork.findMany({
-      where: { artistId, ...(slugFilter ? { slug: { in: slugFilter } } : {}) },
-      select: { slug: true, title: true, artist: { select: { name: true } } },
-      orderBy: { createdAt: 'desc' },
-    })
-    const artworks = rows.filter(a => a.slug) as {
-      slug: string
-      title: string
-      artist: { name: string }
-    }[]
-    if (!artworks.length) return new NextResponse('No artworks found', { status: 404 })
-
-    // Base URL
-    const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || ''
-    const proto =
-      req.headers.get('x-forwarded-proto') ||
-      (host.startsWith('localhost') ? 'http' : 'https')
-    const base = process.env.NEXT_PUBLIC_APP_URL || `${proto}://${host}`
-
-    // Build PDF + fonts
-    const pdf = await PDFDocument.create()
-    const fontRegular = await pdf.embedFont(StandardFonts.Helvetica)
-    const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold)
-
-    // Favicon logo
-    const faviconPath = path.join(
-      process.cwd(),
-      'public',
-      'favicons',
-      'apple-touch-icon.png'
-    )
-    const faviconBytes = await fs.readFile(faviconPath)
-    const faviconImg = await pdf.embedPng(faviconBytes)
-
-    // Card drawer shared by 1up + 8up
-    const drawCard = async (
-      page: PDFPage,
-      box: { x: number; y: number; w: number; h: number },
-      art: { slug: string; title: string; artistName: string },
-      favicon: any
-    ) => {
-      const pad = PAD
-
-      // background
-      page.drawRectangle({
-        x: box.x,
-        y: box.y,
-        width: box.w,
-        height: box.h,
-        color: rgb(1, 1, 1),
-        borderColor: rgb(0.9, 0.9, 0.9),
-        borderWidth: 1,
-      })
-
-      // left/right columns (same proportions as single)
-      const leftW = box.w * 0.55
-      const rightW = box.w - leftW
-
-      // logo
-      const logoSize = 24
-      const logoX = box.x + pad
-      const logoY = box.y + box.h - pad - logoSize
-
-      page.drawImage(favicon, {
-        x: logoX,
-        y: logoY,
-        width: logoSize,
-        height: logoSize,
-      })
-
-      // title + artist (scaled like single card?)
-      let textY = logoY - (logoSize)
-
-
-      // const titleSize = 14
-      const titleSize = Math.round(box.h * 0.1)
-
-      const maxWidth = leftW - pad * 0.8
-
-      const words = art.title.split(' ')
-      let line = ''
-      let lines: string[] = []
-
-      for (const word of words) {
-        const testLine = line ? line + ' ' + word : word
-        const width = fontBold.widthOfTextAtSize(testLine, titleSize)
-
-        if (width > maxWidth) {
-          lines.push(line)
-          line = word
-        } else {
-          line = testLine
-        }
-      }
-      if (line) lines.push(line)
-
-      if (lines.length > 3) {
-        lines = [lines[0], lines[1], lines[2] + "…"]
-      }
-
-      for (const l of lines) {
-        page.drawText(l, {
-          x: box.x + pad,
-          y: textY,
-          size: titleSize,
-          font: fontBold,
-        })
-        textY -= titleSize + 4
-      }
-
-      const artistSize = 10
-      page.drawText(art.artistName, {
-        x: box.x + pad,
-        y: textY,
-        size: artistSize,
-        font: fontRegular,
-        color: rgb(0.25, 0.25, 0.25),
-      })
-
-      // link + QR
-      const link = new URL(`${base}/art/${art.slug}`)
-      link.searchParams.set('utm_source', 'qr')
-      link.searchParams.set('utm_medium', 'print')
-      link.searchParams.set('utm_campaign', art.slug)
-
-      const qrPng = await QRCode.toBuffer(link.toString(), {
-        errorCorrectionLevel: 'M',
-        margin: 1,
-        scale: 6,
-      })
-      const qrImg = await pdf.embedPng(qrPng)
-
-      // same QR proportion as single card (*0.7)
-      const qrSize = Math.min(box.h - pad * 2, rightW - pad * 2) * 0.9
-      const qrX = box.x + leftW + (rightW - qrSize) / 2
-      const qrY = box.y + (box.h - qrSize) / 2
-
-      page.drawImage(qrImg, {
-        x: qrX,
-        y: qrY,
-        width: qrSize,
-        height: qrSize,
-      })
-
-      // CTA only (no URL, to match single)
-      const cta = 'Scan to view this artwork and order prints'
-      const ctaSize = Math.round(box.h * 0.042)
-      const ctaWidth = fontRegular.widthOfTextAtSize(cta, ctaSize)
-      const ctaY = box.y + pad - 8
-
-
-      page.drawText(cta, {
-        x: box.x + leftW + (rightW - ctaWidth) / 2 - 6,
-        y: ctaY,
-        size: ctaSize,
-        font: fontRegular,
-        color: rgb(0.35, 0.35, 0.35),
-      })
+    const base = baseUrl(req);
+    const design = { ...DEFAULT_DESIGN, disc: 0, coupon: "" };
+    // Every printed code is a short link; each artwork's plain code is reused, not made again.
+    const jobs = [];
+    const printed: PrintRecord[] = [];
+    for (const r of rows) {
+      const art = toArtInfo(r);
+      const code = await ensureArtworkCode(user.id, r.id, `${art.title} · Wall label`, design);
+      jobs.push({ design, art, qrText: shortUrl(code, base) });
+      const qr = await prisma.qrCode.findUnique({ where: { code }, select: { id: true } });
+      if (qr) printed.push({ qrCodeId: qr.id, artistId: user.id, artworkId: r.id, design, art, qty: 1, source: "print_all" });
     }
-
-  if (layout === '8up') {
-    const cols = 2
-    const rows = 4
-
-    const maxW = (A4.w - 2 * MARGIN - (cols - 1) * GUTTER) / cols
-    const maxH = (A4.h - 2 * MARGIN - (rows - 1) * GUTTER) / rows
-
-    let cardW = maxW
-    let cardH = cardW / 2
-
-    if (cardH > maxH) {
-      cardH = maxH
-      cardW = cardH * 2
-    }
-
-    const page = pdf.addPage([A4.w, A4.h])
-
-    const maxPerPage = cols * rows
-    const count = Math.min(maxPerPage, artworks.length)
-
-    for (let i = 0; i < count; i++) {
-      const a = artworks[i]
-
-      const col = i % cols
-      const row = Math.floor(i / cols)
-
-      const x = MARGIN + col * (cardW + GUTTER)
-      const y = A4.h - MARGIN - cardH - row * (cardH + GUTTER)
-
-      await drawCard(
-        page,
-        { x, y, w: cardW, h: cardH },
-        {
-          slug: a.slug,
-          title: a.title,
-          artistName: a.artist?.name || '',
-        },
-        faviconImg
-      )
-    }
-  } else {
-    // 1-up: keep as you have it
-    for (const a of artworks) {
-      const page = pdf.addPage([CARD.w, CARD.h])
-      await drawCard(
-        page,
-        { x: 0, y: 0, w: CARD.w, h: CARD.h },
-        {
-          slug: a.slug,
-          title: a.title,
-          artistName: a.artist?.name || '',
-        },
-        faviconImg
-      )
-    }
-  }
-
-    // Return
-    const bytes = await pdf.save()
-    const body = new Uint8Array(bytes)
-
-    const mode =
-      urlIn.searchParams.get('download') === '1' ? 'attachment' : 'inline'
-    const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '')
-
-    return new NextResponse(body, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `${mode}; filename="artfinity-qr-cards-${layout}-${stamp}.pdf"`,
-        'Cache-Control': 'no-store',
-      },
-    })
+    const pdf = await generateQrPdf(jobs);
+    await recordPrints(printed); // what each printed card says (lib/labelStatus.ts)
+    const mode = url.searchParams.get("download") === "1" ? "attachment" : "inline";
+    const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    return new NextResponse(Buffer.from(pdf), { status: 200, headers: pdfHeaders(`artfinity-qr-cards-${stamp}.pdf`, mode) });
   } catch (err) {
-    console.error('Bulk QR PDF error', err)
-    return new NextResponse('Server error', { status: 500 })
+    console.error("Bulk QR PDF error", err);
+    return NextResponse.json({ error: "Something went wrong on our side. Try again in a moment.", code: "server_error" }, { status: 500 });
   }
 }

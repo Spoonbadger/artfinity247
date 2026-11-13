@@ -17,7 +17,7 @@ export default function NewArtworkUploadedEmail({
 }) {
   return (
     <div style={{ fontFamily: "ui-sans-serif, system-ui", color: "#222" }}>
-      <h2 style={{ margin: 0, color: "#b05c5c" }}>
+      <h2 style={{ margin: 0, color: "#8b2a4b" }}>
         🖼 New Artwork Uploaded
       </h2>
 

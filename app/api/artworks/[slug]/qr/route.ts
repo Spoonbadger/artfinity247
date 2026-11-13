@@ -1,128 +1,61 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { jwtVerify } from 'jose'
+// GET → a print sheet of gallery-label QR cards for one artwork.
+// Auth: the logged-in artist (or an admin), or the 7-day email token from the "artwork is live" email.
+import { ensureArtworkCode, shortUrl } from "@/lib/shortlinks";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { generateQrPdf } from '@/lib/generateQrPdf'
+import { activeUserGuard, verifyLinkToken } from "@/lib/auth";
+import { accountState, gateResponse } from "@/lib/accountGate";
+import { generateQrPdf } from "@/lib/generateQrPdf";
+import { DEFAULT_DESIGN } from "@/components/qr/card";
+import { baseUrl, findArt, pdfHeaders, toArtInfo } from "@/app/api/qr/art";
 
-export const dynamic = "force-dynamic"
-export const dynamicParams = true
-export const runtime = 'nodejs'
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { slug: string } }
-) {
+export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
+  const { slug } = params;
+  if (!slug) return NextResponse.json({ error: "Pick a piece first.", code: "missing_art" }, { status: 400 });
+
+  const url = new URL(req.url);
+  const token = url.searchParams.get("token");
+  let payload: Record<string, unknown>;
+  if (token) {
+    // Emailed download links carry their own signed token (lib/artworkLive.ts).
+    const link = await verifyLinkToken(token);
+    if (!link) return NextResponse.json({ error: "That download link expired. Open the piece in Studio and download again.", code: "link_expired" }, { status: 401 });
+    payload = link;
+  } else {
+    // Otherwise the session: signed in, still valid, and not paused or closed (this can create the piece's code).
+    const { user, denied } = await activeUserGuard("Log in to keep going.");
+    if (denied) return denied;
+    payload = user;
+  }
+
+  const row = await findArt(slug);
+  if (!row?.slug) return NextResponse.json({ error: "We couldn't find that piece. It may have been deleted.", code: "art_not_found" }, { status: 404 });
+
+  if (token) {
+    // Email token: signed with { slug, artistId, role, type: "qr_download" } in lib/artworkLive.ts.
+    if (payload.type !== "qr_download" || payload.slug !== slug) return NextResponse.json({ error: "That download link expired. Open the piece in Studio and download again.", code: "link_expired" }, { status: 403 });
+    if (payload.role !== "ADMIN" && payload.artistId !== row.artistId) return NextResponse.json({ error: "That piece isn't yours.", code: "not_your_art" }, { status: 403 });
+    // The link outlives a pause or a closed account, so check the owner's account now.
+    const owner = await prisma.artist.findUnique({ where: { id: row.artistId }, select: { closedAt: true, suspendedAt: true } });
+    const gate = gateResponse(owner ? accountState(owner) : null);
+    if (gate) return NextResponse.json(gate.body, { status: gate.status });
+  } else if (payload.role !== "ADMIN" && payload.id !== row.artistId) {
+    return NextResponse.json({ error: "That piece isn't yours.", code: "not_your_art" }, { status: 403 });
+  }
+
   try {
-    const { slug } = params
-    if (!slug) return new NextResponse("Missing slug", { status: 400 })
-
-    // Get token
-    const token = new URL(req.url).searchParams.get("token")
-    let payload: any = null
-
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET!)
-
-    if (token) {
-      const verified = await jwtVerify(token, secret)
-      payload = verified.payload
-    } else {
-      // fallback to auth cookie
-      const authToken = req.cookies.get("auth-token")?.value
-      if (!authToken) return new NextResponse("Unauthorized", { status: 401 })
-
-      const verified = await jwtVerify(authToken, secret)
-      payload = verified.payload
-    }
-
-    // Fetch artwork
-    const artwork = await prisma.artwork.findUnique({
-      where: { slug },
-      select: {
-        slug: true,
-        title: true,
-        artistId: true,
-        artist: {
-          select: {
-            name: true,
-          },
-        },
-      },
-    })
-
-    if (!artwork) return new NextResponse("Artwork not found", { status: 404 })
-
-    // ===== ACCESS CONTROL =====
-    if (token) {
-      // Email token flow
-      if (payload.slug !== slug) {
-        return new NextResponse("Invalid token", { status: 403 })
-      }
-
-      if (payload.type !== "qr_download") {
-        return new NextResponse("Invalid token type", { status: 403 })
-      }
-
-      if (
-        payload.role !== "ADMIN" &&
-        payload.id !== artwork.artistId
-      ) {
-        return new NextResponse("Forbidden", { status: 403 })
-      }
-    } else {
-      // Logged-in flow
-      if (
-        payload.role !== "ADMIN" &&
-        payload.id !== artwork.artistId
-      ) {
-        return new NextResponse("Forbidden", { status: 403 })
-      }
-    }
-
-
-    // Build absolute URL to /art/[slug] with UTM tracking
-    const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || ''
-    const proto = req.headers.get('x-forwarded-proto') || (host.startsWith('localhost') ? 'http' : 'https')
-    const base = process.env.NEXT_PUBLIC_APP_URL || `${proto}://${host}`
-
-    if (!artwork.slug) {
-        return new NextResponse('Artwork has no slug', { status: 500 })
-    }
-    const artSlug = artwork.slug
-
-    const urlObj = new URL(`${base}/art/${artwork.slug}`)
-    urlObj.searchParams.set('utm_source', 'qr')
-    urlObj.searchParams.set('utm_medium', 'print')
-    urlObj.searchParams.set('utm_campaign', artSlug)
-    const url = urlObj.toString()
-
-
-    // Generate PDF buffer
-    const pdf = await generateQrPdf({
-      title: artwork.title,
-      artistName: artwork.artist?.name || '',
-      url,
-    })
-
-    // Return as download
-    const mode =
-    new URL(req.url).searchParams.get('download') === '1'
-        ? 'attachment'
-        : 'inline'
-
-    // Buffer → Uint8Array (Buffer is a Uint8Array subclass)
-    const body = new Uint8Array(pdf)
-
-    return new NextResponse(body, {
-        status: 200,
-        headers: {
-            'Content-Type': 'application/pdf',
-            'Content-Disposition': `${mode}; filename="${artwork.slug}-qr-card.pdf"`,
-            'Cache-Control': 'no-store',
-        },
-    })
-
-
+    const art = toArtInfo(row);
+    const design = { ...DEFAULT_DESIGN, disc: 0, coupon: "" };
+    // Every printed code is a short link; this one is reused each time the PDF is opened.
+    const code = await ensureArtworkCode(row.artistId, row.id, `${art.title} · Wall label`, design);
+    const pdf = await generateQrPdf([{ design, art, qrText: shortUrl(code, baseUrl(req)) }], { fill: true });
+    const mode = url.searchParams.get("download") === "1" ? "attachment" : "inline";
+    return new NextResponse(Buffer.from(pdf), { status: 200, headers: pdfHeaders(`${art.slug}-qr-cards.pdf`, mode) });
   } catch (err) {
-    console.error('QR route error', err)
-    return new NextResponse('Server error', { status: 500 })
+    console.error("QR route error", err);
+    return NextResponse.json({ error: "Something went wrong on our side. Try again in a moment.", code: "server_error" }, { status: 500 });
   }
 }

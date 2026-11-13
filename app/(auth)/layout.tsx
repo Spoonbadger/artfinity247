@@ -1,24 +1,22 @@
-"use client";
+import { ReactNode, Suspense } from "react";
+import Logo from "@/components/af/Logo";
+import AuthTopLink from "@/components/auth/AuthTopLink";
+import WallBackdrop from "@/components/auth/WallBackdrop";
+import WallPainting from "@/components/auth/WallPainting";
 
-import { ReactNode } from "react";
-import { cn } from "@/lib/utils";
-import { useLoadingStatus } from "@/components/contexts";
-import PageLoading from "@/components/PageLoading";
-
-const Layout = ({ children }: { children: ReactNode }) => {
-  const { isLoading } = useLoadingStatus();
-
+// Auth screens: a quiet gallery wall, the logo, and one card.
+export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div
-      className={cn(
-        "app grid min-h-[100svh] grid-cols-1 items-center justify-center",
-        isLoading && "fixed inset-0 -z-50 max-h-[100svh] overflow-hidden",
-      )}
-    >
-      <main>{children}</main>
-      {isLoading && <PageLoading />}
+    <div className="relative isolate min-h-[100svh] overflow-x-clip bg-wall">
+      <WallBackdrop />
+      <header className="relative z-10 mx-auto flex h-16 max-w-[1240px] items-center justify-between px-4 sm:h-20 sm:px-8">
+        <Logo />
+        <Suspense fallback={null}>
+          <AuthTopLink />
+        </Suspense>
+      </header>
+      <main className="relative z-10 px-4 pb-16 pt-2 sm:px-8 sm:pt-8">{children}</main>
+      <WallPainting />
     </div>
   );
-};
-
-export default Layout;
+}

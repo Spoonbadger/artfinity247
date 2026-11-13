@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
-import { Prisma } from "@prisma/client";
+import { itemBreakdown } from "@/lib/sales";
 
 
 export const dynamic = "force-dynamic"
@@ -39,8 +39,9 @@ function monthRangeOrNull(month?: string) {
   const m = month.match(/^(\d{4})-(\d{2})$/);
   if (!m) return null;
   const [_, y, mm] = m;
-  const start = new Date(Number(y), Number(mm) - 1, 1, 0, 0, 0, 0);
-  const end = new Date(Number(y), Number(mm), 1, 0, 0, 0, 0); // first day next month
+  // UTC, same as the admin payout pages
+  const start = new Date(Date.UTC(Number(y), Number(mm) - 1, 1));
+  const end = new Date(Date.UTC(Number(y), Number(mm), 1)); // first day next month
   return { start, end };
 }
 
@@ -59,7 +60,12 @@ export async function GET(req: NextRequest) {
   const items = await prisma.orderItem.findMany({
     where: {
       artwork: { artistId: user.id },
-      ...(range && { order: { createdAt: { gte: range.start, lt: range.end } } }),
+      // Only paid orders count toward earnings (matches admin payouts)
+      order: {
+        paymentStatus: "paid",
+        kind: { not: "bulk" },
+        ...(range && { createdAt: { gte: range.start, lt: range.end } }),
+      },
     },
     select: {
       id: true,
@@ -68,6 +74,8 @@ export async function GET(req: NextRequest) {
       quantity: true,
       unitPrice: true, // cents
       lineTotal: true, // cents
+      frameChosen: true,
+      artistSplit: true,
       printCost: true,
       shippingCost: true,
       laborCost: true,
@@ -85,19 +93,21 @@ export async function GET(req: NextRequest) {
   });
 
   const rows = items.map((it: any) => {
-    const qty = it.quantity ?? 1;
-    const unit = it.unitPrice ?? 0;
-    const total = it.lineTotal ?? unit * qty;
-
-    const costs =
-      (it.printCost ?? 0) +
-      (it.shippingCost ?? 0) +
-      (it.laborCost ?? 0) +
-      (it.websiteCost ?? 0);
-
-    const expenses = (it.printCost ?? 0) + (it.shippingCost ?? 0) + (it.laborCost ?? 0) + (it.websiteCost ?? 0);
-    const profit = Math.max(0, total - costs);
-    const artistShare = Math.floor(profit / 2);
+    // Authoritative math from lib/revenue.ts (60/40 from 2026-10-21, 50/50 before),
+    // identical to what admin payouts pay out.
+    const b = itemBreakdown({
+      lineTotal: it.lineTotal,
+      unitPrice: it.unitPrice,
+      quantity: it.quantity,
+      size: it.size,
+      frameChosen: it.frameChosen,
+      orderDate: it.order.createdAt,
+      artistSplit: it.artistSplit,
+    });
+    const qty = b.quantity;
+    const total = b.lineTotal;
+    const expenses = b.expenses;
+    const artistShare = b.artistShare;
 
     return {
       id: it.id,

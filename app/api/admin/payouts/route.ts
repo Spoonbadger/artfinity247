@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from "@/lib/prisma";
-import { jwtVerify } from 'jose'
+import { adminRoleGuard } from "@/lib/adminRoles"
 import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
+import { activeRefunds, adjustmentTotals, refundAdjustments, shareAfterRefund } from "@/lib/refunds"
+import { getBalance, paidMethodLabel } from "@/lib/balance"
 
 export const dynamic = "force-dynamic"
 export const runtime = 'nodejs'
@@ -26,12 +28,6 @@ function csvEscape(val: string | number | null | undefined) {
   return s
 }
 
-async function requireAdmin(req: NextRequest) {
-  const token = req.cookies.get("auth-token")?.value
-  if (!token) return null;
-  const { payload } = await jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET))
-  return payload.role === "ADMIN" ? payload : null  // 🔹 simple
-}
 
 function normalizeSize(raw: string | null): PrintSize {
   const v = (raw || "").toUpperCase()
@@ -43,8 +39,9 @@ function normalizeSize(raw: string | null): PrintSize {
 
 
 export async function GET(req: NextRequest) {
-  const admin = await requireAdmin(req)
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  // The month's money report as a file (company share, profit, every artist's payout): admin or owner.
+  const { admin, denied } = await adminRoleGuard("money")
+  if (denied) return denied
 
   const { searchParams } = new URL(req.url)
   const month = searchParams.get('month') // YYYY-MM
@@ -67,13 +64,17 @@ export async function GET(req: NextRequest) {
       order: {
         createdAt: { gte: start, lt: end },
         paymentStatus: 'paid',
+        kind: { not: 'bulk' }, // an artist's own at-cost order earns nothing
       },
     },
     select: {
+      id: true,
+      orderId: true,
       lineTotal: true,
       size: true,
       quantity: true,
       frameChosen: true,
+      artistSplit: true,
       artistName: true,
       artwork: { select: { artistId: true } },
       order: { select: { createdAt: true } },
@@ -92,12 +93,16 @@ export async function GET(req: NextRequest) {
     companyShare: number
   }
   const byArtist = new Map<string, Tot>()
+  const refunds = await activeRefunds(Array.from(new Set(items.map((i) => i.orderId))))
 
   const payouts = await prisma.payout.findMany({
     where: { month },
-    select: { artistId: true, paidAt: true },
+    select: { artistId: true, paidAt: true, amountCents: true, method: true },
   })
   const paidLookup = new Map(payouts.map((p: any) => [p.artistId, p.paidAt]))
+  // How a paid month went out, labelled neutrally (old rows paid outside Stripe keep their own label, lib/payoutPlan.ts).
+  const methodLookup = new Map(payouts.filter((p) => p.paidAt).map((p) => [p.artistId, paidMethodLabel(p.method)]))
+  const recordedLookup = new Map(payouts.filter((p) => p.paidAt).map((p) => [p.artistId, p.amountCents]))
 
   for (const it of items) {
     const artistId = it.artwork?.artistId ?? 'unknown'
@@ -110,10 +115,11 @@ export async function GET(req: NextRequest) {
       frameChosen: it.frameChosen,
       quantity: it.quantity || 1,
       orderDate: it.order.createdAt,
+      artistSplit: it.artistSplit,
     })
     const expenses = b.printCost + b.shippingCost + b.laborCost + b.websiteCost
     const profit = b.profit
-    const artistShare = b.artistShare
+    const artistShare = shareAfterRefund(b.artistShare, refunds.get(it.id))
     const companyShare = b.companyShare
 
     const current = byArtist.get(key) ?? {
@@ -140,6 +146,19 @@ export async function GET(req: NextRequest) {
     byArtist.set(key, current)
   }
 
+  // Refund adjustments (lib/refunds.ts): booked to the artist's next unpaid month at refund time. payout_cents is what the month pays
+  // (recorded amount once paid; else sales + adjustments + anything carried in, never below 0), same as lib/balance.ts.
+  const [monthAdj, allAdj] = await Promise.all([adjustmentTotals({ month }), refundAdjustments()])
+  for (const artistId of Array.from(monthAdj.keys())) {
+    if (!byArtist.has(artistId)) byArtist.set(artistId, { artistId, artistName: '', itemsCount: 0, gross: 0, expenses: 0, profit: 0, artistShare: 0, companyShare: 0 })
+  }
+  const withAdj = new Set(allAdj.map((a) => a.artistId))
+  const carried = new Map<string, { carryIn: number; payable: number }>()
+  for (const artistId of Array.from(byArtist.keys()).filter((id) => withAdj.has(id))) {
+    const row = (await getBalance(artistId)).payouts.find((p) => p.month === month)
+    if (row) carried.set(artistId, { carryIn: row.carryInCents, payable: row.payableCents })
+  }
+
   // Build CSV (keep cents for accuracy + provide dollars view)
   const header = [
     'month',
@@ -157,12 +176,20 @@ export async function GET(req: NextRequest) {
     'artist_share_usd',
     'company_share_usd',
     'status',
+    'refund_adjustment_cents',
+    'carried_in_cents',
+    'payout_cents',
+    'payout_usd',
+    'paid_via',
   ]
 
   const rows = [header.join(',')]
   for (const row of Array.from(byArtist.values())) {
     const dollars = (c: number) => (c / 100).toFixed(2)
     const status = paidLookup.get(row.artistId) ? 'PAID' : 'UNPAID'
+    const adj = monthAdj.get(row.artistId) ?? 0
+    const c = carried.get(row.artistId)
+    const payout = recordedLookup.get(row.artistId) ?? c?.payable ?? Math.max(0, row.artistShare + adj)
     rows.push(
       [
         month,
@@ -180,6 +207,11 @@ export async function GET(req: NextRequest) {
         dollars(row.artistShare),
         dollars(row.companyShare),
         status, // 👈
+        adj,
+        status === 'PAID' ? 0 : c?.carryIn ?? 0,
+        payout,
+        dollars(payout),
+        csvEscape(methodLookup.get(row.artistId) ?? ''),
       ].join(',')
     )
   }

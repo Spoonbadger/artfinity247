@@ -1,174 +1,96 @@
-"use client";
-
-import { ReactNode, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import type { Metadata } from "next";
+import { previewImage, sharePreview } from "@/lib/og";
 import Link from "next/link";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { MaxWidthWrapper } from "@/components/layout";
-import { MinimalSection } from "@/components/sections";
-import { ProductCard } from "@/components/cards";
-import PageBreadcrumb from "@/components/PageBreadcrumb";
-import Pagination from "@/components/CustomPagination";
-import { getAppConfigs, getAppPages } from "@/db/query";
-import { CollectionType, ProductType } from "@/types";
-import { DEFAULT_SCENE_IMG, sceneImagePath } from '@/lib/sceneImages'
+import { notFound } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
+import ArtFilters from "@/components/browse/ArtFilters";
+import { ArtGrid } from "@/components/browse/ArtCard";
+import { Avatar } from "@/components/browse/ArtistCard";
+import PageHead, { EmptyCanvas, Pager } from "@/components/browse/PageHead";
+import { artSort, getArt, getArtists, getCities } from "@/components/browse/data";
+import { prisma } from "@/lib/prisma";
+import { placeName } from "@/lib/citySlug";
 
-type ParamsPropsType = {
-  slug: string;
-};
+export const dynamic = "force-dynamic";
 
-const AppConfigs = getAppConfigs();
-const AppPages = getAppPages();
+const humanize = (s: string) => s.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 
-const ScenePage = ({ params }: { params: ParamsPropsType }): ReactNode => {
-  const { slug: encodedSlug } = params;
-  const slug = decodeURIComponent(encodedSlug);
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const slug = decodeURIComponent(params.slug).toLowerCase();
+  const place = await prisma.artist.findFirst({ where: { citySlug: slug }, select: { city: true, state: true } }).catch(() => null);
+  const name = place?.city ? placeName(place) : humanize(slug);
+  const title = `Art from ${name}`;
+  const description = `Prints by independent artists in ${name}.`;
+  const { art } = await getArt({ city: decodeURIComponent(params.slug), perPage: 6 }).catch(() => ({ art: [] as Awaited<ReturnType<typeof getArt>>["art"] }));
+  const image = previewImage(...art.map((a) => ({ url: a.imageUrl, alt: `${a.title}, by ${a.artist.name}`, sensitive: a.sensitive })));
+  return { title, description, ...sharePreview({ title, description, url: `/scenes/${params.slug}`, image }) };
+}
 
-  const router = useRouter();
-  const searchParams = useSearchParams();
+export default async function ScenePage({ params, searchParams }: { params: { slug: string }; searchParams: Record<string, string | undefined> }) {
+  const slug = decodeURIComponent(params.slug).toLowerCase();
+  const q = (searchParams.q || "").trim().slice(0, 80) || undefined;
+  const sort = artSort(searchParams.sort);
+  const page = Math.max(1, parseInt(searchParams.page || "1", 10) || 1);
 
-  const [scene, setScene] = useState<CollectionType | null>(null);
+  const [cities, { art, total, pages }, artists] = await Promise.all([
+    getCities(),
+    getArt({ city: slug, q, sort, page }),
+    getArtists({ city: slug, pieces: 0 }),
+  ]);
+  const city = cities.find((c) => c.slug === slug);
+  if (!city && !artists.length) notFound();
+  const name = city?.name || humanize(slug);
 
-  const queryPageKey = AppConfigs.pagination_query_key || "page";
-
-  const { title, items_limit, sections } = AppPages.scene;
-  const { slug: productsPageSlug } = AppPages.products;
-
-  const [totalSceneProducts, setTotalSceneProducts] = useState<number>(0);
-  const [paginatedProducts, setPaginatedProducts] = useState<ProductType[]>([]);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [itemsPerPage, setItemsPerPage] = useState<number>(items_limit || 10);
-
-  useEffect(() => {
-    setItemsPerPage(items_limit);
-
-    const queryPage = parseInt(searchParams.get(queryPageKey) || "1", 10);
-    setCurrentPage(queryPage > 0 ? queryPage : 1);
-  }, [searchParams, queryPageKey, items_limit]);
-
-  const humanize = (s: string) =>
-  s.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-
-  const sceneTitle = humanize(slug)
-
-
-// ↓ replace the whole effect that uses getProducts(...)
-  useEffect(() => {
-    if (!slug) return
-
-    (async () => {
-      const res = await fetch(
-        `/api/artworks/by-city/${encodeURIComponent(slug)}?page=${currentPage}&limit=${itemsPerPage}`,
-        { cache: 'no-store' }
-      )
-      if (!res.ok) {
-        setPaginatedProducts([])
-        setTotalSceneProducts(0)
-        return
-      }
-      const data = await res.json()
-      setPaginatedProducts(data.artworks)
-      setTotalSceneProducts(data.total)
-    })()
-  }, [slug, currentPage, itemsPerPage])
-
-
-  const handlePageChange = (page: number) => {
-    if (page > 0 && page <= Math.ceil(totalSceneProducts / itemsPerPage)) {
-      router.push(`?${queryPageKey}=${page}`);
-    } else {
-      router.push(`?${queryPageKey}=1`);
-    }
+  const href = (p: number) => {
+    const s = new URLSearchParams();
+    if (q) s.set("q", q);
+    if (sort !== "newest") s.set("sort", sort);
+    if (p > 1) s.set("page", String(p));
+    return s.toString() ? `/scenes/${slug}?${s}` : `/scenes/${slug}`;
   };
 
-  const banner = sceneImagePath(slug) || DEFAULT_SCENE_IMG
-
   return (
-    <div>
-      <title>{`${title || "Scene"} - ${sceneTitle}: ${AppConfigs.app_name}`}</title>
-      <MinimalSection className="page-banner" bg={banner}>
-        <h1 className="text-center text-white">{`${sceneTitle} - ${title}`}</h1>
-        <PageBreadcrumb type="page-banner" />
-      </MinimalSection>
+    <div className="pb-20">
+      <div className="mx-auto max-w-[1240px] px-4 pt-6 sm:px-6">
+        <Link href="/scenes" className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-ink-2 no-underline hover:text-ink"><ArrowLeft className="h-4 w-4" aria-hidden="true" />All neighborhoods</Link>
+      </div>
+      <PageHead
+        className="pt-4 md:pt-6"
+        title={name}
+        sub={<><span className="num">{city?.pieces ?? total}</span> pieces by <span className="num">{artists.length}</span> local {artists.length === 1 ? "artist" : "artists"}{city && city.label !== name ? <>, in {city.label}</> : null}.</>}
+        stroke="var(--af-scan)"
+      >
+        <ArtFilters action={`/scenes/${slug}`} q={q} placeholder={`Search ${name}`} storageKey="browse.neighborhood" />
+      </PageHead>
 
-      <section>
-        <MaxWidthWrapper className="space-y-4 py-10 md:space-y-6 md:py-14">
-          <h2>{sections?.products?.title}</h2>
-          <div className="page-top grid grid-cols-1 items-center justify-between gap-x-4 gap-y-2 space-y-2 md:grid-cols-2 md:gap-6">
-            <div>
-              <div className="filter-area relative isolate">
-                <Select>
-                  <SelectTrigger className="max-w-[180px] capitalize">
-                    <SelectValue
-                      className="capitalize"
-                      placeholder="Default Sorting"
-                    />
-                  </SelectTrigger>
-                  <SelectContent className="capitalize">
-                    <SelectGroup>
-                      <SelectLabel>Sort By</SelectLabel>
-                      <SelectItem value="popularity">popularity</SelectItem>
-                      <SelectItem value="rating_average">
-                        average rating
-                      </SelectItem>
-                      <SelectItem value="latest">latest</SelectItem>
-                      <SelectItem value="price_low_to_high">
-                        price: low to high
-                      </SelectItem>
-                      <SelectItem value="price_high_to_low">
-                        price: high to low
-                      </SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div>
-              <Pagination
-                totalItems={totalSceneProducts}
-                itemsPerPage={itemsPerPage}
-                currentPage={currentPage}
-                onPageChange={handlePageChange}
-                className="hidden justify-end md:flex"
-              />
-            </div>
-          </div>
-          {paginatedProducts.length > 0 ? (
-            <div className="products-area grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-6 xl:grid-cols-4">
-              {paginatedProducts.map((product) => (
-                <Link
-                  key={product.id}
-                  href={`/art/${product.slug}`}
-                >
-                  <ProductCard product={product} showSeller={true} />
+      {artists.length > 0 && (
+        <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
+          <ul className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0" aria-label={`Artists in ${name}`}>
+            {artists.map((a) => (
+              <li key={a.slug} className="shrink-0">
+                <Link href={`/@${a.slug}`} className="flex items-center gap-2 rounded-full border-[1.5px] border-line bg-white py-1 pl-1 pr-3.5 text-[14px] font-semibold text-ink no-underline hover:border-ink">
+                  <Avatar src={a.avatar} name={a.name} className="h-8 w-8 text-sm ring-0" />
+                  {a.name}
                 </Link>
-              ))}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <section className="mx-auto mt-6 max-w-[1240px] px-4 sm:px-6 md:mt-8" aria-label="Artworks">
+        {art.length ? (
+          <ArtGrid art={art} />
+        ) : (
+          <EmptyCanvas title={q ? "Nothing matches that" : `No art from ${name} yet`}>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Link href="/art" className="btn btn-ghost">Browse all art</Link>
+              <Link href="/register" className="btn btn-blue">Hang the first code</Link>
             </div>
-          ) : (
-            <p className="mb-6 w-full py-6 text-center text-lg capitalize md:mb-8 md:py-12 md:text-xl">
-              {AppConfigs?.messages?.products?.not_found || "No Products Found"}
-            </p>
-          )}
-          <div className="pagination-area flex items-center justify-center py-6">
-            <Pagination
-              totalItems={totalSceneProducts}
-              itemsPerPage={itemsPerPage}
-              currentPage={currentPage}
-              onPageChange={handlePageChange}
-            />
-          </div>
-        </MaxWidthWrapper>
+          </EmptyCanvas>
+        )}
+        <Pager page={page} pages={pages} href={href} />
       </section>
     </div>
   );
-};
-
-export default ScenePage;
+}

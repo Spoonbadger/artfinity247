@@ -1,41 +1,50 @@
-"use client";
+import type { Metadata } from "next";
+import LongForm from "@/components/browse/LongForm";
+import { HELP_DAYS_AFTER_DELIVERY } from "@/lib/reprintFormat";
 
-import { ReactNode, useEffect, useState } from "react";
-import { MaxWidthWrapper } from "@/components/layout";
-import { getAppConfigs, getAppPages } from "@/db/query";
+export const metadata: Metadata = { title: "Return policy" };
 
-const AppConfigs = getAppConfigs();
-const AppPages = getAppPages();
-
-const ReturnPolicyPage = (): ReactNode => {
-  const [title, setTitle] = useState<string>("");
-  const [subTitle, setSubTitle] = useState<string>("");
-  const [content, setContent] = useState<string>("");
-
-  useEffect(() => {
-    const { title, subTitle, content } = AppPages.return_policy;
-
-    setTitle((prev) => title);
-    setSubTitle((prev) => subTitle);
-    setContent((prev) => content);
-  }, []);
+export default function Page() {
   return (
-    <div>
-      <title>{`${title || "Return Policy"}: ${AppConfigs.app_name}`}</title>
+    <LongForm title="Return policy" sub="Arrives damaged? We reprint it free." current="/return-policy" summary={[
+      `Damaged, misprinted or wrong: send a photo within ${HELP_DAYS_AFTER_DELIVERY} days of delivery. We reprint it free, no need to send it back.`,
+      "No returns for a change of mind or the wrong size. Every print is made to order.",
+    ]}>
       <section>
-        <MaxWidthWrapper className="mb-12 md:mb-20">
-          <h1 className="area-title my-4 mt-8 text-center">{title}</h1>
-          <h5 className="area-sub-title mb-6 text-center text-muted-foreground">
-            {subTitle}
-          </h5>
-          <p
-            className="area-text mb-4 text-justify"
-            dangerouslySetInnerHTML={{ __html: content }}
-          />
-        </MaxWidthWrapper>
-      </section>
-    </div>
-  );
-};
+        <p className="!mt-0 !text-[14px] text-ink-2">Last updated: November 5, 2026</p>
 
-export default ReturnPolicyPage;
+        <div>
+          <h2>Damaged, misprinted or wrong</h2>
+          <p>We&apos;ll make it right, at no cost to you.</p>
+          <ul>
+            <li>Within {HELP_DAYS_AFTER_DELIVERY} days of delivery, tap &ldquo;Problem with your print?&rdquo; in your shipping email and add a photo. No need to send it back.</li>
+            <li>
+              No email handy? Write to <a href="mailto:support@theartfinity.com">support@theartfinity.com</a> with your order number and a photo.
+            </li>
+            <li>We reprint and reship it free. If a reprint won&apos;t fix it, we refund you to your original payment method.</li>
+          </ul>
+        </div>
+
+        <div>
+          <h2>Change of mind</h2>
+          <p>
+            Each print is made to order, just for you, so we can&apos;t take returns or exchanges for a change of mind or a wrong size choice. Check the size tiles on the buy page,
+            they show the print&apos;s size in inches.
+          </p>
+        </div>
+
+        <div>
+          <h2>Shipping</h2>
+          <p>US shipping is free, and so is shipping on every reprint.</p>
+        </div>
+
+        <div>
+          <h2>Questions</h2>
+          <p>
+            Write to <a href="mailto:support@theartfinity.com">support@theartfinity.com</a>.
+          </p>
+        </div>
+      </section>
+    </LongForm>
+  );
+}

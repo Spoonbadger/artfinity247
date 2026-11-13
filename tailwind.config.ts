@@ -19,13 +19,29 @@ const config = {
     },
     extend: {
       fontFamily: {
-        primary: ["var(--font-primary)"],
-        secondary: ["var(--font-secondary)"],
-        tertiary: ["var(--font-tertiary)"],
-        quaternary: ["var(--font-quaternary)"],
-        quinary: ["var(--font-quinary)"],
+        display: ["var(--font-display)", "Arial Narrow", "Helvetica Neue", "sans-serif"],
+        body: ["var(--font-body)", "Helvetica Neue", "Arial", "sans-serif"],
+        // legacy names used by older components; all point at the new faces
+        primary: ["var(--font-display)", "sans-serif"],
+        secondary: ["var(--font-body)", "sans-serif"],
+        tertiary: ["var(--font-body)", "sans-serif"],
+        quaternary: ["var(--font-body)", "sans-serif"],
+        quinary: ["var(--font-body)", "sans-serif"],
       },
       colors: {
+        ink: { DEFAULT: "rgb(var(--af-ink-rgb) / <alpha-value>)", 2: "rgb(var(--af-ink-2-rgb) / <alpha-value>)" },
+        paper: "rgb(var(--af-paper-rgb) / <alpha-value>)",
+        wall: "rgb(var(--af-wall-rgb) / <alpha-value>)",
+        line: "rgb(var(--af-line-rgb) / <alpha-value>)",
+        // box edges: border-edge (cards, panels), border-edge-strong (secondary buttons, chips)
+        edge: { DEFAULT: "rgb(var(--af-edge-rgb) / <alpha-value>)", strong: "rgb(var(--af-edge-strong-rgb) / <alpha-value>)" },
+        gallery: "rgb(var(--af-gallery-rgb) / <alpha-value>)",
+        scan: { DEFAULT: "rgb(var(--af-scan-rgb) / <alpha-value>)", soft: "rgb(var(--af-scan-soft-rgb) / <alpha-value>)" },
+        sticker: "rgb(var(--af-sticker-rgb) / <alpha-value>)",
+        // Garnet Rose's petal pink: text selection and soft paint accents
+        petal: "rgb(var(--af-petal-rgb) / <alpha-value>)",
+        coral: "rgb(var(--af-coral-rgb) / <alpha-value>)",
+        earned: { DEFAULT: "rgb(var(--af-earned-rgb) / <alpha-value>)", soft: "rgb(var(--af-earned-soft-rgb) / <alpha-value>)" },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -60,7 +76,7 @@ const config = {
           foreground: "hsl(var(--card-foreground))",
         },
         "theme-primary": {
-          DEFAULT: "#691414",
+          DEFAULT: "#15161b",
           "50": "#f0e8e8",
           "100": "#e1d0d0",
           "200": "#c3a1a1",
@@ -85,6 +101,11 @@ const config = {
           "800": "#583636",
           "900": "#2c1b1b",
         },
+      },
+      // Words in coral (errors, warnings) use a deeper coral: the bright paint is 3.1:1 on white,
+      // this is 5.5:1 (WCAG AA). bg-coral, border-coral and dots keep the bright paint.
+      textColor: {
+        coral: "rgb(var(--af-coral-text-rgb) / <alpha-value>)",
       },
       spacing: {
         header:

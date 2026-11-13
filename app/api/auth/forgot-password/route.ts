@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
-import { Resend } from "resend";
+import { resend, emailEnabled } from "@/lib/resend";
 import { rateLimit } from "@/lib/rateLimit"
 import PasswordResetEmail from "@/emails/PasswordResetEmail"
+import SocialSignInReminderEmail from "@/emails/SocialSignInReminderEmail"
+import { PROVIDER_LABEL, isProviderId } from "@/lib/oauth/meta"
 
 export const dynamic = "force-dynamic"
 
@@ -17,7 +19,7 @@ export async function POST(req: Request) {
     const rawIp = req.headers.get("x-forwarded-for")
     const ip = rawIp?.split(",")[0]?.trim() || "unknown"
     if (!rateLimit(ip)) {
-      return new NextResponse("Too many requests", { status: 429 });
+      return NextResponse.json({ error: "Too many tries. Wait a minute and try again.", code: "rate_limited" }, { status: 429 });
     }
 
     const body = await req.json();
@@ -25,7 +27,7 @@ export async function POST(req: Request) {
 
     const artist = await prisma.artist.findUnique({
       where: { email: email.toLowerCase() },
-      select: { id: true, email: true },
+      select: { id: true, email: true, password: true, oauthAccounts: { select: { provider: true }, orderBy: { createdAt: "asc" } } },
     });
 
     // Always return 200 (anti-enumeration)
@@ -49,6 +51,24 @@ export async function POST(req: Request) {
     }
 
 
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (!appUrl) throw new Error("Missing NEXT_PUBLIC_APP_URL");
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "Artfinity <no-reply@theartfinity.com>";
+
+    // Signed up with Google/Apple/...: no password to reset, so remind them how they sign in instead.
+    const providers = Array.from(new Set(artist.oauthAccounts.map((a) => a.provider))).filter(isProviderId).map((p) => PROVIDER_LABEL[p]);
+    if (!artist.password && providers.length) {
+      if (!rateLimit(`social-reminder:${artist.id}`, 3, 60 * 60 * 1000)) return NextResponse.json({ ok: true }, { status: 200 })
+      if (!emailEnabled) console.log(`[email:dev] social sign-in reminder for ${artist.email}: ${providers.join(", ")}`);
+      await resend.emails.send({
+        from: fromEmail,
+        to: artist.email,
+        subject: `Log in to Artfinity with ${providers[0]}`,
+        react: SocialSignInReminderEmail({ providers, loginLink: `${appUrl}/login` }),
+      })
+      return NextResponse.json({ ok: true }, { status: 200 });
+    }
+
     const rawToken = crypto.randomBytes(32).toString("hex");
     const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
     const expiresAt = new Date(Date.now() + 1000 * 60 * 30); // 30 mins
@@ -69,16 +89,9 @@ export async function POST(req: Request) {
       },
     });
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-    if (!appUrl) throw new Error("Missing NEXT_PUBLIC_APP_URL");
-
     const resetLink = `${appUrl}/reset-password?token=${rawToken}`;
 
-    const resendKey = process.env.RESEND_API_KEY;
-    const fromEmail = process.env.RESEND_FROM_EMAIL; // e.g. "Artfinity <no-reply@yourdomain.com>"
-    if (!resendKey || !fromEmail) throw new Error("Missing RESEND env vars");
-
-    const resend = new Resend(resendKey);
+    if (!emailEnabled) console.log(`[email:dev] password reset link for ${artist.email}: ${resetLink}`);
 
     await resend.emails.send({
       from: fromEmail,
@@ -91,6 +104,6 @@ export async function POST(req: Request) {
   } catch (err) {
     // Still avoid leaking user existence; but return 200 only if you want silent failures.
     // I prefer 500 here so YOU notice problems during dev.
-    return NextResponse.json({ ok: false }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "We couldn't send the link just now. Try again in a minute.", code: "server_error" }, { status: 500 });
   }
 }

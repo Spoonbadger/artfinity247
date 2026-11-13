@@ -15,6 +15,8 @@ export async function GET(req: Request) {
   const rows = await prisma.artist.findMany({
     where: {
       citySlug: { not: "" },
+      closedAt: null,
+      suspendedAt: null,
       artworks: { some: {} },
     },
     select: {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma"
 import { ArtworkStatus } from "@prisma/client"
+import { getArtistManager } from "@/lib/admin"
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
@@ -32,11 +33,17 @@ export async function GET(
         state: true,
         country: true,
         profileImage: true,
-        venmoHandle: true,
+        closedAt: true,
+        suspendedAt: true,
       },
     })
 
-    if (!artist) return new NextResponse("Artist not found", { status: 404 });
+    if (!artist || artist.closedAt || artist.suspendedAt) return new NextResponse("Artist not found", { status: 404 });
+
+    // Contact details and the legal name (payouts and tax only) are private: only the artist themself or an admin sees them.
+    const { allowed } = await getArtistManager(artist.id)
+    const { email, phone, first_name, last_name, closedAt: _closed, suspendedAt: _suspended, ...publicArtist } = artist
+    const artistOut = allowed ? artist : publicArtist
 
     const where = { artistId: artist.id, status: ArtworkStatus.APPROVED };
 
@@ -77,56 +84,15 @@ export async function GET(
       prisma.artwork.count({ where }),
     ]);
 
-    return NextResponse.json({ artist, artworks, total }, { status: 200 })
+    return NextResponse.json(
+      { artist: artistOut, artworks, total },
+      { status: 200, headers: { "Cache-Control": "private, no-store" } }
+    )
   } catch (e) {
     console.error("GET /api/artists/[slug] failed", e)
     return new NextResponse("Server error", { status: 500 })
   }
 }
 
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: { slug: string } }
-) {
-  try {
-    const body = await req.json()
-    let { venmoHandle } = body
-
-    if (!venmoHandle || typeof venmoHandle !== "string") {
-      return NextResponse.json({ error: "Invalid venmoHandle" }, { status: 400 })
-    }
-
-    if (!venmoHandle.startsWith("@")) {
-      venmoHandle = "@" + venmoHandle
-    }
-
-    venmoHandle = venmoHandle.replace(/\s+/g, "")
-
-    // Only letters, numbers, underscores, dashes after "@"
-    if (!/^@[A-Za-z0-9_-]+$/.test(venmoHandle)) {
-      return NextResponse.json(
-        { error: "Venmo handle can only contain letters, numbers, dashes and underscores" },
-        { status: 400 }
-      )
-    }
-
-    const artist = await prisma.artist.update({
-      where: { slug: params.slug },
-      data: { venmoHandle },
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        venmoHandle: true,
-      },
-    })
-
-    return NextResponse.json(artist)
-  } catch (err: any) {
-    if (err.code === "P2002") {
-      return NextResponse.json({ error: "That Venmo handle is already in use." }, { status: 400 })
-    }
-    console.error("Error updating venmoHandle:", err)
-    return NextResponse.json({ error: "Server error" }, { status: 500 })
-  }
-}
+// No PUT here: artists edit their page in Studio. Payout details live in Stripe (Connect onboarding from
+// Studio → Money), never on this route.

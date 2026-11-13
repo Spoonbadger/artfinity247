@@ -1,13 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from "@/lib/auth"
+import { requireAdminRole } from "@/lib/adminRoles"
+import { itemBreakdown } from "@/lib/sales"
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
 
 export async function GET(req: NextRequest) {
   try{
-    await requireAdmin()
+    await requireAdminRole("view")
 
     const { searchParams } = new URL(req.url)
 
@@ -35,9 +36,11 @@ export async function GET(req: NextRequest) {
           id: true,
           slug: true,
           size: true,
+          frameChosen: true,
           quantity: true,
           unitPrice: true,
           lineTotal: true,
+          artistSplit: true,
           printCost: true,
           shippingCost: true,
           laborCost: true,
@@ -63,16 +66,8 @@ export async function GET(req: NextRequest) {
     const withShares = orders.map((order: any) => ({
       ...order,
       items: order.items.map((item: any) => {
-        const expenses =
-          (item.printCost ?? 0) +
-          (item.shippingCost ?? 0) +
-          (item.laborCost ?? 0) +
-          (item.websiteCost ?? 0)
-
-        const profit = (item.lineTotal ?? 0) - expenses
-        const artistShare = Math.floor(profit / 2)
-        const companyShare = profit - artistShare
-      
+        // Same 50/50 → 60/40 split by order date as the payout pages
+        const { profit, artistShare, companyShare } = itemBreakdown({ ...item, orderDate: order.createdAt })
 
         return {
           ...item,

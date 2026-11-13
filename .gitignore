@@ -51,3 +51,26 @@ dev.db
 artists.md
 
 TODO.md
+/public/uploads
+
+# built-in local database (pnpm local)
+/.localdb
+
+# private artwork originals (lib/storage.ts)
+/storage
+
+# photo scenes: render cache, fetcher bookkeeping
+/.cache
+/scenes/photos/.pexels-state.json
+/scenes/photos/.pixabay-state.json
+
+# database dumps (pnpm db:backup, scripts/backup-db.mjs)
+/backups
+
+# Sentry CLI config (holds an auth token)
+.sentryclirc
+
+# Temporary scripts agents write while testing
+*.tmp.mjs
+*.tmp.js
+*.tmp.cjs

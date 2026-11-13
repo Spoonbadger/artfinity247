@@ -24,7 +24,7 @@ export default function ArtistSaleNotificationEmail({
 
   return (
     <div style={{ fontFamily: "ui-sans-serif, system-ui", color: "#222" }}>
-      <h2 style={{ color: "#b05c5c" }}>Your artwork sold!</h2>
+      <h2 style={{ color: "#8b2a4b" }}>Your artwork sold!</h2>
 
       <p>Hi {artistName},</p>
       <p>You’ve just made a sale on Artfinity.</p>

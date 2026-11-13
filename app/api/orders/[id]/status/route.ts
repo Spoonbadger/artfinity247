@@ -1,19 +1,26 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { Resend } from "resend"
-import ShippingStatusEmail from "@/emails/ShippingStatusEmail"
+import { adminRoleGuard } from "@/lib/adminRoles"
+import { logAdminAction } from "@/lib/audit"
+import { cleanTracking, type Tracking } from "@/lib/tracking"
+import { recordTracking } from "@/lib/shipping"
+import { sendReviewRequest } from "@/lib/reviews"
+import { sendShippingEmail } from "@/lib/orderEmails"
 
 export const dynamic = "force-dynamic"
 export const dynamicParams = true
 export const runtime = "nodejs"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { shippingStatus } = await req.json()
+  const { admin, denied } = await adminRoleGuard("orders")
+  if (denied) return denied
+
+  const input = await req.json().catch(() => ({}))
+  const { shippingStatus } = input
 
   if (!["pending", "shipped", "delivered"].includes(shippingStatus)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 })
@@ -29,6 +36,7 @@ export async function POST(
           size: true,
           quantity: true,
           imageUrl: true,
+          artwork: { select: { artistId: true } },
         },
       },
     },
@@ -38,40 +46,51 @@ export async function POST(
     return NextResponse.json({ error: "Order not found" }, { status: 404 })
   }
 
+  // Marking shipped needs a carrier and tracking number; the buyer's email carries the link.
+  let tracking: Tracking | null = null
+  if (shippingStatus === "shipped" && existing.shippingStatus !== "shipped") {
+    const t = cleanTracking(input)
+    if ("error" in t) return NextResponse.json({ error: t.error }, { status: 400 })
+    tracking = t.tracking
+  }
+
   // Update status
   const order = await prisma.order.update({
     where: { id: params.id },
-    data: { shippingStatus },
+    data: {
+      shippingStatus,
+      ...(shippingStatus === "delivered" && !existing.deliveredAt ? { deliveredAt: new Date() } : {}),
+    },
   })
+
+  // Tracking goes on the order's columns (plus a Message per artist, which shows it in their customer thread),
+  // and is registered with the carrier tracking provider so delivery is picked up automatically (lib/shipping).
+  if (tracking) {
+    await recordTracking(existing.id, tracking).catch((err) => console.error("Saving tracking failed", err))
+  }
 
   // Only email on real transitions
   const was = existing.shippingStatus
   const now = shippingStatus
 
+  if (was !== now || tracking) {
+    await logAdminAction(admin, tracking ? "order.ship" : "order.shipping_status", { type: "order", id: order.id },
+      tracking ? `Marked shipped: ${tracking.carrier} ${tracking.number}` : `Shipping ${was} → ${now}`,
+      { from: was, to: now, tracking: tracking ?? undefined })
+  }
+
   if (
     (was === "pending" && now === "shipped") ||
     (was === "shipped" && now === "delivered")
   ) {
-    await resend.emails.send({
-      from: "Artfinity <notifications@theartfinity.com>",
-      to: order.email || "",
-      subject:
-        now === "shipped"
-          ? "Your Artfinity order has shipped!"
-          : "Your Artfinity order was delivered!",
-      react: ShippingStatusEmail({
-        name: existing.shippingName || "Customer",
-        status: now,
-        orderId: order.id,
-        items: existing.items.map(i => ({
-          title: i.title ?? "Untitled",
-          size: i.size ?? "",
-          quantity: i.quantity ?? 1,
-          imageUrl: i.imageUrl ?? null,
-        })),
-      }),
-    })
+    // The status change is saved; a failed email shouldn't make the admin UI report failure.
+    await sendShippingEmail(order.id, now === "shipped" ? "shipped" : "delivered", tracking).catch((err) => console.error("Shipping status email failed", err))
   }
 
-  return NextResponse.json(order)
+  // Delivered: ask the buyer for a review (lib/reviews.ts skips bulk orders and already-reviewed items).
+  if (was !== "delivered" && now === "delivered") {
+    await sendReviewRequest(order.id).catch((err) => console.error("Review request email failed", err))
+  }
+
+  return NextResponse.json({ ...order, tracking })
 }

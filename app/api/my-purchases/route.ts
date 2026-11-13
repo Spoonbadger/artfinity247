@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from "@/lib/prisma";
-import { jwtVerify } from 'jose'
+import { verifyAuthToken } from '@/lib/auth'
 
 export const dynamic = "force-dynamic"
 export const runtime = 'nodejs'
@@ -9,13 +9,8 @@ async function getUserFromCookie(req: NextRequest) {
     const token = req.cookies.get("auth-token")?.value
     if (!token) return null
 
-    try {
-      const secret = new TextEncoder().encode(process.env.JWT_SECRET)
-      const { payload } = await jwtVerify(token, secret)
-      return payload as { id?: string, slug?: string, email?: string }
-    } catch {
-      return null
-    }
+    // Signature, expiry and session version.
+    return verifyAuthToken(token)
 }
 
 export async function GET(req: NextRequest) {

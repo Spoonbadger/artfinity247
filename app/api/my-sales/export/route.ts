@@ -1,22 +1,11 @@
 // app/api/my-sales/export/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { jwtVerify } from "jose";
+import { getUserFromCookie } from "@/lib/auth";
+import { itemBreakdown } from "@/lib/sales";
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs";
-
-async function getUserFromCookie(req: NextRequest) {
-  const token = req.cookies.get("auth-token")?.value;
-  if (!token) return null;
-  try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    const { payload } = await jwtVerify(token, secret);
-    return payload as { id?: string };
-  } catch {
-    return null;
-  }
-}
 
 function csvEscape(v: unknown) {
   const s = String(v ?? "");
@@ -26,8 +15,8 @@ function csvEscape(v: unknown) {
 const toDollars = (cents: number) => (cents / 100).toFixed(2);
 
 export async function GET(req: NextRequest) {
-  const user = await getUserFromCookie(req);
-  if (!user?.id) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  const user = await getUserFromCookie();
+  if (!user?.id) return NextResponse.json({ error: "Log in to export your sales.", code: "not_logged_in" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const year = searchParams.get("year"); // "2025" or null
@@ -43,14 +32,22 @@ export async function GET(req: NextRequest) {
   const items = await prisma.orderItem.findMany({
     where: {
       artwork: { artistId: user.id },
-      ...(createdAtFilter ? { order: { createdAt: createdAtFilter } } : {}),
+      // Only paid orders count toward earnings (matches admin payouts)
+      order: {
+        paymentStatus: "paid",
+        kind: { not: "bulk" },
+        ...(createdAtFilter ? { createdAt: createdAtFilter } : {}),
+      },
     },
     select: {
       id: true,
       title: true,
+      size: true,
+      frameChosen: true,
       quantity: true,
       unitPrice: true,
       lineTotal: true,
+      artistSplit: true,
       printCost: true,
       shippingCost: true,
       laborCost: true,
@@ -60,16 +57,37 @@ export async function GET(req: NextRequest) {
     orderBy: [{ order: { createdAt: "asc" } }],
   });
 
+  // Nothing sold (in that year): say so instead of sending a file with only a header.
+  if (items.length === 0) {
+    return NextResponse.json(
+      {
+        error: year ? `No sales in ${year} to export.` : "No sales to export yet. Your first sale shows up on Sales the moment it happens.",
+        code: "no_sales",
+      },
+      { status: 404 },
+    );
+  }
+
+  // Authoritative per-item math from lib/revenue.ts (60/40 from 2026-10-21, 50/50 before)
+  const breakdowns = items.map((it) =>
+    itemBreakdown({
+      lineTotal: it.lineTotal,
+      unitPrice: it.unitPrice,
+      quantity: it.quantity,
+      size: it.size,
+      frameChosen: it.frameChosen,
+      orderDate: it.order.createdAt,
+      artistSplit: it.artistSplit,
+    })
+  );
+
   // Per-row in cents → convert to $ for the CSV
-  const rows = items.map((it) => {
-    const qty = it.quantity ?? 1;
-    const totalCents = it.lineTotal ?? (it.unitPrice ?? 0) * qty;
-    const expensesCents =
-      (it.printCost ?? 0) +
-      (it.shippingCost ?? 0) +
-      (it.laborCost ?? 0) +
-      (it.websiteCost ?? 0);
-    const artistShareCents = Math.max(0, Math.floor((totalCents - expensesCents) / 2));
+  const rows = items.map((it, i) => {
+    const b = breakdowns[i];
+    const qty = b.quantity;
+    const totalCents = b.lineTotal;
+    const expensesCents = b.expenses;
+    const artistShareCents = b.artistShare;
 
     return {
       date: it.order?.createdAt ? new Date(it.order.createdAt).toISOString().slice(0, 10) : "",
@@ -84,21 +102,13 @@ export async function GET(req: NextRequest) {
   });
 
   // Totals (still aggregate in cents, then convert to $)
-  const totals = items.reduce(
-    (acc: any, it: any) => {
-      const qty = it.quantity ?? 1;
-      const total = it.lineTotal ?? (it.unitPrice ?? 0) * qty;
-      const expenses =
-        (it.printCost ?? 0) +
-        (it.shippingCost ?? 0) +
-        (it.laborCost ?? 0) +
-        (it.websiteCost ?? 0);
-      const artistShare = Math.max(0, Math.floor((total - expenses) / 2));
+  const totals = breakdowns.reduce(
+    (acc, b) => {
       acc.orders += 1;
-      acc.quantity += qty;
-      acc.gross_cents += total;
-      acc.expenses_cents += expenses;
-      acc.artist_share_cents += artistShare;
+      acc.quantity += b.quantity;
+      acc.gross_cents += b.lineTotal;
+      acc.expenses_cents += b.expenses;
+      acc.artist_share_cents += b.artistShare;
       return acc;
     },
     { orders: 0, quantity: 0, gross_cents: 0, expenses_cents: 0, artist_share_cents: 0 }

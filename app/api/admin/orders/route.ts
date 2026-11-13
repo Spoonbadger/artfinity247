@@ -1,7 +1,7 @@
 // /app/api/admin/orders/route.ts
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { jwtVerify } from "jose";
+import { adminRoleGuard } from "@/lib/adminRoles"
 import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
 
 export const dynamic = "force-dynamic"
@@ -14,12 +14,6 @@ function monthRange(ym: string) {
   return { start, end };
 }
 
-async function requireAdmin(req: NextRequest) {
-  const token = req.cookies.get("auth-token")?.value;
-  if (!token) return null;
-  const { payload } = await jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET!));
-  return payload.role === "ADMIN" ? payload : null;
-}
 
 // Normalize stored item.size into "S" | "M" | "L" | "XL"
 function normalizeSize(raw: string | null): PrintSize {
@@ -31,8 +25,8 @@ function normalizeSize(raw: string | null): PrintSize {
 }
 
 export async function GET(req: NextRequest) {
-  const admin = await requireAdmin(req);
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const { admin, denied } = await adminRoleGuard("view");
+  if (denied) return denied;
 
   try {
     const { searchParams } = new URL(req.url);
@@ -59,6 +53,7 @@ export async function GET(req: NextRequest) {
             unitPrice: true,
             lineTotal: true,
             imageUrl: true,
+            artistSplit: true,
             artwork: { select: { artistId: true } },
           },
         },
@@ -80,6 +75,7 @@ export async function GET(req: NextRequest) {
           frameChosen: item.frameChosen,
           quantity: qty || 1,
           orderDate: order.createdAt,
+          artistSplit: item.artistSplit,
         })
 
         return {

@@ -1,6 +1,5 @@
+import CancelClient from "./CancelClient";
 
-const CancelPage = () => {
-    return <div>You are cancelling your purchase</div>
+export default function CancelPage() {
+  return <CancelClient />;
 }
-
-export default CancelPage

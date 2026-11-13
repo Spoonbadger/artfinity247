@@ -99,12 +99,6 @@ const Footer = () => {
                 <li className="nav-item">
                   <div className="business-info max-w-96 text-sm leading-loose">
                     <p className="contact">
-                      {/* <span className="business-email">
-                        <Link href={`tel:${AppConfigs.business_phone}`}>
-                          {AppConfigs.business_phone}
-                        </Link>
-                      </span>
-                      <br /> */}
                       <span className="business-email">
                         <Link href={`mailto:${AppConfigs.business_email}`}>
                           {AppConfigs.business_email}

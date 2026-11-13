@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { jwtVerify } from "jose";
+import { adminRoleGuard } from "@/lib/adminRoles"
 import { calcItemProfitCents, type PrintSize } from "@/lib/revenue"
+import { getBalance, heldAtLatestRun, paidMethodLabel, type PayoutRow } from "@/lib/balance"
+import { isMonthLate, payoutRoute } from "@/lib/payoutPlan"
+import { connectMode, connectStatus } from "@/lib/stripeConnect"
+import { activeRefunds, adjustmentTotals, refundAdjustments, shareAfterRefund } from "@/lib/refunds"
 
 export const dynamic = "force-dynamic"
 
@@ -13,12 +17,6 @@ function monthRange(ym: string) {
   return { start, end };
 }
 
-async function requireAdmin(req: NextRequest) {
-  const token = req.cookies.get("auth-token")?.value;
-  if (!token) return null;
-  const { payload } = await jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET!));
-  return payload.role === "ADMIN" ? payload : null;
-}
 
 function normalizeSize(raw: string | null): PrintSize {
   const v = (raw || "").toUpperCase();
@@ -29,8 +27,9 @@ function normalizeSize(raw: string | null): PrintSize {
 }
 
 export async function GET(req: NextRequest) {
-  const admin = await requireAdmin(req)
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  // Read-only: the payouts table support sees (its buttons are money-only). Paying and marking paid check "money".
+  const { admin, denied } = await adminRoleGuard("view")
+  if (denied) return denied
 
   try {
     const { searchParams } = new URL(req.url);
@@ -44,6 +43,7 @@ export async function GET(req: NextRequest) {
       where: {
         createdAt: { gte: start, lt: end },
         paymentStatus: "paid",
+        kind: { not: "bulk" }, // an artist's own at-cost order earns nothing
       },
       orderBy: { createdAt: "desc" },
       include: {
@@ -67,6 +67,8 @@ export async function GET(req: NextRequest) {
     };
 
     const byArtist = new Map<string, RowAgg>();
+    // Refunded lines whose share was reversed pay the artist nothing (lib/refunds.ts).
+    const refunds = await activeRefunds(orders.map((o) => o.id));
 
     for (const order of orders) {
       for (const item of order.items) {
@@ -82,6 +84,7 @@ export async function GET(req: NextRequest) {
           frameChosen: item.frameChosen,
           quantity: qty || 1,
           orderDate: order.createdAt,
+          artistSplit: item.artistSplit,
         })
         const expenses = b.printCost + b.shippingCost + b.laborCost + b.websiteCost;
 
@@ -99,10 +102,24 @@ export async function GET(req: NextRequest) {
         row.gross += lineTotal;
         row.expenses += expenses;
         row.profit += b.profit;
-        row.artistShare += b.artistShare;
+        row.artistShare += shareAfterRefund(b.artistShare, refunds.get(item.id));
 
         byArtist.set(artistId, row);
       }
+    }
+
+    // Refund adjustments (lib/refunds.ts) are booked to the artist's next unpaid month, and a month can't pay below $0
+    // (lib/balance.ts carries the rest forward). Artists with any adjustment get their month from getBalance, so this
+    // page, Pay all and their Money page agree.
+    const [monthAdj, allAdj] = await Promise.all([adjustmentTotals({ month }), refundAdjustments()]);
+    for (const artistId of Array.from(monthAdj.keys())) {
+      if (!byArtist.has(artistId)) byArtist.set(artistId, { artistId, itemsCount: 0, gross: 0, expenses: 0, profit: 0, artistShare: 0, companyShare: 0 });
+    }
+    const withAdj = new Set(allAdj.map((a) => a.artistId));
+    const balanceRows = new Map<string, PayoutRow>();
+    for (const artistId of Array.from(byArtist.keys()).filter((id) => withAdj.has(id))) {
+      const row = (await getBalance(artistId)).payouts.find((p) => p.month === month);
+      if (row) balanceRows.set(artistId, row);
     }
 
     const artistIds = Array.from(byArtist.keys());
@@ -113,7 +130,7 @@ export async function GET(req: NextRequest) {
     // Fetch artist info in one go
     const artists = await prisma.artist.findMany({
       where: { id: { in: artistIds } },
-      select: { id: true, artist_name: true, email: true, venmoHandle: true },
+      select: { id: true, artist_name: true, name: true, email: true, closedAt: true, stripeAccountId: true, stripePayoutsEnabled: true },
     });
     const artistMap = new Map<string, (typeof artists)[number]>(
       artists.map((a: any) => [a.id, a])
@@ -122,32 +139,56 @@ export async function GET(req: NextRequest) {
     // Fetch payout statuses for the month in one go
     const payouts = await prisma.payout.findMany({
       where: { artistId: { in: artistIds }, month },
-      select: { artistId: true, paidAt: true, amountCents: true },
+      select: { artistId: true, paidAt: true, amountCents: true, method: true, stripeTransferId: true, failureReason: true },
     });
     const payoutMap = new Map<string, (typeof payouts)[number]>(
       payouts.map((p: any) => [p.artistId, p])
     )
 
 
+    // Late: unpaid more than a few days after this month's payout day, and only for a payout-ready Stripe account the
+    // run should have paid (lib/payoutPlan.ts isMonthLate). Money held while Stripe isn't set up is never late.
+    const now = new Date()
+    const mode = connectMode()
+    const heldAt = await heldAtLatestRun(artistIds, now)
+
     const rows = artistIds.map(artistId => {
       const agg = byArtist.get(artistId)!;
       const a = artistMap.get(artistId);
       const p = payoutMap.get(artistId);
+      const refundAdjustmentsCents = monthAdj.get(artistId) ?? 0;
+      const br = balanceRows.get(artistId);
+      // Owed for the month: sales + refund adjustments (+ any carried in), never below $0 while unpaid.
+      const due = br && !p?.paidAt ? br.payableCents : agg.artistShare + refundAdjustmentsCents;
+      const stripe = a ? connectStatus(a, mode) : "not_connected";
+      const unpaid = !p?.paidAt && due > 0 && artistId !== "__unknown__";
 
       return {
         artistId,
-        artistName: a?.artist_name || "(unknown)",
+        artistName: a?.artist_name || a?.name || "(unknown)",
         artistEmail: a?.email || "",
-        venmoHandle: a?.venmoHandle || "",
+        // How they get paid: Stripe once payout-ready; until then the month is held in their balance.
+        stripe,
         itemsCount: agg.itemsCount,
         gross: agg.gross,
         expenses: agg.expenses,
         profit: agg.profit,
-        artistShare: agg.artistShare,
+        artistShare: due,
+        salesShare: agg.artistShare,
+        refundAdjustments: refundAdjustmentsCents,
+        carriedIn: br && !p?.paidAt ? br.carryInCents : 0,
+        // Closed accounts are still paid what they earned.
+        closed: !!a?.closedAt,
+        late: unpaid && isMonthLate({ month, status: stripe, now, heldAt: heldAt.get(artistId) ?? null }),
+        held: unpaid && month < now.toISOString().slice(0, 7) && payoutRoute(stripe) === "held",
         payout: {
           status: p?.paidAt ? "PAID" : "UNPAID",
           paidAt: p?.paidAt || null,
-          amountCents: p?.amountCents ?? agg.artistShare,
+          amountCents: p?.amountCents ?? due,
+          method: p?.method ?? null,
+          methodLabel: p?.paidAt ? paidMethodLabel(p.method) : undefined,
+          stripeTransferId: p?.stripeTransferId ?? null,
+          failureReason: p?.paidAt ? null : p?.failureReason ?? null,
         },
       };
     });

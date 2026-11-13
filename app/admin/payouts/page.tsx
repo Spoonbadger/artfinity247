@@ -1,103 +1,48 @@
-"use client"
+import type { Metadata } from "next";
+import { prisma } from "@/lib/prisma";
+import { adminRoleOrRedirect } from "../_components/gate";
+import { roleCan } from "@/lib/adminCaps";
+import MonthPicker from "../_components/MonthPicker";
+import PayoutsTable from "../_components/PayoutsTable";
+import PayAllPanel from "../_components/PayAllPanel";
+import { currentMonth, monthLabel, monthRange } from "../_components/util";
+import { latePayouts } from "@/lib/balance";
+import { PageHead } from "../_components/ui";
+import { Problem } from "@/components/studio/Problem";
 
-import { useState, useEffect } from "react"
+export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Payouts" };
 
-export default function AdminPayoutsPage() {
-  const months = Array.from({ length: 12 }).map((_, i) => {
-    const d = new Date()
-    d.setMonth(d.getMonth() - i)
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-  })
+export default async function AdminPayoutsPage({ searchParams }: { searchParams: { month?: string } }) {
+  const admin = await adminRoleOrRedirect("/admin/payouts");
+  const monthRows = await prisma.$queryRaw<{ m: string }[]>`
+    SELECT DISTINCT to_char("createdAt" AT TIME ZONE 'UTC', 'YYYY-MM') AS m FROM "Order" WHERE "paymentStatus" = 'paid' ORDER BY m DESC`;
+  const months = Array.from(new Set([currentMonth(), ...monthRows.map((r) => r.m)])).sort().reverse();
+  const month = searchParams.month && monthRange(searchParams.month) ? searchParams.month : monthRows[0]?.m ?? currentMonth();
+  // Late payouts in any month, so they show even while another month is open.
+  const late = await latePayouts();
+  const lateByMonth = new Map<string, number>();
+  for (const l of late) lateByMonth.set(l.month, (lateByMonth.get(l.month) || 0) + 1);
 
-  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))
-  const [rows, setRows] = useState<any[]>([])
-
-  useEffect(() => {
-    fetch(`/api/admin/payouts/summary?month=${month}`, {
-      credentials: "include",
-    })
-      .then(res => res.json())
-      .then(data => setRows(data.rows || []))
-  }, [month])
-
-  const markPaid = async (artistId: string, currentStatus: string) => {
-    const res = await fetch("/api/admin/payouts/mark-paid", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        artistId,
-        month,
-        unmark: currentStatus === "PAID", // 👈 toggle
-      }),
-    })
-    if (res.ok) {
-      // re-fetch summary after marking
-      const updated = await fetch(`/api/admin/payouts/summary?month=${month}`).then(r => r.json())
-      setRows(updated.rows || [])
-    }
-  }
+  const lateList = Array.from(lateByMonth);
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Admin Payouts</h1>
-
-      <div className="flex items-center gap-2 mb-4">
-        <label htmlFor="month">Select month:</label>
-        <select
-          id="month"
-          value={month}
-          onChange={e => setMonth(e.target.value)}
-          className="border rounded px-2 py-1"
-        >
-          {months.map(m => (
-            <option key={m} value={m}>{m}</option>
-          ))}
-        </select>
-      </div>
-
-      <table className="w-full text-sm border">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="p-2">Artist</th>
-            <th className="p-2">Email</th>
-            <th className="p-2">Venmo</th>
-            <th className="p-2">Items</th>
-            <th className="p-2">Gross</th>
-            <th className="p-2">Expenses</th>
-            <th className="p-2">Profit</th>
-            <th className="p-2">Artist Share</th>
-            <th className="p-2">Status</th>
-            <th className="p-2">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(r => (
-            <tr key={r.artistId} className="border-t">
-              <td className="p-2">{r.artistName}</td>
-              <td className="p-2">{r.artistEmail}</td>
-              <td className="p-2">{r.venmoHandle}</td>
-              <td className="p-2 text-center">{r.itemsCount}</td>
-              <td className="p-2">${(r.gross/100).toFixed(2)}</td>
-              <td className="p-2">${(r.expenses/100).toFixed(2)}</td>
-              <td className="p-2">${(r.profit/100).toFixed(2)}</td>
-              <td className="p-2"><strong>${(r.artistShare/100).toFixed(2)}</strong></td>
-              <td className="p-2">
-                {r.payout.status === "PAID"
-                  ? `Paid on ${new Date(r.payout.paidAt).toLocaleDateString()}`
-                  : "UNPAID"}
-              </td>
-              <td className="p-2">
-                <button
-                  onClick={() => markPaid(r.artistId, r.payout.status)}
-                  className="px-3 py-1 rounded text-white bg-blue-600 hover:bg-blue-700"
-                >
-                  {r.payout.status === "PAID" ? "Unmark" : "Mark Paid"}
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="grid gap-5">
+      <PageHead title="Payouts" sub="Stripe only. Paid by the 5th, late after the 8th." />
+      {lateList.length > 0 && (
+        <Problem tone="error" title={`Late: ${lateList.map(([m, n]) => `${monthLabel(m)} (${n} ${n === 1 ? "artist" : "artists"})`).join(", ")}`} fix={{ label: "Open month", href: `/admin/payouts?month=${lateList[0][0]}` }} />
+      )}
+      <PayAllPanel />
+      <section aria-labelledby="month-h" className="grid gap-3">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <h2 id="month-h" className="t-card">By month</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <MonthPicker months={months} value={month} allowAll={false} />
+            {roleCan(admin.adminRole, "money") && <a href={`/api/admin/payouts?month=${month}`} className="btn btn-ghost btn-sm">Export CSV</a>}
+          </div>
+        </div>
+        <PayoutsTable key={month} month={month} />
+      </section>
     </div>
-  )
+  );
 }

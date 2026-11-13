@@ -1,115 +1,82 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { ArrowLeft, ArrowRight } from "lucide-react";
-import { useCart } from "@/components/contexts";
-import { useUser } from "@/components/contexts/UserProvider";
-import { MaxWidthWrapper } from "@/components/layout";
-import { MinimalSection } from "@/components/sections";
-import { CartItemCard } from "@/components/cards";
-import { CartPricingInfo } from "@/components/cards";
-import { Button } from "@/components/ui/button";
-import { getAppPages, getAppConfigs } from "@/db/query";
-import { toast } from "sonner"
+import { ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
+import { useCart, useUser } from "@/components/contexts";
+import { CartItemCard, CartPricingInfo } from "@/components/cards";
+import { usd } from "@/components/art/pricing";
+import { cartArtistNames, lineSavings, startCheckout } from "@/components/art/checkout";
+import { deliveryRange } from "@/lib/delivery";
+import { EmptyState } from "@/components/studio/EmptyState";
 
+export default function CartPage() {
+  const { cartItems, calculateTotalPrice } = useCart();
+  const { currentUser } = useUser();
+  const [busy, setBusy] = useState(false);
+  const [follow, setFollow] = useState(false); // opt-in, never pre-ticked
 
-const AppConfigs = getAppConfigs();
-const AppPages = getAppPages();
+  const total = calculateTotalPrice();
+  const savings = cartItems.reduce((s, ci) => s + lineSavings(ci), 0);
+  const count = cartItems.reduce((n, ci) => n + ci.quantity, 0);
+  const who = cartArtistNames(cartItems);
 
-const CartPage = (): ReactNode => {
-  const { title } = AppPages.cart;
-  const { cartItems, calculateTotalPrice, calculateTax } = useCart();
-
-  const { currentUser } = useUser()
-  const router = useRouter()
-
-  const totalPrice = calculateTotalPrice();
-  // const tax = calculateTax(totalPrice); - later
-  // const totalPriceWithTax = totalPrice + tax; - later
-
-  const [isCheckingOut, setIsCheckingOut] = useState(false)
-
-    const onCheckout = async () => {
-    if (!cartItems.length) return;
+  const onCheckout = async () => {
+    if (!cartItems.length || busy) return;
+    setBusy(true);
     try {
-      setIsCheckingOut(true);
-      const res = await fetch("/api/create-checkout-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: cartItems }), // send as-is
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const { url } = await res.json();
-      window.location.href = url; // redirect to Stripe Checkout
+      window.location.href = await startCheckout(cartItems, { id: currentUser?.id, email: currentUser?.email }, { follow });
     } catch (e) {
       console.error(e);
-      toast.error("Could not start checkout");
-      setIsCheckingOut(false);
+      toast.error("Checkout didn't open. Try again in a moment.");
+      setBusy(false);
     }
-  }
+  };
 
   return (
-    <div>
-      <title>{`${title || "Cart"}: ${AppConfigs.app_name}`}</title>
-      <section>
-        <MaxWidthWrapper className="py-8 md:py-12">
-          <MinimalSection title={title || "Cart"} className="items-start gap-2">
-            <div>
-              <Link
-                href={`/art`}
-                className="mb-1 flex max-w-fit items-center gap-1 text-sm capitalize hover:opacity-85 md:text-lg text-theme-secondary-500"
-              >
-                <ArrowLeft className="size-4 md:size-5" />
-                Continue shopping
-              </Link>
+    <>
+      <title>Cart · Artfinity</title>
+      {/* the cookie notice waits for the first scroll, so it doesn't cover the summary on phones */}
+      <style>{`:root { --af-cookie-wait: 1; }`}</style>
+      <div className="mx-auto max-w-[1040px] px-4 pb-16 pt-6 sm:px-6 md:pt-10">
+        <Link href="/art" className="mb-3 inline-flex items-center gap-1.5 text-[14px] font-semibold text-ink-2 no-underline hover:text-ink">
+          <ArrowLeft className="h-4 w-4" aria-hidden /> Keep looking
+        </Link>
+        <h1 className="t-page mb-6">
+          Your cart{count > 0 && <span className="text-ink-2"> · {count}</span>}
+        </h1>
+
+        {cartItems.length ? (
+          <div className="grid items-start gap-8 md:grid-cols-[minmax(0,1fr)_340px]">
+            <div className="divide-y divide-line border-y border-line">
+              {cartItems.map((item) => (
+                <CartItemCard key={`${item.product.id}-${item.product.selectedSize}-${item.product.frameChosen}-${item.product.frameColor}`} item={item} />
+              ))}
             </div>
-
-            {cartItems.length > 0 ? (
-              <div
-                className={cn(
-                  "grid grid-cols-1 justify-between gap-4 md:grid-cols-[1fr_minmax(25vw,_250px)]",
-                  "mb-6 [&>*>*]:rounded-lg [&>*>*]:border-2",
-                )}
-              >
-                <div className="cart-items-area">
-                  <div className="divide-y-2">
-                    {cartItems.map((item, index) => (
-                      <CartItemCard key={index} item={item} />
-                    ))}
-                  </div>
-                </div>
-
-                <div className="cart-price-info relative -order-1 w-full items-start justify-center md:order-2 md:flex">
-                  <CartPricingInfo
-                    subtotal={totalPrice / 100}
-                    shipping={0}
-                    // estimatedTax={tax / 100}
-                    total={totalPrice / 100}
-                    className="rigt-0 sticky left-0 top-0"
-                  >
-                    <Button
-                      className="mt-4 capitalize md:mx-auto md:mt-6"
-                      onClick={onCheckout}
-                    >
-                      Proceed to Checkout{" "}
-                      <ArrowRight className="size-5 !text-background" />
-                    </Button>
-                  </CartPricingInfo>
-                </div>
-              </div>
-            ) : (
-              <div className="grid min-h-[14rem] place-content-center">
-                <p className="text-lg md:text-2xl">Your cart is empty</p>
-              </div>
-            )}
-          </MinimalSection>
-        </MaxWidthWrapper>
-      </section>
-    </div>
+            <CartPricingInfo subtotal={total / 100} savings={savings / 100} shipping={0} total={total / 100} className="md:sticky md:top-24">
+              <label className="flex cursor-pointer items-start gap-2.5 text-left text-[14px] leading-snug text-ink">
+                <input type="checkbox" checked={follow} onChange={(e) => setFollow(e.target.checked)} className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[rgb(var(--af-scan-rgb))]" />
+                <span>Email me when {who} {who.includes(" and ") ? "post" : "posts"} new work</span>
+              </label>
+              <button type="button" onClick={onCheckout} disabled={busy} className="btn btn-blue btn-lg w-full">
+                {busy ? "Opening checkout…" : `Check out · ${usd(total)}`}
+              </button>
+              <p className="t-small text-center">
+                Printed in NYC, arrives {deliveryRange()} · tax added at checkout ·{" "}
+                <Link href="/help/buyers/damaged-print" className="underline underline-offset-2 hover:text-ink">damaged? free reprint</Link>
+              </p>
+            </CartPricingInfo>
+          </div>
+        ) : (
+          <EmptyState
+            title="Nothing here yet"
+            body="Scan a code next to a painting, or browse."
+            action={{ label: "Browse art", href: "/art" }}
+            className="justify-items-center py-12 text-center sm:py-16"
+          />
+        )}
+      </div>
+    </>
   );
-};
-
-export default CartPage;
+}

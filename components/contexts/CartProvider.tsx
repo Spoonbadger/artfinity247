@@ -8,11 +8,23 @@ import {
   useRef,
   useState,
   useMemo,
+  useCallback,
 } from "react";
 import { useUser } from "@/components/contexts/UserProvider";
 import { CartContextType, CartItemType, CartItemProductType } from "@/types";
 import { updateCartItem } from "@/db/query";
 import { AppConfigs } from "@/db";
+
+// Browser storage can throw (blocked site data, some private modes). The cart then just doesn't persist; the page keeps working.
+const store = {
+  get(k: string): string | null { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k: string, v: string) { try { localStorage.setItem(k, v); } catch { /* storage blocked */ } },
+  remove(k: string) { try { localStorage.removeItem(k); } catch { /* storage blocked */ } },
+};
+
+// updateCartItem mutates the items it is given; hand it copies so state updaters stay pure
+// (React runs updaters twice in dev, which used to double quantities).
+const clone = (items: CartItemType[]) => items.map((ci) => ({ ...ci }));
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 export const useCart = () => {
@@ -23,6 +35,8 @@ export const useCart = () => {
 
 const STORAGE_VERSION = "v1";
 const keyFor = (slug?: string) => `cart:${STORAGE_VERSION}:${slug ?? "guest"}`;
+
+const calculateProductPrice = (product: CartItemProductType, quantity = 1) => (product.unitPrice ?? 0) * quantity;
 
 function safeParse<T>(raw: string | null): T | [] {
   try {
@@ -46,7 +60,7 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
     const effectiveKey = currentUser?.slug ? userKey : guestKey;
     if (loadedKeyRef.current === effectiveKey) return;
 
-    const fromLS = safeParse<CartItemType[]>(localStorage.getItem(effectiveKey));
+    const fromLS = safeParse<CartItemType[]>(store.get(effectiveKey));
     setCartItems(Array.isArray(fromLS) ? fromLS : []);
     loadedKeyRef.current = effectiveKey;
     hasLoadedRef.current = true;
@@ -57,13 +71,13 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
     if (!currentUser?.slug) return;
     const uKey = userKey;
 
-    const guestRaw = localStorage.getItem(guestKey);
+    const guestRaw = store.get(guestKey);
     if (!guestRaw) return;
 
     const guestItems = safeParse<CartItemType[]>(guestRaw);
-    const userItems = safeParse<CartItemType[]>(localStorage.getItem(uKey));
+    const userItems = safeParse<CartItemType[]>(store.get(uKey));
     if (!Array.isArray(guestItems) || guestItems.length === 0) {
-      localStorage.removeItem(guestKey);
+      store.remove(guestKey);
       return;
     }
 
@@ -80,8 +94,8 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
     });
 
     const merged = Array.from(map.values());
-    localStorage.setItem(uKey, JSON.stringify(merged));
-    localStorage.removeItem(guestKey);
+    store.set(uKey, JSON.stringify(merged));
+    store.remove(guestKey);
 
     // if we’re currently on the user key, reflect merged items in state
     if (loadedKeyRef.current === uKey) setCartItems(merged);
@@ -92,66 +106,67 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
     if (!hasLoadedRef.current) return;
     const effectiveKey = currentUser?.slug ? userKey : guestKey;
     try {
-      localStorage.setItem(effectiveKey, JSON.stringify(cartItems));
+      store.set(effectiveKey, JSON.stringify(cartItems));
     } catch {
       // ignore quota errors
     }
   }, [cartItems, currentUser?.slug, userKey, guestKey]);
 
-  // Actions (keep using your updateCartItem helper)
-  const addToCart = (product: CartItemProductType, quantity = 1) => {
+  // Actions (keep using your updateCartItem helper). useCallback keeps them stable, so the context value below only
+  // changes when the cart or the signed-in user does, not on every render (every useCart() would re-render).
+  const userId = currentUser?.id || "guest";
+  const addToCart = useCallback((product: CartItemProductType, quantity = 1) => {
     setCartItems((prev) =>
       updateCartItem({
-        user_id: currentUser?.id || "guest",
+        user_id: userId,
         product,
         quantity,
         operation: "add",
-        prev_items: prev,
+        prev_items: clone(prev),
       })
     );
-  };
+  }, [userId]);
 
-  const updateToCart = (product: CartItemProductType, quantity = 1) => {
+  const updateToCart = useCallback((product: CartItemProductType, quantity = 1) => {
     setCartItems((prev) =>
       updateCartItem({
-        user_id: currentUser?.id || "guest",
+        user_id: userId,
         product,
         quantity,
         operation: "update",
-        prev_items: prev,
+        prev_items: clone(prev),
       })
     );
-  };
+  }, [userId]);
 
-  const removeFromCart = (product: CartItemProductType) => {
+  const removeFromCart = useCallback((product: CartItemProductType) => {
     setCartItems((prev) =>
       updateCartItem({
-        user_id: currentUser?.id || "guest",
+        user_id: userId,
         product,
         operation: "remove",
-        prev_items: prev,
+        prev_items: clone(prev),
       })
     );
-  };
+  }, [userId]);
 
-  const calculateProductPrice = (product: CartItemProductType, quantity = 1) =>
-    (product.unitPrice ?? 0) * quantity;
-
-  const calculateTotalPrice = (items: CartItemType[] = cartItems) =>
-    items.reduce((sum, { product, quantity }) => sum + calculateProductPrice(product, quantity), 0);
+  const calculateTotalPrice = useCallback(
+    (items: CartItemType[] = cartItems) => items.reduce((sum, { product, quantity }) => sum + calculateProductPrice(product, quantity), 0),
+    [cartItems],
+  );
 
   const calculateTax = (totalPrice: number, taxRate = Number(AppConfigs.sales_tax_rate || 0)) =>
     totalPrice * taxRate;
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setCartItems([]);
     try {
-      localStorage.removeItem(userKey);
-      localStorage.removeItem(guestKey);
+      store.remove(userKey);
+      store.remove(guestKey);
     } catch {}
     loadedKeyRef.current = currentUser?.slug ? userKey : guestKey;
     hasLoadedRef.current = true;
-  }
+  }, [currentUser?.slug, userKey, guestKey]);
 
   const value = useMemo(
     () => ({
@@ -164,15 +179,8 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
       calculateTax,
       clearCart,
     }),
-    [
-      cartItems, 
-      addToCart,
-      removeFromCart,
-      updateToCart,
-      clearCart,
-      calculateTotalPrice
-    ]
-  )
+    [cartItems, addToCart, removeFromCart, updateToCart, clearCart, calculateTotalPrice],
+  );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };

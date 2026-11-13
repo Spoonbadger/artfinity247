@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from "@/lib/prisma";
-import { jwtVerify } from 'jose'
+import { getUserFromCookie } from "@/lib/auth";
 
 export const runtime = 'nodejs'
 export const dynamic = "force-dynamic"
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     // Auth
-    const token = req.cookies.get('auth-token')?.value
-    if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+    const user = await getUserFromCookie()
+    if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET)
-    const { payload } = await jwtVerify(token, secret)
-
-    const artistId = payload.id as string
+    const artistId = user.id
     if (!artistId) return NextResponse.json({ error: 'No artist ID' }, { status: 400 })
 
     // Fetch payout history

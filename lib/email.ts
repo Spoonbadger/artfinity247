@@ -1,16 +1,18 @@
-import { Resend } from "resend";
-import ReceiptEmail from "@/emails/ReceiptEmail"
+import { editionLabel } from "@/lib/editions";
+import ReceiptEmail from "@/emails/ReceiptEmail";
 import { prisma } from "@/lib/prisma";
+import { resend } from "@/lib/resend";
+import { deliveryRange } from "@/lib/delivery";
+import { frameText, friendlySize, orderCode } from "@/lib/orderText";
+import { rewardSettings } from "@/lib/collectorRewards";
 
-const resendKey = process.env.RESEND_API_KEY
-const from = process.env.EMAIL_FROM || "Artfinity <contact@theartfinity.com>"
+const from = process.env.EMAIL_FROM || "Artfinity <contact@theartfinity.com>";
 
+/**
+ * Artfinity's default receipt. Goes through the shared client (lib/resend): logged in dev, retried on passing errors.
+ * Idempotent: an order whose receipt already went out is skipped.
+ */
 export async function sendReceiptEmail(orderId: string) {
-  if (!resendKey) {
-    console.warn("RESEND_API_KEY missing; skipping email.");
-    return { skipped: true };
-  }
-
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     select: {
@@ -18,9 +20,11 @@ export async function sendReceiptEmail(orderId: string) {
       email: true,
       amountTotal: true,
       currency: true,
+      createdAt: true,
       shippingName: true,
       shippingAddress: true,
       receiptSentAt: true,
+      kind: true,
       items: {
         select: {
           title: true,
@@ -28,6 +32,11 @@ export async function sendReceiptEmail(orderId: string) {
           size: true,
           quantity: true,
           unitPrice: true,
+          lineTotal: true,
+          frameChosen: true,
+          frameColor: true,
+          editionNumber: true,
+          artwork: { select: { editionSize: true, artist: { select: { name: true, artist_name: true } } } },
         },
       },
     },
@@ -35,25 +44,43 @@ export async function sendReceiptEmail(orderId: string) {
 
   if (!order || !order.email) return { skipped: true };
 
-  // Idempotency: don’t resend if already sent
+  // Idempotency: don't resend if already sent
   if (order.receiptSentAt) return { alreadySent: true };
 
-  const resend = new Resend(resendKey)
-
-  const { data, error } = await resend.emails.send({
-    from,
-    to: order.email,
-    subject: "Your Artfinity receipt",
-    react: ReceiptEmail({
-      orderId: order.id,
-      email: order.email,
-      totalCents: order.amountTotal,
-      currency: order.currency,
-      shippingName: order.shippingName,
-      shippingAddressLine: order.shippingAddress ?? undefined,
-      items: order.items
-    }),
-  });
+  const code = orderCode(order.id);
+  const bulk = order.kind === "bulk";
+  // amountTotal is what Stripe charged; the lines are before tax and shipping is free (bulk: handling rides as shipping).
+  const linesCents = order.items.reduce((n, it) => n + (it.lineTotal ?? (it.unitPrice ?? 0) * (it.quantity ?? 1)), 0);
+  const rewards = (await rewardSettings().catch(() => null))?.enabled ?? false;
+  const { data, error } = await resend.emails.send(
+    {
+      from,
+      to: order.email,
+      subject: bulk ? `Your bulk prints are ordered (${code})` : `Your Artfinity order ${code}`,
+      react: ReceiptEmail({
+        code,
+        bulk,
+        subtotalCents: linesCents,
+        totalCents: order.amountTotal,
+        currency: order.currency,
+        shippingName: order.shippingName,
+        shippingAddressLine: order.shippingAddress ?? undefined,
+        arrives: deliveryRange(order.createdAt),
+        rewards,
+        items: order.items.map((it) => ({
+          title: it.title,
+          imageUrl: it.imageUrl,
+          size: friendlySize(it.size),
+          quantity: it.quantity,
+          unitPrice: it.unitPrice,
+          frame: frameText(it.frameChosen, it.frameColor),
+          artist: it.artwork?.artist ? it.artwork.artist.artist_name || it.artwork.artist.name : null,
+          edition: editionLabel(it.editionNumber, it.quantity, it.artwork?.editionSize),
+        })),
+      }),
+    },
+    { idempotencyKey: `receipt-${order.id}` },
+  );
 
   if (error) throw error;
 

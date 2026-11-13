@@ -21,8 +21,20 @@ model Order {
   shippingStatus  String      @default("pending")
   items           OrderItem[]
   sentToPrinter Boolean @default(false)
+  // When the work order went to the print lab automatically, and the lab's reference if it sends one back
+  printerSentAt DateTime?
+  printerRef    String?
+  // Shipping, set by admin, the lab, or a carrier-tracking webhook
+  trackingCarrier String?
+  trackingNumber  String?
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
   adminNotificationSentAt  DateTime?
+  // retail = a buyer's order; bulk = an artist ordering their own prints at cost to sell in person
+  kind            String  @default("retail")
+  bulkArtistId    String?
   artistNotificationsSentAt DateTime?
+  refunds         Refund[]
 }
 
 model OrderItem {
@@ -43,11 +55,48 @@ model OrderItem {
   printCost    Int?
   shippingCost Int?
   websiteCost  Int?
+  editionNumber Int?     // e.g. 12 of 50 for limited editions
+  qrCodeId      String?  // the printed code that led to this sale (scan attribution)
+  artistSplit   Float?   // the artist's share of profit locked in when the order was placed (0.6 free, higher on Pro)
+  review        Review?
+  refunds       Refund[]
   artwork      Artwork? @relation(fields: [artworkId], references: [id])
   order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
   @@index([artworkId])
+}
+
+// A refunded order line (lib/refunds.ts). The money goes back to the buyer in Stripe; this records it so the books
+// match. A line is refunded while it has a row with undoneAt null. Admins record and undo refunds in the admin order
+// page, which also writes an AdminAction audit row each time.
+model Refund {
+  id             String    @id @default(cuid())
+  orderId        String
+  orderItemId    String
+  // The artist whose share the line paid (null when the piece isn't listed anymore)
+  artistId       String?
+  amountCents    Int       // line total refunded to the buyer, ex-tax
+  shareCents     Int       // the artist's share on the line at refund time
+  // Share taken back because its payout month wasn't paid yet: the line counts as 0 for the artist
+  reversed       Boolean   @default(false)
+  // Already paid out: the share comes off the artist's payout for adjustMonth ("YYYY-MM") as a Refund adjustment
+  deducted       Boolean   @default(false)
+  adjustMonth    String?
+  reason         String    @default("other") // lib/refundPolicy.ts RefundReason
+  title          String    @default("")
+  note           String    @default("")
+  createdAt      DateTime  @default(now())
+  createdByEmail String    @default("")
+  undoneAt       DateTime?
+  undoneByEmail  String?
+  order          Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem      OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  artist         Artist?   @relation(fields: [artistId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([orderItemId])
+  @@index([artistId])
 }
 
 model Payout {
@@ -56,6 +105,9 @@ model Payout {
   month       String
   amountCents Int
   paidAt      DateTime?
+  method      String?   // "stripe" | "carried"; older rows "venmo" | "manual" | null were paid outside Stripe (kept for history)
+  stripeTransferId String? @unique
+  failureReason    String?
   createdAt   DateTime  @default(now())
   artist      Artist    @relation(fields: [artistId], references: [id])
 
@@ -69,7 +121,7 @@ model Artist {
   last_name    String?
   artist_name  String?
   email        String    @unique
-  password     String
+  password     String?   // null for accounts created with Google/Apple/Instagram/etc.
   profileImage String?
   phone        String
   city         String
@@ -80,11 +132,85 @@ model Artist {
   bio          String?   @default("")
   createdAt    DateTime  @default(now())
   role         Role      @default(USER)
+  /// Deprecated: Venmo payouts removed Nov 2026. Unused; drop in a later migration.
   venmoHandle  String?   @unique
+  // Payouts: Stripe Connect (Express) only. Until the account is payout-ready, earnings are held (lib/payouts.ts).
+  stripeAccountId       String?  @unique
+  stripePayoutsEnabled  Boolean  @default(false)
   artworks     Artwork[]
   payouts      Payout[]
 
+  // Real verification (reviewed by an admin), not automatic
+  verification            VerificationStatus @default(NONE)
+  verifiedAt              DateTime?
+  verificationRequestedAt DateTime?
+  verificationEvidence    Json?    // { instagram, website, portfolio, note } submitted by the artist
+  verificationNote        String?  // admin's note, e.g. why a request was declined
+
+  // Customization
+  pageTheme        Json?    // artist page design: accent, banner artwork, layout, pinned ids
+  linksTheme       Json?    // /@handle/links design: background artwork, button style, colors
+  links            ArtistLink[]
+  messages         Message[]
+  emailTemplates   EmailTemplate[]
+  collections      Collection[]
+  qrCodes          QrCode[]
+  printQueueItems  PrintQueueItem[]
+  codePrintOrders  CodePrintOrder[]
+  places           Place[]
+
+  // Legal: when the artist accepted the Artist Terms and Terms & Conditions
+  termsAcceptedAt  DateTime?
+
+  // Plans and referrals (billing comes with the backend)
+  plan             Plan      @default(FREE)
+  proUntil         DateTime? // Pro is active while this is in the future (paid or earned by referrals)
+  referralCode     String?   @unique
+  referredById     String?
+
+  // Infinity subscription (Stripe Billing, lib/billing.ts). Only ever moves proUntil; these record where it stands.
+  stripeCustomerId              String?   @unique // the artist's Stripe Customer; webhooks find the artist by it
+  stripeSubscriptionId          String?
+  subscriptionStatus            String?   // active | trialing | past_due | unpaid | incomplete | incomplete_expired | canceled | paused
+  subscriptionInterval          String?   // month | year
+  subscriptionPeriodEnd         DateTime? // end of the current paid period (or of the free trial while referral months run first)
+  subscriptionTrialEnd          DateTime?
+  subscriptionCancelAtPeriodEnd Boolean   @default(false)
+  subscriptionPaymentFailedAt   DateTime? // set by invoice.payment_failed, cleared when an invoice is paid
+  // The rest of the subscription bookkeeping (lib/billing.ts BillingExtra): endedAt, failedInvoiceId, subProUntil,
+  // simulated, eventAt, updatedAt
+  billing                       Json?
+  refunds                       Refund[]
+
   passwordResetTokens PasswordResetToken[]
+
+  /// Deprecated: Venmo payouts removed Nov 2026. Unused; drop in a later migration.
+  venmoPending       String?
+  /// Deprecated: Venmo payouts removed Nov 2026. Unused; drop in a later migration.
+  venmoPendingToken  String?   @unique
+  /// Deprecated: Venmo payouts removed Nov 2026. Unused; drop in a later migration.
+  venmoPendingAt     DateTime?
+  // Account closing: the page goes offline right away; unpaid earnings are still paid out before the data is removed
+  closedAt           DateTime?
+  // Admin can pause an account (page offline, no new sales) without closing it
+  oauthAccounts      OAuthAccount[]
+  // Set when the artist clicks the confirm link in their email, or signs in with a provider that verified it
+  emailVerifiedAt    DateTime?
+  emailVerifyToken   String?   @unique
+  // Bumped to sign out every existing session (password reset, account takeover fix)
+  sessionVersion     Int       @default(0)
+  // Admin team: owner | admin | support (null for artists). Support can't touch money or other admins.
+  adminRole          String?
+  // Which admin alerts this admin gets, and how: { "<kind>": "instant" | "digest" | "off" }
+  adminNotify        Json?
+  suspendedAt        DateTime?
+  suspendedReason    String?
+  // "Let Artfinity feature my work on its social accounts" (Share kit). The social queue skips artists who turn it off.
+  socialFeature      Boolean   @default(true)
+  events             StudioEvent[]
+  reviews            Review[]
+  followers          Follower[]
+  newsletters        Newsletter[]
 
   @@index([citySlug])
 }
@@ -104,8 +230,31 @@ model Artwork {
   artist       Artist      @relation(fields: [artistId], references: [id])
   OrderItem    OrderItem[]
   status        ArtworkStatus @default(PENDING)
+  sensitive     String[]      @default([])
+  // Limited print runs: null = open edition. editionSize counts prints across all sizes, numbered 1..N.
+  editionSize   Int?
+  // Room previews on the buy page: scene numbers (0-999) the artist picked; empty = auto-picked
+  roomScenes    Int[]         @default([])
+  collectionItems CollectionItem[]
+  qrCodes         QrCode[]
+  printQueueItems PrintQueueItem[]
+  hangings        Hanging[]
+  codePrints      CodePrint[]
   flaggedReason String?
   flaggedBy     String?
+  // Print sizes this file is sharp enough for (small/medium/large/xl). Empty = not checked (older uploads).
+  printableSizes String[]     @default([])
+  // Rights: when the artist confirmed "this is my original work and I hold the rights"
+  ownershipConfirmedAt DateTime?
+  reports         ArtReport[]
+  reviews         Review[]
+  wishlistItems   WishlistItem[]
+  // Perceptual fingerprint (dHash, 16 hex chars) of the original, to catch re-uploads of the same image
+  imageHash       String?
+  // Photo edits (lib/imageEdits.ts): crop, rotation, straighten and perspective corners applied on the server to the
+  // untouched original at `source` (its preview URL; that upload is kept so "Reset edits" can go back). null = unedited.
+  imageEdits      Json?
+  @@index([imageHash])
 }
 
 enum ArtworkStatus {
@@ -130,4 +279,646 @@ model PasswordResetToken {
   artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
 
   @@index([artistId])
+}
+
+
+enum VerificationStatus {
+  NONE
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+// Socials and link-in-bio links. kind: instagram | tiktok | youtube | facebook | x | pinterest | threads | website | email | custom
+model ArtistLink {
+  id        String   @id @default(cuid())
+  artistId  String
+  kind      String
+  label     String?
+  url       String
+  position  Int      @default(0)
+  active    Boolean  @default(true)
+  clicks    Int      @default(0)
+  createdAt DateTime @default(now())
+  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@index([artistId, position])
+}
+
+// Artist <-> customer communications log: thank-you notes, messages, private notes
+// direction: out (artist to buyer) | in (buyer to artist) | note (private)
+model Message {
+  id        String    @id @default(cuid())
+  artistId  String
+  email     String
+  orderId   String?
+  direction String
+  subject   String?
+  body      String
+  sentAt    DateTime?
+  createdAt DateTime  @default(now())
+  artist    Artist    @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@index([artistId, email])
+}
+
+// An artist's own wording for the automated emails. kind: receipt | shipped | delivered | thank_you
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  artistId  String
+  kind      String
+  subject   String
+  body      String
+  enabled   Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@unique([artistId, kind])
+}
+
+
+// An artist's own groupings of their work, sorted by hand (e.g. "East River series", "Small works").
+model Collection {
+  id          String           @id @default(cuid())
+  artistId    String
+  title       String
+  slug        String
+  description String?          @default("")
+  coverArtworkId String?
+  // Public page background (lib/collectionBackground.ts): {kind:"wall"} | {kind:"color",color} |
+  // {kind:"painting",artworkId,blur,tint,tintOpacity}. Null = the gallery wall.
+  background  Json?
+  position    Int              @default(0)
+  createdAt   DateTime         @default(now())
+  artist      Artist           @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  items       CollectionItem[]
+
+  @@unique([artistId, slug])
+  @@index([artistId, position])
+}
+
+model CollectionItem {
+  id           String     @id @default(cuid())
+  collectionId String
+  artworkId    String
+  position     Int        @default(0)
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  artwork      Artwork    @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, artworkId])
+  @@index([collectionId, position])
+}
+
+
+enum Plan {
+  FREE
+  PRO
+}
+
+
+// A printed code. It holds only a short link (/q/<code>); everything below is editable after printing.
+model QrCode {
+  id          String      @id @default(cuid())
+  code        String      @unique // short, upper-case, no look-alike characters, e.g. K7P2
+  artistId    String
+  artworkId   String?     // null = the code opens the artist's page
+  label       String?     // the artist's own name for it, e.g. "Lumen Cafe wall"
+  venue       String?     // shown as "You scanned this at ..."
+  discountPct Int?        // 5-30, applied at checkout
+  design      Json?       // the QR Studio design it was printed with
+  active      Boolean     @default(true)
+  expiresAt   DateTime?
+  createdAt   DateTime    @default(now())
+  // The venue partner this code hangs at (cafe, shop, market), for venue revenue share
+  venueId     String?
+  venuePartner Venue?     @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  // The artist's Place it hangs at (lib/artistPlaces.ts). venue / venueId above mirror the Place's name and partner venue.
+  placeId     String?
+  place       Place?      @relation(fields: [placeId], references: [id], onDelete: SetNull)
+  artist      Artist      @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  artwork     Artwork?    @relation(fields: [artworkId], references: [id], onDelete: SetNull)
+  scans       ScanEvent[]
+  printQueueItems PrintQueueItem[]
+  printLogs   QrPrintLog[]
+  codePrints  CodePrint[]
+
+  @@index([artistId])
+  @@index([placeId])
+}
+
+// One scan of a printed code. No personal data: coarse device and place only.
+model ScanEvent {
+  id        String   @id @default(cuid())
+  qrCodeId  String
+  createdAt DateTime @default(now())
+  device    String?  // phone | tablet | desktop
+  city      String?
+  region    String?
+  country   String?
+  visitorId String?  // random first-party id, for unique scans and joining scans to orders
+  qrCode    QrCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+
+  @@index([qrCodeId, createdAt])
+}
+
+// Studio events (markets, open studios). Shown on the artist page and used to tag QR scans.
+model StudioEvent {
+  id        String   @id @default(cuid())
+  artistId  String
+  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  name      String
+  venue     String   @default("")
+  start     String   // YYYY-MM-DD
+  end       String   // YYYY-MM-DD
+  createdAt DateTime @default(now())
+  // The Place it happens at (found or made from the event's name when it's saved)
+  placeId   String?
+  place     Place?   @relation(fields: [placeId], references: [id], onDelete: SetNull)
+
+  @@index([artistId, start])
+}
+
+// Copyright / rights reports from the public "Report this art" page
+model ArtReport {
+  id          String   @id @default(cuid())
+  artworkId   String?
+  artwork     Artwork? @relation(fields: [artworkId], references: [id], onDelete: SetNull)
+  artworkUrl  String   @default("")
+  reason      String   // "copyright" | "ai" | "offensive" | "other"
+  details     String   @default("")
+  name        String
+  email       String
+  isRightsHolder Boolean @default(false)
+  status      String   @default("open") // open | removed | dismissed
+  adminNote   String?
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+
+  @@index([status, createdAt])
+}
+
+// Buyer reviews: one per purchased print, left after delivery (verified purchase only)
+model Review {
+  id          String    @id @default(cuid())
+  orderItemId String    @unique
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  artworkId   String?
+  artwork     Artwork?  @relation(fields: [artworkId], references: [id], onDelete: SetNull)
+  artistId    String
+  artist      Artist    @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  rating      Int       // 1-5
+  body        String    @default("")
+  buyerName   String    // shown as first name + last initial
+  buyerCity   String?
+  photoUrl    String?   // optional photo of the print on their wall
+  status      String    @default("published") // published | hidden (admin) | flagged
+  artistReply String?
+  artistReplyAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([artworkId, status])
+  @@index([artistId, status])
+}
+
+// Email follows: a buyer or fan follows an artist and gets their newsletter (double opt-in)
+model Follower {
+  id          String    @id @default(cuid())
+  artistId    String
+  artist      Artist    @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  email       String
+  name        String?
+  source      String    @default("page") // page | checkout | links | import
+  token       String    @unique          // confirm + unsubscribe links
+  confirmedAt DateTime?
+  unsubscribedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([artistId, email])
+  @@index([artistId, confirmedAt])
+}
+
+// A newsletter an artist writes and sends to confirmed followers
+model Newsletter {
+  id         String    @id @default(cuid())
+  artistId   String
+  artist     Artist    @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  subject    String
+  body       String    // markdown-lite text
+  artworkIds String[]  @default([])
+  sentAt     DateTime?
+  recipients Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  @@index([artistId, createdAt])
+}
+
+// Page views for artist analytics (no personal data: a random visitor cookie, referrer host, utm source)
+model PageView {
+  id        String   @id @default(cuid())
+  path      String
+  artistId  String?
+  artworkId String?
+  source    String   @default("direct") // qr | instagram | tiktok | facebook | pinterest | email | search | other site host | direct
+  referrer  String?  // host only
+  visitorId String?
+  device    String?  // mobile | desktop | tablet
+  createdAt DateTime @default(now())
+
+  @@index([artistId, createdAt])
+  @@index([artworkId, createdAt])
+}
+
+// Audit log: every admin action (approve, take down, refund, payout, suspend...), so there's a record of who did what
+model AdminAction {
+  id         String   @id @default(cuid())
+  adminId    String
+  adminEmail String
+  action     String   // e.g. "artwork.approve", "order.refund", "artist.suspend"
+  targetType String   // artist | artwork | order | review | report | payout | reprint | setting
+  targetId   String?
+  summary    String   @default("")
+  details    Json?
+  createdAt  DateTime @default(now())
+
+  @@index([targetType, targetId])
+  @@index([createdAt])
+}
+
+// Notes admins leave on an artist or order (support history)
+model AdminNote {
+  id         String   @id @default(cuid())
+  targetType String   // artist | order
+  targetId   String
+  adminEmail String
+  body       String
+  createdAt  DateTime @default(now())
+
+  @@index([targetType, targetId])
+}
+
+// Social sign-in (Google, Apple, Instagram, Facebook...) linked to an artist account
+model OAuthAccount {
+  id                String   @id @default(cuid())
+  artistId          String
+  artist            Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  provider          String   // google | apple | instagram | facebook
+  providerAccountId String
+  email             String?
+  createdAt         DateTime @default(now())
+  lastUsedAt        DateTime?
+
+  @@unique([provider, providerAccountId])
+  @@index([artistId])
+}
+
+// Invite someone to the admin team by email
+model AdminInvite {
+  id         String    @id @default(cuid())
+  email      String
+  role       String    // owner | admin | support
+  token      String    @unique
+  invitedBy  String
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([email])
+}
+
+// Something that needs an admin. One row per thing (key), so the same issue never emails twice.
+model AdminAlert {
+  id         String    @id @default(cuid())
+  kind       String    // report | reprint | duplicate | review_flagged | verification | work_order_failed | payout_late | payout_failed | order_stuck | job_failed ...
+  key        String    @unique // e.g. "report:<id>"
+  title      String
+  link       String    @default("")
+  severity   String    @default("normal") // urgent | normal | low
+  createdAt  DateTime  @default(now())
+  emailedAt  DateTime?
+  digestedAt DateTime?
+  resolvedAt DateTime?
+
+  @@index([resolvedAt, createdAt])
+}
+
+// Log of background jobs (payout run, digests, retries, tracking sync...)
+model JobRun {
+  id         String    @id @default(cuid())
+  job        String
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  ok         Boolean   @default(false)
+  summary    String    @default("")
+  details    Json?
+
+  @@index([job, startedAt])
+}
+
+// A buyer's account: passwordless (email link). Orders are matched by email.
+model Collector {
+  id         String    @id @default(cuid())
+  email      String    @unique
+  name       String?
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime?
+  wishlist   WishlistItem[]
+}
+
+model WishlistItem {
+  id          String    @id @default(cuid())
+  collectorId String
+  collector   Collector @relation(fields: [collectorId], references: [id], onDelete: Cascade)
+  artworkId   String
+  artwork     Artwork   @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@unique([collectorId, artworkId])
+}
+
+// A cafe, shop or market that hosts artists' codes, and may earn a share of sales from its walls
+model Venue {
+  id           String    @id @default(cuid())
+  name         String
+  slug         String    @unique
+  neighborhood String?
+  address      String?
+  contactName  String?
+  contactEmail String?
+  sharePct     Float     @default(0)   // share of Artfinity's profit on sales from this venue's codes, e.g. 0.05
+  active       Boolean   @default(true)
+  notes        String?
+  createdAt    DateTime  @default(now())
+  codes        QrCode[]
+  places       Place[]
+}
+
+// A post for Artfinity's own Instagram (/admin/social). draft -> approved -> posting -> posted | failed; or skipped.
+// The video is rendered in the approving admin's browser and uploaded (mediaUrl); the social-publish job posts it.
+model SocialPost {
+  id            String    @id @default(cuid())
+  status        String    @default("draft") // draft | approved | posting | posted | failed | skipped
+  kind          String    @default("artwork") // artwork | collection | event | artist
+  source        String    @default("manual") // auto (new art) | manual (Promote)
+  artistId      String?
+  artworkId     String?
+  artworkIds    String[]  @default([]) // pieces in the video (several for walks and carousels)
+  collectionId  String?
+  eventId       String?
+  headline      String?   // e.g. "Artist of the week"
+  preset        String
+  format        String    @default("vertical") // vertical 1080x1920 | square 1080x1080
+  caption       String    @default("")
+  position      Int       @default(0)
+  mediaUrl      String?
+  mediaType     String?   // video/mp4 | video/webm
+  scheduledFor  DateTime?
+  postedAt      DateTime?
+  postedBy      String?   // "instagram" (Graph API) or "manual" (marked as posted by an admin)
+  igContainerId String?
+  igMediaId     String?
+  permalink     String?
+  error         String?
+  errorCode     String?   // token | rate_limit | media | config | unknown
+  attempts      Int       @default(0)
+  createdById   String?
+  approvedById  String?
+  approvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([status, scheduledFor])
+  @@index([artworkId])
+  @@index([artistId])
+}
+
+// Connected social account state that can't live in env: a refreshed Instagram token and when it expires.
+model SocialAccount {
+  id          String    @id // "instagram"
+  accessToken String?
+  expiresAt   DateTime?
+  checkedAt   DateTime?
+  refreshedAt DateTime?
+  note        String?
+  updatedAt   DateTime  @updatedAt
+}
+
+// Print queue (/studio/qr/queue): codes an artist wants printed, across devices. One row per code + format; adding the
+// same code in the same format again adds to qty. design is the QR Studio look (components/qr/card.ts sanitizeDesign).
+model PrintQueueItem {
+  id        String   @id @default(cuid())
+  artistId  String
+  artworkId String
+  qrCodeId  String
+  design    Json
+  format    String   // label | sticker | tag | poster
+  qty       Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // Printing for a Place ("Print all codes for this place"): "Mark as printed" tags the code to it.
+  placeId   String?
+  place     Place?   @relation(fields: [placeId], references: [id], onDelete: SetNull)
+  artist    Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  qrCode    QrCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+
+  @@unique([artistId, qrCodeId, format])
+  @@index([artistId])
+}
+
+// When a code was printed: "Mark as printed" on the queue (method "home") or a mailed code order shipping ("mail").
+// My codes shows the latest one ("Printed Nov 5").
+model QrPrintLog {
+  id        String   @id @default(cuid())
+  qrCodeId  String
+  artistId  String
+  format    String
+  qty       Int
+  method    String   @default("home") // home | mail
+  orderId   String?  // CodePrintOrder for "mail"
+  createdAt DateTime @default(now())
+  qrCode    QrCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+
+  @@index([qrCodeId, createdAt])
+  @@index([artistId])
+}
+
+// "We print them for you": laminated, pre-cut codes mailed to the artist at cost (lib/codePrints.ts).
+// status: pending (checkout open) -> paid -> printing -> shipped -> delivered; canceled when the artist gives up on paying.
+model CodePrintOrder {
+  id              String    @id @default(cuid())
+  artistId        String?
+  email           String
+  artistName      String?
+  status          String    @default("pending")
+  items           Json      // snapshot: [{ qrCodeId, code, artworkId, format, qty, design, art, qrText }]
+  queueItemIds    String[]  @default([])
+  cards           Int       @default(0)
+  shipName        String
+  shipLine1       String
+  shipLine2       String?
+  shipCity        String
+  shipState       String
+  shipZip         String
+  subtotalCents   Int
+  shippingCents   Int
+  handlingCents   Int       @default(0)
+  totalCents      Int
+  pricing         Json?     // the unit costs used, for the record
+  stripeSessionId String?   @unique
+  carrier         String?
+  trackingNumber  String?
+  trackingUrl     String?
+  refundNote      String?
+  refundedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  paidAt          DateTime?
+  printingAt      DateTime?
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  canceledAt      DateTime?
+  artist          Artist?   @relation(fields: [artistId], references: [id], onDelete: SetNull)
+
+  @@index([artistId, createdAt])
+  @@index([status, createdAt])
+}
+
+// Painting scanning service (/scanning, /studio/scanning, /admin/scanning; lib/scanning.ts).
+// requested -> confirmed (admin sets the date and final price) -> paid -> scanning -> delivered -> returned; or cancelled.
+// artistId has no relation on purpose, like SocialPost: the booking outlives nothing it points at.
+model ScanBooking {
+  id              String    @id @default(cuid())
+  artistId        String
+  status          String    @default("requested") // requested | confirmed | paid | scanning | delivered | returned | cancelled
+  handoff         String    @default("dropoff") // dropoff | pickup
+  pickupAddress   String?
+  preferredDates  String[]  @default([]) // YYYY-MM-DD, the artist's picks
+  notes           String?
+  estimateCents   Int?      // live estimate when booked (null: needs a quote)
+  priceCents      Int?      // final price, set by an admin when confirming
+  scheduledFor    DateTime? // drop-off or pickup date, set when confirming
+  dropoffInfo     String?   // address and instructions, set when confirming
+  adminNote       String?
+  stripeSessionId String?   @unique
+  confirmedAt     DateTime?
+  paidAt          DateTime?
+  receivedAt      DateTime?
+  scanningAt      DateTime?
+  deliveredAt     DateTime?
+  returnedAt      DateTime?
+  cancelledAt     DateTime?
+  cancelReason    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  items           ScanBookingItem[]
+
+  @@index([artistId, createdAt])
+  @@index([status, scheduledFor])
+}
+
+// One painting in a booking: an artwork already on Artfinity, or a piece not uploaded yet (artworkId null).
+model ScanBookingItem {
+  id                String      @id @default(cuid())
+  bookingId         String
+  booking           ScanBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  artworkId         String?
+  title             String?
+  band              String      // small | medium | large | oversized (lib/scanning.ts)
+  widthIn           Float?
+  heightIn          Float?
+  // Delivery: the scan replaced the artwork's image. The old one is kept until the booking is returned, so it can be undone.
+  scanUrl           String?
+  previousImageUrl  String?
+  previousPrintable String[]    @default([])
+  printableSizes    String[]    @default([])
+  deliveredAt       DateTime?
+
+  @@index([bookingId])
+  @@index([artworkId])
+}
+
+// "Coming soon — join the waitlist" while the scanning service is off.
+model ScanWaitlist {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  artistId  String?
+  source    String   @default("public") // public | studio
+  createdAt DateTime @default(now())
+}
+
+// Places (/studio/places): where an artist's work hangs. A café, gallery, market stall, pop-up or show. Artist-owned.
+// Codes, print queue items, paintings (Hanging) and Studio events belong to one. An optional partner Venue (admin-run,
+// revenue share) is mirrored onto the Place's codes as QrCode.venueId, and the Place's name as QrCode.venue, so
+// checkout, revenue share and admin keep working (lib/artistPlaces.ts).
+// Closed (active false) or past endsOn: scans of its codes follow afterEnd and never land on an error page.
+model Place {
+  id         String    @id @default(cuid())
+  artistId   String
+  name       String
+  kind       String    @default("cafe") // cafe | gallery | market | shop | popup | studio | other
+  area       String?   // neighborhood or address
+  venueId    String?   // partner Venue, for revenue share
+  startsOn   String?   // YYYY-MM-DD
+  endsOn     String?   // YYYY-MM-DD; after this day the place counts as ended
+  active     Boolean   @default(true) // false: closed, or the show ended
+  closedAt   DateTime?
+  afterEnd   String    @default("art") // once ended, scans: art (the painting, no venue line) | page (artist page) | pause
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  artist     Artist    @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  venue      Venue?    @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  codes      QrCode[]
+  hangings   Hanging[]
+  events     StudioEvent[]
+  queueItems PrintQueueItem[]
+  prints     CodePrint[]
+
+  @@index([artistId])
+  @@index([venueId])
+}
+
+// A painting hanging at a Place: one open row (endedAt null) per painting at a time; ended rows are its history.
+model Hanging {
+  id        String    @id @default(cuid())
+  artistId  String
+  artworkId String
+  placeId   String
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+  artwork   Artwork   @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  place     Place     @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@index([artworkId, endedAt])
+  @@index([placeId, endedAt])
+  @@index([artistId, endedAt])
+}
+
+// What a printed card says, recorded each time one is produced (downloads, Print all, the queue's "Mark as printed",
+// a paid "we print them for you" order). Only cards that show a price. A code's label is out of date when its latest
+// unreplaced print shows a different price, discount or title than the code would print now (lib/labelStatus.ts).
+model CodePrint {
+  id              String    @id @default(cuid())
+  qrCodeId        String
+  artworkId       String?
+  artistId        String
+  placeId         String?
+  format          String    // label | sticker | tag | poster
+  style           String    // QR Studio preset (gallery | sticker | market | poster | custom)
+  ink             String    // code color
+  qty             Int       @default(1)
+  priceShownCents Int       // the "Prints from" price on the card
+  discountPct     Int       @default(0) // the "% off when you scan" badge, 0 = none
+  title           String    @default("") // the title on the card ("" when the card doesn't show it)
+  design          Json?     // the look it printed with, for "Reprint"
+  source          String    // download | print_all | queue | order
+  printedAt       DateTime  @default(now())
+  replacedAt      DateTime? // "Mark old labels as replaced"
+  qrCode          QrCode    @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+  artwork         Artwork?  @relation(fields: [artworkId], references: [id], onDelete: SetNull)
+  place           Place?    @relation(fields: [placeId], references: [id], onDelete: SetNull)
+
+  @@index([qrCodeId, printedAt])
+  @@index([artistId, replacedAt])
+  @@index([artworkId])
 }
