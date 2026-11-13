@@ -33,6 +33,7 @@ const UserCard = ({
     >
       <CardHeader className="card-header overflow-hidden rounded-sm px-0">
         <div className="user-media relative mx-auto aspect-square h-64 rounded-sm">
+          {/* eslint-disable-next-line @next/next/no-img-element -- profile photos can come from any sign-in provider host */}
           <img
             src={src}
             alt={name || "Artist profile picture"}

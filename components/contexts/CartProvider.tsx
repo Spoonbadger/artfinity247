@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
   useMemo,
+  useCallback,
 } from "react";
 import { useUser } from "@/components/contexts/UserProvider";
 import { CartContextType, CartItemType, CartItemProductType } from "@/types";
@@ -34,6 +35,8 @@ export const useCart = () => {
 
 const STORAGE_VERSION = "v1";
 const keyFor = (slug?: string) => `cart:${STORAGE_VERSION}:${slug ?? "guest"}`;
+
+const calculateProductPrice = (product: CartItemProductType, quantity = 1) => (product.unitPrice ?? 0) * quantity;
 
 function safeParse<T>(raw: string | null): T | [] {
   try {
@@ -109,52 +112,53 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
     }
   }, [cartItems, currentUser?.slug, userKey, guestKey]);
 
-  // Actions (keep using your updateCartItem helper)
-  const addToCart = (product: CartItemProductType, quantity = 1) => {
+  // Actions (keep using your updateCartItem helper). useCallback keeps them stable, so the context value below only
+  // changes when the cart or the signed-in user does, not on every render (every useCart() would re-render).
+  const userId = currentUser?.id || "guest";
+  const addToCart = useCallback((product: CartItemProductType, quantity = 1) => {
     setCartItems((prev) =>
       updateCartItem({
-        user_id: currentUser?.id || "guest",
+        user_id: userId,
         product,
         quantity,
         operation: "add",
         prev_items: clone(prev),
       })
     );
-  };
+  }, [userId]);
 
-  const updateToCart = (product: CartItemProductType, quantity = 1) => {
+  const updateToCart = useCallback((product: CartItemProductType, quantity = 1) => {
     setCartItems((prev) =>
       updateCartItem({
-        user_id: currentUser?.id || "guest",
+        user_id: userId,
         product,
         quantity,
         operation: "update",
         prev_items: clone(prev),
       })
     );
-  };
+  }, [userId]);
 
-  const removeFromCart = (product: CartItemProductType) => {
+  const removeFromCart = useCallback((product: CartItemProductType) => {
     setCartItems((prev) =>
       updateCartItem({
-        user_id: currentUser?.id || "guest",
+        user_id: userId,
         product,
         operation: "remove",
         prev_items: clone(prev),
       })
     );
-  };
+  }, [userId]);
 
-  const calculateProductPrice = (product: CartItemProductType, quantity = 1) =>
-    (product.unitPrice ?? 0) * quantity;
-
-  const calculateTotalPrice = (items: CartItemType[] = cartItems) =>
-    items.reduce((sum, { product, quantity }) => sum + calculateProductPrice(product, quantity), 0);
+  const calculateTotalPrice = useCallback(
+    (items: CartItemType[] = cartItems) => items.reduce((sum, { product, quantity }) => sum + calculateProductPrice(product, quantity), 0),
+    [cartItems],
+  );
 
   const calculateTax = (totalPrice: number, taxRate = Number(AppConfigs.sales_tax_rate || 0)) =>
     totalPrice * taxRate;
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setCartItems([]);
     try {
       store.remove(userKey);
@@ -162,7 +166,7 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
     } catch {}
     loadedKeyRef.current = currentUser?.slug ? userKey : guestKey;
     hasLoadedRef.current = true;
-  }
+  }, [currentUser?.slug, userKey, guestKey]);
 
   const value = useMemo(
     () => ({
@@ -175,15 +179,8 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
       calculateTax,
       clearCart,
     }),
-    [
-      cartItems, 
-      addToCart,
-      removeFromCart,
-      updateToCart,
-      clearCart,
-      calculateTotalPrice
-    ]
-  )
+    [cartItems, addToCart, removeFromCart, updateToCart, clearCart, calculateTotalPrice],
+  );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };

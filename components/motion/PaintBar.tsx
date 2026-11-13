@@ -24,12 +24,12 @@ export default function PaintBar({ segs, className, label }: { segs: PaintSeg[];
       {segs.map((sg, i) => (
         <div
           key={sg.label}
-          className="absolute inset-0 origin-left transition-transform duration-700 ease-[cubic-bezier(.5,0,.2,1)] motion-reduce:transition-none"
+          className="absolute inset-0 origin-left transition-transform duration-700 [transition-timing-function:cubic-bezier(.5,0,.2,1)] motion-reduce:transition-none"
           style={{ background: sg.color, transform: `scaleX(${cum[i]})`, zIndex: segs.length - i }}
         />
       ))}
       {cum.slice(0, -1).map((c, i) => (
-        <div key={i} className="absolute inset-0 transition-transform duration-700 ease-[cubic-bezier(.5,0,.2,1)] motion-reduce:transition-none" style={{ transform: `translateX(${c * 100}%)`, zIndex: segs.length + 1 }}>
+        <div key={i} className="absolute inset-0 transition-transform duration-700 [transition-timing-function:cubic-bezier(.5,0,.2,1)] motion-reduce:transition-none" style={{ transform: `translateX(${c * 100}%)`, zIndex: segs.length + 1 }}>
           <span className="absolute inset-y-0 left-0 w-[3px] -translate-x-1/2 bg-white" />
         </div>
       ))}

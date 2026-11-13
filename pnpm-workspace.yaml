@@ -15,3 +15,7 @@ onlyBuiltDependencies:
   - '@embedded-postgres/linux-x64'
   - '@embedded-postgres/linux-arm64'
   - '@embedded-postgres/windows-x64'
+
+# core-js only prints a donation message on install; skip it without the "Ignored build scripts" warning.
+ignoredBuiltDependencies:
+  - core-js

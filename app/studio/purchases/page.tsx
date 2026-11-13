@@ -87,6 +87,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams: { 
         <ul className="grid gap-3">
           {items.map((i) => (
             <li key={i.id} className="af-panel flex items-center gap-4 p-3">
+              {/* eslint-disable-next-line @next/next/no-img-element -- a small, already-sized preview (Cloudinary or /uploads), like the other Studio thumbnails */}
               {i.imageUrl ? <img src={i.imageUrl} alt={i.title || "Artwork"} className="h-16 w-14 shrink-0 rounded object-cover" /> : <span className="h-16 w-14 shrink-0 rounded bg-wall" />}
               <div className="min-w-0 flex-1">
                 {i.artwork?.slug ? <Link href={artPath(i.artwork.artist.slug, i.artwork.slug)} className="font-bold text-ink no-underline hover:text-scan">{i.title}</Link> : <b>{i.title}</b>}
