@@ -152,8 +152,8 @@ export async function uploadReviewNote(artistId: string): Promise<{ note: string
   // New artists need the extra check (gore, hate symbols) unless the main provider covers it.
   const covered = !newArtist || ["gore", "hate"].every((c) => (providerCoverage(activeProvider(), "artwork") as string[]).concat(extraProvider() !== "none" ? providerCoverage(extraProvider(), "extra") : []).includes(c));
   if (settings.autoApprove && imageCheckReady() && covered) {
-    return { note: "Most pieces go live right after a quick automatic check. If something needs a look, a person checks it, usually within a day.", reviewed: false };
+    return { note: "Most pieces go live right after a quick automatic check. If something needs a look, our moderation team checks it, usually within a day.", reviewed: false };
   }
   if (artist && trustedByRecord(artist)) return { note: "Most pieces go live on your page the moment you post them.", reviewed: false };
-  return { note: `A person checks your first ${AUTO_APPROVE_AFTER} pieces, usually within a day. We email you when each one is live.`, reviewed: true };
+  return { note: `Our moderation team checks your first ${AUTO_APPROVE_AFTER} pieces, usually within a day. We email you when each one is live.`, reviewed: true };
 }

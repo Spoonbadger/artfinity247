@@ -15,7 +15,7 @@ export default async function UnsubscribePage({ searchParams }: { searchParams: 
   if (!f) {
     return (
       <FollowNote title="We couldn't find that">
-        <p className="text-[17px] text-ink-2">The link may be copied wrong. Reply to any email and we&apos;ll take you off by hand.</p>
+        <p className="text-[17px] text-ink-2">The link may be copied wrong. Reply to any email and we&apos;ll take you off the list.</p>
         <Link href="/" className="btn btn-ghost">Home</Link>
       </FollowNote>
     );

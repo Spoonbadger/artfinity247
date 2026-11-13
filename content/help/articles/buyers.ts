@@ -103,7 +103,7 @@ Damaged in shipping, a misprint or color problem, or the wrong item? We'll fix i
 1. Open your shipping email (or your order page) and tap **Problem with your print?**
 2. Pick what went wrong: ${REPRINT_REASON_TEXT}.
 3. Choose which prints are affected and add up to ${MAX_PHOTOS} photos.
-4. Send it. A person looks at every request and emails you.
+4. Send it. Our support team reviews every request and emails you.
 
 You can ask within ${HELP_DAYS_AFTER_DELIVERY} days of delivery. You don't need to send the print back.
 

@@ -50,7 +50,7 @@ export const REASONS: Record<string, string> = {
   text_overlay: "a screenshot or overlaid text",
 };
 
-export const REVIEW_NOTICE = "A person will take a quick look before this goes live — usually within a day.";
+export const REVIEW_NOTICE = "Our moderation team will take a quick look before this goes live, usually within a day.";
 
 export function labelNotice(added: string[]): string | null {
   if (!added.length) return null;

@@ -151,4 +151,4 @@ export const autoHoldCode = (flaggedReason: string | null | undefined) => (isAut
 export type StoredArtworkDecision = ArtworkDecision & { spotCheck: boolean; source: "upload" | "image_change" | "report"; at: string };
 
 /** What the artist reads when the trust engine holds a piece. Generic on purpose: the reasons are for admins. */
-export const HOLD_NOTICE = "A person will take a quick look before this goes live, usually within a day.";
+export const HOLD_NOTICE = "Our moderation team will take a quick look before this goes live, usually within a day.";

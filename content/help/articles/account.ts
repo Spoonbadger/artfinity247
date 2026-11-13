@@ -178,7 +178,7 @@ Just want a break? You can remove single pieces in [My art](/studio/art) instead
     section,
     audience: "both",
     title: "How do I contact Artfinity?",
-    summary: "Use the contact form, or email support@theartfinity.com about an order. A real person reads every message.",
+    summary: "Use the contact form, or email support@theartfinity.com about an order. We answer every message.",
     link: { href: "/contact", label: "Message us" },
     related: ["damaged-print", "order-status"],
     body: `
@@ -186,7 +186,7 @@ Just want a break? You can remove single pieces in [My art](/studio/art) instead
 - **Artists and everything else:** use the [contact form](/contact). Selling, partnerships, press, or a café that wants art on its walls.
 - **Copied or stolen art:** use [Report art](/report).
 
-A real person reads every message. We answer on weekdays and are closed on weekends and holidays.
+We answer every message on weekdays. We're closed on weekends and holidays.
 `,
   },
 ];

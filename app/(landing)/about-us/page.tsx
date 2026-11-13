@@ -74,7 +74,7 @@ export default async function AboutPage() {
     { color: "var(--af-coral)", title: "Damaged? Reprinted free", text: `Send a photo within ${HELP_DAYS_AFTER_DELIVERY} days of delivery and we print it again.`, href: "/return-policy", link: "Return policy" },
     { color: "var(--af-scan)", title: "Artists keep their rights", text: "Copyright stays with the artist. We never train AI on their work.", href: "/artist-terms-and-agreement", link: "Artist terms" },
     { color: "var(--af-sticker)", title: "Stolen art comes down", text: "Report it and we review within 2 business days.", href: "/dmca", link: "How takedowns work" },
-    { color: "var(--af-ink)", title: "Real verification", text: "A person checks every verified artist's portfolio and socials." },
+    { color: "var(--af-ink)", title: "Real verification", text: "Our team checks every verified artist's portfolio and socials." },
     { color: "var(--af-ink-2)", title: "Safe checkout", text: "Payments run on Stripe. We never see card numbers." },
   ];
 

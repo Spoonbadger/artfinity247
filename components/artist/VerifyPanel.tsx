@@ -92,7 +92,7 @@ export default function VerifyPanel({ initial, name, slug, skipsReview = false, 
       if (!res.ok) throw new Error(j.error || "Couldn't check. Try again.");
       setS((prev) => ({ ...prev, status: j.verification, verifiedAt: j.verifiedAt }));
       if (j.verification === "VERIFIED") toast.success("You're verified. The seal is on your page.");
-      else toast("Still waiting for a person. We'll email you.");
+      else toast("Still in review. We'll email you.");
       router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't check. Try again.");
@@ -128,7 +128,7 @@ export default function VerifyPanel({ initial, name, slug, skipsReview = false, 
 
           {s.status === "PENDING" && (
             <>
-              <p className="t-muted">A person on our team will check it. Usually within two days.</p>
+              <p className="t-muted">Our team will check it, usually within two days.</p>
               <EvidenceSummary e={s.evidence} />
               {!editing && (
                 <div className="flex flex-wrap gap-2">
@@ -267,7 +267,7 @@ export default function VerifyPanel({ initial, name, slug, skipsReview = false, 
             </li>
           ))}
         </ul>
-        {auto && s.status !== "VERIFIED" && <p className="t-small">All of it checks out? You&apos;re verified right away. If not, a person looks.</p>}
+        {auto && s.status !== "VERIFIED" && <p className="t-small">All of it checks out? You&apos;re verified right away. If not, our team takes a look.</p>}
         {skipsReview && s.status !== "VERIFIED" && <p className="t-small">Once you&apos;re verified, new pieces go live right away, without our review.</p>}
         <p className="t-small border-t border-line pt-3">Medals come from sales. The seal comes from us.</p>
       </aside>

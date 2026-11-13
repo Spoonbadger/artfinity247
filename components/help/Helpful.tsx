@@ -31,7 +31,7 @@ export default function Helpful({ slug }: { slug: string }) {
           {vote === "up" ? (
             <>Thanks! Glad it helped.</>
           ) : (
-            <>Thanks for telling us. <Link href="/contact" className="font-semibold text-scan underline underline-offset-2">Message us</Link> and a real person will answer.</>
+            <>Thanks for telling us. <Link href="/contact" className="font-semibold text-scan underline underline-offset-2">Message us</Link> and we&apos;ll get back to you.</>
           )}
         </p>
       ) : (

@@ -75,7 +75,7 @@ export async function findDuplicates(hash: string, artistId: string, excludeId?:
   return { other, own };
 }
 
-export const DUPLICATE_REVIEW_NOTE = "This looks like a piece already on Artfinity, so a person will check it — usually within a day.";
+export const DUPLICATE_REVIEW_NOTE = "This looks like a piece already on Artfinity, so our moderation team will check it, usually within a day.";
 export const DUPLICATE_OWN_NOTE = "You've uploaded this image before. No problem, just so you know.";
 
 /**

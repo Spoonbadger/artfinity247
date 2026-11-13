@@ -70,7 +70,7 @@ export default function ArtistTermsPage() {
         <div>
           <h2>5. Reports and takedowns</h2>
           <p>
-            Anyone who thinks a work on Artfinity infringes their rights can <Link href="/report">report it</Link>. A person at Artfinity reviews every report. Work that infringes is
+            Anyone who thinks a work on Artfinity infringes their rights can <Link href="/report">report it</Link>. Our moderation team reviews every report. Work that infringes is
             taken down, and we may ask you for proof that you hold the rights. Repeated infringement can close your account. Formal notices: see <Link href="/dmca">Copyright and DMCA</Link>.
           </p>
         </div>

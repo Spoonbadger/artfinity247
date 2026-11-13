@@ -39,7 +39,7 @@ Handles use 3 to 30 letters, numbers, dots or underscores. Pick the name people 
     section,
     audience: "artist",
     title: "Uploading your art",
-    summary: `Drop in a JPG, PNG or HEIC up to 25 MB, give it a title and set your prices. Your first ${AUTO_APPROVE_AFTER} pieces get a quick look from a person before they go live.`,
+    summary: `Drop in a JPG, PNG or HEIC up to 25 MB, give it a title and set your prices. Your first ${AUTO_APPROVE_AFTER} pieces get a quick review from our moderation team before they go live.`,
     popular: 3,
     link: { href: "/studio/art/new", label: "Upload a piece" },
     related: ["upload-several", "file-sizes-print-sharp", "why-sizes-hidden", "set-prices"],
@@ -54,14 +54,14 @@ Handles use 3 to 30 letters, numbers, dots or underscores. Pick the name people 
 After the upload you see every print size with a preview of how it crops. Sizes your file is too small for are marked and hidden from buyers. See [Which file sizes print sharp](/help/getting-started/file-sizes-print-sharp).
 
 ## Review for new artists
-New artists' first ${AUTO_APPROVE_AFTER} pieces wait for a quick look from a person before they go live. After that, or once you're [verified](/help/trust/verification-badge), new pieces go live right away. You'll get an email when a piece is live.
+New artists' first ${AUTO_APPROVE_AFTER} pieces wait for a quick review from our moderation team before they go live. After that, or once you're [verified](/help/trust/verification-badge), new pieces go live right away. You'll get an email when a piece is live.
 
 You tick a box to confirm the work is yours and you hold the rights to sell prints of it.
 
 ## Sensitive work
 If a piece shows nudity, violence or gore, disturbing imagery, drug use or strong language, tick the matching label. Buyers see it blurred until they tap to view it.
 
-New uploads also get an automatic image check: if it spots nudity or violence you didn't label, it adds the label for you (change it anytime). Anything that looks explicit, graphic or not like artwork waits for a quick look from a person before it goes live.
+New uploads also get an automatic image check: if it spots nudity or violence you didn't label, it adds the label for you (change it anytime). Anything that looks explicit, graphic or not like artwork waits for a quick review from our moderation team before it goes live.
 
 ## Limited editions
 You can make a piece a limited edition when you upload it. See [Limited editions and certificates](/help/selling/limited-editions).
@@ -103,7 +103,7 @@ You tick the box confirming the work is yours and you hold the rights to sell pr
 - Each painting shows which print sizes it's sharp enough for, like a single upload. Sizes a file is too small for are hidden from buyers (see [Why are some print sizes hidden?](/help/getting-started/why-sizes-hidden)).
 
 ## Review
-The same rules as a single upload apply. New artists' first ${AUTO_APPROVE_AFTER} pieces get a quick look from a person before they go live, and so does anything that looks like a piece already on Artfinity. Everything else goes live the moment you publish it.
+The same rules as a single upload apply. New artists' first ${AUTO_APPROVE_AFTER} pieces get a quick review from our moderation team before they go live, and so does anything that looks like a piece already on Artfinity. Everything else goes live the moment you publish it.
 
 ## When you're done
 You get a short summary of what's live and what's in review, with two shortcuts:

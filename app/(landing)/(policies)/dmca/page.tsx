@@ -16,7 +16,7 @@ export default function Page() {
   return (
     <LongForm title="Copyright and DMCA" sub="How we handle copied art." current="/dmca" summary={[
       <>Someone selling your work? <Link href="/report">Use the report form</Link>.</>,
-      "A person reviews every notice, usually within 2 business days.",
+      "Our moderation team reviews every notice, usually within 2 business days.",
       "Taken down by mistake? File a counter-notice from your takedown email.",
     ]}>
       <h2>Report copied art</h2>
@@ -28,7 +28,7 @@ export default function Page() {
 
       <h2>What happens next</h2>
       <ul>
-        <li>A person reviews every notice, usually within 2 business days.</li>
+        <li>Our moderation team reviews every notice, usually within 2 business days.</li>
         <li>If it’s valid, we take the work down quickly and tell the artist why.</li>
         <li>We email you when it’s done.</li>
         <li>Artists who keep uploading other people’s work lose their account.</li>

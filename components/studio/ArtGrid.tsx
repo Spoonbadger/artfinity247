@@ -160,7 +160,7 @@ export default function ArtGrid({ items, handle, places = [], partners = [] }: {
       <EmptyState
         dab="#e8743b"
         title="No paintings yet"
-        body="Upload one and its QR code is ready to print. Your first few pieces get a quick look from a person, usually within a day."
+        body="Upload one and its QR code is ready to print. Your first few pieces get a quick review from our moderation team, usually within a day."
         action={{ label: "Upload art", href: "/studio/art/new" }}
         help={{ label: "How uploading works", href: "/help/getting-started/upload-art" }}
       />

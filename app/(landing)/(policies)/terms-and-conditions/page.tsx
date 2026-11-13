@@ -76,7 +76,7 @@ export default function Page() {
             Every artwork stays the property of its artist. Buying a print gives you the print, not the copyright: you may not copy, resell or reproduce the image.
           </p>
           <p>
-            Think a piece on Artfinity copies someone else&apos;s work? <Link href="/report">Report it</Link>. A person reviews every report, and we take down work that infringes. Formal notices: see <Link href="/dmca">Copyright and DMCA</Link>.
+            Think a piece on Artfinity copies someone else&apos;s work? <Link href="/report">Report it</Link>. Our moderation team reviews every report, and we take down work that infringes. Formal notices: see <Link href="/dmca">Copyright and DMCA</Link>.
           </p>
         </div>
 

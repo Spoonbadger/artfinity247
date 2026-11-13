@@ -51,7 +51,7 @@ See someone selling AI-made copies of a real artist's work here? [Report it](/re
     section,
     audience: "both",
     title: "Reporting stolen or copied art (DMCA)",
-    summary: "Use the report form and choose \"It's my work / copied\". A person reviews every report, usually within 2 business days, and infringing work comes down.",
+    summary: "Use the report form and choose \"It's my work / copied\". Our moderation team reviews every report, usually within 2 business days, and infringing work comes down.",
     link: { href: "/report", label: "Report art" },
     related: ["duplicate-detection", "copyright", "no-ai-training"],
     body: `
@@ -60,7 +60,7 @@ See someone selling AI-made copies of a real artist's work here? [Report it](/re
 2. Add a link to your original, the Artfinity link, your contact details, the two short statements and your typed signature. The form asks for everything a DMCA notice needs.
 3. Submit. We email you a copy.
 
-A person reviews every report, usually within 2 business days. If it's valid, we take the work down quickly, tell the artist why, and email you when it's done. Artists who keep uploading other people's work lose their account.
+Our moderation team reviews every report, usually within 2 business days. If it's valid, we take the work down quickly, tell the artist why, and email you when it's done. Artists who keep uploading other people's work lose their account.
 
 Not the owner? You can still report AI-made or harmful work on the same form.
 
@@ -75,12 +75,12 @@ Filing a false notice or counter-notice can make you liable for damages. Full de
     section,
     audience: "artist",
     title: "Duplicate detection",
-    summary: "Every upload is fingerprinted. If it looks like a piece another artist already has on Artfinity, a person checks it before it goes live.",
+    summary: "Every upload is fingerprinted. If it looks like a piece another artist already has on Artfinity, our moderation team checks it before it goes live.",
     related: ["report-stolen-art", "upload-art", "verification-badge"],
     body: `
 When you upload, we make a fingerprint of the image and compare it with every piece on Artfinity. It still matches after resizing, re-saving, light crops and small color changes.
 
-- **It matches another artist's piece:** your upload waits for a person to check it before it goes live. You'll see a note saying so.
+- **It matches another artist's piece:** your upload waits for our moderation team to check it before it goes live. You'll see a note saying so.
 - **It matches one of your own pieces:** that's fine. We just let you know you've uploaded it before.
 
 This catches people re-uploading art they found online. If your genuine work is held for review, there's nothing to do: it goes live once it's checked. If someone else has uploaded *your* work, [report it](/help/trust/report-stolen-art).
@@ -91,7 +91,7 @@ This catches people re-uploading art they found online. If your genuine work is 
     section,
     audience: "both",
     title: "The verified badge",
-    summary: "A verified badge means a person at Artfinity checked that the artist is real. Artists apply with their Instagram or website and a photo of themselves with their work.",
+    summary: "A verified badge means our team checked that the artist is real. Artists apply with their Instagram or website and a photo of themselves with their work.",
     link: { href: "/studio/verify", label: "Get verified" },
     related: ["medals", "upload-art", "duplicate-detection"],
     body: `
@@ -104,7 +104,7 @@ The badge next to an artist's name means someone at Artfinity looked at their ev
 3. Upload a photo of you with your work, or of your studio.
 4. Add a note if it helps, then send it.
 
-A person reviews it and emails you the result. If something needs another look, the email says what.
+Our team reviews it and emails you the result. If something needs another look, the email says what.
 
 Verified artists' new pieces go live right away, without the review new artists' first ${AUTO_APPROVE_AFTER} pieces get.
 `,

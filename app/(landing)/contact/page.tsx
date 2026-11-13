@@ -17,7 +17,7 @@ export default function ContactPage() {
     <div className="pb-24">
       <section className="mx-auto max-w-[1240px] px-4 pb-8 pt-10 sm:px-6 md:pb-10 md:pt-16">
         <h1 className="display text-[44px] sm:text-[64px]">Say hello.</h1>
-        <p className="mt-3 text-[17px] text-ink-2">A real person reads every message, usually within a day.</p>
+        <p className="mt-3 text-[17px] text-ink-2">We answer most messages within a day.</p>
       </section>
       <section className="mx-auto grid max-w-[1240px] items-start gap-8 px-4 sm:px-6 lg:grid-cols-[1fr_1.3fr] lg:gap-12">
         {/* The form comes first on phones; the direct emails sit under it. */}

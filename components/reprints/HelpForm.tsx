@@ -182,7 +182,7 @@ export default function HelpForm({ orderId, token, items }: { orderId: string; t
         <button type="button" onClick={send} disabled={sending || uploading > 0} className="btn btn-blue btn-lg w-full sm:w-fit">
           {sending ? "Sending…" : "Send to Artfinity"}
         </button>
-        <p className="t-small">A person looks at every request. No need to send the print back. Artfinity pays for reprints, not the artist.</p>
+        <p className="t-small">Our support team reviews every request. No need to send the print back. Artfinity pays for reprints, not the artist.</p>
       </div>
     </div>
   );

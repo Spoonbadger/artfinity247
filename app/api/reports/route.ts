@@ -212,7 +212,7 @@ export async function POST(req: NextRequest) {
         from: FROM,
         to: b.email,
         subject: dmca ? "We got your copyright notice" : "We got your report",
-        text: `Hi ${first},\n\nThanks for telling us about ${what}. A person on our team will review it within 2 business days. If it's infringing, we take it down, and we'll email you either way.\n\nArtfinity`,
+        text: `Hi ${first},\n\nThanks for telling us about ${what}. Our moderation team will review it within 2 business days. If it's infringing, we take it down, and we'll email you either way.\n\nArtfinity`,
       })
     );
   }

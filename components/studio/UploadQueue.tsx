@@ -623,7 +623,7 @@ export default function UploadQueue({ handle, split, files: initialFiles, cloud:
             )}
             {item.upload === "done" && !item.duplicate && item.duplicateOther && (
               <Problem tone="info" title="This looks like a piece already on Artfinity." fix={{ label: "How we check", href: "/help/trust/duplicate-detection" }}>
-                You can still publish it. A person checks it first, usually within a day.
+                You can still publish it. Our moderation team checks it first, usually within a day.
               </Problem>
             )}
             {item.upload === "done" && item.source && printable && !printable.length && (

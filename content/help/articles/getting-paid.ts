@@ -88,7 +88,7 @@ Questions? [Message us](/contact).
 4. **Did the sale clear?** Sales show as pending for ${RETURN_WINDOW_DAYS} days.
 
 ## Late payouts
-If you're connected and a month is still unpaid ${LATE_AFTER_DAYS} days after the ${PAYOUT_DAY}, Money shows a "late" notice. We see it too. You can also [message us](/contact) and a real person will look into it.
+If you're connected and a month is still unpaid ${LATE_AFTER_DAYS} days after the ${PAYOUT_DAY}, Money shows a "late" notice. We see it too. You can also [message us](/contact) and we'll look into it.
 `,
   },
   {

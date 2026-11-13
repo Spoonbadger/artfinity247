@@ -70,7 +70,7 @@ export function StillStuck() {
     <section className="relative overflow-hidden rounded-2xl bg-ink px-5 py-6 text-white sm:px-7">
       <BrushStroke className="pointer-events-none absolute -right-16 -top-2 h-10 w-[260px] -rotate-[6deg] opacity-30" color="var(--af-sticker)" />
       <h2 className="display relative text-[30px] text-white">Still stuck?</h2>
-      <p className="relative mt-1 max-w-[52ch] text-[15.5px] text-white/80">A real person reads every message. Order problems: {COMPANY.supportEmail}.</p>
+      <p className="relative mt-1 max-w-[52ch] text-[15.5px] text-white/80">We answer every message. Order problems: {COMPANY.supportEmail}.</p>
       <Link href="/contact" className="btn btn-sticker relative mt-4">Message us</Link>
     </section>
   );

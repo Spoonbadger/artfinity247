@@ -69,7 +69,7 @@ export default function AccessibilityPage() {
           <p>
             If something on Artfinity is hard or impossible to use with your setup, email{" "}
             <a href={`mailto:${email}?subject=${encodeURIComponent("Accessibility problem")}`}>{email}</a>. Tell us the page, what you were trying to do,
-            and the browser or assistive technology you use if you can. A person reads every message ({COMPANY.hours}).
+            and the browser or assistive technology you use if you can. Our support team answers every message ({COMPANY.hours}).
           </p>
           <p>
             If you&apos;d like to buy a print and can&apos;t get through checkout, write to us and we&apos;ll help you finish your order. You can also use our{" "}

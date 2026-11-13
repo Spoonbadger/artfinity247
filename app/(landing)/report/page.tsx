@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Report art", description: "Tell us about copied, misrepresented or harmful art on Artfinity." };
 
 const STEPS: [string, string, string][] = [
-  ["var(--af-scan)", "We read it", "A person reviews every report within 2 business days."],
+  ["var(--af-scan)", "We review it", "Our moderation team reviews every report within 2 business days."],
   ["var(--af-coral)", "We act", "If it’s infringing or breaks our rules, we take it down."],
   ["var(--af-sticker)", "We tell you", "You’ll get an email with what we decided."],
 ];
@@ -49,7 +49,7 @@ export default async function ReportPage({ searchParams }: { searchParams: { art
         <p className="mt-3 max-w-[48ch] text-[17px] text-ink-2">
           {counter
             ? "If your work was removed after a copyright notice and it’s yours, you can file a counter-notice."
-            : "Tell us what you saw. A person reviews every report."}
+            : "Tell us what you saw. Our moderation team reviews every report."}
         </p>
       </section>
       <section className="mx-auto grid max-w-[1240px] items-start gap-8 px-4 sm:px-6 lg:grid-cols-[1fr_1.3fr] lg:gap-12">
