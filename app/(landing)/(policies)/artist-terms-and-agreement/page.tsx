@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import LongForm from "@/components/browse/LongForm";
-import { FREE_SPLIT, PRO, pct, proPrice } from "@/lib/plans";
+import { FREE_SPLIT, PRO, pct, proPrice, proYearlyPrice } from "@/lib/plans";
 import { PAYOUT_DAY_OF_MONTH, RETURN_WINDOW_DAYS } from "@/lib/balance";
 import { PAYOUT_DAY } from "@/content/help/facts";
 
@@ -14,7 +14,7 @@ export default function ArtistTermsPage() {
     <LongForm title="Artist terms and agreement" sub="The agreement for selling on Artfinity." current="/artist-terms-and-agreement" summary={[
       "You keep your copyright. We get a limited license to print, show and promote your work while it’s listed.",
       "We never train AI on your art or sell it to anyone who does.",
-      `You get ${pct(FREE_SPLIT)} of the profit on each print, or ${pct(PRO.split)} on Infinity (${proPrice()} a month).`,
+      `You get ${pct(FREE_SPLIT)} of the profit on each print, or ${pct(PRO.split)} on Infinity (${proPrice()} a month or ${proYearlyPrice()} a year).`,
       `Sales are held ${RETURN_WINDOW_DAYS} days, then paid by the ${PAYOUT_DAY} of the next month.`,
       "Only upload work you made or have the rights to. You handle your own taxes.",
     ]}>
@@ -70,8 +70,7 @@ export default function ArtistTermsPage() {
         <div>
           <h2>5. Reports and takedowns</h2>
           <p>
-            Anyone who thinks a work on Artfinity infringes their rights can <Link href="/report">report it</Link>. Our moderation team reviews every report. Work that infringes is
-            taken down, and we may ask you for proof that you hold the rights. Repeated infringement can close your account. Formal notices: see <Link href="/dmca">Copyright and DMCA</Link>.
+            Anyone who thinks a work on Artfinity infringes their rights can <Link href="/report">report it</Link>. Our moderation team reviews every report. We take down work that infringes, and we may ask you for proof that you hold the rights. Repeated infringement can close your account. Formal notices: see <Link href="/dmca">Copyright and DMCA</Link>.
           </p>
         </div>
 
@@ -79,7 +78,7 @@ export default function ArtistTermsPage() {
           <h2>6. Prices</h2>
           <ul>
             <li>You set the price of each print size. It can&apos;t be lower than Artfinity&apos;s base price for that size.</li>
-            <li>Frames are priced by Artfinity and add the same amount for every artist.</li>
+            <li>Artfinity sets frame prices, which are the same amount for every artist.</li>
             <li>Buyers pay no shipping in the US. Shipping is covered by the print cost, not added to the buyer&apos;s total.</li>
             <li>A discount you print on a QR code comes off the price the buyer pays.</li>
           </ul>
@@ -100,7 +99,7 @@ export default function ArtistTermsPage() {
             </li>
             <li>
               <strong>
-                Infinity plan ({proPrice()} a month): {pct(PRO.split)} to you
+                Infinity plan ({proPrice()} a month, or {proYearlyPrice()} a year): {pct(PRO.split)} to you
               </strong>
               , {pct(1 - PRO.split)} to Artfinity
               {PRO.monthlyPrintCap ? `, on up to ${PRO.monthlyPrintCap} prints a month (prints past that are paid at the Free split)` : ""}
@@ -110,8 +109,8 @@ export default function ArtistTermsPage() {
             Your split is set when the order is placed: if Infinity is active that day, the sale gets the Infinity split. Infinity months earned through referrals count the same way.
           </p>
           <p>
-            Infinity is billed by Stripe in advance each month (or year), plus any sales tax, and renews until you cancel; if you cancel, it stays on until the end of the period you paid for, with no partial refunds.
-            Months earned through referrals are used before you&apos;re charged, and if a payment fails, Infinity stays on for a few days while we retry and then your plan goes back to Free.
+            Stripe bills Infinity in advance: {proPrice()} each month, or {proYearlyPrice()} once a year if you pick yearly, plus any sales tax. Infinity renews until you cancel. If you cancel, it stays on until the end of the period you paid for, with no partial refunds.
+            Months earned through referrals are used before you are charged. If a payment fails, Infinity stays on for a few days while we retry, then your plan goes back to Free.
           </p>
           <p>Costs can change with supplier prices and payment fees. You can see each sale&apos;s costs and your share in the Studio.</p>
         </div>
@@ -123,15 +122,13 @@ export default function ArtistTermsPage() {
               Each sale stays pending for {RETURN_WINDOW_DAYS} days after the order, our return window, so a reprint or refund can be settled first.
             </li>
             <li>
-              If a sale you were already paid for is later refunded for a buyer return or a chargeback, we may take your share of it off your next payout (shown as a
-              &ldquo;Refund adjustment&rdquo; on your Money page; a payout never goes below $0, and any rest carries to the next one), but refunds for damaged,
-              misprinted or wrong prints never come out of money we&apos;ve paid you.
+              If a sale you were already paid for is later refunded for a buyer return or a chargeback, we may take your share of it off your next payout. It shows as a &ldquo;Refund adjustment&rdquo; on your Money page. A payout never goes below $0, and anything left over carries to the next one. Refunds for damaged, misprinted or wrong prints never come out of money we&apos;ve paid you.
             </li>
             <li>
               Earnings are paid monthly: each month&apos;s sales are paid by the {ordinal(PAYOUT_DAY_OF_MONTH)} of the following month.
             </li>
             {/* TODO(thomas): review payout terms wording (Stripe-only payouts, Nov 2026). */}
-            <li>We send payouts only through Stripe, to the bank account you connect on your Money page. Until your Stripe account is set up and can receive payouts, we hold your earnings and pay them in the first monthly payout after it can. Please keep your Stripe details up to date.</li>
+            <li>We send payouts only through Stripe, to the bank account you connect on your Money page. Until your Stripe account is set up and can receive payouts, we hold your earnings and pay them in the first monthly payout after it can receive them. Keep your Stripe details up to date to avoid unnecessary delays in the payout process.</li>
           </ul>
         </div>
 

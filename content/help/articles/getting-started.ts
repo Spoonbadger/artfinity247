@@ -94,7 +94,7 @@ Under the drop zone, press **Google Drive** or **Dropbox** and pick your paintin
 ## Same as last one
 Each new painting starts with the prices, print run (open or limited edition) and sensitive labels of the one before it, so a batch priced the same way takes a few clicks. Change anything on a painting and it only changes that one.
 
-You tick the box confirming the work is yours and you hold the rights to sell prints of it once for the whole batch.
+You tick the box once for the whole batch, confirming the work is yours and you hold the rights to sell prints of it.
 
 ## Moving around
 - The strip of thumbnails at the top shows every painting. Click one to jump to it.
@@ -113,7 +113,7 @@ You get a short summary of what's live and what's in review, with two shortcuts:
 We send one email for the batch, not one per painting.
 
 ## Good to know
-- If the page reloads, the paintings that finished uploading are still there, titles and all. Images that were still uploading need adding again.
+- If the page reloads, the paintings that finished uploading are still there, titles and all. You'll need to re-add any images that were still uploading.
 - Your browser warns you if you try to leave while images are still uploading.
 - You can publish up to ${DAILY_UPLOAD_LIMIT} new pieces a day.
 - Your very first upload is always a single piece, so you can see how it works first.
@@ -203,7 +203,7 @@ The code is saved when you download or save it. You'll find it later in [My code
     related: ["first-qr-code", "qr-templates", "scan-tracking", "bulk-prints"],
     link: { href: "/studio/qr", label: "Open QR codes" },
     body: `
-A code only sells if people notice it and their phone can read it. That's true in a Williamsburg café, at the Brooklyn Flea or at Bushwick Open Studios.
+A code only sells if people notice it and their phone can read it.
 
 ## Where to put it
 - **Beside the piece, not across the room.** People scan what they're looking at. Put the label on the wall just to the right of the frame, like a gallery label.

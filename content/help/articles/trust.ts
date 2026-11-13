@@ -15,12 +15,12 @@ export const trust: HelpArticle[] = [
     link: { href: "/artist-terms-and-agreement", label: "Read the artist terms" },
     related: ["no-ai-training", "report-stolen-art", "close-account"],
     body: `
-Selling on Artfinity doesn't transfer your rights. When you upload a piece, you give Artfinity a limited, non-exclusive license to:
+You keep the copyright and all other rights in your art. Selling on Artfinity doesn't transfer them. When you upload a piece, you give Artfinity a limited, non-exclusive license to:
 - Print it and sell those prints to buyers
 - Show it on Artfinity, including your page, QR codes and share images
 - Promote it, and you, in Artfinity's marketing
 
-That's all. The license lasts while the piece is listed. If you remove it or close your account, we stop selling it, but we still finish orders already placed.
+The license covers nothing else. It lasts while the piece is listed. Remove the piece or close your account and we stop selling it. We still finish orders already placed.
 
 Buyers get a print, not the copyright. They can't copy, resell or reproduce the image.
 
@@ -41,7 +41,7 @@ Full details are in the [artist terms](/artist-terms-and-agreement).
 - We don't sell or license your art to anyone who does.
 - Our robots.txt asks AI crawlers not to collect art from the site, and every page and image carries a machine-readable "no text and data mining" signal.
 
-Crawlers that ignore these requests are outside our control, but they don't have our permission.
+We can't stop crawlers that ignore these requests, but they don't have our permission.
 
 See someone selling AI-made copies of a real artist's work here? [Report it](/report).
 `,
@@ -57,7 +57,7 @@ See someone selling AI-made copies of a real artist's work here? [Report it](/re
     body: `
 ## If someone is selling your work
 1. Go to [Report art](/report) and choose **It's my work / copied**.
-2. Add a link to your original, the Artfinity link, your contact details, the two short statements and your typed signature. The form asks for everything a DMCA notice needs.
+2. The form asks for everything a DMCA notice needs: a link to your original, the Artfinity link, your contact details, two short statements and your typed signature.
 3. Submit. We email you a copy.
 
 Our moderation team reviews every report, usually within 2 business days. If it's valid, we take the work down quickly, tell the artist why, and email you when it's done. Artists who keep uploading other people's work lose their account.
@@ -83,7 +83,7 @@ When you upload, we make a fingerprint of the image and compare it with every pi
 - **It matches another artist's piece:** your upload waits for our moderation team to check it before it goes live. You'll see a note saying so.
 - **It matches one of your own pieces:** that's fine. We just let you know you've uploaded it before.
 
-This catches people re-uploading art they found online. If your genuine work is held for review, there's nothing to do: it goes live once it's checked. If someone else has uploaded *your* work, [report it](/help/trust/report-stolen-art).
+This catches people re-uploading art they found online. If your own work is held for review, you don't need to do anything. It goes live once our moderation team has checked it. If someone else has uploaded *your* work, [report it](/help/trust/report-stolen-art).
 `,
   },
   {
@@ -96,7 +96,7 @@ This catches people re-uploading art they found online. If your genuine work is 
     related: ["medals", "upload-art", "duplicate-detection"],
     body: `
 ## For buyers
-The badge next to an artist's name means someone at Artfinity looked at their evidence and confirmed they're a real artist making this work.
+The badge next to an artist's name means our team confirmed they're a real artist making this work.
 
 ## For artists: how to apply
 1. Open [Get verified](/studio/verify).

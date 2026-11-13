@@ -88,7 +88,7 @@ export default function AccountDetails({ initial }: { initial: Account }) {
         <h2 id="acct-details-h" className="t-card">Account details</h2>
         <p className="flex items-center gap-1.5 text-[13.5px] text-ink-2">
           <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          Private. For payouts and tax only.
+          Your legal name and email are private, for payouts and tax only.
         </p>
       </div>
       <form onSubmit={save} className="grid gap-3" noValidate>
@@ -100,6 +100,7 @@ export default function AccountDetails({ initial }: { initial: Account }) {
         {/* No phone field: Artfinity contacts people by email only. A phone already on file is kept, not shown. */}
         <div className="grid gap-3 sm:max-w-[200px]">
           {field("state", "State", { autoComplete: "address-level1", autoCapitalize: "characters", maxLength: 40, placeholder: "NY", onBlur: (e) => { const c = stateCode(e.target.value); if (c && c !== a.state) set("state", c); } })}
+          <p className="t-small -mt-1">Public: it shows next to your city on your art pages.</p>
         </div>
         {error && (
           <p id="acct-err" role="alert" className="rounded-xl border-2 border-coral bg-[#fff1ed] px-3.5 py-2.5 text-[14px] font-semibold">

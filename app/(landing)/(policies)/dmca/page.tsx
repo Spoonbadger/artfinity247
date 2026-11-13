@@ -45,7 +45,7 @@ export default function Page() {
       </p>
       <p>Filing a false notice or counter-notice can make you liable for damages, so only file one if you’re sure.</p>
 
-      <h2>Designated agent</h2>
+      <h2>Our copyright agent</h2>
       <p>You can also send a written notice to our copyright agent:</p>
       <p>
         <strong>{AGENT.name}</strong>

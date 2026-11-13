@@ -14,6 +14,13 @@ import { CartContextType, CartItemType, CartItemProductType } from "@/types";
 import { updateCartItem } from "@/db/query";
 import { AppConfigs } from "@/db";
 
+// Browser storage can throw (blocked site data, some private modes). The cart then just doesn't persist; the page keeps working.
+const store = {
+  get(k: string): string | null { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k: string, v: string) { try { localStorage.setItem(k, v); } catch { /* storage blocked */ } },
+  remove(k: string) { try { localStorage.removeItem(k); } catch { /* storage blocked */ } },
+};
+
 // updateCartItem mutates the items it is given; hand it copies so state updaters stay pure
 // (React runs updaters twice in dev, which used to double quantities).
 const clone = (items: CartItemType[]) => items.map((ci) => ({ ...ci }));
@@ -50,7 +57,7 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
     const effectiveKey = currentUser?.slug ? userKey : guestKey;
     if (loadedKeyRef.current === effectiveKey) return;
 
-    const fromLS = safeParse<CartItemType[]>(localStorage.getItem(effectiveKey));
+    const fromLS = safeParse<CartItemType[]>(store.get(effectiveKey));
     setCartItems(Array.isArray(fromLS) ? fromLS : []);
     loadedKeyRef.current = effectiveKey;
     hasLoadedRef.current = true;
@@ -61,13 +68,13 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
     if (!currentUser?.slug) return;
     const uKey = userKey;
 
-    const guestRaw = localStorage.getItem(guestKey);
+    const guestRaw = store.get(guestKey);
     if (!guestRaw) return;
 
     const guestItems = safeParse<CartItemType[]>(guestRaw);
-    const userItems = safeParse<CartItemType[]>(localStorage.getItem(uKey));
+    const userItems = safeParse<CartItemType[]>(store.get(uKey));
     if (!Array.isArray(guestItems) || guestItems.length === 0) {
-      localStorage.removeItem(guestKey);
+      store.remove(guestKey);
       return;
     }
 
@@ -84,8 +91,8 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
     });
 
     const merged = Array.from(map.values());
-    localStorage.setItem(uKey, JSON.stringify(merged));
-    localStorage.removeItem(guestKey);
+    store.set(uKey, JSON.stringify(merged));
+    store.remove(guestKey);
 
     // if we’re currently on the user key, reflect merged items in state
     if (loadedKeyRef.current === uKey) setCartItems(merged);
@@ -96,7 +103,7 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
     if (!hasLoadedRef.current) return;
     const effectiveKey = currentUser?.slug ? userKey : guestKey;
     try {
-      localStorage.setItem(effectiveKey, JSON.stringify(cartItems));
+      store.set(effectiveKey, JSON.stringify(cartItems));
     } catch {
       // ignore quota errors
     }
@@ -150,8 +157,8 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
   const clearCart = () => {
     setCartItems([]);
     try {
-      localStorage.removeItem(userKey);
-      localStorage.removeItem(guestKey);
+      store.remove(userKey);
+      store.remove(guestKey);
     } catch {}
     loadedKeyRef.current = currentUser?.slug ? userKey : guestKey;
     hasLoadedRef.current = true;

@@ -21,7 +21,7 @@ Every sale shows as **pending** for ${RETURN_WINDOW_DAYS} days after the order. 
 ## Payday: the ${PAYOUT_DAY}
 Earnings are paid monthly, through Stripe to your bank. All of a month's sales are paid by the ${PAYOUT_DAY} of the next month. For example, everything you sell in March is paid by April ${PAYOUT_DAY}.
 
-Haven't connected Stripe yet? Your earnings are held for you, safe. Once you connect, every month that's waiting is paid by the next ${PAYOUT_DAY}. See [How payouts reach you](/help/getting-paid/how-payouts-reach-you).
+Until Stripe is connected, your earnings are held in a temporary account. Once you connect, every month that's waiting is paid by the next ${PAYOUT_DAY}. See [How payouts reach you](/help/getting-paid/how-payouts-reach-you).
 
 Sales from the last days of a month may still be inside the ${RETURN_WINDOW_DAYS}-day window on the ${PAYOUT_DAY}. They're still in that month's payout.
 
@@ -77,7 +77,7 @@ Questions? [Message us](/contact).
     section,
     audience: "artist",
     title: "My payout hasn't arrived",
-    summary: `Check your Stripe connection in Money first. If you're connected and a payout is more than ${LATE_AFTER_DAYS} days past the ${PAYOUT_DAY}, Money flags it and we're on it.`,
+    summary: `Check your Stripe connection in Money first. If you're connected and a payout is more than ${LATE_AFTER_DAYS} days past the ${PAYOUT_DAY}, Money flags it and we look into it.`,
     link: { href: "/studio/money", label: "Open Money" },
     related: ["when-paid", "how-payouts-reach-you"],
     body: `

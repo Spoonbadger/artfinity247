@@ -165,7 +165,7 @@ Each email can belong to one account only.
 - Orders already placed are still printed and shipped.
 - Unpaid earnings are paid through Stripe on the usual monthly payout, by the ${PAYOUT_DAY} of the following month. Connect Stripe in [Money](/studio/money) first.
 - Past sales stay on record. We email you the details.
-- Remaining personal data is removed after any unpaid earnings are paid out (see the [privacy policy](/privacy-policy)).
+- Once we've paid out any unpaid earnings, we remove your remaining personal data (see the [privacy policy](/privacy-policy)).
 
 Just want a break? You can remove single pieces in [My art](/studio/art) instead, or turn codes off in [My codes](/studio/codes).
 
@@ -186,7 +186,7 @@ Just want a break? You can remove single pieces in [My art](/studio/art) instead
 - **Artists and everything else:** use the [contact form](/contact). Selling, partnerships, press, or a café that wants art on its walls.
 - **Copied or stolen art:** use [Report art](/report).
 
-We answer every message on weekdays. We're closed on weekends and holidays.
+We answer every message. Replies come on weekdays; we're closed on weekends and holidays.
 `,
   },
 ];

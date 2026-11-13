@@ -42,10 +42,10 @@ export default function Page() {
         <div>
           <h2>Prices and payment</h2>
           <ul>
-            <li>Prices are in US dollars. The artist sets the price of each print size; frames are priced by Artfinity.</li>
+            <li>Prices are in US dollars. The artist sets the price of each print size, and Artfinity sets frame prices.</li>
             <li>US shipping is free. Sales tax is added at checkout where the law requires it, and the total you see there is the price you pay.</li>
             <li>You pay the price shown when you place the order. A scan discount applies only when it comes from a valid printed code.</li>
-            <li>Payments are handled by Stripe. We never see or store your full card number.</li>
+            <li>Stripe handles payments. We never see or store your full card number.</li>
           </ul>
         </div>
 
@@ -57,7 +57,7 @@ export default function Page() {
               Every print is made to order. Printing takes about {PRINT_BUSINESS_DAYS.min}–{PRINT_BUSINESS_DAYS.max} business days and shipping about {SHIP_BUSINESS_DAYS.min}–
               {SHIP_BUSINESS_DAYS.max} business days. Delivery dates are estimates, and carriers can be late.
             </li>
-            <li>Arrives damaged, misprinted or wrong? We reprint it free. See below.</li>
+            <li>Arrives damaged, misprinted or wrong? We may reprint it free. See Returns and refunds below.</li>
           </ul>
         </div>
 
@@ -65,7 +65,7 @@ export default function Page() {
           <h2>Returns and refunds</h2>
           <p>
             Because prints are made to order, we don&apos;t take returns for a change of mind or a wrong size choice. If your print arrives damaged, misprinted or wrong, email{" "}
-            <a href="mailto:support@theartfinity.com">support@theartfinity.com</a> within 14 days of delivery with your order number and a photo. We reprint and reship it free, or
+            <a href="mailto:support@theartfinity.com">support@theartfinity.com</a> within {HELP_DAYS_AFTER_DELIVERY} days of delivery with your order number and a photo. We reprint and reship it free, or
             refund you if a reprint won&apos;t fix it. Full details are in our <Link href="/return-policy">return policy</Link>.
           </p>
         </div>
@@ -104,7 +104,7 @@ export default function Page() {
 
         <div>
           <h2>Changes</h2>
-          <p>We may update these terms. Changes take effect when posted here, and the date at the top will change. Using the site after that means you accept them.</p>
+          <p>We may update these terms. Changes take effect when we post them here, with a new date at the top. Using the site after that means you accept them.</p>
         </div>
 
         <div>

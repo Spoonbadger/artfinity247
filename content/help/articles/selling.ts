@@ -184,7 +184,7 @@ When there's enough data, the upload form shows what similar work sells for at e
     body: `
 Every print size needs enough pixels to stay sharp (see [Which file sizes print sharp?](/help/getting-started/file-sizes-print-sharp)). Many phone photos are too small, or badly lit, for the bigger sizes, so those sizes are hidden from buyers. A scan of the original fixes both: every size becomes available, and buyers see your real colors.
 
-Scanning is done in New York City only.
+We scan in New York City only.
 
 ## How it works
 1. Open [Painting scans](/studio/scanning) in your Studio (it's in the **Art** folder). You can also get there from **Book a scan** on any piece whose file is too small for big prints.
@@ -207,7 +207,7 @@ Paintings are priced by size band: **Small**, **Medium**, **Large**, and **Overs
 - Tell us in the notes about anything fragile, recently varnished or especially valuable.
 
 ## While we have them
-Only our team handles your paintings, and they stay in a locked studio while they're with us. The [scanning page](/scanning) says how long scans and returns take. Ask us about anything valuable before you hand it over and we'll go over how pieces in our care are looked after.
+Only our team handles your paintings, and they stay in a locked studio while they're with us. The [scanning page](/scanning) says how long scans and returns take. Before you hand over anything valuable, ask us and we'll explain how we look after pieces in our care.
 
 ## After the scan
 - The scan replaces the image on your artwork. Your title, prices, edition and QR codes stay the same.

@@ -118,7 +118,7 @@ Once a print has had time to arrive, we email the buyer: "How does it look on yo
 Buyers can edit their review for ${EDIT_WINDOW_DAYS} days after posting it.
 
 ## Reviews waiting on a check
-A review with a link or rough language is held for a quick look by Artfinity before it goes public. You don't need to do anything. It shows up in Reviews once it's cleared, usually within a day. You can reply as soon as it's public.
+If a review has a link or rough language, our moderation team takes a quick look before it goes public. You don't need to do anything. It shows up in Reviews once it's cleared, usually within a day. You can reply as soon as it's public.
 
 ## No reviews yet?
 Reviews only come from delivered prints, so they start after your first sales arrive. To get there sooner, [print a QR code](/studio/qr) for your paintings, and make the [delivered email](/studio/emails) sound like you.
@@ -177,7 +177,7 @@ At ${PRO_PRICE} a month, it pays for itself after a handful of sales a month. Th
 The "Does it pay for itself?" box in [Infinity plan](/studio/infinity) runs the same math on your own last 30 days of sales: the extra share Infinity would have paid you, against ${PRO_PRICE}.
 
 ## Getting it
-- **Pay by card:** in [Infinity plan](/studio/infinity), tap **Get Infinity**. Checkout is run by Stripe; sales tax may be added depending on where you are. Infinity turns on as soon as the payment goes through.
+- **Pay by card:** in [Infinity plan](/studio/infinity), tap **Get Infinity**. Stripe operates the checkout process. Sales tax may be added depending on where you are located. Infinity turns on as soon as the payment goes through.
 - **Free, through referrals:** see [Referrals](/help/growing/referrals).
 
 Referral months stack with a subscription. If you subscribe while you still have free months, the first charge waits until they run out. Months you earn while subscribed push your next charge back, so you're never charged for time you already have.

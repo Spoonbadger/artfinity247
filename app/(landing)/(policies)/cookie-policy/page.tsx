@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Cookie policy" };
 export default function Page() {
   return (
     <LongForm title="Cookie policy" current="/cookie-policy" summary={[
-      "A few cookies keep you logged in and count QR scans.",
+      "A few cookies keep you logged in, protect sign-ups and count QR scans.",
       "Your cart and settings live in your browser.",
       "No advertising or third-party tracking cookies.",
     ]}>
@@ -22,17 +22,34 @@ export default function Page() {
           <h2>What we use</h2>
           <ul>
             <li>
-              <strong>Login</strong> (auth-token): keeps you signed in.
+              <strong>Login</strong> (auth-token for artists, collector-token for collectors): keeps you signed in. Artists stay signed in for 30 days if they tick &ldquo;Keep me
+              logged in&rdquo; or use Google, Apple, Facebook or Instagram, and otherwise until the browser closes. Collectors stay signed in for 90 days.
             </li>
             <li>
-              <strong>QR scans and visits</strong> (af_vid, af_qc): a random visitor id so artists can count unique scans and visitors, and the last code you scanned so its discount and credit carry
-              over to the artist&apos;s other pieces.
+              <strong>Social sign-in</strong> (af_oauth, af_oauth_signup): protect the trip to Google, Apple, Facebook or Instagram and back, and hold your name, email and photo
+              while you finish signing up. They expire after 10 and 30 minutes.
             </li>
             <li>
-              <strong>Your cart and settings</strong> (browser storage): your cart, artists you follow, your choice on sensitive images, and that you&apos;ve seen this notice.
+              <strong>Security</strong> (af_dev): a random id for this browser, set when an artist signs up or logs in. We keep only a one-way fingerprint of it, to stop people
+              from earning referral rewards by referring themselves. It lasts 2 years.
+            </li>
+            <li>
+              <strong>QR scans and visits</strong> (af_vid, af_qc): a random visitor id so artists can count unique scans and visitors (1 year), and the last code you scanned so
+              its discount and credit carry over to the artist&apos;s other pieces (7 days).
+            </li>
+            <li>
+              <strong>Your cart and settings</strong> (browser storage): your cart, artists you follow, your choice on sensitive images, the print size you picked last, your sort
+              choices, and that you&apos;ve seen this notice. In Studio, it also keeps drafts on your device, like your upload queue and a bulk order&apos;s ship-to address.
+            </li>
+            <li>
+              <strong>Where your visit started</strong> (browser storage, this tab only): the site or QR code that brought you, so artists see where visits come from. It clears
+              when you close the tab, and we skip it if your browser sends Do Not Track or Global Privacy Control.
             </li>
           </ul>
-          <p>We don&apos;t use advertising cookies or third-party tracking cookies. Stripe sets its own cookies on its checkout page to process payment safely.</p>
+          <p>
+            We don&apos;t use advertising cookies or third-party tracking cookies. Stripe sets its own cookies on its checkout page to process payment safely. Google, Apple,
+            Facebook, Instagram and Dropbox may set their own cookies when you sign in with them or import files from them.
+          </p>
         </div>
 
         <div>
@@ -49,7 +66,7 @@ export default function Page() {
               <a href="https://support.mozilla.org/en-US/kb/clear-cookies-and-site-data-firefox" target="_blank" rel="noopener noreferrer">Firefox</a>
             </li>
           </ul>
-          <p>If you block them, logging in and your cart won&apos;t work.</p>
+          <p>If you block cookies, you can&apos;t log in. If you also block site data, your cart won&apos;t work.</p>
         </div>
 
         <div>

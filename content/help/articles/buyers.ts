@@ -41,7 +41,7 @@ When your print ships, we email you the carrier and tracking number. See [Where'
     faq: true,
     related: ["shipping-delivery", "taxes"],
     body: `
-Prices on artist pages and buy pages are before tax. At checkout, sales tax is worked out from your shipping address and added where the law requires it. The total on the checkout page is the price you pay, with no surprises after.
+Prices on artist pages and buy pages are before tax. At checkout, sales tax is worked out from your shipping address and added where the law requires it. The total on the checkout page is the price you pay. Nothing is added later.
 
 Shipping in the US is free, so there's no shipping charge on top.
 
@@ -81,7 +81,7 @@ ${PRICE_TABLE}
     body: `
 Turn on the frame option on the buy page and pick a color: ${FRAME_COLOR_NAMES}. The frame is made for the size you choose and arrives ready to hang.
 
-Frames are priced by Artfinity, the same for every artist. The buy page shows the framed price before you pay.
+Artfinity sets frame prices, the same for every artist. The buy page shows the framed price before you pay.
 
 Prefer to frame it yourself? Every print has a ½-inch handling border, which makes framing easier.
 `,

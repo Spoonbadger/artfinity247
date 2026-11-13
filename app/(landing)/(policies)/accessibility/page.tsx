@@ -27,7 +27,7 @@ export default function AccessibilityPage() {
             We work toward the{" "}
             <a href="https://www.w3.org/TR/WCAG21/" target="_blank" rel="noopener noreferrer">Web Content Accessibility Guidelines (WCAG) 2.1, level AA</a>{" "}
             across the site: buying a print after scanning a code, artist pages, the help center, signing up, and the artist Studio.
-            We don&apos;t claim the site fully meets it yet. It&apos;s a goal we test against and keep working on.
+            We don&apos;t claim the site fully meets it yet. We test against it and keep fixing what falls short.
           </p>
         </div>
 
@@ -72,7 +72,7 @@ export default function AccessibilityPage() {
             and the browser or assistive technology you use if you can. Our support team answers every message ({COMPANY.hours}).
           </p>
           <p>
-            If you&apos;d like to buy a print and can&apos;t get through checkout, write to us and we&apos;ll help you finish your order. You can also use our{" "}
+            Can&apos;t get through checkout? Write to us and we&apos;ll help you finish your order. You can also use our{" "}
             <Link href="/contact">contact page</Link>.
           </p>
         </div>

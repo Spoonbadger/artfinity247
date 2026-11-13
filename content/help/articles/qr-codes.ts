@@ -118,7 +118,7 @@ We record the device type, a rough location (city, region, country) and a random
     link: { href: "/studio/qr", label: "Open QR codes" },
     related: ["what-you-earn", "change-after-printing", "discount-didnt-apply"],
     body: `
-A discount is a nice reason to scan at a market like Smorgasburg or the Union Square Holiday Market. Pick ${QR_DISCOUNTS} in QR Studio and the card shows it next to the lower price. When someone scans, the buy page says "Your discount is applied", and checkout takes it off.
+A discount gives people a reason to scan at a market like Smorgasburg or the Union Square Holiday Market. Pick ${QR_DISCOUNTS} in QR Studio and the card shows it next to the lower price. When someone scans, the buy page says "Your discount is applied", and checkout takes it off.
 
 ## Who pays for it
 The discount lowers the sale price. Costs stay the same, so the profit is smaller, and your share and Artfinity's share both shrink. The QR Studio's **Each sale pays you** panel shows your earnings with the discount included. See [What you earn per sale](/help/selling/what-you-earn) for a worked example.
@@ -237,7 +237,7 @@ Partner venues are places around New York that hang local art and work with Artf
 2. Under **Hangs at**, pick the place from the list of partner venues (it shows the name and neighborhood). It becomes one of your [Places](/studio/places).
 3. Save. That's it: the printed code doesn't change.
 
-Not on the list? Choose **New place…** and type the name. It shows in your stats and on the buyer's page, just like before. If we later sign that place up as a partner, we link your code to it for you.
+Not on the list? Choose **New place…** and type the name. It still shows in your stats and on the buyer's page. If we later sign that place up as a partner, we link your code to it for you.
 
 ## What picking a venue does
 - **Buyers see where they found it.** The buy page says "Scanned at" the venue, linked to the venue's page.

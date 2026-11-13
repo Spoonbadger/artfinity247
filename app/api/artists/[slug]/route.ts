@@ -40,9 +40,9 @@ export async function GET(
 
     if (!artist || artist.closedAt || artist.suspendedAt) return new NextResponse("Artist not found", { status: 404 });
 
-    // Contact and payout details are private: only the artist themself or an admin sees them.
+    // Contact details and the legal name (payouts and tax only) are private: only the artist themself or an admin sees them.
     const { allowed } = await getArtistManager(artist.id)
-    const { email, phone, closedAt: _closed, suspendedAt: _suspended, ...publicArtist } = artist
+    const { email, phone, first_name, last_name, closedAt: _closed, suspendedAt: _suspended, ...publicArtist } = artist
     const artistOut = allowed ? artist : publicArtist
 
     const where = { artistId: artist.id, status: ArtworkStatus.APPROVED };
