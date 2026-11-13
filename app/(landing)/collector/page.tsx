@@ -148,12 +148,14 @@ export default async function CollectorPage({ searchParams }: { searchParams: { 
   return (
     <div className="mx-auto grid max-w-[980px] gap-10 px-4 pb-16 pt-8 sm:px-6 md:gap-14 md:pt-12">
       <header className="grid gap-4">
-        <span className="eyebrow">Signed in as {me.email}</span>
         <div className="flex flex-wrap items-end justify-between gap-4">
-          <h1 className="display relative inline-block text-[46px] sm:text-[64px]">
-            <span className="relative z-10">{firstName ? `${firstName}'s collection` : "Your collection"}</span>
-            <BrushStroke className="absolute -bottom-1 left-0 z-0 h-[0.32em] w-[min(100%,5.5em)] opacity-90" color="var(--af-sticker)" />
-          </h1>
+          <div className="grid min-w-0 gap-2">
+            <h1 className="display relative inline-block text-[46px] sm:text-[64px]">
+              <span className="relative z-10">{firstName ? `${firstName}'s collection` : "Your collection"}</span>
+              <BrushStroke className="absolute -bottom-1 left-0 z-0 h-[0.32em] w-[min(100%,5.5em)] opacity-90" color="var(--af-sticker)" />
+            </h1>
+            <p className="t-small [overflow-wrap:anywhere]">Signed in as {me.email}</p>
+          </div>
           <div className="flex flex-wrap gap-2">
             <Link href="/collector/settings" className="btn btn-ghost btn-sm min-h-[44px] px-4">Settings</Link>
             <SignOutButton />
@@ -170,7 +172,6 @@ export default async function CollectorPage({ searchParams }: { searchParams: { 
         <aside aria-label="Rewards" className="relative grid gap-3 overflow-hidden rounded-[22px] border-[1.5px] border-ink bg-[radial-gradient(ellipse_at_10%_0%,#fff7d6_0%,#ffffff_60%)] p-5 shadow-[5px_5px_0_#15161b] sm:p-6">
           {r.available ? (
             <>
-              <p className="eyebrow">Your reward</p>
               <p className="text-[22px] font-extrabold leading-tight">{r.available.pct}% off your next order</p>
               <p className="text-[15px] text-ink-2">
                 Code <b className="num tracking-[0.06em] text-ink">{r.available.code}</b>. It&apos;s filled in at checkout while you&apos;re signed in. Artfinity covers it, so the artist still gets their full share.
@@ -178,7 +179,6 @@ export default async function CollectorPage({ searchParams }: { searchParams: { 
             </>
           ) : (
             <>
-              <p className="eyebrow">Rewards</p>
               <p className="text-[20px] font-extrabold leading-tight">
                 {r.progress} of {r.settings.every} prints toward your reward
               </p>

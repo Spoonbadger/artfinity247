@@ -48,24 +48,14 @@ export default async function VenuesIndex({ searchParams }: { searchParams?: Rec
                 {ordered.map((v) => (
                   <li key={v.id}>
                     <Link href={`/venues/${v.slug}`} className="af-card group grid h-full gap-3 p-4 text-ink no-underline transition hover:-translate-y-0.5">
-                      <div className="grid grid-cols-4 gap-1.5" aria-hidden="true">
-                        {Array.from({ length: 4 }, (_, i) => v.thumbs[i]).map((t, i) =>
-                          t ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img key={i} src={t.imageUrl} alt="" loading="lazy" className={`aspect-square w-full rounded-[3px] bg-wall object-cover ${t.sensitive.length ? "blur-md" : ""}`} />
-                          ) : (
-                            <span key={i} className="aspect-square w-full rounded-[3px] bg-wall" />
-                          ),
-                        )}
-                      </div>
+                      <WallOfPieces thumbs={v.thumbs} />
                       <div className="grid gap-0.5">
-                        <span className="eyebrow">{hood(v)}</span>
                         <b className="t-card group-hover:text-scan">{v.name}</b>
-                        {v.address && <span className="t-small">{v.address}</span>}
                         <span className="t-small">
-                          {v.pieces ? `${v.pieces} ${v.pieces === 1 ? "piece" : "pieces"}` : "New art soon"}
-                          {v.artists.length ? ` · ${v.artists.slice(0, 3).join(", ")}${v.artists.length > 3 ? ` and ${v.artists.length - 3} more` : ""}` : ""}
+                          {hood(v)} · {v.pieces ? `${v.pieces} ${v.pieces === 1 ? "piece" : "pieces"}` : "New art soon"}
+                          {v.artists.length ? ` by ${v.artists.slice(0, 3).join(", ")}${v.artists.length > 3 ? ` and ${v.artists.length - 3} more` : ""}` : ""}
                         </span>
+                        {v.address && <span className="t-small">{v.address}</span>}
                       </div>
                     </Link>
                   </li>
@@ -78,6 +68,29 @@ export default async function VenuesIndex({ searchParams }: { searchParams?: Rec
           </EmptyCanvas>
         )}
       </div>
+    </div>
+  );
+}
+
+/** A patch of the venue's wall with every piece hanging there (up to nine), sized so they all fit. */
+function WallOfPieces({ thumbs }: { thumbs: { imageUrl: string; sensitive: string[] }[] }) {
+  const n = thumbs.length;
+  const cols = n <= 3 ? Math.max(n, 1) : n === 4 ? 2 : 3;
+  const rows = Math.max(1, Math.ceil(n / cols));
+  return (
+    <div className="relative aspect-[16/10] overflow-hidden rounded-md bg-wall" aria-hidden="true">
+      {n > 0 && (
+        <div
+          className="absolute inset-y-[9%] left-1/2 grid -translate-x-1/2 place-items-center gap-2 sm:gap-3"
+          // roughly portrait-shaped cells, so the pieces hang as a cluster instead of spreading to the edges
+          style={{ width: `${Math.min(82, (48 * cols) / rows)}%`, gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))` }}
+        >
+          {thumbs.map((t, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={i} src={t.imageUrl} alt="" loading="lazy" className={`max-h-full max-w-full bg-white object-contain shadow-[0_1px_0_rgba(21,22,27,.08),0_10px_18px_-6px_rgba(21,22,27,.35)] ${t.sensitive.length ? "blur-md" : ""}`} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

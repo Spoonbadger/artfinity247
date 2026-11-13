@@ -129,9 +129,8 @@ export default async function AboutPage() {
                   )}
                 </span>
                 <div className="grid content-start gap-1">
-                  <p className="t-card">{m.name}</p>
-                  <p className="eyebrow">{m.role}</p>
-                  <p className="t-muted mt-1">{m.note}</p>
+                  <p className="t-card">{m.name} <span className="font-normal text-ink-2">· {m.role}</span></p>
+                  <p className="t-muted">{m.note}</p>
                 </div>
               </li>
             ))}
@@ -197,7 +196,6 @@ export default async function AboutPage() {
             </div>
           </div>
           <address className="af-panel grid gap-3 p-5 text-[15.5px] not-italic">
-            <p className="eyebrow">Talk to a person</p>
             <p><b>{COMPANY.legalName}</b><br />{COMPANY.address}</p>
             <p>
               <a href={`mailto:${COMPANY.email}`} className="font-bold underline underline-offset-2">{COMPANY.email}</a>

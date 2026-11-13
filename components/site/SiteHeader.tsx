@@ -281,7 +281,7 @@ export default function SiteHeader({ brand = null, inPage = false }: { brand?: H
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur">
-      <div className="mx-auto flex max-w-[1240px] items-center gap-6 px-4 py-3 sm:px-6">
+      <div className="mx-auto flex max-w-[1240px] items-center gap-3 px-4 py-3 sm:gap-6 sm:px-6">
         <Logo />
         <nav className="ml-auto hidden items-center gap-5 whitespace-nowrap text-[15px] font-medium lg:flex xl:gap-6" aria-label="Main">
           <BrowseMenu pathname={pathname} />

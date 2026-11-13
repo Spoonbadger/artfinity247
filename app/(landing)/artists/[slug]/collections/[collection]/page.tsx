@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 import { artistPath, artPath, collectionPath, SITE_URL } from "@/lib/urls";
 import ViewBeacon from "@/components/analytics/ViewBeacon";
 import { UrlSort } from "@/components/browse/UrlSort";
+import CollectionBackdrop from "@/components/collections/CollectionBackdrop";
+import { backgroundTone, type Tone } from "@/lib/collectionBackground";
 
 const ORDER = [
   { value: "artist", label: "Artist's order" },
@@ -65,14 +67,15 @@ const WIDTH = [
 ];
 const DROP = ["", "lg:mt-16", "lg:mt-6", "", "lg:mt-10", "lg:mt-2"];
 
-function Hung({ w, i, edition, handle }: { w: PublicWork; i: number; edition: Edition | null; handle: string }) {
+function Hung({ w, i, edition, handle, tone }: { w: PublicWork; i: number; edition: Edition | null; handle: string; tone: Tone }) {
+  const wire = tone === "dark" ? ["rgba(255,255,255,.35)", "rgba(255,255,255,.5)"] : ["rgba(21,22,27,.25)", "rgba(21,22,27,.35)"];
   return (
     <li className={cn("w-full max-w-[340px] sm:max-w-none", WIDTH[i % WIDTH.length], DROP[i % DROP.length])}>
       <Link href={artPath(handle, w.slug)} className="group block text-ink no-underline" aria-label={`${w.title}, from ${money(w.fromCents)}`}>
         <div className={cn("relative mx-auto w-fit transition duration-300 group-hover:-translate-y-1", TILT[i % TILT.length])}>
           {/* the hanging wire */}
           <span aria-hidden className="absolute -top-6 left-1/2 hidden h-6 w-24 -translate-x-1/2 sm:block">
-            <svg viewBox="0 0 96 24" className="h-full w-full"><path d="M8 24 L48 2 L88 24" fill="none" stroke="rgba(21,22,27,.25)" strokeWidth="1" /><circle cx="48" cy="2" r="2" fill="rgba(21,22,27,.35)" /></svg>
+            <svg viewBox="0 0 96 24" className="h-full w-full"><path d="M8 24 L48 2 L88 24" fill="none" stroke={wire[0]} strokeWidth="1" /><circle cx="48" cy="2" r="2" fill={wire[1]} /></svg>
           </span>
           <div className={FRAMES[i % FRAMES.length]}>
             <div className="mat">
@@ -84,7 +87,7 @@ function Hung({ w, i, edition, handle }: { w: PublicWork; i: number; edition: Ed
           </div>
         </div>
         {/* museum label */}
-        <div className="mx-auto mt-4 flex w-fit max-w-full items-center gap-3 rounded-[2px] bg-white/80 px-3 py-1.5 shadow-[0_1px_0_rgba(21,22,27,.08)]">
+        <div className="mx-auto mt-4 flex w-fit max-w-full items-center gap-3 rounded-[2px] bg-white/85 px-3 py-1.5 shadow-[0_1px_0_rgba(21,22,27,.08)]">
           <span className="min-w-0 leading-tight">
             <b className="block truncate text-[15px] group-hover:underline">{w.title}</b>
             <span className="t-small num">Prints from {money(w.fromCents)}</span>
@@ -130,22 +133,23 @@ export default async function CollectionPage({ params, searchParams }: Props) {
   const works = sort === "price-asc" || sort === "price-desc"
     ? [...collection.works].sort((a, b) => (sort === "price-asc" ? a.fromCents - b.fromCents : b.fromCents - a.fromCents))
     : collection.works;
+  const bg = collection.background;
+  const tone = backgroundTone(bg);
+  const dark = tone === "dark";
+  const bgImage = collection.backgroundWork && { url: collection.backgroundWork.imageUrl, sensitive: collection.backgroundWork.sensitive };
 
   return (
     <>
       <SiteHeader brand={{ handle: artist.slug, name: artist.name, avatar: artist.avatar }} />
       <ViewBeacon artistId={artist.id} />
-    <div className="bg-[#efece5] bg-[radial-gradient(ellipse_at_50%_0%,#f7f5f0_0%,#ebe7df_55%,#e4dfd5_100%)] pb-16 sm:pb-24">
+    <CollectionBackdrop bg={bg} image={bgImage} className={cn("pb-16 sm:pb-24", dark && "text-white")}>
       <header className="mx-auto grid max-w-[1240px] gap-4 px-4 pb-8 pt-8 sm:px-6 sm:pb-12 sm:pt-14">
-        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,380px)] md:items-end md:gap-10">
-          <div>
-            <p className="eyebrow">Collection · {n} {n === 1 ? "work" : "works"}</p>
-            <h1 className="display relative mt-2 text-[44px] [overflow-wrap:anywhere] sm:text-[64px]">
-              {collection.title}
-            </h1>
-            <BrushStroke className="mt-2 h-3 w-48 sm:w-64" />
-          </div>
-          {collection.description && <p className="whitespace-pre-line text-[17px] leading-relaxed text-ink-2 md:pb-3">{collection.description}</p>}
+        <div className="mx-auto grid max-w-[720px] justify-items-center gap-3 text-center">
+          <h1 className={cn("display relative text-[44px] [overflow-wrap:anywhere] sm:text-[64px]", dark && "text-white")}>
+            {collection.title}
+          </h1>
+          <BrushStroke className="h-3 w-48 sm:w-64" />
+          {collection.description && <p className={cn("mt-1 whitespace-pre-line text-[17px] leading-relaxed", dark ? "text-white/85" : "text-ink-2")}>{collection.description}</p>}
         </div>
       </header>
 
@@ -155,7 +159,7 @@ export default async function CollectionPage({ params, searchParams }: Props) {
         </div>
       )}
       <ul className="mx-auto flex max-w-[1240px] flex-wrap items-start justify-center gap-x-[6%] gap-y-14 px-8 pb-10 pt-6 sm:gap-x-[7%] sm:px-6 lg:gap-x-[4%] lg:gap-y-16">
-        {works.map((w, i) => <Hung key={w.id} w={w} i={i} edition={editions.get(w.id) ?? null} handle={artist.slug} />)}
+        {works.map((w, i) => <Hung key={w.id} w={w} i={i} edition={editions.get(w.id) ?? null} handle={artist.slug} tone={tone} />)}
       </ul>
 
       <nav aria-label="More collections" className="mx-auto mt-4 grid max-w-[1240px] gap-3 px-4 sm:grid-cols-2 sm:px-6">
@@ -163,9 +167,9 @@ export default async function CollectionPage({ params, searchParams }: Props) {
         <div className="min-w-0">{next && <Neighbor dir="next" artistSlug={artist.slug} c={next} />}</div>
       </nav>
       <p className="mt-8 text-center">
-        <Link href={artistPath(artist.slug)} className="btn btn-ghost">All of {artist.name.split(" ")[0]}&apos;s work</Link>
+        <Link href={artistPath(artist.slug)} className={cn("btn btn-ghost", dark && "border-white/50 text-white")}>All of {artist.name.split(" ")[0]}&apos;s work</Link>
       </p>
-    </div>
+    </CollectionBackdrop>
     </>
   );
 }

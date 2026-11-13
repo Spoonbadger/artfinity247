@@ -84,11 +84,11 @@ export default function ProCalculator({ initialPrints = 8, initialPrice = 60 }: 
 
         <div className={cn("rounded-2xl border-[1.5px] p-4", proWins ? "border-earned bg-earned-soft" : "border-line bg-wall")}>
           <b className="block text-[17px]">
-            {proWins ? `Infinity earns you ${moneyRound(diff * 12)} more a year.` : diff === 0 ? "Even either way." : `Free is better for you now, by ${moneyRound(diff * 12)} a year.`}
+            {proWins ? `Infinity earns you ${moneyRound(diff * 12 + yearlySavingsCents())} more a year, billed yearly.` : diff === 0 ? "Even either way." : `Free is better for you now, by ${moneyRound(diff * 12)} a year.`}
           </b>
           <span className="text-[14px] text-ink-2">
-            {proWins && `That's ${moneyRound(diff)} more a month${yearlySavingsCents() > 0 ? `, or ${moneyRound(diff * 12 + yearlySavingsCents())} a year if you pay yearly` : ""}. `}
-            {m.breakEven != null ? `Infinity pays for itself at ${m.breakEven} prints a month at this price.` : "At this price Infinity doesn't pay for itself on prints alone."}
+            {proWins && yearlySavingsCents() > 0 && `${moneyRound(diff * 12)} if you pay monthly. `}
+            {m.breakEven != null ? `It pays for itself at ${m.breakEven} prints a month.` : "At this price Infinity doesn't pay for itself on prints alone."}
           </span>
         </div>
       </div>

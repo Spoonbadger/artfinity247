@@ -41,7 +41,7 @@ export default function ArtistTabs({ tabs }: { tabs: Tab[] }) {
 
   return (
     <div>
-      <div role="tablist" aria-label="Artist page" onKeyDown={onKeyDown} className="mb-6 flex gap-7 border-b border-line">
+      <div role="tablist" aria-label="Artist page" onKeyDown={onKeyDown} className="mb-6 flex gap-4 border-b border-line sm:gap-7">
         {tabs.map((t) => {
           const on = t.id === active;
           return (

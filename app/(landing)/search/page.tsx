@@ -18,6 +18,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
   const [{ art, total, pages }, artists, cities] = q
     ? await Promise.all([getArt({ q, page, sort }), page === 1 ? getArtists({ q, pieces: 0, take: 12 }) : Promise.resolve([]), getCities()])
     : [{ art: [], total: 0, pages: 1 }, [], await getCities()];
+  const popular = q ? [] : (await getArt({ perPage: 8 })).art;
   const matchCities = q ? cities.filter((c) => c.name.toLowerCase().includes(q.toLowerCase())) : [];
 
   return (
@@ -35,13 +36,11 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
           </div>
         </form>
 
-        {!q && cities.length > 0 && (
-          <div className="mt-8">
-            <span className="eyebrow">Or browse a neighborhood</span>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {cities.map((c) => <Link key={c.slug} href={`/scenes/${c.slug}`} className="inline-flex min-h-[44px] items-center rounded-full border-[1.5px] border-line bg-white px-4 py-1.5 text-[14px] font-semibold text-ink no-underline hover:border-ink">{c.name}</Link>)}
-            </div>
-          </div>
+        {!q && popular.length > 0 && (
+          <section className="mt-12" aria-labelledby="popular-h">
+            <h2 id="popular-h" className="t-section mb-4">Newest prints</h2>
+            <ArtGrid art={popular} />
+          </section>
         )}
 
         {(artists.length > 0 || matchCities.length > 0) && (

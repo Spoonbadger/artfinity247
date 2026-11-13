@@ -7,7 +7,6 @@ import AppConfigs from "@/db/json/AppConfigs.json";
 const SUPPORT = AppConfigs.support_email;
 
 const POLICIES: [string, string][] = [
-  ["Sell with us", "/sell-with-us"],
   ["Artist terms", "/artist-terms-and-agreement"],
   ["Terms and conditions", "/terms-and-conditions"],
   ["Privacy policy", "/privacy-policy"],

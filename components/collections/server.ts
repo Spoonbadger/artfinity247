@@ -2,6 +2,7 @@
 import slugify from "slugify";
 import { prisma } from "@/lib/prisma";
 import { getUserFromCookie } from "@/lib/auth";
+import { parseBackground } from "@/lib/collectionBackground";
 
 export const TITLE_MAX = 80;
 export const DESC_MAX = 600;
@@ -39,7 +40,7 @@ export async function uniqueSlug(artist: string, title: string, exceptId?: strin
 }
 
 export const studioCollectionSelect = {
-  id: true, title: true, slug: true, description: true, coverArtworkId: true, position: true,
+  id: true, title: true, slug: true, description: true, coverArtworkId: true, background: true, position: true,
   items: { orderBy: { position: "asc" as const }, select: { artworkId: true } },
 };
 
@@ -48,7 +49,7 @@ export async function listStudioCollections(artist: string) {
   return rows.map(shapeStudio);
 }
 
-export function shapeStudio(c: { id: string; title: string; slug: string; description: string | null; coverArtworkId: string | null; position: number; items: { artworkId: string }[] }) {
-  return { id: c.id, title: c.title, slug: c.slug, description: c.description ?? "", coverArtworkId: c.coverArtworkId, artworkIds: c.items.map((i) => i.artworkId) };
+export function shapeStudio(c: { id: string; title: string; slug: string; description: string | null; coverArtworkId: string | null; background: unknown; position: number; items: { artworkId: string }[] }) {
+  return { id: c.id, title: c.title, slug: c.slug, description: c.description ?? "", coverArtworkId: c.coverArtworkId, background: parseBackground(c.background), artworkIds: c.items.map((i) => i.artworkId) };
 }
 export type StudioCollection = ReturnType<typeof shapeStudio>;

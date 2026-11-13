@@ -85,13 +85,11 @@ export default async function ReviewPage({ params, searchParams }: Props) {
       : null,
   }));
   const first = shortName(order.shippingName, "").split(" ")[0];
-  const reviewed = items.filter((i) => i.existing).length;
 
   return (
     <div className="bg-wall">
       <div className="mx-auto grid max-w-[620px] gap-6 px-4 pb-20 pt-8 sm:pt-12">
         <header className="grid gap-2">
-          <span className="eyebrow">{reviewed && reviewed === items.length ? "Thanks for reviewing" : "Verified buyer"}</span>
           <h1 className="t-page">
             {first ? `${first}, how` : "How"} does it look on your{" "}
             <span className="relative z-0 whitespace-nowrap">

@@ -1,6 +1,7 @@
 // Public collection data: only approved work is shown, in the artist's order.
 import { prisma } from "@/lib/prisma";
 import { basePrices } from "@/lib/artwork_price";
+import { parseBackground, type CollectionBackground } from "@/lib/collectionBackground";
 
 const workSelect = { id: true, slug: true, title: true, imageUrl: true, sensitive: true, status: true, markupSmall: true, editionSize: true } as const;
 
@@ -23,7 +24,7 @@ async function loadCollections(artistId: string) {
     where: { artistId },
     orderBy: [{ position: "asc" }, { createdAt: "asc" }],
     select: {
-      id: true, slug: true, title: true, description: true, coverArtworkId: true,
+      id: true, slug: true, title: true, description: true, coverArtworkId: true, background: true,
       items: { orderBy: { position: "asc" }, select: { artwork: { select: workSelect } } },
     },
   });
@@ -31,7 +32,15 @@ async function loadCollections(artistId: string) {
     .map((c) => {
       const works = c.items.map((i) => i.artwork).filter((a) => a.status === "APPROVED" && a.slug).map(toWork);
       const cover = works.find((w) => w.id === c.coverArtworkId) ?? works[0] ?? null;
-      return { id: c.id, slug: c.slug, title: c.title, description: c.description ?? "", works, cover };
+      // A painting background has to be a public piece of this collection; otherwise the page keeps the wall.
+      let background: CollectionBackground = parseBackground(c.background);
+      let backgroundWork: PublicWork | null = null;
+      if (background.kind === "painting") {
+        const id = background.artworkId;
+        backgroundWork = works.find((w) => w.id === id) ?? null;
+        if (!backgroundWork) background = { kind: "wall" };
+      }
+      return { id: c.id, slug: c.slug, title: c.title, description: c.description ?? "", works, cover, background, backgroundWork };
     })
     .filter((c) => c.works.length > 0);
 }
@@ -40,7 +49,7 @@ async function loadCollections(artistId: string) {
 export async function getPublicCollections(artistSlug: string): Promise<PublicCollectionCard[]> {
   const artist = await findArtist(artistSlug);
   if (!artist) return [];
-  return (await loadCollections(artist.id)).map(({ works, ...c }) => ({
+  return (await loadCollections(artist.id)).map(({ works, background, backgroundWork, ...c }) => ({
     ...c,
     count: works.length,
     peek: works.filter((w) => w.id !== c.cover?.id).slice(0, 2),

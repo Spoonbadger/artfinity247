@@ -197,9 +197,9 @@ export default async function ArtistPage({ params, searchParams }: Props) {
                 </h2>
                 <ul className="box-inset grid gap-0 px-3.5 py-1.5">
                   {venues.map((v, i) => (
-                    <li key={i} className="flex items-baseline justify-between gap-3 border-b border-dashed border-line py-2 text-[14px] last:border-0">
-                      <span className="min-w-0 text-ink">{v.name}</span>
-                      <span className="t-small shrink-0 font-semibold">{v.when}</span>
+                    <li key={i} className="grid gap-0.5 border-b border-dashed border-line py-2 text-[14px] last:border-0">
+                      <span className="text-ink">{v.name}</span>
+                      <span className="t-small font-semibold">{v.when}</span>
                     </li>
                   ))}
                 </ul>
