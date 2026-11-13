@@ -41,7 +41,8 @@ const OVERVIEW = [
   { title: "You get paid", note: `${pct(FREE_SPLIT)} of the profit, by the 5th.`, color: "var(--af-earned)" },
 ];
 
-function Step({ n, color, title, children, visual, flip = false }: { n: number; color: string; title: string; children: React.ReactNode; visual: React.ReactNode; flip?: boolean }) {
+/** `live` visuals have controls people can use (the size picker), so they stay in the accessibility tree. */
+function Step({ n, color, title, children, visual, flip = false, live = false }: { n: number; color: string; title: string; children: React.ReactNode; visual: React.ReactNode; flip?: boolean; live?: boolean }) {
   return (
     <li id={`step-${n}`} className="grid scroll-mt-24 items-center gap-8 md:grid-cols-2 md:gap-14">
       <div className={cn("grid content-start gap-4", flip && "md:order-2")}>
@@ -51,7 +52,7 @@ function Step({ n, color, title, children, visual, flip = false }: { n: number; 
         </div>
         <div className="grid gap-3 text-[17px] leading-relaxed text-ink-2">{children}</div>
       </div>
-      <div className={cn("grid min-h-[300px] place-items-center rounded-2xl bg-wall p-6 sm:p-8", flip && "md:order-1")} aria-hidden="true">{visual}</div>
+      <div className={cn("grid min-h-[300px] place-items-center rounded-2xl bg-wall p-6 sm:p-8", flip && "md:order-1")} aria-hidden={live ? undefined : true}>{visual}</div>
     </li>
   );
 }
@@ -171,7 +172,7 @@ export default async function HowItWorksPage() {
             <p>If one arrives damaged, we reprint it free.</p>
           </Step>
 
-          <Step n={4} color="var(--af-earned)" flip title="You get paid" visual={<div className="w-full max-w-[460px]"><SplitBar markupCents={markup.medium} /></div>}>
+          <Step n={4} color="var(--af-earned)" flip live title="You get paid" visual={<div className="w-full max-w-[460px]"><SplitBar markupCents={markup.medium} /></div>}>
             <p>You keep {pct(FREE_SPLIT)} of the profit on every print: what&apos;s left after printing, shipping and the card fee.</p>
             <p>It&apos;s paid to your bank through Stripe by the 5th of the next month.</p>
           </Step>

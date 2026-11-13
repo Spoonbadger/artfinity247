@@ -53,7 +53,8 @@ export default async function ReportPage({ searchParams }: { searchParams: { art
         </p>
       </section>
       <section className="mx-auto grid max-w-[1240px] items-start gap-8 px-4 sm:px-6 lg:grid-cols-[1fr_1.3fr] lg:gap-12">
-        <ol className="order-last grid gap-5 lg:order-none">
+        <div className="order-last grid gap-5 lg:order-none">
+          <ol className="grid gap-5">
           {steps.map(([, title, sub]) => (
             <li key={title} className="border-t border-line pt-4">
               <div className="grid min-w-0 gap-1">
@@ -62,11 +63,12 @@ export default async function ReportPage({ searchParams }: { searchParams: { art
               </div>
             </li>
           ))}
+          </ol>
           <p className="t-small border-t border-line pt-4">
             {counter ? "Only file this if you truly believe the takedown was wrong. False statements can carry legal penalties." : "Reports go to our team, not the artist. If we take something down, the artist hears why and can reply."}{" "}
             <Link href="/dmca" className="font-semibold text-ink underline-offset-2 hover:underline">How DMCA works here</Link>
           </p>
-        </ol>
+        </div>
         {counter && !art ? (
           <div className="af-card grid justify-items-start gap-3 p-5 sm:p-7">
             <h2 className="t-card">{user ? "We couldn’t find that work" : "Log in first"}</h2>
