@@ -407,11 +407,11 @@ export async function hangingAt(venueId: string) {
   return { artworks, artistPages };
 }
 
-/** Active venues for the public index, with how many pieces hang at each and a few thumbnails. */
+/** Active venues for the public index, with how many pieces hang at each and up to nine thumbnails. */
 export async function publicVenues() {
   const venues = await prisma.venue.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true, slug: true, neighborhood: true, address: true } });
   return Promise.all(venues.map(async (v) => {
     const h = await hangingAt(v.id);
-    return { ...v, pieces: h.artworks.length, thumbs: h.artworks.slice(0, 4), artists: Array.from(new Set([...h.artworks.map((a) => a.artist.name), ...h.artistPages.map((a) => a.name)])) };
+    return { ...v, pieces: h.artworks.length, thumbs: h.artworks.slice(0, 9), artists: Array.from(new Set([...h.artworks.map((a) => a.artist.name), ...h.artistPages.map((a) => a.name)])) };
   }));
 }
