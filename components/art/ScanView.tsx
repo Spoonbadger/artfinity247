@@ -41,6 +41,9 @@ const canOptimize = (src: string) => src.startsWith("/") || src.includes("res.cl
 const cartKey = (p: { id: string; selectedSize: string; frameChosen: boolean; frameColor: string | null }) =>
   [p.id, p.selectedSize, p.frameChosen ? "framed" : "unframed", p.frameColor ?? ""].join("|");
 
+/** Totes, mugs and tees aren't on sale yet. Flip to true to show "More ways to keep it" again. */
+const SHOW_MERCH = false;
+
 export default function ScanView({
   art,
   artist,
@@ -444,7 +447,7 @@ export default function ScanView({
         )}
       </section>
 
-      {art.sensitive.length === 0 && <MerchPreview imageUrl={art.imageUrl} title={art.title} artistFirstName={firstName} />}
+      {SHOW_MERCH && art.sensitive.length === 0 && <MerchPreview imageUrl={art.imageUrl} title={art.title} artistFirstName={firstName} />}
 
       <p className="mx-auto max-w-[1240px] px-4 pt-4 text-[13px] text-ink-2 sm:px-6">
         <Link href={`/report?art=${encodeURIComponent(art.slug)}`} className="inline-flex min-h-[44px] items-center underline underline-offset-2 hover:text-ink">
