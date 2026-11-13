@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ReviewStars from "@/components/reviews/ReviewStars";
 import MerchPreview from "@/components/art/MerchPreview";
 import SortableReviews, { ReviewSortPill, useReviewSort } from "@/components/reviews/SortableReviews";
@@ -106,6 +106,25 @@ export default function ScanView({
     if (last && last.frame !== undefined && (last.frame === null || FRAME_COLORS.some((f) => f.key === last.frame))) setFrame(last.frame);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // The phone buy bar grows when the arrival line wraps (375px wide), so measure it: the cookie notice docks on top
+  // of it and the page keeps room for it. Height minus the safe-area padding, since both add env() themselves.
+  const barRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const bar = barRef.current;
+    if (!bar || typeof ResizeObserver === "undefined") return;
+    const root = document.documentElement;
+    const sync = () => {
+      const extra = Math.max(0, parseFloat(getComputedStyle(bar).paddingBottom) - 8);
+      root.style.setProperty("--af-bottom-bar", `${Math.max(0, Math.round(bar.offsetHeight - extra))}px`);
+    };
+    const ro = new ResizeObserver(sync);
+    ro.observe(bar);
+    sync();
+    return () => {
+      ro.disconnect();
+      root.style.removeProperty("--af-bottom-bar");
+    };
+  }, []);
   const [aspect, setAspect] = useState<number>(aspectFromServer || 0.8);
   const [busy, setBusy] = useState(false);
   const [req, setReq] = useState<GalleryRequest>(null);
@@ -198,7 +217,7 @@ export default function ScanView({
     <div>
       {/* Phones: room for the sticky buy bar; --af-bottom-bar docks the cookie notice above it.
           --af-cookie-wait: the notice waits for the first scroll, so it never covers the title, price or Buy on load. */}
-      <style>{`:root { --af-cookie-wait: 1; } @media (max-width: 767px) { :root { --af-bottom-bar: 84px; } body { padding-bottom: calc(92px + env(safe-area-inset-bottom)); } }`}</style>
+      <style>{`:root { --af-cookie-wait: 1; } @media (max-width: 767px) { :root { --af-bottom-bar: 84px; } body { padding-bottom: calc(var(--af-bottom-bar) + 8px + env(safe-area-inset-bottom)); } }`}</style>
 
       <div className="mx-auto grid max-w-[1240px] md:grid-cols-[minmax(0,58fr)_minmax(0,42fr)] md:gap-10 md:px-6 md:pt-5 lg:gap-12">
         <ArtGallery
@@ -434,7 +453,7 @@ export default function ScanView({
       </p>
 
       {/* Sticky buy bar on phones: Buy, Add to cart, and arrival once */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 px-4 pb-[calc(8px+env(safe-area-inset-bottom))] pt-2.5 backdrop-blur md:hidden">
+      <div ref={barRef} className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 px-4 pb-[calc(8px+env(safe-area-inset-bottom))] pt-2.5 backdrop-blur md:hidden">
         <div className="flex gap-2">
           <button type="button" onClick={onAdd} disabled={soldOut} className="btn btn-ghost shrink-0 gap-1.5 px-4 py-3 text-[15px]">
             <ShoppingBag className="h-[18px] w-[18px]" aria-hidden /> Add to cart
