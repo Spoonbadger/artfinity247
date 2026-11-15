@@ -1,5 +1,7 @@
 import * as React from "react";
+import { Column, Img, Row, Section } from "@react-email/components";
 import { SITE_URL } from "@/lib/urls";
+import { A, C, CTA, EmailLayout, H1, P } from "./_layout";
 
 type Item = {
   title: string;
@@ -9,12 +11,6 @@ type Item = {
   imageUrl: string | null;
   artist?: string | null;
 };
-
-// Artfinity's paint (Garnet Rose): black cherry ink, garnet.
-const INK = "#2e1219"; // --af-ink
-const INK2 = "#694c54"; // --af-ink-2
-const GARNET = "#8b2a4b"; // --af-scan
-const LINE = "#ecdcd8"; // --af-line
 
 export default function ShippingStatusEmail({
   name,
@@ -36,64 +32,58 @@ export default function ShippingStatusEmail({
   /** Limited-edition prints: signed links to their certificates of authenticity (lib/certificates.ts). */
   certificates?: { title: string; url: string }[];
 }) {
+  const shipped = status === "shipped";
+  const many = items.length > 1 || items.some((i) => i.quantity > 1);
+  const first = name === "Customer" ? "there" : name.trim().split(/\s+/)[0] || name;
   return (
-    <div style={{ fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif", color: INK, maxWidth: 560 }}>
-      <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: INK2 }}>Order {code}</p>
-      <h1 style={{ margin: "6px 0 12px", fontSize: 26, lineHeight: 1.15 }}>{status === "shipped" ? "Your print is on its way" : "Your print was delivered"}</h1>
+    <EmailLayout
+      preview={shipped ? `Order ${code} is with the carrier${tracking ? ` (${tracking.carrier} ${tracking.number})` : ""}.` : `Order ${code} was delivered.`}
+      footer={`You're getting this because you placed order ${code} on Artfinity.`}
+    >
+      <P muted small style={{ margin: "0 0 4px", fontWeight: 600 }}>Order {code}</P>
+      <H1>{shipped ? `Your ${many ? "prints are" : "print is"} on the way` : `Your ${many ? "prints were" : "print was"} delivered`}</H1>
+      <P>Hi {first},</P>
+      <P>{shipped ? "It's with the carrier now and should reach you in a few days." : "We hope it looks great on your wall."}</P>
 
-      <p style={{ margin: "0 0 16px" }}>Hi {name},</p>
+      <Section style={{ margin: "0 0 24px", border: `1px solid ${C.line}`, borderRadius: 8 }}>
+        {items.map((item, i) => (
+          <Row key={i} style={{ borderTop: i ? `1px solid ${C.line}` : "none" }}>
+            {item.imageUrl ? (
+              <Column style={{ width: 64, padding: "14px 0 14px 16px", verticalAlign: "top" }}>
+                <Img src={item.imageUrl} alt="" width="48" height="60" style={{ display: "block", objectFit: "cover", borderRadius: 2, border: `1px solid ${C.line}` }} />
+              </Column>
+            ) : null}
+            <Column style={{ width: "100%", padding: "14px 16px", verticalAlign: "top" }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: C.ink }}>{item.title}</div>
+              {item.artist ? <div style={{ fontSize: 13, color: C.ink2, marginTop: 2 }}>by {item.artist}</div> : null}
+              <div style={{ fontSize: 13, color: C.ink2, marginTop: 2 }}>{[item.size, item.quantity > 1 ? `× ${item.quantity}` : null].filter(Boolean).join(" · ")}</div>
+            </Column>
+          </Row>
+        ))}
+      </Section>
 
-      {items.map((item, i) => (
-        <div key={i} style={{ display: "flex", gap: 12, padding: "10px 0", borderTop: i ? `1px solid ${LINE}` : "none" }}>
-          {item.imageUrl && <img src={item.imageUrl} alt="" width={48} height={60} style={{ objectFit: "cover", borderRadius: 2, border: `1px solid ${LINE}` }} />}
-          <div>
-            <strong>{item.title}</strong>
-            {item.artist ? <div style={{ fontSize: 13, color: INK2 }}>by {item.artist}</div> : null}
-            <div style={{ fontSize: 13, color: INK2 }}>{[item.size, item.quantity > 1 ? `× ${item.quantity}` : null].filter(Boolean).join(" · ")}</div>
-          </div>
-        </div>
-      ))}
-
-      {status === "shipped" ? (
+      {shipped && tracking ? (
         <>
-          <p style={{ margin: "16px 0 0" }}>It&apos;s with the carrier. Expect it in a few days.</p>
-          {tracking && (
-            <p style={{ margin: "12px 0 0" }}>
-              <strong>{tracking.carrier} tracking:</strong> {tracking.number}
-              {tracking.url && (
-                <>
-                  <br />
-                  <a href={tracking.url} style={{ display: "inline-block", marginTop: 8, padding: "10px 16px", borderRadius: 999, background: GARNET, color: "#fff", fontWeight: 600, textDecoration: "none" }}>
-                    Track your package
-                  </a>
-                </>
-              )}
-            </p>
-          )}
+          <P muted small style={{ margin: "0 0 4px" }}>{tracking.carrier} tracking number</P>
+          <P style={{ fontWeight: 600, margin: tracking.url ? "0 0 8px" : "0 0 24px" }}>{tracking.number}</P>
+          {tracking.url ? <CTA href={tracking.url}>Track your package</CTA> : null}
         </>
-      ) : (
-        <p style={{ margin: "16px 0 0" }}>We hope you love it.</p>
-      )}
+      ) : null}
 
       {certificates.map((c) => (
-        <p key={c.url} style={{ margin: "12px 0 0" }}>
-          <strong>{c.title}</strong> is a numbered edition.{" "}
-          <a href={c.url} style={{ color: GARNET, fontWeight: 600 }}>Print the certificate</a>
-        </p>
+        <P key={c.url}>
+          <strong>{c.title}</strong> is a numbered edition. <A href={c.url}>Print its certificate of authenticity</A>.
+        </P>
       ))}
 
-      {helpUrl && (
-        <p style={{ margin: "16px 0 0", fontSize: 14, color: INK2 }}>
-          Something wrong?{" "}
-          <a href={helpUrl} style={{ color: GARNET, fontWeight: 600 }}>Send us a photo</a> within 14 days of delivery and we&apos;ll reprint it free.
-        </p>
-      )}
-
-      <p style={{ margin: "16px 0 0", fontSize: 14, color: INK2 }}>
-        <a href={`${SITE_URL}/collector`} style={{ color: GARNET, fontWeight: 600 }}>Your orders</a>, any time.
-      </p>
-
-      <p style={{ margin: "16px 0 0", fontSize: 14 }}>— Artfinity</p>
-    </div>
+      {helpUrl ? (
+        <P muted small>
+          Something wrong with it? <A href={helpUrl}>Send us a photo</A> within 14 days of delivery and we&apos;ll reprint it free.
+        </P>
+      ) : null}
+      <P muted small style={{ margin: 0 }}>
+        See all your orders any time in <A href={`${SITE_URL}/collector`}>your collection</A>.
+      </P>
+    </EmailLayout>
   );
 }

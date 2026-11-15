@@ -2,6 +2,8 @@
 // Pure module (no database), so the Studio editor can render live previews in the browser.
 // Database lookups and sending live in lib/artistEmails.server.ts.
 
+import { EMAIL_COLORS, emailButton, emailP, emailShell, escHtml } from "@/lib/emailShell";
+
 export const EMAIL_KINDS = ["receipt", "shipped", "delivered", "thank_you"] as const;
 export type EmailKind = (typeof EMAIL_KINDS)[number];
 
@@ -87,21 +89,21 @@ export function renderArtistEmail(kind: EmailKind, template: TemplateLike, vars:
   return { subject, body, text: `${body}\n\n--\n${footer}`, html: emailHtml(body, footer), custom };
 }
 
-const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-
-/** Turns plain text into simple, safe email HTML: paragraphs, line breaks, clickable links. */
-export function emailHtml(body: string, footer = "Sent with Artfinity. From paint to print.") {
-  const linkify = (s: string) => s.replace(/(https?:\/\/[^\s<]+)/g, (u) => `<a href="${u}" style="color:#8b2a4b">${u}</a>`);
-  const paras = body
-    .split(/\n{2,}/)
-    .map((p) => `<p style="margin:0 0 16px">${linkify(esc(p)).replace(/\n/g, "<br>")}</p>`)
-    .join("");
-  return (
-    `<div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.55;color:#15161b;max-width:560px;margin:0 auto;padding:24px">` +
-    paras +
-    `<p style="margin:24px 0 0;padding-top:12px;border-top:1px solid #e6e3dc;font-size:13px;color:#5b5d66">${esc(footer)}</p>` +
-    `</div>`
-  );
+/**
+ * Turns plain text into Artfinity's email frame (lib/emailShell.ts): paragraphs, line breaks, clickable links,
+ * an optional button under the text, and `footer` as a quiet line under the card.
+ */
+export function emailHtml(
+  body: string,
+  footer = "Sent with Artfinity. From paint to print.",
+  opts: { button?: { href: string; label: string }; preview?: string } = {},
+) {
+  const linkify = (s: string) => s.replace(/(https?:\/\/[^\s<]+)/g, (u) => `<a href="${u}" style="color:${EMAIL_COLORS.garnet};text-decoration:underline;word-break:break-all">${u}</a>`);
+  const paras = body.trim().split(/\n{2,}/);
+  const inner =
+    paras.map((p, i) => emailP(linkify(escHtml(p)).replace(/\n/g, "<br>"), { last: i === paras.length - 1 && !opts.button })).join("") +
+    (opts.button ? `<div style="height:8px"></div>${emailButton(opts.button.href, opts.button.label, { last: true })}` : "");
+  return emailShell(inner, { preview: opts.preview, footer: footer ? [escHtml(footer)] : [] });
 }
 
 /** "Buyer 12" -> "Buyer", "ada lovelace" -> "Ada". */

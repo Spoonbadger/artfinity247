@@ -53,7 +53,7 @@ export async function initialArtworkStatus(artistId: string): Promise<"APPROVED"
 export async function announceArtworkLive(artworkId: string, { email = true }: { email?: boolean } = {}) {
   const artwork = await prisma.artwork.findUnique({
     where: { id: artworkId },
-    select: { slug: true, title: true, artistId: true, status: true, artist: { select: { slug: true, artist_name: true, name: true, email: true, role: true } } },
+    select: { slug: true, title: true, imageUrl: true, artistId: true, status: true, artist: { select: { slug: true, artist_name: true, name: true, first_name: true, email: true, role: true } } },
   });
   if (!artwork?.slug || artwork.status !== "APPROVED") return;
 
@@ -76,9 +76,10 @@ export async function announceArtworkLive(artworkId: string, { email = true }: {
       to: artwork.artist.email,
       subject: `Your artwork is live – ${artwork.title}`,
       react: ArtworkLiveWithQrEmail({
-        artistName: artwork.artist.artist_name || artwork.artist.name || "",
+        artistName: artwork.artist.first_name || artwork.artist.artist_name || artwork.artist.name || "",
         title: artwork.title,
         artworkUrl: artUrl(artwork.artist.slug, artwork.slug!, base),
+        imageUrl: artwork.imageUrl ? (artwork.imageUrl.startsWith("/") ? base + artwork.imageUrl : artwork.imageUrl) : null,
         qrDownloadUrl: `${base}/api/artworks/${artwork.slug}/qr?download=1&token=${qrToken}`,
       }),
     });
@@ -101,7 +102,7 @@ export async function announceBatch(artistId: string, ids: string[]): Promise<{ 
     orderBy: { createdAt: "asc" },
     select: { id: true, slug: true, title: true, imageUrl: true, status: true, flaggedReason: true },
   });
-  const artist = await prisma.artist.findUnique({ where: { id: artistId }, select: { slug: true, artist_name: true, name: true, email: true, city: true, state: true } });
+  const artist = await prisma.artist.findUnique({ where: { id: artistId }, select: { slug: true, artist_name: true, name: true, first_name: true, email: true, city: true, state: true } });
   if (!artist || !rows.length) return { live: 0, review: 0 };
   const base = process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com";
   const pieces: BatchPiece[] = rows
@@ -123,7 +124,7 @@ export async function announceBatch(artistId: string, ids: string[]): Promise<{ 
         from: "Artfinity <notifications@theartfinity.com>",
         to: artist.email,
         subject: live === 1 ? `Your artwork is live – ${pieces.find((p) => p.status === "live")!.title}` : `${live} new pieces are live on Artfinity`,
-        react: ArtworksBatchLiveEmail({ artistName: name, pieces, codesUrl: `${base}/studio/art` }),
+        react: ArtworksBatchLiveEmail({ artistName: artist.first_name || name, pieces, codesUrl: `${base}/studio/art` }),
       });
     } catch (err) {
       console.error("Batch live email failed", err);

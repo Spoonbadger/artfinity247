@@ -1,18 +1,17 @@
 import * as React from "react";
+import { CTA, EmailLayout, H1, P } from "./_layout";
 
 // "Confirm your email" for new password sign-ups and email changes. The link works for 7 days.
 export default function ConfirmEmail({ link, firstName }: { link: string; firstName?: string | null }) {
   return (
-    <div style={{ fontFamily: "ui-sans-serif, system-ui", color: "#222" }}>
-      <h2 style={{ color: "#8b2a4b" }}>Confirm your email</h2>
-      <p>{firstName ? `Hi ${firstName}, one` : "One"} quick step: confirm this is your email so we can send your sales and pay you out.</p>
-      <p>
-        <a href={link} style={{ display: "inline-block", padding: "12px 16px", borderRadius: "6px", textDecoration: "none", background: "#8b2a4b", color: "#fff" }}>
-          Confirm my email
-        </a>
-      </p>
-      <p style={{ fontSize: 12, opacity: 0.8 }}>This link works for 7 days. If you didn&apos;t sign up for Artfinity, ignore this email.</p>
-      <p style={{ marginTop: 16 }}>— Artfinity</p>
-    </div>
+    <EmailLayout preview="Confirm your email so we can send your sales and pay you out.">
+      <H1>Confirm your email address</H1>
+      {firstName ? <P>Hi {firstName},</P> : null}
+      <P>Please confirm this is your email address. We use it to tell you about sales and to send your payouts.</P>
+      <CTA href={link}>Confirm email address</CTA>
+      <P muted small style={{ margin: 0 }}>
+        This link expires in 7 days. If you didn&apos;t create an Artfinity account, you can ignore this email.
+      </P>
+    </EmailLayout>
   );
 }

@@ -6,7 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { emailEnabled, resend } from "@/lib/resend";
 import { artistUrl, SITE_URL } from "@/lib/urls";
 import { safeFromName } from "@/lib/artistEmails.server";
-import { emailFooter, esc } from "@/lib/newsletter";
+import { emailButton, emailH1, emailP, emailShell, escHtml } from "@/lib/emailShell";
+import { COMPANY } from "@/lib/about";
 
 export const FROM_ADDRESS = "notifications@theartfinity.com";
 const BASE = (process.env.NEXT_PUBLIC_APP_URL || SITE_URL).replace(/\/$/, "");
@@ -50,15 +51,16 @@ async function sendConfirmEmail(artist: ArtistForEmail, email: string, token: st
   const name = artistDisplayName(artist);
   const first = artistFirstName(artist);
   const link = confirmUrl(token);
-  const html =
-    `<div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.55;color:#15161b;max-width:520px;margin:0 auto;padding:24px">` +
-    `<p style="margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#5b5d66">${esc(name)}</p>` +
-    `<h1 style="margin:0 0 14px;font-size:26px;line-height:1.15">Confirm you want new work from ${esc(first)}</h1>` +
-    `<p style="margin:0 0 20px">Tap the button and ${esc(first)}'s new paintings will land in your inbox. No more than one email a day, usually far fewer.</p>` +
-    `<p style="margin:0 0 22px"><a href="${link}" style="display:inline-block;background:#8b2a4b;color:#fff;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:999px">Yes, send me new work</a></p>` +
-    `<p style="margin:0;font-size:13px;color:#5b5d66">Didn't ask for this? Ignore this email and nothing happens.</p>` +
-    emailFooter({ base: BASE }) +
-    `</div>`;
+  const html = emailShell(
+    emailH1(`Confirm you want new work from ${first}`) +
+      emailP(`Tap the button and ${escHtml(first)}'s new paintings will land in your inbox. No more than one email a day, usually far fewer.`) +
+      emailButton(link, "Yes, send me new work") +
+      emailP("Didn't ask for this? Ignore this email and nothing happens.", { muted: true, small: true, last: true }),
+    {
+      preview: `Confirm to get new work from ${name} in your inbox.`,
+      footer: [`You're getting this because someone asked to follow ${escHtml(name)} on Artfinity with this address.`, `${escHtml(COMPANY.legalName)} · ${escHtml(COMPANY.address)}`],
+    },
+  );
   const text = `Confirm you want new work from ${first}\n\n${link}\n\nDidn't ask for this? Ignore this email and nothing happens.`;
   const { error } = await resend.emails.send({
     from: `${safeFromName(name)} via Artfinity <${FROM_ADDRESS}>`,
