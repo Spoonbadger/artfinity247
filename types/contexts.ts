@@ -20,7 +20,6 @@ export type CartContextType = {
     cartItems?: CartItemType[],
     products?: ProductType[],
   ) => number;
-  calculateTax: (totalPrice: number, taxRate?: number) => number;
   clearCart: () => void
 };
 

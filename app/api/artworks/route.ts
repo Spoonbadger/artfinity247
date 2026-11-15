@@ -38,10 +38,8 @@ export async function GET(req: NextRequest) {
     } else {
       let orderBy: any = { createdAt: "desc" } // default newest
       if (sort === "oldest") orderBy = { createdAt: "asc" };
-      if (sort === "popular") {
-      // TODO: replace with real sales count
-      orderBy = { createdAt: "desc" }
-    }
+      // Most prints sold first, newest breaking ties (same rule as the browse pages, components/browse/data.ts).
+      if (sort === "popular") orderBy = [{ OrderItem: { _count: "desc" } }, { createdAt: "desc" }];
 
       [artworks, total] = await Promise.all([
         prisma.artwork.findMany({

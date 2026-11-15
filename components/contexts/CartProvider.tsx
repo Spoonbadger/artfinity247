@@ -13,7 +13,6 @@ import {
 import { useUser } from "@/components/contexts/UserProvider";
 import { CartContextType, CartItemType, CartItemProductType } from "@/types";
 import { updateCartItem } from "@/db/query";
-import { AppConfigs } from "@/db";
 
 // Browser storage can throw (blocked site data, some private modes). The cart then just doesn't persist; the page keeps working.
 const store = {
@@ -155,9 +154,6 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
     [cartItems],
   );
 
-  const calculateTax = (totalPrice: number, taxRate = Number(AppConfigs.sales_tax_rate || 0)) =>
-    totalPrice * taxRate;
-
   const clearCart = useCallback(() => {
     setCartItems([]);
     try {
@@ -176,7 +172,6 @@ const CartProvider = ({ children }: { children: ReactNode }): ReactNode => {
       removeFromCart,
       calculateProductPrice,
       calculateTotalPrice,
-      calculateTax,
       clearCart,
     }),
     [cartItems, addToCart, removeFromCart, updateToCart, clearCart, calculateTotalPrice],
