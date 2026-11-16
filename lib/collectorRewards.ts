@@ -18,6 +18,7 @@ import { readAdminSettings } from "@/lib/adminSettings";
 import { calcItemProfitCents, type PrintSize as RevenueSize } from "@/lib/revenue";
 import { resend, emailEnabled } from "@/lib/resend";
 import { SITE_URL } from "@/lib/urls";
+import { EMAIL_COLORS, emailButton, emailH1, emailP, emailShell } from "@/lib/emailShell";
 
 export type RewardSettings = { enabled: boolean; every: number; pct: number; source: "env" | "file" | "default" };
 export const REWARD_DEFAULTS = { enabled: false, every: 5, pct: 15 };
@@ -165,14 +166,14 @@ export async function issueRewardIfEarned(email: string) {
   await prisma.jobRun.create({ data: { job: ISSUED, startedAt: now, finishedAt: now, ok: true, summary: `Collector reward ${n} emailed`, details: { email: e, n, pct: s.pct } } });
   const code = rewardCode(e, n);
   const link = `${BASE}/collector`;
-  const html =
-    `<div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.55;color:#15161b;max-width:520px;margin:0 auto;padding:24px">` +
-    `<h1 style="margin:0 0 14px;font-size:26px;line-height:1.15">Thank you: ${s.pct}% off your next order</h1>` +
-    `<p style="margin:0 0 16px">That's ${n * s.every} prints from independent artists. Your next order is ${s.pct}% off, and Artfinity covers it, so the artist still gets their full share.</p>` +
-    `<p style="margin:0 0 16px;font-size:22px;font-weight:800;letter-spacing:.06em">${code}</p>` +
-    `<p style="margin:0 0 22px">It's filled in for you at checkout while you're signed in to your collection with this email. One use.</p>` +
-    `<p style="margin:0 0 22px"><a href="${link}" style="display:inline-block;background:#8b2a4b;color:#fff;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:999px">See your collection</a></p>` +
-    `<p style="margin:0;font-size:14px">— Artfinity</p></div>`;
+  const html = emailShell(
+    emailH1(`Thank you: ${s.pct}% off your next order`) +
+      emailP(`That's ${n * s.every} prints from independent artists. Your next order is ${s.pct}% off, and Artfinity covers it, so the artist still gets their full share.`) +
+      `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px"><tr><td style="padding:12px 18px;border:1px dashed ${EMAIL_COLORS.garnet};border-radius:8px;font-size:20px;font-weight:700;letter-spacing:.08em;color:${EMAIL_COLORS.ink}">${code}</td></tr></table>` +
+      emailP("It's filled in for you at checkout while you're signed in to your collection with this email. One use.") +
+      emailButton(link, "See your collection", { last: true }),
+    { preview: `Your next Artfinity order is ${s.pct}% off.`, footer: ["You're getting this because you collect prints on Artfinity."] },
+  );
   const text = `Thank you: ${s.pct}% off your next order\n\nYour code: ${code}\nFilled in at checkout while you're signed in to your collection with this email. One use.\n\n${link}`;
   const { error } = await resend.emails.send({ from: "Artfinity <notifications@theartfinity.com>", to: e, subject: `${s.pct}% off your next Artfinity order`, html, text });
   if (error) console.error("[rewards] email failed", e, n, error);

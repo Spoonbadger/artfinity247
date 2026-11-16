@@ -21,6 +21,7 @@ import { prisma } from "@/lib/prisma";
 import { resend } from "@/lib/resend";
 import NewArtistNotificationEmail from "@/emails/NewArtistNotificationEmail";
 import WelcomeArtistEmail from "@/emails/WelcomeArtistEmail";
+import { artistUrl } from "@/lib/urls";
 import { checkHandle, normalizeHandle } from "../_lib/handle";
 import { OFFENSIVE_HANDLE_MESSAGE, OFFENSIVE_NAME_MESSAGE, isOffensiveName } from "@/lib/trust/names";
 import { deviceCookie, recordDeviceSignal, referrerForCode } from "@/lib/referrals";
@@ -171,7 +172,7 @@ export async function POST(req: Request) {
       from: "Artfinity <notifications@theartfinity.com>",
       to: email,
       subject: "Welcome to Artfinity",
-      react: WelcomeArtistEmail({ artistName: artist_name }),
+      react: WelcomeArtistEmail({ artistName: artist_name, pageUrl: artistUrl(handle) }),
     });
   } catch (e) {
     console.error("REGISTER_EMAIL_FAIL", e);

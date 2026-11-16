@@ -296,6 +296,6 @@ export async function decideRequest(id: string, action: Decision, note: string) 
 async function sendBuyer(to: string, subject: string, paras: string[]) {
   if (!to) return;
   const text = paras.join("\n\n");
-  const { error } = await resend.emails.send({ from: FROM, to, subject, html: emailHtml(`${text}\n\nArtfinity`), text: `${text}\n\nArtfinity` });
+  const { error } = await resend.emails.send({ from: FROM, to, subject, html: emailHtml(text, "You're getting this about your Artfinity order."), text: `${text}\n\nArtfinity` });
   if (error) throw error;
 }

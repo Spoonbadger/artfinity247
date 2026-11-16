@@ -1,5 +1,5 @@
 // Photo scenes in the browser: the small manifest built by `npm run scenes:build` (data/scenes-client.json).
-// When it lists no photos, everything here falls back to the procedural rooms, so nothing changes until photos exist.
+// When it lists no photos, the site shows no rooms (scene numbers fall back to the old drawn-room numbering for labels).
 import manifest from "@/data/scenes-client.json";
 import { autoScenes, sceneInfo, scenesFor } from "@/lib/rooms/scene";
 import { hash32, SCENE_SLOTS } from "./variants";
@@ -7,7 +7,7 @@ import { GRADE_LABEL, type ClientManifest, type FrameKey, type Grade, type Print
 
 const M = manifest as unknown as ClientManifest;
 
-/** True when photo scenes are built: scene numbers then show photos instead of drawn rooms. */
+/** True when photo scenes are built. Without them no rooms are shown. */
 export const photoScenesOn = M.count > 0 && M.p?.length === SCENE_SLOTS;
 export const photoSceneCount = photoScenesOn ? M.count : 0;
 
@@ -28,10 +28,11 @@ export function sceneLabel(n: number) {
 }
 
 const WIDTHS = [480, 800, 1200, 1600];
-export function photoSrc(n: number, slug: string, size: PrintSizeKey, frame: FrameKey | null | undefined, w = 1200, o: { mat?: boolean; blur?: boolean } = {}) {
+export function photoSrc(n: number, slug: string, size: PrintSizeKey, frame: FrameKey | null | undefined, w = 1200, o: { mat?: boolean; blur?: boolean; bare?: boolean } = {}) {
   const q = new URLSearchParams({ scene: String(norm(n)), art: slug, size, frame: frame || "none", w: String(w), v: M.rev });
   if (o.mat === false) q.set("mat", "0");
   if (o.blur) q.set("blur", "1");
+  if (o.bare) q.set("bare", "1");
   return `/api/scenes/render?${q}`;
 }
 export function photoSrcSet(n: number, slug: string, size: PrintSizeKey, frame: FrameKey | null | undefined, o: { mat?: boolean; blur?: boolean } = {}) {

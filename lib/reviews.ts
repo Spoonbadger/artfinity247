@@ -118,12 +118,6 @@ export async function getReviews(scope: Scope, take = 24) {
 
 // ---------- Emails ----------
 
-const btn = (href: string, label: string) =>
-  `<p style="margin:8px 0 24px"><a href="${href}" style="display:inline-block;background:#8b2a4b;color:#fff;font-weight:700;text-decoration:none;padding:13px 22px;border-radius:999px">${label}</a></p>`;
-
-/** Inserts an HTML button before the footer of an emailHtml() body. */
-const withButton = (html: string, href: string, label: string) => html.replace(/<p style="margin:24px 0 0;/, `${btn(href, label)}<p style="margin:24px 0 0;`);
-
 /**
  * Asks the buyer for a review once their order is delivered. Retail, paid orders only, and only if something is left to review.
  * Safe to call more than once per order (it just sends again), so callers should only call it on the delivered transition.
@@ -148,7 +142,7 @@ export async function sendReviewRequest(orderId: string) {
     `${what[0].toUpperCase() + what.slice(1)} should be with you now. How does it look on your wall?\n\n` +
     `A few words or a photo helps the artist more than you'd think.\n\n` +
     `${url}`;
-  const html = withButton(emailHtml(text.replace(`\n\n${url}`, "")), url, "Leave a review");
+  const html = emailHtml(text.replace(`\n\n${url}`, ""), "You're getting this because you ordered a print on Artfinity.", { button: { href: url, label: "Leave a review" } });
   await resend.emails.send({ from: FROM, to: order.email, subject: "How does it look on your wall?", html, text });
   if (!emailEnabled) console.log(`[review-link] order=${order.id} ${url}`);
   return true;
@@ -182,7 +176,7 @@ export async function notifyArtistOfReview(reviewId: string) {
     from: FROM,
     to: r.artist.email,
     subject: `New ${r.rating}-star review${r.artwork ? ` on ${r.artwork.title}` : ""}`,
-    html: withButton(emailHtml(text), url, "See it in your Studio"),
+    html: emailHtml(text, "", { button: { href: url, label: "See it in your Studio" } }),
     text: `${text}\n\n${url}`,
   });
   return true;

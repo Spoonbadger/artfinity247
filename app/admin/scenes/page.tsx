@@ -23,7 +23,7 @@ export default async function ScenesAdminPage() {
     <div className="grid gap-5">
       <PageHead
         title="Scenes"
-        sub={catalog ? `Live: ${catalog.distinct} scenes from ${catalog.photos.length} photos${catalog.fixtures ? " (includes test fixtures)" : ""}` : "Live: procedural rooms (no photo scenes built)"}
+        sub={catalog ? `Live: ${catalog.distinct} scenes from ${catalog.photos.length} photos${catalog.fixtures ? " (includes test fixtures)" : ""}` : "Live: no rooms shown (no photo scenes built)"}
       >
         <details className="text-[13.5px] text-ink-2">
           <summary className="cursor-pointer font-semibold">How this works</summary>

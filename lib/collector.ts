@@ -20,6 +20,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { emailEnabled, resend } from "@/lib/resend";
 import { SITE_URL } from "@/lib/urls";
+import { emailButton, emailH1, emailP, emailShell, escHtml } from "@/lib/emailShell";
 
 export const COLLECTOR_COOKIE = "collector-token";
 export const SESSION_DAYS = 90;
@@ -115,7 +116,6 @@ export async function knownBuyer(email: string): Promise<boolean> {
   return !!order || !!collector;
 }
 
-const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 /** Emails the sign-in link. With `save`, the email says the piece will be saved once they tap it. */
 export async function sendSignInLink(email: string, opts: { save?: { id: string; title: string } | null; next?: string | null } = {}) {
@@ -125,14 +125,13 @@ export async function sendSignInLink(email: string, opts: { save?: { id: string;
   const lead = opts.save
     ? "Tap the button and it's saved, along with any orders you've placed with this email."
     : "Tap the button to see your orders, the artists you follow and your wishlist.";
-  const html =
-    `<div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.55;color:#15161b;max-width:520px;margin:0 auto;padding:24px">` +
-    `<h1 style="margin:0 0 14px;font-size:26px;line-height:1.15">${esc(heading)}</h1>` +
-    `<p style="margin:0 0 20px">${esc(lead)}</p>` +
-    `<p style="margin:0 0 22px"><a href="${link}" style="display:inline-block;background:#8b2a4b;color:#fff;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:999px">Open my collection</a></p>` +
-    `<p style="margin:0;font-size:13px;color:#5b5d66">The link works once, for ${LINK_MINUTES} minutes. Didn't ask for it? Ignore this email and nothing happens. You never need an account to buy.</p>` +
-    `<p style="margin:20px 0 0;font-size:14px">— Artfinity</p>` +
-    `</div>`;
+  const html = emailShell(
+    emailH1(heading) +
+      emailP(escHtml(lead)) +
+      emailButton(link, opts.save ? "Save it and open my collection" : "Open my collection") +
+      emailP(`The link works once, for ${LINK_MINUTES} minutes. Didn't ask for it? Ignore this email and nothing happens. You never need an account to buy.`, { muted: true, small: true, last: true }),
+    { preview: opts.save ? "Tap to save it to your collection." : "Your sign-in link for your Artfinity collection." },
+  );
   const text = `${heading}\n\n${lead}\n\n${link}\n\nThe link works once, for ${LINK_MINUTES} minutes. Didn't ask for it? Ignore this email.`;
   const { error } = await resend.emails.send({ from: FROM, to: email, subject: opts.save ? "Save it to your Artfinity collection" : "Your Artfinity sign-in link", html, text });
   if (error) throw error;

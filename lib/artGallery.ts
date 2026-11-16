@@ -3,13 +3,12 @@ import sharp from "sharp";
 import { loadCatalog } from "@/lib/scenes/catalog";
 import { creditLine, roomOf } from "@/lib/scenes/types";
 import { readArtImage } from "@/lib/scenes/server";
-import { isScene, sceneInfo, scenesFor, scenesOfType, type RoomType } from "@/lib/rooms/scene";
-import { hashString } from "@/lib/rooms/rng";
+import { isScene } from "@/lib/rooms/scene";
 
 export type GalleryRoom = {
-  /** Scene number: a photo slot (kind "photo") or a drawn room (kind "drawn"). */
+  /** Scene number: a photo slot. */
   n: number;
-  kind: "photo" | "drawn";
+  kind: "photo";
   label: string;
   credit?: string | null;
   url?: string | null;
@@ -21,13 +20,12 @@ export type Detail = { cx: number; cy: number };
 const ROOMS = 4;
 
 /**
- * Rooms for the gallery: real photos first (one per photo, widest daylight crop, the artist's picks when they chose
- * photo scenes), then drawn daylight rooms with furniture for scale to make up four.
+ * Rooms for the gallery: real photos only (one per photo, widest daylight crop, the artist's picks when they chose
+ * photo scenes), up to four. No photo scenes built: no rooms.
  */
 export function galleryRooms(art: { slug: string; roomScenes?: number[] | null }): GalleryRoom[] {
   const out: GalleryRoom[] = [];
   const cat = loadCatalog();
-  const usedTypes = new Set<string>();
   if (cat) {
     const best = new Map<number, { n: number; area: number; crop: { x: number; y: number; w: number; h: number } }>();
     const picks = new Set((art.roomScenes || []).filter(isScene));
@@ -54,29 +52,10 @@ export function galleryRooms(art: { slug: string; roomScenes?: number[] | null }
       .sort((a, b) => rank(roomOf(a.photo.ann?.tags || [])) - rank(roomOf(b.photo.ann?.tags || [])) || b.area - a.area);
     const withContext = all.filter((p) => p.context);
     const photos = withContext.length >= 2 ? withContext : all;
-    for (const p of photos.slice(0, ROOMS - 1)) {
+    for (const p of photos.slice(0, ROOMS)) {
       const room = roomOf(p.photo.ann?.tags || []);
-      if (room) usedTypes.add(room);
       out.push({ n: p.n, kind: "photo", label: room ? labelFor(room) : "Room", credit: p.photo.credit ? creditLine(p.photo.credit) : null, url: p.photo.credit?.url ?? null });
     }
-  }
-  // fill with drawn rooms: the artist's picks when there are no photos, else daylight rooms of types not shown yet
-  const drawnPicks = cat ? [] : scenesFor(art).filter((n) => !sceneInfo(n).evening);
-  const seed = hashString(`gallery:${art.slug}`);
-  const order: RoomType[] = ["living", "bedroom", "dining", "office", "nook", "kitchen"];
-  const pool = [...drawnPicks];
-  order.forEach((t, i) => {
-    const list = scenesOfType(t).filter((n) => !sceneInfo(n).evening);
-    pool.push(list[(seed + i * 7919) % list.length]);
-  });
-  const seen = new Set<number>();
-  for (const n of pool) {
-    if (out.length >= ROOMS) break;
-    const info = sceneInfo(n);
-    if (seen.has(n) || (usedTypes.has(info.type) && !drawnPicks.includes(n))) continue;
-    seen.add(n);
-    usedTypes.add(info.type);
-    out.push({ n, kind: "drawn", label: info.room });
   }
   return out;
 }

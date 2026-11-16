@@ -1,12 +1,11 @@
 // Loads what a preset needs, once, in the browser: paintings (same-origin, so the canvas isn't tainted), the
-// composited room scenes from /api/scenes/render, drawn rooms (lib/rooms), fonts, the QR code and an optional logo.
+// composited room photos from /api/scenes/render, fonts, the QR code and an optional logo.
 // Everything is cached by URL, so switching presets or formats doesn't fetch again.
 import { loadFonts } from "@/components/qr/text";
 import { qrSVG } from "@/lib/qr/render";
 import { findDetails, makeGrain } from "@/components/share/video/engine";
 import { accentOf, dollars, paletteFromPixels } from "@/components/share/shareData";
 import { autoPhotoScenes, photoScenesOn, photoSrc, sceneLabel, scenesForArt } from "@/lib/scenes/client";
-import { autoScenes, renderScene, scenesOfType, ROOM_LABEL, ROOM_SIZE_IN, sceneInfo, type RoomSize } from "@/lib/rooms";
 import { presetOf, type PresetId } from "@/lib/social/presets";
 import type { PrintSizeKey } from "@/lib/scenes/types";
 import type { Piece, Shot, VideoAssets } from "./engine";
@@ -111,94 +110,42 @@ function loadPiece(p: PieceRef): Promise<Piece> {
   });
 }
 
-/** Drawn room (SVG) rasterized once to a 1600 × 1280 canvas. */
-function drawnRoom(n: number, art: { href: string; aspect: number; size: RoomSize } | null): Promise<Shot> {
-  return once(`room:${n}:${art ? `${art.size}:${art.href.length}:${art.href.slice(-40)}` : "empty"}`, async () => {
-    const svg = renderScene(n, art ? { href: art.href, aspect: art.aspect, size: art.size, frame: "black", mat: true } : null, { width: 1600, height: 1280, idp: `v${n}` });
-    const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
-    try {
-      const img = await loadImage(url);
-      const c = canvas(1600, 1280);
-      c.getContext("2d")!.drawImage(img, 0, 0, 1600, 1280);
-      const size = art ? ROOM_SIZE_IN[art.size] : null;
-      const box = art ? diffBox((await drawnRoom(n, null)).img, c) : undefined;
-      return { img: c, iw: 1600, ih: 1280, label: ROOM_LABEL[sceneInfo(n).type], size: size ? `${size[0]} × ${size[1]} in` : undefined, box };
-    } finally {
-      URL.revokeObjectURL(url);
-    }
-  });
-}
-
-function paintingDataUrl(slug: string) {
-  return once(`data:${slug}`, async () => {
-    const res = await fetch(`/api/share/painting?art=${encodeURIComponent(slug)}&w=960`);
-    if (!res.ok) throw new AssetError("Couldn't load the painting. Try again in a moment.");
-    return toDataUrl(await res.blob());
-  });
-}
-
 const parseBox = (v: string | null): Shot["box"] => {
   const b = (v || "").split(",").map(Number);
   return b.length === 4 && b.every((x) => Number.isFinite(x)) && b[2] > b[0] && b[3] > b[1] ? (b as [number, number, number, number]) : undefined;
 };
 
-function photoShot(n: number, slug: string, size: PrintSizeKey): Promise<Shot> {
-  return once(`photo:${n}:${slug}:${size}`, async () => {
+function photoShot(n: number, slug: string, size: PrintSizeKey, bare = false): Promise<Shot> {
+  return once(`photo:${n}:${slug}:${size}:${bare ? "bare" : "hung"}`, async () => {
     // &vb=1 keeps these apart from the buy page's cached copies, which may predate the X-Art-Box header
-    const { img, headers } = await fetchImage(`${photoSrc(n, slug, size, "black", 1600)}&vb=1`);
+    const { img, headers } = await fetchImage(`${photoSrc(n, slug, size, "black", 1600, { bare })}&vb=1`);
     const printed = headers.get("X-Print-Size")?.replace("x", "×");
     return { img, iw: img.naturalWidth, ih: img.naturalHeight, label: sceneLabel(n), size: printed || undefined, box: parseBox(headers.get("X-Art-Box")) };
   });
 }
 
-/** Where two rasters of the same room differ: the print's box, as fractions. */
-function diffBox(a: CanvasImageSource, b: CanvasImageSource): Shot["box"] {
-  const W = 200, H = 160;
-  const read = (img: CanvasImageSource) => {
-    const c = canvas(W, H);
-    const x = c.getContext("2d", { willReadFrequently: true })!;
-    x.drawImage(img, 0, 0, W, H);
-    return x.getImageData(0, 0, W, H).data;
-  };
-  const da = read(a), db = read(b);
-  let x0 = W, y0 = H, x1 = -1, y1 = -1;
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    const i = (y * W + x) * 4;
-    if (Math.abs(da[i] - db[i]) + Math.abs(da[i + 1] - db[i + 1]) + Math.abs(da[i + 2] - db[i + 2]) > 60) {
-      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
-    }
-  }
-  return x1 > x0 && y1 > y0 ? [x0 / W, y0 / H, (x1 + 1) / W, (y1 + 1) / H] : undefined;
-}
-
 const SIZE_ORDER: PrintSizeKey[] = ["small", "medium", "large", "xl"];
 
-async function roomTour(main: PieceRef, piece: Piece): Promise<Shot[]> {
-  if (photoScenesOn) {
-    const nums = Array.from(new Set([...scenesForArt(main), ...autoPhotoScenes(main.slug, 6)])).slice(0, 4);
-    return Promise.all(nums.map((n) => photoShot(n, main.slug, "large")));
-  }
-  const href = await paintingDataUrl(main.slug);
-  return Promise.all(autoScenes(main.slug, 4).map((n) => drawnRoom(n, { href, aspect: piece.iw / piece.ih, size: "large" })));
+const NO_ROOMS = "Room photos aren't available right now. Try another video.";
+
+async function roomTour(main: PieceRef): Promise<Shot[]> {
+  if (!photoScenesOn) throw new AssetError(NO_ROOMS);
+  const nums = Array.from(new Set([...scenesForArt(main), ...autoPhotoScenes(main.slug, 6)])).slice(0, 4);
+  return Promise.all(nums.map((n) => photoShot(n, main.slug, "large")));
 }
 
-async function sizes(req: AssetRequest, piece: Piece): Promise<{ shots: Shot[]; note?: string }> {
+async function sizes(req: AssetRequest): Promise<{ shots: Shot[]; note?: string }> {
+  if (!photoScenesOn) throw new AssetError(NO_ROOMS);
   const main = req.pieces[0];
-  if (photoScenesOn && req.scale) {
-    const shots = await Promise.all(SIZE_ORDER.map((s) => photoShot(req.scale!.n, main.slug, s)));
-    return { shots, note: req.scale.note };
-  }
-  const href = await paintingDataUrl(main.slug);
-  const n = scenesOfType("living")[(main.slug.length * 7) % 100];
-  const shots = await Promise.all((["small", "medium", "large", "xl"] as RoomSize[]).map((s) => drawnRoom(n, { href, aspect: piece.iw / piece.ih, size: s })));
-  return { shots, note: "Sofa: about 32 in tall" };
+  const n = req.scale?.n ?? autoPhotoScenes(main.slug, 1)[0];
+  const shots = await Promise.all(SIZE_ORDER.map((s) => photoShot(n, main.slug, s)));
+  return { shots, note: req.scale?.note };
 }
 
-async function beforeAfter(main: PieceRef, piece: Piece): Promise<{ before: Shot; after: Shot }> {
-  const href = await paintingDataUrl(main.slug);
-  const pool = scenesOfType("living");
-  const n = pool[(main.slug.charCodeAt(0) * 13) % pool.length];
-  const [before, after] = await Promise.all([drawnRoom(n, null), drawnRoom(n, { href, aspect: piece.iw / piece.ih, size: "large" })]);
+async function beforeAfter(main: PieceRef): Promise<{ before: Shot; after: Shot }> {
+  if (!photoScenesOn) throw new AssetError(NO_ROOMS);
+  const n = scenesForArt(main)[0] ?? autoPhotoScenes(main.slug, 1)[0];
+  const [before, after] = await Promise.all([photoShot(n, main.slug, "large", true), photoShot(n, main.slug, "large")]);
   return { before, after };
 }
 
@@ -223,8 +170,8 @@ export async function loadAssets(req: AssetRequest): Promise<VideoAssets> {
   const grain = await once("grain", async () => makeGrain());
   const A: VideoAssets = { fonts, grain, qr, pieces, scenes: [], sizes: [], logo };
   const main = req.pieces[0];
-  if (req.preset === "room-tour") A.scenes = await roomTour(main, pieces[0]);
-  if (req.preset === "size-compare") { const s = await sizes(req, pieces[0]); A.sizes = s.shots; A.sizeNote = s.note; }
-  if (req.preset === "before-after") Object.assign(A, await beforeAfter(main, pieces[0]));
+  if (req.preset === "room-tour") A.scenes = await roomTour(main);
+  if (req.preset === "size-compare") { const s = await sizes(req); A.sizes = s.shots; A.sizeNote = s.note; }
+  if (req.preset === "before-after") Object.assign(A, await beforeAfter(main));
   return A;
 }

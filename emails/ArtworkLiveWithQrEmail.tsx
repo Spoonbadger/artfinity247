@@ -1,81 +1,48 @@
-import * as React from "react"
+import * as React from "react";
+import { Img, Link } from "@react-email/components";
+import { SITE_URL } from "@/lib/urls";
+import { A, C, CTA, Divider, EmailLayout, H1, H2, P } from "./_layout";
 
 export default function ArtworkLiveWithQrEmail({
   artistName,
   title,
   artworkUrl,
   qrDownloadUrl,
+  imageUrl,
 }: {
   artistName: string;
   title: string;
   artworkUrl: string;
+  /** Signed link, works for 7 days (lib/artworkLive.ts). */
   qrDownloadUrl: string;
+  /** Absolute image URL of the piece. */
+  imageUrl?: string | null;
 }) {
   return (
-    <div style={{ fontFamily: "ui-sans-serif, system-ui", color: "#222" }}>
-      <h2 style={{ margin: 0, color: "#8b2a4b" }}>
-        Your artwork is live 🎉
-      </h2>
+    <EmailLayout preview={`${title} is on your page and ready for print orders.`} footer="You're getting this because a piece on your Artfinity page went live.">
+      {imageUrl ? (
+        <Link href={artworkUrl}>
+          <Img
+            src={imageUrl}
+            alt={title}
+            width="200"
+            style={{ display: "block", width: 200, maxWidth: "100%", height: "auto", margin: "0 0 24px", border: `1px solid ${C.line}`, borderRadius: 4 }}
+          />
+        </Link>
+      ) : null}
+      <H1>{title} is live</H1>
+      <P>Hi {artistName},</P>
+      <P>Your piece is on your page now, and people can order prints of it.</P>
+      <CTA href={artworkUrl}>View artwork</CTA>
 
-      <p style={{ marginTop: 16 }}>
-        Hi {artistName},
-      </p>
+      <Divider />
 
-      <p style={{ marginTop: 12, lineHeight: 1.6 }}>
-        <strong>{title}</strong> is now live on Artfinity and ready for customers
-        to view and order prints.
-      </p>
-
-      <p style={{ marginTop: 12 }}>
-        View your artwork:
-      </p>
-
-      <p>
-        <a
-          href={artworkUrl}
-          style={{ color: "#8b2a4b", textDecoration: "underline" }}
-        >
-          {artworkUrl}
-        </a>
-      </p>
-
-      <hr style={{ margin: "24px 0", border: "none", borderTop: "1px solid #eee" }} />
-
-      <h3 style={{ margin: 0 }}>Print Your QR Card</h3>
-
-      <p style={{ marginTop: 12, lineHeight: 1.6 }}>
-        Download your branded QR card below. Print it and place it next to your
-        artwork so visitors can scan and order instantly.
-      </p>
-
-      <div style={{ marginTop: 20 }}>
-        <a
-          href={qrDownloadUrl}
-          style={{
-            backgroundColor: "#8b2a4b",
-            color: "#fff",
-            padding: "12px 18px",
-            borderRadius: 6,
-            textDecoration: "none",
-            fontWeight: 600,
-            display: "inline-block",
-          }}
-        >
-          Download QR Card (PDF)
-        </a>
-      </div>
-
-      <p style={{ marginTop: 20, fontSize: 13, opacity: 0.8 }}>
-        Tip: Print on thick paper or card stock for best results.
-      </p>
-
-      <p style={{ marginTop: 24 }}>
-        — The Artfinity Team
-      </p>
-
-      <p style={{ marginTop: 20, fontSize: 12, opacity: 0.7 }}>
-        This is an automated message confirming your artwork upload.
-      </p>
-    </div>
+      <H2>Hang a QR card beside it</H2>
+      <P>Print the card and place it next to the original so visitors can scan it and order on the spot. Card stock works best.</P>
+      <CTA href={qrDownloadUrl} secondary>Download QR card (PDF)</CTA>
+      <P muted small style={{ margin: 0 }}>
+        The download link works for 7 days. After that, print it any time from <A href={`${SITE_URL}/studio/art`}>My art</A>.
+      </P>
+    </EmailLayout>
   );
 }

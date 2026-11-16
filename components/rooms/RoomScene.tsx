@@ -1,7 +1,7 @@
 "use client";
 
-import { memo, useEffect, useId, useMemo, useState } from "react";
-import { renderScene, type RoomFrame, type RoomSize } from "@/lib/rooms";
+import { memo, useEffect, useState } from "react";
+import type { RoomFrame, RoomSize } from "@/lib/rooms";
 import { photoScenesOn, photoSrc, photoSrcSet, sceneLabel as labelFor } from "@/lib/scenes/client";
 import { cn } from "@/lib/utils";
 
@@ -34,7 +34,7 @@ export type RoomSceneProps = {
   /** Accessible name; omit for decorative thumbnails. */
   title?: string;
   className?: string;
-  /** Artwork slug: with photo scenes built, the room is a composited photo from /api/scenes/render. */
+  /** Artwork slug: the room is a composited photo from /api/scenes/render. */
   slug?: string;
   /** `sizes` for the photo's srcset (default: full width up to 600px). */
   sizes?: string;
@@ -42,40 +42,23 @@ export type RoomSceneProps = {
   eager?: boolean;
 };
 
-/**
- * One room with the print on the wall at true size: a composited photo when photo scenes are built (and a slug is
- * given), otherwise drawn as inline SVG.
- */
-export const RoomScene = memo(function RoomScene({ scene, imageUrl, aspect, size, frame, mat = true, blur, title, className, slug, sizes, eager }: RoomSceneProps) {
-  // a stable, page-unique prefix for this instance's SVG ids
-  const idp = "rs" + useId().replace(/[^a-zA-Z0-9]/g, "");
-  const photo = photoScenesOn && !!slug;
-  const measured = useImageAspect(photo ? "" : imageUrl, photo ? 0.8 : aspect);
-  const html = useMemo(
-    () => (photo ? "" : renderScene(scene, { href: imageUrl, aspect: measured, size, frame: frame ?? null, mat, blur }, { idp: `${idp}s${scene}`, title })),
-    [photo, scene, imageUrl, measured, size, frame, mat, blur, idp, title],
-  );
-  if (photo)
-    return (
-      <div className={cn("relative aspect-[5/4] w-full overflow-hidden bg-wall", className)} data-scene={scene}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={photoSrc(scene, slug!, size, frame, 800, { mat, blur })}
-          srcSet={photoSrcSet(scene, slug!, size, frame, { mat, blur })}
-          sizes={sizes || "(min-width: 768px) 600px, 100vw"}
-          loading={eager ? "eager" : "lazy"}
-          decoding="async"
-          alt={title || ""}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-      </div>
-    );
+/** One room photo with the print on the wall at true size, composited by /api/scenes/render. No photo scenes or no slug: a plain wall. */
+export const RoomScene = memo(function RoomScene({ scene, size, frame, mat = true, blur, title, className, slug, sizes, eager }: RoomSceneProps) {
+  const box = cn("relative aspect-[5/4] w-full overflow-hidden bg-wall", className);
+  if (!photoScenesOn || !slug) return <div className={box} data-scene={scene} />;
   return (
-    <div
-      className={cn("relative aspect-[5/4] w-full overflow-hidden bg-wall [&>svg]:block [&>svg]:h-full [&>svg]:w-full", className)}
-      data-scene={scene}
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
+    <div className={box} data-scene={scene}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={photoSrc(scene, slug, size, frame, 800, { mat, blur })}
+        srcSet={photoSrcSet(scene, slug, size, frame, { mat, blur })}
+        sizes={sizes || "(min-width: 768px) 600px, 100vw"}
+        loading={eager ? "eager" : "lazy"}
+        decoding="async"
+        alt={title || ""}
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+    </div>
   );
 });
 
