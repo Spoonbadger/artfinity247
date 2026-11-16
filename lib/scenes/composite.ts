@@ -31,6 +31,8 @@ export type CompositeOptions = {
   width?: number;
   /** Blur the art (sensitive work). */
   blur?: boolean;
+  /** The room without the print (same crop and grade); `rect` still says where the print would hang. */
+  bare?: boolean;
   quality?: number;
   catalog?: Catalog | null;
   /** Render straight from a photo + annotation (admin preview, CLI on unbuilt annotations). */
@@ -375,7 +377,7 @@ export async function composite(o: CompositeOptions): Promise<CompositeResult> {
   const rand = rng(hash32(`${v.id}:${o.size}:${frame}`));
   const vcx = outW / 2, vcy = outH / 2, vR2 = vcx * vcx + vcy * vcy;
 
-  for (let y = 0; y < bh; y++) {
+  for (let y = 0; y < (o.bare ? 0 : bh); y++) {
     const Y = by0 + y;
     for (let x = 0; x < bw; x++) {
       const X = bx0 + x;

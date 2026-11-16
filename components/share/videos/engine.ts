@@ -1,6 +1,6 @@
 // Share kit videos: every preset in lib/social/presets.ts drawn on a canvas, frame by frame, at 1080 × 1920 or
 // 1080 × 1080. Each preset is a pure function of time, so the live preview and the recorded file match.
-// Room scenes are the composited JPGs from /api/scenes/render (lib/scenes); before/after uses the drawn rooms (lib/rooms).
+// Room scenes are the composited JPGs from /api/scenes/render (lib/scenes); before/after is the same photo with bare=1 first.
 // Text is drawn as outlines with the print-card fonts (components/qr/text), so it looks the same in every browser.
 import type { Font } from "opentype.js";
 import { type Fonts, textD, width, capHeight, fitBlock } from "@/components/qr/text";
@@ -38,7 +38,7 @@ export type VideoAssets = {
   /** Size compare: one room at each print size. */
   sizes: Shot[];
   sizeNote?: string;
-  /** Before/after: the same drawn room without and with the print. */
+  /** Before/after: the same room photo without and with the print. */
   before?: Shot | null;
   after?: Shot | null;
   logo?: { img: Img; w: number; h: number } | null;

@@ -1,7 +1,7 @@
-// GET /api/scenes/render?scene=<0-999>&art=<slug>&size=small|medium|large|xl&frame=none|black|white|natural&w=800&mat=0&blur=1
-// One photo scene with the print hung at true size, as a JPEG. Cached on disk by content key, with an ETag.
+// GET /api/scenes/render?scene=<0-999>&art=<slug>&size=small|medium|large|xl&frame=none|black|white|natural&w=800&mat=0&blur=1&bare=1
+// One photo scene with the print hung at true size, as a JPEG (bare=1: the same room without it, for before/after). Cached on disk by content key, with an ETag.
 // X-Art-Box: where the framed print sits, as x0,y0,x1,y1 fractions of the image (the Share kit videos pan to it).
-// 404 when no photo scenes are built (the site then draws the procedural rooms instead).
+// 404 when no photo scenes are built (the site then shows no rooms).
 import { NextResponse } from "next/server";
 import path from "node:path";
 import fsp from "node:fs/promises";
@@ -33,10 +33,11 @@ export async function GET(req: Request) {
   const art = await artForRender(q.get("art") || "");
   if (!art) return NextResponse.json({ error: "Artwork not found." }, { status: 404 });
   const blur = q.get("blur") === "1" || false;
+  const bare = q.get("bare") === "1";
 
   const key = crypto
     .createHash("sha1")
-    .update([COMPOSITOR_VERSION, catalog.rev, hit.variant.id, hit.photo.ann.updatedAt, art.imageUrl, size, frame, mat, blur, width].join("|"))
+    .update([COMPOSITOR_VERSION, catalog.rev, hit.variant.id, hit.photo.ann.updatedAt, art.imageUrl, size, frame, mat, blur, width, bare ? "bare" : ""].join("|"))
     .digest("hex")
     .slice(0, 24);
   const etag = `"${key}"`;
@@ -62,7 +63,7 @@ export async function GET(req: Request) {
   const img = await readArtImage(art.imageUrl);
   if (!img) return NextResponse.json({ error: "Image unavailable." }, { status: 502 });
   try {
-    const r = await composite({ scene: n, art: img, size, frame, mat, width, blur, catalog });
+    const r = await composite({ scene: n, art: img, size, frame, mat, width, blur, bare, catalog });
     const printed = r.rect.label.replace("×", "x");
     const xs = r.rect.quad.map((p) => p[0] / r.width), ys = r.rect.quad.map((p) => p[1] / r.height);
     const box = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)].map((v) => Math.max(0, Math.min(1, v)).toFixed(4)).join(",");

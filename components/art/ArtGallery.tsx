@@ -76,7 +76,6 @@ export default function ArtGallery({
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const [cur, setCur] = useState(0);
   const [seen, setSeen] = useState<Set<number>>(() => new Set([0]));
-  const [idle, setIdle] = useState(false); // thumbnails of drawn rooms wait until the page has settled
   const [zoom, setZoom] = useState(false);
   const alt = `${title} by ${artistName}`;
 
@@ -102,12 +101,6 @@ export default function ArtGallery({
       if (p) (p as HTMLDivElement & { inert: boolean }).inert = i !== cur;
     });
   }, [cur, n]);
-
-  useEffect(() => {
-    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
-    if (w.requestIdleCallback) w.requestIdleCallback(() => setIdle(true), { timeout: 2500 });
-    else setTimeout(() => setIdle(true), 1200);
-  }, []);
 
   // keep the slide in place when the width changes; fewer slides (a reveal or blur change) clamps it
   useEffect(() => {
@@ -220,7 +213,7 @@ export default function ArtGallery({
                 (seen.has(i) ? (
                   <RoomScene
                     scene={s.room.n}
-                    slug={s.room.kind === "photo" ? slug : undefined}
+                    slug={slug}
                     imageUrl={imageUrl}
                     aspect={aspect}
                     size={size}
@@ -327,7 +320,7 @@ export default function ArtGallery({
                   )}
                   aria-hidden
                 >
-                  <Thumb s={s} idle={idle} thumbSrc={thumbSrc} slug={slug} imageUrl={imageUrl} aspect={aspect} size={size} frame={frame} blurred={blurred} />
+                  <Thumb s={s} thumbSrc={thumbSrc} slug={slug} aspect={aspect} size={size} frame={frame} blurred={blurred} />
                 </span>
               </button>
             );
@@ -340,19 +333,18 @@ export default function ArtGallery({
   );
 }
 
-function Thumb({ s, idle, thumbSrc, slug, imageUrl, aspect, size, frame, blurred }: { s: Slide; idle: boolean; thumbSrc: string; slug: string; imageUrl: string; aspect: number; size: RoomSize; frame: RoomFrame | null; blurred: boolean }) {
+function Thumb({ s, thumbSrc, slug, aspect, size, frame, blurred }: { s: Slide; thumbSrc: string; slug: string; aspect: number; size: RoomSize; frame: RoomFrame | null; blurred: boolean }) {
   if (s.kind === "art")
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img src={thumbSrc} alt="" className={cn("absolute inset-0 m-auto max-h-[80%] max-w-[80%] shadow-sm", blurred && "blur-sm")} style={{ border: `2px solid ${frame ? FRAME_HEX[frame] : "#fff"}` }} />
     );
   if (s.kind === "detail") return <CloseUp src={thumbSrc} d={s.d} aspect={aspect} />;
-  if (s.room.kind === "photo" && photoScenesOn)
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img src={photoSrc(s.room.n, slug, size, frame, 480, { blur: blurred })} alt="" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
-    );
-  return idle ? <RoomScene scene={s.room.n} imageUrl={imageUrl} aspect={aspect} size={size} frame={frame} blur={blurred} className="h-full" /> : null;
+  if (!photoScenesOn) return null;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={photoSrc(s.room.n, slug, size, frame, 480, { blur: blurred })} alt="" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
+  );
 }
 
 const FRAME_LABEL: Record<RoomFrame, string> = { black: "Black", white: "White", natural: "Natural wood" };
