@@ -75,7 +75,9 @@ You don't need to create tables: the first deploy does it (section 5).
      the dashboard. It applies any new database changes before each build (section 5), always over Neon's
      **direct** host: `DIRECT_URL` when set, else `DATABASE_URL` with `-pooler` taken out of the host name.
      Migrations through the pooler can leave a database lock stuck, and the next deploy then fails with
-     "Timed out trying to acquire a postgres advisory lock" (P1002). A failed migration is retried twice.
+     "Timed out trying to acquire a postgres advisory lock" (P1002). Before each try the script releases that lock
+     if an idle session has held it for over two minutes (a migration that is running is left alone), and a
+     failed migration is retried twice.
    - Don't deploy yet: open **Environment Variables** first and add the required ones from section 4
      (at least `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`, `NEXT_PUBLIC_APP_URL`, Cloudinary, `CRON_SECRET`).
      Then **Deploy**.
