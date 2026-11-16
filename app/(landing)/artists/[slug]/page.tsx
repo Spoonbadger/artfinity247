@@ -146,7 +146,11 @@ export default async function ArtistPage({ params, searchParams }: Props) {
       <ViewBeacon artistId={artist.id} />
     <div className="bg-white pb-16 sm:pb-24" style={{ ["--accent" as string]: accent.color, ["--accent-ink" as string]: accent.ink, ["--accent-soft" as string]: accent.soft }}>
       {searchParams?.expired === "1" && <CodeNote kind="expired" name={artist.name} />}
-      <ArtistBanner src={banner?.imageUrl ?? null} alt={banner ? `${banner.title}, by ${artist.name}` : ""} color={bannerColor(theme)} />
+      {theme.banner.kind === "upload" ? (
+        <ArtistBanner src={theme.banner.url} alt="" position={{ x: theme.banner.x, y: theme.banner.y }} />
+      ) : (
+        <ArtistBanner src={banner?.imageUrl ?? null} alt={banner ? `${banner.title}, by ${artist.name}` : ""} color={bannerColor(theme)} />
+      )}
 
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
         {/* Head: avatar overlapping the banner, name, actions */}

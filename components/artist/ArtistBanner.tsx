@@ -1,11 +1,11 @@
 import Image from "next/image";
 
 /**
- * A wide crop of the artist's own best piece, softened into a painterly band:
+ * The artist's uploaded banner (cropped around their focus point), or a wide crop of their best piece softened into a painterly band:
  * scaled up past the frame, a canvas-grain overlay, and a brushed bottom edge
  * that bleeds into the page.
  */
-export default function ArtistBanner({ src, alt, color }: { src: string | null; alt: string; color?: string | null }) {
+export default function ArtistBanner({ src, alt, color, position }: { src: string | null; alt: string; color?: string | null; position?: { x: number; y: number } | null }) {
   return (
     <div className="relative h-[168px] overflow-hidden bg-gallery sm:h-[240px] lg:h-[300px]">
       {color ? (
@@ -24,8 +24,9 @@ export default function ArtistBanner({ src, alt, color }: { src: string | null; 
           fill
           priority
           sizes="100vw"
-          className="scale-[1.04] object-cover [filter:saturate(1.08)_contrast(1.02)]"
-          style={{ objectPosition: "50% 36%" }}
+          // the artist's own banner keeps its colours and their chosen focus point; a piece gets the painterly crop
+          className={position ? "object-cover" : "scale-[1.04] object-cover [filter:saturate(1.08)_contrast(1.02)]"}
+          style={{ objectPosition: position ? `${position.x}% ${position.y}%` : "50% 36%" }}
         />
       ) : (
         <div className="absolute inset-0 bg-[radial-gradient(120%_90%_at_20%_10%,#f7c8a8,transparent_60%),radial-gradient(90%_80%_at_85%_30%,#b8c4ff,transparent_60%),#e9e6df]" />

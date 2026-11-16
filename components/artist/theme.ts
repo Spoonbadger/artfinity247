@@ -26,7 +26,12 @@ export const LAYOUTS: { id: Layout; name: string; note: string }[] = [
   { id: "salon", name: "Salon wall", note: "Mixed sizes" },
 ];
 
-export type Banner = { kind: "auto" } | { kind: "art"; artworkId: string } | { kind: "color"; paint: PaintId };
+/** "upload": the artist's own banner image; x/y is the focus point (0–100 %) that phone and desktop crops keep in view. */
+export type Banner =
+  | { kind: "auto" }
+  | { kind: "art"; artworkId: string }
+  | { kind: "color"; paint: PaintId }
+  | { kind: "upload"; url: string; x: number; y: number };
 
 export type PageTheme = {
   accent: PaintId;
@@ -41,6 +46,10 @@ export const MAX_PINNED = 3;
 
 const isPaint = (v: unknown): v is PaintId => typeof v === "string" && PAINTS.some((p) => p.id === v);
 const ID = /^[a-z0-9]{8,40}$/i;
+/** An image we host: a local upload (dev) or a Cloudinary delivery URL. */
+export const isBannerUrl = (v: unknown): v is string =>
+  typeof v === "string" && v.length <= 600 && !v.includes("..") && (/^\/uploads\/[\w./-]+$/.test(v) || /^https:\/\/res\.cloudinary\.com\/[\w-]+\/image\/upload\/[^\s"'<>]+$/.test(v));
+const pct = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.round(Math.min(100, Math.max(0, v))) : 50);
 
 export function paint(id: PaintId | undefined | null): Paint {
   return PAINTS.find((p) => p.id === id) ?? PAINTS[0];
@@ -62,6 +71,7 @@ export function parseTheme(raw: unknown, artworkIds?: Set<string> | string[]): P
   const b = o.banner && typeof o.banner === "object" ? (o.banner as Record<string, unknown>) : null;
   if (b?.kind === "art" && ok(b.artworkId)) banner = { kind: "art", artworkId: b.artworkId };
   else if (b?.kind === "color" && isPaint(b.paint)) banner = { kind: "color", paint: b.paint };
+  else if (b?.kind === "upload" && isBannerUrl(b.url)) banner = { kind: "upload", url: b.url, x: pct(b.x), y: pct(b.y) };
 
   const pinned = Array.isArray(o.pinned) ? Array.from(new Set(o.pinned.filter(ok))).slice(0, MAX_PINNED) : [];
   const showStats = typeof o.showStats === "boolean" ? o.showStats : true;
@@ -81,6 +91,9 @@ export function themeError(raw: unknown, artworkIds: Set<string>): string | null
     if (typeof b.artworkId !== "string" || !artworkIds.has(b.artworkId)) return "Banner must be one of your approved pieces.";
   } else if (b.kind === "color") {
     if (!isPaint(b.paint)) return "Pick a banner color from the palette.";
+  } else if (b.kind === "upload") {
+    if (!isBannerUrl(b.url)) return "Upload the banner image again.";
+    if (typeof b.x !== "number" || typeof b.y !== "number") return "Pick what stays in view.";
   } else if (b.kind !== "auto") return "Pick a banner.";
   if (!Array.isArray(o.pinned)) return "Pinned must be a list.";
   if (o.pinned.length > MAX_PINNED) return `Pin up to ${MAX_PINNED} pieces.`;
