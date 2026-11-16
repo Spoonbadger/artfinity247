@@ -3,7 +3,7 @@ import { previewImage, sharePreview } from "@/lib/og";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { movedHandle } from "@/lib/handleRedirects";
-import { artistPath } from "@/lib/urls";
+import { artistPath, oembedAlternate } from "@/lib/urls";
 import SiteHeader from "@/components/site/SiteHeader";
 import { getUserFromCookie } from "@/lib/auth";
 import { bannerColor, getArtistPage, resolveBanner, venuesFor } from "@/components/artist/data";
@@ -69,7 +69,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     metadataBase: new URL(SITE),
     title: a.name,
     description,
-    alternates: { canonical: `/@${a.slug}` },
+    alternates: { canonical: `/@${a.slug}`, types: oembedAlternate(`/@${a.slug}`) },
     ...sharePreview({ type: "profile", title: `${a.name} on Artfinity`, description, url: `/@${a.slug}`, image }),
   };
 }

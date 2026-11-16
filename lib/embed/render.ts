@@ -217,22 +217,3 @@ export function renderUnavailable(homeUrl: string, message: string, theme: Embed
   const body = `<main class="w"><p class="e">${esc(message)}</p><footer class="f"><span></span>${extLink(homeUrl, `${MARK}Artfinity`)}</footer></main>`;
   return embedDocument({ title: message, css: themeCss(theme, accent) + CSS, body, theme });
 }
-
-/** A starting height for an iframe before it reports its own (oEmbed and embed.js use it). Rough, never exact. */
-export function estimateHeight(o: EmbedOptions, width: number, count: number): number {
-  const inner = Math.max(200, width - 30);
-  const head = o.header ? 60 : 0;
-  const foot = 30;
-  const shown = Math.max(1, Math.min(count, o.layout === "single" ? 1 : o.count));
-  if (o.layout === "single") return Math.round(30 + head + Math.min(520, inner * 1.1) + 28 + 110 + foot);
-  const cardText = o.prices ? 92 : 74;
-  if (o.layout === "carousel") {
-    const cw = o.columns ? Math.max(130, (inner - (o.columns - 1) * 12) / o.columns) : Math.min(inner * 0.72, 220);
-    return Math.round(30 + head + cw * 1.25 + cardText + 6 + foot + 24);
-  }
-  let cols = o.columns || Math.max(1, Math.floor((inner + 12) / (140 + 12)));
-  while (cols > 1 && (inner - (cols - 1) * 12) / cols < 140) cols--;
-  const cw = (inner - (cols - 1) * 12) / cols;
-  const rows = Math.ceil(shown / cols);
-  return Math.round(30 + head + rows * (cw * 1.25 + cardText) + (rows - 1) * 12 + foot + 24);
-}
