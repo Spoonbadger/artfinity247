@@ -74,3 +74,6 @@ TODO.md
 *.tmp.mjs
 *.tmp.js
 *.tmp.cjs
+
+# Claude Code local settings (launch configs, worktrees)
+.claude/
