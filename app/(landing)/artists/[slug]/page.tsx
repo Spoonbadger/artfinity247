@@ -136,6 +136,10 @@ export default async function ArtistPage({ params, searchParams }: Props) {
     </div>
   );
 
+  // Longer names step down in size so they stay on one or two lines (phone px, larger screens px)
+  const nameLen = artist.name.length;
+  const nameSize: [number, number] = nameLen <= 14 ? [44, 64] : nameLen <= 20 ? [40, 56] : nameLen <= 28 ? [34, 48] : [30, 40];
+
   return (
     <>
       <SiteHeader inPage />
@@ -146,7 +150,7 @@ export default async function ArtistPage({ params, searchParams }: Props) {
 
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6">
         {/* Head: avatar overlapping the banner, name, actions */}
-        <header className="relative -mt-12 flex flex-wrap items-end gap-x-6 gap-y-4 sm:-mt-16">
+        <header className="relative -mt-12 flex flex-wrap items-end gap-x-6 gap-y-4 sm:-mt-16 sm:items-start">
           {/* Avatar with the sales medal pinned to its bottom-right */}
           <div className="relative shrink-0">
             <ArtistAvatar src={artist.avatar} name={artist.name} className="h-24 w-24 sm:h-36 sm:w-36" />
@@ -156,18 +160,24 @@ export default async function ArtistPage({ params, searchParams }: Props) {
               </span>
             )}
           </div>
-          <div className="grid min-w-0 flex-1 basis-[260px] gap-1.5 self-end sm:min-h-[96px] sm:content-center">
-            <h1 className="display text-[44px] sm:text-[64px]">
-              <span className="min-w-0 [overflow-wrap:anywhere]">{artist.name}</span>
+          {/* Desktop: name left, actions right, the actions centered on the name's first line, so a long name,
+              more links or no reviews never move them. The name starts at a fixed height beside the avatar and
+              longer names grow downward. Phones and tablets stack: name, stars, actions. */}
+          <div
+            className="grid min-w-0 flex-1 basis-[260px] content-start gap-y-3 sm:pt-[calc(132px-var(--name-sm)*0.92)] lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-x-8 lg:gap-y-2"
+            style={{ ["--name" as string]: `${nameSize[0]}px`, ["--name-sm" as string]: `${nameSize[1]}px` }}
+          >
+            <h1 className="display min-w-0 text-[length:var(--name)] [text-wrap:balance] sm:text-[length:var(--name-sm)]">
+              <span className="[overflow-wrap:break-word]">{artist.name}</span>
               {trust.verified && <VerifiedBadge size={30} verifiedAt={trust.verifiedAt} className="relative -top-1 ml-2.5 align-middle" />}
             </h1>
-            <ReviewStars average={rating.average} count={rating.count} href="#reviews" className="w-fit" />
-          </div>
-          {/* Follow first on phones; socials and Links sit after it */}
-          <div className="flex flex-wrap items-center gap-3 pb-2 sm:ml-auto">
-            <ArtistActions slug={artist.slug} firstName={artist.firstName} className="max-sm:order-first" />
-            <ArtistSocials links={socials} />
-            <Link href={`/@${artist.slug}/links`} className="btn btn-ghost btn-sm h-11 px-5">Links</Link>
+            {/* Follow first on phones; up to three socials (not at 1024–1279, to leave the name room) and Links, which lists them all */}
+            <div className="flex flex-wrap items-center gap-3 lg:col-start-2 lg:row-start-1 lg:mt-[calc((var(--name-sm)*0.92-2.75rem)/2)] lg:flex-nowrap lg:self-start">
+              <ArtistActions slug={artist.slug} firstName={artist.firstName} className="max-sm:order-first" />
+              <ArtistSocials links={socials} max={3} className="lg:flex-nowrap lg:max-xl:hidden" />
+              <Link href={`/@${artist.slug}/links`} className="btn btn-ghost btn-sm h-11 px-5">Links</Link>
+            </div>
+            <ReviewStars average={rating.average} count={rating.count} href="#reviews" className="w-fit max-lg:row-start-2 max-lg:-mt-1" />
           </div>
         </header>
 
