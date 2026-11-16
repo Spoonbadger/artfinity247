@@ -59,7 +59,7 @@ export async function ArtGrid({ art, className }: { art: CardArt[]; className?: 
     editionsFor(art.map((a) => ({ id: a.id, editionSize: a.editionSize ?? null }))),
   ]);
   return (
-    <div className={cn("grid grid-cols-2 gap-x-3 gap-y-7 sm:gap-x-5 md:grid-cols-3 lg:grid-cols-4 lg:gap-x-7 lg:gap-y-10", className)}>
+    <div className={cn("art-grid grid grid-cols-2 gap-x-3 gap-y-7 sm:gap-x-5 md:grid-cols-3 lg:grid-cols-4 lg:gap-x-7 lg:gap-y-10", className)}>
       {art.map((a, i) => <ArtCard key={a.id} art={a} priority={i < 4} trust={trust.get(a.artist.slug)} edition={editions.get(a.id)} />)}
     </div>
   );

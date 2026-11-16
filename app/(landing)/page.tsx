@@ -116,7 +116,7 @@ export default async function Home({ searchParams }: { searchParams?: Record<str
             <h2 className="t-feature">Hanging codes now</h2>
             <Link href="/artists" className="btn btn-ghost">See all artists</Link>
           </div>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 lg:grid-cols-4 lg:gap-x-7">
+          <div className="art-grid grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 lg:grid-cols-4 lg:gap-x-7">
             {artists.map((a, i) => {
               const art = a.art[0];
               return (
@@ -128,7 +128,7 @@ export default async function Home({ searchParams }: { searchParams?: Record<str
                   <div className="flex min-w-0 items-center gap-2.5">
                     {a.avatar ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={a.avatar} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" loading="lazy" />
+                      <img src={a.avatar} alt="" data-keep-color className="h-9 w-9 shrink-0 rounded-full object-cover" loading="lazy" />
                     ) : (
                       <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-ink font-display text-[15px] font-bold text-white">{a.name[0]}</span>
                     )}

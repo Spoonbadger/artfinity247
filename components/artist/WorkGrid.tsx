@@ -13,7 +13,7 @@ export default function WorkGrid({ works, isOwner }: { works: ArtistWork[]; isOw
   const topSold = Math.max(...works.map((w) => w.sold));
 
   return (
-    <ul className="grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-x-5 lg:grid-cols-3 lg:gap-x-6 lg:gap-y-9">
+    <ul className="art-grid grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-x-5 lg:grid-cols-3 lg:gap-x-6 lg:gap-y-9">
       {works.map((w, i) => {
         const href = w.href;
         const best = topSold >= 3 && w.sold === topSold;
@@ -77,7 +77,7 @@ const hrefFor = (w: ArtistWork) => w.href;
 export function WorkSingle({ works, isOwner }: { works: ArtistWork[]; isOwner?: boolean }) {
   if (works.length === 0) return <EmptyWall isOwner={isOwner} />;
   return (
-    <ul className="mx-auto grid max-w-[760px] gap-10 sm:gap-14">
+    <ul className="art-grid mx-auto grid max-w-[760px] gap-10 sm:gap-14">
       {works.map((w, i) => (
         <li key={w.id} className="min-w-0">
           <Link href={hrefFor(w)} className="group grid gap-3 text-ink no-underline">
@@ -125,7 +125,7 @@ export function WorkSalon({ works, isOwner }: { works: ArtistWork[]; isOwner?: b
   const spans = salonSpans(works.length);
   return (
     <div className="rounded-lg bg-[#ebe7de] p-3 shadow-[inset_0_2px_12px_rgba(21,22,27,.06)] sm:p-6">
-      <ul className="grid grid-flow-dense auto-rows-[118px] grid-cols-2 gap-3 sm:auto-rows-[150px] sm:grid-cols-4 sm:gap-5">
+      <ul className="art-grid grid grid-flow-dense auto-rows-[118px] grid-cols-2 gap-3 sm:auto-rows-[150px] sm:grid-cols-4 sm:gap-5">
         {works.map((w, i) => (
           <li key={w.id} className={cn("min-w-0", spans[i])}>
             <Link href={hrefFor(w)} className="group relative block h-full w-full text-ink no-underline" aria-label={`${w.title}, from ${money(w.fromCents)}`}>
@@ -157,7 +157,7 @@ export function PinnedRow({ works }: { works: ArtistWork[] }) {
         <span className="paint-dab" style={{ ["--dab" as string]: "var(--accent, var(--af-sticker))" }} aria-hidden="true" />
         Pinned
       </h2>
-      <ul className={cn("grid gap-3 sm:gap-5", n === 1 ? "grid-cols-1" : n === 2 ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-3")}>
+      <ul className={cn("art-grid grid gap-3 sm:gap-5", n === 1 ? "grid-cols-1" : n === 2 ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-3")}>
         {works.map((w, i) => (
           <li key={w.id} className={cn("min-w-0", n === 3 && i === 0 && "col-span-2 sm:col-span-1")}>
             <Link href={hrefFor(w)} className="group grid gap-2 text-ink no-underline">

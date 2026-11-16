@@ -21,7 +21,7 @@ export default function SalonStrip({ art, seconds = 70, reverse = false, label =
   if (!art.length) return null;
   return (
     <Marquee seconds={seconds} reverse={reverse} label={label} className="relative">
-      <ul className="flex items-start gap-6 pr-6 sm:gap-9 sm:pr-9">
+      <ul className="art-grid flex items-start gap-6 pr-6 sm:gap-9 sm:pr-9">
         {art.map((a, i) => (
           <li key={a.slug} className={cn("shrink-0", HANG[i % HANG.length])}>
             <Link href={artPath(a.handle, a.slug)} className="group grid gap-2 text-ink no-underline">
