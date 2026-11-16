@@ -274,8 +274,9 @@ export default function ScanView({
             {discountEnded && <p className="t-small">This card&apos;s discount has ended.</p>}
           </div>
 
+          {/* Phones: size boxes and frame pills (desktop gets the price list below) */}
           {/* Size */}
-          <fieldset className="grid gap-2">
+          <fieldset className="grid gap-2 md:hidden">
             <legend className="mb-2 text-[15px] font-bold">Size</legend>
             <div className={cn("grid gap-2", sizes.length === 4 ? "grid-cols-4" : sizes.length === 3 ? "grid-cols-3" : "grid-cols-2", closest && "pt-1.5")}>
               {sizes.map((s) => {
@@ -311,7 +312,7 @@ export default function ScanView({
           </fieldset>
 
           {/* Frame: one row of choices */}
-          <fieldset className="grid gap-2">
+          <fieldset className="grid gap-2 md:hidden">
             <legend className="mb-2 text-[15px] font-bold">
               Frame <span className="num font-normal text-ink-2">· +{usd(framePrice(size))}, ready to hang</span>
             </legend>
@@ -329,6 +330,70 @@ export default function ScanView({
                   >
                     <input type="radio" name="frame" value={f.key ?? "none"} checked={on} onChange={() => setFrame(f.key as FrameColor | null)} className="sr-only" />
                     {f.hex && <span className="h-6 w-6 rounded-full border border-ink/25" style={{ background: f.hex }} aria-hidden />}
+                    {f.label}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          {/* Desktop: a price list, one row per size (Apple's model picker), and four equal frame tiles */}
+          <fieldset className="hidden gap-2 md:grid">
+            <legend className="mb-2 flex w-full items-baseline justify-between gap-3 text-[15px] font-bold">
+              Size
+              <button type="button" onClick={seeInRoom} className="text-[14px] font-semibold text-scan underline decoration-scan/40 underline-offset-2 hover:decoration-scan">
+                See it in a room
+              </button>
+            </legend>
+            <div className="grid gap-2">
+              {sizes.map((s) => {
+                const on = s === size;
+                const [sw, sh] = SIZE_IN[s];
+                return (
+                  <label
+                    key={s}
+                    className={cn(
+                      "flex min-h-[54px] cursor-pointer items-center justify-between gap-3 rounded-xl border-2 bg-white px-[18px] transition has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-scan",
+                      on ? "border-ink shadow-[inset_0_0_0_1px_var(--af-ink)]" : "border-line hover:border-ink-2",
+                    )}
+                  >
+                    <input type="radio" name="size-list" value={s} checked={on} onChange={() => setSize(s)} className="sr-only" />
+                    <span className="flex min-w-0 items-baseline gap-2">
+                      <b className="text-[16px] font-bold">{SIZE_LABEL[s]}</b>
+                      <span className="num text-[14px] text-ink-2">{landscape ? `${sh} × ${sw}` : `${sw} × ${sh}`} in</span>
+                      {s === closest && (
+                        <span className="self-center whitespace-nowrap rounded-full border-[1.5px] border-ink bg-sticker px-1.5 text-[12px] font-bold leading-[16px]">≈ original</span>
+                      )}
+                    </span>
+                    <span className="num shrink-0 text-[15px] font-semibold">{usd(sizePrices[s].now)}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          <fieldset className="hidden gap-2 md:grid">
+            <legend className="mb-2 flex w-full items-baseline justify-between gap-3 text-[15px] font-bold">
+              Frame
+              <span className="num text-[14px] font-normal text-ink-2">+{usd(framePrice(size))}, ready to hang</span>
+            </legend>
+            <div className="grid grid-cols-4 gap-2">
+              {[{ key: null, label: "None", hex: null as string | null }, ...FRAME_COLORS].map((f) => {
+                const on = frame === f.key;
+                return (
+                  <label
+                    key={f.key ?? "none"}
+                    className={cn(
+                      "grid h-[92px] cursor-pointer content-center justify-items-center gap-2 rounded-xl border-2 bg-white px-1 text-center text-[14px] font-semibold leading-tight has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-scan",
+                      on ? "border-ink shadow-[inset_0_0_0_1px_var(--af-ink)]" : "border-line hover:border-ink-2",
+                    )}
+                  >
+                    <input type="radio" name="frame-list" value={f.key ?? "none"} checked={on} onChange={() => setFrame(f.key as FrameColor | null)} className="sr-only" />
+                    <span
+                      className="h-[30px] w-[30px] rounded-md border border-ink/25"
+                      style={f.hex ? { background: f.hex } : { background: "linear-gradient(135deg, transparent 46%, var(--af-edge-strong) 47% 53%, transparent 54%), #fff" }}
+                      aria-hidden
+                    />
                     {f.label}
                   </label>
                 );
