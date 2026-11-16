@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/studio/EmptyState";
 import Medal from "@/components/af/Medal";
 import { cn } from "@/lib/utils";
 import { LAYOUTS, MAX_PINNED, PAINTS, paint, type Layout, type PageTheme, type PaintId } from "./theme";
+import { BannerFocus, UploadTile, useBannerUpload } from "./BannerUpload";
 
 type Work = { id: string; title: string; imageUrl: string; sensitive: string[] };
 
@@ -26,6 +27,17 @@ export default function DesignEditor({ slug, initial, works, hasMedal }: { slug:
   useUnsavedChanges(dirty && !saving);
 
   const set = <K extends keyof PageTheme>(k: K, v: PageTheme[K]) => setTheme((t) => ({ ...t, [k]: v }));
+
+  // The artist's own banner image, kept while they try other banners so they can switch back to it.
+  const [mine, setMine] = useState(initial.banner.kind === "upload" ? initial.banner : null);
+  const { busy, upload } = useBannerUpload();
+  async function takeFile(file: File) {
+    const url = await upload(file);
+    if (!url) return;
+    const b = { kind: "upload" as const, url, x: 50, y: 50 };
+    setMine(b);
+    set("banner", b);
+  }
 
   function togglePin(id: string) {
     setTheme((t) => {
@@ -78,7 +90,7 @@ export default function DesignEditor({ slug, initial, works, hasMedal }: { slug:
         </Section>
 
         {/* Banner */}
-        <Section title="Banner" hint={theme.banner.kind === "auto" ? "Your best seller" : theme.banner.kind === "art" ? "A piece of yours" : paint(theme.banner.paint).name}>
+        <Section title="Banner" hint={theme.banner.kind === "auto" ? "Your best seller" : theme.banner.kind === "art" ? "A piece of yours" : theme.banner.kind === "upload" ? "Your image" : paint(theme.banner.paint).name}>
           <div className="grid gap-3">
             <div role="radiogroup" aria-label="Banner artwork" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]">
               <button
@@ -90,6 +102,7 @@ export default function DesignEditor({ slug, initial, works, hasMedal }: { slug:
               >
                 Best seller
               </button>
+              <UploadTile url={mine?.url ?? null} on={theme.banner.kind === "upload"} busy={busy} onPick={() => mine && set("banner", mine)} onFile={takeFile} />
               {works.map((w) => {
                 const on = theme.banner.kind === "art" && theme.banner.artworkId === w.id;
                 return (
@@ -109,6 +122,15 @@ export default function DesignEditor({ slug, initial, works, hasMedal }: { slug:
                 );
               })}
             </div>
+            {theme.banner.kind === "upload" && (
+              <BannerFocus
+                banner={theme.banner}
+                busy={busy}
+                onChange={(b) => { setMine(b); set("banner", b); }}
+                onReplace={takeFile}
+                onRemove={() => { setMine(null); set("banner", { kind: "auto" }); }}
+              />
+            )}
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-[13px] font-semibold text-ink-2">Or solid paint</span>
               <div role="radiogroup" aria-label="Banner color" className="flex flex-wrap gap-1.5">

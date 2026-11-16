@@ -2,10 +2,14 @@
 import { prisma } from "@/lib/prisma";
 import { getArtistTrust } from "@/lib/artistTrust";
 import { getReviewSummary } from "@/lib/reviews";
-import { artUrl } from "@/lib/urls";
+import { encodeCursor } from "@/lib/apiCursor";
+import { artistUrl, artUrl, collectionUrl } from "@/lib/urls";
 import {
   PUBLIC_ARTWORK, absUrl, artistSelect, artworkSelect, displayName, editionSales, serializeArtist, serializeArtwork, siteBase, sizesFor,
 } from "./publicApi";
+
+const ymd = (d: Date) => d.toISOString().slice(0, 10);
+const addDays = (n: number) => new Date(Date.now() + n * 86_400_000);
 
 export async function getExamples() {
   const base = siteBase();
@@ -19,12 +23,29 @@ export async function getExamples() {
       where: { id: artist.id },
       select: {
         ...artistSelect,
-        collections: { orderBy: { position: "asc" }, take: 1, select: { slug: true, title: true, description: true, _count: { select: { items: true } } } },
+        // The first collection with a public piece (empty ones are hidden from the API).
+        collections: {
+          where: { items: { some: { artwork: PUBLIC_ARTWORK } } },
+          orderBy: { position: "asc" },
+          take: 1,
+          select: {
+            slug: true, title: true, description: true,
+            _count: { select: { items: { where: { artwork: PUBLIC_ARTWORK } } } },
+            items: { where: { artwork: PUBLIC_ARTWORK }, orderBy: [{ position: "asc" }, { id: "asc" }], take: 2, select: { id: true, position: true, artwork: { select: artworkSelect } } },
+          },
+        },
       },
     }),
-    prisma.artwork.findMany({ where: { ...PUBLIC_ARTWORK, artistId: artist.id }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], select: { ...artworkSelect, description: true } }),
+    prisma.artwork.findMany({ where: { ...PUBLIC_ARTWORK, artistId: artist.id }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], select: { ...artworkSelect, description: true, printableSizes: true } }),
     getArtistTrust(artist.id),
   ]);
+  const today = ymd(new Date());
+  const events = await prisma.studioEvent.findMany({
+    where: { artistId: artist.id, end: { gte: today } },
+    orderBy: [{ start: "asc" }, { createdAt: "asc" }],
+    take: 2,
+    select: { name: true, venue: true, start: true, end: true },
+  });
   if (!full || !works.length) return null;
 
   const sold = await editionSales(prisma, works);
@@ -49,6 +70,30 @@ export async function getExamples() {
         }]
       : [],
   };
+  const first = col?.items[0];
+  const colSold = first ? await editionSales(prisma, [first.artwork]) : new Map<string, number>();
+  const collectionRes = col && first
+    ? {
+        collection: {
+          slug: col.slug, title: col.title, description: col.description || "", url: collectionUrl(full.slug, col.slug, base), artworkCount: col._count.items,
+          cover: { url: absUrl(base, first.artwork.imageUrl), alt: first.artwork.title, sensitive: first.artwork.sensitive },
+          artist: { handle: full.slug, name: displayName(full), url: artistUrl(full.slug, base) },
+        },
+        artworks: [serializeArtwork(base, first.artwork, colSold.get(first.artwork.id) ?? 0)],
+        nextCursor: col.items[1] ? encodeCursor({ k: first.position, id: first.id }) : null,
+      }
+    : null;
+  // Real shows when the artist has some; otherwise an illustration of the shape.
+  const eventsRes = {
+    events: events.length
+      ? events.map((e) => ({ name: e.name, venue: e.venue || null, start: e.start, end: e.end, onNow: e.start <= today }))
+      : [{ name: "Open studio", venue: "Studio 4B", start: ymd(addDays(9)), end: ymd(addDays(10)), onNow: false }],
+  };
+  const searchWord = (pick.title.split(/\s+/).find((w) => w.replace(/\W/g, "").length >= 3) ?? pick.title).replace(/[^\p{L}\p{N}-]/gu, "").toLowerCase() || full.slug;
+  const searchRes = {
+    artworks: [serializeArtwork(base, pick, sold.get(pick.id) ?? 0)],
+    nextCursor: encodeCursor({ k: pick.createdAt.getTime(), id: pick.id }),
+  };
 
   return {
     base,
@@ -58,7 +103,10 @@ export async function getExamples() {
     artworkTitle: pick.title,
     sensitiveSlug: sensitive?.slug ?? null,
     collectionSlug: col?.slug ?? null,
-    artistRes, listRes, artworkRes, collectionsRes,
+    collectionTitle: col?.title ?? null,
+    collectionCount: col?._count.items ?? 0,
+    searchWord,
+    artistRes, listRes, artworkRes, collectionsRes, collectionRes, eventsRes, searchRes,
   };
 }
 

@@ -6,6 +6,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import { basePrices, framePrices, getFinalPrice } from "@/lib/artwork_price";
 import { MEDALS } from "@/lib/medals";
 import type { Trust } from "@/lib/artistTrust";
+import { sizeAllowed } from "@/lib/printSizes";
 import { artistUrl, artUrl, linksUrl } from "@/lib/urls";
 
 export const API_VERSION = "v1";
@@ -112,13 +113,15 @@ export function fromPrice(a: Markups) {
   return Math.min(...SIZES.map((s) => getFinalPrice(s, markup(a, s))));
 }
 
-export function sizesFor(a: Markups) {
+/** Every size with its price. `available` is false for sizes the file isn't sharp enough to print (checkout refuses them). */
+export function sizesFor(a: Markups & { printableSizes?: string[] | null }) {
   return SIZES.map((s) => ({
     size: s,
     label: SIZE_LABEL[s],
     inches: `${SIZE_IN[s][0]} × ${SIZE_IN[s][1]}`,
     price: money(getFinalPrice(s, markup(a, s))),
     framedPrice: framePrices[s] !== undefined ? money(getFinalPrice(s, markup(a, s), true)) : null,
+    available: sizeAllowed(a.printableSizes, s),
   }));
 }
 
@@ -176,6 +179,9 @@ export function serializeMedal(trust: Trust) {
   return m ? { tier: m.tier, label: m.label, color: m.color } : null;
 }
 
+/** An artist whose page is online: not closed, not suspended. */
+export const OPEN_ARTIST = { closedAt: null, suspendedAt: null } satisfies Prisma.ArtistWhereInput;
+
 export function parseLimit(raw: string | null) {
   if (raw == null || raw === "") return DEFAULT_LIMIT;
   const n = Math.floor(Number(raw));
@@ -207,6 +213,6 @@ export function serializeArtist(base: string, a: ArtistRow, trust: Trust) {
     url: artistUrl(a.slug, base),
     linksUrl: linksUrl(a.slug, base),
     links: a.links.filter((l) => /^(https?:|mailto:)/i.test(l.url)).map((l) => ({ kind: l.kind, label: l.label || null, url: l.url })),
-    api: { artworks: `${api}/artworks`, collections: `${api}/collections` },
+    api: { artworks: `${api}/artworks`, collections: `${api}/collections`, events: `${api}/events` },
   };
 }

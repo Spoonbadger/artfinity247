@@ -136,6 +136,12 @@
   .t-num { @apply font-display font-extrabold; font-size: clamp(40px, 6vw, 56px); font-variation-settings: "wdth" 78; letter-spacing: -0.02em; line-height: 0.95; font-variant-numeric: tabular-nums; }
 
   /* Text helpers */
+  /* Artwork grids: hovering one piece turns the others grey, so the one under the pointer stands out.
+     Mouse and trackpad only; touch screens keep every piece in colour. Avatars opt out with data-keep-color. */
+  @media (hover: hover) and (pointer: fine) {
+    .art-grid > * img:not([data-keep-color]) { transition: filter 0.35s ease; }
+    .art-grid:has(> :hover) > :not(:hover) img:not([data-keep-color]) { filter: grayscale(1); }
+  }
   .display { @apply font-display font-extrabold; font-variation-settings: "wdth" 78; letter-spacing: -0.02em; line-height: 0.92; }
   .eyebrow { @apply text-xs font-bold uppercase tracking-[0.08em] text-ink-2; }
   .sticker-badge { @apply inline-block -rotate-2 rounded-full border-[1.5px] border-ink bg-sticker px-3 py-1 text-[13px] font-bold text-ink; }

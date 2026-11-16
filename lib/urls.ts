@@ -18,6 +18,10 @@ export const artUrl = (handle: string, slug: string, base?: string) => abs(artPa
 export const linksUrl = (handle: string, base?: string) => abs(linksPath(handle), base);
 export const collectionUrl = (handle: string, c: string, base?: string) => abs(collectionPath(handle, c), base);
 
+/** oEmbed discovery for a public page (path or absolute URL): <link rel="alternate" type="application/json+oembed">. */
+export const oembedUrl = (page: string, base = SITE_URL) => `${base.replace(/\/$/, "")}/api/embed?url=${encodeURIComponent(new URL(page, base).toString())}`;
+export const oembedAlternate = (page: string) => ({ "application/json+oembed": oembedUrl(page) });
+
 /** Keeps every query param (scan params, utm…) when redirecting. */
 export function withQuery(path: string, searchParams: Record<string, string | string[] | undefined>) {
   const q = new URLSearchParams();

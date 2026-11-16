@@ -3,16 +3,17 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useRef, useState } from "react";
-import { ArrowUpRight, LogOut, Menu, X } from "lucide-react";
-import Logo from "@/components/af/Logo";
+import { ArrowLeft, ArrowUpRight, LogOut, Menu, X } from "lucide-react";
+import Logo, { LogoMark } from "@/components/af/Logo";
+import { Swatch } from "@/components/af/Brush";
 import { useUser } from "@/components/contexts";
 import { cn } from "@/lib/utils";
-import ProChip from "@/components/pro/ProChip";
 import ProMark from "@/components/pro/ProMark";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
 import { useFocusTrap } from "@/lib/a11y/useFocusTrap";
 
 import StudioNav, { STUDIO_SECTIONS, activeItem } from "./StudioNav";
+import StudioSearch from "./StudioSearch";
 
 export { STUDIO_NAV, STUDIO_SECTIONS, STUDIO_HOME } from "./StudioNav";
 
@@ -101,32 +102,51 @@ export default function StudioShell({ artist, children, badges }: { artist: Shel
     </span>
   );
 
-  return (
-    <div className="min-h-screen bg-white lg:grid lg:grid-cols-[244px_minmax(0,1fr)] lg:bg-[linear-gradient(to_right,var(--af-wall)_244px,#fff_244px)]">
-      {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-screen flex-col gap-5 border-r border-line bg-wall py-6 lg:flex" style={canvasTexture}>
-        <div className="-my-2.5 px-6">{brand("text-[22px]")}</div>
-        <StudioNav path={path} badges={badges} className="min-h-0 flex-1 overflow-y-auto px-4 [scrollbar-width:thin]" />
-        <div className="grid gap-3 px-4">
-          <Link href={`/@${artist.slug}`} className="btn btn-ghost btn-sm justify-between">
-            View my page <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+  // Header like the admin's: back to the site, the Studio swatch, search, then room on the right for more.
+  // 69px tall (44px swatch + 24px padding + border); pinned on desktop, where the sidebar sits under it.
+  const header = (
+    <header className="z-40 border-b border-line bg-white/95 backdrop-blur lg:sticky lg:top-0">
+      <div className="flex items-center gap-2.5 px-4 py-3 sm:gap-4 sm:px-6">
+        <nav aria-label="Studio shortcuts" className="flex shrink-0 items-center gap-2.5">
+          <Link
+            href="/"
+            aria-label="Back to site"
+            title="Back to site"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-[1.5px] border-edge-strong bg-white text-ink no-underline transition hover:border-ink"
+          >
+            <ArrowLeft className="h-[18px] w-[18px]" aria-hidden="true" />
           </Link>
-          {userRow}
-        </div>
-      </aside>
-
-      {/* Phones: the logo row scrolls away; only the menu bar stays pinned. */}
-      <header className="border-b border-line bg-wall lg:hidden" style={canvasTexture}>
-        <div className="flex items-center justify-between gap-3 px-4 py-0.5">
-          <span className="flex min-w-0 items-center gap-2">
-            {brand("text-[20px]")}
-            {artist.pro && <Link href="/studio/infinity" aria-label="the Infinity plan" className="hidden min-[380px]:inline-flex"><ProChip /></Link>}
-          </span>
-          <Link href={`/@${artist.slug}`} className="btn btn-ghost btn-sm min-h-[44px] shrink-0 px-4" aria-label="View my page">
+          {/* "artfinity Studio": the wordmark (just the paint mark on phones) and Studio on its swatch, one link home */}
+          <Link href="/studio" aria-label="Artfinity Studio home" title="Studio home" className="group flex h-11 shrink-0 items-center gap-1.5 no-underline">
+            <LogoMark className="text-[26px] sm:hidden" />
+            <Logo href={null} className="hidden text-[21px] sm:inline-flex" />
+            <span className="relative inline-grid h-11 place-items-center px-4 sm:px-5">
+              <Swatch color="var(--af-scan)" className="absolute inset-0 h-full w-full transition group-hover:scale-[1.04]" />
+              <span className="display relative text-[22px] leading-none text-white sm:text-[24px]">Studio</span>
+            </span>
+          </Link>
+        </nav>
+        <StudioSearch className="shrink-0 sm:ml-2" />
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <Link href={`/@${artist.slug}`} className="btn btn-ghost btn-sm h-10 min-h-[40px] px-4">
             My page <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
           </Link>
         </div>
-      </header>
+      </div>
+    </header>
+  );
+
+  return (
+    <div className="min-h-screen bg-white">
+      {header}
+      <div className="lg:grid lg:grid-cols-[244px_minmax(0,1fr)] lg:bg-[linear-gradient(to_right,var(--af-wall)_244px,#fff_244px)]">
+      {/* Desktop sidebar, under the pinned header */}
+      <aside className="sticky top-[69px] hidden h-[calc(100svh-69px)] flex-col gap-5 border-r border-line bg-wall py-6 lg:flex" style={canvasTexture}>
+        <StudioNav path={path} badges={badges} className="min-h-0 flex-1 overflow-y-auto px-4 [scrollbar-width:thin]" />
+        <div className="grid gap-3 px-4">{userRow}</div>
+      </aside>
+
+      {/* Phones: the header scrolls away; only the menu bar stays pinned. */}
       <div className="sticky top-0 z-30 border-b border-line bg-wall px-2 py-1.5 lg:hidden" style={canvasTexture}>
         <button
           ref={menuButton}
@@ -155,12 +175,7 @@ export default function StudioShell({ artist, children, badges }: { artist: Shel
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-6 pt-3">
             <StudioNav path={path} badges={badges} size="lg" onNavigate={() => setMenuOpen(false)} />
-            <div className="mt-4 grid gap-3 px-1">
-              <Link href={`/@${artist.slug}`} className="btn btn-ghost min-h-[44px] justify-between">
-                View my page <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
-              {userRow}
-            </div>
+            <div className="mt-4 grid gap-3 px-1">{userRow}</div>
           </div>
         </div>
       )}
@@ -169,6 +184,7 @@ export default function StudioShell({ artist, children, badges }: { artist: Shel
         <InstallPrompt />
         {children}
       </main>
+      </div>
     </div>
   );
 }
