@@ -4,11 +4,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowUpRight, LogOut, Menu, X } from "lucide-react";
-import Logo from "@/components/af/Logo";
+import Logo, { LogoMark } from "@/components/af/Logo";
 import { Swatch } from "@/components/af/Brush";
 import { useUser } from "@/components/contexts";
 import { cn } from "@/lib/utils";
-import ProChip from "@/components/pro/ProChip";
 import ProMark from "@/components/pro/ProMark";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
 import { useFocusTrap } from "@/lib/a11y/useFocusTrap";
@@ -108,7 +107,7 @@ export default function StudioShell({ artist, children, badges }: { artist: Shel
   const header = (
     <header className="z-40 border-b border-line bg-white/95 backdrop-blur lg:sticky lg:top-0">
       <div className="flex items-center gap-2.5 px-4 py-3 sm:gap-4 sm:px-6">
-        <nav aria-label="Studio shortcuts" className="flex min-w-0 items-center gap-2.5">
+        <nav aria-label="Studio shortcuts" className="flex shrink-0 items-center gap-2.5">
           <Link
             href="/"
             aria-label="Back to site"
@@ -117,11 +116,15 @@ export default function StudioShell({ artist, children, badges }: { artist: Shel
           >
             <ArrowLeft className="h-[18px] w-[18px]" aria-hidden="true" />
           </Link>
-          <Link href="/studio" aria-label="Studio home" title="Studio home" className="group relative inline-grid h-11 shrink-0 place-items-center px-5 no-underline">
-            <Swatch color="var(--af-scan)" className="absolute inset-0 h-full w-full transition group-hover:scale-[1.04]" />
-            <span className="display relative text-[24px] leading-none text-white">Studio</span>
+          {/* "artfinity Studio": the wordmark (just the paint mark on phones) and Studio on its swatch, one link home */}
+          <Link href="/studio" aria-label="Artfinity Studio home" title="Studio home" className="group flex h-11 shrink-0 items-center gap-1.5 no-underline">
+            <LogoMark className="text-[26px] sm:hidden" />
+            <Logo href={null} className="hidden text-[21px] sm:inline-flex" />
+            <span className="relative inline-grid h-11 place-items-center px-4 sm:px-5">
+              <Swatch color="var(--af-scan)" className="absolute inset-0 h-full w-full transition group-hover:scale-[1.04]" />
+              <span className="display relative text-[22px] leading-none text-white sm:text-[24px]">Studio</span>
+            </span>
           </Link>
-          {artist.pro && <Link href="/studio/infinity" aria-label="the Infinity plan" className="hidden min-[440px]:inline-flex"><ProChip /></Link>}
         </nav>
         <StudioSearch className="shrink-0 sm:ml-2" />
         <div className="ml-auto flex shrink-0 items-center gap-2">
