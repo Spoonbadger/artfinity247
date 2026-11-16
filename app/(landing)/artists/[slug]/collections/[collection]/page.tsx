@@ -12,7 +12,7 @@ import { editionsFor } from "@/lib/editions";
 import type { Edition } from "@/lib/editionFormat";
 import { money } from "@/lib/earnings";
 import { cn } from "@/lib/utils";
-import { artistPath, artPath, collectionPath, SITE_URL } from "@/lib/urls";
+import { artistPath, artPath, collectionPath, oembedAlternate, SITE_URL } from "@/lib/urls";
 import ViewBeacon from "@/components/analytics/ViewBeacon";
 import { UrlSort } from "@/components/browse/UrlSort";
 import CollectionBackdrop from "@/components/collections/CollectionBackdrop";
@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     metadataBase: new URL(SITE_URL),
     title: `${collection.title} by ${artist.name}`,
     description,
-    alternates: { canonical: url },
+    alternates: { canonical: url, types: oembedAlternate(url) },
     ...sharePreview({ title: `${collection.title} · ${artist.name}`, description, url, image }),
   };
 }

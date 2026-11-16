@@ -15,15 +15,23 @@ export const metadata: Metadata = { title: "Embed on your site" };
 
 export default async function StudioDevelopersPage() {
   const artist = await requireArtist("/studio/developers");
-  const [rows, inReview] = await Promise.all([
+  const live = { status: "APPROVED" as const, slug: { not: null } };
+  const [rows, inReview, cols] = await Promise.all([
     prisma.artwork.findMany({
-      where: { artistId: artist.id, status: "APPROVED", slug: { not: null } },
+      where: { artistId: artist.id, ...live },
       orderBy: { createdAt: "desc" },
       select: { slug: true, title: true, imageUrl: true, sensitive: true },
     }),
     prisma.artwork.count({ where: { artistId: artist.id, status: "PENDING" } }),
+    prisma.collection.findMany({
+      where: { artistId: artist.id },
+      orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+      select: { slug: true, title: true, _count: { select: { items: { where: { artwork: live } } } } },
+    }),
   ]);
   const arts = rows.map((r) => ({ ...r, slug: r.slug as string }));
+  // Only collections with a live piece can be embedded (the rest are hidden on the public page too).
+  const collections = cols.filter((c) => c._count.items > 0).map((c) => ({ slug: c.slug, title: c.title, count: c._count.items }));
   // Lead with a safe-for-work piece for the single-piece snippets.
   const first = arts.find((a) => !a.sensitive.length) ?? arts[0];
   const api = `${SITE}/api/public/v1/artists/${artist.slug}`;
@@ -38,16 +46,14 @@ export default async function StudioDevelopersPage() {
         <section className="af-panel min-w-0 p-4 sm:p-6">
           <EmbedBuilder
             handle={artist.slug}
+            name={artist.artist_name || artist.name}
             artworks={arts}
+            collections={collections}
             initialSlug={first?.slug}
             footer={
-              <div className="grid gap-2">
-                <ol className="t-muted grid list-decimal gap-1 pl-5 marker:font-semibold">
-                  <li>Pick an embed, copy it.</li>
-                  <li>Paste it into an HTML or code block on your site. Squarespace: Code block. Wix: Embed HTML. WordPress: Custom HTML.</li>
-                </ol>
-                <p className="t-small">Buyers check out on Artfinity, so each sale pays your usual share.</p>
-              </div>
+              <p className="t-small">
+                Paste it into an HTML block: Squarespace Code, Wix Embed HTML, WordPress Custom HTML. Buyers check out on Artfinity, so each sale pays your usual share.
+              </p>
             }
           />
         </section>
@@ -79,7 +85,7 @@ export default async function StudioDevelopersPage() {
             <Code
               lang="shell"
               title="Your endpoints"
-              code={[`curl ${api}`, `curl ${api}/artworks`, `curl ${api}/collections`].join("\n")}
+              code={[`curl ${api}`, `curl ${api}/artworks`, `curl ${api}/collections`, `curl ${api}/events`].join("\n")}
             />
           </section>
 

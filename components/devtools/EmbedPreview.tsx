@@ -24,7 +24,20 @@ function loadScript() {
 
 export type EmbedAttrs = Record<`data-${string}`, string | number | undefined>;
 
-export default function EmbedPreview({ attrs, className, label = "your-site.com", bare = false, iframe }: { attrs: EmbedAttrs; className?: string; label?: string; bare?: boolean; iframe?: string }) {
+type Frame = { src: string; height: number; width?: number };
+
+export default function EmbedPreview({
+  attrs, className, label = "your-site.com", bare = false, iframe, dark,
+}: {
+  attrs: EmbedAttrs;
+  className?: string;
+  label?: string;
+  bare?: boolean;
+  /** Show this plain iframe instead of the embed.js div (embed.js still resizes it, as it would on a real page). */
+  iframe?: Frame;
+  /** Dark backdrop, for dark-theme embeds. Defaults to data-theme="dark". */
+  dark?: boolean;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const key = JSON.stringify(attrs);
   useEffect(() => {
@@ -39,7 +52,15 @@ export default function EmbedPreview({ attrs, className, label = "your-site.com"
   }, [key]);
 
   const embed = iframe ? (
-    <iframe key={iframe} src={iframe} width={320} height={460} className="mx-auto block max-w-full border-0" loading="lazy" title="Iframe card preview" />
+    <iframe
+      key={iframe.src}
+      src={iframe.src}
+      width={iframe.width ?? "100%"}
+      height={iframe.height}
+      className="mx-auto block max-w-full border-0"
+      loading="lazy"
+      title="Embed preview"
+    />
   ) : (
     <div ref={ref} {...attrs} />
   );
@@ -55,7 +76,7 @@ export default function EmbedPreview({ attrs, className, label = "your-site.com"
         <span className="truncate rounded-full bg-white px-2.5 py-0.5">{label}</span>
         <span className="ml-auto">Live preview</span>
       </figcaption>
-      <div className={cn("p-2.5 sm:p-5", attrs["data-theme"] === "dark" && "bg-[#26272e]")}>{embed}</div>
+      <div className={cn("p-2.5 sm:p-5", (dark ?? attrs["data-theme"] === "dark") && "bg-[#26272e]")}>{embed}</div>
     </figure>
   );
 }

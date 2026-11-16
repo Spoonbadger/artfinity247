@@ -7,6 +7,8 @@ import EmbedBuilder, { type Kind } from "@/components/devtools/EmbedBuilder";
 import { getExamples } from "@/components/devtools/examples";
 import { PROD_RATE_LIMIT, MAX_LIMIT, DEFAULT_LIMIT, PUBLIC_ARTWORK } from "@/components/devtools/publicApi";
 import { SCRIPT_TAG, SITE, plainBuyLink } from "@/components/devtools/snippets";
+import { MAX_COLUMNS, MAX_COUNT } from "@/lib/embed/options";
+import { SEARCH_DEFAULT_LIMIT, SEARCH_MAX_LIMIT } from "@/lib/artworkSearch";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -19,8 +21,8 @@ const EMBEDS: { kind: Kind; title: string; line: string; dab: string }[] = [
   { kind: "gallery", title: "Artist gallery", line: "Your newest pieces, live prices.", dab: "var(--af-scan)" },
   { kind: "card", title: "One artwork", line: "A single piece with its price and edition.", dab: "var(--af-coral)" },
   { kind: "buy", title: "Buy a print button", line: "Drop it under any photo of your work.", dab: "var(--af-sticker)" },
+  { kind: "collection", title: "Collection", line: "One series, in your order.", dab: "var(--af-ink)" },
   { kind: "links", title: "Link in bio", line: "Points to your Artfinity links page.", dab: "var(--af-earned)" },
-  { kind: "iframe", title: "Iframe card", line: "No script. For builders that block JavaScript.", dab: "var(--af-ink)" },
 ];
 
 const SOON = [
@@ -75,6 +77,8 @@ export default async function DevelopersPage() {
       })
     : [];
   const picks = artworks.map((a) => ({ ...a, slug: a.slug! }));
+  const collections = ex?.collectionSlug ? [{ slug: ex.collectionSlug, title: ex.collectionTitle ?? ex.collectionSlug, count: ex.collectionCount }] : [];
+  const embeds = EMBEDS.filter((e) => e.kind !== "collection" || collections.length);
   const api = `${SITE}/api/public/v1`;
 
   return (
@@ -104,7 +108,7 @@ export default async function DevelopersPage() {
             <Code code={SCRIPT_TAG} lang="html" title="Before </body>" />
             <span className="mt-2 text-[13px] font-semibold text-ink-2">2. Put a div where the art goes</span>
             <Code code={`<div data-artfinity-artist="${ex?.handle ?? "yourhandle"}"></div>`} lang="html" title="Anywhere in the page" />
-            <p className="text-[13px] text-ink-2">Shadow DOM inside, so your CSS can&apos;t break it. About 3 KB gzipped.</p>
+            <p className="text-[13px] text-ink-2">Each embed is an iframe that grows to fit, so your CSS can&apos;t break it. About 3 KB gzipped.</p>
           </div>
         </div>
       </section>
@@ -115,7 +119,7 @@ export default async function DevelopersPage() {
         {ex ? (
           <div className="grid gap-8">
             {/* The gallery is open; the other embeds fold away until someone wants them. */}
-            {EMBEDS.map((e, i) => {
+            {embeds.map((e, i) => {
               const head = (
                 <span className="flex items-baseline gap-3">
                   <span className="paint-dab translate-y-0.5" style={{ ["--dab" as string]: e.dab }} aria-hidden="true" />
@@ -123,7 +127,7 @@ export default async function DevelopersPage() {
                   <span className="hidden text-[15px] text-ink-2 sm:inline">{e.line}</span>
                 </span>
               );
-              const builder = <EmbedBuilder handle={ex.handle} artworks={picks} kinds={[e.kind]} initialSlug={ex.artworkSlug} />;
+              const builder = <EmbedBuilder handle={ex.handle} name={ex.name} artworks={picks} collections={collections} kinds={[e.kind]} initialSlug={ex.artworkSlug} />;
               return i === 0 ? (
                 <div key={e.kind} className="grid min-w-0 gap-5">{head}{builder}</div>
               ) : (
@@ -144,8 +148,12 @@ export default async function DevelopersPage() {
                 <dl className="mt-3 grid gap-2 text-[14px]">
                   {[
                     ["data-layout", "grid, carousel or single"],
-                    ["data-limit", `1 to ${MAX_LIMIT} pieces. Default 6.`],
-                    ["data-theme", "light or dark"],
+                    ["data-count", `1 to ${MAX_COUNT} pieces. Default 6.`],
+                    ["data-columns", `1 to ${MAX_COLUMNS}. Default: as many as fit.`],
+                    ["data-theme", "light, dark or auto"],
+                    ["data-accent", "A palette name or hex. Default: the artist's page color."],
+                    ["data-prices", "no hides prices"],
+                    ["data-header", "no hides the artist header"],
                   ].map(([k, v]) => (
                     <div key={k} className="grid grid-cols-[110px_1fr] gap-3 border-b border-dashed border-line pb-2">
                       <dt className="num font-semibold text-scan">{k}</dt>
@@ -159,7 +167,8 @@ export default async function DevelopersPage() {
                 <h3 className="font-display text-[22px] font-extrabold [font-variation-settings:'wdth'_80]">Email or no iframes?</h3>
                 <p className="text-[14px] text-ink-2">A plain link always works.</p>
                 <Code code={plainBuyLink(ex.handle, ex.artworkSlug, ex.artworkTitle)} lang="html" title="Plain link" />
-                <p className="text-[13.5px] text-ink-2">oEmbed: <span className="num font-semibold text-ink [overflow-wrap:anywhere]">{SITE}/api/embed?url=</span> plus any artwork link.</p>
+                <p className="text-[13.5px] text-ink-2">Scripts blocked? Open Options and pick Iframe only.</p>
+                <p className="text-[13.5px] text-ink-2">oEmbed: <span className="num font-semibold text-ink [overflow-wrap:anywhere]">{SITE}/api/embed?url=</span> plus any artwork, artist or collection link.</p>
                 <p className="text-[13.5px] text-ink-2">Single-page app? Call <span className="num font-semibold text-ink">window.Artfinity.scan()</span> after you add new divs.</p>
               </div>
             </div>
@@ -209,6 +218,40 @@ export default async function DevelopersPage() {
                 line="The artist's series, with covers and counts."
                 req={`curl ${api}/artists/${ex.handle}/collections`}
                 res={ex.collectionsRes}
+              />
+              {ex.collectionRes && (
+                <Endpoint
+                  path="/artists/:handle/collections/:slug"
+                  line="One series and its pieces, in the artist's order."
+                  params={[
+                    ["limit", `1 to ${MAX_LIMIT}. Default ${DEFAULT_LIMIT}.`],
+                    ["cursor", "nextCursor from the last page."],
+                  ]}
+                  req={`curl "${api}/artists/${ex.handle}/collections/${ex.collectionSlug}?limit=1"`}
+                  res={ex.collectionRes}
+                />
+              )}
+              <Endpoint
+                path="/artists/:handle/events"
+                line="Current and upcoming shows, soonest first."
+                req={`curl ${api}/artists/${ex.handle}/events`}
+                res={ex.eventsRes}
+              />
+              <Endpoint
+                path="/artworks"
+                line="Search every artist's approved pieces, newest first."
+                params={[
+                  ["q", "Words in the title, description or artist name."],
+                  ["artist", "An artist handle."],
+                  ["city", "A city slug, like brooklyn or austin-tx."],
+                  ["edition", "limited or open."],
+                  ["sensitive", "exclude drops labelled pieces."],
+                  ["sort", "newest or oldest."],
+                  ["limit", `1 to ${SEARCH_MAX_LIMIT}. Default ${SEARCH_DEFAULT_LIMIT}.`],
+                  ["cursor", "nextCursor from the last page."],
+                ]}
+                req={`curl "${api}/artworks?q=${encodeURIComponent(ex.searchWord)}&limit=1"`}
+                res={ex.searchRes}
               />
               <article className="grid min-w-0 gap-4 border-t border-line pt-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-8">
                 <div>

@@ -15,7 +15,7 @@ export const GET = handler<Ctx>(async (req, { params }) => {
   if (!slug) return notFound("Artwork");
   const a = await prisma.artwork.findFirst({
     where: { ...PUBLIC_ARTWORK, slug },
-    select: { ...artworkSelect, description: true },
+    select: { ...artworkSelect, description: true, printableSizes: true },
   });
   if (!a) return notFound("Artwork");
   const [sold, reviews] = await Promise.all([editionSales(prisma, [a]), getReviewSummary({ artworkId: a.id })]);

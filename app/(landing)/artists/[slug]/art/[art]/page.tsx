@@ -4,7 +4,7 @@ import { codeForArt, CODE_COOKIE, scanVenue } from "@/lib/shortlinks";
 import type { Metadata, Viewport } from "next";
 import { previewImage, sharePreview } from "@/lib/og";
 import { notFound, permanentRedirect } from "next/navigation";
-import { artPath, SITE_URL, withQuery } from "@/lib/urls";
+import { artPath, oembedAlternate, SITE_URL, withQuery } from "@/lib/urls";
 import { prisma } from "@/lib/prisma";
 import { getUserFromCookie } from "@/lib/auth";
 import ScanView from "@/components/art/ScanView";
@@ -63,7 +63,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     metadataBase: new URL(SITE_URL),
     title: `${art.title} by ${name}`,
     description,
-    alternates: { canonical: url },
+    alternates: { canonical: url, types: oembedAlternate(url) },
     ...sharePreview({ type: "article", title: `${art.title} by ${name}`, description, url, image }),
   };
 }
