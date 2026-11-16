@@ -71,12 +71,11 @@ You don't need to create tables: the first deploy does it (section 5).
    - Framework preset: **Next.js** (detected)
    - Root directory: leave as is
    - **Install command**: `pnpm install`
-   - **Build command**:
-     ```
-     DATABASE_URL="${DIRECT_URL:-$DATABASE_URL}" pnpm exec prisma migrate deploy && pnpm exec next build
-     ```
-     This applies any new database changes before each build (section 5). It uses the direct URL because
-     migrations don't work through Neon's pooler.
+   - **Build command**: leave it alone. `vercel.json` sets it to `node scripts/vercel-build.mjs`, which wins over
+     the dashboard. It applies any new database changes before each build (section 5), always over Neon's
+     **direct** host: `DIRECT_URL` when set, else `DATABASE_URL` with `-pooler` taken out of the host name.
+     Migrations through the pooler can leave a database lock stuck, and the next deploy then fails with
+     "Timed out trying to acquire a postgres advisory lock" (P1002). A failed migration is retried twice.
    - Don't deploy yet: open **Environment Variables** first and add the required ones from section 4
      (at least `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`, `NEXT_PUBLIC_APP_URL`, Cloudinary, `CRON_SECRET`).
      Then **Deploy**.
@@ -104,7 +103,7 @@ environment. Every variable is also listed, with a comment, in [`.env.example`](
 | Variable | What it is | Where to get it | Without it |
 | --- | --- | --- | --- |
 | `DATABASE_URL` | Neon **pooled** connection string (+ `&pgbouncer=true&connect_timeout=15`) | Neon → Connect | Nothing loads. |
-| `DIRECT_URL` | Neon **direct** connection string | Neon → Connect, pooling off | Migrations on deploy fail (the build command falls back to `DATABASE_URL`, which fails through the pooler). |
+| `DIRECT_URL` | Neon **direct** connection string | Neon → Connect, pooling off | The build derives the direct host from `DATABASE_URL` instead, which works for Neon. Backups still need it. |
 | `JWT_SECRET` | Random secret that signs log-ins, links and QR discounts. 48+ random characters. | Any password generator. **Different** for Production and Preview. Never change it once live (everyone is logged out and signed links break). | Nobody can log in. |
 | `NEXT_PUBLIC_APP_URL` | The site's address, e.g. `https://theartfinity.com` (Preview: your staging address) | You choose | Links in emails, QR codes and Stripe return pages point to the wrong place. |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Image storage | Cloudinary → Dashboard (section 9) | Uploads fail: Vercel can't save files to disk. |
@@ -460,7 +459,7 @@ Takes 10 minutes. Do it after the first deploy and after big changes.
 
 | Symptom | Likely cause |
 | --- | --- |
-| Build fails at `prisma migrate deploy` | `DIRECT_URL` missing or wrong, or the Neon branch is asleep (retry). |
+| Build fails at `prisma migrate deploy` | `DIRECT_URL` wrong, or the Neon branch is asleep (the build retries twice; redeploy if it still fails). The log's first line says which host it migrated over: it should not contain `-pooler`. |
 | "Nobody can log in" after a change | `JWT_SECRET` changed. Put the old one back. |
 | Orders paid in Stripe but not in /admin | Wrong `STRIPE_WEBHOOK_SECRET`, or the endpoint URL is wrong. Check the endpoint's attempts in Stripe. |
 | No emails | Resend domain not verified, or `RESEND_API_KEY` missing. |
