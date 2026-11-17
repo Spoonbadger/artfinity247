@@ -30,7 +30,8 @@ function crop(d: Detail, aspect: number) {
 
 type Slide = { kind: "art" } | { kind: "room"; room: GalleryRoom } | { kind: "detail"; d: Detail; i: number };
 
-export type GalleryRequest = { slide: "room"; t: number } | null;
+/** "room": show the first room. "in-room": show the first room unless a room is already showing. */
+export type GalleryRequest = { slide: "room" | "in-room"; t: number } | null;
 
 /**
  * The buy page's pictures: the painting, the print in 3–4 rooms at the chosen size and frame, and two close-ups.
@@ -113,7 +114,10 @@ export default function ArtGallery({
   }, [cur, n, go]);
 
   useEffect(() => {
-    if (request?.slide === "room" && rooms.length) go(1);
+    if (!request || !rooms.length) return;
+    // rooms are slides 1..rooms.length, after the painting
+    const onRoom = cur >= 1 && cur <= rooms.length;
+    if (request.slide === "room" || !onRoom) go(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [request?.t]);
 
