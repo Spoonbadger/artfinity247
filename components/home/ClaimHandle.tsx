@@ -12,7 +12,7 @@ type Result = { handle: string; available: boolean; suggestion: string | null; r
 const clean = (v: string) => v.trim().replace(/^@/, "").toLowerCase().replace(/[^a-z0-9_.]/g, "").slice(0, 30);
 
 /** "theartfinity.com/@yourname [Claim it]": checks the name live, then hands it to sign-up. */
-export default function ClaimHandle({ className, dark = false, autoFocus = false }: { className?: string; dark?: boolean; autoFocus?: boolean }) {
+export default function ClaimHandle({ className, dark = false, autoFocus = false, cta = "Claim it" }: { className?: string; dark?: boolean; autoFocus?: boolean; cta?: string }) {
   const router = useRouter();
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
@@ -80,7 +80,7 @@ export default function ClaimHandle({ className, dark = false, autoFocus = false
     <div className={cn("w-full max-w-[520px]", className)}>
       <form onSubmit={submit} className={cn("flex items-center rounded-full border-2 bg-white p-[5px] transition focus-within:shadow-[0_0_0_4px_rgb(var(--af-scan-rgb)/0.22)]", dark ? "border-white" : "border-ink focus-within:border-scan")} autoComplete="off">
         <label htmlFor={id} className="flex min-w-0 flex-1 cursor-text items-center pl-3 text-[14px] min-[400px]:pl-4 min-[400px]:text-[16px]">
-          <span className="shrink-0 text-ink-2"><span className="hidden min-[340px]:inline">theartfinity.com</span>/@</span>
+          <span className="shrink-0 text-ink-2"><span className="hidden min-[400px]:inline">theartfinity.com/</span>@</span>
           <input
             ref={input}
             id={id}
@@ -98,7 +98,7 @@ export default function ClaimHandle({ className, dark = false, autoFocus = false
         </label>
         <button type="submit" className="btn btn-blue shrink-0 px-4 py-3 text-[16px] min-[400px]:px-6" disabled={going || (!!res && res.handle === value && !res.available)}>
           {going ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
-          Claim it
+          {cta}
         </button>
       </form>
       <div id={`${id}-s`} role="status" aria-live="polite" className="mt-2.5 pl-4 text-[14px] empty:mt-0">{status}</div>

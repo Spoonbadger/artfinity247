@@ -13,6 +13,7 @@ import CodeNote from "@/components/qr/CodeNote";
 import HeroStory from "@/components/home/HeroStory";
 import { getHeroData } from "@/components/home/heroData";
 import SalonStrip from "@/components/home/SalonStrip";
+import HeroPrints from "@/components/home/HeroPrints";
 import CityRow from "@/components/home/CityRow";
 import BrushWipe from "@/components/motion/BrushWipe";
 import HowItWorks from "@/components/home/HowItWorks";
@@ -56,18 +57,22 @@ export default async function Home({ searchParams }: { searchParams?: Record<str
       {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="mx-auto grid max-w-[1240px] items-center gap-10 px-4 pb-12 pt-6 sm:px-6 md:pt-8 lg:grid-cols-[1.05fr_1fr] lg:gap-14 lg:pb-16 lg:pt-8">
+          {/* A title and the artist sign-up; buyers get real prints right under it (phones) or a link (desktop) */}
           <div className="min-w-0">
-            <span className="sticker-badge">Free for artists. Always.</span>
-            <h1 className="display mt-5 text-[58px] sm:text-[84px] lg:text-[96px]">
-              Turn every wall into <Brushed color="var(--af-sticker)"><span className="text-scan">your shop.</span></Brushed>
+            <h1 className="display text-[58px] sm:text-[84px] lg:text-[96px]">
+              Take every painting to <Brushed color="var(--af-sticker)"><span className="text-scan">infinity.</span></Brushed>
             </h1>
-            <p className="mt-5 text-[19px] leading-snug text-ink-2 sm:text-[21px]">Hang a code by your painting. Sell prints to anyone who scans.</p>
-            <ClaimHandle className="mt-7" />
-            <p className="t-small mt-3 pl-4">
-              Just here for art? <Link href="/art" className="font-semibold text-ink underline-offset-2 hover:underline">Browse prints by independent artists <ArrowRight className="inline h-3.5 w-3.5" aria-hidden="true" /></Link>
-            </p>
+            <ClaimHandle className="mt-7" cta="Claim it free" />
+            <HeroPrints prints={popular.slice(0, 8)} className="mt-6 lg:hidden" />
+            <Link href="/art" className="mt-2 hidden w-fit items-center gap-1.5 pl-4 text-[15px] font-semibold text-ink no-underline underline-offset-2 hover:underline lg:inline-flex">
+              Shop prints <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
           </div>
-          {heroArt && <HeroStory art={heroArt} perPrint={perPrint} price={price} monthBefore={monthBefore} />}
+          {heroArt && (
+            <div className="hidden lg:block">
+              <HeroStory art={heroArt} perPrint={perPrint} price={price} monthBefore={monthBefore} />
+            </div>
+          )}
         </div>
       </section>
 
