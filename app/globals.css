@@ -139,13 +139,13 @@
   /* Artwork grids: hovering one piece turns the others grey, so the one under the pointer stands out.
      Mouse and trackpad only; touch screens keep every piece in colour. Avatars opt out with data-keep-color.
      The transition list keeps each image's own lift, zoom and shadow easing (500ms, the cards' timing) and adds
-     the fade to it. Coming back to colour waits a beat, so sliding across the gap between two pieces doesn't
-     flash the whole grid back to colour. */
+     a slower, gentler fade (900ms ease-in-out) for the greyscale. Coming back to colour waits a beat, so sliding
+     across the gap between two pieces doesn't flash the whole grid back to colour. */
   @media (hover: hover) and (pointer: fine) {
     .art-grid > * img:not([data-keep-color]) {
       transition-property: transform, box-shadow, opacity, filter;
-      transition-duration: 500ms;
-      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      transition-duration: 500ms, 500ms, 500ms, 900ms;
+      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1), cubic-bezier(0.4, 0, 0.2, 1), cubic-bezier(0.4, 0, 0.2, 1), cubic-bezier(0.45, 0, 0.55, 1);
       transition-delay: 0s, 0s, 0s, 120ms;
     }
     .art-grid > :hover img:not([data-keep-color]) { transition-delay: 0s; }
