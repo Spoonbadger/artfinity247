@@ -7,6 +7,7 @@ import Provider from "@/components/contexts";
 import BrushDefs from "@/components/af/BrushDefs";
 import PwaSetup from "@/components/pwa/PwaSetup";
 import SkipLink from "@/components/a11y/SkipLink";
+import SmoothAnchors from "@/components/site/SmoothAnchors";
 import "./globals.css";
 
 // Bundled in /fonts (see fonts/README.md) so the build never downloads from Google Fonts.
@@ -63,6 +64,7 @@ const RootLayout = ({ children }: Readonly<{ children: ReactNode }>) => {
         <Provider>{children}</Provider>
         <Toaster position="top-center" richColors />
         <PwaSetup />
+        <SmoothAnchors />
       </body>
     </html>
   );
