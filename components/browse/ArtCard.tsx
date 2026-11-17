@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import SensitiveImage from "@/components/site/SensitiveImage";
 import { money } from "@/lib/earnings";
 import { cn } from "@/lib/utils";
@@ -10,6 +11,7 @@ import EditionBadge from "@/components/art/EditionBadge";
 import { editionsFor } from "@/lib/editions";
 import type { Edition } from "@/lib/editionFormat";
 import WishlistHeart from "@/components/collector/WishlistHeart";
+import Masonry from "./Masonry";
 
 /** The art itself, hung on a patch of gallery wall. Fills its (positioned, sized) parent. */
 export function HungArt({ src, alt, sensitive, priority = false }: { src: string; alt: string; sensitive?: string[] | null; priority?: boolean }) {
@@ -29,14 +31,37 @@ export function HungArt({ src, alt, sensitive, priority = false }: { src: string
   return <div className="h-full w-full p-[10%]">{sensitive?.length ? <SensitiveImage labels={sensitive}>{picture}</SensitiveImage> : picture}</div>;
 }
 
+/** The art at its own proportions, edge to edge (masonry tiles). Sensitive pieces stay blurred until shown. */
+function NaturalArt({ src, alt, sensitive, priority = false }: { src: string; alt: string; sensitive?: string[] | null; priority?: boolean }) {
+  const picture = (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt}
+      loading={priority ? "eager" : "lazy"}
+      decoding="async"
+      className="block h-auto min-h-[120px] w-full bg-wall object-cover transition duration-500 group-hover:scale-[1.03]"
+    />
+  );
+  return sensitive?.length ? <SensitiveImage labels={sensitive}>{picture}</SensitiveImage> : picture;
+}
+
 /** A piece hung on a little patch of gallery wall. Card → /@handle/art/[slug], artist → /@handle. */
-export default function ArtCard({ art, className, priority = false, showPrice = true, trust, edition }: { art: CardArt; className?: string; priority?: boolean; showPrice?: boolean; trust?: Trust | null; edition?: Edition | null }) {
+export default function ArtCard({ art, className, priority = false, showPrice = true, trust, edition, natural = false }: { art: CardArt; className?: string; priority?: boolean; showPrice?: boolean; trust?: Trust | null; edition?: Edition | null; natural?: boolean }) {
   return (
-    <article className={cn("group relative grid min-w-0 content-start gap-2.5", className)}>
-      <Link href={artPath(art.artist.slug, art.slug)} className="relative block aspect-[4/5] overflow-hidden rounded-md bg-wall" aria-label={`${art.title} by ${art.artist.name}`}>
-        <HungArt src={art.imageUrl} alt={art.title} sensitive={art.sensitive} priority={priority} />
-        <EditionBadge edition={edition} compact className="absolute left-2 top-2" />
-      </Link>
+    <article className={cn("art-tile group relative grid min-w-0 content-start gap-2.5", className)}>
+      {natural ? (
+        // Masonry tile: the piece at its own shape, full width, with a slow, slight zoom on hover
+        <Link href={artPath(art.artist.slug, art.slug)} className="relative block overflow-hidden rounded-md bg-wall" aria-label={`${art.title} by ${art.artist.name}`}>
+          <NaturalArt src={art.imageUrl} alt={art.title} sensitive={art.sensitive} priority={priority} />
+          <EditionBadge edition={edition} compact className="absolute left-2 top-2" />
+        </Link>
+      ) : (
+        <Link href={artPath(art.artist.slug, art.slug)} className="relative block aspect-[4/5] overflow-hidden rounded-md bg-wall" aria-label={`${art.title} by ${art.artist.name}`}>
+          <HungArt src={art.imageUrl} alt={art.title} sensitive={art.sensitive} priority={priority} />
+          <EditionBadge edition={edition} compact className="absolute left-2 top-2" />
+        </Link>
+      )}
       <WishlistHeart artworkId={art.id} title={art.title} className="absolute right-2 top-2" />
       <div className="grid min-w-0 gap-0.5 px-0.5">
         <Link href={artPath(art.artist.slug, art.slug)} className="truncate text-[15px] font-semibold leading-snug text-ink no-underline hover:text-scan">{art.title}</Link>
@@ -58,9 +83,13 @@ export async function ArtGrid({ art, className }: { art: CardArt[]; className?: 
     getTrustBySlug(art.map((a) => a.artist.slug)),
     editionsFor(art.map((a) => ({ id: a.id, editionSize: a.editionSize ?? null }))),
   ]);
+  // Masonry: each piece at its own shape. Phones start in two columns and desktops in four; the browser
+  // corrects the guess for tablets before the first paint.
+  const ua = headers().get("user-agent") || "";
+  const phone = headers().get("sec-ch-ua-mobile") === "?1" || /Mobi|Android|iPhone|iPod/i.test(ua);
   return (
-    <div className={cn("art-grid grid grid-cols-2 gap-x-3 gap-y-7 sm:gap-x-5 md:grid-cols-3 lg:grid-cols-4 lg:gap-x-7 lg:gap-y-10", className)}>
-      {art.map((a, i) => <ArtCard key={a.id} art={a} priority={i < 4} trust={trust.get(a.artist.slug)} edition={editions.get(a.id)} />)}
-    </div>
+    <Masonry initialCols={phone ? 2 : 4} className={className}>
+      {art.map((a, i) => <ArtCard key={a.id} art={a} priority={i < 4} trust={trust.get(a.artist.slug)} edition={editions.get(a.id)} natural />)}
+    </Masonry>
   );
 }
