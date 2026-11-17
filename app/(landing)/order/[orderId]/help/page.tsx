@@ -68,7 +68,7 @@ export default async function HelpPage({ params, searchParams }: Props) {
   if (latest) {
     const d = latest.body.decision;
     const copy = {
-      open: { badge: "Request received", title: "We have your photos", body: <p>We&apos;ll look today or tomorrow and email you. If it&apos;s on us, we reprint it free.</p> },
+      open: { badge: "Request received", title: "We have your photos", body: <p>We&apos;ll look today or tomorrow and email you. If it&apos;s on us, we&apos;ll make it right.</p> },
       approved: { badge: "Approved", title: "Your free reprint is on its way", body: <p>We&apos;re printing it again and will email tracking when it ships. No need to send the old one back.</p> },
       refunded: { badge: "Refunded", title: "We've refunded you", body: <p>It goes back to the card or wallet you paid with. It can take 5 to 10 business days to show.</p> },
       declined: { badge: "We looked closely", title: "We can't reprint this one", body: <p>If we got it wrong, <WriteToUs /> and tell us more.</p> },
@@ -96,7 +96,7 @@ export default async function HelpPage({ params, searchParams }: Props) {
   if (state === "closed") {
     return (
       <Note title="It's been a while" thumbs={thumbs}>
-        <p>Free reprints are for problems sent within {HELP_DAYS_AFTER_DELIVERY} days of delivery. Still, <WriteToUs /> with a photo and we&apos;ll see what we can do.</p>
+        <p>Requests are for problems sent within {HELP_DAYS_AFTER_DELIVERY} days of delivery. Still, <WriteToUs /> with a photo and we&apos;ll see what we can do.</p>
       </Note>
     );
   }
@@ -122,7 +122,7 @@ export default async function HelpPage({ params, searchParams }: Props) {
             </span>
           </h1>
           <p className="t-body mt-1 text-ink-2">
-            Send a photo and we&apos;ll reprint it free. Open until {fmt(helpDeadline(order, shippedAt))}.
+            Send a photo and we&apos;ll take a look. Open until {fmt(helpDeadline(order, shippedAt))}.
           </p>
         </header>
         <HelpForm orderId={order.id} token={String(searchParams.t)} items={items} />

@@ -29,7 +29,7 @@ const FAQ: [string, string][] = [
   ["Does it cost anything to sell?", `No. Free has no monthly fee. Artfinity only earns when you sell, from its share of each print's profit.`],
   ["Who sets the price?", "You do. Every print has a base price that covers printing and shipping, and you add what you like on top."],
   ["When do I get paid?", "By the 5th of the next month, straight to your bank through Stripe. Each sale is held 14 days first, in case something goes wrong with the print."],
-  ["What if a print arrives damaged?", `The buyer sends a photo within ${HELP_DAYS_AFTER_DELIVERY} days of delivery and we reprint it free. They don't need to send it back.`],
+  ["What if a print arrives damaged?", `The buyer sends a photo within ${HELP_DAYS_AFTER_DELIVERY} days of delivery and we sort it out with them. If we reprint, Artfinity pays, not you.`],
   ["Can buyers return a print?", "Not for a change of mind or the wrong size. Every print is made to order."],
   [`How do I get ${PRO.name} free?`, `Share your link. Each artist who joins, gets a piece live and prints a code or makes a sale gives you ${REFERRALS.rewardMonths} months of ${PRO.name}.`],
 ];
@@ -169,7 +169,7 @@ export default async function HowItWorksPage() {
             }
           >
             <p>Every print is made to order and shipped free in the US. Most arrive in {daysLow} to {daysHigh} business days.</p>
-            <p>If one arrives damaged, we reprint it free.</p>
+            <p>If one arrives damaged, we sort it out with the buyer.</p>
           </Step>
 
           <Step n={4} color="var(--af-earned)" flip live title="You get paid" visual={<div className="w-full max-w-[460px]"><SplitBar markupCents={markup.medium} /></div>}>

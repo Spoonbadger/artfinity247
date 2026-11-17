@@ -9,7 +9,7 @@ export default function TrustStrip({ artist }: { artist?: string }) {
   const rows = [
     { icon: Lock, text: <>Secure payment by Stripe</> },
     { icon: Smartphone, text: <>Apple Pay, Google Pay or card</> },
-    { icon: RotateCcw, text: <>Arrives damaged? Free reprint within {HELP_DAYS_AFTER_DELIVERY} days. <Link href="/return-policy" className="font-semibold text-ink underline underline-offset-2">Returns</Link></> },
+    { icon: RotateCcw, text: <>Arrives damaged? Tell us within {HELP_DAYS_AFTER_DELIVERY} days. <Link href="/return-policy" className="font-semibold text-ink underline underline-offset-2">Returns</Link></> },
     { icon: Heart, text: <>{artist && artist !== "the artist" ? artist : "The artist"} {artist?.includes(" and ") ? "get" : "gets"} at least {pct(FREE_SPLIT)} of the profit</> },
   ];
   return (
