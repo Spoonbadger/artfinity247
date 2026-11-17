@@ -204,10 +204,14 @@ export default function ScanView({
     }
   };
 
-  // Picking a size moves the pictures on to a room, so the new size shows on a wall.
+  // The first size the buyer picks moves the pictures on to a room, so the size shows on a wall. After that the
+  // gallery stays where they left it.
+  const sizePicked = useRef(false);
   const pickSize = (s: PrintSize) => {
     setSize(s);
-    setReq({ slide: "next-room", t: Date.now() });
+    if (sizePicked.current) return;
+    sizePicked.current = true;
+    setReq({ slide: "in-room", t: Date.now() });
   };
 
   const seeInRoom = () => {
