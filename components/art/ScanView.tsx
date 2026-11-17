@@ -204,6 +204,12 @@ export default function ScanView({
     }
   };
 
+  // Picking a size moves the pictures on to a room, so the new size shows on a wall.
+  const pickSize = (s: PrintSize) => {
+    setSize(s);
+    setReq({ slide: "next-room", t: Date.now() });
+  };
+
   const seeInRoom = () => {
     setReq({ slide: "room", t: Date.now() });
     if (window.matchMedia("(max-width: 767px)").matches) window.scrollTo({ top: 0, behavior: "smooth" });
@@ -290,7 +296,7 @@ export default function ScanView({
                       on ? "border-ink shadow-[inset_0_0_0_1px_var(--af-ink)]" : "border-line hover:border-ink-2",
                     )}
                   >
-                    <input type="radio" name="size" value={s} checked={on} onChange={() => setSize(s)} className="sr-only" aria-describedby={s === closest ? "size-note" : undefined} />
+                    <input type="radio" name="size" value={s} checked={on} onChange={() => pickSize(s)} className="sr-only" aria-describedby={s === closest ? "size-note" : undefined} />
                     {s === closest && (
                       <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border-[1.5px] border-ink bg-sticker px-1.5 text-[12px] font-bold leading-[16px]">
                         ≈ original
@@ -357,7 +363,7 @@ export default function ScanView({
                       on ? "border-ink shadow-[inset_0_0_0_1px_var(--af-ink)]" : "border-line hover:border-ink-2",
                     )}
                   >
-                    <input type="radio" name="size-list" value={s} checked={on} onChange={() => setSize(s)} className="sr-only" />
+                    <input type="radio" name="size-list" value={s} checked={on} onChange={() => pickSize(s)} className="sr-only" />
                     <span className="flex min-w-0 items-baseline gap-2">
                       <b className="text-[16px] font-bold">{SIZE_LABEL[s]}</b>
                       <span className="num text-[14px] text-ink-2">{landscape ? `${sh} × ${sw}` : `${sw} × ${sh}`} in</span>
