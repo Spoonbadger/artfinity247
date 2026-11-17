@@ -137,10 +137,19 @@
 
   /* Text helpers */
   /* Artwork grids: hovering one piece turns the others grey, so the one under the pointer stands out.
-     Mouse and trackpad only; touch screens keep every piece in colour. Avatars opt out with data-keep-color. */
+     Mouse and trackpad only; touch screens keep every piece in colour. Avatars opt out with data-keep-color.
+     The transition list keeps each image's own lift, zoom and shadow easing (500ms, the cards' timing) and adds
+     the fade to it. Coming back to colour waits a beat, so sliding across the gap between two pieces doesn't
+     flash the whole grid back to colour. */
   @media (hover: hover) and (pointer: fine) {
-    .art-grid > * img:not([data-keep-color]) { transition: filter 0.35s ease; }
-    .art-grid:has(> :hover) > :not(:hover) img:not([data-keep-color]) { filter: grayscale(1); }
+    .art-grid > * img:not([data-keep-color]) {
+      transition-property: transform, box-shadow, opacity, filter;
+      transition-duration: 500ms;
+      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      transition-delay: 0s, 0s, 0s, 120ms;
+    }
+    .art-grid > :hover img:not([data-keep-color]) { transition-delay: 0s; }
+    .art-grid:has(> :hover) > :not(:hover) img:not([data-keep-color]) { filter: grayscale(1); transition-delay: 0s; }
   }
   .display { @apply font-display font-extrabold; font-variation-settings: "wdth" 78; letter-spacing: -0.02em; line-height: 0.92; }
   .eyebrow { @apply text-xs font-bold uppercase tracking-[0.08em] text-ink-2; }
