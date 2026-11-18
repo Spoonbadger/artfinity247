@@ -9,7 +9,7 @@ const SUMMARY = [
   "Prints are made to order and ship free, to US addresses only.",
   `Damaged, misprinted or wrong? Tell us within ${HELP_DAYS_AFTER_DELIVERY} days of delivery. We review each case. No change-of-mind returns.`,
   "Buying a print doesn’t give you the copyright.",
-  "Disputes go to binding arbitration in New York.",
+  "Have a problem? Contact us first. If we can’t sort it out, New York courts decide.",
 ];
 
 export const metadata: Metadata = { title: "Terms and conditions" };
@@ -92,14 +92,15 @@ export default function Page() {
 
         <div>
           <h2>Governing law</h2>
-          <p>These terms are governed by the laws of the United States and the State of New York, without regard to conflict of law rules.</p>
+          <p>These terms are governed by the laws of the State of New York and applicable US federal law, without regard to conflict of law rules.</p>
         </div>
 
         <div>
           <h2>Disputes</h2>
           <p>
-            Any dispute under these terms will be settled by binding arbitration under the rules of the American Arbitration Association, in New York, New York. You give up any right
-            to a jury trial or to join a class action.
+            If you have a problem with us, contact us first at <a href="mailto:support@theartfinity.com">support@theartfinity.com</a> and tell us what happened. We&apos;ll try
+            to work it out with you informally. If we can&apos;t resolve it within 30 days, either of us may take it to the state or federal courts located in New York County,
+            New York, and you and Artfinity agree to those courts&apos; jurisdiction. Either of us may also bring a claim in small claims court where it qualifies.
           </p>
         </div>
 
