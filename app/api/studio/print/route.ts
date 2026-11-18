@@ -1,4 +1,5 @@
-// POST /api/studio/print { lines: [{ artworkId, code?, size, copies }], paper, customPaper?, artistId? } → the PDF.
+// POST /api/studio/print { lines: [{ artworkId, code?, size, copies }], paper, customPaper?, color?, artistId? } → the PDF.
+// color: "color" (the default) or "bw".
 // Print codes (/studio/print): any mix of pieces, sizes and copies, packed onto as few sheets of the chosen paper as
 // fit (lib/printPack.ts). The download counts as printed (lib/printJob.ts recordHomePrint). artistId: an admin
 // printing for that artist (lib/printAccess.ts).
@@ -7,7 +8,7 @@ import { generatePackedPdf } from "@/lib/generateQrPdf";
 import { artistIsPro } from "@/lib/qr/plan";
 import { printAccess } from "@/lib/printAccess";
 import { PrintError, recordHomePrint, resolveLines } from "@/lib/printJob";
-import { isLabelSheet, isPaper, paperName, paperSize } from "@/lib/printOptions";
+import { isLabelSheet, isPaper, isPrintColor, paperName, paperSize } from "@/lib/printOptions";
 import { logAdminAction } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { baseUrl, pdfHeaders } from "../../qr/art";
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
   const name = paperName(paperKey, body.customPaper as never);
   try {
     const lines = await resolveLines(who.artistId, body.lines, baseUrl(req));
-    const out = await generatePackedPdf(lines, paper, { pro: await artistIsPro(who.artistId), title: `${who.artistName ? `${who.artistName} · ` : ""}Artfinity QR codes`, paperName: name });
+    const out = await generatePackedPdf(lines, paper, { color: isPrintColor(body.color) ? body.color : "color", pro: await artistIsPro(who.artistId), title: `${who.artistName ? `${who.artistName} · ` : ""}Artfinity QR codes`, paperName: name });
     if (out.unplaced) {
       return err(isLabelSheet(paperKey)
         ? `${out.unplaced} ${out.unplaced === 1 ? "card doesn't" : "cards don't"} match the labels on ${name}. Change their size, or print on plain paper.`

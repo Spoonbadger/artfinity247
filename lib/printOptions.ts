@@ -1,6 +1,6 @@
 // Print codes (/studio/print): the card sizes and papers people pick from. Client-safe; shared by the screen's
 // preview and the PDF route, so both pack the same boxes on the same paper (lib/printPack.ts).
-import { FORMATS, TEMPLATES, customName, type CustomSize, type FormatKey, type TemplateKey } from "@/components/qr/card";
+import { FORMATS, TEMPLATES, blackAndWhite, customName, freeDesign, type CustomSize, type Design, type FormatKey, type TemplateKey } from "@/components/qr/card";
 import type { PackItem, PaperSize } from "@/lib/printPack";
 
 /** A card size: one of the four formats, or the code's own custom size (Infinity). */
@@ -8,6 +8,24 @@ export type SizeKey = FormatKey | "custom";
 export const SIZE_ORDER: FormatKey[] = ["label", "sticker", "tag", "poster"];
 export const SIZE_NAME: Record<FormatKey, string> = { label: "Label", sticker: "Sticker", tag: "Tag", poster: "Poster" };
 export const isSize = (v: unknown): v is SizeKey => v === "custom" || (typeof v === "string" && v in FORMATS);
+
+/** How the sheets print. Color unless someone picks black and white on Print codes. */
+export type PrintColor = "color" | "bw";
+export const isPrintColor = (v: unknown): v is PrintColor => v === "color" || v === "bw";
+
+/** The look in the size picked. Changing size keeps the colours and options; a custom size needs one saved. */
+export function lookInSize(d: Design, size: SizeKey): Design | null {
+  if (size === "custom") return d.custom ? d : null;
+  return { ...d, format: size as FormatKey, custom: null };
+}
+
+/** The card the preview draws: the same steps the PDF takes, so the two match. */
+export function printLook(look: Design, size: SizeKey, o: { disc: number; color: PrintColor; pro: boolean }): Design | null {
+  const sized = lookInSize(look, size);
+  if (!sized) return null;
+  const d: Design = { ...(o.pro ? sized : freeDesign(sized)), disc: o.disc };
+  return o.color === "bw" ? blackAndWhite(d) : d;
+}
 
 /** Most copies of one card on one line. */
 export const MAX_COPIES = 100;

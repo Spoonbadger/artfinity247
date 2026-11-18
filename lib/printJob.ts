@@ -10,10 +10,10 @@
 // in My codes and the out-of-date label check.
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { ensureArtworkCode, shortUrl } from "@/lib/shortlinks";
-import { DEFAULT_DESIGN, sanitizeDesign, type CustomSize, type Design, type FormatKey } from "@/components/qr/card";
+import { PLACEHOLDER_CODE, ensureArtworkCode, shortUrl } from "@/lib/shortlinks";
+import { DEFAULT_DESIGN, sanitizeDesign, type CustomSize, type Design } from "@/components/qr/card";
 import { artInfoOf, queueArtSelect } from "@/lib/printQueue";
-import { cardBox, clampCopies, isSize, MAX_LINES, type SizeKey } from "@/lib/printOptions";
+import { cardBox, clampCopies, isSize, lookInSize, MAX_LINES, type SizeKey } from "@/lib/printOptions";
 import { markupsOf, recordPrints } from "@/lib/labelStatus";
 import type { CardJob } from "@/lib/generateQrPdf";
 
@@ -42,28 +42,24 @@ async function baseLook(artistId: string, design: unknown, cache: { last?: Desig
   return cache.last;
 }
 
-/** The look in the size picked. Changing size keeps the colours and options; a custom size needs one saved. */
-export function lookInSize(d: Design, size: SizeKey): Design | null {
-  if (size === "custom") return d.custom ? d : null;
-  return { ...d, format: size as FormatKey, custom: null };
-}
-
-/** Everything the Print codes screen lists for one artist: their pieces, each with its live codes. */
-export async function printablePieces(artistId: string) {
-  const [arts, last] = await Promise.all([
+/** Everything the Print codes screen lists for one artist: their pieces, each with its live codes and card looks. */
+export async function printablePieces(artistId: string, base = process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com") {
+  const [arts, last, fallback] = await Promise.all([
     prisma.artwork.findMany({
       where: { artistId, status: { in: ["APPROVED", "PENDING"] }, slug: { not: null } },
-      select: { id: true, slug: true, title: true, imageUrl: true, status: true, qrCodes: { where: { active: true }, select: codeSelect, orderBy: { createdAt: "desc" } } },
+      select: { ...queueArtSelect, qrCodes: { where: { active: true }, select: codeSelect, orderBy: { createdAt: "desc" } } },
       orderBy: { createdAt: "desc" },
     }),
     // The size each piece was last printed in, so it comes back the same way.
     prisma.codePrint.findMany({ where: { artistId }, orderBy: { printedAt: "desc" }, select: { artworkId: true, format: true }, take: 500 }),
+    // The look for codes never designed, and for pieces with no code yet.
+    baseLook(artistId, null, {}),
   ]);
   const lastSize = new Map<string, string>();
   for (const p of last) if (p.artworkId && !lastSize.has(p.artworkId)) lastSize.set(p.artworkId, p.format);
   const codeOut = (c: (typeof arts)[number]["qrCodes"][number]) => {
     const d = c.design != null ? sanitizeDesign(c.design) : null;
-    return { code: c.code, name: c.label || c.place?.name || c.venue || null, discountPct: c.discountPct ?? 0, custom: d?.custom ?? null, format: d?.format ?? null, designed: c.design != null };
+    return { code: c.code, name: c.label || c.place?.name || c.venue || null, discountPct: c.discountPct ?? 0, custom: d?.custom ?? null, format: d?.format ?? null, designed: c.design != null, look: d ?? fallback, qrText: shortUrl(c.code, base) };
   };
   return {
     pieces: arts.map((a) => {
@@ -71,6 +67,10 @@ export async function printablePieces(artistId: string) {
       const sized = lastSize.get(a.id);
       return {
         id: a.id, slug: a.slug as string, title: a.title, imageUrl: a.imageUrl, inReview: a.status === "PENDING",
+        art: artInfoOf(a),
+        // A piece with no code yet previews with a same-length stand-in; its real code is made when it prints.
+        look: fallback,
+        sampleQr: shortUrl(PLACEHOLDER_CODE, base),
         codes: a.qrCodes.map(codeOut),
         defaultCode: def?.code ?? null,
         // Last printed size, else the default code's own format, else a wall label.

@@ -2,11 +2,11 @@
 // rasterised at print resolution with sharp, then tiled on US Letter with pdf-lib.
 import sharp from "sharp";
 import { PDFDocument, StandardFonts, degrees, rgb, type PDFImage } from "pdf-lib";
-import { cardSVG, customName, freeDesign, renderCard, sheetLayout, FORMATS, type ArtInfo, type Design, type FormatKey } from "@/components/qr/card";
+import { blackAndWhite, cardSVG, customName, freeDesign, renderCard, sheetLayout, FORMATS, type ArtInfo, type Design, type FormatKey } from "@/components/qr/card";
 import { loadFonts } from "@/components/qr/text";
 import { artPalette, artThumb } from "@/lib/qr/palette";
 import { pack, type PaperSize } from "@/lib/printPack";
-import { cardBox, type SizeKey } from "@/lib/printOptions";
+import { cardBox, type PrintColor, type SizeKey } from "@/lib/printOptions";
 
 export type CardJob = { design: Design; art: ArtInfo; qrText: string };
 /**
@@ -121,14 +121,16 @@ export async function generateMixedQrPdf(items: { job: CardJob; qty: number }[],
 /**
  * Print codes (/studio/print): any mix of cards, each `copies` times, packed onto as few sheets of `paper` as fit
  * (lib/printPack.ts, the same layout the screen previews). Thin grey cut lines go round every card on plain paper;
- * ready-cut label sheets get none. Each distinct card is rasterised once.
+ * ready-cut label sheets get none. Each distinct card is rasterised once. color "bw": black ink on every card, and
+ * anything still in colour (a thumbnail of the painting) goes grey.
  */
 export async function generatePackedPdf(
   lines: { job: CardJob; copies: number; size: SizeKey }[],
   paper: PaperSize,
-  opts: PdfPlan & { title?: string; paperName?: string } = {},
+  opts: PdfPlan & { title?: string; paperName?: string; color?: PrintColor } = {},
 ): Promise<{ pdf: Uint8Array; sheets: number; cards: number; unplaced: number }> {
-  const ready = await Promise.all(lines.map((l) => prepareJob(l.job, opts)));
+  const bw = opts.color === "bw";
+  const ready = await Promise.all(lines.map((l) => prepareJob(bw ? { ...l.job, design: blackAndWhite(l.job.design) } : l.job, opts)));
   const items = lines.flatMap((l, i) => {
     const box = cardBox(l.size, ready[i].design.custom);
     return box ? Array.from({ length: Math.max(0, Math.floor(l.copies)) }, () => ({ ...box, ref: i })) : [];
@@ -153,7 +155,8 @@ export async function generatePackedPdf(
       const card = renderCard(job.design, job.art, fonts, job.qrText, `p${i}`);
       // Big cards (the poster, large custom sizes) rasterise at 200 dpi to keep the file small.
       const dpi = card.w * card.h > 30 * 72 * 72 ? 200 : 300;
-      img = await pdf.embedPng(await sharp(Buffer.from(cardSVG(card)), { density: dpi }).png({ compressionLevel: 9 }).toBuffer());
+      const raster = sharp(Buffer.from(cardSVG(card)), { density: dpi });
+      img = await pdf.embedPng(await (bw ? raster.grayscale() : raster).png({ compressionLevel: 9 }).toBuffer());
       images.set(i, img);
     }
     return img;

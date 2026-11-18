@@ -1,7 +1,7 @@
 "use client";
 // Print codes (/studio/print, and /admin/artists/[id]/print for admins): one screen for every print.
-// Tick pieces, give each its own size and copies (1 colour label by default), pick the paper, and see the real sheets:
-// every card packed onto as few sheets as fit (lib/printPack.ts, the same layout the PDF uses). Download PDF prints
+// Tick pieces, give each its own size and copies (1 colour label by default), pick the paper and color, and see the
+// real sheets: the actual cards, packed onto as few sheets as fit (lib/printPack.ts, the same layout the PDF uses). Download PDF prints
 // it and counts as printed. Mail them to me sends exactly these cards to Stripe. Nothing waits in a list.
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -11,10 +11,11 @@ import { errorText, failed, problemFrom, saved } from "@/lib/feedback";
 import { cn } from "@/lib/utils";
 import { fillExtra, pack, PAPER_MARGIN, type PackItem, type Placed } from "@/lib/printPack";
 import {
-  MAX_COPIES, PAPER_MAX, PAPER_MIN, PAPER_ORDER, PLAIN_PAPERS, SIZE_NAME, SIZE_ORDER, cardBox, isLabelSheet, paperName, paperSize, sizeLabel,
-  type CustomPaper, type PaperKey, type SizeKey,
+  MAX_COPIES, PAPER_MAX, PAPER_MIN, PAPER_ORDER, PLAIN_PAPERS, SIZE_NAME, SIZE_ORDER, cardBox, isLabelSheet, paperName, paperSize, printLook, sizeLabel,
+  type CustomPaper, type PaperKey, type PrintColor, type SizeKey,
 } from "@/lib/printOptions";
-import { TEMPLATES, type CustomSize, type TemplateKey } from "@/components/qr/card";
+import { TEMPLATES, renderCard, type CustomSize, type TemplateKey } from "@/components/qr/card";
+import { loadFonts, type Fonts } from "@/components/qr/text";
 import { quoteFor, type CodePrintPricing, type ShipAddress } from "@/lib/printQueueFormat";
 import type { PrintablePieces } from "@/lib/printJob";
 import MailOrder from "./MailOrder";
@@ -25,7 +26,7 @@ export type Preset = Partial<Pick<Row, "code" | "size" | "copies">>;
 
 const PAPER_KEY = "af-print-paper";
 const MAX_PREVIEW = 8;
-/** Preview colours per size, so a mixed sheet reads at a glance. */
+/** Stand-ins per size, for the moment before the card fonts load. */
 const TONE: Record<string, { fill: string; edge: string }> = {
   label: { fill: "#f6e1e6", edge: "#8b2a4b" },
   sticker: { fill: "#fff3c4", edge: "#b08900" },
@@ -63,9 +64,17 @@ export default function PrintCodes({ pieces, preset, pro, forArtist, mail, note 
   const [q, setQ] = useState("");
   const [paper, setPaper] = useState<PaperKey>("letter");
   const [customPaper, setCustomPaper] = useState<CustomPaper>({ w: 8.5, h: 11 });
+  const [color, setColor] = useState<PrintColor>("color");
+  const [fonts, setFonts] = useState<Fonts | null>(null);
   const [busy, setBusy] = useState(false);
   const [showMail, setShowMail] = useState(false);
   const [priceTick, setPriceTick] = useState(0);
+
+  useEffect(() => {
+    let live = true;
+    loadFonts().then((f) => { if (live) setFonts(f); }).catch(() => { /* the preview keeps its stand-ins; the PDF is made on the server */ });
+    return () => { live = false; };
+  }, []);
 
   // Remember the paper between visits (a convenience; the screen works without it).
   useEffect(() => {
@@ -96,6 +105,28 @@ export default function PrintCodes({ pieces, preset, pro, forArtist, mail, note 
   const laid = useMemo(() => pack(items, paperBox), [items, paperBox.w, paperBox.h, paper]); // eslint-disable-line react-hooks/exhaustive-deps
   const cards = items.length - laid.unplaced.length;
   const sheets = laid.sheets.length;
+
+  // The real cards on the sheets being shown, each drawn once and reused for its copies.
+  const previewIds = Array.from(new Set(laid.sheets.slice(0, MAX_PREVIEW).flatMap((s) => s.cards.map((c) => c.ref))));
+  const previewKey = previewIds.map((id) => `${id}:${rows[id].code}:${rows[id].size}`).join("|");
+  const preview = useMemo(() => {
+    const ids: Record<string, string> = {};
+    let markup = "";
+    if (fonts) previewIds.forEach((id, i) => {
+      const p = byId.get(id), r = rows[id];
+      if (!p) return;
+      const code = p.codes.find((c) => c.code === r.code) ?? null;
+      const design = printLook(code?.look ?? p.look, r.size, { disc: code?.discountPct ?? 0, color, pro });
+      if (!design) return;
+      try {
+        const card = renderCard(design, p.art, fonts, code?.qrText ?? p.sampleQr, `pc${i}`);
+        ids[id] = `print-card-${i}`;
+        markup += `<symbol id="print-card-${i}" viewBox="0 0 ${card.w} ${card.h}">${card.inner}</symbol>`;
+      } catch { /* this card keeps its stand-in */ }
+    });
+    return { ids, markup };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fonts, color, previewKey, byId, pro]);
 
   // How full the last sheet is (plain paper, small cards only), to offer "fill the empty space".
   const room = useMemo(() => {
@@ -146,7 +177,7 @@ export default function PrintCodes({ pieces, preset, pro, forArtist, mail, note 
       const r = await fetch("/api/studio/print", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lines, paper, customPaper: paper === "custom" ? customPaper : undefined, artistId: forArtist?.id }),
+        body: JSON.stringify({ lines, paper, customPaper: paper === "custom" ? customPaper : undefined, color, artistId: forArtist?.id }),
       });
       if (!r.ok) {
         const p = await problemFrom(r, "Couldn't make the PDF. Try again.");
@@ -304,7 +335,17 @@ export default function PrintCodes({ pieces, preset, pro, forArtist, mail, note 
               </div>
             )}
 
+            <label className="grid gap-1">
+              <span className="text-[13px] font-semibold text-ink-2">Print in</span>
+              <select value={color} onChange={(e) => setColor(e.target.value as PrintColor)} className="min-h-[42px] rounded-lg border-[1.5px] border-[color:var(--af-field-edge)] bg-white px-2.5 text-[15px]">
+                <option value="color">Color</option>
+                <option value="bw">Black and white</option>
+              </select>
+            </label>
+
             <div className="grid gap-2">
+              {/* The cards' drawings, shared by every sheet below. Generated from our own card renderer. */}
+              <svg aria-hidden="true" className="absolute h-0 w-0" dangerouslySetInnerHTML={{ __html: preview.markup }} />
               <div className="flex items-baseline justify-between gap-2">
                 <b className="text-[15px]" aria-live="polite">{summary}</b>
                 {sheets > MAX_PREVIEW && <span className="text-[13px] text-ink-2">Showing {MAX_PREVIEW}</span>}
@@ -312,7 +353,7 @@ export default function PrintCodes({ pieces, preset, pro, forArtist, mail, note 
               {cards > 0 ? (
                 <div className="grid grid-cols-2 gap-3">
                   {laid.sheets.slice(0, MAX_PREVIEW).map((s, i) => (
-                    <SheetPreview key={i} n={i + 1} paper={paperBox} cards={s.cards} titleOf={(id) => byId.get(id)?.title || ""} sizeOf={(id) => rows[id].size} cut={!paperBox.slots} />
+                    <SheetPreview key={i} n={i + 1} paper={paperBox} cards={s.cards} cardIds={preview.ids} gray={color === "bw"} titleOf={(id) => byId.get(id)?.title || ""} sizeOf={(id) => rows[id].size} cut={!paperBox.slots} />
                   ))}
                 </div>
               ) : (
@@ -332,6 +373,7 @@ export default function PrintCodes({ pieces, preset, pro, forArtist, mail, note 
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Download className="h-4 w-4" aria-hidden="true" />}
                 {busy ? "Making your PDF…" : "Download PDF"}
               </button>
+              {mail && showMail && color === "bw" && <p className="text-[13px] text-ink-2">Mailed cards always come in color.</p>}
               {mail && (
                 <button type="button" onClick={() => setShowMail((v) => !v)} disabled={!cards} aria-expanded={showMail} className="btn btn-ghost w-full">
                   <Truck className="h-4 w-4" aria-hidden="true" />
@@ -381,17 +423,29 @@ function Stepper({ value, onChange, label }: { value: number | null; onChange: (
   );
 }
 
-/** One sheet as it will print: every card in place, coloured by size, named by its piece. */
-function SheetPreview({ n, paper, cards, titleOf, sizeOf, cut }: {
-  n: number; paper: { w: number; h: number }; cards: Placed<string>[]; titleOf: (id: string) => string; sizeOf: (id: string) => SizeKey; cut: boolean;
+/** One sheet as it will print: the real cards in place, with their cut lines. */
+function SheetPreview({ n, paper, cards, cardIds, gray, titleOf, sizeOf, cut }: {
+  n: number; paper: { w: number; h: number }; cards: Placed<string>[]; cardIds: Record<string, string>; gray: boolean; titleOf: (id: string) => string; sizeOf: (id: string) => SizeKey; cut: boolean;
 }) {
   const S = 20; // svg units per inch
   return (
     <figure className="grid gap-1">
-      <svg viewBox={`0 0 ${paper.w * S} ${paper.h * S}`} className="w-full rounded-sm border border-edge bg-white shadow-[0_1px_2px_rgba(0,0,0,.06)]" role="img" aria-label={`Sheet ${n}: ${cards.length} ${cards.length === 1 ? "card" : "cards"}`}>
+      <svg viewBox={`0 0 ${paper.w * S} ${paper.h * S}`} className={cn("w-full rounded-sm border border-edge bg-white shadow-[0_1px_2px_rgba(0,0,0,.06)]", gray && "grayscale")} role="img" aria-label={`Sheet ${n}: ${cards.length} ${cards.length === 1 ? "card" : "cards"}`}>
         {cards.map((c, i) => {
           const t = TONE[sizeOf(c.ref)] ?? TONE.label;
           const x = c.x * S, y = c.y * S, w = c.w * S, h = c.h * S;
+          const art = cardIds[c.ref];
+          if (art) {
+            // Turned cards turn the same way the PDF turns them.
+            const place = c.rotated ? `translate(${x} ${y + h}) rotate(-90)` : `translate(${x} ${y})`;
+            const line = { fill: "none", stroke: "#b8bac2", strokeWidth: 0.5, vectorEffect: "non-scaling-stroke" as const };
+            return (
+              <g key={i}>
+                <use href={`#${art}`} width={c.rotated ? h : w} height={c.rotated ? w : h} transform={place} />
+                {cut && c.scale === 1 && (c.round ? <ellipse cx={x + w / 2} cy={y + h / 2} rx={w / 2} ry={h / 2} {...line} /> : <rect x={x} y={y} width={w} height={h} {...line} />)}
+              </g>
+            );
+          }
           const title = titleOf(c.ref);
           const fs = Math.max(5, Math.min(9, Math.min(w, h) / 4.5));
           const max = Math.max(3, Math.floor((c.round ? w * 0.7 : w - 6) / (fs * 0.55)));

@@ -150,12 +150,8 @@ export function pack<T>(items: PackItem<T>[], paper: PaperSize, opts: { margin?:
   sheets.push(...best.out);
   unplaced.push(...best.left);
 
-  // Centre each sheet's cards on the paper (they were packed from the top-left corner of the safe area).
-  for (const sh of sheets) {
-    const right = Math.max(...sh.cards.map((c) => c.x + c.w)), bottom = Math.max(...sh.cards.map((c) => c.y + c.h));
-    const dx = m + Math.max(0, (W - right) / 2), dy = m + Math.max(0, (H - bottom) / 2);
-    for (const c of sh.cards) { c.x += dx; c.y += dy; }
-  }
+  // Cards start at the top-left of the safe area, so the rest of the sheet stays in one piece for later.
+  for (const sh of sheets) for (const c of sh.cards) { c.x += m; c.y += m; }
 
   // Whole-page cards: one per sheet, as large as the paper allows, centred, turned if the paper's the other way.
   for (const it of list) {
