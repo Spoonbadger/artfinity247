@@ -58,6 +58,8 @@ export default function PrintCodes({ pieces, preset, pro, forArtist, mail, note 
   // Ticked pieces first, in the order they came; fixed on load so rows don't jump while you tick.
   const [order] = useState(() => [...pieces.filter((p) => preset[p.id]), ...pieces.filter((p) => !preset[p.id])].map((p) => p.id));
   const byId = useMemo(() => new Map(pieces.map((p) => [p.id, p])), [pieces]);
+  // A refresh can drop a piece while this screen is open (rejected, removed), so skip any that are gone.
+  const live = useMemo(() => order.flatMap((id) => byId.get(id) ?? []), [order, byId]);
   const [q, setQ] = useState("");
   const [paper, setPaper] = useState<PaperKey>("letter");
   const [customPaper, setCustomPaper] = useState<CustomPaper>({ w: 8.5, h: 11 });
@@ -80,7 +82,7 @@ export default function PrintCodes({ pieces, preset, pro, forArtist, mail, note 
   const customOf = (p: Piece, r: Row): CustomSize | null => p.codes.find((c) => c.code === r.code)?.custom ?? null;
   const sizesFor = (p: Piece, r: Row): SizeKey[] => [...SIZE_ORDER, ...(pro && customOf(p, r) ? (["custom"] as const) : [])];
 
-  const ticked = order.map((id) => ({ p: byId.get(id)!, r: rows[id] })).filter(({ r }) => r.on && r.copies > 0);
+  const ticked = live.map((p) => ({ p, r: rows[p.id] })).filter(({ r }) => r.on && r.copies > 0);
   const paperBox = paperSize(paper, customPaper);
   const items = useMemo(() => {
     const out: PackItem<string>[] = [];
@@ -90,7 +92,7 @@ export default function PrintCodes({ pieces, preset, pro, forArtist, mail, note 
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, order]);
+  }, [rows, live]);
   const laid = useMemo(() => pack(items, paperBox), [items, paperBox.w, paperBox.h, paper]); // eslint-disable-line react-hooks/exhaustive-deps
   const cards = items.length - laid.unplaced.length;
   const sheets = laid.sheets.length;
@@ -116,7 +118,7 @@ export default function PrintCodes({ pieces, preset, pro, forArtist, mail, note 
     saved(`Added ${plural(added, "card")}`, { description: "Extra copies fill the empty space. Same number of sheets." });
   }
 
-  const shown = order.map((id) => byId.get(id)!).filter((p) => !q.trim() || p.title.toLowerCase().includes(q.trim().toLowerCase()));
+  const shown = live.filter((p) => !q.trim() || p.title.toLowerCase().includes(q.trim().toLowerCase()));
   const allOn = shown.length > 0 && shown.every((p) => rows[p.id].on);
   const setAll = (patch: (p: Piece, r: Row) => Partial<Row> | null) =>
     setRows((o) => {
