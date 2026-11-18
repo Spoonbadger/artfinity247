@@ -233,12 +233,13 @@ export default function PrintCodes({ pieces, preset, pro, forArtist, mail, note 
             </div>
           )}
 
-          <ul className="grid">
+          {/* The rows follow this card's width, not the window's: the Studio sidebar can leave it narrow on a wide screen. */}
+          <ul className="grid [container-type:inline-size]">
             {shown.map((p) => {
               const r = rows[p.id];
               const cz = customOf(p, r);
               return (
-                <li key={p.id} className={cn("grid items-center gap-x-3 gap-y-1.5 border-t border-edge py-2.5 first:border-t-0 sm:grid-cols-[minmax(0,1fr)_auto_auto]", !r.on && "opacity-80")}>
+                <li key={p.id} className={cn("grid items-center gap-x-3 gap-y-1.5 border-t border-edge py-2.5 first:border-t-0 [@container(min-width:520px)]:grid-cols-[minmax(0,1fr)_auto_auto]", !r.on && "opacity-80")}>
                   <div className="flex min-w-0 items-center gap-3">
                     <label className="flex min-h-[44px] shrink-0 cursor-pointer items-center gap-3">
                       <input type="checkbox" checked={r.on} onChange={(e) => set(p.id, { on: e.target.checked })} className="h-5 w-5 shrink-0 accent-[var(--af-scan)]" aria-label={`Print ${p.title}`} />
@@ -260,8 +261,8 @@ export default function PrintCodes({ pieces, preset, pro, forArtist, mail, note 
                       </div>
                     </div>
                   </div>
-                  {/* Phones: size and copies on a second line, under the title. Wider: their own columns. */}
-                  <div className="flex items-center justify-between gap-3 pl-[88px] sm:contents">
+                  {/* A narrow card: size and copies on a second line, under the title. Wider: their own columns. */}
+                  <div className="flex items-center justify-between gap-3 pl-[88px] [@container(min-width:520px)]:contents">
                     <label className="min-w-0">
                       <span className="sr-only">Size for {p.title}</span>
                       <select value={r.size} onChange={(e) => set(p.id, { size: e.target.value as SizeKey, on: true })} className="min-h-[40px] max-w-full rounded-full border-[1.5px] border-[color:var(--af-field-edge)] bg-white px-3 text-[14px]">
