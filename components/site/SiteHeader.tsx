@@ -16,12 +16,13 @@ const BROWSE = [
   { href: "/art", label: "All art", note: "Every print, newest first" },
   { href: "/artists", label: "Artists", note: "Find someone whose work you love" },
   { href: "/scenes", label: "Neighborhoods", note: "Art from the places you know" },
+  { href: "/venues", label: "Venues", note: "Cafés and shops with the art on the wall" },
 ];
+// Pricing lives in the footer only (For artists): in the top nav it made buying look like it costs money.
 const LINKS = [
   { href: "/how-it-works", label: "How it works" },
-  { href: "/pricing", label: "Pricing" },
 ];
-const inBrowse = (p: string | null) => !!p && /^\/(art|artists|scenes)(\/|$)/.test(p);
+const inBrowse = (p: string | null) => !!p && /^\/(art|artists|scenes|venues)(\/|$)/.test(p);
 
 /** Desktop "Browse art": opens on hover (with a short grace period so the pointer can cross the gap), on click, or
  * from the keyboard; closes on Escape, on leaving, and on navigation. */

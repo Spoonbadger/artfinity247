@@ -1,6 +1,5 @@
 // What happens when a piece goes live (at upload, or when an admin approves it from review):
 // the referral reward and the "your artwork is live" email with its QR download link. Server-only.
-import { SignJWT } from "jose";
 import { prisma } from "@/lib/prisma";
 import { artUrl } from "@/lib/urls";
 import { resend } from "@/lib/resend";
@@ -67,10 +66,6 @@ export async function announceArtworkLive(artworkId: string, { email = true }: {
 
   try {
     const base = process.env.NEXT_PUBLIC_APP_URL || "https://theartfinity.com";
-    const qrToken = await new SignJWT({ slug: artwork.slug, artistId: artwork.artistId, role: artwork.artist?.role || "ARTIST", type: "qr_download" })
-      .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime("7d")
-      .sign(new TextEncoder().encode(process.env.JWT_SECRET!));
     await resend.emails.send({
       from: "Artfinity <notifications@theartfinity.com>",
       to: artwork.artist.email,
@@ -80,7 +75,7 @@ export async function announceArtworkLive(artworkId: string, { email = true }: {
         title: artwork.title,
         artworkUrl: artUrl(artwork.artist.slug, artwork.slug!, base),
         imageUrl: artwork.imageUrl ? (artwork.imageUrl.startsWith("/") ? base + artwork.imageUrl : artwork.imageUrl) : null,
-        qrDownloadUrl: `${base}/api/artworks/${artwork.slug}/qr?download=1&token=${qrToken}`,
+        qrDownloadUrl: `${base}/studio/print?pieces=${encodeURIComponent(artwork.slug!)}`,
       }),
     });
   } catch (err) {

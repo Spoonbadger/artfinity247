@@ -33,7 +33,7 @@ export default function CodePrintsForm({ value, placeholder }: { value: CodePrin
       const r = await fetch("/api/admin/settings/code-prints", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(pricing) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || "Couldn't save.");
-      toast.success("Code print prices saved", { description: "Artists see them on their print queue now." });
+      toast.success("Code print prices saved", { description: "Artists see them on Print codes now." });
       router.refresh();
     } catch (err) {
       toast.error((err as Error).message);

@@ -112,7 +112,7 @@ export default function ReceiptEmail({
         </P>
       ) : null}
       <P muted small style={{ margin: 0 }}>
-        Arrived damaged? We reprint it free within {HELP_DAYS_AFTER_DELIVERY} days of delivery (<A href={`${SITE_URL}/return-policy`}>returns policy</A>).
+        Arrived damaged? Tell us within {HELP_DAYS_AFTER_DELIVERY} days of delivery (<A href={`${SITE_URL}/return-policy`}>returns policy</A>).
         For anything else, reply or write to{" "}
         <A href={`mailto:${SUPPORT}?subject=${encodeURIComponent(`Order ${code}`)}`}>{SUPPORT}</A> with order {code}.
       </P>

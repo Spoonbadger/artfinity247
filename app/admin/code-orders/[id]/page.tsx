@@ -68,7 +68,7 @@ export default async function CodeOrderPage({ params }: { params: { id: string }
           </li>
           <li className="flex flex-wrap items-center gap-2">
             <b>2.</b>
-            <ActionButton url={`/api/admin/code-orders/${o.id}`} body={{ action: "printing" }} label="Mark printing" title={`Mark ${no} printing?`} confirm="The artist sees “Printing” on their print queue." confirmLabel="Mark printing" done="Marked printing" need="orders" disabled={!paid || st !== "paid"} />
+            <ActionButton url={`/api/admin/code-orders/${o.id}`} body={{ action: "printing" }} label="Mark printing" title={`Mark ${no} printing?`} confirm="The artist sees “Printing” in My purchases." confirmLabel="Mark printing" done="Marked printing" need="orders" disabled={!paid || st !== "paid"} />
             <ActionButton
               url={`/api/admin/code-orders/${o.id}`} body={{ action: "shipped" }} tone="blue" need="orders" disabled={!paid || st === "delivered"}
               label={st === "shipped" ? "Fix tracking" : "Mark shipped"} title={`Ship ${no}`} confirmLabel="Save and email the artist" done="Shipped. The artist has the tracking link."

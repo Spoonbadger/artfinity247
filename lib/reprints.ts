@@ -175,7 +175,7 @@ export async function createRequest(orderId: string, input: { items?: unknown; r
   await sendBuyer(order.email, "We got your photos", [
     `Hi ${firstNameOf(order.shippingName)},`,
     `Sorry about ${titles}. Thank you for the photos.`,
-    `We'll look today or tomorrow and email you. If it's on us, we reprint it free.`,
+    `We'll look today or tomorrow and email you. If it's on us, we'll make it right.`,
   ]).catch((err) => console.error("Reprint confirmation email failed", err));
   await resend.emails.send({
     from: FROM,

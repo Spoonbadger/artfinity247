@@ -220,7 +220,7 @@ export default function ThankYouClient({ sessionId, collector = { signedIn: fals
           <li>
             {order.helpPath
               ? <>Something wrong when it arrives? <Link href={order.helpPath} className="font-semibold text-ink underline underline-offset-4">Tell us</Link></>
-              : <>Arrives damaged? We reprint it free. The link is in your shipping email.</>}
+              : <>Arrives damaged? Tell us within a week. The link is in your shipping email.</>}
           </li>
           {!order.helpPath && <li>Questions about order {code}? <a href={supportMailto(`Order ${code}`)} className="font-semibold text-ink underline underline-offset-4">Email us</a></li>}
           <li>

@@ -425,7 +425,7 @@ export default function ScanView({
           <p className="t-small -mt-1 hidden md:block">
             {arrives ? <><b className="font-semibold text-ink">Arrives {arrives}</b> · free US shipping</> : <b className="font-semibold text-ink">Free US shipping</b>}
             {" · "}
-            <Link href="/return-policy" className="underline decoration-line underline-offset-2 hover:text-ink">damaged? free reprint</Link>
+            <Link href="/return-policy" className="underline decoration-line underline-offset-2 hover:text-ink">damaged? we&apos;ll help</Link>
             {" · secure checkout"}
           </p>
         </section>
@@ -464,7 +464,7 @@ export default function ScanView({
             </li>
             {frame && <li>{FRAME_COLORS.find((f) => f.key === frame)?.label} frame, ready to hang.</li>}
             <li>Printed and shipped by Artfinity. {firstName} gets {pctOf(artistSplit)} of the profit.</li>
-            <li>Size is final sale. Arrives damaged? <Link href="/return-policy" className="font-semibold text-ink underline decoration-line underline-offset-2">We reprint it free.</Link></li>
+            <li>Size is final sale. Arrives damaged? <Link href="/return-policy" className="font-semibold text-ink underline decoration-line underline-offset-2">Tell us within a week.</Link></li>
           </ul>
           <Link href="/help/buyers" className="t-small w-fit underline decoration-line underline-offset-2 hover:text-ink">Shipping, frames and returns</Link>
         </section>
@@ -540,7 +540,7 @@ export default function ScanView({
             {soldOut ? "Sold out" : busy ? "Opening…" : `Buy · ${usd(price.now)}`}
           </button>
         </div>
-        <p className="mt-1 text-center text-[13px] text-ink-2">{arrives ? `Arrives ${arrives} · free US shipping` : "Free US shipping"} · free reprint if damaged</p>
+        <p className="mt-1 text-center text-[13px] text-ink-2">{arrives ? `Arrives ${arrives} · free US shipping` : "Free US shipping"} · help if damaged</p>
       </div>
     </div>
   );

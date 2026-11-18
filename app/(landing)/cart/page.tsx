@@ -64,7 +64,7 @@ export default function CartPage() {
               </button>
               <p className="t-small text-center">
                 Printed in NYC, arrives {deliveryRange()} · tax added at checkout ·{" "}
-                <Link href="/help/buyers/damaged-print" className="underline underline-offset-2 hover:text-ink">damaged? free reprint</Link>
+                <Link href="/help/buyers/damaged-print" className="underline underline-offset-2 hover:text-ink">damaged? we&apos;ll help</Link>
               </p>
             </CartPricingInfo>
           </div>

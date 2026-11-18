@@ -26,7 +26,7 @@ const FAQ: [string, React.ReactNode][] = [
   ["Who owns my art?", <>You do. We get a limited license to print, sell and promote it while it&apos;s listed. We never use it to train AI. See the <Link href="/artist-terms-and-agreement">artist terms</Link>.</>],
   ["Can I set my own prices?", "Yes. You set a markup on each size, on top of the base price."],
   ["What about shipping?", "Shipping is free for US buyers and already in the print cost. Sales tax is added at checkout and never comes out of your share."],
-  ["What if a print arrives damaged?", "We reprint it free for the buyer. Artfinity pays for reprints, not you."],
+  ["What if a print arrives damaged?", "We sort it out with the buyer. If we reprint, Artfinity pays, not you."],
   ["What about taxes?", "You report and pay your own income tax. We don’t withhold any."],
 ];
 

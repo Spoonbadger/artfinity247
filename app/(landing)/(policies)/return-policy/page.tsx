@@ -4,24 +4,26 @@ import { HELP_DAYS_AFTER_DELIVERY } from "@/lib/reprintFormat";
 
 export const metadata: Metadata = { title: "Return policy" };
 
+// Wording follows the case-by-case approach (Nov 17 session): helpful and genuine, but every remedy is at our discretion.
 export default function Page() {
   return (
-    <LongForm title="Return policy" sub="Arrives damaged? We reprint it free." current="/return-policy" summary={[
-      `Damaged, misprinted or wrong: send a photo within ${HELP_DAYS_AFTER_DELIVERY} days of delivery. We reprint it free, no need to send it back.`,
+    <LongForm title="Return policy" sub="Something wrong with your print? Tell us." current="/return-policy" summary={[
+      `Damaged, misprinted or wrong: tell us within ${HELP_DAYS_AFTER_DELIVERY} days of delivery, with your order number and a photo.`,
+      "We look at every case and decide how to help, at our discretion.",
       "No returns for a change of mind or the wrong size. Every print is made to order.",
     ]}>
       <section>
-        <p className="!mt-0 !text-[14px] text-ink-2">Last updated: November 5, 2026</p>
+        <p className="!mt-0 !text-[14px] text-ink-2">Last updated: November 17, 2026</p>
 
         <div>
           <h2>Damaged, misprinted or wrong</h2>
-          <p>We&apos;ll make it right, at no cost to you.</p>
           <ul>
-            <li>Within {HELP_DAYS_AFTER_DELIVERY} days of delivery, tap &ldquo;Problem with your print?&rdquo; in your shipping email and add a photo. No need to send it back.</li>
+            <li>Within {HELP_DAYS_AFTER_DELIVERY} days of delivery, tap &ldquo;Problem with your print?&rdquo; in your shipping email and add a photo.</li>
             <li>
               No email handy? Write to <a href="mailto:support@theartfinity.com">support@theartfinity.com</a> with your order number and a photo.
             </li>
-            <li>We reprint and reship it free. If a reprint won&apos;t fix it, we refund you to your original payment method.</li>
+            <li>We review each request case by case. Depending on what happened, we may offer a reprint, a partial or full refund, or another fix. The decision is ours.</li>
+            <li>Requests after {HELP_DAYS_AFTER_DELIVERY} days, or without a photo, may not be eligible.</li>
           </ul>
         </div>
 
@@ -35,7 +37,7 @@ export default function Page() {
 
         <div>
           <h2>Shipping</h2>
-          <p>US shipping is free, and so is shipping on every reprint.</p>
+          <p>US shipping on orders is free. If we ask you to send a print back, return shipping may be at your cost.</p>
         </div>
 
         <div>

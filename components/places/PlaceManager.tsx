@@ -35,24 +35,12 @@ function fail(e: unknown, fallback: string, retry: () => void) {
   else failed(errorText(e, fallback), { retry });
 }
 
-/** The header's main button: queue every code here (and one for each painting without a code), then the queue. */
+/** The header's main button: Print codes with every painting hanging here ticked, each with its code here (made if missing). */
 export function PrintPlaceButton({ placeId, disabled }: { placeId: string; disabled?: boolean }) {
-  const router = useRouter();
-  const [busy, setBusy] = useState(false);
-  async function go() {
-    setBusy(true);
-    try {
-      const j = await call(`/api/studio/places/${placeId}/queue`, {});
-      saved(`${j.queued} ${j.queued === 1 ? "code" : "codes"} ready to print`, { description: j.made ? `Made ${j.made} new ${j.made === 1 ? "code" : "codes"} for paintings that had none.` : "Print at home or have us mail them." });
-      router.push("/studio/qr/queue");
-    } catch (e) {
-      fail(e, "Couldn't add them to your print queue. Try again.", go);
-    } finally { setBusy(false); }
-  }
-  return (
-    <button type="button" className="btn btn-blue btn-sm" onClick={go} disabled={busy || disabled}>
-      {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Printer className="h-4 w-4" aria-hidden="true" />}Print all codes for this place
-    </button>
+  return disabled ? (
+    <span className="btn btn-blue btn-sm pointer-events-none opacity-50" aria-disabled="true"><Printer className="h-4 w-4" aria-hidden="true" />Print codes for this place</span>
+  ) : (
+    <Link href={`/studio/print?place=${encodeURIComponent(placeId)}`} className="btn btn-blue btn-sm"><Printer className="h-4 w-4" aria-hidden="true" />Print codes for this place</Link>
   );
 }
 

@@ -14,7 +14,9 @@ import { AUTO_APPROVE_AFTER } from "@/lib/artworkLive";
 import { MAX_ARTWORKS as NEWSLETTER_MAX_ART, SEND_GAP_MS } from "@/lib/newsletter";
 import { HELP_DAYS_AFTER_DELIVERY, MAX_PHOTOS, REPRINT_REASONS } from "@/lib/reprintFormat";
 import { DISCOUNTS, EXTRAS, FORMATS, PRESETS, SEASONS } from "@/components/qr/card";
-import { FORMAT_ORDER, PAPER, QUEUE_MAX_QTY } from "@/lib/printQueueFormat";
+import { FORMAT_ORDER, PAPER } from "@/lib/printQueueFormat";
+import { pack } from "@/lib/printPack";
+import { MAX_COPIES, cardBox, paperSize } from "@/lib/printOptions";
 import { LAYOUTS, MAX_PINNED, PAINTS } from "@/components/artist/theme";
 import { EDIT_WINDOW_DAYS } from "@/lib/reviews";
 import { SOURCE_LABEL } from "@/lib/pageviews";
@@ -89,13 +91,18 @@ export const QR_FORMATS = Object.values(FORMATS);
 export const QR_EXTRAS = Object.values(EXTRAS).map((x) => `- **${x.name}:** ${x.sub.toLowerCase()}.`).join("\n");
 export const QR_SEASONS = list(Object.values(SEASONS).map((x) => x.name));
 export const QR_DISCOUNTS = list(DISCOUNTS.filter(Boolean).map((d) => `${d}%`));
-/** | Format | Buy | Per sheet | for the print queue article. */
+/** Cards of one size on one plain US Letter sheet, as Print codes packs them (lib/printPack.ts). */
+const perLetter = (f: (typeof FORMAT_ORDER)[number]) => {
+  const box = cardBox(f, null)!;
+  return pack(Array.from({ length: 40 }, (_, i) => ({ ...box, ref: i })), paperSize("letter")).sheets[0].cards.length;
+};
+/** | Format | Size | Per Letter sheet | What to buy | for the Print codes articles. */
 export const QR_PAPER_TABLE = [
-  "| Format | What to buy | Per sheet |",
-  "|---|---|---|",
-  ...FORMAT_ORDER.map((f) => `| ${FORMATS[f].name} (${FORMATS[f].w} × ${FORMATS[f].h} in) | ${PAPER[f].buy} | ${FORMATS[f].sheet.cols * FORMATS[f].sheet.rows} |`),
+  "| Size | Card | Per Letter sheet | Paper that works |",
+  "|---|---|---|---|",
+  ...FORMAT_ORDER.map((f) => `| ${FORMATS[f].name} | ${FORMATS[f].w} × ${FORMATS[f].h} in | ${perLetter(f)} | ${PAPER[f].buy} |`),
 ].join("\n");
-export { QUEUE_MAX_QTY };
+export { MAX_COPIES };
 export const LEGACY_UNTIL_TEXT = LEGACY_UNTIL.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "America/New_York" });
 
 // ---------- Page design ----------

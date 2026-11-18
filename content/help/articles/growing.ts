@@ -123,7 +123,7 @@ If a review has a link or rough language, our moderation team takes a quick look
 ## No reviews yet?
 Reviews only come from delivered prints, so they start after your first sales arrive. To get there sooner, [print a QR code](/studio/qr) for your paintings, and make the [delivered email](/studio/emails) sound like you.
 
-> A problem with a print? Buyers get a free reprint through their order page, so a damaged parcel rarely turns into a bad review.
+> A problem with a print? Buyers can tell us through their order page and we sort it out, so a damaged parcel rarely turns into a bad review.
 `,
   },
   {

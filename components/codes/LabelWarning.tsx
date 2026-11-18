@@ -54,17 +54,12 @@ export default function LabelWarning({ warning, busy, onReprint, onSave, onCance
           </button>
           <button type="button" className="btn btn-ghost" onClick={onCancel} disabled={!!busy}>Cancel</button>
         </div>
-        <p className="t-small">Reprint adds {warning.codes.length === 1 ? "the code" : `the ${warning.codes.length} codes`} to your print queue with the same look.</p>
+        <p className="t-small">Reprint opens Print codes with {warning.codes.length === 1 ? "this code" : `these ${warning.codes.length} codes`} ticked, in the same look with today&apos;s price.</p>
       </div>
     </div>,
     document.body,
   );
 }
 
-/** After "Save and reprint": queue the codes again. Returns how many went in, or throws with the server's message. */
-export async function queueReprint(codes: string[]): Promise<{ queued: number; cards: number }> {
-  const r = await fetch("/api/studio/code-prints/reprint", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ codes }) });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.error || "Couldn't add them to your print queue. Try again.");
-  return j;
-}
+/** Reprint: Print codes with these codes ticked (their saved look, today's price, the size they last printed in). */
+export const reprintHref = (codes: string[]) => `/studio/print?code=${codes.map(encodeURIComponent).join(",")}`;

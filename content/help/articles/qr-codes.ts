@@ -1,14 +1,9 @@
 import type { HelpArticle } from "../types";
-import { LEGACY_MAX_PCT, LEGACY_UNTIL_TEXT, QR_DISCOUNTS, QR_EXTRAS, QR_FORMATS, QR_PAPER_TABLE, QR_PRESETS, QR_SEASONS, QUEUE_MAX_QTY } from "../facts";
+import { LEGACY_MAX_PCT, LEGACY_UNTIL_TEXT, MAX_COPIES, QR_DISCOUNTS, QR_EXTRAS, QR_PAPER_TABLE, QR_PRESETS, QR_SEASONS } from "../facts";
 
 const section = "qr-codes" as const;
 
 const presetList = QR_PRESETS.map((p) => `- **${p.name}:** ${p.sub.toLowerCase()}. ${p.format.name}, ${p.format.w} × ${p.format.h} in.`).join("\n");
-const sheetTable = [
-  "| Format | Size | Per US Letter sheet |",
-  "|---|---|---|",
-  ...QR_FORMATS.map((f) => `| ${f.name} | ${f.w} × ${f.h} in | ${f.sheet.note} |`),
-].join("\n");
 
 export const qrCodes: HelpArticle[] = [
   {
@@ -134,69 +129,65 @@ Cards printed before discounts were protected carry a plain discount in the link
 `,
   },
   {
-    slug: "printing-sheets",
+    slug: "print-codes",
     section,
     audience: "artist",
-    title: "Printing codes on sheets",
-    summary: "Every download is a US Letter PDF with crop marks. Print at 100% scale on matte card or label paper, then cut.",
-    link: { href: "/studio/qr", label: "Open QR codes" },
-    related: ["qr-templates", "hanging-codes", "first-qr-code"],
+    title: "Print codes: any mix, on as few sheets as possible",
+    summary: "Tick the pieces, give each its own size and number of copies, pick your paper, and download one PDF. Or have us print, laminate and mail them at cost.",
+    link: { href: "/studio/print", label: "Open Print codes" },
+    related: ["printing-sheets", "qr-templates", "old-price-on-label"],
     body: `
-## Sheet layouts
-${sheetTable}
+Every print button on Artfinity opens the same screen, **Print codes**, with the right pieces already ticked: from the QR Studio, My art, an upload, a place, or a label that's out of date.
 
-## Printing tips
-- Print at **100% / actual size**. "Fit to page" shrinks the cards and the crop marks stop lining up.
-- Matte card stock (or matte label sheets) scans better than glossy paper under lights.
-- Print one test sheet first and scan a card with your phone.
-- Round stickers fit standard 2-inch round labels.
+## Pick what to print
+1. Tick the pieces. Search if you have a lot.
+2. Each piece starts at **1 colour label**. Change its size (label, sticker, tag or poster) and how many copies, up to ${MAX_COPIES}.
+3. Changing lots at once? **All ticked** sets the size or copies for every ticked piece. Any piece can still differ.
 
-## Downloads
-- **Download PDF:** a print-ready sheet
-- **SVG:** the card as a vector file, for a print shop or design app
-- **Code PNG:** just the code, 1200 px, to drop into your own designs
-- **Print all my codes:** one PDF with a card for every piece, in the same look
+Two labels of one painting, a sticker of another and three tags each of five more all go in one print.
 
-You can also print gallery labels for every live piece at once from [My art](/studio/art).
+Each card uses the code's saved look from the QR Studio, with its discount as it is today, so the card matches what a scan shows. A piece with no code yet gets one the first time you print it, and keeps it after that.
 
-Printing codes for several pieces? Line them up in the [print queue](/help/qr-codes/print-queue) and print them together on shared sheets.
-`,
-  },
-  {
-    slug: "print-queue",
-    section,
-    audience: "artist",
-    title: "The print queue: print all your codes at once",
-    summary: "Line up codes for several pieces, then print them together on label sheets at home, or have us print, laminate and mail them to you at cost.",
-    link: { href: "/studio/qr/queue", label: "Open the print queue" },
-    related: ["printing-sheets", "qr-templates", "hanging-codes"],
-    body: `
-## Add codes to the queue
-- **From QR Studio:** pick a piece and a look, set how many, then **Add to print queue**. Download PDF still prints one sheet right away.
-- **From My art:** tap **Select pieces to print codes**, pick several, choose a look (or your last-used one) and **Add codes to print queue**.
-- **Right after an upload:** **Add its code to the print queue**.
-
-Every card in the queue holds the piece's real code. If a piece doesn't have one yet, we make it when you add it, so what you print is what scans. Adding the same code in the same format again just adds to its quantity (up to ${QUEUE_MAX_QTY}).
-
-In the queue you can change how many of each, switch a card to another look, or remove it. Your queue is saved to your account, so it's the same on your phone and your laptop.
-
-## Print at home
-The queue makes one PDF per format, and packs **different pieces onto the same sheets**: 3 labels of one painting and 7 of another fill one 10-up sheet. You see each sheet before you print.
+## Pick your paper
+Letter, A4, Legal, Tabloid, or any size you type in. We lay the cards out to use as few sheets as possible: mixed sizes share a sheet, and cards turn sideways when that fits more. The preview shows every sheet before you print.
 
 ${QR_PAPER_TABLE}
 
-> Print at **100% scale** ("Actual size"), not "Fit to page". Test-scan one before you print them all: print sheet 1 on plain paper, hold it over a label sheet to check the fit, and scan a card with your phone.
+On a ready-cut label sheet (Avery), each card goes in its own label, so only cards of that label's size fit.
 
-When they're printed, tap **Mark as printed**. They leave the queue and My codes shows the date ("Printed Nov 5").
+Room left on the last sheet? **Fill the empty space with extra copies** adds copies of what you picked, shared out evenly, without adding a sheet.
 
-## Have us print them
-Prefer not to fuss with label sheets? Choose **Have us print them**: we print every code in your queue, laminate them, cut them and mail them to you.
+## Print at home
+**Download PDF** makes one file with every sheet. Print at **100% / actual size**, then cut on the thin grey lines. My codes shows the date ("Printed Nov 5").
 
-- **At cost.** You pay what printing, laminating and postage cost us. We don't make money on these. The page shows the full breakdown before you pay.
-- **US addresses.** Pay on Stripe's secure checkout. We email you a confirmation, then the tracking link when they ship.
-- Your orders and their tracking show on the print queue and in [My purchases](/studio/purchases).
+## Mail them to me
+Prefer not to cut? **Mail them to me** sends exactly the cards on screen to us. We print, laminate, cut and mail them to you.
 
-> Payment didn't go through? Nothing was charged and your codes stay in the queue. Tap **Try again** on the order.
+- **At cost.** You pay what printing, laminating and postage cost us. The page shows the breakdown before you pay.
+- **Standard sizes only.** Print custom sizes at home.
+- **US addresses.** Pay on Stripe's secure checkout. We email a confirmation, then tracking when they ship. Orders show in [My purchases](/studio/purchases).
+`,
+  },
+  {
+    slug: "printing-sheets",
+    section,
+    audience: "artist",
+    title: "Printing tips: paper, scale and cutting",
+    summary: "Print at 100% scale on matte card or label paper, cut on the grey lines, and test-scan one card first.",
+    link: { href: "/studio/print", label: "Open Print codes" },
+    related: ["print-codes", "qr-templates", "hanging-codes"],
+    body: `
+## Printing tips
+- Print at **100% / actual size**. "Fit to page" shrinks the cards.
+- Matte card stock (or matte label sheets) scans better than glossy paper under lights.
+- Print one test sheet on plain paper first and scan a card with your phone.
+- Round stickers fit standard 2-inch round labels.
+
+## Other downloads in the QR Studio
+- **SVG:** the card as a vector file, for a print shop or design app
+- **Code PNG:** just the code, 1200 px, to drop into your own designs
+
+For everything else, use [Print codes](/help/qr-codes/print-codes).
 `,
   },
   {
@@ -262,13 +253,13 @@ No. Your share of each sale is the same with or without a venue. Some venues get
     title: "When your printed label shows an old price",
     summary: "Change a price, discount or title after printing and Artfinity tells you which labels on the wall now say something different, so you can reprint or mark them replaced.",
     link: { href: "/studio/codes?show=stale", label: "See labels out of date" },
-    related: ["change-after-printing", "print-queue", "places"],
+    related: ["change-after-printing", "print-codes", "places"],
     body: `
-Every time a card with a price is printed (a PDF or SVG download, Print all, the print queue, or codes we mail you), we remember what it says: the "Prints from" price, the discount and the title.
+Every time a card with a price is printed (from Print codes, an SVG download, or codes we mail you), we remember what it says: the "Prints from" price, the discount and the title.
 
 ## When you change something
 Change a piece's prices or title, or a code's discount, and you'll see a note before it saves: "2 printed labels show 'Prints from $55'. After this change scans show $65." Pick one:
-- **Save and reprint:** saves, and puts those codes back in your [print queue](/studio/qr/queue) with the same look and the new price.
+- **Save and reprint:** saves, then opens [Print codes](/studio/print) with those codes ticked, in the same look with the new price.
 - **Save anyway:** saves. The labels stay as they are.
 - **Cancel:** nothing changes.
 
@@ -302,10 +293,10 @@ Tap **Add a place** and give it a name. Add the neighborhood, and dates for a sh
 ## Put things there
 - **Codes:** pick the place under **Hangs at** on a code, or select several in [My codes](/studio/codes) and tap **Move**. Buyers see "You scanned this at" the place.
 - **Paintings:** on [My art](/studio/art) tap **Hang at a place**, or set **Currently hanging at** on the piece. A painting hangs in one place at a time; past places stay in its history.
-- **Print jobs:** on the place, **Print all codes for this place** puts every code there in your print queue, and makes a code for any painting that hasn't got one.
+- **Print jobs:** on the place, **Print codes for this place** opens Print codes with every painting there ticked, and makes a code for any painting that hasn't got one.
 
 ## When things change
-- **Move everything to another place:** codes, paintings and queued prints, in one step.
+- **Move everything to another place:** codes and paintings, in one step.
 - **Back home:** a painting came back to the studio.
 - **This place closed / show ended:** pick what scans of its codes do now:
   - open the painting as usual, without the "scanned at" line
