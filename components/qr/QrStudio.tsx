@@ -13,10 +13,10 @@ import { BrushStroke } from "@/components/af/Brush";
 import { startInfinityCheckout } from "@/components/pro/StartInfinityButton";
 import { PLACEHOLDER_CODE, shortLabel, shortUrl } from "@/lib/shortcode";
 import {
-  ACCENT, BG, COLOR_NAMES, CUSTOM_MAX_H, CUSTOM_MAX_W, CUSTOM_MIN, DISCOUNTS, DOTS, EXTRAS, EYE, EYES, FG, FORMATS, INKS, MSG_MAX, PRESETS, SEASONS, SHAPES, STYLES, TAG, TEMPLATES,
+  ACCENT, BG, COLOR_NAMES, CUSTOM_MAX_H, CUSTOM_MAX_W, CUSTOM_MIN, DISCOUNTS, DOTS, EXTRAS, EYE, EYES, FG, FORMATS, MSG_MAX, PRESETS, SEASONS, SHAPES, STYLES, TAG, TEMPLATES,
   applyExtra, applyInk, applySeason, cardColors, cardInches, customFormat, customName, sanitizeCustom, seasonFor, cardSVG, contrast, fmtDist, inkMatches, lum, messageLines, presetLook, qrValue, renderCard,
   scanNumbers, sheetOf, styleOf, stylesFor,
-  type ArtInfo, type Card, type CustomSize, type Design, type ExtraKey, type FormatKey, type InkKey, type PresetKey, type SeasonKey, type ShapeKey, type StyleKey, type TemplateKey,
+  type ArtInfo, type Card, type CustomSize, type Design, type ExtraKey, type FormatKey, type PresetKey, type SeasonKey, type ShapeKey, type StyleKey, type TemplateKey,
 } from "./card";
 import { loadFonts, type Fonts } from "./text";
 import ArtPicker from "./ArtPicker";
@@ -295,7 +295,6 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
   const paper = d.custom ? (d.custom.sheet !== "auto" ? TEMPLATES[d.custom.sheet].name : "matte cardstock or label paper, US Letter") : PAPER[d.format].buy;
   const sn = card && fonts ? scanNumbers(card, qrText, fonts, d.logo) : null;
   const style = styleOf(d);
-  const inkOn = inkMatches(d) ? d.ink : null;
 
   return (
     <div className={s.wrap}>
@@ -314,9 +313,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
             {pro && d.custom && <CustomSizeFields c={d.custom} onChange={setCustom} perSheet={perSheet} />}
             <div className={s.sub}>Style</div>
             <Chips label="Style" items={stylesFor(d.format).map((k) => [k, STYLES[k].name] as [StyleKey, string])} value={style} onPick={(k) => set({ style: k })} />
-            <div className={s.sub}>Ink</div>
-            <Chips label="Ink" items={(Object.keys(INKS) as InkKey[]).map((k) => [k, INKS[k].name])} value={inkOn as InkKey} onPick={(k) => setD((o) => ({ ...applyInk(o, k), preset: "custom" }))} />
-            <small className={s.hint}>{inkOn === "black" ? "Pure black. Prints sharp on any office printer." : inkOn === "color" ? "Garnet pill and corners, yellow brush." : "Your own colors. Pick an ink to reset them."}</small>
+            {!inkMatches(d) && <button type="button" className="justify-self-start text-left text-[13px] font-semibold text-scan" onClick={() => setD((o) => ({ ...applyInk(o, "color"), preset: "custom" }))}>Back to the standard colors</button>}
           </Group>
 
           <Group title="Start from" dab="#ffd43b">
@@ -524,7 +521,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
                 <dt>Venue</dt><dd>{d.ev.trim() ? <>{d.ev.trim()}{d.evPrint || (pro && d.extras.includes("event")) ? "" : " (not printed)"}</> : "None"}</dd>
                 <dt>Discount</dt><dd>{d.disc ? <>{d.disc}% off at checkout</> : "None"}</dd>
                 {QR_END_DATES && <><dt>Ends</dt><dd>{d.end === "never" ? "Never" : d.end === "30" ? "30 days after printing" : d.evDate ? new Date(`${d.evDate}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "When the event ends"}</dd></>}
-                <dt>Look</dt><dd>{cardName} · {STYLES[style].name} · {inkOn ? INKS[inkOn].name : "Your colors"}{pro && d.extras.length ? ` · ${d.extras.map((k) => EXTRAS[k].name).join(", ")}` : ""}{pro && d.season ? ` · ${SEASONS[d.season].name}` : ""}</dd>
+                <dt>Look</dt><dd>{cardName} · {STYLES[style].name} · {inkMatches(d) ? "Color" : "Your colors"}{pro && d.extras.length ? ` · ${d.extras.map((k) => EXTRAS[k].name).join(", ")}` : ""}{pro && d.season ? ` · ${SEASONS[d.season].name}` : ""}</dd>
               </dl>
               <p className={s.soon}>
                 <span className="sticker-badge">Editable any time</span>

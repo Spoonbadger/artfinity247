@@ -18,10 +18,9 @@ export const qrCodes: HelpArticle[] = [
 ## How a card is laid out
 The painting's title is the headline. Under it: your name, and the edition if there is one. The code is as big as the card allows, with the Artfinity "a" in the middle. One solid shape carries the message and the price.
 
-## Format, style and ink
+## Format and style
 - **Style:** Pill ("Prints from $55" in a solid pill) or Panel (the code on a solid panel, "Scan for prints from $55" beside it). Wall labels also have Clean (no shape) and Brush (the price on a paint stroke).
-- **Ink:** Black ink is pure black on white, so it prints sharp on an office laser printer. Color uses a garnet pill and garnet code corners.
-- New cards start as Pill in black ink.
+- New cards start as Pill in color, with a garnet pill and garnet code corners. To print in black and white, choose it on [Print codes](/help/qr-codes/print-codes).
 
 ## The starting looks
 ${presetList}
@@ -37,7 +36,7 @@ ${presetList}
 With [Infinity](/studio/infinity) you can add:
 ${QR_EXTRAS}
 
-Seasonal looks: ${QR_SEASONS}. Each one comes in Pill or Panel, black ink or color, with small motifs in the margins. The code's clear area is never touched.
+Seasonal looks: ${QR_SEASONS}. Each one comes in Pill or Panel, with small motifs in the margins. The code's clear area is never touched.
 
 On Free you see each one on your own card. Tap it to start Infinity.
 
@@ -156,6 +155,9 @@ ${QR_PAPER_TABLE}
 On a ready-cut label sheet (Avery), each card goes in its own label, so only cards of that label's size fit.
 
 Room left on the last sheet? **Fill the empty space with extra copies** adds copies of what you picked, shared out evenly, without adding a sheet.
+
+## Color or black and white
+Sheets print in **color**. Pick **Black and white** under the paper for pure black ink, which stays sharp on an office laser printer. The preview changes to match. It only changes this print, not the code's look, and mailed cards always come in color.
 
 ## Print at home
 **Download PDF** makes one file with every sheet. Print at **100% / actual size**, then cut on the thin grey lines. My codes shows the date ("Printed Nov 5").

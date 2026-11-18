@@ -60,7 +60,8 @@ export const STYLES: Record<StyleKey, { name: string; formats: FormatKey[] }> = 
 };
 type Inks = { fg: string; bg: string; eye: string; accent: string; tag: string };
 export const INKS: Record<InkKey, Inks & { name: string }> = {
-  // Pure black on white: prints clean on an office laser printer. The brush is the one tint (black at 16%).
+  // Black and white is picked when printing (Print codes), not saved on a look: pure black on white, sharp on an
+  // office laser printer. The brush is the one tint (black at 16%).
   black: { name: "Black ink", fg: "#000000", bg: "#ffffff", eye: "same", accent: "#000000", tag: "#000000" },
   color: { name: "Color", fg: "#15161b", bg: "#ffffff", eye: "#8b2a4b", accent: "#8b2a4b", tag: "#ffd43b" },
 };
@@ -107,7 +108,7 @@ export const MSG_MAX = 20;
 
 type Look = { format: FormatKey; style: StyleKey; ink: InkKey; dots: DotStyle; eyes: EyeStyle } & Inks;
 export const PRESETS: Record<PresetKey, Look & { name: string; sub: string }> = {
-  // Colour by default (Nov 2026): garnet pill and corners, yellow brush. Black ink stays one tap away in the Studio.
+  // Colour by default (Nov 2026): garnet pill and corners, yellow brush. Black and white is a choice at print time.
   gallery: { name: "Gallery label", sub: "Beside the painting", format: "label", style: "pill", ink: "color", dots: "rounded", eyes: "rounded", ...pickInks("color") },
   sticker: { name: "Sticker", sub: "Round and loud", format: "sticker", style: "pill", ink: "color", dots: "dots", eyes: "circle", fg: "#15161b", bg: "#ffd43b", eye: "same", accent: "#15161b", tag: "#15161b" },
   market: { name: "Market tag", sub: "Hangs off a frame", format: "tag", style: "pill", ink: "color", dots: "square", eyes: "rounded", fg: "#15161b", bg: "#ffffff", eye: "#ff5a36", accent: "#ff5a36", tag: "#ffd43b" },
@@ -178,7 +179,7 @@ export function sanitizeDesign(input: unknown): Design {
   const ink: InkKey = legacy ? (lum(fg) < 0.02 && bg === "#ffffff" && eye === "same" ? "black" : "color") : oneOf(i.ink, ["black", "color"] as const, D.ink);
   const extras = Array.isArray(i.extras) ? EXTRA_KEYS.filter((k) => (i.extras as unknown[]).includes(k)) : [];
   const custom = sanitizeCustom(i.custom);
-  return {
+  return inColor({
     preset: oneOf(i.preset, ["gallery", "sticker", "market", "poster", "custom"] as const, "custom"),
     format: custom ? customFormat(custom) : oneOf(i.format, ALL, D.format),
     style: legacy ? "pill" : oneOf(i.style, Object.keys(STYLES) as StyleKey[], D.style),
@@ -204,7 +205,13 @@ export function sanitizeDesign(input: unknown): Design {
     paletteOf: str(i.paletteOf, 120),
     season: oneOf(i.season, ["", ...(Object.keys(SEASONS) as SeasonKey[])] as const, ""),
     custom,
-  };
+  });
+}
+
+/** Looks saved in Black ink come back in Color: black and white is now picked when printing. Own colours stay. */
+function inColor(d: Design): Design {
+  if (d.ink !== "black") return d;
+  return inkMatches(d) ? { ...d, ink: "color", ...pickInks("color") } : { ...d, ink: "color" };
 }
 
 /** A valid custom size, or null. A label sheet sets its own size and shape. */
@@ -236,6 +243,8 @@ export const cardInches = (d: Pick<Design, "format" | "custom">) => (d.custom ? 
 export function applyInk(d: Design, ink: InkKey): Design {
   return { ...d, ink, ...pickInks(ink), extras: ink === "black" ? d.extras.filter((e) => e !== "match") : d.extras };
 }
+/** A card as it prints in black and white (Print codes). */
+export const blackAndWhite = (d: Design): Design => applyInk(d, "black");
 /** Do the colours still match the ink they were set from? */
 export function inkMatches(d: Design) {
   const k = INKS[d.ink];
