@@ -1,4 +1,5 @@
 import Link from "next/link";
+import FinishPaying from "@/components/print/FinishPaying";
 import { prisma } from "@/lib/prisma";
 import { artPath } from "@/lib/urls";
 import { StudioPage } from "@/components/studio/StudioPage";
@@ -27,7 +28,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams: { 
     },
   });
 
-  // QR codes we printed and mailed to this artist (print queue → "Have us print them").
+  // QR codes we printed and mailed to this artist (Print codes → "Mail them to me").
   const codeOrders = await prisma.codePrintOrder.findMany({ where: { artistId: artist.id, status: { not: "canceled" } }, orderBy: { createdAt: "desc" }, take: 20 });
   const sort = SORTS.some((o) => o.value === searchParams.sort) ? searchParams.sort! : "newest";
   if (sort === "oldest") { items.reverse(); codeOrders.reverse(); }
@@ -44,7 +45,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams: { 
         <section aria-labelledby="code-orders-h" className="grid gap-3">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 id="code-orders-h" className="t-card">Code orders</h2>
-            <Link href="/studio/qr/queue#orders" className="text-[14px] font-semibold text-scan">Print queue</Link>
+            <Link href="/studio/print" className="text-[14px] font-semibold text-scan">Print codes</Link>
           </div>
           <ul className="grid gap-3">
             {codeOrders.map((o) => {
@@ -66,7 +67,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams: { 
                     {o.trackingNumber && (o.trackingUrl
                       ? <a href={o.trackingUrl} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">Track {o.carrier}</a>
                       : <span className="text-[13px] text-ink-2">{o.carrier} {o.trackingNumber}</span>)}
-                    {st === "pending" && <Link href="/studio/qr/queue#orders" className="btn btn-blue btn-sm">Finish paying</Link>}
+                    {st === "pending" && <FinishPaying id={o.id} />}
                   </div>
                 </li>
               );

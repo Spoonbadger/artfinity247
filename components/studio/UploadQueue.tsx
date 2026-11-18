@@ -826,9 +826,9 @@ function Summary({ items, handle, onMore, headingRef }: { items: QueueItem[]; ha
         <div className="grid gap-3">
           <div className="flex flex-wrap items-center gap-2">
             {slugs.length > 0 ? (
-              <a href={`/api/artworks/qr/bulk?slugs=${slugs.map(encodeURIComponent).join(",")}`} target="_blank" rel="noopener" className="btn btn-blue">Print all their QR codes</a>
+              <Link href={`/studio/print?pieces=${slugs.map(encodeURIComponent).join(",")}`} className="btn btn-blue">Print their QR codes</Link>
             ) : (
-              <span className="btn btn-blue pointer-events-none opacity-50" aria-disabled="true">Print all their QR codes</span>
+              <span className="btn btn-blue pointer-events-none opacity-50" aria-disabled="true">Print their QR codes</span>
             )}
             <button type="button" className="btn btn-ghost" aria-expanded={open} onClick={() => setOpen((o) => !o)}>Add them to a collection</button>
           </div>

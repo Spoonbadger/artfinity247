@@ -80,8 +80,8 @@ export function stripeClient() {
   return process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-08-27.basil" }) : null;
 }
 
-/** A Stripe Checkout session for an order that isn't paid yet. */
-export async function checkoutSession(order: { id: string; email: string; items: unknown; subtotalCents: number; shippingCents: number; handlingCents: number; pricing: unknown }, base: string) {
+/** A Stripe Checkout session for an order that isn't paid yet. back: the page Stripe returns to (Print codes). */
+export async function checkoutSession(order: { id: string; email: string; items: unknown; subtotalCents: number; shippingCents: number; handlingCents: number; pricing: unknown }, base: string, back = "/studio/print") {
   const stripe = stripeClient();
   if (!stripe) throw new Error("Stripe isn't set up");
   const items = orderItems(order.items);
@@ -104,8 +104,8 @@ export async function checkoutSession(order: { id: string; email: string; items:
     line_items,
     shipping_options: [{ shipping_rate_data: { display_name: order.shippingCents ? "Mail with tracking (at cost)" : "Free shipping (Infinity)", fixed_amount: { amount: order.shippingCents, currency: "usd" }, type: "fixed_amount" } }],
     metadata: { kind: "code_print", codePrintOrderId: order.id },
-    success_url: `${base}/studio/qr/queue?paid=${order.id}&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${base}/studio/qr/queue?canceled=${order.id}`,
+    success_url: `${base}${back}?paid=${order.id}&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${base}${back}?canceled=${order.id}`,
   });
   await prisma.codePrintOrder.update({ where: { id: order.id }, data: { stripeSessionId: session.id } });
   return session.url;
@@ -177,7 +177,7 @@ export async function sendCodeOrderEmail(orderId: string, kind: "paid" | "shippe
   const items = orderItems(o.items);
   const no = codeOrderNumber(o.id);
   const hi = `Hi ${firstNameOf(o.artistName || o.shipName)},`;
-  const link = `${APP_URL()}/studio/qr/queue#orders`;
+  const link = `${APP_URL()}/studio/purchases`;
   let subject = "", body = "";
   if (kind === "paid") {
     subject = `Your QR codes are ordered (${no})`;

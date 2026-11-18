@@ -39,7 +39,7 @@ export default async function MyArtPage() {
 
   const more: MoreItem[] = items.length
     ? [
-        ...(live ? [{ label: "Print all codes (PDF)", href: "/api/artworks/qr/bulk", icon: <FileDown />, external: true, hint: "A gallery label for every live piece" }] : []),
+        ...(live ? [{ label: "Print all codes", href: "/studio/print?pieces=all", icon: <FileDown />, hint: "Every piece ticked. Pick sizes and copies" }] : []),
         { label: "Collections", href: "/studio/collections", icon: <Layers /> },
         { label: "Order prints in bulk", href: "/studio/bulk", icon: <Package /> },
       ]

@@ -1,10 +1,12 @@
 // Print sheets for QR cards: each card is drawn as SVG (components/qr/card.ts),
 // rasterised at print resolution with sharp, then tiled on US Letter with pdf-lib.
 import sharp from "sharp";
-import { PDFDocument, StandardFonts, rgb, type PDFImage } from "pdf-lib";
+import { PDFDocument, StandardFonts, degrees, rgb, type PDFImage } from "pdf-lib";
 import { cardSVG, customName, freeDesign, renderCard, sheetLayout, FORMATS, type ArtInfo, type Design, type FormatKey } from "@/components/qr/card";
 import { loadFonts } from "@/components/qr/text";
 import { artPalette, artThumb } from "@/lib/qr/palette";
+import { pack, type PaperSize } from "@/lib/printPack";
+import { cardBox, type SizeKey } from "@/lib/printOptions";
 
 export type CardJob = { design: Design; art: ArtInfo; qrText: string };
 /**
@@ -96,7 +98,7 @@ export async function generateQrPdf(rawJobs: CardJob[], opts: PdfPlan & { fill?:
 }
 
 /**
- * The print queue's mixed sheets: DIFFERENT pieces packed onto the same sheets, each repeated `qty` times, in order
+ * A mailed order's sheets for the lab (admin): DIFFERENT pieces packed onto the same sheets, each repeated `qty` times, in order
  * (3 labels of piece A and 7 of piece B fill one 10-up sheet). Every job must be in `fmt`; others are skipped.
  * Each distinct card is rasterised once.
  */
@@ -114,4 +116,69 @@ export async function generateMixedQrPdf(items: { job: CardJob; qty: number }[],
     pro: opts.pro,
     hint: (sheet, sheets) => `${opts.footer ? `${opts.footer} · ` : ""}Sheet ${sheet} of ${sheets} · Print at 100% (actual size). Cut on the marks.`,
   });
+}
+
+/**
+ * Print codes (/studio/print): any mix of cards, each `copies` times, packed onto as few sheets of `paper` as fit
+ * (lib/printPack.ts, the same layout the screen previews). Thin grey cut lines go round every card on plain paper;
+ * ready-cut label sheets get none. Each distinct card is rasterised once.
+ */
+export async function generatePackedPdf(
+  lines: { job: CardJob; copies: number; size: SizeKey }[],
+  paper: PaperSize,
+  opts: PdfPlan & { title?: string; paperName?: string } = {},
+): Promise<{ pdf: Uint8Array; sheets: number; cards: number; unplaced: number }> {
+  const ready = await Promise.all(lines.map((l) => prepareJob(l.job, opts)));
+  const items = lines.flatMap((l, i) => {
+    const box = cardBox(l.size, ready[i].design.custom);
+    return box ? Array.from({ length: Math.max(0, Math.floor(l.copies)) }, () => ({ ...box, ref: i })) : [];
+  });
+  if (!items.length) throw new Error("No cards to print");
+  const laid = pack(items, paper);
+  if (!laid.sheets.length) throw new Error("None of these cards fit on this paper");
+  const fonts = await loadFonts();
+  const W = paper.w * 72, H = paper.h * 72;
+
+  const pdf = await PDFDocument.create();
+  pdf.setTitle(opts.title || "Artfinity QR codes");
+  pdf.setAuthor(lines[0].job.art.artist);
+  pdf.setCreator("Artfinity Print codes");
+  const helv = await pdf.embedFont(StandardFonts.Helvetica);
+  const grey = rgb(0.72, 0.73, 0.76);
+  const images = new Map<number, PDFImage>();
+  const image = async (i: number) => {
+    let img = images.get(i);
+    if (!img) {
+      const job = ready[i];
+      const card = renderCard(job.design, job.art, fonts, job.qrText, `p${i}`);
+      // Big cards (the poster, large custom sizes) rasterise at 200 dpi to keep the file small.
+      const dpi = card.w * card.h > 30 * 72 * 72 ? 200 : 300;
+      img = await pdf.embedPng(await sharp(Buffer.from(cardSVG(card)), { density: dpi }).png({ compressionLevel: 9 }).toBuffer());
+      images.set(i, img);
+    }
+    return img;
+  };
+
+  const total = laid.sheets.length;
+  for (let s = 0; s < total; s++) {
+    const page = pdf.addPage([W, H]);
+    const cards = laid.sheets[s].cards;
+    const wholePage = cards.length === 1 && cards[0].scale !== 1;
+    for (const c of cards) {
+      const img = await image(c.ref);
+      const x = c.x * 72, y = c.y * 72, w = c.w * 72, h = c.h * 72;
+      // Turned cards: pdf-lib turns an image about its bottom-left corner, so start from the box's bottom-right.
+      if (c.rotated) page.drawImage(img, { x: x + w, y: H - y - h, width: h, height: w, rotate: degrees(90) });
+      else page.drawImage(img, { x, y: H - y - h, width: w, height: h });
+      if (!paper.slots && !wholePage) {
+        if (c.round) page.drawEllipse({ x: x + w / 2, y: H - y - h / 2, xScale: w / 2, yScale: h / 2, borderColor: grey, borderWidth: 0.35 });
+        else page.drawRectangle({ x, y: H - y - h, width: w, height: h, borderColor: grey, borderWidth: 0.35 });
+      }
+    }
+    if (!wholePage) {
+      const hint = `${total > 1 ? `Sheet ${s + 1} of ${total} · ` : ""}Print at 100% (actual size)${opts.paperName ? ` on ${opts.paperName}` : ""}.${paper.slots ? "" : " Cut on the grey lines."}`;
+      page.drawText(hint, { x: (W - helv.widthOfTextAtSize(hint, 7)) / 2, y: 6, size: 7, font: helv, color: rgb(0.45, 0.46, 0.5) });
+    }
+  }
+  return { pdf: await pdf.save(), sheets: total, cards: items.length - laid.unplaced.length, unplaced: laid.unplaced.length };
 }

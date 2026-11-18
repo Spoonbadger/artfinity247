@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/studio/EmptyState";
 import { SortMenu, useSortPref, type SortOption } from "@/components/studio/SortMenu";
 import { errorText, failed, problemFrom, saved, withUndo } from "@/lib/feedback";
 import PlacePicker, { NO_PLACE, placeInput, type PartnerChoice, type PlaceChoice, type PlaceValue } from "./PlacePicker";
-import { queueReprint } from "./LabelWarning";
+import { reprintHref } from "./LabelWarning";
 import { cn } from "@/lib/utils";
 
 export type CodeListRow = {
@@ -148,15 +148,9 @@ export default function CodesList({ rows, places, partners, initialShow }: { row
     } finally { setBusy(""); }
   }
 
-  async function reprint(codes: string[]) {
-    setBusy("reprint");
-    try {
-      const q = await queueReprint(codes);
-      saved(`${q.queued} ${q.queued === 1 ? "code" : "codes"} added to your print queue`, { description: "Same look, today's price. Mark the old labels replaced once the new ones are up.", next: { label: "Open print queue", href: "/studio/qr/queue" } });
-      done();
-    } catch (e) {
-      failed(errorText(e, "Couldn't add them to your print queue. Try again."), { retry: () => { void reprint(codes); } });
-    } finally { setBusy(""); }
+  function reprint(codes: string[]) {
+    done();
+    router.push(reprintHref(codes));
   }
 
   async function replaced(codes: string[]) {

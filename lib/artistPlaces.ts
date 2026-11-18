@@ -10,8 +10,7 @@
 //   Events    StudioEvent.placeId: found or made by the event's name when it's saved.
 import { prisma } from "@/lib/prisma";
 import { createQrCode, isLive } from "@/lib/shortlinks";
-import { addToQueue, lastLook } from "@/lib/printQueue";
-import { sanitizeDesign } from "@/components/qr/card";
+import { lastLook } from "@/lib/printQueue";
 import { itemBreakdown } from "@/lib/sales";
 import { activeRefunds } from "@/lib/refunds";
 import { isAfterEnd, isPlaceKind, nyToday, placeEnded, type PlaceInput, type PlaceKind } from "@/lib/placeRules";
@@ -277,39 +276,30 @@ export async function deletePlace(artistId: string, id: string) {
 }
 
 /**
- * "Print all codes for this place": every live code there that opens a painting, plus a new code (tagged to the
- * Place) for each painting hanging there without one, goes into the print queue with its own look and today's
- * discount. The queue items carry the Place, so "Mark as printed" records them for it. Returns { queued, made }.
+ * Print codes for a Place (/studio/print?place=…): the live code of every piece hanging there, made for the pieces
+ * that have none yet (carrying the Place's name and partner venue, like codes made in the QR Studio). Making them
+ * twice is safe: a piece that already has a code at the Place keeps it. → { place, codes: [{ artworkId, code }] }
  */
-export async function queueForPlace(artistId: string, placeId: string) {
+export async function placeCodes(artistId: string, placeId: string) {
   const place = await prisma.place.findFirst({ where: { id: placeId, artistId }, select: { id: true, name: true, venueId: true } });
   if (!place) return null;
   const now = new Date();
   const live = (await prisma.qrCode.findMany({
     where: { artistId, placeId, artworkId: { not: null }, artwork: { status: { in: ["APPROVED", "PENDING"] }, slug: { not: null } } },
-    select: { id: true, artworkId: true, design: true, discountPct: true, active: true, expiresAt: true },
-    orderBy: { createdAt: "asc" },
+    select: { code: true, artworkId: true, active: true, expiresAt: true },
+    orderBy: { createdAt: "desc" },
   })).filter((c) => isLive(c, now));
-  const covered = new Set(live.map((c) => c.artworkId));
+  const codes = new Map<string, string>();
+  for (const c of live) if (c.artworkId && !codes.has(c.artworkId)) codes.set(c.artworkId, c.code);
   const hanging = await prisma.hanging.findMany({
     where: { placeId, endedAt: null, artwork: { status: { in: ["APPROVED", "PENDING"] }, slug: { not: null } } },
     select: { artwork: { select: { id: true, title: true } } },
   });
   const last = await lastLook(artistId);
-  let made = 0;
   for (const h of hanging) {
-    if (covered.has(h.artwork.id)) continue;
+    if (codes.has(h.artwork.id)) continue;
     const qr = await createQrCode({ artistId, artworkId: h.artwork.id, label: `${h.artwork.title} · ${place.name}`.slice(0, 60), design: last, ...codeMirror(place) });
-    live.push({ id: qr.id, artworkId: h.artwork.id, design: last, discountPct: null, active: true, expiresAt: null });
-    covered.add(h.artwork.id);
-    made++;
+    codes.set(h.artwork.id, qr.code);
   }
-  let queued = 0;
-  for (const c of live) {
-    const design = sanitizeDesign({ ...sanitizeDesign(c.design ?? last), disc: c.discountPct || 0 });
-    const item = await addToQueue(artistId, { artworkId: c.artworkId!, qrCodeId: c.id, design, qty: 1 });
-    await prisma.printQueueItem.update({ where: { id: item.id }, data: { placeId } });
-    queued++;
-  }
-  return { queued, made, place };
+  return { place, codes: Array.from(codes, ([artworkId, code]) => ({ artworkId, code })) };
 }

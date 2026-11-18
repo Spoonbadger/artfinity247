@@ -48,6 +48,8 @@ const nextConfig = {
     return [
       // Venmo payouts were removed (Nov 2026): old help links go to the Stripe payout article.
       { source: "/help/account/change-venmo", destination: "/help/account/change-payout-bank", permanent: true },
+      // The print queue became Print codes (Nov 2026).
+      { source: "/help/qr-codes/print-queue", destination: "/help/qr-codes/print-codes", permanent: true },
     ];
   },
   async rewrites() {

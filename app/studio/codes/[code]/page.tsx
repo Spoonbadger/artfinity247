@@ -99,7 +99,7 @@ export default async function CodePage({ params }: { params: { code: string } })
               dab="var(--af-scan)"
               title="No scans yet"
               body={<>Hang this code and scans show up here within seconds: where, on what, and whether they bought. Scan it with your phone to test it.</>}
-              action={c.artworkId ? { label: "Print this code", href: `/studio/qr?code=${c.code}` } : { label: "Download the code", href: "#dl-h" }}
+              action={c.artworkId ? { label: "Print this code", href: `/studio/print?code=${c.code}` } : { label: "Download the code", href: "#dl-h" }}
               secondary={{ label: "Open its link", href: `/q/${c.code}` }}
               help={{ label: "Where to hang codes", href: "/help/getting-started/hanging-codes" }}
             />

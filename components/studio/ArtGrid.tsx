@@ -80,13 +80,12 @@ export default function ArtGrid({ items, handle, places = [], partners = [] }: {
   const [sort, setSort] = useSortPref<SortKey>("studio-art", "newest", SORT_KEYS);
   const [show, setShow] = useSortPref<ShowKey>("studio-art-status", "all", SHOW_KEYS);
 
-  // Pick pieces, then either "Add codes to print queue" (pick a look) or "Hang at a place".
+  // Pick pieces, then either "Print their codes" (opens Print codes) or "Hang at a place".
   const [mode, setMode] = useState<"print" | "place" | null>(null);
   const selecting = mode !== null;
   const setSelecting = (on: boolean) => setMode(on ? "print" : null);
   const [target, setTarget] = useState<PlaceValue>(NO_PLACE);
   const [picked, setPicked] = useState<Set<string>>(new Set());
-  const [look, setLook] = useState("last");
   const selectable = items.filter((a) => a.status !== "REJECTED");
   const toggle = (slug: string) => setPicked((o) => { const n = new Set(o); if (n.has(slug)) n.delete(slug); else n.add(slug); return n; });
 
@@ -108,27 +107,11 @@ export default function ArtGrid({ items, handle, places = [], partners = [] }: {
     [items, show, sort],
   );
 
-  async function queuePicked() {
+  /** Opens Print codes with the picked pieces ticked: sizes, copies and paper are set there. */
+  function printPicked() {
     const slugs = Array.from(picked);
     if (!slugs.length) return;
-    setBusy("queue");
-    try {
-      const res = await fetch("/api/studio/print-queue", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slugs, look }) });
-      if (!res.ok) {
-        const p = await problemFrom(res, "Couldn't add them to your print queue. Try again.");
-        failed(p.message, { fix: p.fix, retry: p.fix ? undefined : queuePicked });
-        return;
-      }
-      const j = await res.json().catch(() => ({}));
-      saved(`Added ${j.added} ${j.added === 1 ? "code" : "codes"} to your print queue`, { description: `${j.formatName}s, one of each. Set quantities in the queue.`, next: { label: "Open print queue", href: "/studio/qr/queue" } });
-      setPicked(new Set());
-      setSelecting(false);
-      router.refresh();
-    } catch (e) {
-      failed(errorText(e, "Couldn't add them to your print queue. Try again."), { retry: queuePicked });
-    } finally {
-      setBusy(null);
-    }
+    router.push(`/studio/print?pieces=${slugs.map(encodeURIComponent).join(",")}`);
   }
 
   async function hangPicked() {
@@ -192,7 +175,7 @@ export default function ArtGrid({ items, handle, places = [], partners = [] }: {
                 <button type="button" className="btn btn-ghost btn-sm min-h-[40px]" onClick={() => setMode("place")} title="Pick pieces and say where they hang: a café, gallery, market or show">
                   <MapPin className="h-4 w-4" aria-hidden="true" />Hang at a place
                 </button>
-                <button type="button" className="btn btn-ghost btn-sm min-h-[40px]" onClick={() => setMode("print")} title="Pick pieces and add their codes to your print queue">
+                <button type="button" className="btn btn-ghost btn-sm min-h-[40px]" onClick={() => setMode("print")} title="Pick pieces to print their codes">
                   <Printer className="h-4 w-4" aria-hidden="true" />Print codes
                 </button>
               </span>
@@ -291,21 +274,11 @@ export default function ArtGrid({ items, handle, places = [], partners = [] }: {
       )}
 
       {mode === "print" && (
-        <div className="sticky bottom-3 z-20 flex flex-wrap items-center gap-2 rounded-2xl border border-edge bg-white p-3 shadow-[0_10px_30px_-10px_rgba(21,22,27,.35)]" role="region" aria-label="Add codes to print queue">
+        <div className="sticky bottom-3 z-20 flex flex-wrap items-center gap-2 rounded-2xl border border-edge bg-white p-3 shadow-[0_10px_30px_-10px_rgba(21,22,27,.35)]" role="region" aria-label="Print codes">
           <b className="num text-[15px]" aria-live="polite">{picked.size} selected</b>
-          <label className="flex items-center gap-1.5 text-[13.5px] font-semibold">
-            Look
-            <select value={look} onChange={(e) => setLook(e.target.value)} className="min-h-[40px] rounded-lg border-[1.5px] border-line bg-white px-2 text-[14px]">
-              <option value="last">My last-used look</option>
-              <option value="gallery">Gallery label</option>
-              <option value="sticker">Round sticker</option>
-              <option value="market">Market tag</option>
-              <option value="poster">Show poster</option>
-            </select>
-          </label>
-          <button type="button" className="btn btn-blue btn-sm ml-auto" disabled={!picked.size || busy === "queue"} onClick={queuePicked}>
+          <button type="button" className="btn btn-blue btn-sm ml-auto" disabled={!picked.size} onClick={printPicked}>
             <Printer className="h-4 w-4" aria-hidden="true" />
-            {busy === "queue" ? "Adding…" : "Add codes to print queue"}
+            Print their codes
           </button>
         </div>
       )}

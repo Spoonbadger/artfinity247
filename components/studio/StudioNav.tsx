@@ -28,7 +28,7 @@ export const STUDIO_SECTIONS: StudioSection[] = [
     id: "selling", label: "QR & selling", dab: "#ffd43b", icon: QrCode,
     items: [
       { href: "/studio/qr", label: "QR codes", dab: "#ffd43b" },
-      { href: "/studio/qr/queue", label: "Print queue", dab: "#ff5a36" },
+      { href: "/studio/print", label: "Print codes", dab: "#ff5a36" },
       { href: "/studio/codes", label: "My codes", dab: "var(--af-scan)" },
       { href: "/studio/places", label: "Places", dab: "#0f7a55" },
       { href: "/studio/events", label: "Events", dab: "#7b2d8e" },
@@ -77,8 +77,6 @@ export const STUDIO_SECTIONS: StudioSection[] = [
 export const STUDIO_NAV: StudioNavItem[] = [STUDIO_HOME, ...STUDIO_SECTIONS.flatMap((s) => s.items)];
 
 export function isActive(path: string, href: string) {
-  // The print queue lives under /studio/qr but has its own nav item.
-  if (href === "/studio/qr" && path.startsWith("/studio/qr/queue")) return false;
   if (href === "/studio/followers" && path.startsWith("/studio/newsletter")) return true;
   if (href === "/studio/infinity" && path.startsWith("/studio/pro")) return true;
   return href === "/studio" ? path === "/studio" : path === href || path.startsWith(href + "/");

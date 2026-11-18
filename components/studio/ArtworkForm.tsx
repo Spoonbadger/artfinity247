@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { DragEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { errorText, failed, saved as savedToast } from "@/lib/feedback";
 import { Problem } from "./Problem";
-import AddToQueueButton from "@/components/qr/AddToQueueButton";
 import { Check, Crop, FolderOpen, ImagePlus, Loader2, Pencil, RotateCcw } from "lucide-react";
 import { SIZE_INCHES, type SizeKey } from "@/lib/earnings";
 import { PIXELS_NEEDED } from "@/lib/printSizes";
@@ -20,7 +19,7 @@ import { useUnsavedChanges } from "@/components/forms/useUnsavedChanges";
 import ImageEditor, { type EditResult } from "@/components/media/ImageEditor";
 import { UploadFailed, uploadImage } from "@/components/media/uploadImage";
 import { parseStored, type StoredEdits } from "@/lib/imageEdits";
-import LabelWarning, { queueReprint, type LabelWarningText } from "@/components/codes/LabelWarning";
+import LabelWarning, { type LabelWarningText } from "@/components/codes/LabelWarning";
 import { describeChange, nowFacts, type PrintedLabel } from "@/lib/labelFacts";
 import { basePrices } from "@/lib/artwork_price";
 import {
@@ -270,7 +269,7 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
     await persist(null);
   }
 
-  /** Save the piece; with `reprint`, then put those codes back in the print queue. */
+  /** Save the piece; with `reprint`, then open Print codes with those codes ticked. */
   async function persist(reprint: string[] | null) {
     setSaving(true);
     try {
@@ -287,13 +286,8 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
       const saved = await res.json();
       if (editing && reprint?.length) {
         setWarn(null);
-        try {
-          const q = await queueReprint(reprint);
-          savedToast(`Saved. ${q.queued} ${q.queued === 1 ? "code" : "codes"} added to your print queue`, { next: { label: "Open print queue", href: "/studio/qr/queue" } });
-        } catch (err) {
-          failed(errorText(err, "Saved, but the codes didn't go in the print queue."), { retry: () => { void queueReprint(reprint).then(() => savedToast("Added to your print queue")); } });
-        }
-        router.push("/studio/art");
+        savedToast("Saved. Print the new labels", { description: "Those codes are ticked, with today's price." });
+        router.push(`/studio/print?code=${reprint.map(encodeURIComponent).join(",")}`);
         router.refresh();
       } else if (editing) {
         setWarn(null);
@@ -368,8 +362,8 @@ export default function ArtworkForm({ artwork, split, handle, onManyFiles, onClo
                   <span className="t-small">Pick a label, sticker or tag, then print it at home. You can do this while it&apos;s in review.</span>
                 </span>
                 <span className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                  <Link href={qrHref} className="btn btn-blue">Print its code</Link>
-                  <AddToQueueButton slug={done.slug} title={done.title} label="Add to print queue" className="btn-sm border-0 bg-transparent px-0 underline-offset-2 hover:bg-transparent hover:underline" />
+                  <Link href={`/studio/print?pieces=${encodeURIComponent(done.slug)}`} className="btn btn-blue">Print its code</Link>
+                  <Link href={qrHref} className="text-[14px] font-semibold text-scan underline-offset-2 hover:underline">Change its look</Link>
                 </span>
               </span>
             </li>

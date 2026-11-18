@@ -75,12 +75,10 @@ const FIXES: Record<string, Fix> = {
   event_not_found: { label: "See events", href: "/studio/events" },
   event_limit: { label: "See events", href: "/studio/events" },
   not_your_art: { label: "See my art", href: "/studio/art" },
-  // Print queue and mailed code orders (/studio/qr/queue)
-  address_required: { label: "Add address", href: "/studio/qr/queue#ship" },
+  // Print codes and mailed code orders (/studio/print)
+  address_required: { label: "Add address", href: "/studio/print" },
   queue_empty: { label: "Make a code", href: "/studio/qr" },
-  queue_full: { label: "Open print queue", href: "/studio/qr/queue" },
-  queue_item_gone: { label: "Open print queue", href: "/studio/qr/queue" },
-  code_order_not_found: { label: "See my orders", href: "/studio/qr/queue#orders" },
+  code_order_not_found: { label: "See my orders", href: "/studio/purchases" },
   // Painting scans (/studio/scanning)
   scanning_off: { label: "Join the waitlist", href: "/studio/scanning#waitlist" },
   scan_not_payable: { label: "See my bookings", href: "/studio/scanning#bookings" },
