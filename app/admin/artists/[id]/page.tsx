@@ -154,6 +154,7 @@ export default async function AdminArtistPage({ params }: { params: { id: string
                 confirm="Their page shows the verified seal and they get an email." confirmLabel="Verify" done="Verified" />
             )}
             {!a.closedAt && !a.suspendedAt && <a href={artistPath(a.slug)} target="_blank" rel="noopener" className="btn btn-ghost btn-sm">Public page ↗</a>}
+            {!a.closedAt && roleCan(me.adminRole, "orders") && <Link href={`/admin/artists/${a.id}/print`} className="btn btn-ghost btn-sm">Print codes</Link>}
             <MoreMenu label="Account">
         <ActionButton url={target} body={{ action: "grant_infinity" }} need="accounts" label="Grant Infinity" title={`Give ${name} Infinity months`}
           confirm={infinity ? `Adds to their current Infinity, which runs until ${formatPlanDate(a.proUntil!)}.` : "Starts today. They get the Infinity split on new sales while it lasts."}

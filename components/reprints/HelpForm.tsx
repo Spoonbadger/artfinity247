@@ -80,7 +80,7 @@ export default function HelpForm({ orderId, token, items }: { orderId: string; t
           Got it, thank you
           <BrushStroke className="mx-auto mt-1 h-2.5 w-40" color="var(--af-coral)" />
         </h2>
-        <p className="t-body max-w-[34ch] text-ink-2">We&apos;ll look today or tomorrow and email you. If it&apos;s on us, we reprint it free. No need to send anything back.</p>
+        <p className="t-body max-w-[34ch] text-ink-2">We&apos;ll look today or tomorrow and email you. If it&apos;s on us, we&apos;ll make it right.</p>
         <Link href="/" className="btn btn-ghost mt-1">Back to Artfinity</Link>
       </section>
     );

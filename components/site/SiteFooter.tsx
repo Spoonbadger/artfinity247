@@ -15,7 +15,7 @@ const HOURS = "Weekdays " + AppConfigs.business_open_time.split("\n")[0].trim().
 // Three short columns of the places people actually go; the legal pages sit in one small row underneath.
 const COLS: [string, [string, string][]][] = [
   ["For artists", [["Start selling free", "/register"], ["How it works", "/how-it-works"], ["Sell with us", "/sell-with-us"], ["Pricing", "/pricing"], ...(PAINTING_SCANS ? [["Painting scans", "/scanning"] as [string, string]] : []), ["Artist help", "/help/getting-started"]]],
-  ["For buyers", [["Browse art", "/art"], ["Artists", "/artists"], ["Neighborhoods", "/scenes"], ["Your orders", "/collector"], ["Buying help", "/help/buyers"]]],
+  ["For buyers", [["Browse art", "/art"], ["Artists", "/artists"], ["Neighborhoods", "/scenes"], ["Venues", "/venues"], ["Your orders", "/collector"], ["Buying help", "/help/buyers"]]],
   ["Artfinity", [["About", "/about-us"], ["Help center", "/help"], ["Contact", "/contact"], ["Report art", "/report"]]],
 ];
 

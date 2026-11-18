@@ -120,7 +120,7 @@ export default async function ArtPage({ params, searchParams }: Props) {
           name: a.artist_name || a.name,
           avatar: a.profileImage || null,
           accent: { color: accent.color, ink: accent.ink, soft: accent.soft },
-          owner: isOwner ? { href: `/api/artworks/${encodeURIComponent(art.slug!)}/qr?download=1`, note: ownerNote } : null,
+          owner: isOwner ? { href: user!.id === art.artistId ? `/studio/print?pieces=${encodeURIComponent(art.slug!)}` : `/admin/artists/${art.artistId}/print?pieces=${encodeURIComponent(art.slug!)}`, note: ownerNote } : null,
         }}
       />
       <ViewBeacon artistId={a.id} artworkId={art.id} />

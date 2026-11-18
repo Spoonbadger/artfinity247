@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode, type SyntheticEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown, Download, FileText, ImageIcon, Layers, ListPlus, Loader2, Lock, Plus } from "lucide-react";
+import { Check, ChevronDown, Download, ImageIcon, Loader2, Lock, Plus, Printer } from "lucide-react";
 import { errorText, failed, problemFrom, saved as savedToast } from "@/lib/feedback";
 import { qrSVG } from "@/lib/qr/render";
 import { breakdown, money, SIZE_NAME, SIZE_INCHES, type SizeKey } from "@/lib/earnings";
@@ -15,7 +15,7 @@ import { PLACEHOLDER_CODE, shortLabel, shortUrl } from "@/lib/shortcode";
 import {
   ACCENT, BG, COLOR_NAMES, CUSTOM_MAX_H, CUSTOM_MAX_W, CUSTOM_MIN, DISCOUNTS, DOTS, EXTRAS, EYE, EYES, FG, FORMATS, INKS, MSG_MAX, PRESETS, SEASONS, SHAPES, STYLES, TAG, TEMPLATES,
   applyExtra, applyInk, applySeason, cardColors, cardInches, customFormat, customName, sanitizeCustom, seasonFor, cardSVG, contrast, fmtDist, inkMatches, lum, messageLines, presetLook, qrValue, renderCard,
-  scanNumbers, sheetOf, sheetSVG, styleOf, stylesFor,
+  scanNumbers, sheetOf, styleOf, stylesFor,
   type ArtInfo, type Card, type CustomSize, type Design, type ExtraKey, type FormatKey, type InkKey, type PresetKey, type SeasonKey, type ShapeKey, type StyleKey, type TemplateKey,
 } from "./card";
 import { loadFonts, type Fonts } from "./text";
@@ -26,7 +26,7 @@ import PlacePicker, { placeInput, type PartnerChoice, type PlaceChoice } from "@
 import s from "./qr-studio.module.css";
 import { QR_END_DATES } from "@/lib/features";
 
-type View = "card" | "wall" | "sheet";
+type View = "card" | "wall";
 type Billing = "live" | "simulated" | "off";
 /** A short link code already saved for one artwork (opened from My codes). */
 export type SavedCode = { code: string; slug: string; label: string; expiresAt: string | null; venueId?: string | null; placeId?: string | null };
@@ -60,10 +60,8 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
   const [d, setD] = useState<Design>(initialDesign);
   const [view, setView] = useState<View>("card");
   const [fonts, setFonts] = useState<Fonts | null>(null);
-  const [busy, setBusy] = useState<"" | "pdf" | "all" | "png" | "svg" | "save" | "queue" | "custom" | ExtraKey | SeasonKey>("");
+  const [busy, setBusy] = useState<"" | "pdf" | "png" | "svg" | "save" | "custom" | ExtraKey | SeasonKey>("");
   const router = useRouter();
-  // "Add to print queue": how many cards of this piece, in this look.
-  const [queueQty, setQueueQty] = useState(1);
   // Short link codes saved this visit, by artwork. A code is made on the first download or "Save code";
   // later downloads of the same piece update that code's record instead of making another.
   const [codes, setCodes] = useState<Record<string, string>>(initialSaved ? { [initialSaved.slug]: initialSaved.code } : {});
@@ -239,49 +237,12 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
     a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   }
-  async function downloadPdf(all = false) {
-    setBusy(all ? "all" : "pdf");
-    try {
-      let body: Record<string, unknown>;
-      if (all) {
-        const m = codeMeta();
-        body = { all: true, design: d, venue: m.venue, venueId: m.venueId, place: m.place, discountPct: m.discountPct, expiresAt: m.expiresAt };
-      } else {
-        const c = await ensureCode();
-        if (!c) return;
-        body = { slug: art.slug, design: d, code: c };
-      }
-      const r = await fetch("/api/qr/print", { method: "POST", headers: JSON_HEADERS, body: JSON.stringify(body) });
-      if (!r.ok) {
-        const p = await problemFrom(r, "The PDF didn't download. Try again.");
-        failed(p.message, { fix: p.fix, retry: p.fix ? undefined : () => { void downloadPdf(all); } });
-        return;
-      }
-      save(await r.blob(), all ? `artfinity-all-codes-${d.format}.pdf` : `${fileBase}-sheet.pdf`);
-      if (all) savedToast(`Made ${r.headers.get("X-Af-Codes") || arts.length} codes`, { description: "One per piece. See them in My codes.", next: { label: "My codes", href: "/studio/codes" } });
-      else savedToast("Print sheet downloaded", { description: "Its code is saved in My codes. Print at 100% scale.", next: { label: "My codes", href: "/studio/codes" } });
-    } catch (e) {
-      failed(errorText(e, "The PDF didn't download. Try again."), { retry: () => { void downloadPdf(all); } });
-    } finally { setBusy(""); }
-  }
-  /** Saves the code (like Download PDF), then adds this piece + look to the print queue. */
-  async function addToQueue() {
-    setBusy("queue");
+  /** "Print this code": saves the code with this look, then opens Print codes with this piece ticked, 1 copy. */
+  async function printThis() {
+    setBusy("pdf");
     try {
       const c = await ensureCode();
-      if (!c) return;
-      const n = Math.max(1, Math.min(500, Math.round(queueQty) || 1));
-      const r = await fetch("/api/studio/print-queue", { method: "POST", headers: JSON_HEADERS, body: JSON.stringify({ slug: art.slug, design: d, code: c, qty: n }) });
-      if (!r.ok) {
-        const p = await problemFrom(r, "Couldn't add it to your print queue. Try again.");
-        failed(p.message, { fix: p.fix, retry: p.fix ? undefined : () => { void addToQueue(); } });
-        return;
-      }
-      const j = await r.json().catch(() => ({}));
-      savedToast(`Added ${n} ${F.name.toLowerCase()}${n === 1 ? "" : "s"} to your print queue`, { description: `Code ${c}. ${j.cards ?? n} ${j.cards === 1 ? "card" : "cards"} waiting to print.`, next: { label: "Open print queue", href: "/studio/qr/queue" } });
-      router.refresh();
-    } catch (e) {
-      failed(errorText(e, "Couldn't add it to your print queue. Try again."), { retry: () => { void addToQueue(); } });
+      if (c) router.push(`/studio/print?code=${encodeURIComponent(c)}&size=${d.custom ? "custom" : d.format}`);
     } finally { setBusy(""); }
   }
   async function downloadSvg() {
@@ -499,7 +460,7 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
           <div className={s.outInner}>
           <div className={s.topRow}>
             <div className={s.tabs} role="tablist" aria-label="Preview">
-              {([["card", "Card"], ["wall", "On the wall"], ["sheet", "Print sheet"]] as [View, string][]).map(([v, l]) => (
+              {([["card", "Card"], ["wall", "On the wall"]] as [View, string][]).map(([v, l]) => (
                 <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => setView(v)}>{l}</button>
               ))}
             </div>
@@ -508,18 +469,16 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
           <div className={s.stage} aria-live="polite" data-view={view} ref={stageRef}>
             {!svg ? <div className={s.loading}><Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" /> Mixing paint</div>
               : view === "card" ? <div className={cx(s.face, !d.custom && s[`f_${d.format}`])} style={d.custom ? { maxWidth: `${Math.round(Math.min(520, Math.max(220, size.w * 150)))}px` } : undefined} dangerouslySetInnerHTML={{ __html: svg }} />
-              : view === "wall" ? <Wall art={art} svg={svg} format={d.format} w={size.w} name={cardName} />
-              : <div className={s.sheet} dangerouslySetInnerHTML={{ __html: card ? sheetSVG(card, d.format, "s", d.custom) : initialCard?.sheet || "" }} />}
+              : <Wall art={art} svg={svg} format={d.format} w={size.w} name={cardName} />}
           </div>
           <p className={s.stageNote}>
             {view === "card" && <>{cardName}{d.custom?.sheet === "auto" ? "" : <> · {+size.w.toFixed(2)} × {+size.h.toFixed(2)} in</>} · shown {size.w > 3.5 ? "smaller" : "larger"} than life. Print on {paper}.</>}
             {view === "wall" && <>To scale on an 8 ft wall, beside a 24 × 30 in original{sn && <>. Title reads from {fmtDist(sn.readM * 100)}, code scans from {fmtDist(sn.scanCm)}</>}.</>}
-            {view === "sheet" && <>{sheet.note} US Letter, 100% scale{d.format === "poster" || (d.custom && d.custom.sheet !== "auto") ? "" : ", crop marks included"}. Print on {paper}.</>}
           </p>
           <div className={s.downloads}>
-              <button type="button" className="btn btn-blue btn-sm" onClick={() => downloadPdf()} disabled={!!busy}>
-                {busy === "pdf" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <FileText className="h-4 w-4" aria-hidden="true" />}
-                Download PDF
+              <button type="button" className="btn btn-blue btn-sm" onClick={printThis} disabled={!!busy}>
+                {busy === "pdf" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Printer className="h-4 w-4" aria-hidden="true" />}
+                Print this code
               </button>
               <button type="button" className="btn btn-ghost btn-sm" onClick={downloadSvg} disabled={!fonts || !!busy}>
                 {busy === "svg" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Download className="h-4 w-4" aria-hidden="true" />} SVG
@@ -532,33 +491,9 @@ export default function QrStudio({ arts, initialSlug, initialDesign, initialCard
                 {code ? (dirty ? `Save changes · ${code}` : `Saved · ${code}`) : "Save code"}
               </button>
             </div>
-          {d.custom ? (
-            <p className={s.stageNote}>Custom sizes print from Download PDF: a full sheet, {perSheet} per page.</p>
-          ) : (
-          <div className={s.printAll}>
-            <span>Printing several pieces?</span>
-            <span className="inline-flex items-center gap-2">
-              <label className="inline-flex items-center gap-1.5 text-[13px] font-semibold">
-                <span className="sr-only">How many {F.name.toLowerCase()}s</span>
-                <input type="number" min={1} max={500} inputMode="numeric" value={queueQty} onChange={(e) => setQueueQty(Number(e.target.value))}
-                  className="num h-9 w-16 rounded-lg border-[1.5px] border-line bg-white px-2 text-center text-[14px]" aria-label={`How many ${F.name.toLowerCase()}s of ${art.title}`} />
-              </label>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={addToQueue} disabled={!!busy}>
-                {busy === "queue" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <ListPlus className="h-4 w-4" aria-hidden="true" />}
-                Add to print queue
-              </button>
-            </span>
-          </div>
-          )}
-          {arts.length > 1 && (
-            <div className={s.printAll}>
-              <span>Every piece, this look:</span>
-              <button type="button" className="btn btn-sticker btn-sm" onClick={() => downloadPdf(true)} disabled={!!busy}>
-                {busy === "all" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Layers className="h-4 w-4" aria-hidden="true" />}
-                Print all my codes ({arts.length})
-              </button>
-            </div>
-          )}
+          <p className={s.stageNote}>
+            Printing several pieces, or more than one copy? <Link href="/studio/print" className="font-semibold text-scan">Print codes</Link> fits any mix on as few sheets as possible.
+          </p>
           </div>
         </div>
 

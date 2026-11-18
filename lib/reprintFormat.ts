@@ -29,7 +29,7 @@ export const MAX_PHOTOS = 3;
 export const MAX_NOTE = 800;
 
 /** Buyers can ask this long after delivery (matches the return policy). */
-export const HELP_DAYS_AFTER_DELIVERY = 14;
+export const HELP_DAYS_AFTER_DELIVERY = 7;
 /**
  * Orders store no delivered date, so delivery is estimated: the shipped date (when admin saved the
  * tracking number, kept as a Message) plus this many days in transit. Generous on purpose.

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Column, Img, Row, Section } from "@react-email/components";
 import { SITE_URL } from "@/lib/urls";
+import { HELP_DAYS_AFTER_DELIVERY } from "@/lib/reprintFormat";
 import { A, C, CTA, EmailLayout, H1, P } from "./_layout";
 
 type Item = {
@@ -78,7 +79,7 @@ export default function ShippingStatusEmail({
 
       {helpUrl ? (
         <P muted small>
-          Something wrong with it? <A href={helpUrl}>Send us a photo</A> within 14 days of delivery and we&apos;ll reprint it free.
+          Something wrong with it? <A href={helpUrl}>Send us a photo</A> within {HELP_DAYS_AFTER_DELIVERY} days of delivery and we&apos;ll take a look.
         </P>
       ) : null}
       <P muted small style={{ margin: 0 }}>

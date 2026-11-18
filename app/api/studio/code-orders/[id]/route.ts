@@ -1,5 +1,5 @@
 // POST /api/studio/code-orders/:id { action: "retry" } → a fresh checkout for an order that wasn't paid (→ { url })
-// POST /api/studio/code-orders/:id { action: "cancel" } → give up on an unpaid order (its codes stay in the queue)
+// POST /api/studio/code-orders/:id { action: "cancel" } → give up on an unpaid order (nothing is charged)
 import { NextRequest, NextResponse } from "next/server";
 import { activeUserGuard, getUserFromCookie } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       if (!process.env.STRIPE_SECRET_KEY) {
         if (!testCheckoutAllowed()) return checkoutUnavailable("code-prints");
         await markCodeOrderPaid(order.id);
-        return NextResponse.json({ url: `/studio/qr/queue?paid=${order.id}`, dev: true });
+        return NextResponse.json({ url: `/studio/print?paid=${order.id}`, dev: true });
       }
       return NextResponse.json({ url: await checkoutSession(order, baseUrl(req)) });
     } catch (e) {

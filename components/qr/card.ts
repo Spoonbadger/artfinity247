@@ -107,7 +107,8 @@ export const MSG_MAX = 20;
 
 type Look = { format: FormatKey; style: StyleKey; ink: InkKey; dots: DotStyle; eyes: EyeStyle } & Inks;
 export const PRESETS: Record<PresetKey, Look & { name: string; sub: string }> = {
-  gallery: { name: "Gallery label", sub: "Beside the painting", format: "label", style: "pill", ink: "black", dots: "rounded", eyes: "rounded", ...pickInks("black") },
+  // Colour by default (Nov 2026): garnet pill and corners, yellow brush. Black ink stays one tap away in the Studio.
+  gallery: { name: "Gallery label", sub: "Beside the painting", format: "label", style: "pill", ink: "color", dots: "rounded", eyes: "rounded", ...pickInks("color") },
   sticker: { name: "Sticker", sub: "Round and loud", format: "sticker", style: "pill", ink: "color", dots: "dots", eyes: "circle", fg: "#15161b", bg: "#ffd43b", eye: "same", accent: "#15161b", tag: "#15161b" },
   market: { name: "Market tag", sub: "Hangs off a frame", format: "tag", style: "pill", ink: "color", dots: "square", eyes: "rounded", fg: "#15161b", bg: "#ffffff", eye: "#ff5a36", accent: "#ff5a36", tag: "#ffd43b" },
   poster: { name: "Show poster", sub: "Door or easel", format: "poster", style: "panel", ink: "color", dots: "liquid", eyes: "frame", fg: "#8b2a4b", bg: "#f2f3ec", eye: "same", accent: "#8b2a4b", tag: "#ffd43b" },

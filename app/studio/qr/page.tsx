@@ -15,8 +15,6 @@ import { requireArtist, displayName } from "../_lib/data";
 import { getArtistSplitFor } from "@/lib/revenue";
 import { venueOptions } from "@/lib/venues";
 import { partnerChoices, placeOptions } from "@/lib/artistPlaces";
-import { queueCount } from "@/lib/printQueue";
-import QueueLink from "@/components/qr/QueueLink";
 import { QR_END_DATES } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
@@ -97,7 +95,7 @@ export default async function QrPage({ searchParams }: { searchParams: { art?: s
   }
 
   return (
-    <StudioPage title="QR codes" sub="Every code really scans, and you can change where it goes after printing." actions={<><HelpLink href="/help/qr-codes/qr-templates" /><Link href="/studio/codes" className="btn btn-ghost btn-sm">My codes</Link><QueueLink count={await queueCount(artist.id)} /></>}>
+    <StudioPage title="QR codes" sub="Every code really scans, and you can change where it goes after printing." actions={<><HelpLink href="/help/qr-codes/qr-templates" /><Link href="/studio/codes" className="btn btn-ghost btn-sm">My codes</Link><Link href="/studio/print" className="btn btn-ghost btn-sm">Print codes</Link></>}>
       {inReview.length > 0 && (
         <Problem tone="info" title={inReview.length === 1 ? `${inReview[0]} is in review` : `${inReview.length} pieces are in review`} fix={{ label: "See my art", href: "/studio/art" }}>
           You can print {inReview.length === 1 ? "its code" : "their codes"} now. Scans open the piece once it&apos;s live, usually within a day.

@@ -39,9 +39,9 @@ export default function ArtworkLiveWithQrEmail({
 
       <H2>Hang a QR card beside it</H2>
       <P>Print the card and place it next to the original so visitors can scan it and order on the spot. Card stock works best.</P>
-      <CTA href={qrDownloadUrl} secondary>Download QR card (PDF)</CTA>
+      <CTA href={qrDownloadUrl} secondary>Print its QR code</CTA>
       <P muted small style={{ margin: 0 }}>
-        The download link works for 7 days. After that, print it any time from <A href={`${SITE_URL}/studio/art`}>My art</A>.
+        Pick a label, sticker or tag and how many. Print it any time from <A href={`${SITE_URL}/studio/art`}>My art</A>.
       </P>
     </EmailLayout>
   );

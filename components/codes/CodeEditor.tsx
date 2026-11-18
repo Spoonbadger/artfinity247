@@ -8,7 +8,7 @@ import { Download, ImageIcon, Loader2, Pencil } from "lucide-react";
 import { qrSVG, type DotStyle, type EyeStyle } from "@/lib/qr/render";
 import { shortUrl } from "@/lib/shortcode";
 import PlacePicker, { placeInput, samePlace, type PartnerChoice, type PlaceChoice, type PlaceValue } from "./PlacePicker";
-import LabelWarning, { queueReprint, type LabelWarningText } from "./LabelWarning";
+import LabelWarning, { reprintHref, type LabelWarningText } from "./LabelWarning";
 import { describeChange, nowFacts, type PrintedLabel } from "@/lib/labelFacts";
 import { QR_END_DATES } from "@/lib/features";
 
@@ -79,13 +79,11 @@ export default function CodeEditor({ initial, arts, look, base, places = [], par
         return;
       }
       if (reprint) {
-        try {
-          const q = await queueReprint([initial.code]);
-          saved("Saved and added to your print queue", { description: `${q.cards} ${q.cards === 1 ? "card" : "cards"} waiting to print.`, next: { label: "Open print queue", href: "/studio/qr/queue" } });
-        } catch (err) {
-          failed(errorText(err, "Saved, but it didn't go in the print queue."), { retry: () => { void queueReprint([initial.code]).then(() => saved("Added to your print queue")); } });
-        }
-      } else saved("Saved", { description: "The printed code opens the new version now." });
+        saved("Saved. Print the new label", { description: "Same look, today's price." });
+        router.push(reprintHref([initial.code]));
+        return;
+      }
+      saved("Saved", { description: "The printed code opens the new version now." });
       setWarn(null);
       router.refresh();
     } catch (err) {

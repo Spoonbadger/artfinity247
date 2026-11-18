@@ -71,7 +71,7 @@ export default async function AboutPage() {
 
   const promises: { color: string; title: string; text: string; href?: string; link?: string }[] = [
     { color: "var(--af-earned)", title: `${pct(split)} to the artist`, text: `Of the profit on every print, or ${pct(PRO.split)} on ${PRO.name}. Free to join.`, href: "/pricing", link: "See the math" },
-    { color: "var(--af-coral)", title: "Damaged? Reprinted free", text: `Send a photo within ${HELP_DAYS_AFTER_DELIVERY} days of delivery and we print it again.`, href: "/return-policy", link: "Return policy" },
+    { color: "var(--af-coral)", title: "Damaged? Tell us", text: `Send a photo within ${HELP_DAYS_AFTER_DELIVERY} days of delivery and we look at every case.`, href: "/return-policy", link: "Return policy" },
     { color: "var(--af-scan)", title: "Artists keep their rights", text: "Copyright stays with the artist. We never train AI on their work.", href: "/artist-terms-and-agreement", link: "Artist terms" },
     { color: "var(--af-sticker)", title: "Stolen art comes down", text: "Report it and we review within 2 business days.", href: "/dmca", link: "How takedowns work" },
     { color: "var(--af-ink)", title: "Real verification", text: "Our team checks every verified artist's portfolio and socials." },

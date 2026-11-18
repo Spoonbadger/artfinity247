@@ -5,8 +5,6 @@ import { EmptyState } from "@/components/studio/EmptyState";
 import { Problem } from "@/components/studio/Problem";
 import HelpLink from "@/components/help/HelpLink";
 import { requireArtist, usd } from "../_lib/data";
-import QueueLink from "@/components/qr/QueueLink";
-import { queueCount } from "@/lib/printQueue";
 import { getCodes, pct, status, windowTotals, WINDOW_DAYS, type CodeRow } from "./_lib";
 import CodesList, { type CodeListRow } from "@/components/codes/CodesList";
 import { partnerChoices, placeOptions } from "@/lib/artistPlaces";
@@ -61,7 +59,7 @@ export default async function CodesPage({ searchParams }: { searchParams: { show
     <StudioPage
       title="My codes"
       sub={codes.length ? "Every printed code. Edit any of them, even after printing." : undefined}
-      actions={<><HelpLink href="/help/qr-codes/change-after-printing" /><QueueLink count={await queueCount(artist.id)} /><Link href="/studio/qr" className="btn btn-blue btn-sm"><Plus className="h-4 w-4" aria-hidden="true" />Make a code</Link></>}
+      actions={<><HelpLink href="/help/qr-codes/change-after-printing" /><Link href="/studio/print" className="btn btn-ghost btn-sm">Print codes</Link><Link href="/studio/qr" className="btn btn-blue btn-sm"><Plus className="h-4 w-4" aria-hidden="true" />Make a code</Link></>}
     >
       {codes.length === 0 ? (
         <EmptyState

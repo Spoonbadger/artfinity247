@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, Loader2, Printer } from "lucide-react";
 import { errorText, failed, problemFrom, saved, withUndo } from "@/lib/feedback";
 import { priceWords, type LabelDiff, type PrintedLabel } from "@/lib/labelFacts";
-import { queueReprint } from "./LabelWarning";
+import { reprintHref } from "./LabelWarning";
 
 const day = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" });
 
@@ -14,15 +14,9 @@ export default function LabelCard({ label, diffs, format }: { label: PrintedLabe
   const [busy, setBusy] = useState<"" | "reprint" | "replaced">("");
   const stale = diffs.length > 0;
 
-  async function reprint() {
+  function reprint() {
     setBusy("reprint");
-    try {
-      const q = await queueReprint([label.code]);
-      saved("Added to your print queue", { description: `Same look, today's price. ${q.cards} ${q.cards === 1 ? "card" : "cards"} waiting.`, next: { label: "Open print queue", href: "/studio/qr/queue" } });
-      router.refresh();
-    } catch (e) {
-      failed(errorText(e, "Couldn't add it to your print queue. Try again."), { retry: reprint });
-    } finally { setBusy(""); }
+    router.push(reprintHref([label.code]));
   }
 
   async function replaced() {

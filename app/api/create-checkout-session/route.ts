@@ -167,7 +167,7 @@ export async function POST(req: Request) {
       custom_text: {
         shipping_address: { message: `Printed in NYC and shipped free in the US, with tracking. Arrives ${deliveryRange()}.` },
         // The terms and privacy links come from Stripe's Checkout settings (BILLING_SETUP.md), shown under the button.
-        submit: { message: `Order ${code}. Arrives damaged? We reprint it free within ${HELP_DAYS_AFTER_DELIVERY} days of delivery.` },
+        submit: { message: `Order ${code}. Arrives damaged? Tell us within ${HELP_DAYS_AFTER_DELIVERY} days of delivery.` },
       },
     });
     return json({ url: session.url });

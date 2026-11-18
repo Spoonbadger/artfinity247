@@ -91,24 +91,24 @@ Prefer to frame it yourself? Every print has a ½-inch handling border, which ma
     section,
     audience: "buyer",
     title: "My print arrived damaged or wrong",
-    summary: `We reprint it free. Within ${HELP_DAYS_AFTER_DELIVERY} days of delivery, tap "Problem with your print?" in your shipping email, add a photo, and we'll make it right. No need to send it back.`,
+    summary: `Within ${HELP_DAYS_AFTER_DELIVERY} days of delivery, tap "Problem with your print?" in your shipping email and add a photo. We look at every case.`,
     popular: 2,
     faq: true,
     link: { href: "/return-policy", label: "Return policy" },
     related: ["returns", "order-status", "contact-us"],
     body: `
-Damaged in shipping, a misprint or color problem, or the wrong item? We'll fix it at no cost to you.
+Damaged in shipping, a misprint or color problem, or the wrong item? Tell us and we'll take a look.
 
-## How to ask for a reprint
+## How to tell us
 1. Open your shipping email (or your order page) and tap **Problem with your print?**
 2. Pick what went wrong: ${REPRINT_REASON_TEXT}.
 3. Choose which prints are affected and add up to ${MAX_PHOTOS} photos.
 4. Send it. Our support team reviews every request and emails you.
 
-You can ask within ${HELP_DAYS_AFTER_DELIVERY} days of delivery. You don't need to send the print back.
+You can ask within ${HELP_DAYS_AFTER_DELIVERY} days of delivery. Keep the print until we reply, in case we ask for it back.
 
 ## What happens next
-We reprint and reship it free. If a reprint won't fix it, we refund you to your original payment method.
+We review each request case by case. We may offer a reprint, a refund or another fix, at our discretion.
 
 No email handy? Write to [${SUPPORT}](mailto:${SUPPORT}) with your order number and a photo.
 `,
@@ -135,13 +135,13 @@ If we sent a different size from the one you ordered, that's our mistake. See [M
     section,
     audience: "buyer",
     title: "Can I return a print?",
-    summary: "We can't take returns for a change of mind, because prints are made to order. Damaged, misprinted or wrong prints are reprinted free, or refunded.",
+    summary: "We can't take returns for a change of mind, because prints are made to order. Damaged, misprinted or wrong? Tell us within a week and we review it.",
     link: { href: "/return-policy", label: "Return policy" },
     related: ["damaged-print", "wrong-size"],
     body: `
-- **Damaged, misprinted or wrong:** we reprint and reship it free, or refund you if a reprint won't fix it. See [My print arrived damaged or wrong](/help/buyers/damaged-print).
+- **Damaged, misprinted or wrong:** tell us within ${HELP_DAYS_AFTER_DELIVERY} days of delivery. We review each case and may offer a reprint, a refund or another fix. See [My print arrived damaged or wrong](/help/buyers/damaged-print).
 - **Change of mind or wrong size choice:** no returns or exchanges. Each print is made just for you.
-- **Shipping on reprints:** free, like all US shipping.
+- **Return shipping:** if we ask for the print back, it may be at your cost.
 
 The full [return policy](/return-policy) has the details.
 `,

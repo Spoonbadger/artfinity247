@@ -107,7 +107,7 @@ The same rules as a single upload apply. New artists' first ${AUTO_APPROVE_AFTER
 
 ## When you're done
 You get a short summary of what's live and what's in review, with two shortcuts:
-- **Print all their QR codes**: one PDF with a code for every new live piece. See [Printing sheets of codes](/help/qr-codes/printing-sheets).
+- **Print their QR codes**: opens Print codes with every new piece ticked. See [Print codes](/help/qr-codes/print-codes).
 - **Add them to a collection**: put the whole batch in a new or existing [collection](/help/selling/collections).
 
 We send one email for the batch, not one per painting.
@@ -177,7 +177,7 @@ Pieces uploaded before this check existed show every size.
     popular: 2,
     faq: true,
     link: { href: "/studio/qr", label: "Open QR codes" },
-    related: ["hanging-codes", "qr-templates", "printing-sheets"],
+    related: ["hanging-codes", "qr-templates", "print-codes"],
     body: `
 Every piece on your page gets its own code. A buyer scans it, lands on that piece's buy page, picks a size and pays. We print and ship.
 
@@ -187,11 +187,11 @@ Every piece on your page gets its own code. A buyer scans it, lands on that piec
 3. Pick a look: gallery label, sticker, market tag or show poster.
 4. Optional: add the venue or event, or a scan discount.
 5. Check the **Will it scan?** panel. It warns you if the colors are too close or the code is too small.
-6. Click **Download PDF** and print it at 100% scale (not "fit to page").
+6. Click **Print this code**. Pick how many and your paper, then **Download PDF** and print at 100% scale (not "fit to page").
 
-The code is saved when you download or save it. You'll find it later in [My codes](/studio/codes), where you can change what it does even after printing.
+The code is saved when you print or save it. You'll find it later in [My codes](/studio/codes), where you can change what it does even after printing.
 
-> Have several pieces? **Print all my codes** makes one PDF with a code for every piece, in the same look.
+> Have several pieces? [Print codes](/help/qr-codes/print-codes) prints any mix of pieces, sizes and copies on as few sheets as possible.
 `,
   },
   {

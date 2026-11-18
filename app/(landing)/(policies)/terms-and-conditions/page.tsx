@@ -7,9 +7,9 @@ import { HELP_DAYS_AFTER_DELIVERY } from "@/lib/reprintFormat";
 const SUMMARY = [
   "You must be 18 or older to use the site or buy.",
   "Prints are made to order and ship free, to US addresses only.",
-  `Damaged, misprinted or wrong? Tell us within ${HELP_DAYS_AFTER_DELIVERY} days of delivery and we reprint it free. No change-of-mind returns.`,
+  `Damaged, misprinted or wrong? Tell us within ${HELP_DAYS_AFTER_DELIVERY} days of delivery. We review each case. No change-of-mind returns.`,
   "Buying a print doesn’t give you the copyright.",
-  "Disputes go to binding arbitration in New York.",
+  "Have a problem? Contact us first. If we can’t sort it out, New York courts decide.",
 ];
 
 export const metadata: Metadata = { title: "Terms and conditions" };
@@ -18,7 +18,7 @@ export default function Page() {
   return (
     <LongForm title="Terms and conditions" sub="Using the site and buying prints." current="/terms-and-conditions" summary={SUMMARY}>
       <section>
-        <p className="!mt-0 !text-[14px] text-ink-2">Last updated: November 5, 2026</p>
+        <p className="!mt-0 !text-[14px] text-ink-2">Last updated: November 17, 2026</p>
 
         <div>
           <h2>Introduction</h2>
@@ -57,7 +57,7 @@ export default function Page() {
               Every print is made to order. Printing takes about {PRINT_BUSINESS_DAYS.min}–{PRINT_BUSINESS_DAYS.max} business days and shipping about {SHIP_BUSINESS_DAYS.min}–
               {SHIP_BUSINESS_DAYS.max} business days. Delivery dates are estimates, and carriers can be late.
             </li>
-            <li>Arrives damaged, misprinted or wrong? We may reprint it free. See Returns and refunds below.</li>
+            <li>Arrives damaged, misprinted or wrong? See Returns and refunds below.</li>
           </ul>
         </div>
 
@@ -65,8 +65,9 @@ export default function Page() {
           <h2>Returns and refunds</h2>
           <p>
             Because prints are made to order, we don&apos;t take returns for a change of mind or a wrong size choice. If your print arrives damaged, misprinted or wrong, email{" "}
-            <a href="mailto:support@theartfinity.com">support@theartfinity.com</a> within {HELP_DAYS_AFTER_DELIVERY} days of delivery with your order number and a photo. We reprint and reship it free, or
-            refund you if a reprint won&apos;t fix it. Full details are in our <Link href="/return-policy">return policy</Link>.
+            <a href="mailto:support@theartfinity.com">support@theartfinity.com</a> within {HELP_DAYS_AFTER_DELIVERY} days of delivery with your order number and a photo. We review each request case by case and decide, at our discretion,
+            whether to offer a reprint, a refund or another fix. Return shipping, if we ask for the print back, may be at your cost. Full details are in our{" "}
+            <Link href="/return-policy">return policy</Link>.
           </p>
         </div>
 
@@ -91,14 +92,15 @@ export default function Page() {
 
         <div>
           <h2>Governing law</h2>
-          <p>These terms are governed by the laws of the United States and the State of New York, without regard to conflict of law rules.</p>
+          <p>These terms are governed by the laws of the State of New York and applicable US federal law, without regard to conflict of law rules.</p>
         </div>
 
         <div>
           <h2>Disputes</h2>
           <p>
-            Any dispute under these terms will be settled by binding arbitration under the rules of the American Arbitration Association, in New York, New York. You give up any right
-            to a jury trial or to join a class action.
+            If you have a problem with us, contact us first at <a href="mailto:support@theartfinity.com">support@theartfinity.com</a> and tell us what happened. We&apos;ll try
+            to work it out with you informally. If we can&apos;t resolve it within 30 days, either of us may take it to the state or federal courts located in New York County,
+            New York, and you and Artfinity agree to those courts&apos; jurisdiction. Either of us may also bring a claim in small claims court where it qualifies.
           </p>
         </div>
 
